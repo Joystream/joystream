@@ -147,7 +147,6 @@ pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::AccountId,
     <T as system::Trait>::Hash,
 >>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-pub type BalanceReferendum<T> = Balance<T>;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::Origin,
     <T as system::Trait>::AccountId,
@@ -203,6 +202,11 @@ pub trait Trait: system::Trait {
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
+    ) -> bool;
+
+    fn is_account_free_of_conflicting_stakes(
+        staking_account_id: &<Self as system::Trait>::AccountId,
+        stake: &Balance<Self>,
     ) -> bool;
 }
 
@@ -287,6 +291,10 @@ decl_error! {
 
         /// User tried to announce candidacy twice in the same elections.
         CantCandidateTwice,
+
+        /// User tried to announce candidacy with an account that has the conflicting type of stake
+        /// with candidacy stake and has not enough balance for staking for both purposes.
+        ConflictingStake,
 
         /// Council member and candidates can't withdraw stake yet.
         StakeStillNeeded,
@@ -745,6 +753,10 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::MembershipIdNotMatchAccount);
         }
 
+        if !T::is_account_free_of_conflicting_stakes(&staking_account_id, &stake) {
+            return Err(Error::ConflictingStake);
+        }
+
         let stage_data = match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => stage_data,
             _ => return Err(Error::CantCandidateNow),
@@ -793,11 +805,13 @@ impl<T: Trait> EnsureChecks<T> {
         let candidate = Candidates::<T>::get(membership_id);
 
         // prevent user from releasing candidacy stake during election
-        if candidate.cycle_id == AnnouncementPeriodNr::get() {
-            match Stage::<T>::get().stage {
-                CouncilStage::Idle => (),
-                _ => return Err(Error::StakeStillNeeded),
+        if candidate.cycle_id == AnnouncementPeriodNr::get()
+            && match Stage::<T>::get().stage {
+                CouncilStage::Idle => false,
+                _ => true,
             }
+        {
+            return Err(Error::StakeStillNeeded);
         }
 
         Ok(candidate.staking_account_id)
@@ -822,9 +836,8 @@ impl<T: Trait> EnsureChecks<T> {
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(_) => {
                 // ensure candidacy was announced in current election cycle
-                match Stage::<T>::get().stage {
-                    CouncilStage::Idle => (),
-                    _ => return Err(Error::NotCandidatingNow),
+                if candidate.cycle_id != AnnouncementPeriodNr::get() {
+                    return Err(Error::NotCandidatingNow);
                 }
             }
             _ => return Err(Error::CantWithdrawCandidacyNow),

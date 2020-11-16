@@ -2,8 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, BalanceReferendum, CandidateOf, Candidates, CouncilMemberOf,
-    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
+    AnnouncementPeriodNr, Balance, CandidateOf, Candidates, CouncilMemberOf, CouncilMembers,
+    CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
     CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
@@ -14,8 +14,8 @@ use frame_support::{
 };
 use rand::Rng;
 use referendum::{
-    Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
-    ReferendumStageRevealing,
+    Balance as BalanceReferendum, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
+    ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -78,6 +78,13 @@ impl Trait for Runtime {
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
+    }
+
+    fn is_account_free_of_conflicting_stakes(
+        _account_id: &<Self as system::Trait>::AccountId,
+        _stake: &Balance<Self>,
+    ) -> bool {
+        true
     }
 }
 
@@ -192,7 +199,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: &Balance<Self, ReferendumInstance>,
+        stake: &BalanceReferendum<Self, ReferendumInstance>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -203,7 +210,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     }
 
     fn can_release_voting_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, ReferendumInstance>>,
+        _vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -325,14 +332,14 @@ pub struct VoterInfo<T: Trait> {
     pub commitment: T::Hash,
     pub salt: Vec<u8>,
     pub vote_for: u64,
-    pub stake: BalanceReferendum<T>,
+    pub stake: Balance<T>,
 }
 
 #[derive(Clone)]
 pub struct CouncilSettings<T: Trait> {
     pub council_size: u64,
     pub min_candidate_count: u64,
-    pub min_candidate_stake: BalanceReferendum<T>,
+    pub min_candidate_stake: Balance<T>,
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
@@ -432,7 +439,7 @@ where
     T::AccountId: From<u64>,
     T::MembershipId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    BalanceReferendum<T>: From<u64> + Into<u64>,
+    Balance<T>: From<u64> + Into<u64>,
 {
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
@@ -458,11 +465,11 @@ where
     }
 
     // topup currency to the account
-    fn topup_account(account_id: u64, amount: BalanceReferendum<T>) {
+    fn topup_account(account_id: u64, amount: Balance<T>) {
         let _ = balances::Module::<RuntimeReferendum>::deposit_creating(&account_id, amount.into());
     }
 
-    pub fn generate_candidate(index: u64, stake: BalanceReferendum<T>) -> CandidateInfo<T> {
+    pub fn generate_candidate(index: u64, stake: Balance<T>) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
@@ -482,11 +489,7 @@ where
         }
     }
 
-    pub fn generate_voter(
-        index: u64,
-        stake: BalanceReferendum<T>,
-        vote_for_index: u64,
-    ) -> VoterInfo<T> {
+    pub fn generate_voter(index: u64, stake: Balance<T>, vote_for_index: u64) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
@@ -534,7 +537,7 @@ where
     T::AccountId: From<u64> + Into<u64>,
     T::MembershipId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    BalanceReferendum<T>: From<u64> + Into<u64>,
+    Balance<T>: From<u64> + Into<u64>,
 
     T::Hash: From<<RuntimeReferendum as system::Trait>::Hash>
         + Into<<RuntimeReferendum as system::Trait>::Hash>,
@@ -629,7 +632,7 @@ where
         });
     }
 
-    pub fn check_announcing_stake(membership_id: &T::MembershipId, amount: BalanceReferendum<T>) {
+    pub fn check_announcing_stake(membership_id: &T::MembershipId, amount: Balance<T>) {
         assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
         assert_eq!(Candidates::<T>::get(membership_id).stake, amount);
@@ -672,7 +675,7 @@ where
     pub fn announce_candidacy(
         origin: OriginType<T::AccountId>,
         member_id: T::MembershipId,
-        stake: BalanceReferendum<T>,
+        stake: Balance<T>,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
@@ -690,7 +693,7 @@ where
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
-        stake: BalanceReferendum<T>,
+        stake: Balance<T>,
         expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result
