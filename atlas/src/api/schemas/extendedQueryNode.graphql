@@ -16,6 +16,8 @@ type Member {
 type Channel {
   id: ID!
 
+  createdAt: Date!
+
   handle: String!
 
   description: String!
@@ -216,7 +218,7 @@ type Query {
     first: Int
     after: String
     where: ChannelWhereInput
-    orderBy: [ChannelOrderByInput!]
+    orderBy: ChannelOrderByInput
   ): ChannelConnection!
 
   # Lookup a channel by its ID
@@ -229,7 +231,7 @@ type Query {
   video(id: ID!): Video
 
   # List all videos by given constraints
-  videosConnection(first: Int, after: String, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): VideoConnection!
+  videosConnection(first: Int, after: String, where: VideoWhereInput, orderBy: VideoOrderByInput): VideoConnection!
 
   # List all top trending videos
   featured_videos: [Video!]!

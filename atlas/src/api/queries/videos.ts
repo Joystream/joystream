@@ -46,7 +46,7 @@ export const GET_NEWEST_VIDEOS = gql`
       first: $first
       after: $after
       where: { categoryId_eq: $categoryId, isCurated_eq: false }
-      orderBy: [createdAt_DESC]
+      orderBy: createdAt_DESC
     ) {
       edges {
         cursor
