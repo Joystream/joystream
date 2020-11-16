@@ -17,8 +17,8 @@ rustup install nightly-2020-10-06 --force
 rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
 
 # Sticking with older version of compiler to ensure working build
-rustup install 1.46.0
-rustup default 1.46.0
+rustup install 1.47.0
+rustup default 1.47.0
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
