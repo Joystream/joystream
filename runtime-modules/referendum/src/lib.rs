@@ -242,10 +242,10 @@ decl_event! {
         VoteCast(AccountId, AccountId, Hash, Balance),
 
         /// User revealed his vote
-        VoteRevealed(AccountId, u64),
+        VoteRevealed(AccountId, AccountId, u64),
 
         /// User released his stake
-        StakeReleased(AccountId),
+        StakeReleased(AccountId, AccountId),
     }
 }
 
@@ -342,18 +342,18 @@ decl_module! {
 
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: u64) -> Result<(), Error<T, I>> {
-            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
+        pub fn reveal_vote(origin, staking_account_id: T::AccountId, salt: Vec<u8>, vote_option_id: u64) -> Result<(), Error<T, I>> {
+            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &staking_account_id, &salt, &vote_option_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
+            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &staking_account_id, &vote_option_id, cast_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, staking_account_id, vote_option_id));
 
             Ok(())
         }
@@ -361,18 +361,18 @@ decl_module! {
 
         /// Release a locked stake.
         #[weight = 10_000_000]
-        pub fn release_stake(origin) -> Result<(), Error<T, I>> {
-            let account_id = EnsureChecks::<T, I>::can_release_stake(origin)?;
+        pub fn release_stake(origin, staking_account_id: T::AccountId) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::<T, I>::can_release_stake(origin, &staking_account_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::release_stake(&account_id);
+            Mutations::<T, I>::release_stake(&staking_account_id);
 
             // emit event
-            Self::deposit_event(RawEvent::StakeReleased(account_id));
+            Self::deposit_event(RawEvent::StakeReleased(account_id, staking_account_id));
 
             Ok(())
         }
@@ -549,6 +549,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
         account_id: &<T as system::Trait>::AccountId,
+        staking_account_id: &<T as system::Trait>::AccountId,
         option_id: &u64,
         cast_vote: CastVoteOf<T, I>,
     ) -> Result<(), Error<T, I>> {
@@ -576,18 +577,20 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
         // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
+        Votes::<T, I>::mutate(staking_account_id, |vote| {
+            (*vote).vote_for = Some(*option_id)
+        });
 
         Ok(())
     }
 
     /// Release stake associated to the user's last vote.
-    fn release_stake(account_id: &<T as system::Trait>::AccountId) {
+    fn release_stake(staking_account_id: &<T as system::Trait>::AccountId) {
         // lock stake amount
-        T::Currency::remove_lock(T::LockId::get(), account_id);
+        T::Currency::remove_lock(T::LockId::get(), staking_account_id);
 
         // remove vote record
-        Votes::<T, I>::remove(account_id);
+        Votes::<T, I>::remove(staking_account_id);
     }
 
     /// Tries to insert option to the proper place in the winners list. Utility for reaveal_vote() function.
@@ -757,6 +760,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::Hash>>(
         origin: T::Origin,
+        staking_account_id: &T::AccountId,
         salt: &[u8],
         vote_option_id: &u64,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
@@ -773,7 +777,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::RevealingNotInProgress),
         };
 
-        let cast_vote = Self::ensure_vote_exists(&account_id)?;
+        let cast_vote = Self::ensure_vote_exists(&staking_account_id)?;
 
         // ask runtime if option is valid
         if !T::is_valid_option_id(vote_option_id) {
@@ -791,7 +795,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure commitment corresponds to salt and vote option
-        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_id);
+        let commitment =
+            R::calculate_commitment(&staking_account_id, salt, &cycle_id, vote_option_id);
         if commitment != cast_vote.commitment {
             return Err(Error::InvalidReveal);
         }
@@ -799,13 +804,16 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok((stage_data, account_id, cast_vote))
     }
 
-    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn can_release_stake(
+        origin: T::Origin,
+        staking_account_id: &T::AccountId,
+    ) -> Result<T::AccountId, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
-        let cast_vote = Self::ensure_vote_exists(&account_id)?;
+        let cast_vote = Self::ensure_vote_exists(&staking_account_id)?;
 
         // allow release only for past cycles
         if cycle_id == cast_vote.cycle_id {
@@ -820,13 +828,15 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<CastVoteOf<T, I>, Error<T, I>> {
+    fn ensure_vote_exists(
+        staking_account_id: &T::AccountId,
+    ) -> Result<CastVoteOf<T, I>, Error<T, I>> {
         // ensure there is some vote with locked stake
-        if !Votes::<T, I>::contains_key(account_id) {
+        if !Votes::<T, I>::contains_key(staking_account_id) {
             return Err(Error::VoteNotExisting);
         }
 
-        let cast_vote = Votes::<T, I>::get(account_id);
+        let cast_vote = Votes::<T, I>::get(staking_account_id);
 
         Ok(cast_vote)
     }

@@ -709,6 +709,7 @@ where
 
     pub fn reveal_vote(
         origin: OriginType<T::AccountId>,
+        staking_account_id: T::AccountId,
         salt: Vec<u8>,
         vote_option: u64,
         //expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
@@ -718,6 +719,7 @@ where
         assert_eq!(
             referendum::Module::<RuntimeReferendum, ReferendumInstance>::reveal_vote(
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
+                staking_account_id.into(),
                 salt,
                 vote_option,
             )
@@ -817,6 +819,7 @@ where
         params.voters.iter().for_each(|voter| {
             Self::reveal_vote(
                 voter.origin.clone(),
+                voter.account_id.clone(),
                 voter.salt.clone(),
                 voter.vote_for,
                 Ok(()),
