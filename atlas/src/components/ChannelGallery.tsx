@@ -1,5 +1,4 @@
 import React from 'react'
-import styled from '@emotion/styled'
 
 import { ChannelPreviewBase, Gallery } from '@/shared/components'
 import ChannelPreview from './ChannelPreviewWithNavigation'
@@ -29,7 +28,7 @@ const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, channels, loadin
             <ChannelPreview
               id={channel.id}
               name={channel.handle}
-              avatarURL={channel.avatarPhotoURL}
+              avatarURL={channel.avatarPhotoUrl}
               key={channel.id}
               animated
             />

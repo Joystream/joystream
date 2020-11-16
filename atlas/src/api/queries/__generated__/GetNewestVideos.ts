@@ -35,7 +35,7 @@ export interface GetNewestVideos_videosConnection_edges_node_media {
 export interface GetNewestVideos_videosConnection_edges_node_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -47,8 +47,8 @@ export interface GetNewestVideos_videosConnection_edges_node {
   category: GetNewestVideos_videosConnection_edges_node_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: GetNewestVideos_videosConnection_edges_node_media;
   channel: GetNewestVideos_videosConnection_edges_node_channel;
 }

@@ -16,8 +16,8 @@ const fakeVideo: VideoFields = {
   description: 'this is an awesome video',
   views: 271412,
   duration: 167,
-  thumbnailURL: 'https://source.unsplash.com/7MAjXGUmaPw/640x380',
-  publishedOnJoystreamAt: new Date(),
+  thumbnailUrl: 'https://source.unsplash.com/7MAjXGUmaPw/640x380',
+  createdAt: new Date(),
   media: {
     location: {
       host: '',
@@ -26,7 +26,7 @@ const fakeVideo: VideoFields = {
   },
   channel: {
     id: 'channelId',
-    avatarPhotoURL: 'https://source.unsplash.com/collection/781477/320x320',
+    avatarPhotoUrl: 'https://source.unsplash.com/collection/781477/320x320',
     handle: 'channel name',
   },
 }

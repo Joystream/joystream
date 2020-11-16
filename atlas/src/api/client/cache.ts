@@ -15,15 +15,15 @@ const cache = new InMemoryCache({
     },
     Video: {
       fields: {
-        publishedOnJoystreamAt: {
-          merge(_, publishedOnJoystreamAt: string | Date): Date {
-            if (typeof publishedOnJoystreamAt !== 'string') {
+        createdAt: {
+          merge(_, createdAt: string | Date): Date {
+            if (typeof createdAt !== 'string') {
               // TODO: investigate further
               // rarely, for some reason the object that arrives here is already a date object
               // in this case parsing attempt will cause an error
-              return publishedOnJoystreamAt
+              return createdAt
             }
-            return parseISO(publishedOnJoystreamAt)
+            return parseISO(createdAt)
           },
         },
       },

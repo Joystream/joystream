@@ -11,8 +11,8 @@ export interface GetNewestChannels_channelsConnection_edges_node {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
+  coverPhotoUrl: string | null;
 }
 
 export interface GetNewestChannels_channelsConnection_edges {

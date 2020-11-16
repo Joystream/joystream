@@ -35,7 +35,7 @@ export interface Search_search_item_Video_media {
 export interface Search_search_item_Video_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -47,8 +47,8 @@ export interface Search_search_item_Video {
   category: Search_search_item_Video_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: Search_search_item_Video_media;
   channel: Search_search_item_Video_channel;
 }
@@ -57,8 +57,8 @@ export interface Search_search_item_Channel {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
+  coverPhotoUrl: string | null;
 }
 
 export type Search_search_item = Search_search_item_Video | Search_search_item_Channel;

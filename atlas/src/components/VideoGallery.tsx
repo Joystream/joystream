@@ -48,11 +48,11 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) =
               channelId={video.channel.id}
               title={video.title}
               channelName={video.channel.handle}
-              channelAvatarURL={video.channel.avatarPhotoURL}
+              channelAvatarURL={video.channel.avatarPhotoUrl}
               views={video.views}
-              createdAt={video.publishedOnJoystreamAt}
+              createdAt={video.createdAt}
               duration={video.duration}
-              posterURL={video.thumbnailURL}
+              posterURL={video.thumbnailUrl}
               key={video.id}
             />
           ))}

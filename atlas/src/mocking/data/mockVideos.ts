@@ -2,15 +2,15 @@ import { thumbnailSources } from './mockImages'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import rawVideos from './raw/videos.json'
 
-export type MockVideo = Omit<VideoFields, 'media' | 'category' | 'channel' | 'publishedOnJoystreamAt' | 'duration'> & {
-  publishedOnJoystreamAt: unknown
+export type MockVideo = Omit<VideoFields, 'media' | 'category' | 'channel' | 'createdAt' | 'duration'> & {
+  createdAt: unknown
 }
 
 const mockVideos: MockVideo[] = rawVideos.map((rawVideo, idx) => {
   return {
     ...rawVideo,
     __typename: 'Video',
-    thumbnailURL: thumbnailSources[idx % thumbnailSources.length],
+    thumbnailUrl: thumbnailSources[idx % thumbnailSources.length],
   }
 })
 

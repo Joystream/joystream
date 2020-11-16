@@ -33,12 +33,12 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
     <div>
       <Header>
         <MediaWrapper>
-          <CoverImage src={data?.channel?.coverPhotoURL || DEFAULT_CHANNEL_COVER_URL} />
+          <CoverImage src={data?.channel?.coverPhotoUrl || DEFAULT_CHANNEL_COVER_URL} />
         </MediaWrapper>
         <TitleSection>
           {data?.channel ? (
             <>
-              <StyledAvatar img={data.channel.avatarPhotoURL} name={data.channel.handle} />
+              <StyledAvatar img={data.channel.avatarPhotoUrl} name={data.channel.handle} />
               <TitleContainer>
                 <Title>{data.channel.handle}</Title>
               </TitleContainer>

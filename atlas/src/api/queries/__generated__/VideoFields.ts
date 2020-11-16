@@ -35,7 +35,7 @@ export interface VideoFields_media {
 export interface VideoFields_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -47,8 +47,8 @@ export interface VideoFields {
   category: VideoFields_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: VideoFields_media;
   channel: VideoFields_channel;
 }

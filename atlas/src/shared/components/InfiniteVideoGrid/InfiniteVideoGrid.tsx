@@ -3,7 +3,7 @@ import styled from '@emotion/styled'
 import { debounce } from 'lodash'
 import { useLazyQuery } from '@apollo/client'
 
-import { typography, sizes } from '../../theme'
+import { sizes, typography } from '../../theme'
 import { VideoPreviewBase } from '../VideoPreview'
 import Grid from '../Grid'
 import VideoPreview from '@/components/VideoPreviewWithNavigation'
@@ -124,10 +124,10 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
           channelId={v.channel.id}
           title={v.title}
           channelName={v.channel.handle}
-          channelAvatarURL={v.channel.avatarPhotoURL}
-          createdAt={v.publishedOnJoystreamAt}
+          channelAvatarURL={v.channel.avatarPhotoUrl}
+          createdAt={v.createdAt}
           views={v.views}
-          posterURL={v.thumbnailURL}
+          posterURL={v.thumbnailUrl}
           key={v.id}
         />
       ))}

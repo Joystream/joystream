@@ -5,14 +5,14 @@ export const channelFieldsFragment = gql`
   fragment ChannelFields on Channel {
     id
     handle
-    avatarPhotoURL
-    coverPhotoURL
+    avatarPhotoUrl
+    coverPhotoUrl
   }
 `
 
 export const GET_NEWEST_CHANNELS = gql`
   query GetNewestChannels($first: Int, $after: String) {
-    channelsConnection(first: $first, after: $after, orderBy: [publishedOnJoystreamAt_DESC]) {
+    channelsConnection(first: $first, after: $after, orderBy: [createdAt_DESC]) {
       edges {
         cursor
         node {
