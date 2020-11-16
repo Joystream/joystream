@@ -5,6 +5,22 @@ export const Container = styled.div`
   position: relative;
 `
 
+export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next' }>`
+  position: absolute;
+  top: 0;
+  left: ${(props) => (props.direction === 'prev' ? 0 : 'auto')};
+  right: ${(props) => (props.direction === 'next' ? 0 : 'auto')};
+  bottom: 0;
+  width: 10%;
+  z-index: 1;
+  background-image: linear-gradient(
+    ${(props) => (props.direction === 'prev' ? 270 : 90)}deg,
+    transparent,
+    var(--gradientColor, transparent)
+  );
+  pointer-events: none;
+`
+
 export const Arrow = styled(Button)`
   position: absolute;
   width: 48px;
@@ -12,7 +28,7 @@ export const Arrow = styled(Button)`
   transition: none;
 
   &.disabled {
-    opacity: 0;
+    display: none;
   }
 
   &.glider-prev {
@@ -20,6 +36,12 @@ export const Arrow = styled(Button)`
   }
   &.glider-next {
     right: 0;
+  }
+  + ${BackgroundGradient} {
+    --gradientColor: black;
+  }
+  &.disabled + ${BackgroundGradient} {
+    --gradientColor: transparent;
   }
 `
 

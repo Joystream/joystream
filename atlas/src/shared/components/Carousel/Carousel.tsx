@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 
 import { useGlider, GliderProps } from '../Glider'
 
-import { Container, GliderContainer, Arrow, Track } from './Carousel.style'
+import { Container, GliderContainer, Arrow, Track, BackgroundGradient } from './Carousel.style'
 
 type CarouselProps = {
   trackPadding?: string
@@ -28,10 +28,12 @@ const Carousel: React.FC<CarouselProps> = ({
   return (
     <Container {...getContainerProps({ className })}>
       <Arrow {...getPrevArrowProps<React.ComponentProps<typeof Arrow>>({ icon: 'chevron-left' })} ref={prevArrowRef} />
+      <BackgroundGradient direction="prev" />
       <GliderContainer {...getGliderProps()} ref={ref}>
         <Track {...getTrackProps({ trackPadding })}>{children}</Track>
       </GliderContainer>
       <Arrow {...getNextArrowProps<React.ComponentProps<typeof Arrow>>({ icon: 'chevron-right' })} ref={nextArrowRef} />
+      <BackgroundGradient direction="next" />
     </Container>
   )
 }
