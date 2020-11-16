@@ -853,6 +853,11 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::NotCandidatingNow);
         }
 
+        // ensure election hasn't ended yet
+        if let CouncilStage::Idle = Stage::<T>::get().stage {
+            return Err(Error::NotCandidatingNow);
+        }
+
         Ok(())
     }
 }
