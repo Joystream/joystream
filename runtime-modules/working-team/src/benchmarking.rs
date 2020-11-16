@@ -584,7 +584,7 @@ benchmarks_instance! {
         );
     }
 
-    fill_opening_worker { // We can actually fill an opening with 0 applications?
+    fill_opening_worker {
         let i in 1 .. T::MaxWorkerNumberLimit::get();
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
