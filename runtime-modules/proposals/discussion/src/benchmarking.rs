@@ -67,7 +67,7 @@ fn member_account<T: membership::Trait>(
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-const MAX_BYTES: u32 = 50000;
+const MAX_BYTES: u32 = 16384;
 
 benchmarks! {
     _ { }
