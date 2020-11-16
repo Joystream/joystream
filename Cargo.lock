@@ -2105,7 +2105,6 @@ dependencies = [
  "pallet-versioned-store",
  "pallet-versioned-store-permissions",
  "pallet-working-group",
- "pallet-working-team",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -3893,7 +3892,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-team"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

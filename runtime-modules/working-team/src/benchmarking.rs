@@ -16,6 +16,7 @@ use crate::Module as WorkingTeam;
 use membership::Module as Membership;
 
 const SEED: u32 = 0;
+const MAX_BYTES: u32 = 16384;
 
 enum StakingRole {
     WithStakes,
@@ -512,7 +513,7 @@ benchmarks_instance! {
     }
 
     apply_on_opening {
-        let i in 1 .. 50000;
+        let i in 1 .. MAX_BYTES;
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
         let opening_id = add_opening_helper::<T, I>(
@@ -679,7 +680,7 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     slash_stake {
-        let i in 0 .. 50000;
+        let i in 0 .. MAX_BYTES;
 
         let (lead_id, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -700,7 +701,7 @@ benchmarks_instance! {
     }
 
     terminate_role_worker {
-        let i in 0 .. 50000;
+        let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -724,7 +725,7 @@ benchmarks_instance! {
     }
 
     terminate_role_lead {
-        let i in 0 .. 50000;
+        let i in 0 .. MAX_BYTES;
 
         let (_, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
@@ -832,7 +833,7 @@ benchmarks_instance! {
     }
 
     set_status_text {
-        let i in 0 .. 50000;
+        let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -883,7 +884,7 @@ benchmarks_instance! {
     // Regular opening is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     add_opening {
-        let i in 0 .. 50000;
+        let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);

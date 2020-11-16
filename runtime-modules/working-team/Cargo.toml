@@ -1,6 +1,6 @@
 [package]
 name = "pallet-working-team"
-version = "1.0.0"
+version = "1.0.1"
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -15,7 +15,6 @@ sp-std = { package = 'sp-std', default-features = false, git = 'https://github.c
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
 
 [dev-dependencies]
