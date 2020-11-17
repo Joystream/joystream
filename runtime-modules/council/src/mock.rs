@@ -190,7 +190,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     type MinimumStake = MinimumVotingStake;
 
-    fn caclulate_vote_power(
+    fn calculate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
     ) -> Self::VotePower {
