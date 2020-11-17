@@ -308,7 +308,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Trait> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -318,11 +318,12 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
 
 /// Balance alias
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;

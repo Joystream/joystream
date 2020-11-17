@@ -18,7 +18,9 @@ mod integration;
 pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
-mod tests; // Runtime integration tests
+mod tests;
+/// Weights for pallets used in the runtime.
+mod weights; // Runtime integration tests
 
 use frame_support::traits::KeyOwnerProofSystem;
 use frame_support::weights::{
@@ -26,6 +28,7 @@ use frame_support::weights::{
     Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
+use frame_system::EnsureRoot;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -39,7 +42,6 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use system::EnsureRoot;
 
 pub use constants::*;
 pub use primitives::*;
@@ -70,12 +72,22 @@ pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
 
+#[cfg(feature = "std")]
+/// Wasm binary unwrapped. If built with `BUILD_DUMMY_WASM_BINARY`, the function panics.
+pub fn wasm_binary_unwrap() -> &'static [u8] {
+    WASM_BINARY.expect(
+        "Development wasm binary is not available. This means the client is \
+        built with `BUILD_DUMMY_WASM_BINARY` flag and it is only usable for \
+        production chains. Please rebuild with the flag disabled.",
+    )
+}
+
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 7,
+    spec_version: 8,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -105,7 +117,7 @@ parameter_types! {
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
 // TODO: adjust weight
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -126,15 +138,17 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = Version;
-    type ModuleToIndex = ModuleToIndex;
+    type PalletInfo = PalletInfo;
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = weights::frame_system::WeightInfo;
 }
 
 impl pallet_utility::Trait for Runtime {
     type Event = Event;
     type Call = Call;
+    type WeightInfo = weights::pallet_utility::WeightInfo;
 }
 
 parameter_types! {
@@ -146,6 +160,22 @@ impl pallet_babe::Trait for Runtime {
     type EpochDuration = EpochDuration;
     type ExpectedBlockTime = ExpectedBlockTime;
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+    type KeyOwnerProofSystem = Historical;
+
+    type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::Proof;
+
+    type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::IdentificationTuple;
+
+    type HandleEquivocation =
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+
+    type WeightInfo = ();
 }
 
 impl pallet_grandpa::Trait for Runtime {
@@ -161,19 +191,16 @@ impl pallet_grandpa::Trait for Runtime {
 
     type KeyOwnerProofSystem = Historical;
 
-    type HandleEquivocation = pallet_grandpa::EquivocationHandler<
-        Self::KeyOwnerIdentification,
-        primitives::report::ReporterAppCrypto,
-        Runtime,
-        Offences,
-    >;
+    type HandleEquivocation =
+        pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+    type WeightInfo = ();
 }
 
-impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
     Call: From<LocalCall>,
 {
-    fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: Call,
         public: <Signature as sp_runtime::traits::Verify>::Signer,
         account: AccountId,
@@ -186,12 +213,12 @@ where
     }
 }
 
-impl system::offchain::SigningTypes for Runtime {
+impl frame_system::offchain::SigningTypes for Runtime {
     type Public = <Signature as sp_runtime::traits::Verify>::Signer;
     type Signature = Signature;
 }
 
-impl<C> system::offchain::SendTransactionTypes<C> for Runtime
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
     Call: From<C>,
 {
@@ -207,6 +234,7 @@ impl pallet_timestamp::Trait for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = weights::pallet_timestamp::WeightInfo;
 }
 
 parameter_types! {
@@ -214,6 +242,7 @@ parameter_types! {
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
     pub const InitialMembersBalance: u32 = 2000;
+    pub const MaxLocks: u32 = 50;
 }
 
 impl pallet_balances::Trait for Runtime {
@@ -222,6 +251,8 @@ impl pallet_balances::Trait for Runtime {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = weights::pallet_balances::WeightInfo;
+    type MaxLocks = MaxLocks;
 }
 
 parameter_types! {
@@ -279,6 +310,7 @@ impl pallet_session::Trait for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+    type WeightInfo = weights::pallet_session::WeightInfo;
 }
 
 impl pallet_session::historical::Trait for Runtime {
@@ -331,12 +363,13 @@ impl pallet_staking::Trait for Runtime {
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
     type NextNewSession = Session;
-    type ElectionLookahead = MaxIterations;
+    type ElectionLookahead = ElectionLookahead;
     type Call = Call;
     type MaxIterations = MaxIterations;
     type MinSolutionScoreBump = MinSolutionScoreBump;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type UnsignedPriority = StakingUnsignedPriority;
+    type WeightInfo = weights::pallet_staking::WeightInfo;
 }
 
 impl pallet_im_online::Trait for Runtime {
@@ -345,6 +378,7 @@ impl pallet_im_online::Trait for Runtime {
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = weights::pallet_im_online::WeightInfo;
 }
 
 parameter_types! {
@@ -366,7 +400,7 @@ parameter_types! {
 }
 
 impl pallet_finality_tracker::Trait for Runtime {
-    type OnFinalizationStalled = Grandpa;
+    type OnFinalizationStalled = ();
     type WindowSize = WindowSize;
     type ReportLatency = ReportLatency;
 }
@@ -637,9 +671,9 @@ construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic
     {
         // Substrate
-        System: system::{Module, Call, Storage, Config, Event<T>},
+        System: frame_system::{Module, Call, Storage, Config, Event<T>},
         Utility: pallet_utility::{Module, Call, Event},
-        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
+        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},

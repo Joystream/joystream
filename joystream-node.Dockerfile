@@ -5,7 +5,7 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ENV WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
+ENV WASM_BUILD_TOOLCHAIN=nightly-2020-10-06
 RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --release

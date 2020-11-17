@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::{StorageMap, StorageValue};
-use system::{EventRecord, Phase, RawOrigin};
+use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::*;
 
