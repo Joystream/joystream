@@ -24,7 +24,7 @@ async function main() {
     category: { existing: { name: 'Education' } },
     // We use the same "existing" syntax to reference a channel by unique property (title)
     // In this case it's a channel that we created in createChannel example
-    channel: { existing: { title: 'Example channel' } },
+    channel: { existing: { handle: 'Example channel' } },
     media: {
       // We use "new" syntax to sygnalize we want to create a new VideoMedia entity that will be related to this Video entity
       new: {

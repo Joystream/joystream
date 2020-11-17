@@ -19,7 +19,7 @@ async function main() {
 
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<FlattenRelations<ChannelEntity>> = {
-    title: 'Updated channel title 2',
+    handle: 'Updated channel title 2',
   }
 
   // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)

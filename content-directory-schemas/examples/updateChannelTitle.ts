@@ -17,7 +17,7 @@ async function main() {
 
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<ChannelEntity> = {
-    title: 'Updated channel title',
+    handle: 'Updated channel title',
   }
 
   // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)

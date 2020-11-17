@@ -198,7 +198,7 @@ export class InputParser {
         const schemaPropertyType = schema.newProperties.find((p) => p.name === propertyName)!.property_type
         // Handle entities "nested" via "new"
         if (isSingle(schemaPropertyType) && isReference(schemaPropertyType.Single)) {
-          if (Object.keys(propertyValue).includes('new')) {
+          if (propertyValue !== null && Object.keys(propertyValue).includes('new')) {
             const refEntitySchema = this.schemaByClassName(schemaPropertyType.Single.Reference.className)
             this.includeEntityInputInUniqueQueryMap(propertyValue.new, refEntitySchema)
           }

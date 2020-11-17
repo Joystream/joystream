@@ -9,7 +9,7 @@ export default class MyChannelsCommand extends ContentDirectoryCommandBase {
   async run() {
     const memberId = await this.getRequiredMemberId()
 
-    const props: (keyof ChannelEntity)[] = ['title', 'isPublic']
+    const props: (keyof ChannelEntity)[] = ['handle', 'isPublic']
 
     const list = await this.createEntityList('Channel', props, [], memberId)
 
