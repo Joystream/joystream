@@ -84,7 +84,7 @@ type Channel @entity {
   # owner: Member!
 
   "The title of the Channel"
-  title: String! @fulltext(query: "titles")
+  handle: String! @fulltext(query: "titles")
 
   "The description of a Channel"
   description: String!
