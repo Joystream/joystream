@@ -22,7 +22,7 @@ async function main() {
     // (those referenced here are part of inputs/entityBatches)
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    // We use the same "existing" syntax to reference a channel by unique property (title)
+    // We use the same "existing" syntax to reference a channel by unique property (handle)
     // In this case it's a channel that we created in createChannel example
     channel: { existing: { handle: 'Example channel' } },
     media: {
