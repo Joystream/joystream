@@ -175,20 +175,17 @@ impl pallet_timestamp::Trait for Test {
     type WeightInfo = ();
 }
 
-#[cfg(feature = "runtime-benchmarks")]
 impl governance::council::Trait for Test {
     type Event = TestEvent;
     type CouncilTermEnded = ();
 }
 
-#[cfg(feature = "runtime-benchmarks")]
 impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;

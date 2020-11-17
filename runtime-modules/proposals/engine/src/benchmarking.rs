@@ -79,7 +79,7 @@ fn create_proposal<T: Trait>(id: u32) -> (T::AccountId, T::MemberId, T::Proposal
         approval_threshold_percentage: 1,
         slashing_quorum_percentage: 0,
         slashing_threshold_percentage: 1,
-        required_stake: Some(One::one()),
+        required_stake: Some(T::Balance::max_value()),
         constitutionality: 0,
     };
 
@@ -190,7 +190,7 @@ benchmarks! {
             T::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
         }
 
-    }: _ (RawOrigin::Signed(account_id), member_id, proposal_id)
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
     verify {
         assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
 
@@ -199,7 +199,42 @@ benchmarks! {
             "Proposal code still in storage"
         );
 
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), i, "Proposal still active");
+        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "Proposal still active");
+
+        assert_eq!(
+            Balances::<T>::usable_balance(account_id),
+            T::Balance::max_value() - T::CancellationFee::get(),
+            "Balance not slashed"
+        );
+
+        assert_last_event::<T>(
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled).into()
+        );
+    }
+
+    veto_proposal {
+        let i in 0 .. 1;
+        let (account_id, _, proposal_id) = create_proposal::<T>(0);
+    }: _ (RawOrigin::Root, proposal_id)
+    verify {
+        assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
+
+        assert!(
+            !DispatchableCallCode::<T>::contains_key(proposal_id),
+            "Proposal code still in storage"
+        );
+
+        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "Proposal still active");
+
+        assert_eq!(
+            Balances::<T>::usable_balance(account_id),
+            T::Balance::max_value(),
+            "Vetoed proposals shouldn't be slashed"
+        );
+
+        assert_last_event::<T>(
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed).into()
+        );
     }
 
 }
@@ -221,6 +256,13 @@ mod tests {
     fn test_cancel_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_cancel_proposal::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_veto_proposal() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_veto_proposal::<Test>());
         });
     }
 }
