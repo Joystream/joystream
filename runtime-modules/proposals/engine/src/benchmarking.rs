@@ -1,10 +1,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsEngine;
+use balances::Module as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use governance::council::Module as Council;
 use membership::Module as Membership;
+use sp_runtime::traits::{Bounded, One};
 use sp_std::cmp::min;
 use sp_std::prelude::*;
 use system as frame_system;
@@ -44,10 +46,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: membership::Trait>(
-    name: &'static str,
-    id: u32,
-) -> (T::AccountId, T::MemberId) {
+fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId, T::MemberId) {
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
@@ -65,10 +64,73 @@ fn member_account<T: membership::Trait>(
     )
     .unwrap();
 
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
+fn create_proposal<T: Trait>(id: u32) -> (T::AccountId, T::MemberId, T::ProposalId) {
+    let (account_id, member_id) = member_funded_account::<T>("member", id);
+
+    let proposal_parameters = ProposalParameters {
+        voting_period: T::BlockNumber::from(1),
+        grace_period: Zero::zero(),
+        approval_quorum_percentage: 1,
+        approval_threshold_percentage: 1,
+        slashing_quorum_percentage: 0,
+        slashing_threshold_percentage: 1,
+        required_stake: Some(One::one()),
+        constitutionality: 0,
+    };
+
+    let proposal_creation_parameters = ProposalCreationParameters {
+        account_id: account_id.clone(),
+        proposer_id: member_id.clone(),
+        proposal_parameters,
+        title: vec![0u8],
+        description: vec![0u8],
+        staking_account_id: Some(account_id.clone()),
+        encoded_dispatchable_call_code: vec![0u8],
+        exact_execution_block: None,
+    };
+
+    let proposal_id = ProposalsEngine::<T>::create_proposal(proposal_creation_parameters).unwrap();
+
+    assert!(
+        Proposals::<T>::contains_key(proposal_id),
+        "Proposal not created"
+    );
+    assert!(
+        DispatchableCallCode::<T>::contains_key(proposal_id),
+        "Dispatchable code not added"
+    );
+    assert_eq!(
+        ProposalsEngine::<T>::proposal_codes(proposal_id),
+        vec![0u8],
+        "Dispatchable code does not match"
+    );
+
+    // Assuming that the number of proposals is equal to id
+    assert_eq!(
+        ProposalsEngine::<T>::proposal_count(),
+        id + 1,
+        "Not correct number of proposals stored"
+    );
+    assert_eq!(
+        ProposalsEngine::<T>::active_proposal_count(),
+        id + 1,
+        "Created proposal not active"
+    );
+
+    (account_id, member_id, proposal_id)
+}
+
 const MAX_BYTES: u32 = 16384;
+
+// In version 2.0 of substrate `T::MaxLocks` was added to balance
+// see: https://github.com/paritytech/substrate/pull/7103/commits/20a77424686b169d254b542ec4b128dce6a4ef8b
+// update this benchmark when updating.
+const MAX_LOCKS: u32 = 125;
 
 benchmarks! {
     where_clause {
@@ -80,39 +142,9 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (account_id, member_id) = member_account::<T>("member", 0);
+        let (_, _, proposal_id) = create_proposal::<T>(0);
 
-        let proposal_parameters = ProposalParameters {
-            voting_period: T::BlockNumber::from(1),
-            grace_period: Zero::zero(),
-            approval_quorum_percentage: 1,
-            approval_threshold_percentage: 1,
-            slashing_quorum_percentage: 0,
-            slashing_threshold_percentage: 1,
-            required_stake: None,
-            constitutionality: 0,
-        };
-
-        let proposal_creation_parameters = ProposalCreationParameters {
-            account_id,
-            proposer_id: member_id,
-            proposal_parameters,
-            title: vec![0u8],
-            description: vec![0u8],
-            staking_account_id: None,
-            encoded_dispatchable_call_code: vec![0u8],
-            exact_execution_block: None,
-        };
-
-        let proposal_id =
-            ProposalsEngine::<T>::create_proposal(proposal_creation_parameters).unwrap();
-        assert!(Proposals::<T>::contains_key(proposal_id), "Proposal not created");
-        assert!(DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable code not added");
-        assert_eq!(ProposalsEngine::<T>::proposal_codes(proposal_id), vec![0u8], "Dispatchable code does not match");
-        assert_eq!(ProposalsEngine::<T>::proposal_count(), 1, "Not correct number of proposals stored");
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 1, "Created proposal not active");
-
-        let (account_voter_id, member_voter_id) = member_account::<T>("voter", 1);
+        let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
 
         Council::<T>::set_council(RawOrigin::Root.into(), vec![account_voter_id.clone()]).unwrap();
     }: _ (
@@ -121,31 +153,55 @@ benchmarks! {
             proposal_id,
             VoteKind::Approve,
             vec![0u8; i.try_into().unwrap()]
-      )
-      verify {
-          assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still exist");
+        )
+    verify {
+        assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still exist");
 
-          let voting_results = ProposalsEngine::<T>::proposals(proposal_id).voting_results;
+        let voting_results = ProposalsEngine::<T>::proposals(proposal_id).voting_results;
 
-          assert_eq!(
-              voting_results,
-              VotingResults{ approvals: 1, abstentions: 0, rejections: 0, slashes: 0 },
-              "There should only be 1 approval"
-          );
+        assert_eq!(
+          voting_results,
+          VotingResults{ approvals: 1, abstentions: 0, rejections: 0, slashes: 0 },
+          "There should only be 1 approval"
+        );
 
-          assert!(
-              VoteExistsByProposalByVoter::<T>::contains_key(proposal_id, member_voter_id),
-              "Voter not added to existing voters"
-          );
+        assert!(
+          VoteExistsByProposalByVoter::<T>::contains_key(proposal_id, member_voter_id),
+          "Voter not added to existing voters"
+        );
 
-          assert_eq!(
-              ProposalsEngine::<T>::vote_by_proposal_by_voter(proposal_id, member_voter_id),
-              VoteKind::Approve,
-              "Stored vote doesn't match"
-          );
+        assert_eq!(
+          ProposalsEngine::<T>::vote_by_proposal_by_voter(proposal_id, member_voter_id),
+          VoteKind::Approve,
+          "Stored vote doesn't match"
+        );
 
-          assert_last_event::<T>(RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into());
-      }
+        assert_last_event::<T>(RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into());
+    }
+
+
+    cancel_proposal {
+        let i in 1 .. MAX_LOCKS;
+
+        let (account_id, member_id, proposal_id) = create_proposal::<T>(0);
+
+        for lock_number in 1 .. i {
+            let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
+            T::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
+        }
+
+    }: _ (RawOrigin::Signed(account_id), member_id, proposal_id)
+    verify {
+        assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
+
+        assert!(
+            !DispatchableCallCode::<T>::contains_key(proposal_id),
+            "Proposal code still in storage"
+        );
+
+        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), i, "Proposal still active");
+    }
+
 }
 
 #[cfg(test)]
@@ -158,6 +214,13 @@ mod tests {
     fn test_vote() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_vote::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_cancel_proposal() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_proposal::<Test>());
         });
     }
 }
