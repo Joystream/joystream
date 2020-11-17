@@ -4,7 +4,7 @@ import { FallbackProps } from 'react-error-boundary'
 
 import { ReactComponent as ErrorIllustration } from '@/assets/error.svg'
 import { Button, Typography } from '@/shared/components'
-import { sizes } from '@/shared/theme'
+import { sizes, colors } from '@/shared/theme'
 
 const Container = styled.div`
   margin: ${sizes.b10 * 2}px auto 0;
@@ -26,6 +26,7 @@ const Message = styled.div`
   > p {
     margin: 0;
     line-height: 1.75;
+    color: ${colors.gray[300]};
   }
 `
 
@@ -40,7 +41,7 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
       <ErrorIllustration />
       <Message>
         <Title variant="h3">Ops! An Error occurred</Title>
-        <p>We could not aquire expected results. Please try reloading or return to the home page.</p>
+        <p>We could not acquire expected results. Please try reloading or return to the home page.</p>
       </Message>
       <Button onClick={resetErrorBoundary}>Return to home page</Button>
     </Container>

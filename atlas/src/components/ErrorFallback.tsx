@@ -7,7 +7,7 @@ import { Button } from '@/shared/components'
 import { sizes, colors } from '@/shared/theme'
 
 const Container = styled.div`
-  padding: ${sizes.b4};
+  padding: ${sizes.b4}px;
   color: ${colors.gray[400]};
   display: grid;
   place-items: center;
