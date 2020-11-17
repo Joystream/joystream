@@ -1,16 +1,16 @@
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
-import { KnownLicense } from '../../../generated/graphql-server/src/modules/known-license/known-license.model'
-import { UserDefinedLicense } from '../../../generated/graphql-server/src/modules/user-defined-license/user-defined-license.model'
-import { JoystreamMediaLocation } from '../../../generated/graphql-server/src/modules/joystream-media-location/joystream-media-location.model'
-import { HttpMediaLocation } from '../../../generated/graphql-server/src/modules/http-media-location/http-media-location.model'
+import { KnownLicenseEntity } from '../../../generated/graphql-server/src/modules/known-license-entity/known-license-entity.model'
+import { UserDefinedLicenseEntity } from '../../../generated/graphql-server/src/modules/user-defined-license-entity/user-defined-license-entity.model'
 import { VideoMedia } from '../../../generated/graphql-server/src/modules/video-media/video-media.model'
 import { Video } from '../../../generated/graphql-server/src/modules/video/video.model'
 import { Language } from '../../../generated/graphql-server/src/modules/language/language.model'
 import { VideoMediaEncoding } from '../../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
-import { License } from '../../../generated/graphql-server/src/modules/license/license.model'
-import { MediaLocation } from '../../../generated/graphql-server/src/modules/media-location/media-location.model'
+import { LicenseEntity } from '../../../generated/graphql-server/src/modules/license-entity/license-entity.model'
+import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
+import { HttpMediaLocationEntity } from '../../../generated/graphql-server/src/modules/http-media-location-entity/http-media-location-entity.model'
+import { JoystreamMediaLocationEntity } from '../../../generated/graphql-server/src/modules/joystream-media-location-entity/joystream-media-location-entity.model'
 
 import {
   ICategory,
@@ -28,6 +28,12 @@ import {
   IVideoMediaEncoding,
   IWhereCond,
 } from '../../types'
+import {
+  HttpMediaLocation,
+  JoystreamMediaLocation,
+  KnownLicense,
+  UserDefinedLicense,
+} from '../../../generated/graphql-server/src/modules/variants/variants.model'
 
 function getEntityIdFromReferencedField(ref: IReference, entityIdBeforeTransaction: number): string {
   const { entityId, existing } = ref
@@ -42,18 +48,18 @@ async function updateMediaLocationEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const { httpMediaLocation, joystreamMediaLocation } = props
-  const record = await db.get(MediaLocation, where)
+  const record = await db.get(MediaLocationEntity, where)
   if (record === undefined) throw Error(`MediaLocation entity not found: ${where.where.id}`)
 
   if (httpMediaLocation) {
     const id = getEntityIdFromReferencedField(httpMediaLocation, entityIdBeforeTransaction)
-    record.httpMediaLocation = await db.get(HttpMediaLocation, { where: { id } })
+    record.httpMediaLocation = await db.get(HttpMediaLocationEntity, { where: { id } })
   }
   if (joystreamMediaLocation) {
     const id = getEntityIdFromReferencedField(joystreamMediaLocation, entityIdBeforeTransaction)
-    record.joystreamMediaLocation = await db.get(JoystreamMediaLocation, { where: { id } })
+    record.joystreamMediaLocation = await db.get(JoystreamMediaLocationEntity, { where: { id } })
   }
-  await db.save<MediaLocation>(record)
+  await db.save<MediaLocationEntity>(record)
 }
 
 async function updateLicenseEntityPropertyValues(
@@ -62,19 +68,19 @@ async function updateLicenseEntityPropertyValues(
   props: ILicense,
   entityIdBeforeTransaction: number
 ): Promise<void> {
-  const record = await db.get(License, where)
+  const record = await db.get(LicenseEntity, where)
   if (record === undefined) throw Error(`License entity not found: ${where.where.id}`)
 
   const { knownLicense, userDefinedLicense } = props
   if (knownLicense) {
     const id = getEntityIdFromReferencedField(knownLicense, entityIdBeforeTransaction)
-    record.knownLicense = await db.get(KnownLicense, { where: { id } })
+    record.knownLicense = await db.get(KnownLicenseEntity, { where: { id } })
   }
   if (userDefinedLicense) {
     const id = getEntityIdFromReferencedField(userDefinedLicense, entityIdBeforeTransaction)
-    record.userdefinedLicense = await db.get(UserDefinedLicense, { where: { id } })
+    record.userdefinedLicense = await db.get(UserDefinedLicenseEntity, { where: { id } })
   }
-  await db.save<License>(record)
+  await db.save<LicenseEntity>(record)
 }
 
 async function updateCategoryEntityPropertyValues(db: DB, where: IWhereCond, props: ICategory): Promise<void> {
@@ -114,7 +120,7 @@ async function updateVideoMediaEntityPropertyValues(
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
 
   let enco: VideoMediaEncoding | undefined
-  let mediaLoc: MediaLocation | undefined
+  let mediaLoc: HttpMediaLocation | JoystreamMediaLocation = record.location
   const { encoding, location } = props
   if (encoding) {
     const id = getEntityIdFromReferencedField(encoding, entityIdBeforeTransaction)
@@ -122,16 +128,30 @@ async function updateVideoMediaEntityPropertyValues(
     if (enco === undefined) throw Error(`VideoMediaEncoding entity not found: ${id}`)
     props.encoding = undefined
   }
+
   if (location) {
     const id = getEntityIdFromReferencedField(location, entityIdBeforeTransaction)
-    mediaLoc = await db.get(MediaLocation, { where: { id } })
-    if (!mediaLoc) throw Error(`MediaLocation entity not found: ${id}`)
+    const mLoc = await db.get(MediaLocationEntity, { where: { id } })
+    if (!mLoc) throw Error(`MediaLocation entity not found: ${id}`)
+    const { httpMediaLocation, joystreamMediaLocation } = mLoc
+
+    if (httpMediaLocation) {
+      mediaLoc = new HttpMediaLocation()
+      mediaLoc.isTypeOf = typeof HttpMediaLocation
+      mediaLoc.url = httpMediaLocation.url
+      mediaLoc.port = httpMediaLocation.port
+    }
+    if (joystreamMediaLocation) {
+      mediaLoc = new JoystreamMediaLocation()
+      mediaLoc.isTypeOf = typeof JoystreamMediaLocation
+      mediaLoc.dataObjectId = joystreamMediaLocation.dataObjectId
+    }
     props.location = undefined
   }
   Object.assign(record, props)
 
   record.encoding = enco || record.encoding
-  record.location = mediaLoc || record.location
+  record.location = mediaLoc
   await db.save<VideoMedia>(record)
 }
 async function updateVideoEntityPropertyValues(
@@ -147,7 +167,8 @@ async function updateVideoEntityPropertyValues(
   let cat: Category | undefined
   let lang: Language | undefined
   let vMedia: VideoMedia | undefined
-  let lic: License | undefined
+  let lic: KnownLicense | UserDefinedLicense = record.license
+
   const { channel, category, language, media, license } = props
   if (channel) {
     const id = getEntityIdFromReferencedField(channel, entityIdBeforeTransaction)
@@ -168,9 +189,26 @@ async function updateVideoEntityPropertyValues(
     props.media = undefined
   }
   if (license) {
+    console.log(license)
     const id = getEntityIdFromReferencedField(license, entityIdBeforeTransaction)
-    lic = await db.get(License, { where: { id } })
-    if (!lic) throw Error(`License entity not found: ${id}`)
+    console.log(`ENTITY_ID`, id)
+    const l = await db.get(LicenseEntity, { where: { id }, relations: ['knownLicense', 'userdefinedLicense'] })
+    console.log(`LICENSE_ENTITY`, l)
+    if (!l) throw Error(`License entity not found: ${id}`)
+    const { knownLicense, userdefinedLicense } = l
+    if (knownLicense) {
+      lic = new KnownLicense()
+      lic.code = knownLicense.code
+      lic.description = knownLicense.description
+      lic.isTypeOf = 'KnownLicense'
+      lic.name = knownLicense.name
+      lic.url = knownLicense.url
+    }
+    if (userdefinedLicense) {
+      lic = new UserDefinedLicense()
+      lic.content = userdefinedLicense.content
+      lic.isTypeOf = 'UserDefinedLicense'
+    }
     props.license = undefined
   }
   if (language) {
@@ -185,7 +223,7 @@ async function updateVideoEntityPropertyValues(
   record.channel = chann || record.channel
   record.category = cat || record.category
   record.media = vMedia || record.media
-  record.license = lic || record.license
+  record.license = lic
   record.language = lang
 
   await db.save<Video>(record)
@@ -195,26 +233,26 @@ async function updateUserDefinedLicenseEntityPropertyValues(
   where: IWhereCond,
   props: IUserDefinedLicense
 ): Promise<void> {
-  const record = await db.get(UserDefinedLicense, where)
+  const record = await db.get(UserDefinedLicenseEntity, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
-  await db.save<UserDefinedLicense>(record)
+  await db.save<UserDefinedLicenseEntity>(record)
 }
 async function updateKnownLicenseEntityPropertyValues(db: DB, where: IWhereCond, props: IKnownLicense): Promise<void> {
-  const record = await db.get(KnownLicense, where)
+  const record = await db.get(KnownLicenseEntity, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
-  await db.save<KnownLicense>(record)
+  await db.save<KnownLicenseEntity>(record)
 }
 async function updateHttpMediaLocationEntityPropertyValues(
   db: DB,
   where: IWhereCond,
   props: IHttpMediaLocation
 ): Promise<void> {
-  const record = await db.get(HttpMediaLocation, where)
+  const record = await db.get(HttpMediaLocationEntity, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
-  await db.save<HttpMediaLocation>(record)
+  await db.save<HttpMediaLocationEntity>(record)
 }
 
 async function updateJoystreamMediaLocationEntityPropertyValues(
@@ -222,10 +260,10 @@ async function updateJoystreamMediaLocationEntityPropertyValues(
   where: IWhereCond,
   props: IJoystreamMediaLocation
 ): Promise<void> {
-  const record = await db.get(JoystreamMediaLocation, where)
+  const record = await db.get(JoystreamMediaLocationEntity, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
-  await db.save<JoystreamMediaLocation>(record)
+  await db.save<JoystreamMediaLocationEntity>(record)
 }
 async function updateLanguageEntityPropertyValues(db: DB, where: IWhereCond, props: ILanguage): Promise<void> {
   const record = await db.get(Language, where)

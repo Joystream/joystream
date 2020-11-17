@@ -134,7 +134,7 @@ type VideoMediaEncoding @entity {
   happenedIn: Block!
 }
 
-type KnownLicense @entity {
+type KnownLicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -153,7 +153,7 @@ type KnownLicense @entity {
   happenedIn: Block!
 }
 
-type UserDefinedLicense @entity {
+type UserDefinedLicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -163,39 +163,39 @@ type UserDefinedLicense @entity {
   happenedIn: Block!
 }
 
-type License @entity {
+type LicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
   # One of the following field will be non-null
 
   "Reference to a known license"
-  knownLicense: KnownLicense
+  knownLicense: KnownLicenseEntity
 
   "Reference to user-defined license"
-  userdefinedLicense: UserDefinedLicense
+  userdefinedLicense: UserDefinedLicenseEntity
 
   happenedIn: Block!
 }
 
-type MediaLocation @entity {
+type MediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
   # One of the following field will be non-null
 
   "A reference to HttpMediaLocation"
-  httpMediaLocation: HttpMediaLocation
+  httpMediaLocation: HttpMediaLocationEntity
 
   "A reference to JoystreamMediaLocation"
-  joystreamMediaLocation: JoystreamMediaLocation
+  joystreamMediaLocation: JoystreamMediaLocationEntity
 
-  videoMedia: VideoMedia @derivedFrom(field: "location")
+  videoMedia: VideoMedia @derivedFrom(field: "locationEntity")
 
   happenedIn: Block!
 }
 
-type JoystreamMediaLocation @entity {
+type JoystreamMediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -205,7 +205,7 @@ type JoystreamMediaLocation @entity {
   happenedIn: Block!
 }
 
-type HttpMediaLocation @entity {
+type HttpMediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -238,6 +238,8 @@ type VideoMedia @entity {
 
   "Location of the video media object"
   location: MediaLocation!
+
+  locationEntity: MediaLocationEntity
 
   happenedIn: Block!
 }
@@ -292,3 +294,39 @@ type Video @entity {
 
   happenedIn: Block!
 }
+
+type JoystreamMediaLocation @variant {
+  "Id of the data object in the Joystream runtime dataDirectory module"
+  dataObjectId: String!
+}
+
+type HttpMediaLocation @variant {
+  "The http url pointing to the media"
+  url: String!
+
+  "The port to use when connecting to the http url (defaults to 80)"
+  port: Int
+}
+
+type KnownLicense @variant {
+  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
+  code: String!
+
+  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
+  name: String
+
+  "Short description of the license conditions"
+  description: String
+
+  "An url pointing to full license content"
+  url: String
+}
+
+type UserDefinedLicense @variant {
+  "Custom license content"
+  content: String!
+}
+
+union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
+
+union License = KnownLicense | UserDefinedLicense

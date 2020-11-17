@@ -1,18 +1,18 @@
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
-import { KnownLicense } from '../../../generated/graphql-server/src/modules/known-license/known-license.model'
-import { UserDefinedLicense } from '../../../generated/graphql-server/src/modules/user-defined-license/user-defined-license.model'
-import { JoystreamMediaLocation } from '../../../generated/graphql-server/src/modules/joystream-media-location/joystream-media-location.model'
-import { HttpMediaLocation } from '../../../generated/graphql-server/src/modules/http-media-location/http-media-location.model'
+import { KnownLicenseEntity } from '../../../generated/graphql-server/src/modules/known-license-entity/known-license-entity.model'
+import { UserDefinedLicenseEntity } from '../../../generated/graphql-server/src/modules/user-defined-license-entity/user-defined-license-entity.model'
+import { JoystreamMediaLocationEntity } from '../../../generated/graphql-server/src/modules/joystream-media-location-entity/joystream-media-location-entity.model'
+import { HttpMediaLocationEntity } from '../../../generated/graphql-server/src/modules/http-media-location-entity/http-media-location-entity.model'
 import { VideoMedia } from '../../../generated/graphql-server/src/modules/video-media/video-media.model'
 import { Video } from '../../../generated/graphql-server/src/modules/video/video.model'
 import { Block, Network } from '../../../generated/graphql-server/src/modules/block/block.model'
 import { Language } from '../../../generated/graphql-server/src/modules/language/language.model'
 import { VideoMediaEncoding } from '../../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
 import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
-import { License } from '../../../generated/graphql-server/src/modules/license/license.model'
-import { MediaLocation } from '../../../generated/graphql-server/src/modules/media-location/media-location.model'
+import { LicenseEntity } from '../../../generated/graphql-server/src/modules/license-entity/license-entity.model'
+import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
 
 import { contentDirectoryClassNamesWithId } from '../content-dir-consts'
 import {
@@ -35,6 +35,12 @@ import {
 } from '../../types'
 import { getOrCreate } from '../get-or-create'
 import BN from 'bn.js'
+import {
+  HttpMediaLocation,
+  JoystreamMediaLocation,
+  KnownLicense,
+  UserDefinedLicense,
+} from '../../../generated/graphql-server/src/modules/variants/variants.model'
 
 async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promise<Block> {
   let b = await db.get(Block, { where: { block: blockNumber } })
@@ -95,11 +101,11 @@ async function createCategory({ db, block, id }: IDBBlockId, p: ICategory): Prom
   return category
 }
 
-async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicense): Promise<KnownLicense> {
-  const record = await db.get(KnownLicense, { where: { id } })
+async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicense): Promise<KnownLicenseEntity> {
+  const record = await db.get(KnownLicenseEntity, { where: { id } })
   if (record) return record
 
-  const knownLicence = new KnownLicense()
+  const knownLicence = new KnownLicenseEntity()
 
   knownLicence.id = id
   knownLicence.code = p.code
@@ -115,28 +121,28 @@ async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicens
 async function createUserDefinedLicense(
   { db, block, id }: IDBBlockId,
   p: IUserDefinedLicense
-): Promise<UserDefinedLicense> {
-  const record = await db.get(UserDefinedLicense, { where: { id } })
+): Promise<UserDefinedLicenseEntity> {
+  const record = await db.get(UserDefinedLicenseEntity, { where: { id } })
   if (record) return record
 
-  const userDefinedLicense = new UserDefinedLicense()
+  const userDefinedLicense = new UserDefinedLicenseEntity()
 
   userDefinedLicense.id = id
   userDefinedLicense.content = p.content
   userDefinedLicense.version = block
   userDefinedLicense.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  await db.save<UserDefinedLicense>(userDefinedLicense)
+  await db.save<UserDefinedLicenseEntity>(userDefinedLicense)
   return userDefinedLicense
 }
 
 async function createJoystreamMediaLocation(
   { db, block, id }: IDBBlockId,
   p: IJoystreamMediaLocation
-): Promise<JoystreamMediaLocation> {
-  const record = await db.get(JoystreamMediaLocation, { where: { id } })
+): Promise<JoystreamMediaLocationEntity> {
+  const record = await db.get(JoystreamMediaLocationEntity, { where: { id } })
   if (record) return record
 
-  const joyMediaLoc = new JoystreamMediaLocation()
+  const joyMediaLoc = new JoystreamMediaLocationEntity()
 
   joyMediaLoc.id = id
   joyMediaLoc.dataObjectId = p.dataObjectId
@@ -149,11 +155,11 @@ async function createJoystreamMediaLocation(
 async function createHttpMediaLocation(
   { db, block, id }: IDBBlockId,
   p: IHttpMediaLocation
-): Promise<HttpMediaLocation> {
-  const record = await db.get(HttpMediaLocation, { where: { id } })
+): Promise<HttpMediaLocationEntity> {
+  const record = await db.get(HttpMediaLocationEntity, { where: { id } })
   if (record) return record
 
-  const httpMediaLoc = new HttpMediaLocation()
+  const httpMediaLoc = new HttpMediaLocationEntity()
 
   httpMediaLoc.id = id
   httpMediaLoc.url = p.url
@@ -187,16 +193,31 @@ async function createVideoMedia(
     )
   }
   if (location !== undefined) {
-    videoMedia.location = await getOrCreate.mediaLocation(
+    const m = await getOrCreate.mediaLocation(
       { db, block, id },
       classEntityMap,
       location,
       nextEntityIdBeforeTransaction
     )
+    videoMedia.locationEntity = m
+    const { httpMediaLocation, joystreamMediaLocation } = m
+    if (httpMediaLocation) {
+      const mediaLoc = new HttpMediaLocation()
+      mediaLoc.isTypeOf = 'HttpMediaLocation'
+      mediaLoc.port = httpMediaLocation.port
+      mediaLoc.url = httpMediaLocation.url
+      videoMedia.location = mediaLoc
+    }
+    if (joystreamMediaLocation) {
+      const mediaLoc = new JoystreamMediaLocation()
+      mediaLoc.isTypeOf = 'JoystreamMediaLocation'
+      mediaLoc.dataObjectId = joystreamMediaLocation.dataObjectId
+      videoMedia.location = mediaLoc
+    }
   }
 
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  await db.save(videoMedia)
+  await db.save<VideoMedia>(videoMedia)
   return videoMedia
 }
 
@@ -235,7 +256,27 @@ async function createVideo(
     )
   }
   if (license !== undefined) {
-    video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license, nextEntityIdBeforeTransaction)
+    const { knownLicense, userdefinedLicense } = await getOrCreate.license(
+      { db, block, id },
+      classEntityMap,
+      license,
+      nextEntityIdBeforeTransaction
+    )
+    if (knownLicense) {
+      const lic = new KnownLicense()
+      lic.code = knownLicense.code
+      lic.description = knownLicense.description
+      lic.isTypeOf = 'KnownLicense'
+      lic.name = knownLicense.name
+      lic.url = knownLicense.url
+      video.license = lic
+    }
+    if (userdefinedLicense) {
+      const lic = new UserDefinedLicense()
+      lic.content = userdefinedLicense.content
+      lic.isTypeOf = 'UserDefinedLicense'
+      video.license = lic
+    }
   }
   if (category !== undefined) {
     video.category = await getOrCreate.category(
@@ -293,13 +334,13 @@ async function createLicense(
   classEntityMap: ClassEntityMap,
   p: ILicense,
   nextEntityIdBeforeTransaction: number
-): Promise<License> {
-  const record = await db.get(License, { where: { id } })
+): Promise<LicenseEntity> {
+  const record = await db.get(LicenseEntity, { where: { id } })
   if (record) return record
 
   const { knownLicense, userDefinedLicense } = p
 
-  const license = new License()
+  const license = new LicenseEntity()
   license.id = id
   if (knownLicense !== undefined) {
     license.knownLicense = await getOrCreate.knownLicense(
@@ -318,7 +359,7 @@ async function createLicense(
     )
   }
   license.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  await db.save<License>(license)
+  await db.save<LicenseEntity>(license)
   return license
 }
 
@@ -327,10 +368,10 @@ async function createMediaLocation(
   classEntityMap: ClassEntityMap,
   p: IMediaLocation,
   nextEntityIdBeforeTransaction: number
-): Promise<MediaLocation> {
+): Promise<MediaLocationEntity> {
   const { httpMediaLocation, joystreamMediaLocation } = p
 
-  const location = new MediaLocation()
+  const location = new MediaLocationEntity()
   location.id = id
   if (httpMediaLocation !== undefined) {
     location.httpMediaLocation = await getOrCreate.httpMediaLocation(
@@ -349,7 +390,7 @@ async function createMediaLocation(
     )
   }
   location.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  await db.save<License>(location)
+  await db.save<MediaLocationEntity>(location)
   return location
 }
 
