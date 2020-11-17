@@ -556,9 +556,10 @@ impl InstanceMocks<Runtime, Instance0> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::release_stake(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-            ),
+            Module::<Runtime, Instance0>::release_voting_stake(InstanceMockUtils::<
+                Runtime,
+                Instance0,
+            >::mock_origin(origin),),
             expected_result,
         );
 
