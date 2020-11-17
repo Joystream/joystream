@@ -6,7 +6,7 @@ import { assert } from 'chai'
 export function createUpdateChannelTitleFixture(api: QueryNodeApi): UpdateChannelFixture {
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<ChannelEntity> = {
-    title: 'Updated channel title',
+    handle: 'Updated channel title',
   }
 
   const uniquePropVal: Record<string, any> = { title: 'Example channel' }
