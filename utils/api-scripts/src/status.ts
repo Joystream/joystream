@@ -12,7 +12,7 @@ async function main() {
 
   // Create the API and wait until ready
   let api: ApiPromise
-  let retry = 3
+  let retry = 6
   while (true) {
     try {
       api = await ApiPromise.create({ provider, types })

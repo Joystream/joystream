@@ -37,9 +37,9 @@
     "@dzlzv/hydra-indexer-lib": "0.0.19-legacy.1.26.1"
   },
   "devDependencies": {
+    "eslint": "^7.6.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2",
-    "eslint": "^7.6.0"
+    "prettier": "2.0.2"
   },
   "husky": {
     "hooks": {

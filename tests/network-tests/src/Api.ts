@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Hash, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
@@ -30,6 +30,12 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
+import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { initializeContentDir, InputParser, ExtrinsicsHelper } from 'cd-schemas'
+import { OperationType } from '@joystream/types/content-directory'
+import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
+
 import Debugger from 'debug'
 const debug = Debugger('api')
 
@@ -39,11 +45,11 @@ export enum WorkingGroups {
 }
 
 export class Api {
-  private readonly api: ApiPromise
-  private readonly sender: Sender
-  private readonly keyring: Keyring
+  protected readonly api: ApiPromise
+  protected readonly sender: Sender
+  protected readonly keyring: Keyring
   // source of funds for all new accounts
-  private readonly treasuryAccount: string
+  protected readonly treasuryAccount: string
 
   public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
     let connectAttempts = 0
@@ -1707,6 +1713,7 @@ export class Api {
     ).filter((addr) => addr !== '')
   }
   */
+
   public async terminateApplication(
     leader: string,
     applicationId: ApplicationId,
@@ -1917,5 +1924,132 @@ export class Api {
 
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
+  }
+
+  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<void> {
+    const transaction = this.api.tx.contentDirectory.transaction(
+      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
+      operations // We provide parsed operations as second argument
+    )
+    const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
+    await this.sender.signAndSend(transaction, lead.role_account_id, false)
+  }
+
+  public async createChannelEntity(channel: ChannelEntity): Promise<void> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+    const parser = InputParser.createWithKnownSchemas(
+      this.api,
+      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+      [
+        {
+          className: 'Channel',
+          entries: [channel], // We could specify multiple entries here, but in this case we only need one
+        },
+      ]
+    )
+    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+    const operations = await parser.getEntityBatchOperations()
+    return await this.sendContentDirectoryTransaction(operations)
+  }
+
+  public async createVideoEntity(video: VideoEntity): Promise<void> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+    const parser = InputParser.createWithKnownSchemas(
+      this.api,
+      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+      [
+        {
+          className: 'Video',
+          entries: [video], // We could specify multiple entries here, but in this case we only need one
+        },
+      ]
+    )
+    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+    const operations = await parser.getEntityBatchOperations()
+    return await this.sendContentDirectoryTransaction(operations)
+  }
+
+  public async updateChannelEntity(
+    channelUpdateInput: Record<string, any>,
+    uniquePropValue: Record<string, any>
+  ): Promise<void> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+    const parser = InputParser.createWithKnownSchemas(this.api)
+
+    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
+    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
+    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
+    const updateOperations = await parser.getEntityUpdateOperations(
+      channelUpdateInput,
+      'Channel', // Class name
+      CHANNEL_ID // Id of the entity we want to update
+    )
+    return await this.sendContentDirectoryTransaction(updateOperations)
+  }
+
+  public async initializeContentDirectory(leadKeyPair: KeyringPair) {
+    await initializeContentDir(this.api, leadKeyPair)
+  }
+}
+
+export class QueryNodeApi extends Api {
+  private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
+
+  public static async new(
+    provider: WsProvider,
+    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ): Promise<QueryNodeApi> {
+    let connectAttempts = 0
+    while (true) {
+      connectAttempts++
+      debug(`Connecting to chain, attempt ${connectAttempts}..`)
+      try {
+        const api = await ApiPromise.create({ provider, types })
+
+        // Wait for api to be connected and ready
+        await api.isReady
+
+        // If a node was just started up it might take a few seconds to start producing blocks
+        // Give it a few seconds to be ready.
+        await Utils.wait(5000)
+
+        return new QueryNodeApi(api, queryNodeProvider, treasuryAccountUri, sudoAccountUri)
+      } catch (err) {
+        if (connectAttempts === 3) {
+          throw new Error('Unable to connect to chain')
+        }
+      }
+      await Utils.wait(5000)
+    }
+  }
+
+  constructor(
+    api: ApiPromise,
+    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ) {
+    super(api, treasuryAccountUri, sudoAccountUri)
+    this.queryNodeProvider = queryNodeProvider
+  }
+
+  public async getChannelbyTitle(title: string): Promise<ApolloQueryResult<any>> {
+    const GET_CHANNEL_BY_TITLE = gql`
+      query($title: String!) {
+        channels(where: { title_eq: $title }) {
+          title
+          description
+          coverPhotoUrl
+          avatarPhotoUrl
+          isPublic
+          isCurated
+          languageId
+        }
+      }
+    `
+
+    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { title } })
   }
 }
