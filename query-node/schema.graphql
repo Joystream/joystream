@@ -18,7 +18,7 @@ type Member @entity {
   id: ID!
 
   "The unique handle chosen by member"
-  handle: String @unique @fulltext(query: "handles")
+  handle: String @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
   avatarUri: String
@@ -84,7 +84,7 @@ type Channel @entity {
   # owner: Member!
 
   "The title of the Channel"
-  handle: String! @fulltext(query: "titles")
+  handle: String! @fulltext(query: "channelsByHandle")
 
   "The description of a Channel"
   description: String!
@@ -114,7 +114,7 @@ type Category @entity {
   id: ID!
 
   "The name of the category"
-  name: String! @unique @fulltext(query: "names")
+  name: String! @unique @fulltext(query: "categoriesByName")
 
   "The description of the category"
   description: String
@@ -253,7 +253,7 @@ type Video @entity {
   category: Category!
 
   "The title of the video"
-  title: String! @fulltext(query: "titles")
+  title: String! @fulltext(query: "videosByTitle")
 
   "The description of the Video"
   description: String!
