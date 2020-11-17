@@ -3,7 +3,7 @@ import styled from '@emotion/styled'
 
 import { ReactComponent as EmptyStateIllustration } from '@/assets/empty-state-illustration.svg'
 import { Typography } from '@/shared/components'
-import { sizes } from '@/shared/theme'
+import { sizes, colors } from '@/shared/theme'
 
 const Container = styled.div`
   margin: ${sizes.b10 * 2}px auto 0;
@@ -23,6 +23,7 @@ const Message = styled.div`
   > p {
     margin: 0;
     line-height: 1.75;
+    color: ${colors.gray[300]};
   }
 `
 
@@ -35,7 +36,7 @@ const EmptyFallback: React.FC = () => (
     <EmptyStateIllustration />
     <Message>
       <Title variant="h3">Sorry, we couldn&apos;t find any matches.</Title>
-      <p></p>
+      <p>Please try a different keyword.</p>
     </Message>
   </Container>
 )
