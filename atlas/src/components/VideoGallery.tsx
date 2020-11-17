@@ -15,7 +15,7 @@ type VideoGalleryProps = {
 
 const PLACEHOLDERS_COUNT = 12
 const CAROUSEL_ARROW_HEIGHT = 48
-const trackPadding = `${sizes.b2}px 0 0 0`
+const trackPadding = `${sizes.b2}px 0 0 ${sizes.b2}px`
 
 // This is needed since Gliderjs and the Grid have different resizing policies
 const breakpoints = breakpointsOfGrid({
@@ -27,6 +27,7 @@ const breakpoints = breakpointsOfGrid({
   breakpoint,
   settings: {
     slidesToShow: idx + 1,
+    slidesToScroll: idx + 1,
   },
 }))
 
@@ -40,7 +41,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) =
     if (!imgHeight) {
       return
     }
-    const topPx = (imgHeight - CAROUSEL_ARROW_HEIGHT) / 2 + sizes.b2
+    const topPx = (imgHeight - CAROUSEL_ARROW_HEIGHT) / 2
     return css`
       top: ${topPx}px;
     `

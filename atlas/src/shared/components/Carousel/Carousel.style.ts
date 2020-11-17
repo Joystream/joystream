@@ -5,12 +5,13 @@ export const Container = styled.div`
   position: relative;
 `
 
-export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next' }>`
+export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next'; margin: string }>`
   position: absolute;
   top: 0;
   left: ${(props) => (props.direction === 'prev' ? 0 : 'auto')};
   right: ${(props) => (props.direction === 'next' ? 0 : 'auto')};
   bottom: 0;
+  margin: ${(props) => props.margin};
   width: 10%;
   z-index: 1;
   background-image: linear-gradient(
@@ -45,10 +46,12 @@ export const Arrow = styled(Button)`
   }
 `
 
-export const GliderContainer = styled.div`
+export const GliderContainer = styled.div<{ trackPadding: string; margin: string }>`
   scrollbar-width: none;
-`
-export const Track = styled.div<{ trackPadding: string }>`
-  align-items: flex-start;
   padding: ${(props) => props.trackPadding};
+  margin: ${(props) => props.margin};
+`
+
+export const Track = styled.div`
+  align-items: flex-start;
 `
