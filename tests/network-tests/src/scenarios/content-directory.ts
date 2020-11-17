@@ -42,7 +42,7 @@ const scenario = async () => {
 
   await createVideo(api)
 
-  await updateChannel(api)
+  // await updateChannel(api)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

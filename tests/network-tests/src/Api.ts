@@ -2068,10 +2068,6 @@ export class QueryNodeApi extends Api {
             ... on Channel {
               title
               description
-              coverPhotoUrl
-              avatarPhotoUrl
-              isPublic
-              isCurated
             }
           }
         }

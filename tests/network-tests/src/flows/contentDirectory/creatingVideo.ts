@@ -48,7 +48,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
   assert(queriedVideo.description === video.description, 'Should be equal')
   assert(queriedVideo.duration === video.duration, 'Should be equal')
   assert(queriedVideo.thumbnailUrl === video.thumbnailURL, 'Should be equal')
-  assert(queriedVideo.avatarPhotoUrl === video.isExplicit, 'Should be equal')
+  assert(queriedVideo.isExplicit === video.isExplicit, 'Should be equal')
   assert(queriedVideo.isPublic === video.isPublic, 'Should be equal')
 }
 
@@ -62,34 +62,39 @@ export default async function createVideo(api: QueryNodeApi) {
   await Utils.wait(120000)
 
   // Perform number of full text searches on Channel title, that is a slight variation on title that one expects would return the video.
-  let channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('Examp')
+  let channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('video')
+  
+  assert(channelFullTextSearchResult.data.titles.length === 1, 'Should contain exactly one entry')
 
-  assert(channelFullTextSearchResult.data.titles[0].item.videos.length === 1, 'Should contain exactly one video')
+  // Both channel and video title starts with `Example`
+  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('Example')
 
-  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle(' channel')
-
-  assert(channelFullTextSearchResult.data.titles[0].item.videos.length === 1, 'Should contain exactly one video')
+  assert(channelFullTextSearchResult.data.titles.length === 2, 'Should contain two entries')
 
   // Perform number full text searches on Channel title, that absolutely should NOT return the video.
   channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('First')
 
   assert(channelFullTextSearchResult.data.titles.length === 0, 'Should be empty')
 
-  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('Chanel')
+  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('vid')
 
   assert(channelFullTextSearchResult.data.titles.length === 0, 'Should be empty')
 
   // Ensure channel contains only one video with right data
   const channelResult = await api.getChannelbyTitle(channelTitle)
 
-  assertVideoMatchQueriedResult(channelResult.data.channels[0], createVideoHappyCaseFixture.videoEntity)
+  console.log(channelResult.data.channels[0].videos)
+  
+  assert(channelResult.data.channels[0].videos.length === 1, 'Given channel should contain exactly one video')
+
+  assertVideoMatchQueriedResult(channelResult.data.channels[0].videos[0], createVideoHappyCaseFixture.videoEntity)
 
   // Perform number of full text searches on Video title, that is a slight variation on title that one expects would return the video.
   let videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('Example')
 
-  assert(videoFullTextSearchResult.data.titles.length === 1, 'Should contain exactly one video')
+  assert(videoFullTextSearchResult.data.titles.length === 2, 'Should contain two entries')
 
-  videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('video')
+  videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('Example video')
 
   assert(videoFullTextSearchResult.data.titles.length === 1, 'Should contain exactly one video')
 

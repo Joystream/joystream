@@ -30,11 +30,11 @@ export default async function updateChannel(api: QueryNodeApi) {
 
   const channelAfterUpdateResult = await api.getChannelbyTitle('Example channel')
   const channelAfterUpdate = channelAfterUpdateResult.data.channels[0]
-
-  assert(channelAfterUpdate.title === channel.title, 'Should be equal')
-  
+   
   // description field should be updated to provided one 
   assert(channelAfterUpdate.description === description, 'Should be equal')
+
+  assert(channelAfterUpdate.title === channel.title, 'Should be equal')
   assert(channelAfterUpdate.coverPhotoUrl === channel.coverPhotoUrl, 'Should be equal')
   assert(channelAfterUpdate.avatarPhotoUrl === channel.avatarPhotoURL, 'Should be equal')
   assert(channelAfterUpdate.isPublic === channel.isPublic, 'Should be equal')
