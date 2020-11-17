@@ -9,6 +9,7 @@ import { Search, SearchVariables } from '@/api/queries/__generated__/Search'
 import { TabsMenu } from '@/shared/components'
 import { VideoGrid, PlaceholderVideoGrid, ChannelGrid } from '@/components'
 import AllResultsTab from '@/views/SearchView/AllResultsTab'
+import EmptyFallback from './EmptyFallback'
 
 type SearchViewProps = {
   search?: string
@@ -33,6 +34,10 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
 
   if (!loading && !data?.search) {
     return <p>Something went wrong...</p>
+  }
+
+  if (!loading && channels.length === 0 && videos.length === 0) {
+    return <EmptyFallback />
   }
 
   return (
