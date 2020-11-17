@@ -189,13 +189,13 @@ async function updateVideoEntityPropertyValues(
     props.media = undefined
   }
   if (license) {
-    console.log(license)
     const id = getEntityIdFromReferencedField(license, entityIdBeforeTransaction)
-    console.log(`ENTITY_ID`, id)
-    const l = await db.get(LicenseEntity, { where: { id }, relations: ['knownLicense', 'userdefinedLicense'] })
-    console.log(`LICENSE_ENTITY`, l)
-    if (!l) throw Error(`License entity not found: ${id}`)
-    const { knownLicense, userdefinedLicense } = l
+    const licenseEntity = await db.get(LicenseEntity, {
+      where: { id },
+      relations: ['knownLicense', 'userdefinedLicense'],
+    })
+    if (!licenseEntity) throw Error(`License entity not found: ${id}`)
+    const { knownLicense, userdefinedLicense } = licenseEntity
     if (knownLicense) {
       lic = new KnownLicense()
       lic.code = knownLicense.code
