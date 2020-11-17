@@ -23,10 +23,17 @@ const DEFAULT_CHANNEL_COVER_URL = 'https://eu-central-1.linodeobjects.com/atlas-
 
 const ChannelView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
-  const { loading, data } = useQuery<GetChannel, GetChannelVariables>(GET_CHANNEL, {
+  const { loading, data, error } = useQuery<GetChannel, GetChannelVariables>(GET_CHANNEL, {
     variables: { id },
   })
 
+  if (error) {
+    throw error
+  }
+
+  if (loading || !data?.channel) {
+    return <p>Loading Channel...</p>
+  }
   const videos = data?.channel?.videos || []
 
   return (

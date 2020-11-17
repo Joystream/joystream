@@ -18,7 +18,7 @@ const tabs = ['all results', 'videos', 'channels']
 
 const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const { data, loading } = useQuery<Search, SearchVariables>(SEARCH, { variables: { query_string: search } })
+  const { data, loading, error } = useQuery<Search, SearchVariables>(SEARCH, { variables: { query_string: search } })
 
   const getChannelsAndVideos = (loading: boolean, data: Search | undefined) => {
     if (loading || !data?.search) {
@@ -32,8 +32,14 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
 
   const { channels, videos } = useMemo(() => getChannelsAndVideos(loading, data), [loading, data])
 
+  if (error) {
+    throw error
+  }
   if (!loading && !data?.search) {
-    return <p>Something went wrong...</p>
+    throw new Error(`There was a problem with your search...`)
+  }
+  if (loading || !data) {
+    return <p>Loading...</p>
   }
 
   if (!loading && channels.length === 0 && videos.length === 0) {

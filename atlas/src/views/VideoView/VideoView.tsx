@@ -26,7 +26,7 @@ import { AddVideoView, AddVideoViewVariables } from '@/api/queries/__generated__
 
 const VideoView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
-  const { loading, data } = useQuery<GetVideo, GetVideoVariables>(GET_VIDEO_WITH_CHANNEL_VIDEOS, {
+  const { loading, data, error } = useQuery<GetVideo, GetVideoVariables>(GET_VIDEO_WITH_CHANNEL_VIDEOS, {
     variables: { id },
   })
   const [addVideoView] = useMutation<AddVideoView, AddVideoViewVariables>(ADD_VIDEO_VIEW)
@@ -54,6 +54,10 @@ const VideoView: React.FC<RouteComponentProps> = () => {
       console.warn('Failed to increase video views', { error })
     })
   }, [addVideoView, videoID])
+
+  if(error) {
+    throw error
+  }
 
   if (!loading && !data?.video) {
     return <p>Video not found</p>

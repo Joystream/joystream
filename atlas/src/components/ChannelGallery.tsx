@@ -1,5 +1,4 @@
 import React from 'react'
-import styled from '@emotion/styled'
 
 import { ChannelPreviewBase, Gallery } from '@/shared/components'
 import ChannelPreview from './ChannelPreviewWithNavigation'

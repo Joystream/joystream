@@ -94,6 +94,7 @@
     "react-docgen-typescript-loader": "^3.7.1",
     "react-dom": "^16.13.1",
     "react-glider": "^2.0.2",
+    "react-error-boundary": "^3.0.2",
     "react-player": "^2.2.0",
     "react-scripts": "3.4.1",
     "react-spring": "^8.0.27",

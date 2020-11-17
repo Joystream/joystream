@@ -40,12 +40,16 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   const targetDisplayedVideosCount = targetRowsCount * videosPerRow
   const targetLoadedVideosCount = targetDisplayedVideosCount + skipCount
 
-  const [fetchVideos, { loading, data, fetchMore, called, refetch }] = useLazyQuery<
+  const [fetchVideos, { loading, data, error, fetchMore, called, refetch }] = useLazyQuery<
     GetNewestVideos,
     GetNewestVideosVariables
   >(GET_NEWEST_VIDEOS, {
     notifyOnNetworkStatusChange: true,
   })
+
+  if (error) {
+    throw error
+  }
 
   const loadedVideosCount = data?.videosConnection.edges.length || 0
   const allVideosLoaded = data ? !data.videosConnection.pageInfo.hasNextPage : false

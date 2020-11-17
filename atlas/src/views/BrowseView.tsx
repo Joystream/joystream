@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import styled from '@emotion/styled'
 import { RouteComponentProps } from '@reach/router'
+import { ErrorBoundary } from 'react-error-boundary'
+
+import { ErrorFallback } from '@/components'
 import { CategoryPicker, InfiniteVideoGrid, Typography } from '@/shared/components'
 import { colors, sizes } from '@/shared/theme'
 import { useQuery } from '@apollo/client'
@@ -10,12 +13,19 @@ import { CategoryFields } from '@/api/queries/__generated__/CategoryFields'
 
 const BrowseView: React.FC<RouteComponentProps> = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
-  const { loading: categoriesLoading, data: categoriesData } = useQuery<GetCategories>(GET_CATEGORIES, {
-    onCompleted: (data) => handleCategoryChange(data.categories[0]),
-  })
+  const { loading: categoriesLoading, data: categoriesData, error: categoriesError } = useQuery<GetCategories>(
+    GET_CATEGORIES,
+    {
+      onCompleted: (data) => handleCategoryChange(data.categories[0]),
+    }
+  )
 
   const handleCategoryChange = (category: CategoryFields) => {
     setSelectedCategoryId(category.id)
+  }
+
+  if (categoriesError) {
+    throw categoriesError
   }
 
   return (
@@ -28,7 +38,9 @@ const BrowseView: React.FC<RouteComponentProps> = () => {
         selectedCategoryId={selectedCategoryId}
         onChange={handleCategoryChange}
       />
-      <StyledInfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <StyledInfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
+      </ErrorBoundary>
     </div>
   )
 }

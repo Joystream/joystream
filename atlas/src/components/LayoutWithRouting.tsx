@@ -1,11 +1,28 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { Router } from '@reach/router'
+import { RouteComponentProps, Router, navigate } from '@reach/router'
+import { ErrorBoundary } from 'react-error-boundary'
 
 import { GlobalStyle } from '@/shared/components'
-import { Navbar } from '@/components'
-import { BrowseView, ChannelView, HomeView, SearchView, VideoView } from '@/views'
+import { Navbar, ViewErrorFallback } from '@/components'
+import { HomeView, VideoView, SearchView, ChannelView, BrowseView } from '@/views'
 import routes from '@/config/routes'
+
+type RouteProps = {
+  Component: React.ComponentType
+} & RouteComponentProps
+const Route: React.FC<RouteProps> = ({ Component, ...pathProps }) => {
+  return (
+    <ErrorBoundary
+      FallbackComponent={ViewErrorFallback}
+      onReset={() => {
+        navigate('/')
+      }}
+    >
+      <Component {...pathProps} />
+    </ErrorBoundary>
+  )
+}
 
 const LayoutWithRouting: React.FC = () => (
   <>
@@ -15,11 +32,11 @@ const LayoutWithRouting: React.FC = () => (
     </Router>
     <MainContainer>
       <Router primary={false}>
-        <HomeView default />
-        <VideoView path={routes.video()} />
-        <SearchView path={routes.search()} />
-        <BrowseView path={routes.browse()} />
-        <ChannelView path={routes.channel()} />
+        <Route default Component={HomeView} />
+        <Route path={routes.video()} Component={VideoView} />
+        <Route path={routes.search()} Component={SearchView} />
+        <Route Component={BrowseView} path={routes.browse()} />
+        <Route Component={ChannelView} path={routes.channel()} />
       </Router>
     </MainContainer>
   </>
