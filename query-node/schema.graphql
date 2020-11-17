@@ -90,10 +90,10 @@ type Channel @entity {
   description: String!
 
   "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhotoURL: String!
+  coverPhotoUrl: String
 
   "Channel's avatar photo."
-  avatarPhotoURL: String!
+  avatarPhotoUrl: String
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean!
