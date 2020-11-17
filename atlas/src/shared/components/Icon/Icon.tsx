@@ -1,5 +1,4 @@
 import React from 'react'
-import { css } from '@emotion/core'
 import * as Icons from '../../icons'
 import { camelCase } from 'lodash'
 
@@ -11,12 +10,6 @@ type IconProps = {
 const capitalize = (s: string) => s.slice(0, 1).toUpperCase() + s.slice(1)
 const pascalCase = (s: string) => capitalize(camelCase(s))
 const iconsList = Object.keys(Icons)
-const iconStyles = css`
-  stroke: currentColor;
-  > * {
-    stroke: currentColor;
-  }
-`
 
 const Icon: React.FC<IconProps> = ({ name, ...svgProps }) => {
   const iconProp = pascalCase(name) as keyof typeof Icons
@@ -27,7 +20,7 @@ const Icon: React.FC<IconProps> = ({ name, ...svgProps }) => {
 
   const IconComponent = Icons[iconProp]
 
-  return <IconComponent css={iconStyles} {...svgProps} />
+  return <IconComponent {...svgProps} />
 }
 
 export default Icon

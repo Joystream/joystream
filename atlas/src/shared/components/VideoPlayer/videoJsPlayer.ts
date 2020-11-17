@@ -10,10 +10,12 @@ export type VideoJsConfig = {
   height?: number
   fluid?: boolean
   fill?: boolean
+  muted?: boolean
+  posterUrl?: string
 }
 
 type VideoJsPlayerHook = (config: VideoJsConfig) => [VideoJsPlayer | null, RefObject<HTMLVideoElement>]
-export const useVideoJsPlayer: VideoJsPlayerHook = ({ fill, fluid, height, src, width }) => {
+export const useVideoJsPlayer: VideoJsPlayerHook = ({ fill, fluid, height, src, width, muted = false, posterUrl }) => {
   const playerRef = useRef<HTMLVideoElement>(null)
   const [player, setPlayer] = useState<VideoJsPlayer | null>(null)
 
@@ -75,6 +77,22 @@ export const useVideoJsPlayer: VideoJsPlayerHook = ({ fill, fluid, height, src, 
     // @ts-ignore @types/video.js is outdated and doesn't provide types for some newer video.js features
     player.fill(Boolean(fill))
   }, [player, fill])
+
+  useEffect(() => {
+    if (!player) {
+      return
+    }
+
+    player.muted(muted)
+  }, [player, muted])
+
+  useEffect(() => {
+    if (!player || !posterUrl) {
+      return
+    }
+
+    player.poster(posterUrl)
+  }, [player, posterUrl])
 
   return [player, playerRef]
 }

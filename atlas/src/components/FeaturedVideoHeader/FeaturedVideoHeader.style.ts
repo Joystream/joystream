@@ -2,8 +2,9 @@ import styled from '@emotion/styled'
 import { fluidRange } from 'polished'
 
 import { Avatar, Button } from '@/shared/components'
-import { breakpoints, colors, spacing, typography } from '@/shared/theme'
+import { breakpoints, colors, sizes, spacing, typography } from '@/shared/theme'
 import { Link } from '@reach/router'
+import { css } from '@emotion/core'
 
 export const Container = styled.section`
   position: relative;
@@ -32,32 +33,45 @@ export const MediaWrapper = styled.div`
   width: calc(100% + calc(2 * var(--global-horizontal-padding)));
 `
 
-export const BackgroundImage = styled.div<{ src: string }>`
+export const Media = styled.div`
   width: 100%;
   height: 0;
   padding-top: 56.25%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: local;
-  background-size: cover;
+  position: relative;
+`
+
+const absoluteMediaCss = css`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+`
+
+export const PlayerContainer = styled.div`
+  ${absoluteMediaCss};
+`
+
+export const GradientOverlay = styled.div`
+  ${absoluteMediaCss};
 
   // as the content overlaps the media more and more as the viewport width grows, we need to hide some part of the media with a gradient
   // this helps with keeping a consistent background behind a page content - we don't want the media to peek out in the content spacing
-  background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%), url(${({ src }) => src});
+  background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%);
   @media screen and (min-width: ${breakpoints.small}) {
-    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 50%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 50%);
   }
   @media screen and (min-width: ${breakpoints.medium}) {
-    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 70%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 70%);
   }
   @media screen and (min-width: ${breakpoints.large}) {
-    background-image: linear-gradient(0deg, black 0%, black 20%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, black 20%, rgba(0, 0, 0, 0) 90%);
   }
   @media screen and (min-width: ${breakpoints.xlarge}) {
-    background-image: linear-gradient(0deg, black 0%, black 25%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, black 25%, rgba(0, 0, 0, 0) 90%);
   }
   @media screen and (min-width: ${breakpoints.xxlarge}) {
-    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%);
   }
 `
 
@@ -108,6 +122,9 @@ export const StyledAvatar = styled(Avatar)`
 `
 
 export const TitleContainer = styled.div`
+  a {
+    text-decoration: none;
+  }
   margin-bottom: ${spacing.xxl};
   @media screen and (min-width: ${breakpoints.medium}) {
     margin-bottom: ${spacing.xxxl};
@@ -131,6 +148,19 @@ export const TitleContainer = styled.div`
   }
 `
 
+export const ButtonsContainer = styled.div`
+  transition: opacity 200ms;
+  opacity: 0;
+
+  &.fade-enter-done {
+    opacity: 1;
+  }
+`
+
 export const PlayButton = styled(Button)`
   width: 116px;
+`
+
+export const SoundButton = styled(Button)`
+  margin-left: ${sizes.b4}px;
 `
