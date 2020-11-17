@@ -38,7 +38,7 @@ export const CategoryPropertyNamesWithId: IPropertyIdWithName = {
 }
 
 export const channelPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'title',
+  0: 'handle',
   1: 'description',
   2: 'coverPhotoURL',
   3: 'avatarPhotoURL',

@@ -59,7 +59,7 @@ async function createChannel(
 
   channel.version = block
   channel.id = id
-  channel.title = p.title
+  channel.handle = p.handle
   channel.description = p.description
   channel.isCurated = p.isCurated || false
   channel.isPublic = p.isPublic
