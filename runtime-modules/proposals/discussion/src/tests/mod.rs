@@ -5,7 +5,8 @@ use system::RawOrigin;
 use system::{EventRecord, Phase};
 
 use crate::*;
-use mock::*;
+
+pub(crate) use mock::*;
 
 struct EventFixture;
 impl EventFixture {

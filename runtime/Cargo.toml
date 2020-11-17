@@ -12,6 +12,7 @@ serde = { version = "1.0.101", optional = true, features = ["derive"] }
 lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
 lite-json = { version = '0.1.3', default-features = false}
 codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
+hex-literal = { optional = true, version = '0.3.1' }
 
 # Substrate primitives
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -175,6 +176,8 @@ runtime-benchmarks = [
     "pallet-offences-benchmarking",
 	"pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
+    "proposals-discussion/runtime-benchmarks",
+    "hex-literal",
 ]
 
 
