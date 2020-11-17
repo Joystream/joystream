@@ -208,8 +208,7 @@ pub trait Trait: system::Trait {
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
 pub trait ReferendumConnection<T: Trait> {
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
-    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>])
-        -> Result<(), Error<T>>;
+    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
     fn can_release_vote_stake() -> Result<(), Error<T>>;
@@ -543,17 +542,13 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
     /// Process candidates' results recieved from the referendum.
-    fn recieve_referendum_results(
-        winners: &[OptionResult<VotePowerOf<T>>],
-    ) -> Result<(), Error<T>> {
+    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]) {
         //
         // == MUTATION SAFE ==
         //
 
         // conclude election
         Self::end_election_period(winners);
-
-        Ok(())
     }
 
     /// Check that it is a proper time to release stake.

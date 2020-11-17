@@ -223,8 +223,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
             .collect();
         <Module<Runtime> as ReferendumConnection<Runtime>>::recieve_referendum_results(
             tmp_winners.as_slice(),
-        )
-        .unwrap();
+        );
 
         INTERMEDIATE_RESULTS.with(|value| value.replace(BTreeMap::new()));
     }
