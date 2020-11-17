@@ -265,7 +265,7 @@ type Video @entity {
   skippableIntroDuration: Int
 
   "Video thumbnail url (recommended ratio: 16:9)"
-  thumbnailURL: String!
+  thumbnailUrl: String!
 
   "Video's main langauge"
   language: Language
