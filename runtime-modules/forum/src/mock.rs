@@ -62,8 +62,9 @@ impl frame_system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
 }
@@ -72,6 +73,7 @@ impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -265,7 +267,7 @@ pub fn create_category_mock(
     if result.is_ok() {
         assert_eq!(TestForumModule::next_category_id(), category_id + 1);
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryCreated(category_id))
         );
     }
@@ -298,7 +300,7 @@ pub fn create_thread_mock(
     if result.is_ok() {
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadCreated(thread_id))
         );
     }
@@ -329,7 +331,7 @@ pub fn edit_thread_title_mock(
             Runtime::calculate_hash(new_title.as_slice()),
         );
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(thread_id,))
         );
     }
@@ -363,7 +365,7 @@ pub fn delete_thread_mock(
             num_direct_threads - 1,
         );
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
         );
     }
@@ -393,7 +395,7 @@ pub fn move_thread_mock(
             thread_id
         ),);
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadMoved(thread_id, new_category_id))
         );
     }
@@ -419,7 +421,7 @@ pub fn update_thread_archival_status_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadUpdated(thread_id, new_archival_status))
         );
     }
@@ -447,7 +449,7 @@ pub fn create_post_mock(
     if result.is_ok() {
         assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostAdded(post_id))
         );
     };
@@ -480,7 +482,7 @@ pub fn edit_post_text_mock(
             Runtime::calculate_hash(new_text.as_slice()),
         );
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostTextUpdated(post_id))
         );
     }
@@ -545,7 +547,7 @@ pub fn vote_on_poll_mock(
             thread.poll.unwrap().poll_alternatives[index as usize].vote_count + 1
         );
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::VoteOnPoll(thread_id, index,))
         );
     };
@@ -570,7 +572,7 @@ pub fn update_category_archival_status_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryUpdated(category_id, new_archival_status))
         );
     }
@@ -589,7 +591,7 @@ pub fn delete_category_mock(
     if result.is_ok() {
         assert!(!<CategoryById<Runtime>>::contains_key(category_id));
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id))
         );
     };
@@ -616,7 +618,7 @@ pub fn moderate_thread_mock(
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale))
         );
     }
@@ -646,7 +648,7 @@ pub fn moderate_post_mock(
     if result.is_ok() {
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale))
         );
     }
@@ -676,7 +678,7 @@ pub fn set_stickied_threads_mock(
             stickied_ids.clone()
         );
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
                 stickied_ids.clone(),
@@ -708,7 +710,7 @@ pub fn react_post_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            frame_system::events().last().unwrap().event,
+            System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostReacted(
                 forum_user_id,
                 post_id,
@@ -779,16 +781,16 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
-    while frame_system::block_number() < n {
-        <frame_system as OnFinalize<u64>>::on_finalize(frame_system::block_number());
-        <TestForumModule as OnFinalize<u64>>::on_finalize(frame_system::block_number());
-        frame_system::set_block_number(frame_system::block_number() + 1);
-        <frame_system as OnInitialize<u64>>::on_initialize(frame_system::block_number());
-        <TestForumModule as OnInitialize<u64>>::on_initialize(frame_system::block_number());
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestForumModule as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 
-pub type frame_system = frame_system::Module<Runtime>;
+pub type System = frame_system::Module<Runtime>;
 
 pub type Timestamp = pallet_timestamp::Module<Runtime>;
 

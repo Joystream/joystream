@@ -39,6 +39,7 @@ struct EncodedForumData {
     category_by_moderator: Vec<String>,
     /// hex encoded poll items input validation constraint
     poll_items_constraint: String,
+    /// hex encoded data migration done bool flag
     data_migration_done: String,
 }
 
