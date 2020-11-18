@@ -12,14 +12,14 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage};
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
-pub trait Trait: system::Trait {
-    type Event: From<Event> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait {
+    type Event: From<Event> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 /// Contains constitution text hash and its amendment number.

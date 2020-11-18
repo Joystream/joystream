@@ -5,10 +5,10 @@ mod mocks;
 use crate::{ConstitutionInfo, Event};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_system::{EventRecord, Phase, RawOrigin};
 use mocks::{build_test_externalities, Constitution, System, Test, TestEvent};
 use sp_runtime::traits::Hash;
 use sp_runtime::DispatchError;
-use system::{EventRecord, Phase, RawOrigin};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -71,7 +71,7 @@ impl AmendConstitutionFixture {
 
         let new_constitution = Constitution::constitution();
         if actual_result.is_ok() {
-            let hashed = <Test as system::Trait>::Hashing::hash(&self.text);
+            let hashed = <Test as frame_system::Trait>::Hashing::hash(&self.text);
             let hash = hashed.as_ref().to_vec();
 
             assert_eq!(new_constitution, ConstitutionInfo { text_hash: hash });
@@ -89,7 +89,7 @@ fn amend_contitution_succeeds() {
 
         let text = b"Constitution text".to_vec();
 
-        let hashed = <Test as system::Trait>::Hashing::hash(&text);
+        let hashed = <Test as frame_system::Trait>::Hashing::hash(&text);
         let hash = hashed.as_ref().to_vec();
 
         let amend_constitution_fixture = AmendConstitutionFixture::default().with_text(text);

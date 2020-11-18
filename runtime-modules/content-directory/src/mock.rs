@@ -17,13 +17,14 @@ use std::cell::RefCell;
 
 /// Runtime Types
 
-type ClassId = <Runtime as Trait>::ClassId;
-type EntityId = <Runtime as Trait>::EntityId;
-type Nonce = <Runtime as Trait>::Nonce;
+pub type ClassId = <Runtime as Trait>::ClassId;
+pub type EntityId = <Runtime as Trait>::EntityId;
+pub type Nonce = <Runtime as Trait>::Nonce;
+pub type Hashed = <Runtime as frame_system::Trait>::Hash;
 
-type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
+pub type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
-type MemberId = <Runtime as ActorAuthenticator>::MemberId;
+pub type MemberId = <Runtime as ActorAuthenticator>::MemberId;
 
 /// Origins
 
@@ -207,7 +208,7 @@ impl Get<EntityId> for IndividualEntitiesCreationLimit {
     }
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -228,10 +229,11 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 mod test_events {
@@ -241,7 +243,7 @@ mod test_events {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         test_events<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -363,7 +365,7 @@ impl ExtBuilder {
 
     pub fn build(self, config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
         self.set_associated_consts();
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
         config.assimilate_storage(&mut t).unwrap();
@@ -376,6 +378,8 @@ impl ExtBuilder {
 
 fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig {
+        class_by_id: vec![],
+        entity_by_id: vec![],
         curator_group_by_id: vec![],
         next_class_id: 1,
         next_entity_id: 1,
@@ -404,7 +408,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-impl<T: Trait> Property<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     pub fn required(mut self) -> Self {
         self.required = true;
         self
@@ -423,10 +427,10 @@ type RawTestEvent = RawEvent<
     CuratorId,
     ClassId,
     EntityId,
-    EntityController<Runtime>,
+    EntityController<MemberId>,
     EntityCreationVoucher<Runtime>,
     bool,
-    Actor<Runtime>,
+    Actor<CuratorGroupId, CuratorId, MemberId>,
     Nonce,
     Option<ReferenceCounterSideEffects<Runtime>>,
     Option<(EntityId, EntityReferenceCounterSideEffect)>,
@@ -581,7 +585,7 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchR
     )
 }
 
-pub fn create_class_with_default_permissions() -> Class<Runtime> {
+pub fn create_class_with_default_permissions() -> Class<EntityId, ClassId, CuratorGroupId> {
     Class::new(
         ClassPermissions::default(),
         generate_text(ClassNameLengthConstraint::get().max() as usize),
@@ -633,7 +637,7 @@ pub fn add_class_schema(
     lead_origin: u64,
     class_id: ClassId,
     existing_properties: BTreeSet<PropertyId>,
-    new_properties: Vec<Property<Runtime>>,
+    new_properties: Vec<Property<ClassId>>,
 ) -> DispatchResult {
     TestModule::add_class_schema(
         Origin::signed(lead_origin),
@@ -656,7 +660,7 @@ pub fn next_class_id() -> ClassId {
     TestModule::next_class_id()
 }
 
-pub fn class_by_id(class_id: ClassId) -> Class<Runtime> {
+pub fn class_by_id(class_id: ClassId) -> Class<EntityId, ClassId, CuratorGroupId> {
     TestModule::class_by_id(class_id)
 }
 
@@ -669,7 +673,7 @@ pub fn class_exists(class_id: ClassId) -> bool {
 pub fn update_entity_creation_voucher(
     lead_origin: u64,
     class_id: ClassId,
-    controller: EntityController<Runtime>,
+    controller: EntityController<MemberId>,
     maximum_entities_count: EntityId,
 ) -> DispatchResult {
     TestModule::update_entity_creation_voucher(
@@ -682,14 +686,14 @@ pub fn update_entity_creation_voucher(
 
 pub fn entity_creation_vouchers(
     class_id: ClassId,
-    entity_controller: &EntityController<Runtime>,
+    entity_controller: &EntityController<MemberId>,
 ) -> EntityCreationVoucher<Runtime> {
     TestModule::entity_creation_vouchers(class_id, entity_controller)
 }
 
 pub fn entity_creation_voucher_exists(
     class_id: ClassId,
-    entity_controller: &EntityController<Runtime>,
+    entity_controller: &EntityController<MemberId>,
 ) -> bool {
     EntityCreationVouchers::<Runtime>::contains_key(class_id, entity_controller)
 }
@@ -700,7 +704,7 @@ pub fn entity_exists(entity_id: EntityId) -> bool {
     EntityById::<Runtime>::contains_key(entity_id)
 }
 
-pub fn entity_by_id(entity_id: EntityId) -> Entity<Runtime> {
+pub fn entity_by_id(entity_id: EntityId) -> Entity<ClassId, MemberId, Hashed, EntityId, Nonce> {
     TestModule::entity_by_id(entity_id)
 }
 
@@ -708,11 +712,19 @@ pub fn next_entity_id() -> EntityId {
     TestModule::next_entity_id()
 }
 
-pub fn create_entity(origin: u64, class_id: ClassId, actor: Actor<Runtime>) -> DispatchResult {
+pub fn create_entity(
+    origin: u64,
+    class_id: ClassId,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+) -> DispatchResult {
     TestModule::create_entity(Origin::signed(origin), class_id, actor)
 }
 
-pub fn remove_entity(origin: u64, actor: Actor<Runtime>, entity_id: EntityId) -> DispatchResult {
+pub fn remove_entity(
+    origin: u64,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    entity_id: EntityId,
+) -> DispatchResult {
     TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
 }
 
@@ -732,7 +744,7 @@ pub fn update_entity_permissions(
 
 pub fn add_schema_support_to_entity(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     entity_id: EntityId,
     schema_id: SchemaId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
@@ -748,7 +760,7 @@ pub fn add_schema_support_to_entity(
 
 pub fn update_entity_property_values(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     entity_id: EntityId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
 ) -> DispatchResult {
@@ -762,7 +774,7 @@ pub fn update_entity_property_values(
 
 pub fn clear_entity_property_vector(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
 ) -> DispatchResult {
@@ -776,7 +788,7 @@ pub fn clear_entity_property_vector(
 
 pub fn insert_at_entity_property_vector(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
@@ -796,7 +808,7 @@ pub fn insert_at_entity_property_vector(
 
 pub fn remove_at_entity_property_vector(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
@@ -815,7 +827,7 @@ pub fn remove_at_entity_property_vector(
 pub fn transfer_entity_ownership(
     origin: u64,
     entity_id: EntityId,
-    new_controller: EntityController<Runtime>,
+    new_controller: EntityController<MemberId>,
     new_property_value_references_with_same_owner_flag_set: BTreeMap<
         PropertyId,
         InputPropertyValue<Runtime>,
@@ -833,7 +845,7 @@ pub fn transfer_entity_ownership(
 
 pub fn transaction(
     origin: u64,
-    actor: Actor<Runtime>,
+    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
     operations: Vec<OperationType<Runtime>>,
 ) -> DispatchResult {
     TestModule::transaction(Origin::signed(origin), actor, operations)
@@ -849,20 +861,20 @@ pub enum InvalidPropertyType {
     VecIsTooLong,
 }
 
-impl<T: Trait> Property<T> {
+impl Property<ClassId> {
     pub fn default_with_name(name_len: usize) -> Self {
         let name = generate_text(name_len);
         let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
             description,
-            ..Property::<T>::default()
+            ..Property::<ClassId>::default()
         }
     }
 
     pub fn with_name_and_type(
         name_len: usize,
-        property_type: PropertyType<T>,
+        property_type: PropertyType<ClassId>,
         required: bool,
         unique: bool,
     ) -> Self {
@@ -874,12 +886,12 @@ impl<T: Trait> Property<T> {
             property_type,
             required,
             unique,
-            ..Property::<T>::default()
+            ..Property::<ClassId>::default()
         }
     }
 
-    pub fn invalid(invalid_property_type: InvalidPropertyType) -> Property<Runtime> {
-        let mut default_property = Property::<Runtime>::default_with_name(
+    pub fn invalid(invalid_property_type: InvalidPropertyType) -> Property<ClassId> {
+        let mut default_property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().min() as usize,
         );
         match invalid_property_type {
@@ -901,16 +913,16 @@ impl<T: Trait> Property<T> {
             }
             InvalidPropertyType::TextIsTooLong => {
                 default_property.property_type =
-                    PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
+                    PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get() + 1);
             }
             InvalidPropertyType::TextHashIsTooLong => {
                 if let Some(hashed_text_max_len) = HashedTextMaxLengthConstraint::get() {
                     default_property.property_type =
-                        PropertyType::<Runtime>::single_text_hash(Some(hashed_text_max_len + 1));
+                        PropertyType::<ClassId>::single_text_hash(Some(hashed_text_max_len + 1));
                 }
             }
             InvalidPropertyType::VecIsTooLong => {
-                default_property.property_type = PropertyType::<Runtime>::vec_reference(
+                default_property.property_type = PropertyType::<ClassId>::vec_reference(
                     FIRST_CLASS_ID,
                     true,
                     VecMaxLengthConstraint::get() + 1,
@@ -921,43 +933,43 @@ impl<T: Trait> Property<T> {
     }
 }
 
-impl<T: Trait> PropertyType<T> {
+impl PropertyType<ClassId> {
     pub fn vec_reference(
         class_id: ClassId,
         same_controller: bool,
         max_length: VecMaxLength,
-    ) -> PropertyType<Runtime> {
-        let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
-        let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
-        PropertyType::<Runtime>::Vector(vec_reference)
+    ) -> PropertyType<ClassId> {
+        let vec_type = Type::<ClassId>::Reference(class_id, same_controller);
+        let vec_reference = VecPropertyType::<ClassId>::new(vec_type, max_length);
+        PropertyType::<ClassId>::Vector(vec_reference)
     }
 
     pub fn vec_text(
         text_max_len: TextMaxLength,
         vec_max_length: VecMaxLength,
-    ) -> PropertyType<Runtime> {
-        let vec_type = Type::<Runtime>::Text(text_max_len);
-        let vec_text = VecPropertyType::<Runtime>::new(vec_type, vec_max_length);
-        PropertyType::<Runtime>::Vector(vec_text)
+    ) -> PropertyType<ClassId> {
+        let vec_type = Type::<ClassId>::Text(text_max_len);
+        let vec_text = VecPropertyType::<ClassId>::new(vec_type, vec_max_length);
+        PropertyType::<ClassId>::Vector(vec_text)
     }
 
-    pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<Runtime> {
-        let text_type = Type::<Runtime>::Text(text_max_len);
-        PropertyType::<Runtime>::Single(text_type)
+    pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<ClassId> {
+        let text_type = Type::<ClassId>::Text(text_max_len);
+        PropertyType::<ClassId>::Single(text_type)
     }
 
-    pub fn single_text_hash(text_hash_max_len: HashedTextMaxLength) -> PropertyType<Runtime> {
-        let text_type = Type::<Runtime>::Hash(text_hash_max_len);
-        PropertyType::<Runtime>::Single(text_type)
+    pub fn single_text_hash(text_hash_max_len: HashedTextMaxLength) -> PropertyType<ClassId> {
+        let text_type = Type::<ClassId>::Hash(text_hash_max_len);
+        PropertyType::<ClassId>::Single(text_type)
     }
 
     pub fn vec_text_hash(
         text_hash_max_len: HashedTextMaxLength,
         vec_max_length: VecMaxLength,
-    ) -> PropertyType<Runtime> {
-        let vec_type = Type::<Runtime>::Hash(text_hash_max_len);
-        let vec_text_hash = VecPropertyType::<Runtime>::new(vec_type, vec_max_length);
-        PropertyType::<Runtime>::Vector(vec_text_hash)
+    ) -> PropertyType<ClassId> {
+        let vec_type = Type::<ClassId>::Hash(text_hash_max_len);
+        let vec_text_hash = VecPropertyType::<ClassId>::new(vec_type, vec_max_length);
+        PropertyType::<ClassId>::Vector(vec_text_hash)
     }
 }
 
@@ -1013,7 +1025,7 @@ impl PropertyLockingPolicy {
 }
 
 // Assign back to type variables so we can make dispatched calls of these modules later.
-pub type System = system::Module<Runtime>;
+pub type System = frame_system::Module<Runtime>;
 pub type TestModule = Module<Runtime>;
 
 // Recommendation from Parity on testing on_finalize

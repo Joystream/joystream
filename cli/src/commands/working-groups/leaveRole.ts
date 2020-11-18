@@ -21,7 +21,7 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'leaveRole', [worker.workerId, rationale])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'leaveRole', [worker.workerId, rationale])
 
     this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.white(worker.workerId.toNumber())})`))
   }

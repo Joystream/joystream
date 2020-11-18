@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassOf, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -131,7 +131,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Map, representing ClassId -> Class relation
        **/
-      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<Class>>;
+      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<ClassOf>>;
       /**
        * Map, representing  CuratorGroupId -> CuratorGroup relation
        **/
@@ -139,7 +139,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Map, representing EntityId -> Entity relation
        **/
-      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Entity>>;
+      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<EntityOf>>;
       entityCreationVouchers: AugmentedQueryDoubleMap<ApiType, (key1: ClassId | AnyNumber | Uint8Array, key2: EntityController | { Maintainers: any } | { Member: any } | { Lead: any } | string | Uint8Array) => Observable<EntityCreationVoucher>>;
       /**
        * Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
@@ -634,14 +634,6 @@ declare module '@polkadot/api/types/storage' {
        **/
       runtimeUpgradeProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
       /**
-       * Grace period for the 'set content working group mint capacity' proposal
-       **/
-      setContentWorkingGroupMintCapacityProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set content working group mint capacity' proposal
-       **/
-      setContentWorkingGroupMintCapacityProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
        * Grace period for the 'set election parameters' proposal
        **/
       setElectionParametersProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
@@ -649,14 +641,6 @@ declare module '@polkadot/api/types/storage' {
        * Voting period for the 'set election parameters' proposal
        **/
       setElectionParametersProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set lead' proposal
-       **/
-      setLeadProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set lead' proposal
-       **/
-      setLeadProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
       /**
        * Grace period for the 'set validator count' proposal
        **/

@@ -82,10 +82,7 @@ yarn workspace pioneer start
 ```
 
 Browse pioneer on http://localhost:3000/
-You should find Alice account is the storage working group lead and is a storage provider
-Create a media channel. And upload a file. You may have to wait a couple of minutes before
-the ipns of the storage-node is registered before you can upload a file, or you will get an error
-in pioneer.
+You should find Alice account is the storage working group lead and is a storage provider.
 
 ## Detailed Setup and Configuration Guide
 

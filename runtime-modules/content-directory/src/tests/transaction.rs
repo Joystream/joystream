@@ -8,7 +8,7 @@ fn transaction_success() {
 
         // Create single reference property
         let property_type_reference = Type::Reference(FIRST_CLASS_ID, true);
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             PropertyType::Single(property_type_reference),
             true,

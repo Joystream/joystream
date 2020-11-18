@@ -70,8 +70,8 @@ pub type MemberId = u64;
 /// account.
 pub mod report {
     use super::{Signature, Verify};
+    use frame_system::offchain::AppCrypto;
     use sp_core::crypto::{key_types, KeyTypeId};
-    use system::offchain::AppCrypto;
 
     /// Key type for the reporting module. Used for reporting BABE and GRANDPA
     /// equivocations.

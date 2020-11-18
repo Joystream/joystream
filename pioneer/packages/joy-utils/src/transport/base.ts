@@ -63,10 +63,6 @@ export default class BaseTransport {
     return this.cacheApi.query.actors;
   }
 
-  protected get contentWorkingGroup () {
-    return this.cacheApi.query.contentWorkingGroup;
-  }
-
   protected get minting () {
     return this.cacheApi.query.minting;
   }

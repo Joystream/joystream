@@ -20,7 +20,7 @@ mod constitution {
 impl_outer_event! {
     pub enum TestEvent for Test {
         constitution,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -34,7 +34,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -55,10 +55,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 impl Trait for Test {
@@ -66,12 +67,12 @@ impl Trait for Test {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     t.into()
 }
 
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Constitution = Module<Test>;

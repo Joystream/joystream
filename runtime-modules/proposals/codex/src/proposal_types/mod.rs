@@ -18,12 +18,13 @@ pub trait ProposalEncoder<T: crate::Trait> {
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfMint<T>,
     crate::BalanceOfGovernanceCurrency<T>,
-    <T as system::Trait>::BlockNumber,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::AccountId,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
     crate::BalanceOf<T>,
     working_group::WorkerId<T>,
+    crate::MemberId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -38,6 +39,7 @@ pub enum ProposalDetails<
     ApplicationId,
     StakeBalance,
     WorkerId,
+    MemberId,
 > {
     /// The text of the `text` proposal
     Text(Vec<u8>),
@@ -53,10 +55,20 @@ pub enum ProposalDetails<
     /// Balance and destination account for the `spending` proposal
     Spending(MintedBalance, AccountId),
 
+    /// ********** Deprecated during the Babylon release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
+    /// New leader memberId and account_id for the `set lead` proposal
+    DeprecatedSetLead(Option<(MemberId, AccountId)>),
+
+    /// ********** Deprecated during the Babylon release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
+    /// Balance for the `set content working group mint capacity` proposal
+    DeprecatedSetContentWorkingGroupMintCapacity(MintedBalance),
+
     /// ********** Deprecated during the Nicaea release.
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// AccountId for the `evict storage provider` proposal
-    EvictStorageProvider(AccountId),
+    DeprecatedEvictStorageProvider(AccountId),
 
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
@@ -64,7 +76,7 @@ pub enum ProposalDetails<
     /// ********** Deprecated during the Nicaea release.
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// Role parameters for the `set storage role parameters` proposal
-    SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
+    DeprecatedSetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
 
     /// Add opening for the working group leader position.
     AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
@@ -105,6 +117,7 @@ impl<
         ApplicationId,
         StakeBalance,
         WorkerId,
+        MemberId,
     > Default
     for ProposalDetails<
         MintedBalance,
@@ -115,6 +128,7 @@ impl<
         ApplicationId,
         StakeBalance,
         WorkerId,
+        MemberId,
     >
 {
     fn default() -> Self {

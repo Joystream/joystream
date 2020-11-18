@@ -47,7 +47,7 @@ fn create_entity_success() {
             EntityCreationVoucher::new(class.get_default_entity_creation_voucher_upper_bound());
         entity_voucher.increment_created_entities_count();
 
-        let entity_controller = EntityController::from_actor(&actor);
+        let entity_controller = EntityController::<MemberId>::from_actor::<Runtime>(&actor);
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
@@ -55,7 +55,7 @@ fn create_entity_success() {
         );
 
         // Ensure new entity created
-        let entity = Entity::<Runtime>::new(
+        let entity = Entity::<ClassId, MemberId, Hashed, EntityId, Nonce>::new(
             entity_controller,
             FIRST_CLASS_ID,
             BTreeSet::new(),

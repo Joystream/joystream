@@ -65,7 +65,7 @@ fn update_entity_creation_voucher_success() {
             None
         ));
 
-        let entity_controller = EntityController::from_actor(&actor);
+        let entity_controller = EntityController::<MemberId>::from_actor::<Runtime>(&actor);
 
         // Create entity
         assert_ok!(create_entity(FIRST_MEMBER_ORIGIN, FIRST_CLASS_ID, actor));

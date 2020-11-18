@@ -93,7 +93,7 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
@@ -109,7 +109,7 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 
 ```bash
 docker-compose up -d
-yarn workspace network-tests test
+DEBUG=* yarn workspace network-tests test-run src/scenarios/full.ts
 docker-compose down
 ```
 

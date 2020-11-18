@@ -20,7 +20,7 @@
 //!
 //! ```
 //! use frame_support::decl_module;
-//! use system::ensure_root;
+//! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
 //! pub trait Trait: discussions::Trait + membership::Trait {}
@@ -93,9 +93,9 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: system::Trait + membership::Trait {
+pub trait Trait: frame_system::Trait + membership::Trait {
     /// Discussion event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates post author id and origin combination
     type AuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -308,9 +308,9 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over system::block_number()
+    // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
+        <frame_system::Module<T>>::block_number()
     }
 
     fn ensure_thread_mode(

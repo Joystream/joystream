@@ -29,13 +29,13 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig,
-    VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    VersionedStorePermissionsConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -231,8 +231,8 @@ pub fn testnet_genesis(
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
-        system: Some(SystemConfig {
-            code: WASM_BINARY.to_vec(),
+        frame_system: Some(SystemConfig {
+            code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         }),
         pallet_balances: Some(BalancesConfig {
@@ -312,20 +312,22 @@ pub fn testnet_genesis(
         }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
             phantom: Default::default(),
-            storage_working_group_mint_capacity: 0,
+            working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
-            storage_working_group_mint_capacity: 0,
+            working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         content_directory: Some({
             ContentDirectoryConfig {
+                class_by_id: vec![],
+                entity_by_id: vec![],
                 curator_group_by_id: vec![],
                 next_class_id: 1,
                 next_entity_id: 1,
@@ -341,7 +343,7 @@ pub fn testnet_genesis(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::service::{new_full, new_light};
+    use crate::service::{new_full_base, new_light_base, NewFullBase};
     use sc_service_test;
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
@@ -415,8 +417,30 @@ pub(crate) mod tests {
     fn test_connectivity() {
         sc_service_test::connectivity(
             integration_test_config_with_two_authorities(),
-            |config| new_full(config),
-            |config| new_light(config),
+            |config| {
+                let NewFullBase {
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                    ..
+                } = new_full_base(config, |_, _| ())?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
+            |config| {
+                let (keep_alive, _, client, network, transaction_pool) = new_light_base(config)?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    keep_alive,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
         );
     }
 }

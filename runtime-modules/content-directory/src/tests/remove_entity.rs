@@ -27,7 +27,7 @@ fn remove_entity_success() {
         // Ensure number of entities_created under respective entity creation voucher decremented succesfully.
         let entity_voucher = EntityCreationVoucher::new(IndividualEntitiesCreationLimit::get());
 
-        let entity_controller = EntityController::from_actor(&actor);
+        let entity_controller = EntityController::<MemberId>::from_actor::<Runtime>(&actor);
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
@@ -292,5 +292,11 @@ fn remove_entity_rc_does_not_equal_to_zero() {
             Error::<Runtime>::EntityRcDoesNotEqualToZero,
             number_of_events_before_call,
         );
+
+        // Remove first entity, which have property values referencing second one.
+        assert_ok!(remove_entity(LEAD_ORIGIN, actor, FIRST_ENTITY_ID));
+
+        // Succesfully perform second entity removal
+        assert_ok!(remove_entity(LEAD_ORIGIN, actor, SECOND_ENTITY_ID));
     })
 }

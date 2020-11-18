@@ -32,3 +32,6 @@ yarn*
 
 # Istanbul report output
 **.nyc_output/
+
+# eslint cache
+**/.eslintcache

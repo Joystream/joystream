@@ -22,7 +22,7 @@ fn add_schema_support_to_non_existent_entity() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -68,7 +68,7 @@ fn add_schema_support_lead_auth_failed() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -114,7 +114,7 @@ fn add_schema_support_member_auth_failed() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -167,7 +167,7 @@ fn add_schema_support_curator_group_is_not_active() {
         ));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -213,7 +213,7 @@ fn add_schema_support_curator_auth_failed() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -260,7 +260,7 @@ fn add_schema_support_curator_not_found_in_curator_group() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -307,7 +307,7 @@ fn add_schema_support_access_denied() {
         );
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -391,7 +391,7 @@ fn add_schema_support_to_entity_class_property_not_found() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -442,7 +442,7 @@ fn add_schema_support_already_added_to_the_entity() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -501,7 +501,7 @@ fn add_schema_support_already_contains_given_property_id() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create first property
-        let first_property = Property::<Runtime>::default_with_name(
+        let first_property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -515,8 +515,8 @@ fn add_schema_support_already_contains_given_property_id() {
 
         // Create second property
         let second_property_type =
-            PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
-        let second_property = Property::<Runtime>::with_name_and_type(
+            PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
+        let second_property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize - 1,
             second_property_type,
             true,
@@ -583,7 +583,7 @@ fn add_schema_support_is_not_active() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -642,7 +642,7 @@ fn add_schema_support_does_not_contain_provided_property_id() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create first property
-        let first_property = Property::<Runtime>::default_with_name(
+        let first_property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -655,7 +655,7 @@ fn add_schema_support_does_not_contain_provided_property_id() {
         ));
 
         // Create second property
-        let second_property = Property::<Runtime>::default_with_name(
+        let second_property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize - 1,
         );
 
@@ -706,14 +706,14 @@ fn add_schema_support_missing_required_property() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create first property
-        let first_property = Property::<Runtime>::default_with_name(
+        let first_property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
         // Create second property
         let second_property_type =
-            PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
-        let second_property = Property::<Runtime>::with_name_and_type(
+            PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
+        let second_property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize - 1,
             second_property_type,
             true,
@@ -766,8 +766,8 @@ fn add_schema_support_dont_match_type() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
-        let property = Property::<Runtime>::with_name_and_type(
+        let property_type = PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize - 1,
             property_type,
             true,
@@ -836,9 +836,9 @@ fn add_schema_support_referenced_entity_does_not_match_class() {
         ));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -898,9 +898,9 @@ fn add_schema_support_referenced_entity_does_not_exist() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(SECOND_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(SECOND_CLASS_ID, true, 5);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -970,9 +970,9 @@ fn add_schema_support_entity_can_not_be_referenced() {
         ));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -1046,9 +1046,9 @@ fn add_schema_support_same_controller_constraint_violation() {
         ));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -1105,9 +1105,9 @@ fn add_schema_support_text_property_is_too_long() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
 
         // Create text property
-        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
+        let property_type = PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
@@ -1168,9 +1168,9 @@ fn add_schema_support_text_hash_property_is_too_long() {
 
         // Create hash property
         let property_type =
-            PropertyType::<Runtime>::single_text_hash(hashed_text_max_length_constraint);
+            PropertyType::<ClassId>::single_text_hash(hashed_text_max_length_constraint);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
@@ -1239,13 +1239,13 @@ fn add_schema_support_vec_property_is_too_long() {
         ));
 
         // Create vec property
-        let property_type = PropertyType::<Runtime>::vec_reference(
+        let property_type = PropertyType::<ClassId>::vec_reference(
             SECOND_CLASS_ID,
             true,
             VecMaxLengthConstraint::get(),
         );
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -1306,11 +1306,11 @@ fn add_schema_support_property_should_be_unique() {
         // Create second entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
 
-        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
+        let property_type = PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
 
         // Create text property
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
@@ -1382,11 +1382,11 @@ fn add_schema_support_properties_should_be_unique() {
         // Create third entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
 
-        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
+        let property_type = PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
 
         // Create text property
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,

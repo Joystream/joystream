@@ -3,7 +3,7 @@ mod mock;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
 use hiring::ActivateOpeningAt;
@@ -38,7 +38,7 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -382,18 +382,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
 #[test]
 fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
-        assert_eq!(
-            ProposalCodex::create_set_validator_count_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
-                3,
-                None,
-            ),
-            Err(Error::<Test>::InvalidValidatorCount.into())
-        );
+        staking::MinimumValidatorCount::put(10);
 
         assert_eq!(
             ProposalCodex::create_set_validator_count_proposal(
@@ -401,7 +390,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(1),
+                Some(<BalanceOf<Test>>::from(100_000_u32)),
                 3,
                 None,
             ),

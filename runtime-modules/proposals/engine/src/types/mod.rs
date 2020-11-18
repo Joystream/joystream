@@ -371,7 +371,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Trait> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -415,16 +415,16 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 // Simplification of the 'Proposal' type
 pub(crate) type ProposalOf<T> = Proposal<
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     BalanceOf<T>,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait> {
+pub trait StakingHandler<T: frame_system::Trait + membership::Trait + balances::Trait> {
     /// Locks the specified balance on the account using specific lock identifier.
     fn lock(account_id: &T::AccountId, amount: BalanceOf<T>);
 

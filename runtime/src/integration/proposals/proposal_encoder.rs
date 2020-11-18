@@ -47,15 +47,27 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             ),
+            // ********** Deprecated during the Babylon release.
+            ProposalDetails::DeprecatedSetLead(_) => {
+                print("Error: Calling deprecated SetLead encoding option.");
+                return Vec::new();
+            }
+            // ********** Deprecated during the Babylon release.
+            ProposalDetails::DeprecatedSetContentWorkingGroupMintCapacity(_) => {
+                print(
+                    "Error: Calling deprecated SetContentWorkingGroupMintCapacity encoding option.",
+                );
+                return Vec::new();
+            }
             // ********** Deprecated during the Nicaea release.
             // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::EvictStorageProvider(_) => {
+            ProposalDetails::DeprecatedEvictStorageProvider(_) => {
                 print("Error: Calling deprecated EvictStorageProvider encoding option.");
                 return Vec::new();
             }
             // ********** Deprecated during the Nicaea release.
             // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::SetStorageRoleParameters(_) => {
+            ProposalDetails::DeprecatedSetStorageRoleParameters(_) => {
                 print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
                 return Vec::new();
             }
@@ -132,7 +144,7 @@ struct Wg<T, I> {
 impl<T, I> Wg<T, I>
 where
     T: working_group::Trait<I>,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 {
     // Generic call constructor for the add working group opening.
     fn create_add_opening_call(

@@ -9,7 +9,7 @@ export interface ExtendedEnum<Types extends Record<string, Constructor>> extends
   type: keyof Types & string // More typesafe type for the original Enum property
 }
 
-export interface ExtendedEnumConstructor<Types extends Record<string, Constructor>>
+export interface ExtendedEnumConstructor<Types extends Record<string, Constructor> = Record<string, Constructor>>
   extends EnumConstructor<ExtendedEnum<Types>> {
   create<TypeKey extends keyof Types>(
     registry: Registry,

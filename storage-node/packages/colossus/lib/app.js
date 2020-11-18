@@ -35,7 +35,7 @@ const fileUploads = require('./middleware/file_uploads')
 const pagination = require('@joystream/storage-utils/pagination')
 
 // Configure app
-function createApp(projectRoot, storage, runtime) {
+function createApp(projectRoot, storage, runtime, discoveryClient, ipfsHttpGatewayUrl) {
   const app = express()
   app.use(cors())
   app.use(bodyParser.json())
@@ -59,6 +59,8 @@ function createApp(projectRoot, storage, runtime) {
     dependencies: {
       storage,
       runtime,
+      discoveryClient,
+      ipfsHttpGatewayUrl,
     },
   })
 

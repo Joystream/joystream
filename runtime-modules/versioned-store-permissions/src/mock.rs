@@ -27,7 +27,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -48,16 +48,18 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl versioned_store::Trait for Runtime {
@@ -90,7 +92,7 @@ pub struct MockCredentialChecker {}
 
 impl CredentialChecker<Runtime> for MockCredentialChecker {
     fn account_has_credential(
-        account_id: &<Runtime as system::Trait>::AccountId,
+        account_id: &<Runtime as frame_system::Trait>::AccountId,
         credential_id: <Runtime as Trait>::Credential,
     ) -> bool {
         if (credential_id as usize) < PRINCIPAL_GROUP_MEMBERS.len() {
@@ -114,7 +116,7 @@ pub struct MockCreateClassPermissionsChecker {}
 
 impl CreateClassPermissionsChecker<Runtime> for MockCreateClassPermissionsChecker {
     fn account_can_create_class_permissions(
-        account_id: &<Runtime as system::Trait>::AccountId,
+        account_id: &<Runtime as frame_system::Trait>::AccountId,
     ) -> bool {
         CLASS_PERMISSIONS_CREATORS
             .iter()
@@ -151,7 +153,7 @@ fn default_versioned_store_genesis_config() -> versioned_store::GenesisConfig {
 }
 
 fn build_test_externalities(config: versioned_store::GenesisConfig) -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
@@ -165,7 +167,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     build_test_externalities(versioned_store_config).execute_with(f)
 }
 
-// pub type System = system::Module;
+// pub type System = frame_system::Module;
 
 /// Export module on a test runtime
 pub type Permissions = Module<Runtime>;

@@ -64,11 +64,11 @@ mod tests;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
@@ -106,7 +106,7 @@ struct CreateProposalParameters<T: Trait> {
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
-    system::Trait
+    frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + membership::Trait
@@ -195,12 +195,12 @@ pub trait Trait:
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     >>::Balance;
 
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
@@ -271,14 +271,13 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalCodex{
+    pub trait Store for Module<T: Trait> as ProposalCodex {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
 
         /// Map proposal id to proposal details
-        pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
-            map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
+        pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
     }
 }
 
@@ -801,7 +800,7 @@ decl_module! {
 
             print("Runtime upgrade proposal execution started.");
 
-            <system::Module<T>>::set_code(origin, wasm)?;
+            <frame_system::Module<T>>::set_code(origin, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
         }

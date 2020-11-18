@@ -55,7 +55,7 @@
 //!
 //! ```
 //! use frame_support::{decl_module, print};
-//! use system::ensure_signed;
+//! use frame_system::ensure_signed;
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
@@ -130,18 +130,18 @@ use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, Wit
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
+use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
-use system::{ensure_root, RawOrigin};
 
 use common::origin::ActorOriginValidator;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: ActorOriginValidator<
@@ -204,7 +204,7 @@ decl_event!(
     where
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
-        <T as system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::BlockNumber,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -609,9 +609,9 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over system::block_number()
+    // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
+        <frame_system::Module<T>>::block_number()
     }
 
     // Executes proposal code.

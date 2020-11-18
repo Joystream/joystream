@@ -164,6 +164,9 @@ decl_error! {
         /// Curator under provided curator id is not a member of curaror group under given id
         CuratorIsNotAMemberOfGivenCuratorGroup,
 
+        /// Curator under provided curator id is already a member of curaror group under given id
+        CuratorIsAlreadyAMemberOfGivenCuratorGroup,
+
         /// Given curator group does not exist
         CuratorGroupDoesNotExist,
 

@@ -1,89 +1,228 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { ApiMethodArg, ApiMethodNamedArgs } from '../../Types'
+import { GroupMember } from '../../Types'
 import chalk from 'chalk'
-import { flags } from '@oclif/command'
 import { apiModuleByGroup } from '../../Api'
-import WorkerOpeningOptions from '../../promptOptions/addWorkerOpening'
-import { setDefaults } from '../../helpers/promptOptions'
+import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
+import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
+import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
+import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
+import WGOpeningSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
+import { WorkingGroupOpening as WGOpeningJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
+import _ from 'lodash'
+import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
+import Ajv from 'ajv'
+import ExitCodes from '../../ExitCodes'
+import { flags } from '@oclif/command'
+import { createType } from '@joystream/types'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
   static flags = {
     ...WorkingGroupsCommandBase.flags,
-    useDraft: flags.boolean({
-      char: 'd',
+    input: IOFlags.input,
+    output: flags.string({
+      char: 'o',
+      required: false,
+      description: 'Path to the file where the output JSON should be saved (this output can be then reused as input)',
+    }),
+    edit: flags.boolean({
+      char: 'e',
+      required: false,
       description:
-        'Whether to create the opening from existing draft.\n' +
-        'If provided without --draftName - the list of choices will be displayed.',
+        'If provided along with --input - launches in edit mode allowing to modify the input before sending the exstinsic',
+      dependsOn: ['input'],
     }),
-    draftName: flags.string({
-      char: 'n',
-      description: 'Name of the draft to create the opening from.',
-      dependsOn: ['useDraft'],
-    }),
-    createDraftOnly: flags.boolean({
-      char: 'c',
+    dryRun: flags.boolean({
+      required: false,
       description:
-        'If provided - the extrinsic will not be executed. Use this flag if you only want to create a draft.',
+        'If provided along with --output - skips sending the actual extrinsic' +
+        '(can be used to generate a "draft" which can be provided as input later)',
+      dependsOn: ['output'],
     }),
-    skipPrompts: flags.boolean({
-      char: 's',
-      description: 'Whether to skip all prompts when adding from draft (will use all default values)',
-      dependsOn: ['useDraft'],
-      exclusive: ['createDraftOnly'],
-    }),
+  }
+
+  getHRTDefaults(memberHandle: string): HRTJson {
+    const groupName = _.startCase(this.group)
+    return {
+      version: 1,
+      headline: `Looking for ${groupName}!`,
+      job: {
+        title: groupName,
+        description: `Become part of the ${groupName} Group! This is a great opportunity to support Joystream!`,
+      },
+      application: {
+        sections: [
+          {
+            title: 'About you',
+            questions: [
+              {
+                title: 'Your name',
+                type: 'text',
+              },
+              {
+                title: 'What makes you a good fit for the job?',
+                type: 'text area',
+              },
+            ],
+          },
+        ],
+      },
+      reward: '10k JOY per 3600 blocks',
+      creator: {
+        membership: {
+          handle: memberHandle,
+        },
+      },
+    }
+  }
+
+  createTxParams(wgOpeningJson: WGOpeningJson, hrtJson: HRTJson) {
+    return [
+      wgOpeningJson.activateAt,
+      createType('WorkingGroupOpeningPolicyCommitment', {
+        max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
+        application_rationing_policy: wgOpeningJson.maxActiveApplicants
+          ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }
+          : null,
+        application_staking_policy: wgOpeningJson.applicationStake
+          ? {
+              amount: wgOpeningJson.applicationStake.value,
+              amount_mode: wgOpeningJson.applicationStake.mode,
+            }
+          : null,
+        role_staking_policy: wgOpeningJson.roleStake
+          ? {
+              amount: wgOpeningJson.roleStake.value,
+              amount_mode: wgOpeningJson.roleStake.mode,
+            }
+          : null,
+        terminate_role_stake_unstaking_period: wgOpeningJson.terminateRoleUnstakingPeriod,
+        exit_role_stake_unstaking_period: wgOpeningJson.leaveRoleUnstakingPeriod,
+      }),
+      JSON.stringify(hrtJson),
+      createType('OpeningType', 'Worker'),
+    ]
+  }
+
+  async promptForData(
+    lead: GroupMember,
+    rememberedInput?: [WGOpeningJson, HRTJson]
+  ): Promise<[WGOpeningJson, HRTJson]> {
+    const openingDefaults = rememberedInput?.[0]
+    const openingPrompt = new JsonSchemaPrompter<WGOpeningJson>(
+      (WGOpeningSchema as unknown) as JSONSchema,
+      openingDefaults
+    )
+    const wgOpeningJson = await openingPrompt.promptAll()
+
+    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(lead.profile.handle.toString())
+    this.log(`Values for ${chalk.greenBright('human_readable_text')} json:`)
+    const hrtPropmpt = new JsonSchemaPrompter<HRTJson>((HRTSchema as unknown) as JSONSchema, hrtDefaults)
+    // Prompt only for 'headline', 'job', 'application', 'reward' and 'process', leave the rest default
+    const headline = await hrtPropmpt.promptSingleProp('headline')
+    this.log('General information about the job:')
+    const job = await hrtPropmpt.promptSingleProp('job')
+    this.log('Application form sections and questions:')
+    const application = await hrtPropmpt.promptSingleProp('application')
+    this.log('Reward displayed in the opening box:')
+    const reward = await hrtPropmpt.promptSingleProp('reward')
+    this.log('Hiring process details (additional information)')
+    const process = await hrtPropmpt.promptSingleProp('process')
+
+    const hrtJson = { ...hrtDefaults, job, headline, application, reward, process }
+
+    return [wgOpeningJson, hrtJson]
+  }
+
+  async getInputFromFile(filePath: string): Promise<[WGOpeningJson, HRTJson]> {
+    const ajv = new Ajv({ allErrors: true })
+    const inputParams = await getInputJson<[WGOpeningJson, HRTJson]>(filePath)
+    if (!Array.isArray(inputParams) || inputParams.length !== 2) {
+      this.error('Invalid input file', { exit: ExitCodes.InvalidInput })
+    }
+    const [openingJson, hrtJson] = inputParams
+    if (!ajv.validate(WGOpeningSchema, openingJson)) {
+      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'openingJson', separator: '\n' })}`, {
+        exit: ExitCodes.InvalidInput,
+      })
+    }
+    if (!ajv.validate(HRTSchema, hrtJson)) {
+      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'hrtJson', separator: '\n' })}`, {
+        exit: ExitCodes.InvalidInput,
+      })
+    }
+
+    return [openingJson, hrtJson]
   }
 
   async run() {
     const account = await this.getRequiredSelectedAccount()
     // lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLead()
+    await this.requestAccountDecoding(account) // Prompt for password
 
-    const { flags } = this.parse(WorkingGroupsCreateOpening)
+    const {
+      flags: { input, output, edit, dryRun },
+    } = this.parse(WorkingGroupsCreateOpening)
 
-    const promptOptions = new WorkerOpeningOptions()
-    let defaultValues: ApiMethodNamedArgs | undefined
-    if (flags.useDraft) {
-      const draftName = flags.draftName || (await this.promptForOpeningDraft())
-      defaultValues = await this.loadOpeningDraftParams(draftName)
-      setDefaults(promptOptions, defaultValues)
-    }
+    ensureOutputFileIsWriteable(output)
 
-    if (!flags.skipPrompts) {
-      const module = apiModuleByGroup[this.group]
-      const method = 'addOpening'
+    let tryAgain = false
+    let rememberedInput: [WGOpeningJson, HRTJson] | undefined
+    do {
+      if (edit) {
+        rememberedInput = await this.getInputFromFile(input as string)
+      }
+      // Either prompt for the data or get it from input file
+      const [openingJson, hrtJson] =
+        !input || edit || tryAgain
+          ? await this.promptForData(lead, rememberedInput)
+          : await this.getInputFromFile(input)
 
-      let saveDraft = false
-      let params: ApiMethodArg[]
-      if (flags.createDraftOnly) {
-        params = await this.promptForExtrinsicParams(module, method, promptOptions)
-        saveDraft = true
-      } else {
-        await this.requestAccountDecoding(account) // Prompt for password
-        params = await this.buildAndSendExtrinsic(account, module, method, promptOptions, true)
+      // Remember the provided/fetched data in a variable
+      rememberedInput = [openingJson, hrtJson]
 
-        saveDraft = await this.simplePrompt({
-          message: 'Do you wish to save this opening as draft?',
-          type: 'confirm',
-        })
+      // Generate and ask to confirm tx params
+      const txParams = this.createTxParams(openingJson, hrtJson)
+      this.jsonPrettyPrint(JSON.stringify(txParams))
+      const confirmed = await this.simplePrompt({
+        type: 'confirm',
+        message: 'Do you confirm these extrinsic parameters?',
+      })
+      if (!confirmed) {
+        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+        continue
       }
 
-      if (saveDraft) {
-        const draftName = await this.promptForNewOpeningDraftName()
-        this.saveOpeningDraft(draftName, params)
-
-        this.log(chalk.green(`Opening draft ${chalk.white(draftName)} succesfully saved!`))
+      // Save output to file
+      if (output) {
+        try {
+          saveOutputJsonToFile(output, rememberedInput)
+          this.log(chalk.green(`Output succesfully saved in: ${chalk.white(output)}!`))
+        } catch (e) {
+          this.warn(`Could not save output to ${output}!`)
+        }
       }
-    } else {
-      await this.requestAccountDecoding(account) // Prompt for password
+
+      if (dryRun) {
+        this.exit(ExitCodes.OK)
+      }
+
+      // Send the tx
       this.log(chalk.white('Sending the extrinsic...'))
-      await this.sendExtrinsic(
+      const txSuccess = await this.sendAndFollowTx(
         account,
-        apiModuleByGroup[this.group],
-        'addOpening',
-        defaultValues!.map((v) => v.value)
+        this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams),
+        true // warnOnly
       )
-      this.log(chalk.green('Opening succesfully created!'))
-    }
+
+      // Display a success message on success or ask to try again on error
+      if (txSuccess) {
+        this.log(chalk.green('Opening succesfully created!'))
+        tryAgain = false
+      } else {
+        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+      }
+    } while (tryAgain)
   }
 }
