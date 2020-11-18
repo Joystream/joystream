@@ -1,3 +1,4 @@
+import { SerializedStyles } from '@emotion/core'
 import React, { useRef } from 'react'
 
 import { useGlider, GliderProps } from '../Glider'
@@ -7,12 +8,14 @@ import { Container, GliderContainer, Arrow, Track, BackgroundGradient } from './
 type CarouselProps = {
   trackPadding?: string
   className?: string
+  arrowCss?: SerializedStyles
 } & GliderProps
 
 const Carousel: React.FC<CarouselProps> = ({
   children,
   trackPadding = '0',
   className = '',
+  arrowCss,
   slidesToShow = 'auto',
   ...gliderOptions
 }) => {
@@ -27,12 +30,12 @@ const Carousel: React.FC<CarouselProps> = ({
   })
   return (
     <Container {...getContainerProps({ className })}>
-      <Arrow {...getPrevArrowProps()} icon="chevron-left" ref={prevArrowRef} />
+      <Arrow {...getPrevArrowProps()} icon="chevron-left" ref={prevArrowRef} css={arrowCss} />
       <BackgroundGradient direction="prev" />
       <GliderContainer {...getGliderProps()} ref={ref}>
         <Track {...getTrackProps({ trackPadding })}>{children}</Track>
       </GliderContainer>
-      <Arrow {...getNextArrowProps()} icon="chevron-right" ref={nextArrowRef} />
+      <Arrow {...getNextArrowProps()} icon="chevron-right" ref={nextArrowRef} css={arrowCss} />
       <BackgroundGradient direction="next" />
     </Container>
   )
