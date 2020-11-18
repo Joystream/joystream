@@ -38,13 +38,13 @@ export const categoryPropertyNamesWithId: IPropertyWithId = {
 }
 
 export const channelPropertyNamesWithId: IPropertyWithId = {
-  0: { name: 'title', type: 'string', required: false },
+  0: { name: 'handle', type: 'string', required: true },
   1: { name: 'description', type: 'string', required: false },
   2: { name: 'coverPhotoURL', type: 'string', required: false },
   3: { name: 'avatarPhotoURL', type: 'string', required: false },
   4: { name: 'isPublic', type: 'boolean', required: true },
   5: { name: 'isCurated', type: 'boolean', required: false },
-  6: { name: 'language', type: 'number', required: true },
+  6: { name: 'language', type: 'number', required: false },
 }
 
 export const licensePropertyNamesWithId: IPropertyWithId = {
