@@ -11,16 +11,17 @@ use std::{fs, path::Path};
 type CategoryId = <Runtime as forum::Trait>::CategoryId;
 type ForumUserId = <Runtime as forum::Trait>::ForumUserId;
 type ModeratorId = <Runtime as forum::Trait>::ModeratorId;
+type ThreadOf = (
+    CategoryId,
+    ThreadId,
+    Thread<ForumUserId, CategoryId, Moment, H256>,
+);
 
 #[derive(Decode)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, H256>)>,
     posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, H256>)>,
-    threads: Vec<(
-        CategoryId,
-        ThreadId,
-        Thread<ForumUserId, CategoryId, Moment, H256>,
-    )>,
+    threads: Vec<ThreadOf>,
     category_by_moderator: Vec<(CategoryId, ModeratorId, ())>,
     poll_items_constraint: InputValidationLengthConstraint,
     data_migration_done: bool,
