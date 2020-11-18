@@ -63,7 +63,7 @@ mod tests;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print, StorageValue};
+use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
@@ -79,7 +79,7 @@ use proposals_engine::{
 };
 
 pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
+    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
 };
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
@@ -120,15 +120,76 @@ pub trait Trait:
     /// Defines max wasm code length of the runtime upgrade proposal.
     type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
 
-    /// Validates member id and origin combination
+    /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
-    /// Encodes the proposal usint its details
+    /// Encodes the proposal usint its details.
     type ProposalEncoder: ProposalEncoder<Self>;
+
+    /// 'Set validator count' proposal parameters.
+    type SetValidatorCountProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Runtime upgrade' proposal parameters.
+    type RuntimeUpgradeProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Text' proposal parameters.
+    type TextProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// 'Spending' proposal parameters.
+    type SpendingProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// 'Add working group opening' proposal parameters.
+    type AddWorkingGroupOpeningProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Begin review working group applications' proposal parameters.
+    type BeginReviewWorkingGroupApplicationsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Fill working group opening' proposal parameters.
+    type FillWorkingGroupOpeningProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Set working group mint capacity' proposal parameters.
+    type SetWorkingGroupMintCapacityProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Decrease working group leader stake' proposal parameters.
+    type DecreaseWorkingGroupLeaderStakeProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Slash working group leader stake' proposal parameters.
+    type SlashWorkingGroupLeaderStakeProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Set working group leader reward' proposal parameters.
+    type SetWorkingGroupLeaderRewardProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Terminate working group leader role' proposal parameters.
+    type TerminateWorkingGroupLeaderRoleProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Amend constitution' proposal parameters.
+    type AmendConstitutionProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
@@ -218,100 +279,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
-
-        /// Voting period for the 'set validator count' proposal
-        pub SetValidatorCountProposalVotingPeriod get(fn set_validator_count_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set validator count' proposal
-        pub SetValidatorCountProposalGracePeriod get(fn set_validator_count_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'runtime upgrade' proposal
-        pub RuntimeUpgradeProposalVotingPeriod get(fn runtime_upgrade_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'runtime upgrade' proposal
-        pub RuntimeUpgradeProposalGracePeriod get(fn runtime_upgrade_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'text' proposal
-        pub TextProposalVotingPeriod get(fn text_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'text' proposal
-        pub TextProposalGracePeriod get(fn text_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'spending' proposal
-        pub SpendingProposalVotingPeriod get(fn spending_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'spending' proposal
-        pub SpendingProposalGracePeriod get(fn spending_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'add working group opening' proposal
-        pub AddWorkingGroupOpeningProposalVotingPeriod get(fn add_working_group_opening_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'add working group opening' proposal
-        pub AddWorkingGroupOpeningProposalGracePeriod get(fn add_working_group_opening_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'begin review working group leader applications' proposal
-        pub BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod get(fn begin_review_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'begin review working group leader applications' proposal
-        pub BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod get(fn begin_review_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'fill working group leader opening' proposal
-        pub FillWorkingGroupLeaderOpeningProposalVotingPeriod get(fn fill_working_group_leader_opening_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'fill working group leader opening' proposal
-        pub FillWorkingGroupLeaderOpeningProposalGracePeriod get(fn fill_working_group_leader_opening_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'set working group mint capacity' proposal
-        pub SetWorkingGroupMintCapacityProposalVotingPeriod get(fn set_working_group_mint_capacity_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set working group mint capacity' proposal
-        pub SetWorkingGroupMintCapacityProposalGracePeriod get(fn set_working_group_mint_capacity_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'decrease working group leader stake' proposal
-        pub DecreaseWorkingGroupLeaderStakeProposalVotingPeriod get(fn decrease_working_group_leader_stake_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'decrease working group leader stake' proposal
-        pub DecreaseWorkingGroupLeaderStakeProposalGracePeriod get(fn decrease_working_group_leader_stake_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'slash working group leader stake' proposal
-        pub SlashWorkingGroupLeaderStakeProposalVotingPeriod get(fn slash_working_group_leader_stake_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'slash working group leader stake' proposal
-        pub SlashWorkingGroupLeaderStakeProposalGracePeriod get(fn slash_working_group_leader_stake_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'set working group leader reward' proposal
-        pub SetWorkingGroupLeaderRewardProposalVotingPeriod get(fn set_working_group_leader_reward_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set working group leader reward' proposal
-        pub SetWorkingGroupLeaderRewardProposalGracePeriod get(fn set_working_group_leader_reward_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'terminate working group leader role' proposal
-        pub TerminateWorkingGroupLeaderRoleProposalVotingPeriod get(fn terminate_working_group_leader_role_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'terminate working group leader role' proposal
-        pub TerminateWorkingGroupLeaderRoleProposalGracePeriod get(fn terminate_working_group_leader_role_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'amend constitution' proposal
-        pub AmendConstitutionProposalVotingPeriod get(fn amend_constitution_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'amend constitution' proposal
-        pub AmendConstitutionProposalGracePeriod get(fn amend_constitution_proposal_grace_period)
-            config(): T::BlockNumber;
     }
 }
 
@@ -321,20 +288,63 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T>;
 
+        /// Exports 'Set validator count' proposal parameters.
+        const SetValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetValidatorCountProposalParameters::get();
+
+        /// Exports 'Runtime upgrade' proposal parameters.
+        const RuntimeUpgradeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::RuntimeUpgradeProposalParameters::get();
+
+        /// Exports 'Text' proposal parameters.
+        const TextProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::TextProposalParameters::get();
+
+        /// Exports 'Spending' proposal parameters.
+        const SpendingProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SpendingProposalParameters::get();
+
+        /// Exports 'Add working group opening' proposal parameters.
+        const AddWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::AddWorkingGroupOpeningProposalParameters::get();
+
+        /// Exports 'Begin review working group applications' proposal parameters.
+        const BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::BeginReviewWorkingGroupApplicationsProposalParameters::get();
+
+        /// Exports 'Fill working group opening' proposal parameters.
+        const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::FillWorkingGroupOpeningProposalParameters::get();
+
+        /// Exports 'Set working group mint capacity' proposal parameters.
+        const SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupMintCapacityProposalParameters::get();
+
+        /// Exports 'Decrease working group leader stake' proposal parameters.
+        const DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::DecreaseWorkingGroupLeaderStakeProposalParameters::get();
+
+        /// Exports 'Slash working group leader stake' proposal parameters.
+        const SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SlashWorkingGroupLeaderStakeProposalParameters::get();
+
+        /// Exports 'Set working group leader reward' proposal parameters.
+        const SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupLeaderRewardProposalParameters::get();
+
+        /// Exports 'Terminate working group leader role' proposal parameters.
+        const TerminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::TerminateWorkingGroupLeaderRoleProposalParameters::get();
+
+        /// Exports 'Amend constitution' proposal parameters.
+        const AmendConstitutionProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::AmendConstitutionProposalParameters::get();
+
         /// Exports max allowed text proposal length const.
         const TextProposalMaxLength: u32 = T::TextProposalMaxLength::get();
 
         /// Exports max wasm code length of the runtime upgrade proposal const.
         const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
-
-        // Runtime upgrade summary:
-        //  - add values for the new 'amend constitution' proposal.
-        fn on_runtime_upgrade() -> frame_support::weights::Weight {
-            <AmendConstitutionProposalVotingPeriod<T>>::put::<T::BlockNumber>(72_000u32.into());
-            <AmendConstitutionProposalGracePeriod<T>>::put::<T::BlockNumber>(0u32.into());
-
-            10_000_000u64 // TODO: adjust weight
-        }
 
         /// Create 'Text (signal)' proposal type.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -359,7 +369,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::text_proposal::<T>(),
+                proposal_parameters: T::TextProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block
             };
@@ -391,7 +401,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::runtime_upgrade_proposal::<T>(),
+                proposal_parameters: T::RuntimeUpgradeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -426,7 +436,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
+                proposal_parameters: T::SpendingProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -464,7 +474,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
+                proposal_parameters: T::SetValidatorCountProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -492,7 +502,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::add_working_group_leader_opening_proposal::<T>(),
+                proposal_parameters: T::AddWorkingGroupOpeningProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -521,7 +531,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<T>(),
+                proposal_parameters: T::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -554,7 +564,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
+                proposal_parameters: T::FillWorkingGroupOpeningProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -588,7 +598,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
+                proposal_parameters: T::SetWorkingGroupMintCapacityProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -625,7 +635,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
+                proposal_parameters: T::DecreaseWorkingGroupLeaderStakeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -662,7 +672,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
+                proposal_parameters: T::SlashWorkingGroupLeaderStakeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -697,7 +707,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
+                proposal_parameters: T::SetWorkingGroupLeaderRewardProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -726,7 +736,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::terminate_working_group_leader_role_proposal::<T>(),
+                proposal_parameters: T::TerminateWorkingGroupLeaderRoleProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -755,7 +765,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::amend_constitution_proposal::<T>(),
+                proposal_parameters: T::AmendConstitutionProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -837,89 +847,6 @@ impl<T: Trait> Module<T> {
         <ProposalDetailsByProposalId<T>>::insert(proposal_id, params.proposal_details);
 
         Ok(())
-    }
-
-    /// Sets config values for the proposals.
-    /// Should be called on the migration to the new runtime version.
-    pub fn set_config_values(p: ProposalsConfigParameters) {
-        <SetValidatorCountProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_validator_count_proposal_voting_period,
-        ));
-        <SetValidatorCountProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_validator_count_proposal_grace_period,
-        ));
-        <RuntimeUpgradeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.runtime_upgrade_proposal_voting_period,
-        ));
-        <RuntimeUpgradeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.runtime_upgrade_proposal_grace_period,
-        ));
-        <TextProposalVotingPeriod<T>>::put(T::BlockNumber::from(p.text_proposal_voting_period));
-        <TextProposalGracePeriod<T>>::put(T::BlockNumber::from(p.text_proposal_grace_period));
-        <SpendingProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.spending_proposal_voting_period,
-        ));
-        <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.spending_proposal_grace_period,
-        ));
-        <AddWorkingGroupOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.add_working_group_opening_proposal_voting_period,
-        ));
-        <AddWorkingGroupOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.add_working_group_opening_proposal_grace_period,
-        ));
-        <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(
-            T::BlockNumber::from(
-                p.begin_review_working_group_leader_applications_proposal_voting_period,
-            ),
-        );
-        <BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod<T>>::put(
-            T::BlockNumber::from(
-                p.begin_review_working_group_leader_applications_proposal_grace_period,
-            ),
-        );
-        <FillWorkingGroupLeaderOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.fill_working_group_leader_opening_proposal_voting_period,
-        ));
-        <FillWorkingGroupLeaderOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.fill_working_group_leader_opening_proposal_grace_period,
-        ));
-        <SetWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_mint_capacity_proposal_voting_period,
-        ));
-        <SetWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_mint_capacity_proposal_grace_period,
-        ));
-        <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.decrease_working_group_leader_stake_proposal_voting_period,
-        ));
-        <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.decrease_working_group_leader_stake_proposal_grace_period,
-        ));
-        <SlashWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.slash_working_group_leader_stake_proposal_voting_period,
-        ));
-        <SlashWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.slash_working_group_leader_stake_proposal_grace_period,
-        ));
-        <SetWorkingGroupLeaderRewardProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_leader_reward_proposal_voting_period,
-        ));
-        <SetWorkingGroupLeaderRewardProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_leader_reward_proposal_grace_period,
-        ));
-        <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.terminate_working_group_leader_role_proposal_voting_period,
-        ));
-        <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.terminate_working_group_leader_role_proposal_grace_period,
-        ));
-        <AmendConstitutionProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.amend_constitution_proposal_voting_period,
-        ));
-        <AmendConstitutionProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.amend_constitution_proposal_grace_period,
-        ));
     }
 }
 

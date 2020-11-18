@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-discussion'
-version = '3.0.1'
+version = '4.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 

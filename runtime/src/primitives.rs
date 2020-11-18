@@ -1,7 +1,6 @@
 //! Low-level types used throughout the Substrate code.
 
 #![warn(missing_docs)]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_runtime::{

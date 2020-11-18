@@ -577,6 +577,8 @@ fn spending_proposal_execution_succeeds() {
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+        run_to_block(14410);
+
         assert_eq!(Balances::free_balance(converted_account_id), new_balance);
     });
 }
@@ -602,6 +604,8 @@ fn set_validator_count_proposal_execution_succeeds() {
             )
         });
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        run_to_block(14410);
 
         assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
     });

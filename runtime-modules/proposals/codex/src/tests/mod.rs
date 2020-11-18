@@ -10,7 +10,6 @@ use hiring::ActivateOpeningAt;
 use proposals_engine::ProposalParameters;
 use working_group::OpeningPolicyCommitment;
 
-use crate::proposal_types::ProposalsConfigParameters;
 use crate::*;
 use crate::{Error, ProposalDetails};
 pub use mock::*;
@@ -129,7 +128,7 @@ fn create_text_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::text_proposal::<Test>(),
+            proposal_parameters: <Test as crate::Trait>::TextProposalParameters::get(),
             proposal_details: ProposalDetails::Text(b"text".to_vec()),
         };
         proposal_fixture.check_all();
@@ -209,7 +208,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::runtime_upgrade_proposal::<Test>(),
+            proposal_parameters: <Test as crate::Trait>::RuntimeUpgradeProposalParameters::get(),
             proposal_details: ProposalDetails::RuntimeUpgrade(b"wasm".to_vec()),
         };
         proposal_fixture.check_all();
@@ -292,7 +291,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::spending_proposal::<Test>(),
+            proposal_parameters: <Test as crate::Trait>::SpendingProposalParameters::get(),
             proposal_details: ProposalDetails::Spending(100, 2),
         };
         proposal_fixture.check_all();
@@ -373,9 +372,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::set_validator_count_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::SetValidatorCountProposalParameters::get(),
             proposal_details: ProposalDetails::SetValidatorCount(4),
         };
         proposal_fixture.check_all();
@@ -409,115 +406,6 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 None,
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
-        );
-    });
-}
-
-#[test]
-fn set_default_proposal_parameters_succeeded() {
-    initial_test_ext().execute_with(|| {
-        let p = ProposalsConfigParameters::default();
-
-        // nothing is set
-        assert_eq!(<SetValidatorCountProposalVotingPeriod<Test>>::get(), 0);
-
-        ProposalCodex::set_config_values(p);
-
-        assert_eq!(
-            <SetValidatorCountProposalVotingPeriod<Test>>::get(),
-            p.set_validator_count_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetValidatorCountProposalGracePeriod<Test>>::get(),
-            p.set_validator_count_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <RuntimeUpgradeProposalVotingPeriod<Test>>::get(),
-            p.runtime_upgrade_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <RuntimeUpgradeProposalGracePeriod<Test>>::get(),
-            p.runtime_upgrade_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <TextProposalVotingPeriod<Test>>::get(),
-            p.text_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <TextProposalGracePeriod<Test>>::get(),
-            p.text_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SpendingProposalVotingPeriod<Test>>::get(),
-            p.spending_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SpendingProposalGracePeriod<Test>>::get(),
-            p.spending_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <AddWorkingGroupOpeningProposalVotingPeriod<Test>>::get(),
-            p.add_working_group_opening_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <AddWorkingGroupOpeningProposalGracePeriod<Test>>::get(),
-            p.add_working_group_opening_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<Test>>::get(),
-            p.begin_review_working_group_leader_applications_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod<Test>>::get(),
-            p.begin_review_working_group_leader_applications_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <FillWorkingGroupLeaderOpeningProposalVotingPeriod<Test>>::get(),
-            p.fill_working_group_leader_opening_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <FillWorkingGroupLeaderOpeningProposalGracePeriod<Test>>::get(),
-            p.fill_working_group_leader_opening_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
-            p.set_working_group_mint_capacity_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
-            p.set_working_group_mint_capacity_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<Test>>::get(),
-            p.decrease_working_group_leader_stake_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<Test>>::get(),
-            p.decrease_working_group_leader_stake_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SlashWorkingGroupLeaderStakeProposalVotingPeriod<Test>>::get(),
-            p.slash_working_group_leader_stake_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SlashWorkingGroupLeaderStakeProposalGracePeriod<Test>>::get(),
-            p.slash_working_group_leader_stake_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetWorkingGroupLeaderRewardProposalVotingPeriod<Test>>::get(),
-            p.set_working_group_leader_reward_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetWorkingGroupLeaderRewardProposalGracePeriod<Test>>::get(),
-            p.set_working_group_leader_reward_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<Test>>::get(),
-            p.terminate_working_group_leader_role_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <TerminateWorkingGroupLeaderRoleProposalGracePeriod<Test>>::get(),
-            p.terminate_working_group_leader_role_proposal_grace_period as u64
         );
     });
 }
@@ -577,10 +465,11 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::add_working_group_leader_opening_proposal::<
-                Test,
-            >(),
-            proposal_details: ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters.clone()),
+            proposal_parameters:
+                <Test as crate::Trait>::AddWorkingGroupOpeningProposalParameters::get(),
+            proposal_details: ProposalDetails::AddWorkingGroupLeaderOpening(
+                add_opening_parameters.clone(),
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -641,9 +530,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
  					None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
             proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
                 working_group),
         };
@@ -708,10 +595,11 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::fill_working_group_leader_opening_proposal::<
-                Test,
-            >(),
-            proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters.clone()),
+            proposal_parameters:
+                <Test as crate::Trait>::FillWorkingGroupOpeningProposalParameters::get(),
+            proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(
+                fill_opening_parameters.clone(),
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -799,8 +687,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
-                ),
+                <Test as crate::Trait>::SetWorkingGroupMintCapacityProposalParameters::get(),
             proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(10, working_group),
         };
         proposal_fixture.check_all();
@@ -862,9 +749,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::decrease_working_group_leader_stake_proposal::<
-                    Test,
-                >(),
+                <Test as crate::Trait>::DecreaseWorkingGroupLeaderStakeProposalParameters::get(),
             proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 10,
                 10,
@@ -900,7 +785,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -913,7 +798,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             successful_call: || {
@@ -926,18 +811,12 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     10,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::slash_working_group_leader_stake_proposal::<
-                    Test,
-                >(),
-            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
-                10,
-                10,
-                working_group,
-            ),
+                <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
+            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group),
         };
         proposal_fixture.check_all();
     });
@@ -1068,8 +947,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::set_working_group_leader_reward_proposal::<Test>(
-                ),
+                <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
             proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(10, 10, working_group),
         };
         proposal_fixture.check_all();
@@ -1132,9 +1010,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::terminate_working_group_leader_role_proposal::<
-                    Test,
-                >(),
+                <Test as crate::Trait>::TerminateWorkingGroupLeaderRoleProposalParameters::get(),
             proposal_details: ProposalDetails::TerminateWorkingGroupLeaderRole(
                 terminate_role_parameters.clone(),
             ),
@@ -1182,9 +1058,7 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::amend_constitution_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::AmendConstitutionProposalParameters::get(),
             proposal_details: ProposalDetails::AmendConstitution(b"constitution text".to_vec()),
         };
         proposal_fixture.check_all();

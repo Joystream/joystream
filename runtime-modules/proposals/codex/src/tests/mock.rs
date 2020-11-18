@@ -12,7 +12,7 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 pub use system;
 
-use crate::{ProposalDetailsOf, ProposalEncoder};
+use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
@@ -250,11 +250,41 @@ impl staking::SessionInterface<u64> for Test {
     }
 }
 
+parameter_types! {
+    pub DefaultProposalParameters: ProposalParameters<u64, u64> = default_proposal_parameters();
+}
+
+pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 66,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
+        constitutionality: 1,
+    }
+}
+
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
+    type SetValidatorCountProposalParameters = DefaultProposalParameters;
+    type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
+    type TextProposalParameters = DefaultProposalParameters;
+    type SpendingProposalParameters = DefaultProposalParameters;
+    type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
+    type BeginReviewWorkingGroupApplicationsProposalParameters = DefaultProposalParameters;
+    type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
+    type SetWorkingGroupMintCapacityProposalParameters = DefaultProposalParameters;
+    type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
+    type SlashWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
+    type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
+    type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
+    type AmendConstitutionProposalParameters = DefaultProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {
