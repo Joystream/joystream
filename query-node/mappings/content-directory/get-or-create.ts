@@ -13,7 +13,7 @@ import { NextEntityId } from '../../generated/graphql-server/src/modules/next-en
 
 import { decode } from './decode'
 import {
-  CategoryPropertyNamesWithId,
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
@@ -264,7 +264,7 @@ async function category(
   const { properties } = findEntity(entityId, 'Category', classEntityMap)
   return await createCategory(
     { db, block, id },
-    decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId)
+    decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId)
   )
 }
 
