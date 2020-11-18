@@ -1,0 +1,13 @@
+{
+  "env": {
+    "node": true,
+    "mocha": true,
+    "commonjs": true
+  },
+  // Globals provided by Truffle:
+  "globals": {
+    "artifacts": true,
+    "web3": true,
+    "assert": true
+  }
+}

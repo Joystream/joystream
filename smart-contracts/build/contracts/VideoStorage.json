@@ -1,0 +1,3873 @@
+{
+  "contractName": "VideoStorage",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "name": "videoCountByChannelId",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "_channelId",
+          "type": "uint64"
+        }
+      ],
+      "name": "addVideo",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "_videoId",
+          "type": "uint64"
+        }
+      ],
+      "name": "getExistingVideo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "channelId",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isExisting",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Video",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "_videoId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isActive",
+          "type": "bool"
+        }
+      ],
+      "name": "updateStatus",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "_videoId",
+          "type": "uint64"
+        }
+      ],
+      "name": "removeVideo",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_channelId\",\"type\":\"uint64\"}],\"name\":\"addVideo\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_videoId\",\"type\":\"uint64\"}],\"name\":\"getExistingVideo\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"channelId\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"isActive\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isExisting\",\"type\":\"bool\"}],\"internalType\":\"struct Video\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_videoId\",\"type\":\"uint64\"}],\"name\":\"removeVideo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_videoId\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"_isActive\",\"type\":\"bool\"}],\"name\":\"updateStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"videoCountByChannelId\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/leszek/projects/joystream/joystream/smart-contracts/contracts/storage/VideoStorage.sol\":\"VideoStorage\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":1},\"remappings\":[]},\"sources\":{\"/home/leszek/projects/joystream/joystream/smart-contracts/contracts/lib/SafeMath64.sol\":{\"keccak256\":\"0x8bc82907895f53b4869d0eb1339c36dd119e8e8e7befd1d421f6d4a174d8fb94\",\"urls\":[\"bzz-raw://203dddf705e0e2fdff34da4c82b475ad2a7eb104a09dd0948d0684b1ad4efb9f\",\"dweb:/ipfs/QmXSiwFynjS9UEwgV5s6kZCEuYDG6h9tmTNcgS7iAH6NJu\"]},\"/home/leszek/projects/joystream/joystream/smart-contracts/contracts/storage/VideoStorage.sol\":{\"keccak256\":\"0xeaa1d2609e979107c346e8eb52b83e91732fc79478223c32ee165f9a9c2af6a6\",\"urls\":[\"bzz-raw://60135b3b62c8841761048ae81b4adf4e60f237e4498c9bdc391dde6cfaad689f\",\"dweb:/ipfs/QmaRQsMewgAEkdYxHgm5c8FXuNomwr6p9LAxiGBTEpUn5u\"]},\"/home/leszek/projects/joystream/joystream/smart-contracts/node_modules/@openzeppelin/contracts/GSN/Context.sol\":{\"keccak256\":\"0xdb26cbf4d028490f49831a7865c2fe1b28db44b535ca8d343785a3b768aae183\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://840b14ce0315c47d49ba328f1f9fa7654ded1c9e1559e6c5e777a7b2dc28bf0a\",\"dweb:/ipfs/QmTLLabn4wcfGro9LEmUXUN2nwKqZSotXMvjDCLXEnLtZP\"]},\"/home/leszek/projects/joystream/joystream/smart-contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol\":{\"keccak256\":\"0x4bd6402ca6b3419008c2b482aff54e66836e8cb4eba2680e42ac5884ae6424fc\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8f9f711fb8d0d92aeea1c327e3845d13ca1fa8f142e47f8723cd5b3106fb29a3\",\"dweb:/ipfs/QmVQUReDW9f4zGqhizwHnyU8EntMs95tbASdqkGncnikba\"]}},\"version\":1}",
+  "bytecode": "0x6080604052600380546001600160401b031916600117905534801561002357600080fd5b50600061002e61007d565b600080546001600160a01b0319166001600160a01b0383169081178255604051929350917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908290a350610081565b3390565b61081b806100906000396000f3fe608060405234801561001057600080fd5b50600436106100785760003560e01c8063010529821461007d578063715018a6146100a6578063750a1063146100b05780638da5cb5b146100d05780639a055bbf146100e55780639d8d51f8146100f8578063b5b9dc911461010b578063f2fde38b1461011e575b600080fd5b61009061008b3660046105bd565b610131565b60405161009d91906107b1565b60405180910390f35b6100ae61014c565b005b6100c36100be3660046105bd565b6101c2565b60405161009d9190610783565b6100d8610246565b60405161009d919061062b565b6100ae6100f33660046105bd565b610255565b6100906101063660046105bd565b6102e7565b6100ae6101193660046105e4565b6103ab565b6100ae61012c366004610596565b610415565b6002602052600090815260409020546001600160401b031681565b6101546104b9565b6000546001600160a01b0390811691161461018a5760405162461bcd60e51b81526004016101819061070d565b60405180910390fd5b600080546040516001600160a01b03909116906000805160206107c6833981519152908390a3600080546001600160a01b0319169055565b6101ca610576565b6101d2610576565b506001600160401b0380831660009081526001602090815260409182902082516060810184529054938416815260ff600160401b85048116151592820192909252600160481b9093041615159082018190526102405760405162461bcd60e51b815260040161018190610742565b92915050565b6000546001600160a01b031690565b61025d6104b9565b6000546001600160a01b0390811691161461028a5760405162461bcd60e51b81526004016101819061070d565b6001600160401b03808216600090815260016020818152604080842054851684526002909152909120546102bf9216906104bd565b506001600160401b0316600090815260016020526040902080546001600160501b0319169055565b60006102f16104b9565b6000546001600160a01b0390811691161461031e5760405162461bcd60e51b81526004016101819061070d565b6003546001600160401b0390811660008181526001602081815260408084208054600160401b600160481b60ff60481b199092169190911760ff60401b1916176001600160401b031916898816908117825585526002909252909220549293919261038a921690610506565b506003546103a2906001600160401b03166001610506565b50909392505050565b6103b36104b9565b6000546001600160a01b039081169116146103e05760405162461bcd60e51b81526004016101819061070d565b6001600160401b0390911660009081526001602052604090208054911515600160401b0260ff60401b19909216919091179055565b61041d6104b9565b6000546001600160a01b0390811691161461044a5760405162461bcd60e51b81526004016101819061070d565b6001600160a01b0381166104705760405162461bcd60e51b815260040161018190610692565b600080546040516001600160a01b03808516939216916000805160206107c683398151915291a3600080546001600160a01b0319166001600160a01b0392909216919091179055565b3390565b60006104ff83836040518060400160405280601e81526020017f536166654d6174683a207375627472616374696f6e206f766572666c6f770000815250610537565b9392505050565b60008282016001600160401b0380851690821610156104ff5760405162461bcd60e51b8152600401610181906106d8565b6000836001600160401b0316836001600160401b03161115829061056e5760405162461bcd60e51b8152600401610181919061063f565b505050900390565b604080516060810182526000808252602082018190529181019190915290565b6000602082840312156105a7578081fd5b81356001600160a01b03811681146104ff578182fd5b6000602082840312156105ce578081fd5b81356001600160401b03811681146104ff578182fd5b600080604083850312156105f6578081fd5b82356001600160401b038116811461060c578182fd5b915060208301358015158114610620578182fd5b809150509250929050565b6001600160a01b0391909116815260200190565b6000602080835283518082850152825b8181101561066b5785810183015185820160400152820161064f565b8181111561067c5783604083870101525b50601f01601f1916929092016040019392505050565b60208082526026908201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160408201526564647265737360d01b606082015260800190565b6020808252601b908201527a536166654d6174683a206164646974696f6e206f766572666c6f7760281b604082015260600190565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b60208082526021908201527f547279696e6720746f2061636365737320756e6578697374696e6720766964656040820152606f60f81b606082015260800190565b81516001600160401b0316815260208083015115159082015260409182015115159181019190915260600190565b6001600160401b039190911681526020019056fe8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0a2646970667358221220bfe2b6e1714a633139d3e0680422359b56bdcc045055314ce8472504e979bb0d64736f6c634300060c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100785760003560e01c8063010529821461007d578063715018a6146100a6578063750a1063146100b05780638da5cb5b146100d05780639a055bbf146100e55780639d8d51f8146100f8578063b5b9dc911461010b578063f2fde38b1461011e575b600080fd5b61009061008b3660046105bd565b610131565b60405161009d91906107b1565b60405180910390f35b6100ae61014c565b005b6100c36100be3660046105bd565b6101c2565b60405161009d9190610783565b6100d8610246565b60405161009d919061062b565b6100ae6100f33660046105bd565b610255565b6100906101063660046105bd565b6102e7565b6100ae6101193660046105e4565b6103ab565b6100ae61012c366004610596565b610415565b6002602052600090815260409020546001600160401b031681565b6101546104b9565b6000546001600160a01b0390811691161461018a5760405162461bcd60e51b81526004016101819061070d565b60405180910390fd5b600080546040516001600160a01b03909116906000805160206107c6833981519152908390a3600080546001600160a01b0319169055565b6101ca610576565b6101d2610576565b506001600160401b0380831660009081526001602090815260409182902082516060810184529054938416815260ff600160401b85048116151592820192909252600160481b9093041615159082018190526102405760405162461bcd60e51b815260040161018190610742565b92915050565b6000546001600160a01b031690565b61025d6104b9565b6000546001600160a01b0390811691161461028a5760405162461bcd60e51b81526004016101819061070d565b6001600160401b03808216600090815260016020818152604080842054851684526002909152909120546102bf9216906104bd565b506001600160401b0316600090815260016020526040902080546001600160501b0319169055565b60006102f16104b9565b6000546001600160a01b0390811691161461031e5760405162461bcd60e51b81526004016101819061070d565b6003546001600160401b0390811660008181526001602081815260408084208054600160401b600160481b60ff60481b199092169190911760ff60401b1916176001600160401b031916898816908117825585526002909252909220549293919261038a921690610506565b506003546103a2906001600160401b03166001610506565b50909392505050565b6103b36104b9565b6000546001600160a01b039081169116146103e05760405162461bcd60e51b81526004016101819061070d565b6001600160401b0390911660009081526001602052604090208054911515600160401b0260ff60401b19909216919091179055565b61041d6104b9565b6000546001600160a01b0390811691161461044a5760405162461bcd60e51b81526004016101819061070d565b6001600160a01b0381166104705760405162461bcd60e51b815260040161018190610692565b600080546040516001600160a01b03808516939216916000805160206107c683398151915291a3600080546001600160a01b0319166001600160a01b0392909216919091179055565b3390565b60006104ff83836040518060400160405280601e81526020017f536166654d6174683a207375627472616374696f6e206f766572666c6f770000815250610537565b9392505050565b60008282016001600160401b0380851690821610156104ff5760405162461bcd60e51b8152600401610181906106d8565b6000836001600160401b0316836001600160401b03161115829061056e5760405162461bcd60e51b8152600401610181919061063f565b505050900390565b604080516060810182526000808252602082018190529181019190915290565b6000602082840312156105a7578081fd5b81356001600160a01b03811681146104ff578182fd5b6000602082840312156105ce578081fd5b81356001600160401b03811681146104ff578182fd5b600080604083850312156105f6578081fd5b82356001600160401b038116811461060c578182fd5b915060208301358015158114610620578182fd5b809150509250929050565b6001600160a01b0391909116815260200190565b6000602080835283518082850152825b8181101561066b5785810183015185820160400152820161064f565b8181111561067c5783604083870101525b50601f01601f1916929092016040019392505050565b60208082526026908201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160408201526564647265737360d01b606082015260800190565b6020808252601b908201527a536166654d6174683a206164646974696f6e206f766572666c6f7760281b604082015260600190565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b60208082526021908201527f547279696e6720746f2061636365737320756e6578697374696e6720766964656040820152606f60f81b606082015260800190565b81516001600160401b0316815260208083015115159082015260409182015115159181019190915260600190565b6001600160401b039190911681526020019056fe8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0a2646970667358221220bfe2b6e1714a633139d3e0680422359b56bdcc045055314ce8472504e979bb0d64736f6c634300060c0033",
+  "immutableReferences": {},
+  "sourceMap": "305:1439:11:-:0;;;608:22;;;-1:-1:-1;;;;;;608:22:11;629:1;608:22;;;305:1439;;;;;;;;;-1:-1:-1;865:17:14;885:12;:10;:12::i;:::-;907:6;:18;;-1:-1:-1;;;;;;907:18:14;-1:-1:-1;;;;;907:18:14;;;;;;;940:43;;907:18;;-1:-1:-1;907:18:14;940:43;;907:6;;940:43;831:159;305:1439:11;;590:104:13;677:10;590:104;:::o;305:1439:11:-;;;;;;;",
+  "deployedSourceMap": "305:1439:11:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;487:55;;;;;;:::i;:::-;;:::i;:::-;;;;;;;:::i;:::-;;;;;;;;1689:145:14;;;:::i;:::-;;1081:208:11;;;;;;:::i;:::-;;:::i;:::-;;;;;;;:::i;1066:77:14:-;;;:::i;:::-;;;;;;;:::i;1503:239:11:-;;;;;;:::i;:::-;;:::i;637:399::-;;;;;;:::i;:::-;;:::i;1292:205::-;;;;;;:::i;:::-;;:::i;1983:240:14:-;;;;;;:::i;:::-;;:::i;487:55:11:-;;;;;;;;;;;;-1:-1:-1;;;;;487:55:11;;:::o;1689:145:14:-;1280:12;:10;:12::i;:::-;1270:6;;-1:-1:-1;;;;;1270:6:14;;;:22;;;1262:67;;;;-1:-1:-1;;;1262:67:14;;;;;;;:::i;:::-;;;;;;;;;1795:1:::1;1779:6:::0;;1758:40:::1;::::0;-1:-1:-1;;;;;1779:6:14;;::::1;::::0;-1:-1:-1;;;;;;;;;;;1758:40:14;1795:1;;1758:40:::1;1825:1;1808:19:::0;;-1:-1:-1;;;;;;1808:19:14::1;::::0;;1689:145::o;1081:208:11:-;1145:12;;:::i;:::-;1163:18;;:::i;:::-;-1:-1:-1;;;;;;1184:19:11;;;;;;;:9;:19;;;;;;;;;1163:40;;;;;;;;;;;;;;;-1:-1:-1;;;1163:40:11;;;;;;;;;;;;;-1:-1:-1;;;1163:40:11;;;;;;;;;;;;1207:62;;;;-1:-1:-1;;;1207:62:11;;;;;;;:::i;:::-;1280:5;1081:208;-1:-1:-1;;1081:208:11:o;1066:77:14:-;1104:7;1130:6;-1:-1:-1;;;;;1130:6:14;1066:77;:::o;1503:239:11:-;1280:12:14;:10;:12::i;:::-;1270:6;;-1:-1:-1;;;;;1270:6:14;;;:22;;;1262:67;;;;-1:-1:-1;;;1262:67:14;;;;;;;:::i;:::-;-1:-1:-1;;;;;1614:19:11;;::::1;1592:52;1614:19:::0;;;1649:1:::1;1614:19;::::0;;;;;;;:29;;::::1;1592:52:::0;;:21:::1;:52:::0;;;;;;;:59:::1;::::0;:52:::1;::::0;:56:::1;:59::i;:::-;-1:-1:-1::0;;;;;;1719:19:11::1;;::::0;;;:9:::1;:19;::::0;;;;1712:26;;-1:-1:-1;;;;;;1712:26:11;;;1503:239::o;637:399::-;701:6;1280:12:14;:10;:12::i;:::-;1270:6;;-1:-1:-1;;;;;1270:6:14;;;:22;;;1262:67;;;;-1:-1:-1;;;1262:67:14;;;;;;;:::i;:::-;730:11:11::1;::::0;-1:-1:-1;;;;;730:11:11;;::::1;713:14;791:18:::0;;;730:11;791:18:::1;::::0;;;;;;;838:26;;-1:-1:-1;;;;;;;;;;838:26:11;;::::1;::::0;;;::::1;-1:-1:-1::0;;;;868:24:11::1;;-1:-1:-1::0;;;;;;896:31:11::1;::::0;;::::1;::::0;;::::1;::::0;;952:33;;:21:::1;:33:::0;;;;;;;730:11;;791:18;;952:40:::1;::::0;:33:::1;::::0;:37:::1;:40::i;:::-;-1:-1:-1::0;996:11:11::1;::::0;:18:::1;::::0;-1:-1:-1;;;;;996:11:11::1;1012:1;996:15;:18::i;:::-;-1:-1:-1::0;1025:7:11;;637:399;-1:-1:-1;;;637:399:11:o;1292:205::-;1280:12:14;:10;:12::i;:::-;1270:6;;-1:-1:-1;;;;;1270:6:14;;;:22;;;1262:67;;;;-1:-1:-1;;;1262:67:14;;;;;;;:::i;:::-;-1:-1:-1;;;;;1412:19:11;;::::1;1390;1412::::0;;;:9:::1;:19;::::0;;;;1467:26;;;::::1;;-1:-1:-1::0;;;1467:26:11::1;-1:-1:-1::0;;;;1467:26:11;;::::1;::::0;;;::::1;::::0;;1292:205::o;1983:240:14:-;1280:12;:10;:12::i;:::-;1270:6;;-1:-1:-1;;;;;1270:6:14;;;:22;;;1262:67;;;;-1:-1:-1;;;1262:67:14;;;;;;;:::i;:::-;-1:-1:-1;;;;;2071:22:14;::::1;2063:73;;;;-1:-1:-1::0;;;2063:73:14::1;;;;;;;:::i;:::-;2172:6;::::0;;2151:38:::1;::::0;-1:-1:-1;;;;;2151:38:14;;::::1;::::0;2172:6;::::1;::::0;-1:-1:-1;;;;;;;;;;;2151:38:14;::::1;2199:6;:17:::0;;-1:-1:-1;;;;;;2199:17:14::1;-1:-1:-1::0;;;;;2199:17:14;;;::::1;::::0;;;::::1;::::0;;1983:240::o;590:104:13:-;677:10;590:104;:::o;767:131:7:-;823:6;848:43;852:1;855;848:43;;;;;;;;;;;;;;;;;:3;:43::i;:::-;841:50;767:131;-1:-1:-1;;;767:131:7:o;324:172::-;380:6;409:5;;;-1:-1:-1;;;;;432:6:7;;;;;;;;424:46;;;;-1:-1:-1;;;424:46:7;;;;;;;:::i;1189:183::-;1273:6;1304:1;-1:-1:-1;;;;;1299:6:7;:1;-1:-1:-1;;;;;1299:6:7;;;1307:12;1291:29;;;;;-1:-1:-1;;;1291:29:7;;;;;;;;:::i;:::-;-1:-1:-1;;;1341:5:7;;;1189:183::o;-1:-1:-1:-;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;408:241::-;;512:2;500:9;491:7;487:23;483:32;480:2;;;-1:-1;;518:12;480:2;72:20;;-1:-1;;;;;7512:54;;8122:35;;8112:2;;-1:-1;;8161:12;656:239;;759:2;747:9;738:7;734:23;730:32;727:2;;;-1:-1;;765:12;727:2;339:20;;-1:-1;;;;;7639:30;;8363:34;;8353:2;;-1:-1;;8401:12;902:358;;;1019:2;1007:9;998:7;994:23;990:32;987:2;;;-1:-1;;1025:12;987:2;339:20;;-1:-1;;;;;7639:30;;8363:34;;8353:2;;-1:-1;;8401:12;8353:2;1077:62;-1:-1;1176:2;1212:22;;206:20;7424:13;;7417:21;8243:32;;8233:2;;-1:-1;;8279:12;8233:2;1184:60;;;;981:279;;;;;:::o;4175:222::-;-1:-1;;;;;7512:54;;;;1338:37;;4302:2;4287:18;;4273:124::o;4404:310::-;;4551:2;;4572:17;4565:47;1633:5;7047:12;7204:6;4551:2;4540:9;4536:18;7192:19;-1:-1;7754:101;7768:6;7765:1;7762:13;7754:101;;;7835:11;;;;;7829:18;7816:11;;;7232:14;7816:11;7809:39;7783:10;;7754:101;;;7870:6;7867:1;7864:13;7861:2;;;-1:-1;7232:14;7926:6;4540:9;7917:16;;7910:27;7861:2;-1:-1;8042:7;8026:14;-1:-1;;8022:28;1791:39;;;;7232:14;1791:39;;4522:192;-1:-1;;;4522:192::o;4721:416::-;4921:2;4935:47;;;2067:2;4906:18;;;7192:19;2103:34;7232:14;;;2083:55;-1:-1;;;2158:12;;;2151:30;2200:12;;;4892:245::o;5144:416::-;5344:2;5358:47;;;2451:2;5329:18;;;7192:19;-1:-1;;;7232:14;;;2467:50;2536:12;;;5315:245::o;5567:416::-;5767:2;5781:47;;;5752:18;;;7192:19;2823:34;7232:14;;;2803:55;2877:12;;;5738:245::o;5990:416::-;6190:2;6204:47;;;3128:2;6175:18;;;7192:19;3164:34;7232:14;;;3144:55;-1:-1;;;3219:12;;;3212:25;3256:12;;;6161:245::o;6413:314::-;3527:23;;-1:-1;;;;;7639:30;4010:36;;3700:4;3689:16;;;3683:23;7424:13;7417:21;3754:14;;;1442:34;7650:18;3843:16;;;3837:23;7424:13;7417:21;3908:14;;;1442:34;;;;6586:2;6571:18;;6557:170::o;6734:218::-;-1:-1;;;;;7639:30;;;;4010:36;;6859:2;6844:18;;6830:122::o",
+  "source": "pragma solidity ^0.6.0;\npragma experimental ABIEncoderV2;\n\nimport \"../../node_modules/@openzeppelin/contracts/access/Ownable.sol\";\nimport \"../lib/SafeMath64.sol\";\n\n// Any change to this struct requires VideoStorage migration\nstruct Video {\n    uint64 channelId;\n    bool isActive;\n    bool isExisting;\n}\n\ncontract VideoStorage is Ownable {\n\tusing SafeMath64 for uint64;\n\n    mapping (uint64 => Video) private videoById;\n\t// TODO: Use logic contract to update this in ChannelStorage?\n    mapping (uint64 => uint64) public videoCountByChannelId; // TODO: Either u32 or update this in logic for consistency\n    uint64 nextVideoId = 1;\n\n    function addVideo (uint64 _channelId) public onlyOwner returns (uint64) {\n\t\tuint64 videoId = nextVideoId;\n\t\t// Get storage ref\n\t\tVideo storage newVideo = videoById[videoId];\n\t\t// Populate the struct\n\t\tnewVideo.isExisting = true;\n\t\tnewVideo.isActive = true;\n\t\tnewVideo.channelId = _channelId;\n\t\t// Update counters\n\t\tvideoCountByChannelId[_channelId].add(1);\n\t\tnextVideoId.add(1);\n\t\treturn videoId;\n\t}\n\n\t// Get channel + perform existance check\n\tfunction getExistingVideo(uint64 _videoId) public view returns (Video memory) {\n\t\tVideo memory video = videoById[_videoId];\n\t\trequire(video.isExisting, \"Trying to access unexisting video\");\n\t\treturn video;\n\t}\n\n\tfunction updateStatus (uint64 _videoId, bool _isActive) public onlyOwner {\n\t\t// Get storage ref\n\t\tVideo storage video = videoById[_videoId];\n\t\t// Update the value in struct\n\t\tvideo.isActive = _isActive;\n\t}\n\n    function removeVideo (uint64 _videoId) public onlyOwner {\n\t\t// Dec videoCountByChannel\n\t\tvideoCountByChannelId[videoById[_videoId].channelId].sub(1);\n\t\t// Clear entry in map (setting isExisting to false)\n    \tdelete videoById[_videoId];\n\t}\n}\n",
+  "sourcePath": "/home/leszek/projects/joystream/joystream/smart-contracts/contracts/storage/VideoStorage.sol",
+  "ast": {
+    "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/contracts/storage/VideoStorage.sol",
+    "exportedSymbols": {
+      "Video": [
+        3126
+      ],
+      "VideoStorage": [
+        3263
+      ]
+    },
+    "id": 3264,
+    "license": null,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3116,
+        "literals": [
+          "solidity",
+          "^",
+          "0.6",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:11"
+      },
+      {
+        "id": 3117,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:33:11"
+      },
+      {
+        "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "file": "../../node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "id": 3118,
+        "nodeType": "ImportDirective",
+        "scope": 3264,
+        "sourceUnit": 3403,
+        "src": "59:71:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/contracts/lib/SafeMath64.sol",
+        "file": "../lib/SafeMath64.sol",
+        "id": 3119,
+        "nodeType": "ImportDirective",
+        "scope": 3264,
+        "sourceUnit": 2263,
+        "src": "131:31:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "canonicalName": "Video",
+        "id": 3126,
+        "members": [
+          {
+            "constant": false,
+            "id": 3121,
+            "mutability": "mutable",
+            "name": "channelId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "244:16:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint64",
+              "typeString": "uint64"
+            },
+            "typeName": {
+              "id": 3120,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "244:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 3123,
+            "mutability": "mutable",
+            "name": "isActive",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "266:13:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_bool",
+              "typeString": "bool"
+            },
+            "typeName": {
+              "id": 3122,
+              "name": "bool",
+              "nodeType": "ElementaryTypeName",
+              "src": "266:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_bool",
+                "typeString": "bool"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 3125,
+            "mutability": "mutable",
+            "name": "isExisting",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "285:15:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_bool",
+              "typeString": "bool"
+            },
+            "typeName": {
+              "id": 3124,
+              "name": "bool",
+              "nodeType": "ElementaryTypeName",
+              "src": "285:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_bool",
+                "typeString": "bool"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          }
+        ],
+        "name": "Video",
+        "nodeType": "StructDefinition",
+        "scope": 3264,
+        "src": "225:78:11",
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [
+          {
+            "arguments": null,
+            "baseName": {
+              "contractScope": null,
+              "id": 3127,
+              "name": "Ownable",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 3402,
+              "src": "330:7:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_Ownable_$3402",
+                "typeString": "contract Ownable"
+              }
+            },
+            "id": 3128,
+            "nodeType": "InheritanceSpecifier",
+            "src": "330:7:11"
+          }
+        ],
+        "contractDependencies": [
+          3293,
+          3402
+        ],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 3263,
+        "linearizedBaseContracts": [
+          3263,
+          3402,
+          3293
+        ],
+        "name": "VideoStorage",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "id": 3131,
+            "libraryName": {
+              "contractScope": null,
+              "id": 3129,
+              "name": "SafeMath64",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 2262,
+              "src": "347:10:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_SafeMath64_$2262",
+                "typeString": "library SafeMath64"
+              }
+            },
+            "nodeType": "UsingForDirective",
+            "src": "341:28:11",
+            "typeName": {
+              "id": 3130,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "362:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            }
+          },
+          {
+            "constant": false,
+            "id": 3135,
+            "mutability": "mutable",
+            "name": "videoById",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "375:43:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+              "typeString": "mapping(uint64 => struct Video)"
+            },
+            "typeName": {
+              "id": 3134,
+              "keyType": {
+                "id": 3132,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "384:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "375:25:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                "typeString": "mapping(uint64 => struct Video)"
+              },
+              "valueType": {
+                "contractScope": null,
+                "id": 3133,
+                "name": "Video",
+                "nodeType": "UserDefinedTypeName",
+                "referencedDeclaration": 3126,
+                "src": "394:5:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                  "typeString": "struct Video"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "private"
+          },
+          {
+            "constant": false,
+            "functionSelector": "01052982",
+            "id": 3139,
+            "mutability": "mutable",
+            "name": "videoCountByChannelId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "487:55:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+              "typeString": "mapping(uint64 => uint64)"
+            },
+            "typeName": {
+              "id": 3138,
+              "keyType": {
+                "id": 3136,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "496:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "487:26:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                "typeString": "mapping(uint64 => uint64)"
+              },
+              "valueType": {
+                "id": 3137,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "506:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3142,
+            "mutability": "mutable",
+            "name": "nextVideoId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "608:22:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint64",
+              "typeString": "uint64"
+            },
+            "typeName": {
+              "id": 3140,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "608:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "31",
+              "id": 3141,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "629:1:11",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_1_by_1",
+                "typeString": "int_const 1"
+              },
+              "value": "1"
+            },
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 3194,
+              "nodeType": "Block",
+              "src": "709:327:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3152
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3152,
+                      "mutability": "mutable",
+                      "name": "videoId",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3194,
+                      "src": "713:14:11",
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      },
+                      "typeName": {
+                        "id": 3151,
+                        "name": "uint64",
+                        "nodeType": "ElementaryTypeName",
+                        "src": "713:6:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3154,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "id": 3153,
+                    "name": "nextVideoId",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3142,
+                    "src": "730:11:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "713:28:11"
+                },
+                {
+                  "assignments": [
+                    3156
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3156,
+                      "mutability": "mutable",
+                      "name": "newVideo",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3194,
+                      "src": "766:22:11",
+                      "stateVariable": false,
+                      "storageLocation": "storage",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3155,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "766:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3160,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3157,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "791:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3159,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3158,
+                      "name": "videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3152,
+                      "src": "801:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "791:18:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "766:43:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3165,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3161,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "838:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3163,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isExisting",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3125,
+                      "src": "838:19:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "hexValue": "74727565",
+                      "id": 3164,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "bool",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "860:4:11",
+                      "subdenomination": null,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      },
+                      "value": "true"
+                    },
+                    "src": "838:26:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3166,
+                  "nodeType": "ExpressionStatement",
+                  "src": "838:26:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3171,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3167,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "868:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3169,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isActive",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3123,
+                      "src": "868:17:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "hexValue": "74727565",
+                      "id": 3170,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "bool",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "888:4:11",
+                      "subdenomination": null,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      },
+                      "value": "true"
+                    },
+                    "src": "868:24:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3172,
+                  "nodeType": "ExpressionStatement",
+                  "src": "868:24:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3177,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3173,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "896:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3175,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "channelId",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3121,
+                      "src": "896:18:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 3176,
+                      "name": "_channelId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3144,
+                      "src": "917:10:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "src": "896:31:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3178,
+                  "nodeType": "ExpressionStatement",
+                  "src": "896:31:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3183,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "990:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 3179,
+                          "name": "videoCountByChannelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3139,
+                          "src": "952:21:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                            "typeString": "mapping(uint64 => uint64)"
+                          }
+                        },
+                        "id": 3181,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "id": 3180,
+                          "name": "_channelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3144,
+                          "src": "974:10:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint64",
+                            "typeString": "uint64"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "952:33:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3182,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "add",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2095,
+                      "src": "952:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3184,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "952:40:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3185,
+                  "nodeType": "ExpressionStatement",
+                  "src": "952:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3189,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1012:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3186,
+                        "name": "nextVideoId",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3142,
+                        "src": "996:11:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3188,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "add",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2095,
+                      "src": "996:15:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3190,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "996:18:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3191,
+                  "nodeType": "ExpressionStatement",
+                  "src": "996:18:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3192,
+                    "name": "videoId",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3152,
+                    "src": "1025:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "functionReturnParameters": 3150,
+                  "id": 3193,
+                  "nodeType": "Return",
+                  "src": "1018:14:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "9d8d51f8",
+            "id": 3195,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3147,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3146,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "682:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "682:9:11"
+              }
+            ],
+            "name": "addVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3145,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3144,
+                  "mutability": "mutable",
+                  "name": "_channelId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3195,
+                  "src": "656:17:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3143,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "656:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "655:19:11"
+            },
+            "returnParameters": {
+              "id": 3150,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3149,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3195,
+                  "src": "701:6:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3148,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "701:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "700:8:11"
+            },
+            "scope": 3263,
+            "src": "637:399:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3216,
+              "nodeType": "Block",
+              "src": "1159:130:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3203
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3203,
+                      "mutability": "mutable",
+                      "name": "video",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3216,
+                      "src": "1163:18:11",
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3202,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "1163:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3207,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3204,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "1184:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3206,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3205,
+                      "name": "_videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3197,
+                      "src": "1194:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1184:19:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "1163:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 3209,
+                          "name": "video",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3203,
+                          "src": "1215:5:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                            "typeString": "struct Video memory"
+                          }
+                        },
+                        "id": 3210,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "isExisting",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 3125,
+                        "src": "1215:16:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "547279696e6720746f2061636365737320756e6578697374696e6720766964656f",
+                        "id": 3211,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1233:35:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_ef84195aa65b690d040381fa261002a097fd97c1858b61bd1a73caa5f2638470",
+                          "typeString": "literal_string \"Trying to access unexisting video\""
+                        },
+                        "value": "Trying to access unexisting video"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        },
+                        {
+                          "typeIdentifier": "t_stringliteral_ef84195aa65b690d040381fa261002a097fd97c1858b61bd1a73caa5f2638470",
+                          "typeString": "literal_string \"Trying to access unexisting video\""
+                        }
+                      ],
+                      "id": 3208,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        -18,
+                        -18
+                      ],
+                      "referencedDeclaration": -18,
+                      "src": "1207:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (bool,string memory) pure"
+                      }
+                    },
+                    "id": 3212,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1207:62:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3213,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1207:62:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3214,
+                    "name": "video",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3203,
+                    "src": "1280:5:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                      "typeString": "struct Video memory"
+                    }
+                  },
+                  "functionReturnParameters": 3201,
+                  "id": 3215,
+                  "nodeType": "Return",
+                  "src": "1273:12:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "750a1063",
+            "id": 3217,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getExistingVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3198,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3197,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3217,
+                  "src": "1107:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3196,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1107:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:17:11"
+            },
+            "returnParameters": {
+              "id": 3201,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3200,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3217,
+                  "src": "1145:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                    "typeString": "struct Video"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 3199,
+                    "name": "Video",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 3126,
+                    "src": "1145:5:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                      "typeString": "struct Video"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1144:14:11"
+            },
+            "scope": 3263,
+            "src": "1081:208:11",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3238,
+              "nodeType": "Block",
+              "src": "1365:132:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3227
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3227,
+                      "mutability": "mutable",
+                      "name": "video",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3238,
+                      "src": "1390:19:11",
+                      "stateVariable": false,
+                      "storageLocation": "storage",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3226,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "1390:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3231,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3228,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "1412:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3230,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3229,
+                      "name": "_videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3219,
+                      "src": "1422:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1412:19:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "1390:41:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3236,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3232,
+                        "name": "video",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3227,
+                        "src": "1467:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3234,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isActive",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3123,
+                      "src": "1467:14:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 3235,
+                      "name": "_isActive",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3221,
+                      "src": "1484:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "src": "1467:26:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3237,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1467:26:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "b5b9dc91",
+            "id": 3239,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3224,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3223,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "1355:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "1355:9:11"
+              }
+            ],
+            "name": "updateStatus",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3222,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3219,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3239,
+                  "src": "1315:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3218,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1315:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3221,
+                  "mutability": "mutable",
+                  "name": "_isActive",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3239,
+                  "src": "1332:14:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3220,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1332:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1314:33:11"
+            },
+            "returnParameters": {
+              "id": 3225,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1365:0:11"
+            },
+            "scope": 3263,
+            "src": "1292:205:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3261,
+              "nodeType": "Block",
+              "src": "1559:183:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3253,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1649:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 3246,
+                          "name": "videoCountByChannelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3139,
+                          "src": "1592:21:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                            "typeString": "mapping(uint64 => uint64)"
+                          }
+                        },
+                        "id": 3251,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "expression": {
+                            "argumentTypes": null,
+                            "baseExpression": {
+                              "argumentTypes": null,
+                              "id": 3247,
+                              "name": "videoById",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 3135,
+                              "src": "1614:9:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                                "typeString": "mapping(uint64 => struct Video storage ref)"
+                              }
+                            },
+                            "id": 3249,
+                            "indexExpression": {
+                              "argumentTypes": null,
+                              "id": 3248,
+                              "name": "_videoId",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 3241,
+                              "src": "1624:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_uint64",
+                                "typeString": "uint64"
+                              }
+                            },
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "nodeType": "IndexAccess",
+                            "src": "1614:19:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_Video_$3126_storage",
+                              "typeString": "struct Video storage ref"
+                            }
+                          },
+                          "id": 3250,
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "channelId",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 3121,
+                          "src": "1614:29:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint64",
+                            "typeString": "uint64"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1592:52:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3252,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "sub",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2112,
+                      "src": "1592:56:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3254,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1592:59:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3255,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1592:59:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3259,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "UnaryOperation",
+                    "operator": "delete",
+                    "prefix": true,
+                    "src": "1712:26:11",
+                    "subExpression": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "id": 3256,
+                        "name": "videoById",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3135,
+                        "src": "1719:9:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                          "typeString": "mapping(uint64 => struct Video storage ref)"
+                        }
+                      },
+                      "id": 3258,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 3257,
+                        "name": "_videoId",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3241,
+                        "src": "1729:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "1719:19:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage",
+                        "typeString": "struct Video storage ref"
+                      }
+                    },
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3260,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1712:26:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "9a055bbf",
+            "id": 3262,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3244,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3243,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "1549:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "1549:9:11"
+              }
+            ],
+            "name": "removeVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3242,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3241,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3262,
+                  "src": "1525:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3240,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1525:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1524:17:11"
+            },
+            "returnParameters": {
+              "id": 3245,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1559:0:11"
+            },
+            "scope": 3263,
+            "src": "1503:239:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3264,
+        "src": "305:1439:11"
+      }
+    ],
+    "src": "0:1745:11"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/contracts/storage/VideoStorage.sol",
+    "exportedSymbols": {
+      "Video": [
+        3126
+      ],
+      "VideoStorage": [
+        3263
+      ]
+    },
+    "id": 3264,
+    "license": null,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3116,
+        "literals": [
+          "solidity",
+          "^",
+          "0.6",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:11"
+      },
+      {
+        "id": 3117,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:33:11"
+      },
+      {
+        "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "file": "../../node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "id": 3118,
+        "nodeType": "ImportDirective",
+        "scope": 3264,
+        "sourceUnit": 3403,
+        "src": "59:71:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "absolutePath": "/home/leszek/projects/joystream/joystream/smart-contracts/contracts/lib/SafeMath64.sol",
+        "file": "../lib/SafeMath64.sol",
+        "id": 3119,
+        "nodeType": "ImportDirective",
+        "scope": 3264,
+        "sourceUnit": 2263,
+        "src": "131:31:11",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "canonicalName": "Video",
+        "id": 3126,
+        "members": [
+          {
+            "constant": false,
+            "id": 3121,
+            "mutability": "mutable",
+            "name": "channelId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "244:16:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint64",
+              "typeString": "uint64"
+            },
+            "typeName": {
+              "id": 3120,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "244:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 3123,
+            "mutability": "mutable",
+            "name": "isActive",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "266:13:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_bool",
+              "typeString": "bool"
+            },
+            "typeName": {
+              "id": 3122,
+              "name": "bool",
+              "nodeType": "ElementaryTypeName",
+              "src": "266:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_bool",
+                "typeString": "bool"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 3125,
+            "mutability": "mutable",
+            "name": "isExisting",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3126,
+            "src": "285:15:11",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_bool",
+              "typeString": "bool"
+            },
+            "typeName": {
+              "id": 3124,
+              "name": "bool",
+              "nodeType": "ElementaryTypeName",
+              "src": "285:4:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_bool",
+                "typeString": "bool"
+              }
+            },
+            "value": null,
+            "visibility": "internal"
+          }
+        ],
+        "name": "Video",
+        "nodeType": "StructDefinition",
+        "scope": 3264,
+        "src": "225:78:11",
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [
+          {
+            "arguments": null,
+            "baseName": {
+              "contractScope": null,
+              "id": 3127,
+              "name": "Ownable",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 3402,
+              "src": "330:7:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_Ownable_$3402",
+                "typeString": "contract Ownable"
+              }
+            },
+            "id": 3128,
+            "nodeType": "InheritanceSpecifier",
+            "src": "330:7:11"
+          }
+        ],
+        "contractDependencies": [
+          3293,
+          3402
+        ],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 3263,
+        "linearizedBaseContracts": [
+          3263,
+          3402,
+          3293
+        ],
+        "name": "VideoStorage",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "id": 3131,
+            "libraryName": {
+              "contractScope": null,
+              "id": 3129,
+              "name": "SafeMath64",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 2262,
+              "src": "347:10:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_SafeMath64_$2262",
+                "typeString": "library SafeMath64"
+              }
+            },
+            "nodeType": "UsingForDirective",
+            "src": "341:28:11",
+            "typeName": {
+              "id": 3130,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "362:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            }
+          },
+          {
+            "constant": false,
+            "id": 3135,
+            "mutability": "mutable",
+            "name": "videoById",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "375:43:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+              "typeString": "mapping(uint64 => struct Video)"
+            },
+            "typeName": {
+              "id": 3134,
+              "keyType": {
+                "id": 3132,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "384:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "375:25:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                "typeString": "mapping(uint64 => struct Video)"
+              },
+              "valueType": {
+                "contractScope": null,
+                "id": 3133,
+                "name": "Video",
+                "nodeType": "UserDefinedTypeName",
+                "referencedDeclaration": 3126,
+                "src": "394:5:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                  "typeString": "struct Video"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "private"
+          },
+          {
+            "constant": false,
+            "functionSelector": "01052982",
+            "id": 3139,
+            "mutability": "mutable",
+            "name": "videoCountByChannelId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "487:55:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+              "typeString": "mapping(uint64 => uint64)"
+            },
+            "typeName": {
+              "id": 3138,
+              "keyType": {
+                "id": 3136,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "496:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "487:26:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                "typeString": "mapping(uint64 => uint64)"
+              },
+              "valueType": {
+                "id": 3137,
+                "name": "uint64",
+                "nodeType": "ElementaryTypeName",
+                "src": "506:6:11",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint64",
+                  "typeString": "uint64"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3142,
+            "mutability": "mutable",
+            "name": "nextVideoId",
+            "nodeType": "VariableDeclaration",
+            "overrides": null,
+            "scope": 3263,
+            "src": "608:22:11",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint64",
+              "typeString": "uint64"
+            },
+            "typeName": {
+              "id": 3140,
+              "name": "uint64",
+              "nodeType": "ElementaryTypeName",
+              "src": "608:6:11",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint64",
+                "typeString": "uint64"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "31",
+              "id": 3141,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "629:1:11",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_1_by_1",
+                "typeString": "int_const 1"
+              },
+              "value": "1"
+            },
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 3194,
+              "nodeType": "Block",
+              "src": "709:327:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3152
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3152,
+                      "mutability": "mutable",
+                      "name": "videoId",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3194,
+                      "src": "713:14:11",
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      },
+                      "typeName": {
+                        "id": 3151,
+                        "name": "uint64",
+                        "nodeType": "ElementaryTypeName",
+                        "src": "713:6:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3154,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "id": 3153,
+                    "name": "nextVideoId",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3142,
+                    "src": "730:11:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "713:28:11"
+                },
+                {
+                  "assignments": [
+                    3156
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3156,
+                      "mutability": "mutable",
+                      "name": "newVideo",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3194,
+                      "src": "766:22:11",
+                      "stateVariable": false,
+                      "storageLocation": "storage",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3155,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "766:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3160,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3157,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "791:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3159,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3158,
+                      "name": "videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3152,
+                      "src": "801:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "791:18:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "766:43:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3165,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3161,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "838:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3163,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isExisting",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3125,
+                      "src": "838:19:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "hexValue": "74727565",
+                      "id": 3164,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "bool",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "860:4:11",
+                      "subdenomination": null,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      },
+                      "value": "true"
+                    },
+                    "src": "838:26:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3166,
+                  "nodeType": "ExpressionStatement",
+                  "src": "838:26:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3171,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3167,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "868:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3169,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isActive",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3123,
+                      "src": "868:17:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "hexValue": "74727565",
+                      "id": 3170,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "bool",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "888:4:11",
+                      "subdenomination": null,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      },
+                      "value": "true"
+                    },
+                    "src": "868:24:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3172,
+                  "nodeType": "ExpressionStatement",
+                  "src": "868:24:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3177,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3173,
+                        "name": "newVideo",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3156,
+                        "src": "896:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3175,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "channelId",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3121,
+                      "src": "896:18:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 3176,
+                      "name": "_channelId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3144,
+                      "src": "917:10:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "src": "896:31:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3178,
+                  "nodeType": "ExpressionStatement",
+                  "src": "896:31:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3183,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "990:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 3179,
+                          "name": "videoCountByChannelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3139,
+                          "src": "952:21:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                            "typeString": "mapping(uint64 => uint64)"
+                          }
+                        },
+                        "id": 3181,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "id": 3180,
+                          "name": "_channelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3144,
+                          "src": "974:10:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint64",
+                            "typeString": "uint64"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "952:33:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3182,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "add",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2095,
+                      "src": "952:37:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3184,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "952:40:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3185,
+                  "nodeType": "ExpressionStatement",
+                  "src": "952:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3189,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1012:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3186,
+                        "name": "nextVideoId",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3142,
+                        "src": "996:11:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3188,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "add",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2095,
+                      "src": "996:15:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3190,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "996:18:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3191,
+                  "nodeType": "ExpressionStatement",
+                  "src": "996:18:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3192,
+                    "name": "videoId",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3152,
+                    "src": "1025:7:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "functionReturnParameters": 3150,
+                  "id": 3193,
+                  "nodeType": "Return",
+                  "src": "1018:14:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "9d8d51f8",
+            "id": 3195,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3147,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3146,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "682:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "682:9:11"
+              }
+            ],
+            "name": "addVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3145,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3144,
+                  "mutability": "mutable",
+                  "name": "_channelId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3195,
+                  "src": "656:17:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3143,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "656:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "655:19:11"
+            },
+            "returnParameters": {
+              "id": 3150,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3149,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3195,
+                  "src": "701:6:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3148,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "701:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "700:8:11"
+            },
+            "scope": 3263,
+            "src": "637:399:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3216,
+              "nodeType": "Block",
+              "src": "1159:130:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3203
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3203,
+                      "mutability": "mutable",
+                      "name": "video",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3216,
+                      "src": "1163:18:11",
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3202,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "1163:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3207,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3204,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "1184:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3206,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3205,
+                      "name": "_videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3197,
+                      "src": "1194:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1184:19:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "1163:40:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 3209,
+                          "name": "video",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3203,
+                          "src": "1215:5:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                            "typeString": "struct Video memory"
+                          }
+                        },
+                        "id": 3210,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "isExisting",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 3125,
+                        "src": "1215:16:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "547279696e6720746f2061636365737320756e6578697374696e6720766964656f",
+                        "id": 3211,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1233:35:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_ef84195aa65b690d040381fa261002a097fd97c1858b61bd1a73caa5f2638470",
+                          "typeString": "literal_string \"Trying to access unexisting video\""
+                        },
+                        "value": "Trying to access unexisting video"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        },
+                        {
+                          "typeIdentifier": "t_stringliteral_ef84195aa65b690d040381fa261002a097fd97c1858b61bd1a73caa5f2638470",
+                          "typeString": "literal_string \"Trying to access unexisting video\""
+                        }
+                      ],
+                      "id": 3208,
+                      "name": "require",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        -18,
+                        -18
+                      ],
+                      "referencedDeclaration": -18,
+                      "src": "1207:7:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (bool,string memory) pure"
+                      }
+                    },
+                    "id": 3212,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1207:62:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3213,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1207:62:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3214,
+                    "name": "video",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 3203,
+                    "src": "1280:5:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                      "typeString": "struct Video memory"
+                    }
+                  },
+                  "functionReturnParameters": 3201,
+                  "id": 3215,
+                  "nodeType": "Return",
+                  "src": "1273:12:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "750a1063",
+            "id": 3217,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getExistingVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3198,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3197,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3217,
+                  "src": "1107:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3196,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1107:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:17:11"
+            },
+            "returnParameters": {
+              "id": 3201,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3200,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3217,
+                  "src": "1145:12:11",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Video_$3126_memory_ptr",
+                    "typeString": "struct Video"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 3199,
+                    "name": "Video",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 3126,
+                    "src": "1145:5:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                      "typeString": "struct Video"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1144:14:11"
+            },
+            "scope": 3263,
+            "src": "1081:208:11",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3238,
+              "nodeType": "Block",
+              "src": "1365:132:11",
+              "statements": [
+                {
+                  "assignments": [
+                    3227
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 3227,
+                      "mutability": "mutable",
+                      "name": "video",
+                      "nodeType": "VariableDeclaration",
+                      "overrides": null,
+                      "scope": 3238,
+                      "src": "1390:19:11",
+                      "stateVariable": false,
+                      "storageLocation": "storage",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                        "typeString": "struct Video"
+                      },
+                      "typeName": {
+                        "contractScope": null,
+                        "id": 3226,
+                        "name": "Video",
+                        "nodeType": "UserDefinedTypeName",
+                        "referencedDeclaration": 3126,
+                        "src": "1390:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video"
+                        }
+                      },
+                      "value": null,
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 3231,
+                  "initialValue": {
+                    "argumentTypes": null,
+                    "baseExpression": {
+                      "argumentTypes": null,
+                      "id": 3228,
+                      "name": "videoById",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3135,
+                      "src": "1412:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                        "typeString": "mapping(uint64 => struct Video storage ref)"
+                      }
+                    },
+                    "id": 3230,
+                    "indexExpression": {
+                      "argumentTypes": null,
+                      "id": 3229,
+                      "name": "_videoId",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3219,
+                      "src": "1422:8:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint64",
+                        "typeString": "uint64"
+                      }
+                    },
+                    "isConstant": false,
+                    "isLValue": true,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "IndexAccess",
+                    "src": "1412:19:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Video_$3126_storage",
+                      "typeString": "struct Video storage ref"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "1390:41:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3236,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 3232,
+                        "name": "video",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3227,
+                        "src": "1467:5:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Video_$3126_storage_ptr",
+                          "typeString": "struct Video storage pointer"
+                        }
+                      },
+                      "id": 3234,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "isActive",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3123,
+                      "src": "1467:14:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 3235,
+                      "name": "_isActive",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 3221,
+                      "src": "1484:9:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "src": "1467:26:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 3237,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1467:26:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "b5b9dc91",
+            "id": 3239,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3224,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3223,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "1355:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "1355:9:11"
+              }
+            ],
+            "name": "updateStatus",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3222,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3219,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3239,
+                  "src": "1315:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3218,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1315:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3221,
+                  "mutability": "mutable",
+                  "name": "_isActive",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3239,
+                  "src": "1332:14:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3220,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1332:4:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1314:33:11"
+            },
+            "returnParameters": {
+              "id": 3225,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1365:0:11"
+            },
+            "scope": 3263,
+            "src": "1292:205:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3261,
+              "nodeType": "Block",
+              "src": "1559:183:11",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "31",
+                        "id": 3253,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1649:1:11",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 3246,
+                          "name": "videoCountByChannelId",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3139,
+                          "src": "1592:21:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_uint64_$_t_uint64_$",
+                            "typeString": "mapping(uint64 => uint64)"
+                          }
+                        },
+                        "id": 3251,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "expression": {
+                            "argumentTypes": null,
+                            "baseExpression": {
+                              "argumentTypes": null,
+                              "id": 3247,
+                              "name": "videoById",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 3135,
+                              "src": "1614:9:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                                "typeString": "mapping(uint64 => struct Video storage ref)"
+                              }
+                            },
+                            "id": 3249,
+                            "indexExpression": {
+                              "argumentTypes": null,
+                              "id": 3248,
+                              "name": "_videoId",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 3241,
+                              "src": "1624:8:11",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_uint64",
+                                "typeString": "uint64"
+                              }
+                            },
+                            "isConstant": false,
+                            "isLValue": true,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "nodeType": "IndexAccess",
+                            "src": "1614:19:11",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_Video_$3126_storage",
+                              "typeString": "struct Video storage ref"
+                            }
+                          },
+                          "id": 3250,
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "channelId",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 3121,
+                          "src": "1614:29:11",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint64",
+                            "typeString": "uint64"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1592:52:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "id": 3252,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "sub",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 2112,
+                      "src": "1592:56:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_pure$_t_uint64_$_t_uint64_$returns$_t_uint64_$bound_to$_t_uint64_$",
+                        "typeString": "function (uint64,uint64) pure returns (uint64)"
+                      }
+                    },
+                    "id": 3254,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1592:59:11",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "id": 3255,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1592:59:11"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 3259,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "UnaryOperation",
+                    "operator": "delete",
+                    "prefix": true,
+                    "src": "1712:26:11",
+                    "subExpression": {
+                      "argumentTypes": null,
+                      "baseExpression": {
+                        "argumentTypes": null,
+                        "id": 3256,
+                        "name": "videoById",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3135,
+                        "src": "1719:9:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_mapping$_t_uint64_$_t_struct$_Video_$3126_storage_$",
+                          "typeString": "mapping(uint64 => struct Video storage ref)"
+                        }
+                      },
+                      "id": 3258,
+                      "indexExpression": {
+                        "argumentTypes": null,
+                        "id": 3257,
+                        "name": "_videoId",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3241,
+                        "src": "1729:8:11",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint64",
+                          "typeString": "uint64"
+                        }
+                      },
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "IndexAccess",
+                      "src": "1719:19:11",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Video_$3126_storage",
+                        "typeString": "struct Video storage ref"
+                      }
+                    },
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3260,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1712:26:11"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "9a055bbf",
+            "id": 3262,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 3244,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 3243,
+                  "name": "onlyOwner",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 3351,
+                  "src": "1549:9:11",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "1549:9:11"
+              }
+            ],
+            "name": "removeVideo",
+            "nodeType": "FunctionDefinition",
+            "overrides": null,
+            "parameters": {
+              "id": 3242,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3241,
+                  "mutability": "mutable",
+                  "name": "_videoId",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 3262,
+                  "src": "1525:15:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint64",
+                    "typeString": "uint64"
+                  },
+                  "typeName": {
+                    "id": 3240,
+                    "name": "uint64",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1525:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint64",
+                      "typeString": "uint64"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1524:17:11"
+            },
+            "returnParameters": {
+              "id": 3245,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1559:0:11"
+            },
+            "scope": 3263,
+            "src": "1503:239:11",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3264,
+        "src": "305:1439:11"
+      }
+    ],
+    "src": "0:1745:11"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.6.12+commit.27d51765.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.3.2",
+  "updatedAt": "2020-11-17T12:09:37.589Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}

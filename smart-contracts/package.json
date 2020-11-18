@@ -1,0 +1,21 @@
+{
+  "name": "@joystream/cd-smart-contract",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "truffle test",
+    "start": "ganache-cli --hardfork istanbul --network-id 5777 --gasLimit 10000000",
+    "lint:contracts": "solhint 'contracts/**/*.sol'"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.0.0",
+    "@truffle/contract": "^4.2.28",
+    "openzeppelin-solidity": "^3.1.0",
+    "truffle": "^5.1.33"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.5",
+    "ts-node": "^9.0.0",
+    "ganache-cli": "^6.12.1",
+    "solhint": "^3.3.2"
+  }
+}
