@@ -33,7 +33,7 @@ const Grid: React.FC<GridProps> = ({
   className,
   gap = spacing.xl,
   onResize,
-  repeat = 'fit',
+  repeat = 'fill',
   maxColumns = 6,
   minWidth = MIN_VIDEO_PREVIEW_WIDTH,
   ...props
