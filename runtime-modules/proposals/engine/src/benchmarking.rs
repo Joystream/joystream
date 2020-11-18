@@ -4,6 +4,7 @@ use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
+use frame_support::traits::OnFinalize;
 use governance::council::Module as Council;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -13,6 +14,8 @@ use system as frame_system;
 use system::EventRecord;
 use system::Module as System;
 use system::RawOrigin;
+
+use codec::Encode;
 
 const SEED: u32 = 0;
 
@@ -69,7 +72,10 @@ fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn create_proposal<T: Trait>(id: u32) -> (T::AccountId, T::MemberId, T::ProposalId) {
+fn create_proposal<T: Trait>(
+    id: u32,
+    proposal_number: u32,
+) -> (T::AccountId, T::MemberId, T::ProposalId) {
     let (account_id, member_id) = member_funded_account::<T>("member", id);
 
     let proposal_parameters = ProposalParameters {
@@ -90,7 +96,7 @@ fn create_proposal<T: Trait>(id: u32) -> (T::AccountId, T::MemberId, T::Proposal
         title: vec![0u8],
         description: vec![0u8],
         staking_account_id: Some(account_id.clone()),
-        encoded_dispatchable_call_code: vec![0u8],
+        encoded_dispatchable_call_code: frame_system::Call::<T>::remark(vec![]).encode(),
         exact_execution_block: None,
     };
 
@@ -106,19 +112,20 @@ fn create_proposal<T: Trait>(id: u32) -> (T::AccountId, T::MemberId, T::Proposal
     );
     assert_eq!(
         ProposalsEngine::<T>::proposal_codes(proposal_id),
-        vec![0u8],
+        frame_system::Call::<T>::remark(vec![]).encode(),
         "Dispatchable code does not match"
     );
 
-    // Assuming that the number of proposals is equal to id
     assert_eq!(
         ProposalsEngine::<T>::proposal_count(),
-        id + 1,
+        proposal_number,
         "Not correct number of proposals stored"
     );
+
+    // For now assume that active proposals == number of proposals
     assert_eq!(
         ProposalsEngine::<T>::active_proposal_count(),
-        id + 1,
+        proposal_number,
         "Created proposal not active"
     );
 
@@ -142,7 +149,7 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (_, _, proposal_id) = create_proposal::<T>(0);
+        let (_, _, proposal_id) = create_proposal::<T>(0, 1);
 
         let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
 
@@ -176,14 +183,16 @@ benchmarks! {
           "Stored vote doesn't match"
         );
 
-        assert_last_event::<T>(RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into());
+        assert_last_event::<T>(
+            RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into()
+        );
     }
 
 
     cancel_proposal {
         let i in 1 .. MAX_LOCKS;
 
-        let (account_id, member_id, proposal_id) = create_proposal::<T>(0);
+        let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1);
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
@@ -214,7 +223,7 @@ benchmarks! {
 
     veto_proposal {
         let i in 0 .. 1;
-        let (account_id, _, proposal_id) = create_proposal::<T>(0);
+        let (account_id, _, proposal_id) = create_proposal::<T>(0, 1);
     }: _ (RawOrigin::Root, proposal_id)
     verify {
         assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
@@ -235,6 +244,38 @@ benchmarks! {
         assert_last_event::<T>(
             RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed).into()
         );
+    }
+
+    on_finalize_immediate_execution {
+        let i in 0 .. T::MaxActiveProposalLimit::get();
+
+        let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 0);
+        Council::<T>::set_council(RawOrigin::Root.into(), vec![account_voter_id.clone()]).unwrap();
+
+        let mut proposers = Vec::new();
+        for id in 1 .. i+1 {
+            let (proposer_account_id, _, proposal_id) = create_proposal::<T>(id, id);
+            proposers.push(proposer_account_id);
+
+            ProposalsEngine::<T>::vote(
+                RawOrigin::Signed(account_voter_id.clone()).into(),
+                member_voter_id,
+                proposal_id,
+                VoteKind::Approve,
+                vec![0u8]
+            ).unwrap()
+        }
+
+    }: { ProposalsEngine::<T>::on_finalize(System::<T>::block_number().into()) }
+    verify {
+        for proposer_account_id in proposers {
+            assert_eq!(
+                T::StakingHandler::current_stake(&proposer_account_id),
+                Zero::zero(),
+                "Should've unlocked all stake"
+            );
+        }
+
     }
 
 }
@@ -263,6 +304,13 @@ mod tests {
     fn test_veto_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_veto_proposal::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_on_finalize() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_immediate_execution::<Test>());
         });
     }
 }
