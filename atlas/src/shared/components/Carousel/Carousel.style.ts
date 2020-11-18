@@ -1,48 +1,54 @@
 import styled from '@emotion/styled'
-import Glider from 'react-glider'
+import Button from '../Button'
 
-import Icon from '../Icon'
-import { colors } from '../../theme'
+export const Container = styled.div`
+  position: relative;
+`
 
-export const Container = styled.div<{ trackPadding: string }>`
-  .glider-prev,
-  .glider-next {
-    position: absolute;
+export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next' }>`
+  position: absolute;
+  top: 0;
+  left: ${(props) => (props.direction === 'prev' ? 0 : 'auto')};
+  right: ${(props) => (props.direction === 'next' ? 0 : 'auto')};
+  bottom: 0;
+  width: 10%;
+  z-index: 1;
+  background-image: linear-gradient(
+    ${(props) => (props.direction === 'prev' ? 270 : 90)}deg,
+    transparent,
+    var(--gradientColor, transparent)
+  );
+  pointer-events: none;
+`
 
-    display: grid;
-    place-items: center;
-    color: ${colors.white};
-    background-color: ${colors.blue[500]};
-    border: unset;
-    width: 48px;
-    height: 48px;
-    transition: none;
-    :hover {
-      color: ${colors.white};
-      background-color: ${colors.blue[700]};
-    }
-    :active {
-      background-color: ${colors.blue[900]};
-    }
+export const Arrow = styled(Button)`
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  transition: none;
+
+  &.disabled {
+    display: none;
   }
-  .glider-prev.disabled,
-  .glider-next.disabled {
-    opacity: 0;
-  }
-  .glider-prev {
+
+  &.glider-prev {
     left: 0;
   }
-  .glider-next {
+  &.glider-next {
     right: 0;
   }
-
-  .glider-track {
-    padding: ${(props) => props.trackPadding};
-    align-items: start;
+  + ${BackgroundGradient} {
+    --gradientColor: black;
+  }
+  &.disabled + ${BackgroundGradient} {
+    --gradientColor: transparent;
   }
 `
 
-export const StyledGlider = styled(Glider)`
+export const GliderContainer = styled.div`
   scrollbar-width: none;
 `
-export const Arrow = styled(Icon)``
+export const Track = styled.div<{ trackPadding: string }>`
+  align-items: flex-start;
+  padding: ${(props) => props.trackPadding};
+`
