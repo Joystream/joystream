@@ -1,14 +1,15 @@
 use frame_support::traits::{Currency, LockableCurrency, ReservableCurrency};
 use sp_runtime::traits::Convert;
 
-pub trait GovernanceCurrency: system::Trait + Sized {
+pub trait GovernanceCurrency: frame_system::Trait + Sized {
     type Currency: Currency<Self::AccountId>
         + ReservableCurrency<Self::AccountId>
         + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 }
 
-pub type BalanceOf<T> =
-    <<T as GovernanceCurrency>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as GovernanceCurrency>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::Balance;
 
 /// A structure that converts the currency type into a lossy u64
 /// And back from u128

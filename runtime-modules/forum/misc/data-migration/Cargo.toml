@@ -12,7 +12,7 @@ rstd = { package = 'sr-std', default-features = false, git = 'https://github.com
 runtime-primitives = { package = 'sr-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 srml-support = { package = 'srml-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 srml-support-procedural = { package = 'srml-support-procedural', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
+frame_system = { package = 'srml-frame_system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
 
@@ -54,7 +54,7 @@ std = [
 	'runtime-io/std',
 	'runtime-primitives/std',
 	'srml-support/std',
-	'system/std',
+	'frame_system/std',
   	'balances/std',
 	'timestamp/std',
 	'old-forum/std',

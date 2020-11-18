@@ -225,8 +225,8 @@ use sp_std::prelude::*;
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + pallet_timestamp::Trait + Sized {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
     type ForumUserId: Parameter
         + Member
         + BaseArithmetic
@@ -292,9 +292,9 @@ pub trait Trait: system::Trait + pallet_timestamp::Trait + Sized {
     type MaxCategoryDepth: Get<u64>;
     type MapLimits: StorageLimits;
 
-    fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
+    fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool;
     fn is_forum_member(
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
         forum_user_id: &Self::ForumUserId,
     ) -> bool;
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
@@ -370,7 +370,7 @@ impl InputValidationLengthConstraint {
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system::ensure_signed;
+use frame_system::ensure_signed;
 
 /// Represents all poll alternatives and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -1156,7 +1156,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // TODO need a safer approach for system call
+    // TODO need a safer approach for frame_system call
     // Interface to add a new thread.
     // It can be call from other module and this module.
     // Method not check the forum user. The extrinsic call it should check if forum id is valid.
@@ -1225,7 +1225,7 @@ impl<T: Trait> Module<T> {
         Ok((new_thread_id, new_thread))
     }
 
-    // TODO need a safer approach for system call
+    // TODO need a safer approach for frame_system call
     // Interface to add a new post.
     // It can be call from other module and this module.
     // Method not check the forum user. The extrinsic call it should check if forum id is valid.

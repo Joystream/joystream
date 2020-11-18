@@ -29,7 +29,7 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
             InputValue::Text(value) => StoredValue::Text(value),
 
             InputValue::TextToHash(value) => {
-                let hash_value = value.using_encoded(<T as system::Trait>::Hashing::hash);
+                let hash_value = value.using_encoded(<T as frame_system::Trait>::Hashing::hash);
                 StoredValue::Hash(hash_value)
             }
             InputValue::Reference(value) => StoredValue::Reference(value),
@@ -52,7 +52,7 @@ impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T::Hash, T::EntityId> {
             VecInputValue::TextToHash(vec_value) => {
                 let hash_vec_value: Vec<_> = vec_value
                     .into_iter()
-                    .map(|value| value.using_encoded(<T as system::Trait>::Hashing::hash))
+                    .map(|value| value.using_encoded(<T as frame_system::Trait>::Hashing::hash))
                     .collect();
                 VecStoredValue::Hash(hash_vec_value)
             }

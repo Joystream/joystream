@@ -29,7 +29,7 @@ mod migration_mod {
 }
 
 // forum *lead* was called *sudo* in old version of forum
-pub const FORUM_LEAD: <Runtime as system::Trait>::AccountId = 33;
+pub const FORUM_LEAD: <Runtime as frame_system::Trait>::AccountId = 33;
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
@@ -51,7 +51,7 @@ parameter_types! {
     pub const DefaultMigrationConfig: migration::MigrationConfig = Default::default();
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
@@ -78,12 +78,12 @@ impl timestamp::Trait for Runtime {
 
 pub struct ShimMembershipRegistry {}
 
-impl old_forum::ForumUserRegistry<<Runtime as system::Trait>::AccountId>
+impl old_forum::ForumUserRegistry<<Runtime as frame_system::Trait>::AccountId>
     for ShimMembershipRegistry
 {
     fn get_forum_user(
-        _id: &<Runtime as system::Trait>::AccountId,
-    ) -> Option<old_forum::ForumUser<<Runtime as system::Trait>::AccountId>> {
+        _id: &<Runtime as frame_system::Trait>::AccountId,
+    ) -> Option<old_forum::ForumUser<<Runtime as frame_system::Trait>::AccountId>> {
         None
     }
 }
@@ -127,7 +127,7 @@ pub fn set_migration_config_mock(
 }
 
 pub fn create_migration_data_mock(
-    account_id: <Runtime as system::Trait>::AccountId,
+    account_id: <Runtime as frame_system::Trait>::AccountId,
     thread_number: u32,
     post_number: u32,
     text: Vec<u8>,
@@ -135,7 +135,7 @@ pub fn create_migration_data_mock(
     TestModule::create_migration_data(account_id, thread_number, post_number, text);
 }
 
-pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
+pub fn on_initialize_mock(n: <Runtime as frame_system::Trait>::BlockNumber) {
     TestModule::on_initialize(n);
 }
 
@@ -143,13 +143,13 @@ pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
     t.into()
 }
 
-// pub type System = system::Module<Runtime>;
+// pub type frame_system = frame_system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestModule = Module<Runtime>;

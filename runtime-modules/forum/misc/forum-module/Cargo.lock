@@ -1272,7 +1272,7 @@ dependencies = [
  "sr-primitives",
  "sr-std",
  "srml-support",
- "srml-system",
+ "srml-frame_system",
  "substrate-keyring",
 ]
 
@@ -1343,7 +1343,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "srml-system"
+name = "srml-frame_system"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
@@ -1370,7 +1370,7 @@ dependencies = [
  "sr-primitives",
  "sr-std",
  "srml-support",
- "srml-system",
+ "srml-frame_system",
  "substrate-inherents",
 ]
 
@@ -1463,7 +1463,7 @@ dependencies = [
  "srml-balances",
  "srml-support",
  "srml-support-procedural",
- "srml-system",
+ "srml-frame_system",
  "srml-timestamp",
  "substrate-forum-module 1.1.0",
  "substrate-forum-module 1.1.0 (git+https://github.com/juniuszhou/substrate-forum-module?rev=2c664a211c129fa96b3b4923f73cf850d8177006)",
@@ -1485,7 +1485,7 @@ dependencies = [
  "srml-balances",
  "srml-support",
  "srml-support-procedural",
- "srml-system",
+ "srml-frame_system",
  "srml-timestamp",
 ]
 
@@ -1503,7 +1503,7 @@ dependencies = [
  "srml-balances",
  "srml-support",
  "srml-support-procedural",
- "srml-system",
+ "srml-frame_system",
  "srml-timestamp",
  "substrate-forum-module 1.1.0 (git+https://github.com/juniuszhou/substrate-forum-module?rev=2c664a211c129fa96b3b4923f73cf850d8177006)",
  "substrate-primitives",

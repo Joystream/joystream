@@ -19,12 +19,13 @@
 		"codegen:all": "yarn hydra-cli codegen && cp indexer-tsconfig.json generated/indexer/tsconfig.json",
 		"codegen:indexer": "yarn hydra-cli codegen --no-graphql && cp indexer-tsconfig.json generated/indexer/tsconfig.json",
 		"codegen:server": "yarn hydra-cli codegen --no-indexer",
-		"docker:up": "docker-compose up -d"
+		"docker:up": "docker-compose up -d",
+    "cd-classes": "ts-node scripts/get-class-id-and-name.ts"
 	},
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@dzlzv/hydra-cli": "^0.0.17"
+		"@dzlzv/hydra-cli": "^0.0.19"
 	},
 	"dependencies": {
 		"@joystream/types": "^0.14.0",

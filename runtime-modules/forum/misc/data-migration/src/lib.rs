@@ -46,9 +46,9 @@ impl Default for MigrationConfig {
 }
 
 pub trait Trait:
-    system::Trait + old_forum::Trait + new_forum::Trait + timestamp::Trait + Sized
+    frame_system::Trait + old_forum::Trait + new_forum::Trait + timestamp::Trait + Sized
 {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
     /// Initial balance of members created at genesis
     type MigrationConfig: Get<MigrationConfig>;
 }
@@ -56,7 +56,7 @@ pub trait Trait:
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::BlockNumber,
     {
         /// Data migration is done
         DataMigrationDone(BlockNumber),

@@ -3,7 +3,7 @@
 
 use super::*;
 
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
 use hiring::ActivateOpeningAt;
@@ -12,7 +12,7 @@ use working_group::{OpeningPolicyCommitment, RewardPolicy};
 
 use crate::{
     Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
-    StorageWorkingGroup, StorageWorkingGroupInstance, ForumWorkingGroup, ForumWorkingGroupInstance
+    ForumWorkingGroup, ForumWorkingGroupInstance, StorageWorkingGroup, StorageWorkingGroupInstance,
 };
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -248,8 +248,8 @@ fn set_reward(
 }
 
 fn set_mint_capacity<
-    T: working_group::Trait<I> + system::Trait + minting::Trait,
-    I: working_group::Instance,
+    T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+    I: frame_support::traits::Instance,
 >(
     member_id: MemberId,
     account_id: [u8; 32],
@@ -349,8 +349,8 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
 }
 
 fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
-    T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -413,8 +413,8 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
 }
 
 fn run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds<
-    T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -498,12 +498,12 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
     }
 
     fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
-        T: working_group::Trait<I> + system::Trait + stake::Trait,
-        I: working_group::Instance,
+        T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+        I: frame_support::traits::Instance,
     >(
         working_group: WorkingGroup,
     ) where
-        <T as system::Trait>::AccountId: From<[u8; 32]>,
+        <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
         <T as membership::Trait>::MemberId: From<u64>,
         <T as hiring::Trait>::OpeningId: From<u64>,
     {
@@ -581,19 +581,20 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
         }
     }
 
-fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
-    T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
->(
-    working_group: WorkingGroup,
-) where
-    <T as system::Trait>::AccountId: From<[u8; 32]>,
-    <T as hiring::Trait>::OpeningId: From<u64>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
-    <<T as stake::Trait>::Currency as traits::Currency<<T as system::Trait>::AccountId>>::Balance:
-        From<u128>,
-{
+    fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
+        T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+        I: frame_support::traits::Instance,
+    >(
+        working_group: WorkingGroup,
+    ) where
+        <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
+        <T as hiring::Trait>::OpeningId: From<u64>,
+        <T as membership::Trait>::MemberId: From<u64>,
+        <T as membership::Trait>::ActorId: Into<u64>,
+        <<T as stake::Trait>::Currency as traits::Currency<
+            <T as frame_system::Trait>::AccountId,
+        >>::Balance: From<u128>,
+    {
         initial_test_ext().execute_with(|| {
             let member_id: MemberId = 1;
             let account_id: [u8; 32] = [member_id as u8; 32];
@@ -703,19 +704,20 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         }
     }
 
-fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
-    T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
->(
-    working_group: WorkingGroup,
-) where
-    <T as system::Trait>::AccountId: From<[u8; 32]>,
-    <T as hiring::Trait>::OpeningId: From<u64>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
-    <<T as stake::Trait>::Currency as traits::Currency<<T as system::Trait>::AccountId>>::Balance:
-        From<u128>,
-{
+    fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
+        T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+        I: frame_support::traits::Instance,
+    >(
+        working_group: WorkingGroup,
+    ) where
+        <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
+        <T as hiring::Trait>::OpeningId: From<u64>,
+        <T as membership::Trait>::MemberId: From<u64>,
+        <T as membership::Trait>::ActorId: Into<u64>,
+        <<T as stake::Trait>::Currency as traits::Currency<
+            <T as frame_system::Trait>::AccountId,
+        >>::Balance: From<u128>,
+    {
         initial_test_ext().execute_with(|| {
             let member_id: MemberId = 1;
             let account_id: [u8; 32] = [member_id as u8; 32];
@@ -826,16 +828,16 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         }
 
         fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
-            T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
-            <T as system::Trait>::AccountId: From<[u8; 32]>,
+            <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
             <T as membership::Trait>::MemberId: From<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <<T as minting::Trait>::Currency as traits::Currency<
-                <T as system::Trait>::AccountId,
+                <T as frame_system::Trait>::AccountId,
             >>::Balance: From<u128>,
         {
             initial_test_ext().execute_with(|| {
@@ -889,18 +891,18 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         }
 
         fn run_create_set_group_leader_reward_proposal_execution_succeeds<
-            T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
-            <T as system::Trait>::AccountId: From<[u8; 32]>,
+            <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
             <T as membership::Trait>::MemberId: From<u64>,
             <T as membership::Trait>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as minting::Trait>::Currency as traits::Currency<
-                <T as system::Trait>::AccountId,
+                <T as frame_system::Trait>::AccountId,
             >>::Balance: From<u128>,
         {
             initial_test_ext().execute_with(|| {
@@ -1018,18 +1020,18 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         }
 
         fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
-            T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
-            <T as system::Trait>::AccountId: From<[u8; 32]>,
+            <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
             <T as membership::Trait>::MemberId: From<u64>,
             <T as membership::Trait>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as stake::Trait>::Currency as traits::Currency<
-                <T as system::Trait>::AccountId,
+                <T as frame_system::Trait>::AccountId,
             >>::Balance: From<u128>,
         {
             initial_test_ext().execute_with(|| {
@@ -1140,18 +1142,18 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         }
 
         fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds<
-            T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
-            <T as system::Trait>::AccountId: From<[u8; 32]>,
+            <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
             <T as membership::Trait>::MemberId: From<u64>,
             <T as membership::Trait>::ActorId: Into<u64>,
             <T as minting::Trait>::MintId: From<u64>,
             <T as hiring::Trait>::OpeningId: From<u64>,
             <<T as stake::Trait>::Currency as traits::Currency<
-                <T as system::Trait>::AccountId,
+                <T as frame_system::Trait>::AccountId,
             >>::Balance: From<u128>,
         {
             initial_test_ext().execute_with(|| {
