@@ -108,7 +108,7 @@ export const Title = styled.h1`
 
   white-space: nowrap;
   text-overflow: ellipsis;
-  overflow-x: hidden;
+  overflow: hidden;
   max-width: 100%;
 `
 
