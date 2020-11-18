@@ -5,7 +5,8 @@
     "test": "truffle test --network development",
     "start": "ganache-cli --hardfork istanbul --network-id 5777 --gasLimit 10000000",
     "compile": "truffle compile",
-    "lint:contracts": "solhint 'contracts/**/*.sol'"
+    "lint:contracts": "solhint 'contracts/**/*.sol'",
+    "format:contracts": "yarn prettier --write contracts/**/*.sol contracts/*.sol"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.0.0",
@@ -14,9 +15,12 @@
     "truffle": "^5.1.33"
   },
   "devDependencies": {
-    "typescript": "^4.0.5",
-    "ts-node": "^9.0.0",
     "ganache-cli": "^6.12.1",
-    "solhint": "^3.3.2"
+    "solhint": "^3.3.2",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.5",
+    "prettier": "^2.1.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.60",
+    "solhint-plugin-prettier": "^0.0.5"
   }
 }
