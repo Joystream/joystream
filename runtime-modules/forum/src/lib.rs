@@ -804,10 +804,6 @@ decl_module! {
 
             Self::ensure_can_create_thread(account_id, &forum_user_id, &category_id)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1038,6 +1034,11 @@ decl_module! {
         }
 
         /// Edit post text
+        // TODO need a safer approach for frame_system call
+        // Interface to add a new post.
+        // It can be call from other module and this module.
+        // Method not check the forum user. The extrinsic call it should check if forum id is valid.
+        // If other module call it, could set the forum user id as zero, which not used by forum module.
         #[weight = 10_000_000] // TODO: adjust weight
         fn add_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, text: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
@@ -1045,14 +1046,20 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
+            // Make sure thread exists and is mutable
             let (_, thread) = Self::ensure_can_add_post(account_id, &forum_user_id, &category_id, &thread_id)?;
+
+            // Ensure map limits are not reached
+            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPostsInThread>(
+                thread.num_direct_posts as u64,
+            )?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Add new post
-            let (post_id, _) = Self::add_new_post(thread.category_id, thread_id, text.as_slice(), forum_user_id)?;
+            let (post_id, _) = Self::add_new_post(thread.category_id, thread_id, text.as_slice(), forum_user_id);
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(post_id));
@@ -1163,32 +1170,12 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // TODO need a safer approach for frame_system call
-    // Interface to add a new post.
-    // It can be call from other module and this module.
-    // Method not check the forum user. The extrinsic call it should check if forum id is valid.
-    // If other module call it, could set the forum user id as zero, which not used by forum module.
     pub fn add_new_post(
         category_id: T::CategoryId,
         thread_id: T::ThreadId,
         text: &[u8],
         author_id: T::ForumUserId,
-    ) -> Result<(T::PostId, Post<T::ForumUserId, T::ThreadId, T::Hash>), Error<T>> {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Make sure thread exists and is mutable
-        let (_, thread) = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
-
-        // Ensure map limits are not reached
-        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPostsInThread>(
-            thread.num_direct_posts as u64,
-        )?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
+    ) -> (T::PostId, Post<T::ForumUserId, T::ThreadId, T::Hash>) {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
 
@@ -1208,7 +1195,7 @@ impl<T: Trait> Module<T> {
         // Update thread's post counter
         <ThreadById<T>>::mutate(category_id, thread_id, |c| c.num_direct_posts += 1);
 
-        Ok((new_post_id, new_post))
+        (new_post_id, new_post)
     }
 
     fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
