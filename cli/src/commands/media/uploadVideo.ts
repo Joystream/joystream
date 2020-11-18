@@ -20,7 +20,7 @@ import toBuffer from 'it-to-buffer'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import ffmpeg from 'fluent-ffmpeg'
 import MediaCommandBase from '../../base/MediaCommandBase'
-import { getInputJson, IOFlags } from '../../helpers/InputOutput'
+import { getInputJson, validateInput, IOFlags } from '../../helpers/InputOutput'
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
@@ -38,8 +38,7 @@ type VideoMetadata = {
 export default class UploadVideoCommand extends MediaCommandBase {
   static description = 'Upload a new Video to a channel (requires a membership).'
   static flags = {
-    // TODO: ...IOFlags, - providing input as json
-    ...IOFlags,
+    input: IOFlags.input,
     channel: flags.integer({
       char: 'c',
       required: false,
@@ -220,6 +219,117 @@ export default class UploadVideoCommand extends MediaCommandBase {
     }
   }
 
+  private async promptForVideoInput(
+    channelId: number,
+    fileSize: number,
+    contentId: ContentId,
+    videoMetadata: VideoMetadata | null
+  ) {
+    // Set the defaults
+    const videoMediaDefaults: Partial<VideoMediaEntity> = {
+      pixelWidth: videoMetadata?.width,
+      pixelHeight: videoMetadata?.height,
+    }
+    const videoDefaults: Partial<VideoEntity> = {
+      duration: videoMetadata?.duration,
+      skippableIntroDuration: 0,
+    }
+
+    // Prompt for data
+    const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
+    const videoMediaJsonSchema = (VideoMediaEntitySchema as unknown) as JSONSchema
+
+    const videoMediaPrompter = new JsonSchemaPrompter<VideoMediaEntity>(videoMediaJsonSchema, videoMediaDefaults)
+    const videoPrompter = new JsonSchemaPrompter<VideoEntity>(videoJsonSchema, videoDefaults)
+
+    // Prompt for the data
+    const encodingSuggestion =
+      videoMetadata && videoMetadata.codecFullName ? ` (suggested: ${videoMetadata.codecFullName})` : ''
+    const encoding = await this.promptForEntityId(
+      `Choose Video encoding${encodingSuggestion}`,
+      'VideoMediaEncoding',
+      'name'
+    )
+    const { pixelWidth, pixelHeight } = await videoMediaPrompter.promptMultipleProps(['pixelWidth', 'pixelHeight'])
+    const language = await this.promptForEntityId('Choose Video language', 'Language', 'name')
+    const category = await this.promptForEntityId('Choose Video category', 'ContentCategory', 'name')
+    const videoProps = await videoPrompter.promptMultipleProps([
+      'title',
+      'description',
+      'thumbnailURL',
+      'duration',
+      'isPublic',
+      'isExplicit',
+      'hasMarketing',
+      'skippableIntroDuration',
+    ])
+
+    const license = await videoPrompter.promptSingleProp('license', () => this.promptForNewLicense())
+    const publishedBeforeJoystream = await videoPrompter.promptSingleProp('publishedBeforeJoystream', () =>
+      this.promptForPublishedBeforeJoystream()
+    )
+
+    // Create final inputs
+    const videoMediaInput: VideoMediaEntity = {
+      encoding,
+      pixelWidth,
+      pixelHeight,
+      size: fileSize,
+      location: { new: { joystreamMediaLocation: { new: { dataObjectId: contentId.encode() } } } },
+    }
+    return {
+      ...videoProps,
+      channel: channelId,
+      language,
+      category,
+      license,
+      media: { new: videoMediaInput },
+      publishedBeforeJoystream,
+    }
+  }
+
+  private async getVideoInputFromFile(
+    filePath: string,
+    channelId: number,
+    fileSize: number,
+    contentId: ContentId,
+    videoMetadata: VideoMetadata | null
+  ) {
+    let videoInput = await getInputJson<any>(filePath)
+    if (typeof videoInput !== 'object' || videoInput === null) {
+      this.error('Invalid input json - expected an object', { exit: ExitCodes.InvalidInput })
+    }
+    const videoMediaDefaults: Partial<VideoMediaEntity> = {
+      pixelWidth: videoMetadata?.width,
+      pixelHeight: videoMetadata?.height,
+      size: fileSize,
+    }
+    const videoDefaults: Partial<VideoEntity> = {
+      channel: channelId,
+      duration: videoMetadata?.duration,
+    }
+    const inputVideoMedia =
+      videoInput.media && typeof videoInput.media === 'object' && (videoInput.media as any).new
+        ? (videoInput.media as any).new
+        : {}
+    videoInput = {
+      ...videoDefaults,
+      ...videoInput,
+      media: {
+        new: {
+          ...videoMediaDefaults,
+          ...inputVideoMedia,
+          location: { new: { joystreamMediaLocation: { new: { dataObjectId: contentId.encode() } } } },
+        },
+      },
+    }
+
+    const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
+    await validateInput(videoInput, videoJsonSchema)
+
+    return videoInput as VideoEntity
+  }
+
   async run() {
     const account = await this.getRequiredSelectedAccount()
     const memberId = await this.getRequiredMemberId()
@@ -231,11 +341,6 @@ export default class UploadVideoCommand extends MediaCommandBase {
       args: { filePath },
       flags: { channel: inputChannelId, input, confirm },
     } = this.parse(UploadVideoCommand)
-
-    // Keep this here in case if provided input is not correct it will prevent uploading video
-    const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
-    let videoInput: VideoEntity | null = await getInputJson<VideoEntity>(input, videoJsonSchema)
-    this.jsonPrettyPrint(JSON.stringify(videoInput))
 
     // Basic file validation
     if (!fs.existsSync(filePath)) {
@@ -311,72 +416,12 @@ export default class UploadVideoCommand extends MediaCommandBase {
 
     await this.uploadVideo(filePath, fileSize, uploadUrl)
 
-    // Prompting for the data:
-
-    // Set the defaults
-    const videoMediaDefaults: Partial<VideoMediaEntity> = {
-      pixelWidth: videoMetadata?.width,
-      pixelHeight: videoMetadata?.height,
-    }
-    const videoDefaults: Partial<VideoEntity> = {
-      duration: videoMetadata?.duration,
-      skippableIntroDuration: 0,
-    }
-
     // No input, create prompting helpers
-    if (!videoInput) {
-      const videoMediaJsonSchema = (VideoMediaEntitySchema as unknown) as JSONSchema
+    const videoInput = input
+      ? await this.getVideoInputFromFile(input, channelId, fileSize, contentId, videoMetadata)
+      : await this.promptForVideoInput(channelId, fileSize, contentId, videoMetadata)
 
-      const videoMediaPrompter = new JsonSchemaPrompter<VideoMediaEntity>(videoMediaJsonSchema, videoMediaDefaults)
-      const videoPrompter = new JsonSchemaPrompter<VideoEntity>(videoJsonSchema, videoDefaults)
-
-      // Prompt for the data
-      const encodingSuggestion =
-        videoMetadata && videoMetadata.codecFullName ? ` (suggested: ${videoMetadata.codecFullName})` : ''
-      const encoding = await this.promptForEntityId(
-        `Choose Video encoding${encodingSuggestion}`,
-        'VideoMediaEncoding',
-        'name'
-      )
-      const { pixelWidth, pixelHeight } = await videoMediaPrompter.promptMultipleProps(['pixelWidth', 'pixelHeight'])
-      const language = await this.promptForEntityId('Choose Video language', 'Language', 'name')
-      const category = await this.promptForEntityId('Choose Video category', 'ContentCategory', 'name')
-      const videoProps = await videoPrompter.promptMultipleProps([
-        'title',
-        'description',
-        'thumbnailURL',
-        'duration',
-        'isPublic',
-        'isExplicit',
-        'hasMarketing',
-        'skippableIntroDuration',
-      ])
-
-      const license = await videoPrompter.promptSingleProp('license', () => this.promptForNewLicense())
-      const publishedBeforeJoystream = await videoPrompter.promptSingleProp('publishedBeforeJoystream', () =>
-        this.promptForPublishedBeforeJoystream()
-      )
-
-      // Create final inputs
-      const videoMediaInput: VideoMediaEntity = {
-        encoding,
-        pixelWidth,
-        pixelHeight,
-        size: fileSize,
-        location: { new: { joystreamMediaLocation: { new: { dataObjectId: contentId.encode() } } } },
-      }
-      videoInput = {
-        ...videoProps,
-        channel: channelId,
-        language,
-        category,
-        license,
-        media: { new: videoMediaInput },
-        publishedBeforeJoystream,
-      }
-
-      this.jsonPrettyPrint(JSON.stringify(videoInput))
-    }
+    this.jsonPrettyPrint(JSON.stringify(videoInput))
 
     if (!confirm) await this.requireConfirmation('Do you confirm the provided input?')
 
