@@ -35,7 +35,7 @@ export interface GetFeaturedVideos_featured_videos_media {
 export interface GetFeaturedVideos_featured_videos_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -47,8 +47,8 @@ export interface GetFeaturedVideos_featured_videos {
   category: GetFeaturedVideos_featured_videos_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: GetFeaturedVideos_featured_videos_media;
   channel: GetFeaturedVideos_featured_videos_channel;
 }

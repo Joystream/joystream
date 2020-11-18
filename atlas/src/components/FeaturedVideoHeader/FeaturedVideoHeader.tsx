@@ -17,11 +17,11 @@ const FeaturedVideoHeader: React.FC = () => {
   return (
     <Container>
       <MediaWrapper>
-        <BackgroundImage src={mockCoverVideo.thumbnailURL} />
+        <BackgroundImage src={mockCoverVideo.thumbnailUrl} />
       </MediaWrapper>
       <InfoContainer>
         <ChannelLink to={routes.channel(mockCoverVideoChannel.id)}>
-          <StyledAvatar img={mockCoverVideoChannel.avatarPhotoURL} name={mockCoverVideoChannel.handle} />
+          <StyledAvatar img={mockCoverVideoChannel.avatarPhotoUrl} name={mockCoverVideoChannel.handle} />
         </ChannelLink>
         <TitleContainer>
           <h2>{mockCoverVideo.title}</h2>

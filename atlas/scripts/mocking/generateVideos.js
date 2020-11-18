@@ -14,7 +14,7 @@ const generateVideo = () => {
     title: faker.lorem.words(titleWordsCount),
     description: faker.lorem.sentences(descriptionSentenceCount),
     views: faker.random.number(150000),
-    publishedOnJoystreamAt: faker.date.past(10),
+    createdAt: faker.date.past(10),
   }
 }
 

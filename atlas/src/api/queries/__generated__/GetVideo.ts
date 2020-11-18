@@ -60,7 +60,7 @@ export interface GetVideo_video_channel_videos_media {
 export interface GetVideo_video_channel_videos_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -72,8 +72,8 @@ export interface GetVideo_video_channel_videos {
   category: GetVideo_video_channel_videos_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: GetVideo_video_channel_videos_media;
   channel: GetVideo_video_channel_videos_channel;
 }
@@ -81,7 +81,7 @@ export interface GetVideo_video_channel_videos {
 export interface GetVideo_video_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
   videos: GetVideo_video_channel_videos[];
 }
@@ -94,8 +94,8 @@ export interface GetVideo_video {
   category: GetVideo_video_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: GetVideo_video_media;
   channel: GetVideo_video_channel;
 }

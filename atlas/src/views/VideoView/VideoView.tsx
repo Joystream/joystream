@@ -15,7 +15,7 @@ import {
   StyledChannelAvatar,
   Title,
 } from './VideoView.style'
-import { VideoGrid, PlaceholderVideoGrid } from '@/components'
+import { PlaceholderVideoGrid, VideoGrid } from '@/components'
 import { Placeholder, VideoPlayer } from '@/shared/components'
 import { useMutation, useQuery } from '@apollo/client'
 import { ADD_VIDEO_VIEW, GET_VIDEO_WITH_CHANNEL_VIDEOS } from '@/api/queries'
@@ -74,7 +74,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         {data?.video ? <Title>{data.video.title}</Title> : <Placeholder height={46} width={400} />}
         <Meta>
           {data?.video ? (
-            formatVideoViewsAndDate(data.video.views, data.video.publishedOnJoystreamAt, { fullViews: true })
+            formatVideoViewsAndDate(data.video.views, data.video.createdAt, { fullViews: true })
           ) : (
             <Placeholder height={18} width={200} />
           )}
@@ -83,7 +83,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
           {data?.video ? (
             <StyledChannelAvatar
               name={data.video.channel.handle}
-              avatarUrl={data.video.channel.avatarPhotoURL}
+              avatarUrl={data.video.channel.avatarPhotoUrl}
               onClick={() => navigate(routes.channel(data.video!.channel.id))}
             />
           ) : (

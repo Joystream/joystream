@@ -17,7 +17,7 @@ const ChannelGrid: React.FC<ChannelGridProps> = ({ channels, ...gridProps }) => 
   return (
     <Grid {...gridProps}>
       {channels.map((c) => (
-        <StyledChannelPreview key={c.id} id={c.id} name={c.handle} avatarURL={c.avatarPhotoURL} />
+        <StyledChannelPreview key={c.id} id={c.id} name={c.handle} avatarURL={c.avatarPhotoUrl} />
       ))}
     </Grid>
   )

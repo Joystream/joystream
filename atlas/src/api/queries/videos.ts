@@ -26,14 +26,14 @@ export const videoFieldsFragment = gql`
     }
     views
     duration
-    thumbnailURL
-    publishedOnJoystreamAt
+    thumbnailUrl
+    createdAt
     media {
       ...VideoMediaFields
     }
     channel {
       id
-      avatarPhotoURL
+      avatarPhotoUrl
       handle
     }
   }
@@ -46,7 +46,7 @@ export const GET_NEWEST_VIDEOS = gql`
       first: $first
       after: $after
       where: { categoryId_eq: $categoryId, isCurated_eq: false }
-      orderBy: [publishedOnJoystreamAt_DESC]
+      orderBy: createdAt_DESC
     ) {
       edges {
         cursor
@@ -79,7 +79,7 @@ export const GET_VIDEO_WITH_CHANNEL_VIDEOS = gql`
       ...VideoFields
       channel {
         id
-        avatarPhotoURL
+        avatarPhotoUrl
         handle
         videos {
           ...VideoFields

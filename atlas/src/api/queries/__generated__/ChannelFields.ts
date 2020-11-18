@@ -11,6 +11,6 @@ export interface ChannelFields {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
+  coverPhotoUrl: string | null;
 }

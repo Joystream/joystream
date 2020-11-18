@@ -35,7 +35,7 @@ export interface GetChannel_channel_videos_media {
 export interface GetChannel_channel_videos_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
   handle: string;
 }
 
@@ -47,8 +47,8 @@ export interface GetChannel_channel_videos {
   category: GetChannel_channel_videos_category;
   views: number | null;
   duration: number;
-  thumbnailURL: string;
-  publishedOnJoystreamAt: GQLDate;
+  thumbnailUrl: string;
+  createdAt: GQLDate;
   media: GetChannel_channel_videos_media;
   channel: GetChannel_channel_videos_channel;
 }
@@ -57,8 +57,8 @@ export interface GetChannel_channel {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
+  avatarPhotoUrl: string | null;
+  coverPhotoUrl: string | null;
   videos: GetChannel_channel_videos[];
 }
 

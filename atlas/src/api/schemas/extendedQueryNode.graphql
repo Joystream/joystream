@@ -16,13 +16,15 @@ type Member {
 type Channel {
   id: ID!
 
+  createdAt: Date!
+
   handle: String!
 
   description: String!
 
-  coverPhotoURL: String
+  coverPhotoUrl: String
 
-  avatarPhotoURL: String
+  avatarPhotoUrl: String
 
   owner: Member!
 
@@ -120,7 +122,7 @@ type Video {
   # In intro
   skippableIntroDuration: Int
 
-  thumbnailURL: String!
+  thumbnailUrl: String!
   Language: Language
 
   media: VideoMedia!
@@ -128,8 +130,8 @@ type Video {
   hasMarketing: Boolean
 
   # Timestamp of block
-  publishedOnJoystreamAt: Date!
-  publishedOnJoystreamAtBlockHeight: Float!
+  createdAt: Date!
+  createdAtBlockHeight: Float!
 
   # Possible time when video was published before Joystream
   publishedBeforeJoystream: String
@@ -165,8 +167,8 @@ input ChannelWhereInput {
 }
 
 enum ChannelOrderByInput {
-  publishedOnJoystreamAt_ASC
-  publishedOnJoystreamAt_DESC
+  createdAt_ASC
+  createdAt_DESC
 }
 
 type ChannelEdge {
@@ -187,8 +189,8 @@ input VideoWhereInput {
 }
 
 enum VideoOrderByInput {
-  publishedOnJoystreamAt_ASC
-  publishedOnJoystreamAt_DESC
+  createdAt_ASC
+  createdAt_DESC
 }
 
 type VideoEdge {
@@ -216,7 +218,7 @@ type Query {
     first: Int
     after: String
     where: ChannelWhereInput
-    orderBy: [ChannelOrderByInput!]
+    orderBy: ChannelOrderByInput
   ): ChannelConnection!
 
   # Lookup a channel by its ID
@@ -229,7 +231,7 @@ type Query {
   video(id: ID!): Video
 
   # List all videos by given constraints
-  videosConnection(first: Int, after: String, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): VideoConnection!
+  videosConnection(first: Int, after: String, where: VideoWhereInput, orderBy: VideoOrderByInput): VideoConnection!
 
   # List all top trending videos
   featured_videos: [Video!]!

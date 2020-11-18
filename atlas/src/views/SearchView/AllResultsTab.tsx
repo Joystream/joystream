@@ -3,7 +3,7 @@ import { Search_search_item_Channel, Search_search_item_Video } from '@/api/quer
 import { Placeholder, VideoPreviewBase } from '@/shared/components'
 import styled from '@emotion/styled'
 import { spacing, typography } from '@/shared/theme'
-import { VideoPreview, ChannelGallery, VideoGallery } from '@/components'
+import { ChannelGallery, VideoGallery, VideoPreview } from '@/components'
 
 type AllResultsTabProps = {
   videos: Search_search_item_Video[]
@@ -32,9 +32,9 @@ const AllResultsTab: React.FC<AllResultsTabProps> = ({ videos: allVideos, channe
               title={bestMatch.title}
               duration={bestMatch.duration}
               channelName={bestMatch.channel.handle}
-              createdAt={bestMatch.publishedOnJoystreamAt}
+              createdAt={bestMatch.createdAt}
               views={bestMatch.views}
-              posterURL={bestMatch.thumbnailURL}
+              posterURL={bestMatch.thumbnailUrl}
               main
             />
           </>
