@@ -3,7 +3,7 @@ import {
   ButtonsContainer,
   ChannelLink,
   Container,
-  GradientOverlay,
+  HorizontalGradientOverlay,
   InfoContainer,
   Media,
   MediaWrapper,
@@ -12,6 +12,7 @@ import {
   SoundButton,
   StyledAvatar,
   TitleContainer,
+  VerticalGradientOverlay,
 } from './FeaturedVideoHeader.style'
 import { CSSTransition } from 'react-transition-group'
 import { mockCoverVideo, mockCoverVideoChannel, mockCoverVideoMedia } from '@/mocking/data/mockCoverVideo'
@@ -52,7 +53,8 @@ const FeaturedVideoHeader: React.FC = () => {
               src={mockCoverVideoMedia.location}
             />
           </PlayerContainer>
-          <GradientOverlay />
+          <HorizontalGradientOverlay />
+          <VerticalGradientOverlay />
         </Media>
       </MediaWrapper>
       <InfoContainer>
