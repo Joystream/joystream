@@ -74,7 +74,7 @@ async function createChannel(
 
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   const { language } = p
-  if (language !== undefined) {
+  if (language) {
     channel.language = await getOrCreate.language(
       { db, block, id },
       classEntityMap,

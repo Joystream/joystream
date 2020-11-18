@@ -98,8 +98,8 @@ async function updateChannelEntityPropertyValues(
   const record = await db.get(Channel, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
 
-  let lang: Language | undefined
-  if (props.language !== undefined) {
+  let lang: Language | undefined = record.language
+  if (props.language) {
     const id = getEntityIdFromReferencedField(props.language, entityIdBeforeTransaction)
     lang = await db.get(Language, { where: { id } })
     if (lang === undefined) throw Error(`Language entity not found: ${id}`)
@@ -107,7 +107,7 @@ async function updateChannelEntityPropertyValues(
   }
   Object.assign(record, props)
 
-  record.language = lang || record.language
+  record.language = lang
   await db.save<Channel>(record)
 }
 async function updateVideoMediaEntityPropertyValues(

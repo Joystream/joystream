@@ -102,7 +102,7 @@ type Channel @entity {
   isCurated: Boolean!
 
   "The primary langauge of the channel's content"
-  language: Language!
+  language: Language
 
   videos: [Video!] @derivedFrom(field: "channel")
 
