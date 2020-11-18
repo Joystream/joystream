@@ -968,15 +968,16 @@ decl_module! {
             // Get thread
             let (_, thread) = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
 
+            let category_id = thread.category_id;
+
             // Make sure poll exist
-            Self::ensure_vote_is_valid(&thread, index)?;
+            let poll = Self::ensure_vote_is_valid(thread, index)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Store new poll alternative statistics
-            let poll = thread.poll.unwrap();
             let new_poll_alternatives: Vec<PollAlternative<T::Hash>> = poll.poll_alternatives
                 .iter()
                 .enumerate()
@@ -991,11 +992,11 @@ decl_module! {
                 .collect();
 
             // Update thread with one object
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |value| {
+            <ThreadById<T>>::mutate(category_id, thread_id, |value| {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
-                        ..poll
+                        ..poll.to_owned()
                     }),
                     ..(value.clone())
                 }
@@ -1843,15 +1844,12 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: &Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        thread: Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         index: u32,
-    ) -> Result<(), Error<T>> {
-        // Poll not existed
-        if thread.poll.is_none() {
-            return Err(Error::<T>::PollNotExist);
-        }
+    ) -> Result<Poll<T::Moment, T::Hash>, Error<T>> {
+        // Ensure poll exists
+        let poll = thread.poll.ok_or(Error::<T>::PollNotExist)?;
 
-        let poll = thread.poll.as_ref().unwrap();
         // Poll not expired
         if poll.end_time < <pallet_timestamp::Module<T>>::now() {
             Err(Error::<T>::PollCommitExpired)
@@ -1861,7 +1859,7 @@ impl<T: Trait> Module<T> {
             if index as usize >= alternative_length {
                 Err(Error::<T>::PollData)
             } else {
-                Ok(())
+                Ok(poll)
             }
         }
     }
