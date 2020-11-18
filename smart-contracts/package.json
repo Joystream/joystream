@@ -2,8 +2,9 @@
   "name": "@joystream/cd-smart-contract",
   "version": "0.1.0",
   "scripts": {
-    "test": "truffle test",
+    "test": "truffle test --network development",
     "start": "ganache-cli --hardfork istanbul --network-id 5777 --gasLimit 10000000",
+    "compile": "truffle compile",
     "lint:contracts": "solhint 'contracts/**/*.sol'"
   },
   "dependencies": {
