@@ -217,6 +217,7 @@ pub use frame_support::dispatch::DispatchResult;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{MaybeSerialize, Member};
@@ -320,57 +321,10 @@ pub trait StorageLimits {
 
     /// Maximum total of all existing categories
     type MaxCategories: Get<u64>;
+
+    /// Maximum number of poll alternatives
+    type MaxPollAlternativesNumber: Get<u64>;
 }
-
-/*
- * MOVE ALL OF THESE OUT TO COMMON LATER
- */
-
-/// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct InputValidationLengthConstraint {
-    /// Minimum length
-    pub min: u16,
-
-    /// Difference between minimum length and max length.
-    /// While having max would have been more direct, this
-    /// way makes max < min unrepresentable semantically,
-    /// which is safer.
-    pub max_min_diff: u16,
-}
-
-impl InputValidationLengthConstraint {
-    /// Helper for computing max
-    pub fn max(&self) -> u16 {
-        self.min + self.max_min_diff
-    }
-
-    pub fn ensure_valid<ErrorType>(
-        &self,
-        len: usize,
-        too_short_msg: ErrorType,
-        too_long_msg: ErrorType,
-    ) -> Result<(), ErrorType> {
-        let length = len as u16;
-        if length < self.min {
-            Err(too_short_msg)
-        } else if length > self.max() {
-            Err(too_long_msg)
-        } else {
-            Ok(())
-        }
-    }
-}
-
-//use srml_support::storage::*;
-//use sr_io::{StorageOverlay, ChildrenStorageOverlay};
-//#[cfg(feature = "std")]
-//use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
-//#[cfg(any(feature = "std", test))]
-//use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
-
-use frame_system::ensure_signed;
 
 /// Represents all poll alternatives and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -616,9 +570,6 @@ decl_storage! {
         /// Moderator set for each Category
         pub CategoryByModerator get(fn category_by_moderator) config(): double_map hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) T::ModeratorId => ();
 
-        /// Input constraints for number of items in poll.
-        pub PollItemsConstraint get(fn poll_items_constraint) config(): InputValidationLengthConstraint;
-
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(fn data_migration_done) config(): bool;
     }
@@ -830,8 +781,20 @@ decl_module! {
         }
 
         /// Create new thread in category with poll
+        // TODO need a safer approach for frame_system call
+        // Interface to add a new thread.
+        // It can be call from other module and this module.
+        // Method not check the forum user. The extrinsic call it should check if forum id is valid.
+        // If other module call it, could set the forum user id as zero, which not used by forum module.
+        // Data structure of poll data: item description vector, poll description, start time, end time,
+        // minimum selected items, maximum selected items
         #[weight = 10_000_000] // TODO: adjust weight
-        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>,
+        fn create_thread(
+            origin,
+            forum_user_id: T::ForumUserId,
+            category_id: T::CategoryId,
+            title: Vec<u8>,
+            text: Vec<u8>,
             poll: Option<Poll<T::Moment, T::Hash>>,
         ) -> DispatchResult {
             // Ensure data migration is done
@@ -845,11 +808,54 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Create a new thread
-            let (thread_id, _) = Self::add_new_thread(category_id, forum_user_id, title.as_slice(), text.as_slice(), &poll)?;
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            // Check that thread can be added to category
+            Self::ensure_category_is_mutable(&category_id)?;
+
+            // Ensure poll is valid
+            if let Some(ref data) = poll {
+                // Check all poll alternatives
+                Self::ensure_poll_alternatives_length_is_valid(&data.poll_alternatives)?;
+
+                // Check poll self information
+                Self::ensure_poll_is_valid(data)?;
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Create and add new thread
+            let new_thread_id = <NextThreadId<T>>::get();
+
+            // Add inital post to thread
+            let _ = Self::add_new_post(category_id, new_thread_id, &text, forum_user_id);
+
+            // Build a new thread
+            let new_thread = Thread {
+                category_id,
+                title_hash: T::calculate_hash(&title),
+                author_id: forum_user_id,
+                archived: false,
+                poll,
+                num_direct_posts: 1,
+            };
+
+            // Store thread
+            <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
+                *value = new_thread.clone()
+            });
+
+            // Update next thread id
+            <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+            // Update category's thread counter
+            <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(thread_id));
+            Self::deposit_event(RawEvent::ThreadCreated(new_thread_id));
 
             Ok(())
         }
@@ -996,7 +1002,7 @@ decl_module! {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
-                        ..poll.to_owned()
+                        ..poll
                     }),
                     ..(value.clone())
                 }
@@ -1158,75 +1164,6 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // TODO need a safer approach for frame_system call
-    // Interface to add a new thread.
-    // It can be call from other module and this module.
-    // Method not check the forum user. The extrinsic call it should check if forum id is valid.
-    // If other module call it, could set the forum user id as zero, which not used by forum module.
-    // Data structure of poll data: item description vector, poll description, start time, end time,
-    // minimum selected items, maximum selected items
-    pub fn add_new_thread(
-        category_id: T::CategoryId,
-        author_id: T::ForumUserId,
-        title: &[u8],
-        text: &[u8],
-        poll: &Option<Poll<T::Moment, T::Hash>>,
-    ) -> Result<
-        (
-            T::ThreadId,
-            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
-        ),
-        Error<T>,
-    > {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Check that thread can be added to category
-        Self::ensure_category_is_mutable(&category_id)?;
-
-        // Unwrap poll
-        if let Some(data) = poll {
-            // Check all poll alternatives
-            Self::ensure_poll_alternatives_valid(&data.poll_alternatives)?;
-
-            // Check poll self information
-            Self::ensure_poll_is_valid(&data)?;
-        }
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Create and add new thread
-        let new_thread_id = <NextThreadId<T>>::get();
-
-        // Add inital post to thread
-        let _ = Self::add_new_post(category_id, new_thread_id, text, author_id);
-
-        // Build a new thread
-        let new_thread = Thread {
-            category_id,
-            title_hash: T::calculate_hash(title),
-            author_id,
-            archived: false,
-            poll: poll.clone(),
-            num_direct_posts: 1,
-        };
-
-        // Store thread
-        <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
-            *value = new_thread.clone()
-        });
-
-        // Update next thread id
-        <NextThreadId<T>>::mutate(|n| *n += One::one());
-
-        // Update category's thread counter
-        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
-
-        Ok((new_thread_id, new_thread))
-    }
-
-    // TODO need a safer approach for frame_system call
     // Interface to add a new post.
     // It can be call from other module and this module.
     // Method not check the forum user. The extrinsic call it should check if forum id is valid.
@@ -1305,24 +1242,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensure all poll alternative valid
-    fn ensure_poll_alternatives_valid(
+    // Ensure poll alternative size is valid
+    fn ensure_poll_alternatives_length_is_valid(
         alternatives: &[PollAlternative<T::Hash>],
     ) -> Result<(), Error<T>> {
-        let len = alternatives.len();
-        // Check alternative amount
-        Self::ensure_poll_alternatives_length_is_valid(len)?;
+        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
+            alternatives.len() as u64,
+        )?;
 
         Ok(())
-    }
-
-    // Ensure poll alternative size is valid
-    fn ensure_poll_alternatives_length_is_valid(len: usize) -> Result<(), Error<T>> {
-        PollItemsConstraint::get().ensure_valid(
-            len,
-            Error::<T>::PollAlternativesTooShort,
-            Error::<T>::PollAlternativesTooLong,
-        )
     }
 
     fn ensure_post_is_mutable(

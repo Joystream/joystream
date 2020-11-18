@@ -559,6 +559,7 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 20;
+    pub const MaxPollAlternativesNumber: u64 = 20;
 }
 
 pub struct MapLimits;
@@ -569,6 +570,7 @@ impl forum::StorageLimits for MapLimits {
     type MaxPostsInThread = MaxPostsInThread;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
+    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 // Alias for forum working group
