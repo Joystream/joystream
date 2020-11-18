@@ -170,9 +170,14 @@ export interface IEntity {
   properties: IProperty[]
 }
 
-export interface IPropertyIdWithName {
-  // propertyId - property name
-  [propertyId: string]: string
+export interface IPropertyDef {
+  name: string
+  type: string
+  required: boolean
+}
+
+export interface IPropertyWithId {
+  [inClassIndex: string]: IPropertyDef
 }
 
 export interface IWhereCond {
