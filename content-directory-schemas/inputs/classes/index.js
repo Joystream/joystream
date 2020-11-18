@@ -1,5 +1,4 @@
-// Class order (needs to be inline with query node mappings)
-export const EXPECTED_CLASS_ORDER = [
+const EXPECTED_CLASS_ORDER = [
   'Channel',
   'ContentCategory',
   'HttpMediaLocation',
@@ -14,3 +13,6 @@ export const EXPECTED_CLASS_ORDER = [
   'VideoMediaEncoding',
   'FeaturedVideo',
 ]
+
+// Exports class input jsons in a predictable order
+module.exports = EXPECTED_CLASS_ORDER.map((className) => require(`./${className}Class.json`))

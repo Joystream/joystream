@@ -4,4 +4,3 @@ export { getInputs, getInitializationInputs, getInputsLocation } from './helpers
 export { isReference, isSingle } from './helpers/propertyType'
 export { getSchemasLocation } from './helpers/schemas'
 export { default as initializeContentDir } from './helpers/initialize'
-export { EXPECTED_CLASS_ORDER } from './consts'

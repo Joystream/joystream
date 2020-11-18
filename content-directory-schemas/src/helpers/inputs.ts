@@ -2,7 +2,6 @@ import path from 'path'
 import fs from 'fs'
 import { CreateClass, AddClassSchema } from '../../types/extrinsics'
 import { EntityBatch } from '../../types/EntityBatch'
-import { EXPECTED_CLASS_ORDER } from '../consts'
 
 export const INPUTS_LOCATION = path.join(__dirname, '../../inputs')
 export const INPUT_TYPES = ['classes', 'schemas', 'entityBatches'] as const
@@ -16,26 +15,25 @@ export function getInputs<Schema = any>(
   inputType: InputType,
   rootInputsLocation = INPUTS_LOCATION
 ): FetchedInput<Schema>[] {
-  return fs.readdirSync(path.join(rootInputsLocation, inputType)).map((fileName) => {
-    const inputJson = fs.readFileSync(path.join(rootInputsLocation, inputType, fileName)).toString()
-    return {
+  const inputs: FetchedInput<Schema>[] = []
+  fs.readdirSync(path.join(rootInputsLocation, inputType)).forEach((fileName) => {
+    const inputFilePath = path.join(rootInputsLocation, inputType, fileName)
+    if (path.extname(inputFilePath) !== '.json') {
+      return
+    }
+    const inputJson = fs.readFileSync(inputFilePath).toString()
+    inputs.push({
       fileName,
       data: JSON.parse(inputJson) as Schema,
-    }
+    })
   })
-}
-
-export function getSortedClassInputs(rootInputsLocation = INPUTS_LOCATION): FetchedInput<CreateClass>[] {
-  return getInputs<CreateClass>('classes', rootInputsLocation).sort((a, b) => {
-    if (EXPECTED_CLASS_ORDER.indexOf(a.data.name) === -1) return 1
-    if (EXPECTED_CLASS_ORDER.indexOf(b.data.name) === -1) return -1
-    return EXPECTED_CLASS_ORDER.indexOf(a.data.name) - EXPECTED_CLASS_ORDER.indexOf(b.data.name)
-  })
+  return inputs
 }
 
 export function getInitializationInputs(rootInputsLocation = INPUTS_LOCATION) {
   return {
-    classInputs: getSortedClassInputs(rootInputsLocation).map(({ data }) => data),
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    classInputs: require('../../inputs/classes/index.js') as CreateClass[],
     schemaInputs: getInputs<AddClassSchema>('schemas').map(({ data }) => data),
     entityBatchInputs: getInputs<EntityBatch>('entityBatches').map(({ data }) => data),
   }
