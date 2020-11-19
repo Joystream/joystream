@@ -165,7 +165,7 @@ The best way to ilustrate this would be by providing some examples:
       description: 'This is an example channel',
       language: { existing: { code: 'EN' } },
       coverPhotoUrl: '',
-      avatarPhotoURL: '',
+      avatarPhotoUrl: '',
       isPublic: true,
     }
 

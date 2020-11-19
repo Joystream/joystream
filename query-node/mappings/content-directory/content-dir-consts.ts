@@ -40,8 +40,8 @@ export const CategoryPropertyNamesWithId: IPropertyIdWithName = {
 export const channelPropertyNamesWithId: IPropertyIdWithName = {
   0: 'title',
   1: 'description',
-  2: 'coverPhotoURL',
-  3: 'avatarPhotoURL',
+  2: 'coverPhotoUrl',
+  3: 'avatarPhotoUrl',
   4: 'isPublic',
   5: 'isCurated',
   6: 'language',

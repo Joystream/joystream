@@ -23,7 +23,7 @@ async function main() {
     // input/entityBatches/LanguageBatch.json
     language: { existing: { code: 'EN' } },
     coverPhotoUrl: '',
-    avatarPhotoURL: '',
+    avatarPhotoUrl: '',
     isPublic: true,
   }
   // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)

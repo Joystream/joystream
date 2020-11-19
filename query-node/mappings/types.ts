@@ -42,8 +42,8 @@ export interface IReference {
 export interface IChannel {
   title: string
   description: string
-  coverPhotoURL: string
-  avatarPhotoURL: string
+  coverPhotoUrl: string
+  avatarPhotoUrl: string
   isPublic: boolean
   isCurated: boolean
   language?: IReference

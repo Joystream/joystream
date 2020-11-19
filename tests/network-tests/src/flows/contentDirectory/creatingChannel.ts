@@ -14,7 +14,7 @@ export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixt
     // input/entityBatches/LanguageBatch.json
     language: { existing: { code: 'EN' } },
     coverPhotoUrl: '',
-    avatarPhotoURL: '',
+    avatarPhotoUrl: '',
     isPublic: true,
   }
   return new CreateChannelFixture(api, channelEntity)
@@ -36,7 +36,7 @@ export default async function channelCreation(api: QueryNodeApi) {
   assert(queriedChannel.description === createChannelHappyCaseFixture.channelEntity.description, 'Should be equal')
   assert(queriedChannel.coverPhotoUrl === createChannelHappyCaseFixture.channelEntity.coverPhotoUrl, 'Should be equal')
   assert(
-    queriedChannel.avatarPhotoUrl === createChannelHappyCaseFixture.channelEntity.avatarPhotoURL,
+    queriedChannel.avatarPhotoUrl === createChannelHappyCaseFixture.channelEntity.avatarPhotoUrl,
     'Should be equal'
   )
   assert(queriedChannel.isPublic === createChannelHappyCaseFixture.channelEntity.isPublic, 'Should be equal')

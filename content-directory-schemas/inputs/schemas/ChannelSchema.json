@@ -21,7 +21,7 @@
       "property_type": { "Single": { "Text": 256 } }
     },
     {
-      "name": "avatarPhotoURL",
+      "name": "avatarPhotoUrl",
       "description": "Channel's avatar photo.",
       "required": false,
       "property_type": { "Single": { "Text": 256 } }

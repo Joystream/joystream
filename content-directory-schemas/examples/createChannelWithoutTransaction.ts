@@ -30,7 +30,7 @@ async function main() {
     description: 'This is an example channel',
     language: languageEntityId,
     coverPhotoUrl: '',
-    avatarPhotoURL: '',
+    avatarPhotoUrl: '',
     isPublic: true,
   }
 
