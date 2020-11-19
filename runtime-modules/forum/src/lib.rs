@@ -781,7 +781,7 @@ decl_module! {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
-                        ..poll.to_owned()
+                        ..poll.clone()
                     }),
                     ..(value.clone())
                 }
