@@ -517,9 +517,6 @@ decl_error! {
         /// Poll items number too short.
         PollAlternativesTooShort,
 
-        /// Poll items number too long.
-        PollAlternativesTooLong,
-
         /// Poll not exist.
         PollNotExist,
 
@@ -993,6 +990,8 @@ decl_module! {
                     })
                 .collect();
 
+            Self::ensure_poll_alternatives_length_is_valid(&new_poll_alternatives)?;
+
             // Update thread with one object
             <ThreadById<T>>::mutate(category_id, thread_id, |value| {
                 *value = Thread {
@@ -1236,6 +1235,11 @@ impl<T: Trait> Module<T> {
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
             alternatives.len() as u64,
         )?;
+
+        ensure!(
+            alternatives.len() as u64 >= 2,
+            Error::<T>::PollAlternativesTooShort
+        );
 
         Ok(())
     }
