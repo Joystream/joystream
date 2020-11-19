@@ -1351,11 +1351,7 @@ impl<T: Trait> Module<T> {
         };
 
         // Ensure category exists
-        if !<CategoryById<T>>::contains_key(category_id) {
-            return Err(Error::<T>::CategoryDoesNotExist);
-        }
-
-        let category = <CategoryById<T>>::get(category_id);
+        let category = Self::ensure_category_exists(category_id)?;
 
         // Ensure category is empty
         ensure!(
@@ -1438,10 +1434,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_is_forum_lead_account(&account_id)?;
 
         // ensure category exists.
-        ensure!(
-            <CategoryById<T>>::contains_key(&category_id),
-            Error::<T>::CategoryDoesNotExist
-        );
+        let category = Self::ensure_category_exists(category_id)?;
 
         if new_value {
             Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
@@ -1450,6 +1443,17 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    fn ensure_category_exists(
+        category_id: &T::CategoryId,
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+        ensure!(
+            <CategoryById<T>>::contains_key(&category_id),
+            Error::<T>::CategoryDoesNotExist
+        );
+
+        Ok(<CategoryById<T>>::get(category_id))
     }
 
     fn ensure_can_create_category(
