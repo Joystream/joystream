@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { VideoEntity } from 'cd-schemas/types/entities'
-import { InputParser, ExtrinsicsHelper } from 'cd-schemas'
-import { FlattenRelations } from 'cd-schemas/types/utility'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities'
+import { InputParser, ExtrinsicsHelper } from '@joystream/cd-schemas'
+import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 import { flags } from '@oclif/command'
 import { createType } from '@joystream/types'
 
