@@ -30,6 +30,7 @@
 //! - [announce_candidacy](./struct.Module.html#method.announce_candidacy)
 //! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
 //! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
+//! - [set_budget](./struct.Module.html#method.set_budget)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
@@ -57,7 +58,7 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use std::marker::PhantomData;
-use system::{ensure_signed, RawOrigin};
+use system::{ensure_root, ensure_signed, RawOrigin};
 
 use referendum::{OptionResult, ReferendumManager};
 
@@ -309,6 +310,9 @@ decl_event! {
 
         /// The reward was paid to the council member only partially.
         RewardPartialPayment(MembershipId, AccountId),
+
+        /// Budget balance was changed by the root.
+        BudgetBalanceChanged(Balance),
     }
 }
 
@@ -477,6 +481,25 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Sets the budget balance.
+        #[weight = 10_000_000]
+        pub fn set_budget(origin, balance: Balance<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_budget(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_budget(&balance);
+
+            // emit event
+            Self::deposit_event(RawEvent::BudgetBalanceChanged(balance));
+
+            Ok(())
+        }
     }
 }
 
@@ -567,7 +590,7 @@ impl<T: Trait> Module<T> {
             .collect();
 
         // update state
-        Mutations::<T>::elect_new_council(elected_members.as_slice());
+        Mutations::<T>::elect_new_council(elected_members.as_slice(), now);
 
         // emit event
         Self::deposit_event(RawEvent::NewCouncilElected(elected_council_users));
@@ -601,6 +624,10 @@ impl<T: Trait> Module<T> {
             // calculate unpaid reward
             let unpaid_reward =
                 Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
+
+            if unpaid_reward == 0.into() {
+                continue;
+            }
 
             // calculate withdrawable balance
             let (available_balance, missing_balance) =
@@ -773,7 +800,7 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Elect new council after successful election.
-    fn elect_new_council(elected_members: &[CouncilMemberOf<T>]) {
+    fn elect_new_council(elected_members: &[CouncilMemberOf<T>], now: T::BlockNumber) {
         let block_number = <system::Module<T>>::block_number();
 
         // change council state
@@ -784,29 +811,25 @@ impl<T: Trait> Mutations<T> {
             }
         });
 
+        // try to pay any unpaid rewards (any unpaid rewards after this will be discarded call)
+        Module::<T>::pay_elected_member_rewards(now);
+
         // release stakes for previous council members
-        CouncilMembers::<T>::get()
-            .iter()
-            .for_each(|council_member| {
-                T::ElectedMemberLock::unlock(&council_member.staking_account_id);
-            });
+        for council_member in CouncilMembers::<T>::get() {
+            T::ElectedMemberLock::unlock(&council_member.staking_account_id);
+        }
 
         // set new council
         CouncilMembers::<T>::put(elected_members.to_vec());
 
         // setup elected member lock to new council's members
-        CouncilMembers::<T>::get()
-            .iter()
-            .for_each(|council_member| {
-                // unlock candidacy stake
-                T::CandidacyLock::unlock(&council_member.staking_account_id);
+        for council_member in CouncilMembers::<T>::get() {
+            // unlock candidacy stake
+            T::CandidacyLock::unlock(&council_member.staking_account_id);
 
-                // lock council member stake
-                T::ElectedMemberLock::lock(
-                    &council_member.staking_account_id,
-                    council_member.stake,
-                );
-            });
+            // lock council member stake
+            T::ElectedMemberLock::lock(&council_member.staking_account_id, council_member.stake);
+        }
     }
 
     /// Announce user's candidacy.
@@ -856,6 +879,12 @@ impl<T: Trait> Mutations<T> {
     fn clear_candidate(membership_id: &T::MembershipId) {
         // clear candidate record
         Candidates::<T>::remove(membership_id);
+    }
+
+    /////////////////// Budget-related /////////////////////////////////////////
+
+    fn set_budget(balance: &Balance<T>) {
+        Budget::<T>::put(balance);
     }
 
     fn pay_reward(
@@ -1046,6 +1075,12 @@ impl<T: Trait> EnsureChecks<T> {
         if let CouncilStage::Idle = Stage::<T>::get().stage {
             return Err(Error::NotCandidatingNow);
         }
+
+        Ok(())
+    }
+
+    fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
 
         Ok(())
     }
