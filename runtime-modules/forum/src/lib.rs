@@ -441,7 +441,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            Self::ensure_can_update_category_membership_of_moderator(account_id, &category_id)?;
+            Self::ensure_can_update_category_membership_of_moderator(account_id, &category_id, new_value)?;
 
             //
             // == MUTATION SAFE ==
@@ -451,13 +451,11 @@ decl_module! {
                 <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
 
                 <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators += 1);
+            } else {
+                <CategoryByModerator<T>>::remove(category_id, moderator_id);
 
-                return Ok(());
+                <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators -= 1);
             }
-
-            <CategoryByModerator<T>>::remove(category_id, moderator_id);
-
-            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators -= 1);
 
             Ok(())
         }
@@ -1434,7 +1432,8 @@ impl<T: Trait> Module<T> {
     fn ensure_can_update_category_membership_of_moderator(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+        new_value: bool,
+    ) -> Result<(), Error<T>> {
         // Not signed by forum LEAD
         Self::ensure_is_forum_lead_account(&account_id)?;
 
@@ -1444,13 +1443,13 @@ impl<T: Trait> Module<T> {
             Error::<T>::CategoryDoesNotExist
         );
 
-        let category = <CategoryById<T>>::get(&category_id);
+        if new_value {
+            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
+                category.num_direct_moderators as u64,
+            )?;
+        }
 
-        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
-            category.num_direct_moderators as u64,
-        )?;
-
-        Ok(category)
+        Ok(())
     }
 
     fn ensure_can_create_category(
