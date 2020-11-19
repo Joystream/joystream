@@ -1525,14 +1525,12 @@ impl<T: Trait> Module<T> {
         stickied_ids: &[T::ThreadId],
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Ensure actor can moderate the category
-        Self::ensure_can_moderate_category(account_id, &actor, &category_id)?;
+        let category = Self::ensure_can_moderate_category(account_id, &actor, &category_id)?;
 
         // Ensure all thread id valid and is under the category
         for item in stickied_ids {
             Self::ensure_thread_exists(&category_id, item)?;
         }
-
-        let category = <CategoryById<T>>::get(category_id);
 
         Ok(category)
     }
