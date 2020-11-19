@@ -431,7 +431,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
             hiring_opening.stage,
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 0
+                    started_accepting_applicants_at_block: 1
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,
@@ -449,8 +449,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
             hiring_opening.stage,
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block: 0,
-                    started_review_period_at_block: grace_period + 2,
+                    started_accepting_applicants_at_block: 1,
+                    started_review_period_at_block: grace_period + 3,
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,

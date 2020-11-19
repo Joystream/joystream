@@ -126,6 +126,7 @@ use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::Get;
+use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
@@ -348,6 +349,14 @@ decl_module! {
         /// Exports const -  max simultaneous active proposals number.
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
 
+        /// Block Initialization. Perform voting period check, vote result tally, approved proposals
+        /// grace period checks, and proposal execution.
+        fn on_initialize() -> Weight {
+            Self::process_proposals();
+
+            10_000_000 // TODO: adjust weight
+        }
+
         /// Vote extrinsic. Conditions:  origin must allow votes.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn vote(
@@ -415,11 +424,6 @@ decl_module! {
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
 
-        /// Block finalization. Perform voting period check, vote result tally, approved proposals
-        /// grace period checks, and proposal execution.
-        fn on_finalize(_n: T::BlockNumber) {
-            Self::process_proposals();
-        }
     }
 }
 
