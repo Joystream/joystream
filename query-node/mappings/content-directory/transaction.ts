@@ -25,7 +25,7 @@ import {
   IWhereCond,
 } from '../types'
 import {
-  CategoryPropertyNamesWithId,
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   knownLicensePropertyNamesWIthId,
   userDefinedLicensePropertyNamesWithId,
@@ -167,7 +167,7 @@ async function batchAddSchemaSupportToEntity(
 
       switch (className) {
         case ContentDirectoryKnownClasses.CATEGORY:
-          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId))
+          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId))
           break
 
         case ContentDirectoryKnownClasses.CHANNEL:
@@ -299,7 +299,7 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateCategoryEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId)
+          decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId)
         )
         break
 

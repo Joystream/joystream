@@ -1,4 +1,4 @@
-import { IPropertyIdWithName } from '../types'
+import { IPropertyWithId } from '../types'
 
 // Content directory predefined class names
 export enum ContentDirectoryKnownClasses {
@@ -32,85 +32,85 @@ export const contentDirectoryClassNamesWithId: { classId: number; name: string }
   { name: ContentDirectoryKnownClasses.VIDEOMEDIAENCODING, classId: 12 },
 ]
 
-export const CategoryPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'name',
-  1: 'description',
+export const categoryPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'name', type: 'string', required: true },
+  1: { name: 'description', type: 'string', required: false },
 }
 
-export const channelPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'title',
-  1: 'description',
-  2: 'coverPhotoUrl',
-  3: 'avatarPhotoUrl',
-  4: 'isPublic',
-  5: 'isCurated',
-  6: 'language',
+export const channelPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'title', type: 'string', required: false },
+  1: { name: 'description', type: 'string', required: false },
+  2: { name: 'coverPhotoUrl', type: 'string', required: false },
+  3: { name: 'avatarPhotoUrl', type: 'string', required: false },
+  4: { name: 'isPublic', type: 'boolean', required: true },
+  5: { name: 'isCurated', type: 'boolean', required: false },
+  6: { name: 'language', type: 'number', required: true },
 }
 
-export const licensePropertyNamesWithId: IPropertyIdWithName = {
-  0: 'knownLicense',
-  1: 'userDefinedLicense',
+export const licensePropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'knownLicense', type: 'number', required: false },
+  1: { name: 'userDefinedLicense', type: 'number', required: false },
 }
 
-export const knownLicensePropertyNamesWIthId: IPropertyIdWithName = {
-  0: 'code',
-  1: 'name',
-  2: 'description',
-  3: 'url',
+export const knownLicensePropertyNamesWIthId: IPropertyWithId = {
+  0: { name: 'code', type: 'string', required: true },
+  1: { name: 'name', type: 'string', required: false },
+  2: { name: 'description', type: 'string', required: false },
+  3: { name: 'url', type: 'string', required: false },
 }
 
-export const languagePropertyNamesWIthId: IPropertyIdWithName = {
-  0: 'name',
-  1: 'code',
+export const languagePropertyNamesWIthId: IPropertyWithId = {
+  0: { name: 'name', type: 'string', required: true },
+  1: { name: 'code', type: 'string', required: true },
 }
 
-export const userDefinedLicensePropertyNamesWithId: IPropertyIdWithName = {
-  0: 'content',
+export const userDefinedLicensePropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'content', type: 'string', required: false },
 }
 
-export const mediaLocationPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'httpMediaLocation',
-  1: 'joystreamMediaLocation',
+export const mediaLocationPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'httpMediaLocation', type: 'number', required: false },
+  1: { name: 'joystreamMediaLocation', type: 'number', required: false },
 }
 
-export const joystreamMediaLocationPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'dataObjectId',
+export const joystreamMediaLocationPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'dataObjectId', type: 'string', required: true },
 }
 
-export const httpMediaLocationPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'url',
-  1: 'port',
+export const httpMediaLocationPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'url', type: 'string', required: false },
+  1: { name: 'port', type: 'number', required: false },
 }
 
-export const videoMediaEncodingPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'name',
+export const videoMediaEncodingPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'name', type: 'string', required: true },
 }
 
-export const videoMediaPropertyNamesWithId: IPropertyIdWithName = {
-  0: 'encoding',
-  1: 'pixelWidth',
-  2: 'pixelHeight',
-  3: 'size',
-  4: 'location',
+export const videoMediaPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'encoding', type: 'number', required: true },
+  1: { name: 'pixelWidth', type: 'number', required: true },
+  2: { name: 'pixelHeight', type: 'number', required: true },
+  3: { name: 'size', type: 'number', required: false },
+  4: { name: 'location', type: 'number', required: true },
 }
 
-export const videoPropertyNamesWithId: IPropertyIdWithName = {
+export const videoPropertyNamesWithId: IPropertyWithId = {
   // referenced entity's id
-  0: 'channel',
+  0: { name: 'channel', type: 'number', required: true },
   // referenced entity's id
-  1: 'category',
-  2: 'title',
-  3: 'description',
-  4: 'duration',
-  5: 'skippableIntroDuration',
-  6: 'thumbnailUrl',
-  7: 'language',
+  1: { name: 'category', type: 'number', required: true },
+  2: { name: 'title', type: 'string', required: false },
+  3: { name: 'description', type: 'string', required: false },
+  4: { name: 'duration', type: 'number', required: true },
+  5: { name: 'skippableIntroDuration', type: 'number', required: false },
+  6: { name: 'thumbnailUrl', type: 'string', required: true },
+  7: { name: 'language', type: 'number', required: false },
   // referenced entity's id
-  8: 'media',
-  9: 'hasMarketing',
-  10: 'publishedBeforeJoystream',
-  11: 'isPublic',
-  12: 'isExplicit',
-  13: 'license',
-  14: 'isCurated',
+  8: { name: 'media', type: 'number', required: true },
+  9: { name: 'hasMarketing', type: 'boolean', required: false },
+  10: { name: 'publishedBeforeJoystream', type: 'number', required: false },
+  11: { name: 'isPublic', type: 'boolean', required: true },
+  12: { name: 'isExplicit', type: 'boolean', required: true },
+  13: { name: 'license', type: 'number', required: true },
+  14: { name: 'isCurated', type: 'boolean', required: true },
 }

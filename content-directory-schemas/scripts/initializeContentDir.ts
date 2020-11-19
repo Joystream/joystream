@@ -1,20 +1,15 @@
-import { CreateClass } from '../types/extrinsics/CreateClass'
-import { AddClassSchema } from '../types/extrinsics/AddClassSchema'
 import { types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { getInputs } from '../src/helpers/inputs'
+import { getInitializationInputs } from '../src/helpers/inputs'
 import fs from 'fs'
 import path from 'path'
-import { EntityBatch } from '../types/EntityBatch'
 import { InputParser } from '../src/helpers/InputParser'
 import { ExtrinsicsHelper, getAlicePair } from '../src/helpers/extrinsics'
 
 // Save entity operations output here for easier debugging
 const ENTITY_OPERATIONS_OUTPUT_PATH = path.join(__dirname, '../operations.json')
 
-const classInputs = getInputs<CreateClass>('classes').map(({ data }) => data)
-const schemaInputs = getInputs<AddClassSchema>('schemas').map(({ data }) => data)
-const entityBatchInputs = getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
+const { classInputs, schemaInputs, entityBatchInputs } = getInitializationInputs()
 
 async function main() {
   // Init api

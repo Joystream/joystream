@@ -45,7 +45,7 @@ import {
   createBlockOrGetFromDatabase,
 } from './create'
 import {
-  CategoryPropertyNamesWithId,
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
@@ -112,7 +112,7 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
-      await createCategory(arg, decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId))
+      await createCategory(arg, decode.setProperties<ICategory>(event, categoryPropertyNamesWithId))
       break
 
     case ContentDirectoryKnownClasses.KNOWNLICENSE:
@@ -296,7 +296,7 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateCategoryEntityPropertyValues(
         db,
         where,
-        decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId)
+        decode.setProperties<ICategory>(event, categoryPropertyNamesWithId)
       )
       break
 
