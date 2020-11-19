@@ -522,7 +522,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor can update category
-            let category = Self::ensure_can_update_category_archival_status(account_id, &actor, &category_id)?;
+            let category = Self::ensure_can_moderate_category(account_id, &actor, &category_id)?;
 
             // No change, invalid transaction
             if new_archival_status == category.archived {
@@ -1384,35 +1384,16 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_can_update_category_archival_status(
-        account_id: T::AccountId,
-        actor: &PrivilegedActor<T>,
-        category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        // Check actor's role
-        Self::ensure_can_moderate_category(account_id, actor, category_id)?;
-
-        // Ensure category exists
-        if !<CategoryById<T>>::contains_key(category_id) {
-            return Err(Error::<T>::CategoryDoesNotExist);
-        }
-
-        let category = <CategoryById<T>>::get(category_id);
-
-        Ok(category)
-    }
-
     /// check if an account can moderate a category.
     fn ensure_can_moderate_category(
         account_id: T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<(), Error<T>> {
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Ensure actor's role
         Self::ensure_actor_role(account_id, actor)?;
 
-        Self::ensure_can_moderate_category_path(actor, category_id)?;
-        Ok(())
+        Self::ensure_can_moderate_category_path(actor, category_id)
     }
 
     // check that moderator is allowed to manipulate category in hierarchy
@@ -1435,7 +1416,8 @@ impl<T: Trait> Module<T> {
 
         // TODO: test if this line can possibly create panic! It calls assert internaly
         // Get path from category to root + ensure category exists
-        let category_tree_path = Self::build_category_tree_path(category_id);
+        let category_tree_path =
+            Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
         match actor {
             PrivilegedActor::Lead => (),
