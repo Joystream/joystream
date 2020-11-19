@@ -313,14 +313,14 @@ decl_storage! {
 
         /// Map proposal executable code by proposal id.
         pub DispatchableCallCode get(fn proposal_codes): map hasher(blake2_128_concat)
-            T::ProposalId =>  Vec<u8>;
+            T::ProposalId => Vec<u8>;
 
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
-            double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
+            double_map hasher(blake2_128_concat) T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
     }
 }
 

@@ -11,6 +11,7 @@
 //! ## Supported extrinsics
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
+//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread permission mode
 //!
 //! ## Public API methods
 //! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
