@@ -5,7 +5,7 @@ use super::mock::*;
 
 use frame_support::*;
 
-fn get_membership_by_id(member_id: u32) -> crate::Membership<Test> {
+fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
         Members::membership(member_id)
     } else {

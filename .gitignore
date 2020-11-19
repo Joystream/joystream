@@ -28,7 +28,10 @@ yarn*
 *.wasm
 
 # Temporary files
-.tmp/
+**.tmp/
 
 # Istanbul report output
 **.nyc_output/
+
+# eslint cache
+**/.eslintcache

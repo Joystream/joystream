@@ -34,73 +34,6 @@ function developmentPort(): number {
   return 3001
 }
 
-// Sign and broadcast multiple transactions concurrently (so they may all be finalized in a single block)
-// Resolves when last transaction is finalized.
-const batchDispatchCalls = async (
-  runtimeApi: RuntimeApi,
-  senderAddress: string | Uint8Array,
-  rawCalls: any[]
-): Promise<any> => {
-  const api = runtimeApi.api
-
-  debug(`dispatching ${rawCalls.length} transactions.`)
-
-  // promise.all to avoid unhandled promise rejection
-  return Promise.all(
-    rawCalls.map((call) => {
-      const { methodName, sectionName, args } = call
-      const tx = api.tx[sectionName][methodName](...args)
-      return runtimeApi.signAndSend(senderAddress, tx)
-    })
-  )
-}
-
-// Dispatch pre-prepared calls to runtime to initialize the versioned store
-const vstoreInit = async (api: RuntimeApi, contentLead: string): Promise<any> => {
-  // If any existing classes are found we will skip initializing
-  // because the pre-prepared transactions make the assumption
-  // that the versioned store is not initialized.
-  const firstClassStorageKey = api.api.query.versionedStore.classById.key(1)
-  const firstClass = await api.api.rpc.state.getStorage(firstClassStorageKey)
-  if (firstClass.isSome) {
-    debug('Skipping Initializing Content Directory, classes already exist.')
-    return
-  } else {
-    debug('Initializing Content Directory.')
-  }
-
-  if (!contentLead) {
-    throw new Error('SURI of content lead not provided')
-  }
-
-  // Get address and load key into keyring if a SURI was supplied
-  const contentLeadAddress = getKeyFromAddressOrSuri(api, contentLead).address
-
-  // Load pre-pared calls
-  const classes = require('../../../../../devops/vstore/classes.json')
-  const entities = require('../../../../../devops/vstore/entities.json')
-
-  // To create all classes in a single block,
-  // select all createClass calls first
-  debug('Creating Classes in versioned store.')
-  const createClasses = classes.filter((call) => {
-    return call.methodName === 'createClass'
-  })
-  await batchDispatchCalls(api, contentLeadAddress, createClasses)
-
-  // To add schemas to all classes in a single block
-  // select all addClassSchema calls
-  debug('Adding Schemas to classes in versioned store.')
-  const addClassSchema = classes.filter((call) => {
-    return call.methodName === 'addClassSchema'
-  })
-  await batchDispatchCalls(api, contentLeadAddress, addClassSchema)
-
-  // Combine all calls to create entities into a single block
-  debug('Creating entities in versioned store.')
-  await batchDispatchCalls(api, contentLeadAddress, entities)
-}
-
 // Checks the chain state for the storage provider setup we expect
 // to have if the initialization was successfully run prior.
 // Returns the provider id if found, throws otherwise.
@@ -166,12 +99,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
   } else {
     debug('Alice is already a member.')
   }
-
-  debug('Setting Alice as content working group lead.')
-  await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
-
-  // Initialize classes and entities in the versioned store
-  await vstoreInit(api, alice)
 
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
@@ -263,8 +190,6 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
   debug(`Assigned storage provider id: ${providerId}`)
 }
 
-export { init, check, aliceKeyPair, roleKeyPair, developmentPort, vstoreInit, makeMemberInitialLeadAndStorageProvider }
-
 function getLeadOpeningInfo() {
   return `{
     "version": 1,
@@ -314,3 +239,5 @@ function getWorkerOpeningInfo() {
     }
   }`
 }
+
+export { init, check, aliceKeyPair, roleKeyPair, developmentPort, makeMemberInitialLeadAndStorageProvider }

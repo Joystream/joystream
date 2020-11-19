@@ -8,7 +8,9 @@
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
-    "@joystream/types": "^0.13.0",
+    "@apidevtools/json-schema-ref-parser": "^9.0.6",
+    "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "@joystream/types": "^0.14.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
@@ -16,12 +18,22 @@
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
     "@polkadot/api": "1.26.1",
+    "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
     "@types/proper-lockfile": "^4.1.1",
     "@types/slug": "^0.9.1",
     "ajv": "^6.11.0",
     "cli-ux": "^5.4.5",
+    "fluent-ffmpeg": "^2.1.2",
     "inquirer": "^7.1.0",
+    "inquirer-datepicker-prompt": "^0.4.2",
+    "ipfs-http-client": "^47.0.1",
+    "ipfs-only-hash": "^1.0.2",
+    "it-all": "^1.0.4",
+    "it-drain": "^1.0.3",
+    "it-first": "^1.0.4",
+    "it-last": "^1.0.4",
+    "it-to-buffer": "^1.0.4",
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
@@ -42,7 +54,8 @@
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^8.8.2",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "json-schema-to-typescript": "^9.1.1"
   },
   "engines": {
     "node": ">=12.18.0",
@@ -86,6 +99,12 @@
       },
       "working-groups": {
         "description": "Working group lead and worker actions"
+      },
+      "content-directory": {
+        "description": "Interactions with content directory module - managing classes, schemas, entities and permissions"
+      },
+      "media": {
+        "description": "Higher-level content directory interactions, ie. publishing and curating content"
       }
     }
   },
@@ -101,9 +120,14 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
-    "lint": "eslint ./ --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
-    "format": "prettier ./ --write"
+    "lint": "eslint ./src --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "format": "prettier ./ --write",
+    "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/"
   },
-  "types": "lib/index.d.ts"
+  "types": "lib/index.d.ts",
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
+  }
 }

@@ -124,6 +124,7 @@ function CurrentList ({ favorites, hasQueries, isIntentions, next, stakingOvervi
     [t('validators'), 'start', 2],
     [t('other stake')],
     [t('own stake')],
+    [t('total stake')],
     [t('commission')],
     [t('points')],
     [t('last #')],

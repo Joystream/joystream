@@ -66,17 +66,11 @@ function showUsageAndExit(message: string) {
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful
   'dev-check': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.check(api)
-  },
-  // Runs the versioned store initialization with given SURI of content working group lead
-  'vstore-init': async (api, suri: string) => {
-    return dev.vstoreInit(api, suri)
   },
   'sudo-create-sp': async (api) => {
     return dev.makeMemberInitialLeadAndStorageProvider(api)
@@ -86,11 +80,11 @@ const commands = {
     api: any,
     filePath: string,
     dataObjectTypeId: string,
+    memberId: string,
     keyFile: string,
-    passPhrase: string,
-    memberId: string
+    passPhrase: string
   ) => {
-    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
+    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, memberId, keyFile, passPhrase)
 
     await uploadCmd.run()
   },
@@ -113,7 +107,7 @@ const commands = {
 
 // Entry point.
 export async function main() {
-  const api = await RuntimeApi.create()
+  const api = await RuntimeApi.create({ retries: 3 })
 
   // Simple CLI commands
   const command = cli.input[0]

@@ -16,6 +16,7 @@ import uiKeyring from '@polkadot/ui-keyring';
 import * as types from '@polkadot/types';
 import * as util from '@polkadot/util';
 import * as hashing from '@polkadot/util-crypto';
+import * as joy from '@joystream/types';
 
 import { STORE_EXAMPLES, STORE_SELECTED, CUSTOM_LABEL } from './constants';
 import makeWrapper from './snippets/wrapping';
@@ -36,6 +37,7 @@ interface Injected {
   setIsRunning: (isRunning: boolean) => void;
   types: typeof types;
   util: typeof util;
+  joy: typeof joy;
   [name: string]: any;
 }
 
@@ -69,7 +71,8 @@ function setupInjected ({ api, isDevelopment }: ApiProps, setIsRunning: (isRunni
     uiKeyring: isDevelopment
       ? uiKeyring
       : null,
-    util
+    util,
+    joy
   };
 }
 

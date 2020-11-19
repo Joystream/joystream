@@ -1,14 +1,12 @@
 import { Option, Vec as Vector, BTreeMap, u64, bool, Text, Null } from '@polkadot/types'
-import { U8aFixed } from '@polkadot/types/codec'
-import { H256 } from '@polkadot/types/interfaces'
-import { BlockAndTime, JoyEnum, JoyStructDecorated } from './common'
+import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash } from './common'
 import { MemberId } from './members'
 import { StorageProviderId } from './working-group' // this should be in discovery really
 import { randomAsU8a } from '@polkadot/util-crypto'
 import { encodeAddress, decodeAddress } from '@polkadot/keyring'
 import { RegistryTypes, Registry } from '@polkadot/types/types'
 
-export class ContentId extends U8aFixed implements H256 {
+export class ContentId extends Hash {
   static generate(registry: Registry): ContentId {
     // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
     return new ContentId(registry, randomAsU8a())

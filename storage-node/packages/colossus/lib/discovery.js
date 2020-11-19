@@ -33,7 +33,7 @@ const path = require('path')
 const validateResponses = require('./middleware/validate_responses')
 
 // Configure app
-function createApp(projectRoot, runtime) {
+function createApp(projectRoot, discoveryClient) {
   const app = express()
   app.use(cors())
   app.use(bodyParser.json())
@@ -54,7 +54,7 @@ function createApp(projectRoot, runtime) {
     },
     docsPath: '/swagger.json',
     dependencies: {
-      runtime,
+      discoveryClient,
     },
   })
 

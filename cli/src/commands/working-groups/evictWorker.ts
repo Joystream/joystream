@@ -41,7 +41,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'terminateRole', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateRole', [
       workerId,
       rationale,
       shouldSlash,

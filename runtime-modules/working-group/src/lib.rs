@@ -328,7 +328,7 @@ decl_storage! {
     }
         add_extra_genesis {
         config(phantom): sp_std::marker::PhantomData<I>;
-        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(working_group_mint_capacity): minting::BalanceOf<T>;
         config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
@@ -337,7 +337,7 @@ decl_storage! {
                 config.opening_human_readable_text_constraint,
                 config.worker_application_human_readable_text_constraint,
                 config.worker_exit_rationale_text_constraint,
-                config.storage_working_group_mint_capacity)
+                config.working_group_mint_capacity)
         });
     }
 }
@@ -1298,7 +1298,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(worker)
     }
 
-    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error<T, I>> {
+    /// Ensures worker under given id already exists
+    pub fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error<T, I>> {
         ensure!(
             WorkerById::<T, I>::contains_key(worker_id),
             Error::<T, I>::WorkerDoesNotExist
@@ -1482,8 +1483,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    // Initialize working group constraints and mint.
-    pub(crate) fn initialize_working_group(
+    /// Initialize working group constraints and mint.
+    pub fn initialize_working_group(
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,

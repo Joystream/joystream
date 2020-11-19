@@ -1,19 +1,57 @@
-import { Struct, Option, Text, bool, Vec, u16, u32, u64, Null } from '@polkadot/types'
-import { BlockNumber, Moment } from '@polkadot/types/interfaces'
-import { Codec, RegistryTypes } from '@polkadot/types/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, Compact, UInt } from '@polkadot/types'
+import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
+import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
+import { u8aConcat, u8aToHex } from '@polkadot/util'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
+import AccountId from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
+// Adds sorting during BTreeSet toU8a encoding (required by the runtime)
+// Currently only supports values that extend UInt
+// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
+export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
+  toArray(): V[]
+}
+export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
+  return class extends BTreeSet.with(valType) {
+    public toArray(): V[] {
+      return Array.from(this)
+    }
+
+    public toU8a(isBare?: boolean): Uint8Array {
+      const encoded = new Array<Uint8Array>()
+
+      if (!isBare) {
+        encoded.push(Compact.encodeU8a(this.size))
+      }
+
+      const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
+
+      sorted.forEach((v: V) => {
+        encoded.push(v.toU8a(isBare))
+      })
+
+      return u8aConcat(...encoded)
+    }
+
+    public toHex(): string {
+      return u8aToHex(this.toU8a())
+    }
+  }
+}
+
 export class Credential extends u64 {}
-export class CredentialSet extends Vec.with(Credential) {} // BtreeSet ?
+export class CredentialSet extends JoyBTreeSet(Credential) {}
 
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
+
+export class Hash extends U8aFixed implements PolkadotHash {}
 
 export type BlockAndTimeType = {
   block: BlockNumber
@@ -67,6 +105,7 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 
 export const WorkingGroupDef = {
   Storage: Null,
+  Content: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
@@ -91,6 +130,12 @@ export class SlashingTerms extends JoyEnum({
   Slashable: SlashableTerms,
 } as const) {}
 
+export class MemoText extends Text {}
+// @polkadot/types overrides required since migration to Substrate 2.0,
+// see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+export class Address extends AccountId {}
+export class LookupSource extends AccountId {}
+
 export const commonTypes: RegistryTypes = {
   Credential,
   CredentialSet,
@@ -102,6 +147,9 @@ export const commonTypes: RegistryTypes = {
   // Expose in registry for api.createType purposes:
   SlashingTerms,
   SlashableTerms,
+  MemoText,
+  Address,
+  LookupSource,
 }
 
 export default commonTypes

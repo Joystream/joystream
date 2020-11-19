@@ -2,6 +2,9 @@ module.exports = {
   env: {
     mocha: true,
   },
+  parserOptions: {
+    project: './tsconfig.json'
+  },
   extends: [
     // The oclif rules have some code-style/formatting rules which may conflict with
     // our prettier global settings. Disabling for now
@@ -11,7 +14,8 @@ module.exports = {
     // "oclif-typescript",
   ],
   rules: {
-    "no-unused-vars": "off", // Required by the typescript rule below
-    "@typescript-eslint/no-unused-vars": ["error"]
-  }
+    'no-unused-vars': 'off', // Required by the typescript rule below
+    '@typescript-eslint/no-unused-vars': ['error'],
+    '@typescript-eslint/no-floating-promises': 'error',
+  },
 }

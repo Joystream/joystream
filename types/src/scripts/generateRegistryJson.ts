@@ -2,7 +2,6 @@
 
 import { types } from '../index'
 import { Constructor, Codec, RegistryTypes, Registry } from '@polkadot/types/types'
-import { Struct } from '@polkadot/types/codec'
 import { TypeRegistry } from '@polkadot/types'
 import fs from 'fs'
 import path from 'path'
@@ -13,6 +12,8 @@ function normalizeDef(registry: Registry, defOrConstructor: any, typeName: strin
   if (typeof defOrConstructor === 'string') {
     // Replace unhandled BTreeSet with Vec
     defOrConstructor = defOrConstructor.replace('BTreeSet<', 'Vec<')
+    // Workaround for "Unhandled type VecFixed"
+    defOrConstructor = defOrConstructor.replace('[u8;32]', 'Hash')
     return defOrConstructor
   } else if (typeof defOrConstructor === 'function') {
     const defString = new (defOrConstructor as Constructor<Codec>)(registry).toRawType().toString()
@@ -47,13 +48,8 @@ function normalizeDef(registry: Registry, defOrConstructor: any, typeName: strin
       throw new Error('_set definitions are not supported yet!')
     } else {
       // Struct - normalize properties
-      const emptyStruct = new Struct(registry, {}) as any
       for (const [key, value] of Object.entries(obj)) {
         // Prevent interface clashes
-        // FIXME: Would be way better if this was actually done by @polkadot/typegen tool
-        if (emptyStruct[key] !== undefined) {
-          continue
-        }
         const normalizedValue = normalizeDef(registry, value, `${typeName}[${key}]`)
         if (typeof normalizedValue !== 'string') {
           throw new Error(

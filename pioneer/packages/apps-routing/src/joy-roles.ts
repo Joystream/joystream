@@ -7,7 +7,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
     Component: Roles,
     display: {
       needsApi: [
-        'query.contentWorkingGroup.mint',
+        'query.contentDirectoryWorkingGroup.mint',
         'query.storageWorkingGroup.mint'
       ]
     },

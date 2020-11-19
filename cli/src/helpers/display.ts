@@ -44,10 +44,11 @@ export function displayTable(rows: { [k: string]: string | number }[], cellHoriz
   const maxLength = (columnName: string) =>
     rows.reduce((maxLength, row) => {
       const val = row[columnName]
-      const valLength = typeof val === 'string' ? val.length : val.toString().length
+      const valLength = typeof val === 'string' ? val.length : val !== undefined ? val.toString().length : 0
       return Math.max(maxLength, valLength)
     }, columnName.length)
   const columnDef = (columnName: string) => ({
+    header: columnName,
     get: (row: typeof rows[number]) => chalk.white(`${row[columnName]}`),
     minWidth: maxLength(columnName) + cellHorizontalPadding,
   })

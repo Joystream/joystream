@@ -17,12 +17,12 @@ const storage: StorageType = 'substrate';
 type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 
 const getReactValue = (state: ForumState, endpoint: string, paramValue: any) => {
-  function getEntityById<T extends keyof InterfaceTypes>
+  function getEntityById<T extends 'Category' | 'Thread' | 'Reply'>
   (mapName: EntityMapName, type: T): InterfaceTypes[T] {
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
 
-    return createType(type, entity);
+    return createType(type, entity as any);
   }
 
   switch (endpoint) {

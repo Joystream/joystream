@@ -17,7 +17,7 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
-        yarn workspace @joystream/types checks
+        yarn workspace @joystream/types checks --quiet
     - name: npm pack test
       run: |
         cd types
@@ -40,7 +40,7 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace @joystream/types checks
+        yarn workspace @joystream/types checks --quiet
     - name: npm pack test
       run: |
         cd types
