@@ -1343,12 +1343,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Check actor's role
-        match actor {
-            PrivilegedActor::Lead => Self::ensure_is_forum_lead_account(&account_id)?,
-            PrivilegedActor::Moderator(moderator_id) => {
-                Self::ensure_is_moderator_account(&account_id, &moderator_id)?
-            }
-        };
+        Self::ensure_actor_role(account_id, actor)?;
 
         // Ensure category exists
         let category = Self::ensure_category_exists(category_id)?;
