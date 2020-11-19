@@ -255,7 +255,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
       channelId = await this.promptForEntityId(
         'Select a channel to publish the video under',
         'Channel',
-        'title',
+        'handle',
         memberId
       )
     } else {
@@ -335,7 +335,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
     const videoProps = await videoPrompter.promptMultipleProps([
       'title',
       'description',
-      'thumbnailURL',
+      'thumbnailUrl',
       'duration',
       'isPublic',
       'isExplicit',

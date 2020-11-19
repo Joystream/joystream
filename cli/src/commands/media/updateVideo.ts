@@ -83,7 +83,7 @@ export default class UpdateVideoCommand extends MediaCommandBase {
       'category',
       'title',
       'description',
-      'thumbnailURL',
+      'thumbnailUrl',
       'duration',
       'isPublic',
       'isExplicit',

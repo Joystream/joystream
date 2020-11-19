@@ -3,19 +3,19 @@ import { UpdateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 
-export function createUpdateChannelTitleFixture(api: QueryNodeApi): UpdateChannelFixture {
+export function createUpdateChannelHandleFixture(api: QueryNodeApi): UpdateChannelFixture {
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<ChannelEntity> = {
-    title: 'Updated channel title',
+    handle: 'Updated channel handle',
   }
 
-  const uniquePropVal: Record<string, any> = { title: 'Example channel' }
+  const uniquePropVal: Record<string, any> = { handle: 'Example channel' }
 
   return new UpdateChannelFixture(api, channelUpdateInput, uniquePropVal)
 }
 
 export default async function updateChannel(api: QueryNodeApi) {
-  const createVideoHappyCaseFixture = createUpdateChannelTitleFixture(api)
+  const createVideoHappyCaseFixture = createUpdateChannelHandleFixture(api)
 
   await createVideoHappyCaseFixture.runner(false)
 }

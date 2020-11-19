@@ -161,11 +161,11 @@ The best way to ilustrate this would be by providing some examples:
     // Initialize the api, SENDER_KEYPAIR and SENDER_MEMBER_ID...
 
     const channel: ChannelEntity = {
-      title: 'Example channel',
+      handle: 'Example channel',
       description: 'This is an example channel',
       language: { existing: { code: 'EN' } },
       coverPhotoUrl: '',
-      avatarPhotoURL: '',
+      avatarPhotoUrl: '',
       isPublic: true,
     }
 
@@ -198,7 +198,7 @@ async main() {
     description: 'This is an example video',
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    channel: { existing: { title: 'Example channel' } },
+    channel: { existing: { handle: 'Example channel' } },
     media: {
       new: {
         encoding: { existing: { name: 'H.263_MP4' } },
@@ -221,7 +221,7 @@ async main() {
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }
@@ -241,7 +241,7 @@ async main() {
 ```
 _Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`_
 
-#### Update channel title
+#### Update channel handle
 
 ```
 import { InputParser } from 'cd-schemas'
@@ -252,12 +252,12 @@ async function main() {
   // ...
 
   const channelUpdateInput: Partial<ChannelEntity> = {
-    title: 'Updated channel title',
+    handle: 'Updated channel handle',
   }
 
   const parser = InputParser.createWithKnownSchemas(api)
 
-  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ handle: 'Example channel' }, 'Channel')
 
   const updateOperations = await parser.getEntityUpdateOperations(channelUpdateInput, 'Channel', CHANNEL_ID)
 
@@ -266,7 +266,7 @@ async function main() {
     .signAndSend(SENDER_KEYPAIR)
 }
 ```
-_Full example with comments can be found in `content-directory-schemas/examples/updateChannelTitle.ts` and ran with `yarn workspace cd-schemas example:updateChannelTitle`_
+_Full example with comments can be found in `content-directory-schemas/examples/updateChannelHandle.ts` and ran with `yarn workspace cd-schemas example:updateChannelHandle`_
 
 Note: Updates can also inlucde `new` and `existing` keywords. In case `new` is specified inside the update - `CreateEntity` and `AddSchemaSupportToEntity` operations will be included as part of the operations returned by `InputParser.getEntityUpdateOperations`.
 

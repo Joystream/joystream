@@ -2,11 +2,11 @@
   "className": "Channel",
   "entries": [
     {
-      "title": "Joystream Cartoons",
+      "handle": "Joystream Cartoons",
       "description": "Joystream Cartoons channel",
       "language": { "existing": { "code": "EN" } },
       "coverPhotoUrl": "https://user-images.githubusercontent.com/4144334/91547902-7e90db00-e91c-11ea-9f5c-45d4921928d5.png",
-      "avatarPhotoURL": "https://user-images.githubusercontent.com/4144334/91546674-ba2aa580-e91a-11ea-96e2-abc7654c0461.png",
+      "avatarPhotoUrl": "https://user-images.githubusercontent.com/4144334/91546674-ba2aa580-e91a-11ea-96e2-abc7654c0461.png",
       "isPublic": true
     }
   ]
