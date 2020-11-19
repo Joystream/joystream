@@ -84,7 +84,7 @@ type Channel @entity {
   # owner: Member!
 
   "The title of the Channel"
-  handle: String! @fulltext(query: "channelsByHandle")
+  handle: String! @fulltext(query: "search")
 
   "The description of a Channel"
   description: String!
@@ -255,7 +255,7 @@ type Video @entity {
   category: Category!
 
   "The title of the video"
-  title: String! @fulltext(query: "videosByTitle")
+  title: String! @fulltext(query: "search")
 
   "The description of the Video"
   description: String!
