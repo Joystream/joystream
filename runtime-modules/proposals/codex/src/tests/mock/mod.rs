@@ -16,6 +16,8 @@ use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
+mod staking_handler;
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -90,7 +92,7 @@ impl proposals_engine::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
-    type StakingHandler = proposals_engine::StakingManager<Test, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;

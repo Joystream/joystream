@@ -598,7 +598,7 @@ impl proposals_engine::Trait for Runtime {
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakingHandler = proposals_engine::StakingManager<Self, ProposalsLockId>;
+    type StakingHandler = integration::staking_handler::StakingManager<Self, ProposalsLockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;

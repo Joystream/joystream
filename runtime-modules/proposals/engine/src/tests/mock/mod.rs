@@ -17,6 +17,7 @@ use sp_runtime::{
 };
 
 pub(crate) mod proposals;
+pub(crate) mod staking_handler;
 
 use crate::ProposalObserver;
 pub use proposals::*;
@@ -89,7 +90,7 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakingHandler = crate::StakingManager<Test, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
