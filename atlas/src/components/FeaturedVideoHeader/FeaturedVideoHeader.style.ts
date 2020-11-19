@@ -176,8 +176,8 @@ export const TitleContainer = styled.div`
   }
 
   h2 {
-    ${fluidRange({ prop: 'fontSize', fromSize: '40px', toSize: '72px' }, '320px', '1920px')};
-    ${fluidRange({ prop: 'lineHeight', fromSize: '48px', toSize: '68px' }, '320px', '1920px')};
+    ${fluidRange({ prop: 'fontSize', fromSize: '40px', toSize: '72px' }, breakpoints.base, breakpoints.xlarge)};
+    ${fluidRange({ prop: 'lineHeight', fromSize: '48px', toSize: '68px' }, breakpoints.base, breakpoints.xlarge)};
     font-family: ${typography.fonts.headers};
     font-weight: 700;
 
@@ -190,8 +190,8 @@ export const TitleContainer = styled.div`
 
   span {
     display: block;
-    ${fluidRange({ prop: 'fontSize', fromSize: '14px', toSize: '22px' }, '320px', '1920px')};
-    ${fluidRange({ prop: 'lineHeight', fromSize: '20px', toSize: '26px' }, '320px', '1920px')};
+    ${fluidRange({ prop: 'fontSize', fromSize: '14px', toSize: '22px' }, breakpoints.base, breakpoints.xlarge)};
+    ${fluidRange({ prop: 'lineHeight', fromSize: '20px', toSize: '26px' }, breakpoints.base, breakpoints.xlarge)};
     color: ${colors.white};
   }
 `
