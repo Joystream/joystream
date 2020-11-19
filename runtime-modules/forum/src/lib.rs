@@ -1144,24 +1144,25 @@ impl<T: Trait> Module<T> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, &forum_user_id)?;
 
+        // Ensure thread is mutable
+        let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
+
         // Ensure forum user is author of the thread
-        let thread = Self::ensure_is_thread_author(&category_id, &thread_id, &forum_user_id)?;
+        Self::ensure_is_thread_author(&thread, forum_user_id)?;
 
         Ok(thread)
     }
 
     fn ensure_is_thread_author(
-        category_id: &T::CategoryId,
-        thread_id: &T::ThreadId,
+        thread: &Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         forum_user_id: &T::ForumUserId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
-        let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
+    ) -> Result<(), Error<T>> {
+        ensure!(
+            thread.author_id == *forum_user_id,
+            Error::<T>::AccountDoesNotMatchThreadAuthor
+        );
 
-        if thread.author_id != *forum_user_id {
-            return Err(Error::<T>::AccountDoesNotMatchThreadAuthor);
-        }
-
-        Ok(thread)
+        Ok(())
     }
 
     fn ensure_actor_role(
