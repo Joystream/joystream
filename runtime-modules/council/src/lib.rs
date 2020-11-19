@@ -231,9 +231,11 @@ pub trait Trait: system::Trait {
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool;
 
-    /// This function is needed because there is no way to enforce `Trait::BlockNumber: From<Balance<T>> + Into<Balance<T>>`
-    /// needed by `get_current_reward()`. That's because `where` clause is not expected inside of `decl_error`
-    /// (and there might be other problems).
+    /// Converts block number type to balance type.
+    /// NOTE: This function is needed because there is no way to enforce type constraint
+    ///       `Trait::BlockNumber: From<Balance<T>> + Into<Balance<T>>` needed by `get_current_reward()`.
+    ///       That's because cascade of `where` clauses leads to `decl_error` macro that doesn't support
+    ///       type constraint via `where`.
     fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self>;
 }
 
@@ -312,7 +314,7 @@ decl_event! {
         RewardPartialPayment(MembershipId, AccountId),
 
         /// Budget balance was changed by the root.
-        BudgetBalanceChanged(Balance),
+        BudgetBalanceSet(Balance),
     }
 }
 
@@ -496,7 +498,7 @@ decl_module! {
             Mutations::<T>::set_budget(&balance);
 
             // emit event
-            Self::deposit_event(RawEvent::BudgetBalanceChanged(balance));
+            Self::deposit_event(RawEvent::BudgetBalanceSet(balance));
 
             Ok(())
         }
@@ -883,10 +885,12 @@ impl<T: Trait> Mutations<T> {
 
     /////////////////// Budget-related /////////////////////////////////////////
 
+    /// Set budget balance
     fn set_budget(balance: &Balance<T>) {
         Budget::<T>::put(balance);
     }
 
+    /// Pay reward to a single elected council member.
     fn pay_reward(
         member_index: usize,
         account_id: &T::AccountId,
@@ -910,6 +914,7 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
+    /// Save reward-payments-related changes and plan the next reward payout.
     fn finish_reward_payments(new_balance: Balance<T>, now: T::BlockNumber) {
         // update budget's balance
         Budget::<T>::put(new_balance);
@@ -1079,6 +1084,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(())
     }
 
+    // Ensures there is no problem in setting the budget balance.
     fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
