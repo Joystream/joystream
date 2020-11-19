@@ -306,9 +306,27 @@ fn council_two_consecutive_rounds() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -352,9 +370,27 @@ fn council_two_consecutive_rounds() {
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
-            (candidates[2].candidate.clone(), candidates[2].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[2].candidate.clone(),
+                candidates[2].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         let params2 = CouncilCycleParams {
@@ -462,9 +498,27 @@ fn council_candidate_stake_can_be_unlocked() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -550,9 +604,27 @@ fn council_candidate_stake_automaticly_converted() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -622,9 +694,27 @@ fn council_member_stake_is_locked() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -700,9 +790,27 @@ fn council_member_stake_automaticly_unlocked() {
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
-            (candidates[2].candidate.clone(), candidates[2].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
+            (
+                candidates[2].candidate.clone(),
+                candidates[2].membership_id,
+                council_settings.cycle_duration + council_settings.election_duration - 1,
+                0,
+            )
+                .into(),
         ];
 
         let params2 = CouncilCycleParams {

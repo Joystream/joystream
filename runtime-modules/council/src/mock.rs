@@ -56,6 +56,8 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u64 = 2;
 }
 
 impl Trait for Runtime {
@@ -73,11 +75,18 @@ impl Trait for Runtime {
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
 
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
+    }
+
+    fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self> {
+        (*block_number).into()
     }
 }
 
@@ -336,6 +345,8 @@ pub struct CouncilSettings<T: Trait> {
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
     pub idle_stage_duration: T::BlockNumber,
+    pub election_duration: T::BlockNumber,
+    pub cycle_duration: T::BlockNumber,
 }
 
 impl<T: Trait> CouncilSettings<T>
@@ -345,16 +356,32 @@ where
     pub fn extract_settings() -> CouncilSettings<T> {
         let council_size = T::CouncilSize::get();
 
+        let reveal_stage_duration =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(
+            )
+            .into();
+        let announcing_stage_duration = <T as Trait>::AnnouncingPeriodDuration::get();
+        let voting_stage_duration =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get()
+                .into();
+        let idle_stage_duration = <T as Trait>::IdlePeriodDuration::get();
+
         CouncilSettings {
             council_size,
             min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
             min_candidate_stake: T::MinCandidateStake::get(),
-            announcing_stage_duration: <T as Trait>::AnnouncingPeriodDuration::get(),
-            voting_stage_duration:
-                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into(),
-            reveal_stage_duration:
-                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into(),
+            announcing_stage_duration,
+            voting_stage_duration,
+            reveal_stage_duration,
             idle_stage_duration: <T as Trait>::IdlePeriodDuration::get(),
+
+            election_duration: reveal_stage_duration
+                + announcing_stage_duration
+                + voting_stage_duration,
+            cycle_duration: reveal_stage_duration
+                + announcing_stage_duration
+                + voting_stage_duration
+                + idle_stage_duration,
         }
     }
 }
@@ -855,9 +882,27 @@ where
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<T>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C

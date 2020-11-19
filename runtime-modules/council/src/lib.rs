@@ -121,21 +121,38 @@ pub struct Candidate<AccountId, Balance, Hash> {
 /// Council member representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct CouncilMember<AccountId, MembershipId, Balance> {
+pub struct CouncilMember<AccountId, MembershipId, Balance, BlockNumber> {
     staking_account_id: AccountId,
     membership_id: MembershipId,
     stake: Balance,
+
+    last_payment_block: BlockNumber,
+    unpaid_reward: Balance,
 }
 
-impl<AccountId, MembershipId, Balance, Hash>
-    From<(Candidate<AccountId, Balance, Hash>, MembershipId)>
-    for CouncilMember<AccountId, MembershipId, Balance>
+impl<AccountId, MembershipId, Balance, Hash, BlockNumber>
+    From<(
+        Candidate<AccountId, Balance, Hash>,
+        MembershipId,
+        BlockNumber,
+        Balance,
+    )> for CouncilMember<AccountId, MembershipId, Balance, BlockNumber>
 {
-    fn from(candidate_and_user_id: (Candidate<AccountId, Balance, Hash>, MembershipId)) -> Self {
+    fn from(
+        from: (
+            Candidate<AccountId, Balance, Hash>,
+            MembershipId,
+            BlockNumber,
+            Balance,
+        ),
+    ) -> Self {
         Self {
-            staking_account_id: candidate_and_user_id.0.staking_account_id,
-            membership_id: candidate_and_user_id.1,
-            stake: candidate_and_user_id.0.stake,
+            staking_account_id: from.0.staking_account_id,
+            membership_id: from.1,
+            stake: from.0.stake,
+
+            last_payment_block: from.2,
+            unpaid_reward: from.3,
         }
     }
 }
@@ -153,8 +170,12 @@ pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::Hash,
 >>::VotePower;
 
-pub type CouncilMemberOf<T> =
-    CouncilMember<<T as system::Trait>::AccountId, <T as Trait>::MembershipId, Balance<T>>;
+pub type CouncilMemberOf<T> = CouncilMember<
+    <T as system::Trait>::AccountId,
+    <T as Trait>::MembershipId,
+    Balance<T>,
+    <T as system::Trait>::BlockNumber,
+>;
 pub type CandidateOf<T> =
     Candidate<<T as system::Trait>::AccountId, Balance<T>, <T as system::Trait>::Hash>;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::BlockNumber>;
@@ -198,11 +219,21 @@ pub trait Trait: system::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
+    /// The value elected members will be awarded each block of their reign.
+    type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
+    /// Interval for automatic reward payments.
+    type ElectedMemberRewardPeriod: Get<Self::BlockNumber>;
+
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool;
+
+    /// This function is needed because there is no way to enforce `Trait::BlockNumber: From<Balance<T>> + Into<Balance<T>>`
+    /// needed by `get_current_reward()`. That's because `where` clause is not expected inside of `decl_error`
+    /// (and there might be other problems).
+    fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self>;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -230,6 +261,12 @@ decl_storage! {
 
         /// Index of the current candidacy period. It is incremented everytime announcement period starts.
         pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
+
+        /// Budget for the council's elected members rewards.
+        pub Budget get(fn budget): Balance<T>;
+
+        /// The next block in which the budget will be increased.
+        pub NextBudgetRefill get(fn next_budget_refill): T::BlockNumber;
     }
 }
 
@@ -238,6 +275,7 @@ decl_event! {
     where
         Balance = Balance::<T>,
         <T as Trait>::MembershipId,
+        <T as system::Trait>::AccountId,
     {
         /// New council was elected
         AnnouncingPeriodStarted(),
@@ -265,6 +303,12 @@ decl_event! {
 
         /// The candidate has set a new note for their candidacy
         CandidacyNoteSet(MembershipId, Vec<u8>),
+
+        /// The whole reward was paid to the council member.
+        RewardPayment(MembershipId, AccountId),
+
+        /// The reward was paid to the council member only partially.
+        RewardPartialPayment(MembershipId, AccountId),
     }
 }
 
@@ -348,6 +392,8 @@ decl_module! {
         fn on_finalize(now: T::BlockNumber) {
             Self::try_progress_stage(now);
         }
+
+        /////////////////// Election-related ///////////////////////////////////
 
         /// Subscribe candidate
         #[weight = 10_000_000]
@@ -437,8 +483,11 @@ decl_module! {
 /////////////////// Inner logic ////////////////////////////////////////////////
 
 impl<T: Trait> Module<T> {
+    /////////////////// Lifetime ///////////////////////////////////////////
+
     /// Checkout expire of referendum stage.
     fn try_progress_stage(now: T::BlockNumber) {
+        // election progress
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
                 if now
@@ -453,6 +502,11 @@ impl<T: Trait> Module<T> {
                 }
             }
             _ => (),
+        }
+
+        // budget reward progress
+        if now == NextBudgetRefill::<T>::get() {
+            Self::pay_elected_member_rewards(now);
         }
     }
 
@@ -491,6 +545,8 @@ impl<T: Trait> Module<T> {
             return;
         }
 
+        let now: T::BlockNumber = <system::Module<T>>::block_number();
+
         // prepare candidates that got elected
         let elected_members: Vec<CouncilMemberOf<T>> = winners
             .iter()
@@ -499,9 +555,9 @@ impl<T: Trait> Module<T> {
                 let candidate = Candidates::<T>::get(membership_id);
 
                 // clear candidate record
-                Candidates::<T>::remove(membership_id);
+                Mutations::<T>::clear_candidate(&membership_id);
 
-                (candidate, membership_id).into()
+                (candidate, membership_id, now, 0.into()).into()
             })
             .collect();
         // prepare council users for event
@@ -525,6 +581,64 @@ impl<T: Trait> Module<T> {
         // emit event
         Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
     }
+
+    /////////////////// Budget-related /////////////////////////////////////
+
+    /// pay rewards to elected council members
+    fn pay_elected_member_rewards(now: T::BlockNumber) {
+        let reward_per_block = T::ElectedMemberRewardPerBlock::get();
+
+        // intermediate balance
+        let mut new_balance = Budget::<T>::get();
+
+        // pay reward to all council members
+        for (member_index, council_member) in CouncilMembers::<T>::get().iter().enumerate() {
+            // stop iterating if budget is completely depleted
+            if new_balance == 0.into() {
+                break;
+            }
+
+            // calculate unpaid reward
+            let unpaid_reward =
+                Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
+
+            // calculate withdrawable balance
+            let (available_balance, missing_balance) =
+                Calculations::<T>::payable_reward(&new_balance, &unpaid_reward);
+
+            // pay reward
+            Mutations::<T>::pay_reward(
+                member_index,
+                &council_member.staking_account_id,
+                &available_balance,
+                &missing_balance,
+                &now,
+            );
+
+            // remember new balance
+            new_balance -= available_balance;
+
+            // emit event
+            if missing_balance > 0.into() {
+                // reward has been paid only partially
+                Self::deposit_event(RawEvent::RewardPartialPayment(
+                    council_member.membership_id,
+                    council_member.staking_account_id.clone(),
+                ));
+            } else {
+                // whole reward has been paid
+                Self::deposit_event(RawEvent::RewardPayment(
+                    council_member.membership_id,
+                    council_member.staking_account_id.clone(),
+                ));
+            }
+        }
+
+        // update state
+        Mutations::<T>::finish_reward_payments(new_balance, now);
+    }
+
+    /////////////////// Utils //////////////////////////////////////////////////
 
     /// Construct a new candidate for council election.
     fn prepare_new_candidate(
@@ -574,6 +688,40 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 }
 
+/////////////////// Calculations ///////////////////////////////////////////////
+
+struct Calculations<T: Trait> {
+    _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
+}
+
+impl<T: Trait> Calculations<T> {
+    /// Calculate current reward for the recipient.
+    fn get_current_reward(
+        council_member: &CouncilMemberOf<T>,
+        reward_per_block: Balance<T>,
+        now: T::BlockNumber,
+    ) -> Balance<T> {
+        council_member.unpaid_reward
+            + T::blocks_to_balance(&(now - council_member.last_payment_block)) * reward_per_block
+    }
+
+    /// Retrieve current budget's balance and calculate missing balance for reward payment.
+    fn payable_reward(
+        budget_balance: &Balance<T>,
+        reward_amount: &Balance<T>,
+    ) -> (Balance<T>, Balance<T>) {
+        // check if reward has enough balance
+        if reward_amount <= budget_balance {
+            return (*reward_amount, 0.into());
+        }
+
+        // calculate missing balance
+        let missing_balance = *reward_amount - *budget_balance;
+
+        (*budget_balance, missing_balance)
+    }
+}
+
 /////////////////// Mutations //////////////////////////////////////////////////
 
 struct Mutations<T: Trait> {
@@ -581,6 +729,8 @@ struct Mutations<T: Trait> {
 }
 
 impl<T: Trait> Mutations<T> {
+    /////////////////// Election-related ///////////////////////////////////
+
     /// Change the council stage to candidacy announcing stage.
     fn start_announcing_period() {
         let stage_data = CouncilStageAnnouncing {
@@ -700,6 +850,44 @@ impl<T: Trait> Mutations<T> {
     /// Set a new candidacy note for a candidate in the current election.
     fn set_candidacy_note(membership_id: &T::MembershipId, note_hash: &T::Hash) {
         Candidates::<T>::mutate(membership_id, |value| value.note_hash = Some(*note_hash));
+    }
+
+    /// Removes member's candidacy record.
+    fn clear_candidate(membership_id: &T::MembershipId) {
+        // clear candidate record
+        Candidates::<T>::remove(membership_id);
+    }
+
+    fn pay_reward(
+        member_index: usize,
+        account_id: &T::AccountId,
+        amount: &Balance<T>,
+        missing_balance: &Balance<T>,
+        now: &T::BlockNumber,
+    ) {
+        // mint tokens into reward account
+        <<<T as Trait>::Referendum as ReferendumManager<
+            <T as system::Trait>::Origin,
+            <T as system::Trait>::AccountId,
+            <T as system::Trait>::Hash,
+        >>::Currency as Currency<<T as system::Trait>::AccountId>>::deposit_creating(
+            account_id, *amount,
+        );
+
+        // update elected council member
+        CouncilMembers::<T>::mutate(|members| {
+            members[member_index].last_payment_block = *now;
+            members[member_index].unpaid_reward = *missing_balance;
+        });
+    }
+
+    fn finish_reward_payments(new_balance: Balance<T>, now: T::BlockNumber) {
+        // update budget's balance
+        Budget::<T>::put(new_balance);
+
+        // plan next rewards payment
+        let next_reward_block = now + T::ElectedMemberRewardPeriod::get();
+        NextBudgetRefill::<T>::put(next_reward_block);
     }
 }
 
