@@ -6,7 +6,8 @@ const imageTopOverflow = '2rem'
 const containerPadding = '22px'
 
 export const OuterContainer = styled.article`
-  min-height: ${`calc(166px + ${imageTopOverflow})`};
+  display: flex;
+  min-height: calc(178px + ${imageTopOverflow});
   padding-top: ${imageTopOverflow};
   :hover {
     cursor: ${(props) => (props.onClick ? 'pointer' : 'default')};
@@ -34,7 +35,6 @@ export const InnerContainer = styled.div<InnerContainerProps>`
 
   width: calc(156px + calc(2 * ${containerPadding}));
   padding: 0 ${containerPadding};
-  height: 100%;
 
   display: flex;
   flex-direction: column;
