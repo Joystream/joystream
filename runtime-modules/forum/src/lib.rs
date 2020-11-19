@@ -577,7 +577,7 @@ decl_error! {
 
         // Error for limited size
 
-        // Maximum size of storage map exceeded
+        /// Maximum size of storage map exceeded
         MapSizeLimit,
     }
 }
@@ -648,10 +648,10 @@ decl_event!(
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
 
-        // A thread was deleted.
+        /// A thread was deleted.
         ThreadDeleted(ThreadId),
 
-        // A thread was moved to new category
+        /// A thread was moved to new category
         ThreadMoved(ThreadId, CategoryId),
 
         /// Post with given id was created.
