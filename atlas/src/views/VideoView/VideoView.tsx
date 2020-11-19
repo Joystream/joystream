@@ -55,7 +55,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
     })
   }, [addVideoView, videoID])
 
-  if(error) {
+  if (error) {
     throw error
   }
 

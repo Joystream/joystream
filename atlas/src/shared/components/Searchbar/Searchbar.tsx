@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Input, CancelButton, Container } from './Searchbar.style'
+import { CancelButton, Container, Input, StyledIcon } from './Searchbar.style'
 
 type SearchbarProps = {
   value: string
@@ -41,6 +41,7 @@ const Searchbar: React.FC<SearchbarProps> = ({
 
   return (
     <Container className={className}>
+      <StyledIcon name="search" />
       <Input
         value={controlled ? externalValue : value}
         placeholder={placeholder}
