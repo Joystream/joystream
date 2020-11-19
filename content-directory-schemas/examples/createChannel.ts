@@ -16,14 +16,14 @@ async function main() {
   const [ALICE] = keyring.getPairs()
 
   const channel: ChannelEntity = {
-    title: 'Example channel',
+    handle: 'Example channel',
     description: 'This is an example channel',
     // We can use "existing" syntax to reference either an on-chain entity or other entity that's part of the same batch.
     // Here we reference language that we assume was added by initialization script (initialize:dev), as it is part of
     // input/entityBatches/LanguageBatch.json
     language: { existing: { code: 'EN' } },
     coverPhotoUrl: '',
-    avatarPhotoURL: '',
+    avatarPhotoUrl: '',
     isPublic: true,
   }
   // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
