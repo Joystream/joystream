@@ -1,5 +1,5 @@
 {
-  "name": "cd-schemas",
+  "name": "@joystream/cd-schemas",
   "version": "0.1.0",
   "description": "JSON schemas, inputs and related tooling for Joystream content directory 2.0",
   "author": "Joystream contributors",

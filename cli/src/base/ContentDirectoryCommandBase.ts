@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
-import { FlattenRelations } from 'cd-schemas/types/utility'
+import { ReferenceProperty } from '@joystream/cd-schemas/types/extrinsics/AddClassSchema'
+import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import {
   Class,

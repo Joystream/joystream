@@ -1,9 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types as joyTypes } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
-// Import input parser and video entity from cd-schemas (we use it as library here)
-import { InputParser } from 'cd-schemas'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+// Import input parser and video entity from @joystream/cd-schemas (we use it as library here)
+import { InputParser } from '@joystream/cd-schemas'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 
 async function main() {
   // Initialize the api

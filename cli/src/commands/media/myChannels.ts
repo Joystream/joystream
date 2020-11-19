@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { displayTable } from '../../helpers/display'
 import chalk from 'chalk'
 

@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { InputParser, ExtrinsicsHelper, getInitializationInputs } from 'cd-schemas'
+import { InputParser, ExtrinsicsHelper, getInitializationInputs } from '@joystream/cd-schemas'
 import { flags } from '@oclif/command'
 
 export default class InitializeCommand extends ContentDirectoryCommandBase {

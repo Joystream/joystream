@@ -1,6 +1,6 @@
 import { QueryNodeApi, WorkingGroups } from '../../Api'
 import { UpdateChannelFixture } from '../../fixtures/contentDirectoryModule'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 
 export function createUpdateChannelTitleFixture(api: QueryNodeApi): UpdateChannelFixture {
