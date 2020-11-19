@@ -49,9 +49,9 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
   const metaPlaceholder = <SpacedPlaceholder height={main ? 16 : 12} width={main ? '40%' : '80%'} />
 
   return (
-    <Container onClick={onClick} clickable={clickable} main={main} className={className}>
-      <CoverWrapper>
-        <CoverContainer>{coverNode || coverPlaceholder}</CoverContainer>
+    <Container main={main} className={className}>
+      <CoverWrapper onClick={onClick}>
+        <CoverContainer clickable={clickable}>{coverNode || coverPlaceholder}</CoverContainer>
       </CoverWrapper>
       <InfoContainer main={main}>
         {displayChannel && (

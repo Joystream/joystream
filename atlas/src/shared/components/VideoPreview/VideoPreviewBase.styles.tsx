@@ -9,9 +9,9 @@ type MainProps = {
   main: boolean
 }
 
-type ContainerProps = {
+type ClickableProps = {
   clickable: boolean
-} & MainProps
+}
 
 type ScalesWithCoverProps = {
   scalingFactor: number
@@ -31,16 +31,33 @@ export const CoverWrapper = styled.div`
   width: 100%;
 `
 
-export const CoverContainer = styled.div`
+export const CoverContainer = styled.div<ClickableProps>`
   position: relative;
   width: 100%;
   height: 0;
   padding-top: 56.25%;
-
   transition-property: box-shadow, transform;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
   animation: ${fadeIn} 0.5s ease-in;
+  cursor: ${(props) => (props.clickable ? 'pointer' : 'auto')};
+  :hover {
+    ${(props) =>
+      props.clickable
+        ? ` transform: translate(-${spacing.xs}, -${spacing.xs});
+      box-shadow: ${spacing.xs} ${spacing.xs} 0 ${colors.blue['500']};
+  
+      ${CoverHoverOverlay} {
+        opacity: 1;
+      }
+      ${CoverIcon} {
+        transform: translateY(0);
+      }
+      ${ProgressOverlay} {
+        bottom: ${HOVER_BORDER_SIZE};
+      }`
+        : null}
+  }
 `
 
 const mainContainerCss = css`
@@ -49,37 +66,13 @@ const mainContainerCss = css`
   }
 `
 
-export const Container = styled.article<ContainerProps>`
+export const Container = styled.article<MainProps>`
   width: 100%;
   color: ${colors.gray[300]};
-  cursor: ${({ clickable }) => (clickable ? 'pointer' : 'auto')};
 
   display: inline-flex;
   flex-direction: column;
   ${({ main }) => main && mainContainerCss}
-
-  ${({ clickable }) =>
-    clickable &&
-    `
-				&:hover {
-					${CoverContainer} {
-						transform: translate(-${spacing.xs}, -${spacing.xs});
-						box-shadow: ${spacing.xs} ${spacing.xs} 0 ${colors.blue['500']};
-					}
-
-					${CoverHoverOverlay} {
-						opacity: 1;
-					}
-					
-					${CoverIcon} {
-						transform: translateY(0);
-					}
-
-					${ProgressOverlay} {
-						bottom: ${HOVER_BORDER_SIZE};
-					}
-				}
-			`};
 `
 
 const mainInfoContainerCss = css`

@@ -1,12 +1,11 @@
 import React from 'react'
+import { keyframes } from '@emotion/core'
 import styled from '@emotion/styled'
 import { fluidRange } from 'polished'
 import { colors, spacing, typography } from '../../theme'
 import Avatar from '../Avatar'
 import Icon from '../Icon'
 import { HOVER_BORDER_SIZE } from './VideoPreviewBase.styles'
-
-type CoverImageProps = Record<string, unknown>
 
 type MainProps = {
   main: boolean
@@ -19,8 +18,10 @@ type ChannelProps = {
 type ScalesWithCoverProps = {
   scalingFactor: number
 }
-
-export const CoverImage = styled.img<CoverImageProps>`
+type ClickableProps = {
+  clickable?: boolean
+}
+export const CoverImage = styled.img`
   display: block;
   position: absolute;
   top: 0;
@@ -91,12 +92,24 @@ export const StyledAvatar = styled(Avatar)<ChannelProps>`
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-export const TitleHeader = styled.h3<MainProps & ScalesWithCoverProps>`
+const fadeIn = keyframes`
+  0% {
+    opacity: 0;
+
+  }
+  100% {
+    opacity: 1;
+
+  }
+`
+export const TitleHeader = styled.h3<MainProps & ScalesWithCoverProps & ClickableProps>`
   margin: 0;
   font-weight: ${typography.weights.bold};
   font-size: calc(${(props) => props.scalingFactor} * ${typography.sizes.h6});
   ${({ main }) => main && fluidRange({ prop: 'fontSize', fromSize: '24px', toSize: '40px' })};
   line-height: ${({ main }) => (main ? 1 : 1.25)};
+  cursor: ${(props) => (props.clickable ? 'pointer' : 'auto')};
+  animation: ${fadeIn} 1.5s linear;
 `
 
 export const ChannelName = styled.span<ChannelProps & ScalesWithCoverProps>`
@@ -104,9 +117,11 @@ export const ChannelName = styled.span<ChannelProps & ScalesWithCoverProps>`
   line-height: 1.25rem;
   display: inline-block;
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
+  animation: ${fadeIn} 1.5s linear;
 `
 
 export const MetaText = styled.span<MainProps & ScalesWithCoverProps>`
   font-size: ${({ main, scalingFactor }) =>
     main ? typography.sizes.h6 : `calc(${scalingFactor}*${typography.sizes.subtitle2})`};
+  animation: ${fadeIn} 1.5s linear;
 `
