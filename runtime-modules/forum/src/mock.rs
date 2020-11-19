@@ -145,13 +145,11 @@ impl Trait for Runtime {
 #[derive(Clone)]
 pub enum OriginType {
     Signed(<Runtime as frame_system::Trait>::AccountId),
-    //Inherent, <== did not find how to make such an origin yet
 }
 
 pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
-        //OriginType::Inherent => Origin::inherent,
     }
 }
 
@@ -732,7 +730,7 @@ pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
+        category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
         thread_by_id: vec![],
