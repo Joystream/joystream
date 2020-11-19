@@ -217,6 +217,7 @@ pub use frame_support::dispatch::DispatchResult;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{MaybeSerialize, Member};
@@ -362,15 +363,6 @@ impl InputValidationLengthConstraint {
         }
     }
 }
-
-//use srml_support::storage::*;
-//use sr_io::{StorageOverlay, ChildrenStorageOverlay};
-//#[cfg(feature = "std")]
-//use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
-//#[cfg(any(feature = "std", test))]
-//use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
-
-use frame_system::ensure_signed;
 
 /// Represents all poll alternatives and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
