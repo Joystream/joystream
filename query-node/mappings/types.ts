@@ -42,8 +42,8 @@ export interface IReference {
 export interface IChannel {
   handle: string
   description: string
-  coverPhotoURL: string
-  avatarPhotoURL: string
+  coverPhotoUrl: string
+  avatarPhotoUrl: string
   isPublic: boolean
   isCurated: boolean
   language?: IReference
@@ -100,7 +100,7 @@ export interface IVideo {
   description: string
   duration: number
   skippableIntroDuration?: number
-  thumbnailURL: string
+  thumbnailUrl: string
   language?: IReference
   // referenced entity's id
   media?: IReference

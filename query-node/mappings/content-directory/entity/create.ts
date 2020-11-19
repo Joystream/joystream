@@ -69,8 +69,8 @@ async function createChannel(
   channel.description = p.description
   channel.isCurated = p.isCurated || false
   channel.isPublic = p.isPublic
-  channel.coverPhotoUrl = p.coverPhotoURL
-  channel.avatarPhotoUrl = p.avatarPhotoURL
+  channel.coverPhotoUrl = p.coverPhotoUrl
+  channel.avatarPhotoUrl = p.avatarPhotoUrl
 
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   const { language } = p
@@ -243,7 +243,7 @@ async function createVideo(
   video.isPublic = p.isPublic
   video.publishedBeforeJoystream = p.publishedBeforeJoystream
   video.skippableIntroDuration = p.skippableIntroDuration
-  video.thumbnailUrl = p.thumbnailURL
+  video.thumbnailUrl = p.thumbnailUrl
   video.version = block
 
   const { language, license, category, channel, media } = p

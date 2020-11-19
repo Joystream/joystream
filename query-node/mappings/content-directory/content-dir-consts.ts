@@ -40,8 +40,8 @@ export const categoryPropertyNamesWithId: IPropertyWithId = {
 export const channelPropertyNamesWithId: IPropertyWithId = {
   0: { name: 'handle', type: 'string', required: true },
   1: { name: 'description', type: 'string', required: false },
-  2: { name: 'coverPhotoURL', type: 'string', required: false },
-  3: { name: 'avatarPhotoURL', type: 'string', required: false },
+  2: { name: 'coverPhotoUrl', type: 'string', required: false },
+  3: { name: 'avatarPhotoUrl', type: 'string', required: false },
   4: { name: 'isPublic', type: 'boolean', required: true },
   5: { name: 'isCurated', type: 'boolean', required: false },
   6: { name: 'language', type: 'number', required: false },
@@ -103,7 +103,7 @@ export const videoPropertyNamesWithId: IPropertyWithId = {
   3: { name: 'description', type: 'string', required: false },
   4: { name: 'duration', type: 'number', required: true },
   5: { name: 'skippableIntroDuration', type: 'number', required: false },
-  6: { name: 'thumbnailURL', type: 'string', required: true },
+  6: { name: 'thumbnailUrl', type: 'string', required: true },
   7: { name: 'language', type: 'number', required: false },
   // referenced entity's id
   8: { name: 'media', type: 'number', required: true },
