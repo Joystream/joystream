@@ -126,12 +126,12 @@ use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::Get;
-use frame_support::weights::Weight;
+use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::Zero;
+use sp_arithmetic::traits::{Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
@@ -179,7 +179,10 @@ pub trait Trait:
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
+    type DispatchableCallCode: Parameter
+        + UnfilteredDispatchable<Origin = Self::Origin>
+        + GetDispatchInfo
+        + Default;
 
     /// Proposal state change observer.
     type ProposalObserver: ProposalObserver<Self>;
@@ -352,9 +355,8 @@ decl_module! {
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_initialize() -> Weight {
-            Self::process_proposals();
-
             10_000_000 // TODO: adjust weight
+                .saturating_add(Self::process_proposals())
         }
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
@@ -619,13 +621,17 @@ impl<T: Trait> Module<T> {
     }
 
     // Executes proposal code.
-    fn execute_proposal(proposal_id: T::ProposalId) {
+    fn execute_proposal(proposal_id: T::ProposalId) -> Weight {
         let proposal_code = Self::proposal_codes(proposal_id);
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
+        let mut execution_code_weight = 0;
+
         let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
+                execution_code_weight = proposal_code.get_dispatch_info().weight;
+
                 if let Err(dispatch_error) =
                     proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
                 {
@@ -642,6 +648,8 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
         Self::remove_proposal_data(&proposal_id);
+
+        execution_code_weight
     }
 
     // Computes a finalized proposal:
@@ -656,12 +664,14 @@ impl<T: Trait> Module<T> {
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
         proposal_decision: ProposalDecision,
-    ) {
+    ) -> Weight {
         // fire the proposal decision event
         Self::deposit_event(RawEvent::ProposalDecisionMade(
             proposal_id,
             proposal_decision.clone(),
         ));
+
+        let mut executed_weight = 0;
 
         // deal with stakes if necessary
         if proposal_decision
@@ -689,13 +699,16 @@ impl<T: Trait> Module<T> {
 
             // immediately execute proposal if it ready for execution or save it for the future otherwise.
             if finalized_proposal.is_ready_for_execution(now) {
-                Self::execute_proposal(proposal_id);
+                executed_weight =
+                    executed_weight.saturating_add(Self::execute_proposal(proposal_id));
             } else {
                 <Proposals<T>>::insert(proposal_id, finalized_proposal);
             }
         } else {
             Self::remove_proposal_data(&proposal_id);
         }
+
+        executed_weight
     }
 
     // Slashes the stake and perform unstake only in case of existing stake.
@@ -770,10 +783,12 @@ impl<T: Trait> Module<T> {
 
     /// Perform voting period check, vote result tally, approved proposals
     /// grace period checks, and proposal execution.
-    fn process_proposals() {
+    fn process_proposals() -> Weight {
         // Collect all proposals.
         let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
         let now = Self::current_block();
+
+        let mut executed_weight = 0;
 
         for (proposal_id, proposal) in proposals {
             match proposal.status {
@@ -784,18 +799,25 @@ impl<T: Trait> Module<T> {
 
                     // If decision is calculated for a proposal - finalize it.
                     if let Some(decision_status) = decision_status {
-                        Self::finalize_proposal(proposal_id, proposal, decision_status);
+                        executed_weight.saturating_add(Self::finalize_proposal(
+                            proposal_id,
+                            proposal,
+                            decision_status,
+                        ));
                     }
                 }
                 // Execute the proposal code if the proposal is ready for execution.
                 ProposalStatus::PendingExecution(_) => {
                     if proposal.is_ready_for_execution(now) {
-                        Self::execute_proposal(proposal_id);
+                        executed_weight =
+                            executed_weight.saturating_add(Self::execute_proposal(proposal_id));
                     }
                 }
                 // Skip the proposal until it gets reactivated.
                 ProposalStatus::PendingConstitutionality => {}
             }
         }
+
+        executed_weight
     }
 }
