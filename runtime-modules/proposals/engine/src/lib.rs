@@ -352,13 +352,6 @@ decl_module! {
         /// Exports const -  max simultaneous active proposals number.
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
 
-        /// Block Initialization. Perform voting period check, vote result tally, approved proposals
-        /// grace period checks, and proposal execution.
-        fn on_initialize() -> Weight {
-            10_000_000 // TODO: adjust weight
-                .saturating_add(Self::process_proposals())
-        }
-
         /// Vote extrinsic. Conditions:  origin must allow votes.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn vote(
