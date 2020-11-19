@@ -35,6 +35,7 @@ _Building_
 
 ```bash
 $ yarn install
+$ yarn build
 ```
 
 The command will install dependencies, and make a `colossus` executable available:
