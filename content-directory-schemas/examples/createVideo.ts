@@ -46,7 +46,7 @@ async function main() {
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }

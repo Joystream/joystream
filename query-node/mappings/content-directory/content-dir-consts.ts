@@ -103,7 +103,7 @@ export const videoPropertyNamesWithId: IPropertyIdWithName = {
   3: 'description',
   4: 'duration',
   5: 'skippableIntroDuration',
-  6: 'thumbnailURL',
+  6: 'thumbnailUrl',
   7: 'language',
   // referenced entity's id
   8: 'media',

@@ -222,7 +222,7 @@ async function createVideo(
   video.isPublic = p.isPublic
   video.publishedBeforeJoystream = p.publishedBeforeJoystream
   video.skippableIntroDuration = p.skippableIntroDuration
-  video.thumbnailUrl = p.thumbnailURL
+  video.thumbnailUrl = p.thumbnailUrl
   video.version = block
 
   const { language, license, category, channel, media } = p

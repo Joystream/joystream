@@ -26,7 +26,7 @@
           "pixelHeight": 1080
         }
       },
-      "thumbnailURL": "http://www.caminandes.com/wp-content/uploads/2016/02/web_header4.png",
+      "thumbnailUrl": "http://www.caminandes.com/wp-content/uploads/2016/02/web_header4.png",
       "isExplicit": false,
       "license": { "new": { "knownLicense": { "existing": { "code": "CC_BY" } } } }
     },
@@ -55,7 +55,7 @@
           "pixelHeight": 1080
         }
       },
-      "thumbnailURL": "http://www.caminandes.com/wp-content/uploads/2016/02/web_header4.png",
+      "thumbnailUrl": "http://www.caminandes.com/wp-content/uploads/2016/02/web_header4.png",
       "isExplicit": false,
       "license": { "new": { "knownLicense": { "existing": { "code": "CC_BY" } } } }
     }

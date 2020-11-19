@@ -35,7 +35,7 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateV
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }

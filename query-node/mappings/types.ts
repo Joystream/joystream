@@ -100,7 +100,7 @@ export interface IVideo {
   description: string
   duration: number
   skippableIntroDuration?: number
-  thumbnailURL: string
+  thumbnailUrl: string
   language?: IReference
   // referenced entity's id
   media?: IReference
