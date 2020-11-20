@@ -303,6 +303,9 @@ decl_event! {
         /// The whole reward was paid to the council member.
         RewardPayment(MembershipId, AccountId, Balance, Balance),
 
+        /// No reward was paid to the elected member because the whole accumulated reward was already paid out.
+        NoUnpaidReward(MembershipId, AccountId),
+
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
     }
@@ -609,49 +612,61 @@ impl<T: Trait> Module<T> {
     /// pay rewards to elected council members
     fn pay_elected_member_rewards(now: T::BlockNumber) {
         let reward_per_block = T::ElectedMemberRewardPerBlock::get();
-
-        // intermediate balance
-        let mut new_balance = Budget::<T>::get();
+        let starting_balance = Budget::<T>::get();
 
         // pay reward to all council members
-        for (member_index, council_member) in CouncilMembers::<T>::get().iter().enumerate() {
-            // stop iterating if budget is completely depleted
-            if new_balance == 0.into() {
-                break;
-            }
+        let new_balance = CouncilMembers::<T>::get().iter().enumerate().fold(
+            starting_balance,
+            |balance, (member_index, council_member)| {
+                // calculate unpaid reward
+                let unpaid_reward =
+                    Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
-            // calculate unpaid reward
-            let unpaid_reward =
-                Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
+                if unpaid_reward == 0.into() {
+                    Self::deposit_event(RawEvent::NoUnpaidReward(
+                        council_member.membership_id,
+                        council_member.staking_account_id.clone(),
+                    ));
+                    return balance;
+                }
 
-            if unpaid_reward == 0.into() {
-                continue;
-            }
+                // stop iterating if budget is completely depleted
+                if balance == 0.into() {
+                    // emit event
+                    Self::deposit_event(RawEvent::RewardPayment(
+                        council_member.membership_id,
+                        council_member.staking_account_id.clone(),
+                        0.into(),
+                        unpaid_reward,
+                    ));
+                    return balance;
+                }
 
-            // calculate withdrawable balance
-            let (available_balance, missing_balance) =
-                Calculations::<T>::payable_reward(&new_balance, &unpaid_reward);
+                // calculate withdrawable balance
+                let (available_balance, missing_balance) =
+                    Calculations::<T>::payable_reward(&balance, &unpaid_reward);
 
-            // pay reward
-            Mutations::<T>::pay_reward(
-                member_index,
-                &council_member.staking_account_id,
-                &available_balance,
-                &missing_balance,
-                &now,
-            );
+                // pay reward
+                Mutations::<T>::pay_reward(
+                    member_index,
+                    &council_member.staking_account_id,
+                    &available_balance,
+                    &missing_balance,
+                    &now,
+                );
 
-            // remember new balance
-            new_balance -= available_balance;
+                // emit event
+                Self::deposit_event(RawEvent::RewardPayment(
+                    council_member.membership_id,
+                    council_member.staking_account_id.clone(),
+                    available_balance,
+                    missing_balance,
+                ));
 
-            // emit event
-            Self::deposit_event(RawEvent::RewardPayment(
-                council_member.membership_id,
-                council_member.staking_account_id.clone(),
-                available_balance,
-                missing_balance,
-            ));
-        }
+                // return new balance
+                balance - available_balance
+            },
+        );
 
         // update state
         Mutations::<T>::finish_reward_payments(new_balance, now);
