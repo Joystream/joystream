@@ -1388,10 +1388,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@^0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.20.tgz#8837ab287966ba30130cecfa77f27a2d6aad7061"
-  integrity sha512-pFDL2ZkbUyvSGgklmFNAxA2Y/afCJSxvKQHspjuxwhscsjTq0ay05mEtARbvDhLI1yN7jWedfyzQNUtQPCYHuA==
+"@dzlzv/hydra-cli@^0.0.21":
+  version "0.0.21"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.21.tgz#4f99f125d81fdf1f962e0c31b3acf937a75bd3c1"
+  integrity sha512-pHZ6Qms4DcOpl8eYWllwonkH8nHtDwLuj/P1O+5S0dl6aKJ2tYmvxpmH0OfBLUACf5K8g6eSMs36M37ospSQ8g==
   dependencies:
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
@@ -1411,9 +1411,10 @@
     listr "^0.14.3"
     lodash "^4.17.15"
     mustache "^4.0.1"
+    pluralize "^8.0.0"
     tslib "1.11.2"
     typeorm-model-generator "^0.4.2"
-    warthog "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz"
+    warthog "https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz"
 
 "@dzlzv/hydra-indexer-lib@0.0.19-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.19-legacy.1.26.1":
   version "0.0.19-legacy.1.26.1"
@@ -29145,9 +29146,9 @@ warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-"warthog@https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz":
-  version "2.20.0"
-  resolved "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz#c655c7da3279b958d8fd6549be30d9eb811d48c7"
+"warthog@https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz":
+  version "2.22.0"
+  resolved "https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz#33162a65e2897c79f9b5c6c214565e85685108d3"
   dependencies:
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
