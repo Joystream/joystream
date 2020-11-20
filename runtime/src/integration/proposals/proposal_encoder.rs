@@ -127,6 +127,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     Wg::terminate_role_call(terminate_role_params)
                 )
             }
+            ProposalDetails::AmendConstitution(constitution_text) => {
+                Call::Constitution(constitution::Call::amend_constitution(constitution_text))
+            }
         };
 
         call.encode()
