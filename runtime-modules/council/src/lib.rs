@@ -308,10 +308,7 @@ decl_event! {
         CandidacyNoteSet(MembershipId, Vec<u8>),
 
         /// The whole reward was paid to the council member.
-        RewardPayment(MembershipId, AccountId),
-
-        /// The reward was paid to the council member only partially.
-        RewardPartialPayment(MembershipId, AccountId),
+        RewardPayment(MembershipId, AccountId, Balance, Balance),
 
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
@@ -655,19 +652,12 @@ impl<T: Trait> Module<T> {
             new_balance -= available_balance;
 
             // emit event
-            if missing_balance > 0.into() {
-                // reward has been paid only partially
-                Self::deposit_event(RawEvent::RewardPartialPayment(
-                    council_member.membership_id,
-                    council_member.staking_account_id.clone(),
-                ));
-            } else {
-                // whole reward has been paid
-                Self::deposit_event(RawEvent::RewardPayment(
-                    council_member.membership_id,
-                    council_member.staking_account_id.clone(),
-                ));
-            }
+            Self::deposit_event(RawEvent::RewardPayment(
+                council_member.membership_id,
+                council_member.staking_account_id.clone(),
+                available_balance,
+                missing_balance,
+            ));
         }
 
         // update state
