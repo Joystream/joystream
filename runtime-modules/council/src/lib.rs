@@ -269,7 +269,7 @@ decl_storage! {
         pub Budget get(fn budget): Balance<T>;
 
         /// The next block in which the budget will be increased.
-        pub NextBudgetRefill get(fn next_budget_refill): T::BlockNumber;
+        pub NextRewardPayments get(fn next_reward_payments): T::BlockNumber;
     }
 }
 
@@ -396,7 +396,11 @@ decl_module! {
 
         // No origin so this is a priviledged call
         fn on_finalize(now: T::BlockNumber) {
+            // council stage progress
             Self::try_progress_stage(now);
+
+            // budget reward payment
+            Self::try_reward_payments(now);
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -528,9 +532,12 @@ impl<T: Trait> Module<T> {
             }
             _ => (),
         }
+    }
 
-        // budget reward progress
-        if now == NextBudgetRefill::<T>::get() {
+    /// Checkout elected council members reward payments.
+    fn try_reward_payments(now: T::BlockNumber) {
+        // council members rewards
+        if now == NextRewardPayments::<T>::get() {
             Self::pay_elected_member_rewards(now);
         }
     }
@@ -921,7 +928,7 @@ impl<T: Trait> Mutations<T> {
 
         // plan next rewards payment
         let next_reward_block = now + T::ElectedMemberRewardPeriod::get();
-        NextBudgetRefill::<T>::put(next_reward_block);
+        NextRewardPayments::<T>::put(next_reward_block);
     }
 }
 
