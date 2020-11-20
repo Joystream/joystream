@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-engine'
-version = '3.1.0'
+version = '4.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -13,15 +13,13 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 
 [dev-dependencies]
-mockall = "0.7.1"
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 [features]
 default = ['std']
@@ -34,7 +32,7 @@ std = [
 	'pallet-timestamp/std',
 	'sp-arithmetic/std',
 	'sp-runtime/std',
+	'balances/std',
     'membership/std',
-    'stake/std',
     'common/std',
 ]

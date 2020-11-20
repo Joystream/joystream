@@ -60,7 +60,7 @@ fn add_opening(
             member_id as u64,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(100_000_u32)),
+            Some(account_id.into()),
             AddOpeningParameters {
                 activate_at: activate_at.clone(),
                 commitment: opening_policy_commitment
@@ -69,6 +69,7 @@ fn add_opening(
                 human_readable_text: Vec::new(),
                 working_group,
             },
+            None,
         )
     })
     .with_expected_proposal_id(expected_proposal_id)
@@ -95,9 +96,10 @@ fn begin_review_applications(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(25_000_u32)),
+            Some(account_id.into()),
             opening_id,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -125,13 +127,14 @@ fn fill_opening(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            Some(account_id.into()),
             proposals_codex::FillOpeningParameters {
                 opening_id,
                 successful_application_id,
                 reward_policy: reward_policy.clone(),
                 working_group,
             },
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -166,10 +169,11 @@ fn decrease_stake(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            Some(account_id.into()),
             leader_worker_id,
             stake_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -196,10 +200,11 @@ fn slash_stake(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            Some(account_id.into()),
             leader_worker_id,
             stake_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -226,10 +231,11 @@ fn set_reward(
             member_id as u64,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            Some(account_id.into()),
             leader_worker_id,
             reward_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -268,9 +274,10 @@ fn set_mint_capacity<
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            Some(account_id.into()),
             mint_capacity,
             working_group,
+            None,
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -297,13 +304,14 @@ fn terminate_role(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Runtime>>::from(100_000_u32)),
+            Some(account_id.into()),
             proposals_codex::TerminateRoleParameters {
                 worker_id: leader_worker_id,
                 rationale: Vec::new(),
                 slash,
                 working_group,
             },
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -433,6 +441,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
         );
 
         begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+        let grace_period = 14400;
+        run_to_block(grace_period + 10);
 
         let hiring_opening = Hiring::opening_by_id(hiring_opening_id);
         assert_eq!(
@@ -440,7 +450,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
                     started_accepting_applicants_at_block: 0,
-                    started_review_period_at_block: 2,
+                    started_review_period_at_block: grace_period + 2,
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,
@@ -513,6 +523,9 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             let lead = WorkingGroupInstance::<T, I>::current_lead();
             assert!(lead.is_none());
 
+            let grace_period_for_begin_application_proposal = 14400;
+            run_to_block(grace_period_for_begin_application_proposal + 20);
+
             fill_opening(
                 member_id,
                 account_id,
@@ -522,6 +535,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 3,
                 working_group,
             );
+
+            run_to_block(grace_period_for_begin_application_proposal + 30);
 
             let lead = WorkingGroupInstance::<T, I>::current_lead();
             assert!(lead.is_some());

@@ -25,7 +25,7 @@ use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
     self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    proposals_config, AccountId,
+    AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -216,7 +216,7 @@ impl ChainSpecBuilder {
 // as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
-    deployment: &ChainDeployment,
+    _deployment: &ChainDeployment,
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
@@ -269,17 +269,10 @@ fn genesis_constructor(
         .map(|path| initial_balances::from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
 
-    let proposals_cfg = match deployment {
-        ChainDeployment::live => proposals_config::production(),
-        ChainDeployment::staging => proposals_config::staging(),
-        _ => proposals_config::development(),
-    };
-
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),
-        proposals_cfg,
         members,
         forum_cfg,
         versioned_store_cfg,
