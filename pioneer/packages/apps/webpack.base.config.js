@@ -27,6 +27,7 @@ function mapChunks (name, regs, inc) {
 function createWebpack (ENV, context) {
   const pkgJson = require(path.join(context, 'package.json'));
   const isProd = ENV === 'production';
+  const isLive = !(process.env.IS_LIVE === 'false' || process.env.IS_LIVE === false);
   const hasPublic = fs.existsSync(path.join(context, 'public'));
   const plugins = hasPublic
     ? [new CopyWebpackPlugin({ patterns: [{ from: 'public' }] })]
@@ -53,7 +54,8 @@ function createWebpack (ENV, context) {
 
   return {
     context,
-    entry: ['@babel/polyfill', './src/index.tsx'],
+    // Make it quicker if we're not in a LIVE mode
+    entry: !isLive ? './src/notLive.ts' : ['@babel/polyfill', './src/index.tsx'],
     mode: ENV,
     module: {
       rules: [

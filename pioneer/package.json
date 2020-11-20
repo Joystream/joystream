@@ -17,10 +17,10 @@
     "docs": "echo \"skipping docs\"",
     "clean": "polkadot-dev-clean-build",
     "clean:i18n": "rm -rf packages/apps/public/locales/en && mkdir -p packages/apps/public/locales/en",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
+    "lint": "tsc --noEmit --pretty && eslint --ext .js,.jsx,.ts,.tsx .",
     "lint:css": "stylelint './packages/**/src/**/*.tsx'",
-    "lint-only-errors": "eslint --quiet --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
-    "lint-autofix": "eslint --fix --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
+    "lint-only-errors": "yarn lint --quiet",
+    "lint-autofix": "yarn lint --fix",
     "postinstall": "polkadot-dev-yarn-only",
     "test": "echo \"skipping tests\"",
     "vanitygen": "node packages/app-accounts/scripts/vanitygen.js",
@@ -93,5 +93,8 @@
     "sass-loader": "^8.0.0",
     "style-loader": "^1.0.0",
     "@joystream/types": "link:../types"
+  },
+  "volta": {
+    "extends": "../package.json"
   }
 }

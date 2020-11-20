@@ -1,13 +1,14 @@
 //! The Joystream Substrate Node runtime integration tests.
 
 #![cfg(test)]
+#[macro_use]
 
 mod proposals_integration;
 mod storage_integration;
 use sp_runtime::BuildStorage;
 
 pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<crate::Runtime>()
         .unwrap();
 

@@ -1,5 +1,5 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,

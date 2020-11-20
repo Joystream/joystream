@@ -19,7 +19,7 @@ mod tests;
 
 pub use mint::*;
 
-pub trait Trait: system::Trait {
+pub trait Trait: frame_system::Trait {
     /// The currency to mint.
     type Currency: Currency<Self::AccountId>;
 
@@ -35,7 +35,7 @@ pub trait Trait: system::Trait {
 }
 
 pub type BalanceOf<T> =
-    <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum GeneralError {
@@ -136,7 +136,7 @@ impl<T: Trait> Module<T> {
         initial_capacity: BalanceOf<T>,
         adjustment: Option<Adjustment<BalanceOf<T>, T::BlockNumber>>,
     ) -> Result<T::MintId, GeneralError> {
-        let now = <system::Module<T>>::block_number();
+        let now = <frame_system::Module<T>>::block_number();
 
         // Ensure the next adjustment if set, is in the future
         if let Some(adjustment) = adjustment {

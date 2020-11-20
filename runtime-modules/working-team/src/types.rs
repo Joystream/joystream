@@ -10,7 +10,7 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 /// Team job application type alias.
-pub type JobApplication<T> = Application<<T as system::Trait>::AccountId, MemberId<T>>;
+pub type JobApplication<T> = Application<<T as frame_system::Trait>::AccountId, MemberId<T>>;
 
 /// Member identifier in membership::member module.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -25,12 +25,12 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 }
 
 // WorkerId - TeamWorker - helper struct.
-pub(crate) struct WorkerInfo<T: membership::Trait + system::Trait> {
+pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait> {
     pub worker_id: TeamWorkerId<T>,
     pub worker: TeamWorker<T>,
 }
 
-impl<T: membership::Trait + system::Trait> From<(TeamWorkerId<T>, TeamWorker<T>)>
+impl<T: membership::Trait + frame_system::Trait> From<(TeamWorkerId<T>, TeamWorker<T>)>
     for WorkerInfo<T>
 {
     fn from((worker_id, worker): (TeamWorkerId<T>, TeamWorker<T>)) -> Self {
@@ -40,16 +40,16 @@ impl<T: membership::Trait + system::Trait> From<(TeamWorkerId<T>, TeamWorker<T>)
 
 /// Team worker type alias.
 pub type TeamWorker<T> = Worker<
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     MemberId<T>,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     BalanceOfCurrency<T>,
 >;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     >>::Balance;
 
 /// Job opening for the normal or leader position.
@@ -218,7 +218,7 @@ pub struct StakePolicy<BlockNumber, Balance> {
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurrency> {
+pub trait StakingHandler<T: frame_system::Trait + membership::Trait + GovernanceCurrency> {
     /// Locks the specified balance on the account using specific lock identifier.
     fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
 
@@ -295,7 +295,7 @@ pub struct StakeParameters<AccountId, Balance> {
 pub type ApplyOnOpeningParameters<T, I> = ApplyOnOpeningParams<
     MemberId<T>,
     <T as crate::Trait<I>>::OpeningId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     BalanceOfCurrency<T>,
 >;
 

@@ -30,10 +30,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'increaseStake', [
-      worker.workerId,
-      balance,
-    ])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'increaseStake', [worker.workerId, balance])
 
     this.log(
       chalk.green(

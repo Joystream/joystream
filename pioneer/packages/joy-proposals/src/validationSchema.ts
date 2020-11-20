@@ -7,8 +7,6 @@ import { FormValues as SignalFormValues } from './forms/SignalForm';
 import { FormValues as RuntimeUpgradeFormValues } from './forms/RuntimeUpgradeForm';
 import { FormValues as SetCouncilParamsFormValues } from './forms/SetCouncilParamsForm';
 import { FormValues as SpendingProposalFormValues } from './forms/SpendingProposalForm';
-import { FormValues as SetContentWorkingGroupLeadFormValues } from './forms/SetContentWorkingGroupLeadForm';
-import { FormValues as SetContentWorkingGroupMintCapacityFormValues } from './forms/MintCapacityForm';
 import { FormValues as SetMaxValidatorCountFormValues } from './forms/SetMaxValidatorCountForm';
 import { FormValues as AddWorkingGroupLeaderOpeningFormValues } from './forms/AddWorkingGroupOpeningForm';
 import { FormValues as SetWorkingGroupMintCapacityFormValues } from './forms/SetWorkingGroupMintCapacityForm';
@@ -58,10 +56,6 @@ const TOKENS_MAX = 5000000;
 // Set Validator Count
 const MAX_VALIDATOR_COUNT_MIN = 4;
 const MAX_VALIDATOR_COUNT_MAX = 100;
-
-// Content Working Group Mint Capacity
-const MINT_CAPACITY_MIN = 0;
-const MINT_CAPACITY_MAX = 1000000;
 
 // Add Working Group Leader Opening Parameters
 // TODO: Discuss the actual values
@@ -122,7 +116,7 @@ import Validation from 'path/to/validationSchema'
 */
 
 type ProposalTypeKeys = typeof ProposalTypes[number];
-type OutdatedProposals = 'EvictStorageProvider' | 'SetStorageRoleParameters';
+type OutdatedProposals = 'EvictStorageProvider' | 'SetStorageRoleParameters' | 'SetLead' | 'SetContentWorkingGroupMintCapacity';
 type ValidationTypeKeys = Exclude<ProposalTypeKeys, OutdatedProposals> | 'All';
 
 /* eslint-disable @typescript-eslint/indent */
@@ -134,8 +128,6 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
   T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
   T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
-  T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
-  T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
   T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
   T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
   T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
@@ -294,17 +286,6 @@ const Validation: ValidationType = {
       .required('You need to specify an amount of tokens.'),
     destinationAccount: Yup.string()
       .required('Select a destination account!')
-  }),
-  SetLead: () => ({
-    workingGroupLead: Yup.string().required('Select a proposed lead!')
-  }),
-  SetContentWorkingGroupMintCapacity: () => ({
-    capacity: Yup.number()
-      .positive('Mint capacity should be positive.')
-      .integer('This field must be an integer.')
-      .min(MINT_CAPACITY_MIN, errorMessage('Mint capacity', MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
-      .max(MINT_CAPACITY_MAX, errorMessage('Mint capacity', MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
-      .required('You need to specify a mint capacity.')
   }),
   SetValidatorCount: () => ({
     maxValidatorCount: Yup.number()

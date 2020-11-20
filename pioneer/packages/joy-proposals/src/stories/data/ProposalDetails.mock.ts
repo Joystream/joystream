@@ -20,8 +20,8 @@ const mockedProposal: ParsedProposal = {
   proposerId: 303,
   status: createType('ProposalStatus', {
     Active: {
-      stakeId: 0,
-      sourceAccountId: '5C4hrfkRjSLwQSFVtCvtbV6wctV1WFnkiexUZWLAh4Bc7jib'
+      stake_id: 0,
+      source_account_id: '5C4hrfkRjSLwQSFVtCvtbV6wctV1WFnkiexUZWLAh4Bc7jib'
     }
   }),
   proposer: {

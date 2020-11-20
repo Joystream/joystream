@@ -100,7 +100,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   },
   {
     type: 'SetContentWorkingGroupMintCapacity',
-    category: Categories.cwg,
+    category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
         'This is not the direct reward, but base reward for Pallet staking module.' +
@@ -116,7 +116,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   },
   {
     type: 'SetLead',
-    category: Categories.cwg,
+    category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
         'This is not the direct reward, but base reward for Pallet staking module.' +

@@ -24,8 +24,8 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
   formatReward(reward?: Reward) {
     return reward
       ? formatBalance(reward.value) +
-          (reward.interval && ` / ${reward.interval} block(s)`) +
-          (reward.nextPaymentBlock && ` (next payment: #${reward.nextPaymentBlock})`)
+          (reward.interval ? ` / ${reward.interval} block(s)` : '') +
+          (reward.nextPaymentBlock ? ` (next payment: #${reward.nextPaymentBlock})` : '')
       : 'NONE'
   }
 
@@ -55,7 +55,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
       workerId,
       newRewardValue,
     ])

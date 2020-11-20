@@ -32,7 +32,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRoleAccount', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRoleAccount', [
       worker.workerId,
       newRoleAccount,
     ])

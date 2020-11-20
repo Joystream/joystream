@@ -33,7 +33,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'fillOpening', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
       openingId,
       applicationIds,
       rewardPolicyOpt,

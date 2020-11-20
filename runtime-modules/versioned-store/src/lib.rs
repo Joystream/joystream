@@ -213,8 +213,8 @@ pub struct ClassPropertyValue {
     pub value: PropertyValue,
 }
 
-pub trait Trait: system::Trait + Sized {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + Sized {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -246,7 +246,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     {
         ClassCreated(ClassId),
         ClassSchemaAdded(ClassId, u16),
@@ -697,7 +697,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Preserve special formatting.
     #[rustfmt::skip]
+    #[allow(clippy::match_like_matches_macro)]
     pub fn does_prop_value_match_type(
         value: PropertyValue,
         prop: Property,

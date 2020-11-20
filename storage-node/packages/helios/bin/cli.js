@@ -2,7 +2,7 @@
 
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 const { encodeAddress } = require('@polkadot/keyring')
-const { discover } = require('@joystream/service-discovery')
+const { DiscoveryClient } = require('@joystream/service-discovery')
 const axios = require('axios')
 const stripEndingSlash = require('@joystream/storage-utils/stripEndingSlash')
 
@@ -124,12 +124,14 @@ async function main() {
     })
   )
 
+  const discoveryClient = new DiscoveryClient({ api: runtime })
+
   // Resolve IPNS identities of providers
   console.log('\nResolving live provider API Endpoints...')
   const endpoints = await Promise.all(
     providersStatuses.map(async ({ providerId }) => {
       try {
-        const serviceInfo = await discover.discoverOverJoystreamDiscoveryService(providerId, runtime)
+        const serviceInfo = await discoveryClient.discoverOverJoystreamDiscoveryService(providerId)
 
         if (serviceInfo === null) {
           console.log(`provider ${providerId} has not published service information`)

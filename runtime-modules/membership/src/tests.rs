@@ -5,7 +5,7 @@ use super::mock::*;
 
 use frame_support::*;
 
-fn get_membership_by_id(member_id: u32) -> crate::Membership<Test> {
+fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
         Members::membership(member_id)
     } else {
@@ -332,7 +332,7 @@ fn set_root_account() {
 
             let membership = Members::membership(member_id);
 
-            assert_eq!(ALICE_ACCOUNT_ID, membership.root_account);
+            assert_eq!(ALICE_NEW_ROOT_ACCOUNT, membership.root_account);
 
             assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
         });

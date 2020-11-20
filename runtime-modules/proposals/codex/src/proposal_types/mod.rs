@@ -1,7 +1,5 @@
 #![warn(missing_docs)]
 
-pub(crate) mod parameters;
-
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -20,13 +18,13 @@ pub trait ProposalEncoder<T: crate::Trait> {
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfMint<T>,
     crate::BalanceOfGovernanceCurrency<T>,
-    <T as system::Trait>::BlockNumber,
-    <T as system::Trait>::AccountId,
-    crate::MemberId<T>,
+    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::AccountId,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
     crate::BalanceOf<T>,
     working_group::WorkerId<T>,
+    crate::MemberId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -37,11 +35,11 @@ pub enum ProposalDetails<
     CurrencyBalance,
     BlockNumber,
     AccountId,
-    MemberId,
     OpeningId,
     ApplicationId,
     StakeBalance,
     WorkerId,
+    MemberId,
 > {
     /// The text of the `text` proposal
     Text(Vec<u8>),
@@ -49,22 +47,28 @@ pub enum ProposalDetails<
     /// The wasm code for the `runtime upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
+    /// ********** Deprecated.
+    /// It is kept only for backward compatibility in the Pioneer. **********
     /// Election parameters for the `set election parameters` proposal
     SetElectionParameters(ElectionParameters<CurrencyBalance, BlockNumber>),
 
     /// Balance and destination account for the `spending` proposal
     Spending(MintedBalance, AccountId),
 
+    /// ********** Deprecated during the Babylon release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
     /// New leader memberId and account_id for the `set lead` proposal
-    SetLead(Option<(MemberId, AccountId)>),
+    DeprecatedSetLead(Option<(MemberId, AccountId)>),
 
+    /// ********** Deprecated during the Babylon release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
     /// Balance for the `set content working group mint capacity` proposal
-    SetContentWorkingGroupMintCapacity(MintedBalance),
+    DeprecatedSetContentWorkingGroupMintCapacity(MintedBalance),
 
     /// ********** Deprecated during the Nicaea release.
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// AccountId for the `evict storage provider` proposal
-    EvictStorageProvider(AccountId),
+    DeprecatedEvictStorageProvider(AccountId),
 
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
@@ -72,7 +76,7 @@ pub enum ProposalDetails<
     /// ********** Deprecated during the Nicaea release.
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// Role parameters for the `set storage role parameters` proposal
-    SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
+    DeprecatedSetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
 
     /// Add opening for the working group leader position.
     AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
@@ -99,6 +103,9 @@ pub enum ProposalDetails<
 
     /// Fire the working group leader with possible slashing.
     TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
+
+    /// Amend constitution.
+    AmendConstitution(Vec<u8>),
 }
 
 impl<
@@ -106,22 +113,22 @@ impl<
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,
         WorkerId,
+        MemberId,
     > Default
     for ProposalDetails<
         MintedBalance,
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,
         WorkerId,
+        MemberId,
     >
 {
     fn default() -> Self {
@@ -217,175 +224,4 @@ pub struct RoleParameters<Balance, BlockNumber> {
 
     /// Small fee burned to make a request to enter role.
     pub entry_request_fee: Balance,
-}
-
-/// Contains proposal config parameters. Default values are used by migration and genesis config.
-#[derive(Copy, Clone)]
-pub struct ProposalsConfigParameters {
-    /// 'Set validator count' proposal voting period
-    pub set_validator_count_proposal_voting_period: u32,
-
-    /// 'Set validator count' proposal grace period
-    pub set_validator_count_proposal_grace_period: u32,
-
-    /// 'Runtime upgrade' proposal voting period
-    pub runtime_upgrade_proposal_voting_period: u32,
-
-    /// 'Runtime upgrade' proposal grace period
-    pub runtime_upgrade_proposal_grace_period: u32,
-
-    /// 'Text' proposal voting period
-    pub text_proposal_voting_period: u32,
-
-    /// 'Text' proposal grace period
-    pub text_proposal_grace_period: u32,
-
-    /// 'Set election parameters' proposal voting period
-    pub set_election_parameters_proposal_voting_period: u32,
-
-    /// 'Set election parameters' proposal grace period
-    pub set_election_parameters_proposal_grace_period: u32,
-
-    /// 'Set content working group mint capacity' proposal voting period
-    pub set_content_working_group_mint_capacity_proposal_voting_period: u32,
-
-    /// 'Set content working group mint capacity' proposal grace period
-    pub set_content_working_group_mint_capacity_proposal_grace_period: u32,
-
-    /// 'Set lead' proposal voting period
-    pub set_lead_proposal_voting_period: u32,
-
-    /// 'Set lead' proposal grace period
-    pub set_lead_proposal_grace_period: u32,
-
-    /// 'Spending' proposal voting period
-    pub spending_proposal_voting_period: u32,
-
-    /// 'Spending' proposal grace period
-    pub spending_proposal_grace_period: u32,
-
-    /// 'Add working group opening' proposal voting period
-    pub add_working_group_opening_proposal_voting_period: u32,
-
-    /// 'Add working group opening' proposal grace period
-    pub add_working_group_opening_proposal_grace_period: u32,
-
-    /// 'Begin review working group leader applications' proposal voting period
-    pub begin_review_working_group_leader_applications_proposal_voting_period: u32,
-
-    /// 'Begin review working group leader applications' proposal grace period
-    pub begin_review_working_group_leader_applications_proposal_grace_period: u32,
-
-    /// 'Fill working group leader opening' proposal voting period
-    pub fill_working_group_leader_opening_proposal_voting_period: u32,
-
-    /// 'Fill working group leader opening' proposal grace period
-    pub fill_working_group_leader_opening_proposal_grace_period: u32,
-
-    /// 'Set working group mint capacity' proposal voting period
-    pub set_working_group_mint_capacity_proposal_voting_period: u32,
-
-    /// 'Set working group mint capacity' proposal grace period
-    pub set_working_group_mint_capacity_proposal_grace_period: u32,
-
-    /// 'Decrease working group leader stake' proposal voting period
-    pub decrease_working_group_leader_stake_proposal_voting_period: u32,
-
-    /// 'Decrease working group leader stake' proposal grace period
-    pub decrease_working_group_leader_stake_proposal_grace_period: u32,
-
-    /// 'Slash working group leader stake' proposal voting period
-    pub slash_working_group_leader_stake_proposal_voting_period: u32,
-
-    /// 'Slash working group leader stake' proposal grace period
-    pub slash_working_group_leader_stake_proposal_grace_period: u32,
-
-    /// 'Set working group leader reward' proposal voting period
-    pub set_working_group_leader_reward_proposal_voting_period: u32,
-
-    /// 'Set working group leader reward' proposal grace period
-    pub set_working_group_leader_reward_proposal_grace_period: u32,
-
-    /// 'Terminate working group leader role' proposal voting period
-    pub terminate_working_group_leader_role_proposal_voting_period: u32,
-
-    /// 'Terminate working group leader role' proposal grace period
-    pub terminate_working_group_leader_role_proposal_grace_period: u32,
-}
-
-impl Default for ProposalsConfigParameters {
-    fn default() -> Self {
-        ProposalsConfigParameters {
-            set_validator_count_proposal_voting_period: 43200u32,
-            set_validator_count_proposal_grace_period: 0u32,
-            runtime_upgrade_proposal_voting_period: 72000u32,
-            runtime_upgrade_proposal_grace_period: 72000u32,
-            text_proposal_voting_period: 72000u32,
-            text_proposal_grace_period: 0u32,
-            set_election_parameters_proposal_voting_period: 72000u32,
-            set_election_parameters_proposal_grace_period: 201_601_u32,
-            set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
-            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
-            set_lead_proposal_voting_period: 43200u32,
-            set_lead_proposal_grace_period: 0u32,
-            spending_proposal_voting_period: 72000u32,
-            spending_proposal_grace_period: 14400u32,
-            add_working_group_opening_proposal_voting_period: 72000u32,
-            add_working_group_opening_proposal_grace_period: 0u32,
-            begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
-            begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
-            fill_working_group_leader_opening_proposal_voting_period: 43200u32,
-            fill_working_group_leader_opening_proposal_grace_period: 0u32,
-            set_working_group_mint_capacity_proposal_voting_period: 43200u32,
-            set_working_group_mint_capacity_proposal_grace_period: 0u32,
-            decrease_working_group_leader_stake_proposal_voting_period: 43200u32,
-            decrease_working_group_leader_stake_proposal_grace_period: 0u32,
-            slash_working_group_leader_stake_proposal_voting_period: 43200u32,
-            slash_working_group_leader_stake_proposal_grace_period: 0u32,
-            set_working_group_leader_reward_proposal_voting_period: 43200u32,
-            set_working_group_leader_reward_proposal_grace_period: 0u32,
-            terminate_working_group_leader_role_proposal_voting_period: 72200u32,
-            terminate_working_group_leader_role_proposal_grace_period: 0u32,
-        }
-    }
-}
-
-impl ProposalsConfigParameters {
-    /// Set same voting_period for all proposals. For proposals
-    /// that by default have 0 grace period remain with 0 grace period.
-    /// All remaining proposals get assigned grace_period.
-    pub fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
-        ProposalsConfigParameters {
-            set_validator_count_proposal_voting_period: voting_period,
-            set_validator_count_proposal_grace_period: 0,
-            runtime_upgrade_proposal_voting_period: voting_period,
-            runtime_upgrade_proposal_grace_period: grace_period,
-            text_proposal_voting_period: voting_period,
-            text_proposal_grace_period: 0,
-            set_election_parameters_proposal_voting_period: voting_period,
-            set_election_parameters_proposal_grace_period: grace_period,
-            set_content_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_content_working_group_mint_capacity_proposal_grace_period: 0,
-            set_lead_proposal_voting_period: voting_period,
-            set_lead_proposal_grace_period: 0,
-            spending_proposal_voting_period: voting_period,
-            spending_proposal_grace_period: grace_period,
-            add_working_group_opening_proposal_voting_period: voting_period,
-            add_working_group_opening_proposal_grace_period: 0,
-            begin_review_working_group_leader_applications_proposal_voting_period: voting_period,
-            begin_review_working_group_leader_applications_proposal_grace_period: grace_period,
-            fill_working_group_leader_opening_proposal_voting_period: voting_period,
-            fill_working_group_leader_opening_proposal_grace_period: 0,
-            set_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_working_group_mint_capacity_proposal_grace_period: 0,
-            decrease_working_group_leader_stake_proposal_voting_period: voting_period,
-            decrease_working_group_leader_stake_proposal_grace_period: 0,
-            slash_working_group_leader_stake_proposal_voting_period: voting_period,
-            slash_working_group_leader_stake_proposal_grace_period: 0,
-            set_working_group_leader_reward_proposal_voting_period: voting_period,
-            set_working_group_leader_reward_proposal_grace_period: 0,
-            terminate_working_group_leader_role_proposal_voting_period: voting_period,
-            terminate_working_group_leader_role_proposal_grace_period: 0,
-        }
-    }
 }

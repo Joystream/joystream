@@ -42,7 +42,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'decreaseStake', [workerId, balance])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'decreaseStake', [workerId, balance])
 
     this.log(
       chalk.green(

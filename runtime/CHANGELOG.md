@@ -1,11 +1,14 @@
-### Version 6.21.0 - Constantinople runtime upgrade B (Nicaea) - July 29 2020
+### Version 7.4.0 - Alexandria - new chain - September 21 2020
+- Update to substrate v2.0.0-rc4
+
+### Version 6.21.0 - (Constantinople) runtime upgrade B (Nicaea) - July 29 2020
 
 - Introduction of general Working Group runtime module
 - Adds a new instance of the working group module - the Storage Working Group which
   replaces the old actors module for managing the Storge Provider enrollment process
 - New governance proposals to support new working groups
 
-### Version 6.15.0 - Constantinople runtime upgrade A - June 2020
+### Version 6.15.0 - (Constantinople) runtime upgrade A - June 2020
 
 - Updated runtime to sort out type name clashes between the proposal discussion module
   and forum module, in preparing to roll out proposal discussion system in pioneer.

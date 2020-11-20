@@ -35,6 +35,7 @@ _Building_
 
 ```bash
 $ yarn install
+$ yarn build
 ```
 
 The command will install dependencies, and make a `colossus` executable available:
@@ -75,30 +76,15 @@ yarn colossus --dev
 ```
 
 Start pioneer ui:
-``sh
-yarn workspace pioneer start
-
-````
-
-Browse pioneer on http://localhost:3000/
-You should find Alice account is the storage working group lead and is a storage provider
-Create a media channel. And upload a file. You may have to wait a couple of minutes before
-the ipns of the storage-node is registered before you can upload a file, or you will get an error
-in pioneer.
-
-## Detailed Setup and Configuration Guide
-For details on how to setup a storage node on the Joystream network, follow this [step by step guide](https://github.com/Joystream/helpdesk/tree/master/roles/storage-providers).
-
-## Running a development instance with Docker
-If you have docker installed you can run a fresh development setup using the utility scripts provided:
-
-First build a docker image of joystream-node from the root:
 
 ```sh
-# Build the latest image
-scripts/build-joystream-node-docker-image.sh
+yarn workspace pioneer start
 
-# Run docker-compose to start an ipfs node, and joystream-node in development mode
-# initializes the chain with development settings, and start a storage-node
-storage-node/scripts/run-dev-instance.sh
-````
+```
+
+Browse pioneer on http://localhost:3000/
+You should find Alice account is the storage working group lead and is a storage provider.
+
+## Detailed Setup and Configuration Guide
+
+For details on how to setup a storage node on the Joystream network, follow this [step by step guide](https://github.com/Joystream/helpdesk/tree/master/roles/storage-providers).

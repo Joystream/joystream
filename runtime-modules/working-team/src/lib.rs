@@ -41,11 +41,11 @@ use frame_support::traits::{Currency, Get};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
@@ -58,7 +58,7 @@ use common::origin::ActorOriginValidator;
 
 /// The _Team_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    system::Trait + membership::Trait + balances::Trait + common::currency::GovernanceCurrency
+    frame_system::Trait + membership::Trait + balances::Trait + common::currency::GovernanceCurrency
 {
     /// OpeningId type
     type OpeningId: Parameter
@@ -81,7 +81,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
         + PartialEq;
 
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines max workers number in the team.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -107,7 +107,7 @@ decl_event!(
        <T as Trait<I>>::ApplicationId,
        ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
        TeamWorkerId = TeamWorkerId<T>,
-       <T as system::Trait>::AccountId,
+       <T as frame_system::Trait>::AccountId,
        Balance = BalanceOfCurrency<T>,
     {
         /// Emits on adding new job opening.
@@ -826,9 +826,9 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-    // Wrapper-function over system::block_number()
+    // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
+        <frame_system::Module<T>>::block_number()
     }
 
     // Increases active worker counter (saturating).
@@ -958,7 +958,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn reward_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
         // If reward period is not set.
         let mut rewarding_period: u32 = T::RewardPeriod::get();
-        if rewarding_period == Zero::zero() {
+        if rewarding_period == 0u32 {
             rewarding_period = One::one();
         }
 
@@ -1077,10 +1077,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             return false;
         }
 
-        let reward_period = T::RewardPeriod::get();
+        let reward_period: u32 = T::RewardPeriod::get();
 
         // Special case for not set reward_period. Treats as reward_period == 1.
-        if reward_period == Zero::zero() {
+        if reward_period == 0u32 {
             return true;
         }
 

@@ -20,6 +20,8 @@ members = [
 	"runtime-modules/versioned-store-permissions",
 	"runtime-modules/working-group",
 	"runtime-modules/working-team",
+	"runtime-modules/content-directory",
+	"runtime-modules/constitution",
 	"node",
 	"utils/chain-spec-builder/"
 ]

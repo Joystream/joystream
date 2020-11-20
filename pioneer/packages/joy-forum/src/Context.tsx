@@ -232,10 +232,10 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         moderator_id: createType('AccountId', moderator),
         rationale: createType('Text', rationale)
       });
-      const threadUpd = createType('Thread', Object.assign(
-        thread.cloneValues(),
-        { moderation: createType('Option<ModerationAction>', moderation) }
-      ));
+      const threadUpd = createType('Thread', {
+        ...thread.cloneValues(),
+        moderation: createType('Option<ModerationAction>', moderation)
+      });
 
       threadById.set(id, threadUpd);
 
