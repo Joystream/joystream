@@ -36,7 +36,7 @@ export default async function channelCreation(api: QueryNodeApi) {
   await Utils.wait(120000)
 
   // Ensure newly created channel was parsed by query node
-  let result = await api.getChannelbyHandle(createChannelHappyCaseFixture.channelEntity.handle)
+  const result = await api.getChannelbyHandle(createChannelHappyCaseFixture.channelEntity.handle)
 
   assertChannelMatchQueriedResult(result.data.channels[0], createChannelHappyCaseFixture.channelEntity)
 }
