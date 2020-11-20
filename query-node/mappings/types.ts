@@ -40,7 +40,7 @@ export interface IReference {
 }
 
 export interface IChannel {
-  title: string
+  handle: string
   description: string
   coverPhotoUrl: string
   avatarPhotoUrl: string
