@@ -303,9 +303,6 @@ decl_event! {
         /// The whole reward was paid to the council member.
         RewardPayment(MembershipId, AccountId, Balance, Balance),
 
-        /// No reward was paid to the elected member because the whole accumulated reward was already paid out.
-        NoUnpaidReward(MembershipId, AccountId),
-
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
     }
@@ -623,9 +620,11 @@ impl<T: Trait> Module<T> {
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
                 if unpaid_reward == 0.into() {
-                    Self::deposit_event(RawEvent::NoUnpaidReward(
+                    Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
                         council_member.staking_account_id.clone(),
+                        0.into(),
+                        0.into(),
                     ));
                     return balance;
                 }
