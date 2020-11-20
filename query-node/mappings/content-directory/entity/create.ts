@@ -216,8 +216,7 @@ async function createVideo(
   video.description = p.description
   video.duration = p.duration
   video.hasMarketing = p.hasMarketing
-  // TODO: needs to be handled correctly, from runtime CurationStatus is coming
-  video.isCurated = p.isCurated || true
+  video.isCurated = p.isCurated || false
   video.isExplicit = p.isExplicit
   video.isPublic = p.isPublic
   video.publishedBeforeJoystream = p.publishedBeforeJoystream
