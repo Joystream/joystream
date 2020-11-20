@@ -489,6 +489,7 @@ where
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
             staking_account_id: account_id.into(),
+            reward_account_id: account_id.into(),
             cycle_id: AnnouncementPeriodNr::get(),
             stake,
             note_hash: None,
@@ -698,7 +699,8 @@ where
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
-                member_id.into(),
+                member_id.into(), // use member id as staking account
+                member_id.into(), // use member id as reward account
                 stake
             ),
             expected_result,

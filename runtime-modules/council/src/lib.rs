@@ -114,6 +114,7 @@ pub struct CouncilStageElection {
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct Candidate<AccountId, Balance, Hash> {
     staking_account_id: AccountId,
+    reward_account_id: AccountId,
     cycle_id: u64,
     stake: Balance,
     note_hash: Option<Hash>,
@@ -124,6 +125,7 @@ pub struct Candidate<AccountId, Balance, Hash> {
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct CouncilMember<AccountId, MembershipId, Balance, BlockNumber> {
     staking_account_id: AccountId,
+    reward_account_id: AccountId,
     membership_id: MembershipId,
     stake: Balance,
 
@@ -149,6 +151,7 @@ impl<AccountId, MembershipId, Balance, Hash, BlockNumber>
     ) -> Self {
         Self {
             staking_account_id: from.0.staking_account_id,
+            reward_account_id: from.0.reward_account_id,
             membership_id: from.1,
             stake: from.0.stake,
 
@@ -397,12 +400,12 @@ decl_module! {
 
         /// Subscribe candidate
         #[weight = 10_000_000]
-        pub fn announce_candidacy(origin, membership_id: T::MembershipId, staking_account_id: T::AccountId, stake: Balance<T>) -> Result<(), Error<T>> {
+        pub fn announce_candidacy(origin, membership_id: T::MembershipId, staking_account_id: T::AccountId, reward_account_id: T::AccountId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &membership_id, &staking_account_id, &stake)?;
+            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &membership_id, &staking_account_id, &reward_account_id, &stake)?;
 
             // prepare candidate
-            let candidate = Self::prepare_new_candidate(staking_account_id, stake);
+            let candidate = Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
 
             //
             // == MUTATION SAFE ==
@@ -622,7 +625,7 @@ impl<T: Trait> Module<T> {
                 if unpaid_reward == 0.into() {
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
-                        council_member.staking_account_id.clone(),
+                        council_member.reward_account_id.clone(),
                         0.into(),
                         0.into(),
                     ));
@@ -634,7 +637,7 @@ impl<T: Trait> Module<T> {
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
-                        council_member.staking_account_id.clone(),
+                        council_member.reward_account_id.clone(),
                         0.into(),
                         unpaid_reward,
                     ));
@@ -648,7 +651,7 @@ impl<T: Trait> Module<T> {
                 // pay reward
                 Mutations::<T>::pay_reward(
                     member_index,
-                    &council_member.staking_account_id,
+                    &council_member.reward_account_id,
                     &available_balance,
                     &missing_balance,
                     &now,
@@ -657,7 +660,7 @@ impl<T: Trait> Module<T> {
                 // emit event
                 Self::deposit_event(RawEvent::RewardPayment(
                     council_member.membership_id,
-                    council_member.staking_account_id.clone(),
+                    council_member.reward_account_id.clone(),
                     available_balance,
                     missing_balance,
                 ));
@@ -676,10 +679,12 @@ impl<T: Trait> Module<T> {
     /// Construct a new candidate for council election.
     fn prepare_new_candidate(
         staking_account_id: T::AccountId,
+        reward_account_id: T::AccountId,
         stake: Balance<T>,
     ) -> CandidateOf<T> {
         Candidate {
             staking_account_id,
+            reward_account_id,
             cycle_id: AnnouncementPeriodNr::get(),
             stake,
             note_hash: None,
@@ -963,6 +968,7 @@ impl<T: Trait> EnsureChecks<T> {
         origin: T::Origin,
         membership_id: &T::MembershipId,
         staking_account_id: &T::AccountId,
+        reward_account_id: &T::AccountId,
         stake: &Balance<T>,
     ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
         // ensure user's membership
@@ -976,6 +982,10 @@ impl<T: Trait> EnsureChecks<T> {
         // ensure there are no conflicting stake types for the account
         if !T::CandidacyLock::is_account_free_of_conflicting_stakes(&staking_account_id) {
             return Err(Error::ConflictingStake);
+        }
+
+        if !T::is_council_member_account(&membership_id, &reward_account_id) {
+            return Err(Error::MembershipIdNotMatchAccount);
         }
 
         let stage_data = match Stage::<T>::get().stage {
