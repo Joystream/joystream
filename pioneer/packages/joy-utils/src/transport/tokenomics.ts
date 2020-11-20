@@ -4,7 +4,7 @@ import CouncilTransport from './council';
 import WorkingGroupsTransport from './workingGroups';
 import { APIQueryCache } from './APIQueryCache';
 import { Seats } from '@joystream/types/council';
-import { Option } from '@polkadot/types';
+import { Option, u32, Vec } from '@polkadot/types';
 import { BlockNumber, BalanceOf, Exposure } from '@polkadot/types/interfaces';
 import { WorkerId } from '@joystream/types/working-group';
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
@@ -298,13 +298,21 @@ export default class TokenomicsTransport extends BaseTransport {
   async networkStatistics () {
     const blockHeight = (await this.api.derive.chain.bestNumber()).toNumber();
     const numberOfMembers = (await this.api.query.members.nextMemberId() as MemberId).toNumber();
-    const content = (await this.api.query.versionedStore.classById(7) as Class).properties;
+    const content = await this.api.query.dataDirectory.knownContentIds() as Vec<ContentId>;
     const numberOfChannels = (await this.api.query.contentWorkingGroup.nextChannelId() as ChannelId).toNumber();
-    const proposalCount = Number(await this.api.query.proposalsEngine.proposalCount());
-    const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber();
-    const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber();
-    const [councilMintId, contentCuratorMintId, storageMintId] = await Promise.all([await this.api.query.council.councilMint() as MintId, await this.api.query.contentWorkingGroup.mint() as MintId, await this.api.query.storageWorkingGroup.mint() as MintId]);
-    const [councilMint, contentMint, storageMint] = (await this.api.query.minting.mints.multi<Mint>([councilMintId, contentCuratorMintId, storageMintId]));
+    const proposalCount = (await this.api.query.proposalsEngine.proposalCount() as u32).toNumber();
+    const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber() - 1;
+    const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber() - 1;
+    const [councilMintId, contentCuratorMintId, storageMintId] = await Promise.all([
+      (await this.api.query.council.councilMint()) as MintId,
+      (await this.api.query.contentWorkingGroup.mint()) as MintId,
+      (await this.api.query.storageWorkingGroup.mint()) as MintId
+    ]);
+    const [councilMint, contentMint, storageMint] = await this.api.query.minting.mints.multi<Mint>([
+      councilMintId,
+      contentCuratorMintId,
+      storageMintId
+    ]);
 
     return {
       blockHeight,
@@ -325,7 +333,7 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async proposalStatistics () {
-    const proposal = {
+    const proposalCounters = {
       all: 0,
       Active: 0,
       Approved: 0,
@@ -337,11 +345,11 @@ export default class TokenomicsTransport extends BaseTransport {
     };
 
     const returnData = {
-      text: { ...proposal },
-      spending: { ...proposal },
-      workingGroups: { ...proposal },
-      networkChanges: { ...proposal },
-      all: { ...proposal }
+      text: { ...proposalCounters },
+      spending: { ...proposalCounters },
+      workingGroups: { ...proposalCounters },
+      networkChanges: { ...proposalCounters },
+      all: { ...proposalCounters }
     };
 
     const proposals = await this.entriesByIds<ProposalId, ProposalDetails>(this.api.query.proposalsCodex.proposalDetailsByProposalId);
@@ -372,7 +380,7 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   historicalProposalStatistics () {
-    const proposal = {
+    const proposalCounters = {
       all: 0,
       Active: 0,
       Approved: 0,
@@ -384,11 +392,11 @@ export default class TokenomicsTransport extends BaseTransport {
     };
 
     const historicalProposalData = {
-      text: { ...proposal },
-      spending: { ...proposal },
-      workingGroups: { ...proposal },
-      networkChanges: { ...proposal },
-      all: { ...proposal }
+      text: { ...proposalCounters },
+      spending: { ...proposalCounters },
+      workingGroups: { ...proposalCounters },
+      networkChanges: { ...proposalCounters },
+      all: { ...proposalCounters }
     };
 
     HISTORICAL_PROPOSALS.map(({ proposal }) => {
