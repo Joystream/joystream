@@ -56,7 +56,7 @@ use frame_support::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion};
 use std::marker::PhantomData;
 use system::{ensure_root, ensure_signed, RawOrigin};
 
@@ -230,13 +230,6 @@ pub trait Trait: system::Trait {
         membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool;
-
-    /// Converts block number type to balance type.
-    /// NOTE: This function is needed because there is no way to enforce type constraint
-    ///       `Trait::BlockNumber: From<Balance<T>> + Into<Balance<T>>` needed by `get_current_reward()`.
-    ///       That's because cascade of `where` clauses leads to `decl_error` macro that doesn't support
-    ///       type constraint via `where`.
-    fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self>;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -727,8 +720,10 @@ impl<T: Trait> Calculations<T> {
         reward_per_block: Balance<T>,
         now: T::BlockNumber,
     ) -> Balance<T> {
-        council_member.unpaid_reward
-            + T::blocks_to_balance(&(now - council_member.last_payment_block)) * reward_per_block
+        (council_member.unpaid_reward.saturated_into()
+            + (now - council_member.last_payment_block).saturated_into()
+                * reward_per_block.saturated_into())
+        .saturated_into()
     }
 
     /// Retrieve current budget's balance and calculate missing balance for reward payment.
@@ -742,7 +737,9 @@ impl<T: Trait> Calculations<T> {
         }
 
         // calculate missing balance
-        let missing_balance = *reward_amount - *budget_balance;
+        let missing_balance = (*reward_amount - *budget_balance)
+            .saturated_into()
+            .saturated_into();
 
         (*budget_balance, missing_balance)
     }

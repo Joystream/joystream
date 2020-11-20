@@ -84,10 +84,6 @@ impl Trait for Runtime {
     ) -> bool {
         membership_id == account_id
     }
-
-    fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self> {
-        (*block_number).into()
-    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
