@@ -1,5 +1,5 @@
 {
-  "name": "cd-schemas",
+  "name": "@joystream/cd-schemas",
   "version": "0.1.0",
   "description": "JSON schemas, inputs and related tooling for Joystream content directory 2.0",
   "author": "Joystream contributors",
@@ -19,9 +19,9 @@
     "initialize:dev": "yarn initialize:alice-as-lead && yarn initialize:content-dir",
     "example:createChannel": "ts-node ./examples/createChannel.ts",
     "example:createVideo": "ts-node ./examples/createVideo.ts",
-    "example:updateChannelTitle": "ts-node ./examples/updateChannelTitle.ts",
+    "example:updateChannelHandle": "ts-node ./examples/updateChannelHandle.ts",
     "example:createChannelWithoutTransaction": "ts-node ./examples/createChannelWithoutTransaction.ts",
-    "example:updateChannelTitlelWithoutTransaction": "ts-node ./examples/updateChannelTitleWithoutTransaction.ts"
+    "example:updateChannelHandlelWithoutTransaction": "ts-node ./examples/updateChannelHandleWithoutTransaction.ts"
   },
   "dependencies": {
     "ajv": "6.12.5",
@@ -44,5 +44,9 @@
   "bugs": {
     "url": "https://github.com/Joystream/joystream/issues"
   },
-  "homepage": "https://github.com/Joystream/joystream"
+  "homepage": "https://github.com/Joystream/joystream",
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
+  }
 }

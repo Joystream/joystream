@@ -1,16 +1,16 @@
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
-import { KnownLicense } from '../../../generated/graphql-server/src/modules/known-license/known-license.model'
-import { UserDefinedLicense } from '../../../generated/graphql-server/src/modules/user-defined-license/user-defined-license.model'
-import { JoystreamMediaLocation } from '../../../generated/graphql-server/src/modules/joystream-media-location/joystream-media-location.model'
-import { HttpMediaLocation } from '../../../generated/graphql-server/src/modules/http-media-location/http-media-location.model'
+import { KnownLicenseEntity } from '../../../generated/graphql-server/src/modules/known-license-entity/known-license-entity.model'
+import { UserDefinedLicenseEntity } from '../../../generated/graphql-server/src/modules/user-defined-license-entity/user-defined-license-entity.model'
+import { JoystreamMediaLocationEntity } from '../../../generated/graphql-server/src/modules/joystream-media-location-entity/joystream-media-location-entity.model'
+import { HttpMediaLocationEntity } from '../../../generated/graphql-server/src/modules/http-media-location-entity/http-media-location-entity.model'
 import { VideoMedia } from '../../../generated/graphql-server/src/modules/video-media/video-media.model'
 import { Video } from '../../../generated/graphql-server/src/modules/video/video.model'
 import { Language } from '../../../generated/graphql-server/src/modules/language/language.model'
 import { VideoMediaEncoding } from '../../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
-import { License } from '../../../generated/graphql-server/src/modules/license/license.model'
-import { MediaLocation } from '../../../generated/graphql-server/src/modules/media-location/media-location.model'
+import { LicenseEntity } from '../../../generated/graphql-server/src/modules/license-entity/license-entity.model'
+import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
 
 import { IWhereCond } from '../../types'
 
@@ -39,45 +39,82 @@ async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
 }
 
 async function removeLicense(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(License, where)
+  const record = await db.get(LicenseEntity, where)
   if (record === undefined) throw Error(`License not found`)
+
+  const { knownLicense, userdefinedLicense } = record
+  let videos: Video[] = []
+
+  if (knownLicense) {
+    videos = await db.getMany(Video, {
+      where: {
+        license: {
+          isTypeOf: 'KnownLicense',
+          code: knownLicense.code,
+          description: knownLicense.description,
+          name: knownLicense.name,
+          url: knownLicense.url,
+        },
+      },
+    })
+  }
+  if (userdefinedLicense) {
+    videos = await db.getMany(Video, {
+      where: { license: { isTypeOf: 'UserDefinedLicense', content: userdefinedLicense.content } },
+    })
+  }
   // Remove all the videos under this license
-  if (record.videolicense) record.videolicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
-  await db.remove<License>(record)
+  videos.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  await db.remove<LicenseEntity>(record)
 }
 async function removeUserDefinedLicense(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(UserDefinedLicense, where)
+  const record = await db.get(UserDefinedLicenseEntity, where)
   if (record === undefined) throw Error(`UserDefinedLicense not found`)
-  if (record.licenseuserdefinedLicense)
-    record.licenseuserdefinedLicense.map(async (l) => await removeLicense(db, { where: { id: l.id } }))
-  await db.remove<UserDefinedLicense>(record)
+  if (record.licenseentityuserdefinedLicense)
+    record.licenseentityuserdefinedLicense.map(async (l) => await removeLicense(db, { where: { id: l.id } }))
+  await db.remove<UserDefinedLicenseEntity>(record)
 }
 async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(KnownLicense, where)
+  const record = await db.get(KnownLicenseEntity, where)
   if (record === undefined) throw Error(`KnownLicense not found`)
-  if (record.licenseknownLicense)
-    record.licenseknownLicense.map(async (k) => await removeLicense(db, { where: { id: k.id } }))
-  await db.remove<KnownLicense>(record)
+  if (record.licenseentityknownLicense)
+    record.licenseentityknownLicense.map(async (k) => await removeLicense(db, { where: { id: k.id } }))
+  await db.remove<KnownLicenseEntity>(record)
 }
 async function removeMediaLocation(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(MediaLocation, where)
+  const record = await db.get(MediaLocationEntity, where)
   if (record === undefined) throw Error(`MediaLocation not found`)
   if (record.videoMedia) await removeVideo(db, { where: { id: record.videoMedia.id } })
-  await db.remove<MediaLocation>(record)
+
+  const { httpMediaLocation, joystreamMediaLocation } = record
+
+  let videoMedia: VideoMedia | undefined
+  if (httpMediaLocation) {
+    videoMedia = await db.get(VideoMedia, {
+      where: { location: { isTypeOf: 'HttpMediaLocation', url: httpMediaLocation.url, port: httpMediaLocation.port } },
+    })
+  }
+  if (joystreamMediaLocation) {
+    videoMedia = await db.get(VideoMedia, {
+      where: { location: { isTypeOf: 'JoystreamMediaLocation', dataObjectId: joystreamMediaLocation.dataObjectId } },
+    })
+  }
+  if (videoMedia) await db.remove<VideoMedia>(videoMedia)
+  await db.remove<MediaLocationEntity>(record)
 }
 async function removeHttpMediaLocation(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(HttpMediaLocation, where)
+  const record = await db.get(HttpMediaLocationEntity, where)
   if (record === undefined) throw Error(`HttpMediaLocation not found`)
-  if (record.medialocationhttpMediaLocation)
-    record.medialocationhttpMediaLocation.map(async (v) => await removeMediaLocation(db, { where: { id: v.id } }))
-  await db.remove<HttpMediaLocation>(record)
+  if (record.medialocationentityhttpMediaLocation)
+    record.medialocationentityhttpMediaLocation.map(async (v) => await removeMediaLocation(db, { where: { id: v.id } }))
+  await db.remove<HttpMediaLocationEntity>(record)
 }
 async function removeJoystreamMediaLocation(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(JoystreamMediaLocation, where)
+  const record = await db.get(JoystreamMediaLocationEntity, where)
   if (record === undefined) throw Error(`JoystreamMediaLocation not found`)
-  if (record.medialocationjoystreamMediaLocation)
-    record.medialocationjoystreamMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
-  await db.remove<JoystreamMediaLocation>(record)
+  if (record.medialocationentityjoystreamMediaLocation)
+    record.medialocationentityjoystreamMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  await db.remove<JoystreamMediaLocationEntity>(record)
 }
 async function removeLanguage(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Language, where)

@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
-import { FlattenRelations } from 'cd-schemas/types/utility'
+import { ReferenceProperty } from '@joystream/cd-schemas/types/extrinsics/AddClassSchema'
+import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import {
   Class,
@@ -234,14 +234,14 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     if (requireSchema && !entity.supported_schemas.toArray().length) {
-      this.error(`${requiredClass || ''}Entity of id ${id} has no schema support added!`)
+      this.error(`${requiredClass || ''} entity of id ${id} has no schema support added!`)
     }
 
     return entity
   }
 
-  async getAndParseKnownEntity<T>(id: string | number): Promise<FlattenRelations<T>> {
-    const entity = await this.getEntity(id)
+  async getAndParseKnownEntity<T>(id: string | number, className?: string): Promise<FlattenRelations<T>> {
+    const entity = await this.getEntity(id, className)
     return this.parseToKnownEntityJson<T>(entity)
   }
 
@@ -337,7 +337,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const defaultValues = entityClass.properties
       .map((p) => p.name.toString())
       .reduce((d, propName) => {
-        if (includedProps?.includes(propName)) {
+        if (!includedProps || includedProps.includes(propName)) {
           d[propName] = chalk.grey('[not set]')
         }
         return d

@@ -1,10 +1,10 @@
 import { QueryNodeApi, WorkingGroups } from '../../Api'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 
-export function createVideoReferencingChannelFixture(api: QueryNodeApi, title: string): CreateVideoFixture {
+export function createVideoReferencingChannelFixture(api: QueryNodeApi, handle: string): CreateVideoFixture {
   const videoEntity: VideoEntity = {
     title: 'Example video',
     description: 'This is an example video',
@@ -12,9 +12,9 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi, title: s
     // (those referenced here are part of inputs/entityBatches)
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    // We use the same "existing" syntax to reference a channel by unique property (title)
+    // We use the same "existing" syntax to reference a channel by unique property (handle)
     // In this case it's a channel that we created in createChannel example
-    channel: { existing: { title } },
+    channel: { existing: { handle } },
     media: {
       // We use "new" syntax to sygnalize we want to create a new VideoMedia entity that will be related to this Video entity
       new: {
@@ -36,7 +36,7 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi, title: s
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }
@@ -47,7 +47,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
   assert(queriedVideo.title === video.title, 'Should be equal')
   assert(queriedVideo.description === video.description, 'Should be equal')
   assert(queriedVideo.duration === video.duration, 'Should be equal')
-  assert(queriedVideo.thumbnailUrl === video.thumbnailURL, 'Should be equal')
+  assert(queriedVideo.thumbnailUrl === video.thumbnailUrl, 'Should be equal')
   assert(queriedVideo.isExplicit === video.isExplicit, 'Should be equal')
   assert(queriedVideo.isPublic === video.isPublic, 'Should be equal')
 }
@@ -63,7 +63,7 @@ export default async function createVideo(api: QueryNodeApi) {
 
   // Perform number of full text searches on Channel title, that is a slight variation on title that one expects would return the video.
   let channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('video')
-  
+
   assert(channelFullTextSearchResult.data.titles.length === 1, 'Should contain exactly one entry')
 
   // Both channel and video title starts with `Example`
@@ -81,10 +81,10 @@ export default async function createVideo(api: QueryNodeApi) {
   assert(channelFullTextSearchResult.data.titles.length === 0, 'Should be empty')
 
   // Ensure channel contains only one video with right data
-  const channelResult = await api.getChannelbyTitle(channelTitle)
+  const channelResult = await api.getChannelbyHandle(channelTitle)
 
   console.log(channelResult.data.channels[0].videos)
-  
+
   assert(channelResult.data.channels[0].videos.length === 1, 'Given channel should contain exactly one video')
 
   assertVideoMatchQueriedResult(channelResult.data.channels[0].videos[0], createVideoHappyCaseFixture.videoEntity)
@@ -106,5 +106,4 @@ export default async function createVideo(api: QueryNodeApi) {
   videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('MediaVideo')
 
   assert(videoFullTextSearchResult.data.titles.length === 0, 'Should be empty')
-
 }

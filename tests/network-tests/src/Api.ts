@@ -30,9 +30,9 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser, ExtrinsicsHelper } from 'cd-schemas'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
+import { initializeContentDir, InputParser, ExtrinsicsHelper } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 
@@ -2035,11 +2035,11 @@ export class QueryNodeApi extends Api {
     this.queryNodeProvider = queryNodeProvider
   }
 
-  public async getChannelbyTitle(title: string): Promise<ApolloQueryResult<any>> {
+  public async getChannelbyHandle(handle: string): Promise<ApolloQueryResult<any>> {
     const GET_CHANNEL_BY_TITLE = gql`
-      query($title: String!) {
-        channels(where: { title_eq: $title }) {
-          title
+      query($handle: String!) {
+        channels(where: { handle_eq: $handle }) {
+          handle
           description
           coverPhotoUrl
           avatarPhotoUrl
@@ -2057,16 +2057,16 @@ export class QueryNodeApi extends Api {
       }
     `
 
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { title } })
+    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { handle } })
   }
 
   public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
     const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
       query($text: String!) {
-        titles(text: $text) {
+        search(text: $text) {
           item {
             ... on Channel {
-              title
+              handle
               description
             }
           }
@@ -2080,10 +2080,10 @@ export class QueryNodeApi extends Api {
   public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
     const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
       query($text: String!) {
-        titles(text: $text) {
+        search(text: $text) {
           item {
             ... on Video {
-              title
+              handle
               description
               duration
               thumbnailUrl
