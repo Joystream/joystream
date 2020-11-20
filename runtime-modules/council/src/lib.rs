@@ -57,7 +57,7 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use std::marker::PhantomData;
-use system::{ensure_signed, RawOrigin};
+use system::ensure_signed;
 
 use referendum::{OptionResult, ReferendumManager};
 
@@ -303,10 +303,6 @@ decl_error! {
         /// Candidate can't vote for himself.
         CantVoteForYourself,
 
-        /// Invalid runtime implementation broke the council. This error shouldn't happen
-        /// and in case of bad implementation should be discovered in the first block when referendum start will fail.
-        InvalidRuntimeImplementation,
-
         /// Invalid membership.
         MembershipIdNotMatchAccount,
 
@@ -471,9 +467,8 @@ impl<T: Trait> Module<T> {
             return;
         }
 
-        // TODO: try to find way how to get rid of unwrap here or staticly ensure it will not fail here
         // update state
-        Mutations::<T>::finalize_announcing_period(&stage_data).unwrap(); // starting referendum should always start if implementation is valid - unwrap
+        Mutations::<T>::finalize_announcing_period(&stage_data);
 
         // emit event
         Self::deposit_event(RawEvent::VotingPeriodStarted(stage_data.candidates_count));
@@ -605,14 +600,11 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Change the council stage from the announcing to the election stage.
-    fn finalize_announcing_period(stage_data: &CouncilStageAnnouncing) -> Result<(), Error<T>> {
+    fn finalize_announcing_period(stage_data: &CouncilStageAnnouncing) {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
-        let origin = RawOrigin::Root;
 
-        // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         // start referendum
-        T::Referendum::start_referendum(origin.into(), extra_winning_target_count)
-            .map_err(|_| Error::<T>::InvalidRuntimeImplementation)?;
+        T::Referendum::force_start(extra_winning_target_count);
 
         let block_number = <system::Module<T>>::block_number();
 
@@ -623,8 +615,6 @@ impl<T: Trait> Mutations<T> {
             }),
             changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
         });
-
-        Ok(())
     }
 
     /// Elect new council after successful election.
