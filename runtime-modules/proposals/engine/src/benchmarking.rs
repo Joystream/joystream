@@ -5,16 +5,15 @@ use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
-use frame_support::traits::OnInitialize;
+use frame_support::traits::{Currency, OnInitialize};
+use frame_system::EventRecord;
+use frame_system::Module as System;
+use frame_system::RawOrigin;
 use governance::council::Module as Council;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::cmp::min;
 use sp_std::prelude::*;
-use system as frame_system;
-use system::EventRecord;
-use system::Module as System;
-use system::RawOrigin;
 
 use codec::Encode;
 
@@ -348,11 +347,13 @@ benchmarks! {
             );
         }
 
+        /*
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
                 RawEvent::ProposalExecuted(proposal_id.clone(), ExecutionStatus::Executed).into()
             );
         }
+        */
     }
 
     on_initialize_immediate_execution_decode_fails {

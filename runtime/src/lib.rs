@@ -70,6 +70,7 @@ pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
+pub use proposals_engine::dummy_proposals;
 pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
@@ -608,6 +609,9 @@ impl proposals_engine::Trait for Runtime {
     type ProposalObserver = ProposalsCodex;
 }
 
+#[cfg(features = "runtime-benchmarks")]
+impl proposal_engine::dummy_proposal::Trait for Runtime {}
+
 impl Default for Call {
     fn default() -> Self {
         panic!("shouldn't call default for Call");
@@ -734,6 +738,7 @@ construct_runtime!(
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage},
+        DummyProposals: dummy_proposals::{Module, Call},
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},

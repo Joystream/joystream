@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-engine'
-version = '4.0.0'
+version = '4.0.1'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -16,7 +16,7 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
 # We need to add the following dependencies(governance, recurringrrewards and minting) for benchmarking
 # but since we also need them for the mock runtime for the benchmark tests, we need to implement the traits and events
 # in the Test runtime so we can't add them as optional dependncies(the test compilation without feature benchmark
