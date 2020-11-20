@@ -16,11 +16,11 @@ use sp_runtime::{
     Perbill,
 };
 
-pub(crate) mod proposals;
 pub(crate) mod staking_handler;
 
+pub use crate::dummy_proposals;
+pub use crate::dummy_proposals::*;
 use crate::ProposalObserver;
-pub use proposals::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -70,7 +70,7 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl proposals::Trait for Test {}
+impl dummy_proposals::Trait for Test {}
 
 parameter_types! {
     pub const CancellationFee: u64 = 5;
@@ -101,7 +101,7 @@ impl crate::Trait for Test {
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
-    type DispatchableCallCode = proposals::Call<Test>;
+    type DispatchableCallCode = dummy_proposals::Call<Test>;
     type ProposalObserver = ();
 }
 
@@ -109,7 +109,7 @@ impl ProposalObserver<Test> for () {
     fn proposal_removed(_proposal_id: &u32) {}
 }
 
-impl Default for proposals::Call<Test> {
+impl Default for dummy_proposals::Call<Test> {
     fn default() -> Self {
         panic!("shouldn't call default for Call");
     }

@@ -1,5 +1,4 @@
-//! Contains executable proposal extrinsic mocks
-
+#![cfg(any(feature = "runtime-benchmarks", test))]
 use frame_support::decl_module;
 use sp_std::vec::Vec;
 pub trait Trait: frame_system::Trait {}
