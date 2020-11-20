@@ -739,6 +739,8 @@ impl<T: Trait> Calculations<T> {
         reward_per_block: Balance<T>,
         now: T::BlockNumber,
     ) -> Balance<T> {
+        // calculate currently unpaid reward for elected council member
+        // previously_unpaid_reward + (current_block_number - last_payment_block_number) * reward_per_block
         council_member.unpaid_reward.saturating_add(
             now.saturating_sub(council_member.last_payment_block)
                 .saturated_into()
