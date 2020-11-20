@@ -586,8 +586,8 @@ impl<T: Trait> Module<T> {
                 let membership_id = item.option_id.into();
                 let candidate = Candidates::<T>::get(membership_id);
 
-                // clear candidate record
-                Mutations::<T>::clear_candidate(&membership_id);
+                // clear candidate record and unlock their candidacy stake
+                Mutations::<T>::clear_candidate(&membership_id, &candidate);
 
                 (candidate, membership_id, now, 0.into()).into()
             })
@@ -831,11 +831,8 @@ impl<T: Trait> Mutations<T> {
         // set new council
         CouncilMembers::<T>::put(elected_members.to_vec());
 
-        // setup elected member lock to new council's members
+        // setup elected member lock for new council's members
         for council_member in CouncilMembers::<T>::get() {
-            // unlock candidacy stake
-            T::CandidacyLock::unlock(&council_member.staking_account_id);
-
             // lock council member stake
             T::ElectedMemberLock::lock(&council_member.staking_account_id, council_member.stake);
         }
@@ -885,7 +882,10 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Removes member's candidacy record.
-    fn clear_candidate(membership_id: &T::MembershipId) {
+    fn clear_candidate(membership_id: &T::MembershipId, candidate: &CandidateOf<T>) {
+        // unlock candidacy stake
+        T::CandidacyLock::unlock(&candidate.staking_account_id);
+
         // clear candidate record
         Candidates::<T>::remove(membership_id);
     }
