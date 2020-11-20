@@ -56,7 +56,7 @@ use frame_support::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
 use std::marker::PhantomData;
 use system::{ensure_root, ensure_signed, RawOrigin};
 
@@ -720,10 +720,12 @@ impl<T: Trait> Calculations<T> {
         reward_per_block: Balance<T>,
         now: T::BlockNumber,
     ) -> Balance<T> {
-        (council_member.unpaid_reward.saturated_into()
-            + (now - council_member.last_payment_block).saturated_into()
-                * reward_per_block.saturated_into())
-        .saturated_into()
+        council_member.unpaid_reward.saturating_add(
+            now.saturating_sub(council_member.last_payment_block)
+                .saturated_into()
+                .saturating_mul(reward_per_block.saturated_into())
+                .saturated_into(),
+        )
     }
 
     /// Retrieve current budget's balance and calculate missing balance for reward payment.
@@ -737,9 +739,7 @@ impl<T: Trait> Calculations<T> {
         }
 
         // calculate missing balance
-        let missing_balance = (*reward_amount - *budget_balance)
-            .saturated_into()
-            .saturated_into();
+        let missing_balance = reward_amount.saturating_sub(*budget_balance);
 
         (*budget_balance, missing_balance)
     }
