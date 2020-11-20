@@ -2,8 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, Balance, CandidateOf, Candidates, CouncilMemberOf, CouncilMembers,
-    CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
+    AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
+    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
     CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
@@ -51,13 +51,13 @@ pub struct Runtime;
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
-    pub const IdlePeriodDuration: u64 = 17;
+    pub const IdlePeriodDuration: u64 = 27;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPerBlock: u64 = 100;
-    pub const ElectedMemberRewardPeriod: u64 = 2;
+    pub const ElectedMemberRewardPeriod: u64 = 10;
 }
 
 impl Trait for Runtime {
@@ -746,6 +746,24 @@ where
         );
     }
 
+    pub fn set_budget(
+        origin: OriginType<T::AccountId>,
+        amount: Balance<T>,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_budget(InstanceMockUtils::<T>::mock_origin(origin), amount,).is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(Budget::<T>::get(), amount,);
+    }
+
     /// simulate one council's election cycle
     pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
         let settings = params.council_settings;
@@ -856,10 +874,17 @@ where
                 + settings.voting_stage_duration,
         );
         Self::check_council_members(params.expected_final_council_members.clone());
+
+        // finish idle period
+        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
     }
 
     /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
-    pub fn run_full_council_cycle(start_block_number: T::BlockNumber) -> CouncilCycleParams<T> {
+    pub fn run_full_council_cycle(
+        start_block_number: T::BlockNumber,
+        expected_initial_council_members: &[CouncilMemberOf<T>],
+        users_offset: u64,
+    ) -> CouncilCycleParams<T> {
         let council_settings = CouncilSettings::<T>::extract_settings();
         let vote_stake =
             <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
@@ -869,7 +894,7 @@ where
             as u64)
             .map(|i| {
                 InstanceMockUtils::<T>::generate_candidate(
-                    u64::from(i),
+                    u64::from(i) + users_offset,
                     council_settings.min_candidate_stake,
                 )
             })
@@ -885,21 +910,21 @@ where
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration - 1.into(),
                 0.into(),
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration - 1.into(),
                 0.into(),
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration - 1.into(),
                 0.into(),
             )
                 .into(),
@@ -910,9 +935,9 @@ where
         let voters = (0..votes_map.len())
             .map(|index| {
                 InstanceMockUtils::<T>::generate_voter(
-                    index as u64,
+                    index as u64 + users_offset,
                     vote_stake.into(),
-                    CANDIDATE_BASE_ID + votes_map[index],
+                    CANDIDATE_BASE_ID + votes_map[index] + users_offset,
                 )
             })
             .collect();
@@ -920,7 +945,7 @@ where
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<T>::extract_settings(),
             cycle_start_block_number: start_block_number,
-            expected_initial_council_members: vec![],
+            expected_initial_council_members: expected_initial_council_members.to_vec(),
             expected_final_council_members,
             candidates_announcing: candidates.clone(),
             expected_candidates,
