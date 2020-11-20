@@ -14,7 +14,7 @@ In order to make this documentation as clear as possible it is important to make
 In order to intialize the content directory on a development chain based on data that is provided in form of json files inside `/inputs` directory (`classes`, `schemas` and example entities - `entityBatches`), we can run:
 
 ```
-yarn workspace cd-schemas initialize:dev
+yarn workspace @joystream/cd-schemas initialize:dev
 ```
 
 This will handle:
@@ -51,7 +51,7 @@ For more context, see: https://code.visualstudio.com/docs/languages/json
 
 ### Validate inputs and `json-schemas` via a command
 
-All inputs inside `inputs` directory and `json-schemas` used to validate those inputs can also be validated using `yarn workspace cd-schemas validate` command. This is mainly to facilitate checking the validity of `.json` and `.schema.json` files inside `content-directory-schemas` through CI.
+All inputs inside `inputs` directory and `json-schemas` used to validate those inputs can also be validated using `yarn workspace @joystream/cd-schemas validate` command. This is mainly to facilitate checking the validity of `.json` and `.schema.json` files inside `content-directory-schemas` through CI.
 
 ### Entity batches
 
@@ -109,7 +109,7 @@ We can do it by either using `"new"` or `"existing"` keyword.
 There is a script that provides an easy way of converting `runtime-schemas` (based on inputs from `inputs/schemas`) to `json-schemas` (`.schema.json` files) which allow validating the input (ie. json files) describing some specific entities. It can be run with:
 
 ```
-yarn workspace cd-schemas generate:entity-schemas
+yarn workspace @joystream/cd-schemas generate:entity-schemas
 ```
 
 Those `json-schemas` are currently mainly used for validating the inputs inside `inputs/entityBatches`.
@@ -125,7 +125,7 @@ The generated `json-schemas` include:
 Thanks to the `json-schema-to-typescript` library, we can very simply generate Typescript interfaces based on existing `json-schemas`. This can be done via:
 
 ```
-yarn workspace cd-schemas generate:types
+yarn workspace @joystream/cd-schemas generate:types
 ```
 
 This command will generate:
@@ -153,19 +153,19 @@ The best way to ilustrate this would be by providing some examples:
 
 #### Creating a channel
 ```
-  import { InputParser } from 'cd-schemas'
-  import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+  import { InputParser } from '@joystream/cd-schemas'
+  import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
   // Other imports...
 
   async main() {
     // Initialize the api, SENDER_KEYPAIR and SENDER_MEMBER_ID...
 
     const channel: ChannelEntity = {
-      title: 'Example channel',
+      handle: 'Example channel',
       description: 'This is an example channel',
       language: { existing: { code: 'EN' } },
       coverPhotoUrl: '',
-      avatarPhotoURL: '',
+      avatarPhotoUrl: '',
       isPublic: true,
     }
 
@@ -182,12 +182,12 @@ The best way to ilustrate this would be by providing some examples:
       .signAndSend(SENDER_KEYPAIR)
   }
 ```
-_Full example with comments can be found in `content-directory-schemas/examples/createChannel.ts` and ran with `yarn workspace cd-schemas example:createChannel`_
+_Full example with comments can be found in `content-directory-schemas/examples/createChannel.ts` and ran with `yarn workspace @joystream/cd-schemas example:createChannel`_
 
 #### Creating a video
 ```
-import { InputParser } from 'cd-schemas'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { InputParser } from '@joystream/cd-schemas'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 // ...
 
 async main() {
@@ -198,7 +198,7 @@ async main() {
     description: 'This is an example video',
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    channel: { existing: { title: 'Example channel' } },
+    channel: { existing: { handle: 'Example channel' } },
     media: {
       new: {
         encoding: { existing: { name: 'H.263_MP4' } },
@@ -221,7 +221,7 @@ async main() {
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }
@@ -239,25 +239,25 @@ async main() {
     .signAndSend(SENDER_KEYPAIR)
 }
 ```
-_Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`_
+_Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace @joystream/cd-schemas example:createChannel`_
 
-#### Update channel title
+#### Update channel handle
 
 ```
-import { InputParser } from 'cd-schemas'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { InputParser } from '@joystream/cd-schemas'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 // ...
 
 async function main() {
   // ...
 
   const channelUpdateInput: Partial<ChannelEntity> = {
-    title: 'Updated channel title',
+    handle: 'Updated channel handle',
   }
 
   const parser = InputParser.createWithKnownSchemas(api)
 
-  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ handle: 'Example channel' }, 'Channel')
 
   const updateOperations = await parser.getEntityUpdateOperations(channelUpdateInput, 'Channel', CHANNEL_ID)
 
@@ -266,7 +266,7 @@ async function main() {
     .signAndSend(SENDER_KEYPAIR)
 }
 ```
-_Full example with comments can be found in `content-directory-schemas/examples/updateChannelTitle.ts` and ran with `yarn workspace cd-schemas example:updateChannelTitle`_
+_Full example with comments can be found in `content-directory-schemas/examples/updateChannelHandle.ts` and ran with `yarn workspace @joystream/cd-schemas example:updateChannelHandle`_
 
 Note: Updates can also inlucde `new` and `existing` keywords. In case `new` is specified inside the update - `CreateEntity` and `AddSchemaSupportToEntity` operations will be included as part of the operations returned by `InputParser.getEntityUpdateOperations`.
 

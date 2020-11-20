@@ -1,9 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types as joyTypes } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
-// Import input parser and video entity from cd-schemas (we use it as library here)
-import { InputParser } from 'cd-schemas'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+// Import input parser and video entity from @joystream/cd-schemas (we use it as library here)
+import { InputParser } from '@joystream/cd-schemas'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 
 async function main() {
   // Initialize the api
@@ -22,9 +22,9 @@ async function main() {
     // (those referenced here are part of inputs/entityBatches)
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    // We use the same "existing" syntax to reference a channel by unique property (title)
+    // We use the same "existing" syntax to reference a channel by unique property (handle)
     // In this case it's a channel that we created in createChannel example
-    channel: { existing: { title: 'Example channel' } },
+    channel: { existing: { handle: 'Example channel' } },
     media: {
       // We use "new" syntax to sygnalize we want to create a new VideoMedia entity that will be related to this Video entity
       new: {
@@ -46,7 +46,7 @@ async function main() {
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }
