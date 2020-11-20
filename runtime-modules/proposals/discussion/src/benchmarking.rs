@@ -3,13 +3,12 @@ use super::*;
 use crate::Module as ProposalsDiscussion;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
+use frame_system::EventRecord;
+use frame_system::Module as System;
+use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_std::cmp::min;
 use sp_std::prelude::*;
-use system as frame_system;
-use system::EventRecord;
-use system::Module as System;
-use system::RawOrigin;
 
 const SEED: u32 = 0;
 
