@@ -32,7 +32,7 @@ async function main() {
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
   let api: ApiPromise
-  let retry = 3
+  let retry = 6
   while (true) {
     try {
       api = await ApiPromise.create({ provider, types })
