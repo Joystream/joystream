@@ -1388,10 +1388,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.21.tgz#4f99f125d81fdf1f962e0c31b3acf937a75bd3c1"
-  integrity sha512-pHZ6Qms4DcOpl8eYWllwonkH8nHtDwLuj/P1O+5S0dl6aKJ2tYmvxpmH0OfBLUACf5K8g6eSMs36M37ospSQ8g==
+"@dzlzv/hydra-cli@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.22.tgz#0df5c4286370f23c3175a25c185f96daa4a40091"
+  integrity sha512-JnRGXbeWWtLQqbjyaZAYN4JvRBjivfxazJeWuipgZoqBNezIcFHbYiBC6Suut55PL6CRSOD9K5bwlAXOx/2RIg==
   dependencies:
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
@@ -22453,9 +22453,9 @@ pg@^7.12.1:
     semver "4.3.2"
 
 pg@^8.0.3:
-  version "8.5.0"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-8.5.0.tgz#c29332763ffd51ce52b07dc20dc2337f4d213d08"
-  integrity sha512-h+KHEwce67pAQilZhMCpCx1RC7rR1US7mdjwvKzHRaRxKQxbbFtv5UlwjzqILQ1dwhK+RVGqOVcahE/2KOcaeA==
+  version "8.5.1"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.5.1.tgz#34dcb15f6db4a29c702bf5031ef2e1e25a06a120"
+  integrity sha512-9wm3yX9lCfjvA98ybCyw2pADUivyNWT/yIP4ZcDVpMN0og70BUWYEGXPCTAQdGTAqnytfRADb7NERrY1qxhIqw==
   dependencies:
     buffer-writer "2.0.0"
     packet-reader "1.0.0"
