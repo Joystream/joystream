@@ -30,9 +30,9 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser, ExtrinsicsHelper } from 'cd-schemas'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
+import { initializeContentDir, InputParser, ExtrinsicsHelper } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 

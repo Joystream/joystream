@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build && yarn workspace cd-schemas generate:all && yarn workspace cd-schemas build && yarn workspace @joystream/cli build",
+    "postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build && yarn workspace @joystream/cli build",
+    "build": "./build.sh",
+    "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
     "cargo-build": "scripts/cargo-build.sh"
   },
@@ -50,5 +52,9 @@
   "engines": {
     "node": ">=12.18.0",
     "yarn": "^1.22.0"
+  },
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
   }
 }

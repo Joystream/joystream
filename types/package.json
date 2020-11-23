@@ -59,5 +59,9 @@
   "bugs": {
     "url": "https://github.com/Joystream/joystream/issues"
   },
-  "homepage": "https://github.com/Joystream/joystream"
+  "homepage": "https://github.com/Joystream/joystream",
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
+  }
 }

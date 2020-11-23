@@ -1,35 +1,46 @@
 import { SubstrateEvent } from '../../generated/indexer'
 import {
-  IPropertyIdWithName,
   IClassEntity,
   IProperty,
   IBatchOperation,
   ICreateEntityOperation,
   IEntity,
+  IReference,
+  IPropertyWithId,
 } from '../types'
+import Debug from 'debug'
 
 import { ParametrizedClassPropertyValue, UpdatePropertyValuesOperation } from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
+
+const debug = Debug('mappings:cd:decode')
 
 function stringIfyEntityId(event: SubstrateEvent): string {
   const { 1: entityId } = event.params
   return entityId.value as string
 }
 
-function setProperties<T>({ extrinsic, blockNumber }: SubstrateEvent, propNamesWithId: IPropertyIdWithName): T {
+function setProperties<T>({ extrinsic, blockNumber }: SubstrateEvent, propNamesWithId: IPropertyWithId): T {
   if (extrinsic === undefined) throw Error('Undefined extrinsic')
 
   const { 3: newPropertyValues } = extrinsic!.args
-  const properties: { [key: string]: any } = {}
+  const properties: { [key: string]: any; reference?: IReference } = {}
 
   for (const [k, v] of Object.entries(newPropertyValues.value)) {
-    const propertyName = propNamesWithId[k]
-    const propertyValue = createType('InputPropertyValue', v as any)
-      .asType('Single')
-      .value.toJSON()
-    properties[propertyName] = propertyValue
+    const prop = propNamesWithId[k]
+    const singlePropVal = createType('InputPropertyValue', v as any).asType('Single')
+
+    if (singlePropVal.isOfType('Reference')) {
+      properties[prop.name] = { entityId: singlePropVal.asType('Reference').toJSON(), existing: true }
+    } else {
+      const val = singlePropVal.value.toJSON()
+      if (typeof val !== prop.type && !prop.required) properties[prop.name] = undefined
+      else properties[prop.name] = val
+    }
   }
   properties.version = blockNumber
+
+  debug(`Entity properties: ${JSON.stringify(properties)}`)
   return properties as T
 }
 
@@ -48,16 +59,18 @@ function getClassEntity(event: SubstrateEvent): IClassEntity {
  * @param properties
  * @param propertyNamesWithId
  */
-function setEntityPropertyValues<T>(properties: IProperty[], propertyNamesWithId: IPropertyIdWithName): T {
-  const entityProperties: { [key: string]: any } = {}
+function setEntityPropertyValues<T>(properties: IProperty[], propertyNamesWithId: IPropertyWithId): T {
+  const entityProperties: { [key: string]: any; reference?: IReference } = {}
 
   for (const [propId, propName] of Object.entries(propertyNamesWithId)) {
     // get the property value by id
-    const p = properties.find((p) => p.propertyId === propId)
-    const propertyValue = p ? p.value : undefined
-    entityProperties[propName] = propertyValue
+    const p = properties.find((p) => p.id === propId)
+    if (!p) continue
+
+    if (typeof p.value !== propName.type && !propName.required) entityProperties[propName.name] = undefined
+    else entityProperties[propName.name] = p.reference ? p.reference : p.value
   }
-  // console.log(entityProperties);
+  debug(`Entity properties: ${JSON.stringify(entityProperties)}`)
   return entityProperties as T
 }
 
@@ -70,20 +83,27 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
     const v = createType('ParametrizedPropertyValue', pv.value)
     const propertyId = pv.in_class_index.toJSON()
 
+    let reference
     let value
     if (v.isOfType('InputPropertyValue')) {
       const inputPropVal = v.asType('InputPropertyValue')
       value = inputPropVal.isOfType('Single')
         ? inputPropVal.asType('Single').value.toJSON()
         : inputPropVal.asType('Vector').value.toJSON()
+
+      if (inputPropVal.isOfType('Single')) {
+        if (inputPropVal.asType('Single').isOfType('Reference')) {
+          reference = { entityId: value as number, existing: true }
+        }
+      }
     } else if (v.isOfType('InternalEntityJustAdded')) {
-      // const inputPropVal = v.asType('InternalEntityJustAdded');
       value = v.asType('InternalEntityJustAdded').toJSON()
+      reference = { entityId: value as number, existing: false }
     } else {
       // TODO: Add support for v.asType('InternalEntityVec')
       throw Error('InternalEntityVec property type is not supported yet!')
     }
-    properties.push({ propertyId: `${propertyId}`, value })
+    properties.push({ id: `${propertyId}`, value, reference })
   })
   return properties
 }

@@ -1,29 +1,9 @@
 import Debug from 'debug'
-import { DB, SubstrateEvent } from '../../generated/indexer'
-import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
+import { DB, SubstrateEvent } from '../../../generated/indexer'
+import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
-import { decode } from './decode'
+import { decode } from '../decode'
 import {
-  createCategory,
-  createChannel,
-  createVideoMedia,
-  createVideo,
-  createUserDefinedLicense,
-  createKnownLicense,
-  createHttpMediaLocation,
-  createJoystreamMediaLocation,
-  removeCategory,
-  removeChannel,
-  removeVideoMedia,
-  removeVideo,
-  removeUserDefinedLicense,
-  removeKnownLicense,
-  removeHttpMediaLocation,
-  removeJoystreamMediaLocation,
-  removeLanguage,
-  removeVideoMediaEncoding,
-  createLanguage,
-  createVideoMediaEncoding,
   updateCategoryEntityPropertyValues,
   updateChannelEntityPropertyValues,
   updateVideoMediaEntityPropertyValues,
@@ -34,10 +14,38 @@ import {
   updateKnownLicenseEntityPropertyValues,
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
-  createBlockOrGetFromDatabase,
-} from './entity-helper'
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
+} from './update'
 import {
-  CategoryPropertyNamesWithId,
+  removeCategory,
+  removeChannel,
+  removeVideoMedia,
+  removeVideo,
+  removeUserDefinedLicense,
+  removeKnownLicense,
+  removeHttpMediaLocation,
+  removeJoystreamMediaLocation,
+  removeLanguage,
+  removeVideoMediaEncoding,
+  removeLicense,
+  removeMediaLocation,
+} from './remove'
+import {
+  createCategory,
+  createChannel,
+  createVideoMedia,
+  createVideo,
+  createUserDefinedLicense,
+  createKnownLicense,
+  createHttpMediaLocation,
+  createJoystreamMediaLocation,
+  createLanguage,
+  createVideoMediaEncoding,
+  createBlockOrGetFromDatabase,
+} from './create'
+import {
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
@@ -48,7 +56,7 @@ import {
   videoPropertyNamesWithId,
   contentDirectoryClassNamesWithId,
   ContentDirectoryKnownClasses,
-} from './content-dir-consts'
+} from '../content-dir-consts'
 
 import {
   IChannel,
@@ -63,7 +71,11 @@ import {
   IVideoMediaEncoding,
   IDBBlockId,
   IWhereCond,
-} from '../types'
+  IEntity,
+  ILicense,
+  IMediaLocation,
+} from '../../types'
+import { getOrCreate } from '../get-or-create'
 
 const debug = Debug('mappings:content-directory')
 
@@ -91,11 +103,16 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      await createChannel(arg, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      await createChannel(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IChannel>(event, channelPropertyNamesWithId),
+        0 // ignored
+      )
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
-      await createCategory(arg, decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId))
+      await createCategory(arg, decode.setProperties<ICategory>(event, categoryPropertyNamesWithId))
       break
 
     case ContentDirectoryKnownClasses.KNOWNLICENSE:
@@ -124,11 +141,21 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       break
 
     case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await createVideoMedia(arg, decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId))
+      await createVideoMedia(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
+        0 // ignored
+      )
       break
 
     case ContentDirectoryKnownClasses.VIDEO:
-      await createVideo(arg, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
+      await createVideo(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IVideo>(event, videoPropertyNamesWithId),
+        0 // ignored
+      )
       break
 
     case ContentDirectoryKnownClasses.LANGUAGE:
@@ -162,7 +189,7 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
 
   const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
   if (cls === undefined) {
-    console.log('Undefined class')
+    console.log('Unknown class')
     return
   }
 
@@ -206,6 +233,14 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
       await removeVideoMediaEncoding(db, where)
       break
 
+    case ContentDirectoryKnownClasses.LICENSE:
+      await removeLicense(db, where)
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await removeMediaLocation(db, where)
+      break
+
     default:
       throw new Error(`Unknown class name: ${cls.name}`)
   }
@@ -224,16 +259,17 @@ async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent): Pr
   classEntity.version = event.blockNumber
   classEntity.happenedIn = await createBlockOrGetFromDatabase(db, event.blockNumber)
   await db.save<ClassEntity>(classEntity)
+
+  await getOrCreate.nextEntityId(db, c.entityId + 1)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: SubstrateEvent): Promise<void> {
-  debug(`EntityPropertyValuesUpdated event: ${JSON.stringify(event)}`)
-
   const { extrinsic } = event
-
   if (extrinsic && extrinsic.method === 'transaction') return
   if (extrinsic === undefined) throw Error(`Extrinsic data not found for event: ${event.id}`)
+
+  debug(`EntityPropertyValuesUpdated event: ${JSON.stringify(event)}`)
 
   const { 2: newPropertyValues } = extrinsic.args
   const entityId = decode.stringIfyEntityId(event)
@@ -253,14 +289,14 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId), 0)
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
       await updateCategoryEntityPropertyValues(
         db,
         where,
-        decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId)
+        decode.setProperties<ICategory>(event, categoryPropertyNamesWithId)
       )
       break
 
@@ -300,12 +336,13 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateVideoMediaEntityPropertyValues(
         db,
         where,
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
+        0
       )
       break
 
     case ContentDirectoryKnownClasses.VIDEO:
-      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
+      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId), 0)
       break
 
     case ContentDirectoryKnownClasses.LANGUAGE:
@@ -321,6 +358,24 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
         db,
         where,
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await updateLicenseEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId),
+        0
+      )
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await updateMediaLocationEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
+        0
       )
       break
 

@@ -14,7 +14,8 @@
     "baseUrl": ".",
     "paths": {
       "@polkadot/types/augment": ["../../../types/augment-codec/augment-types.ts"]
-    }
+    },
+    "esModuleInterop": true
   },
   "exclude": ["node_modules"]
 }

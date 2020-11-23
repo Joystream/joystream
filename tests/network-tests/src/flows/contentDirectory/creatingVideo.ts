@@ -1,6 +1,6 @@
 import { QueryNodeApi, WorkingGroups } from '../../Api'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 
 export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateVideoFixture {
@@ -11,9 +11,9 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateV
     // (those referenced here are part of inputs/entityBatches)
     language: { existing: { code: 'EN' } },
     category: { existing: { name: 'Education' } },
-    // We use the same "existing" syntax to reference a channel by unique property (title)
+    // We use the same "existing" syntax to reference a channel by unique property (handle)
     // In this case it's a channel that we created in createChannel example
-    channel: { existing: { title: 'Example channel' } },
+    channel: { existing: { handle: 'Example channel' } },
     media: {
       // We use "new" syntax to sygnalize we want to create a new VideoMedia entity that will be related to this Video entity
       new: {
@@ -35,7 +35,7 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateV
       },
     },
     duration: 3600,
-    thumbnailURL: '',
+    thumbnailUrl: '',
     isExplicit: false,
     isPublic: true,
   }

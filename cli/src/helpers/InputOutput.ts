@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import Ajv from 'ajv'
 import $RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import { getSchemasLocation } from 'cd-schemas'
+import { getSchemasLocation } from '@joystream/cd-schemas'
 import chalk from 'chalk'
 
 // Default schema path for resolving refs

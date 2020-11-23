@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { VideoEntity } from 'cd-schemas/types/entities'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities'
 import fs from 'fs'
 import { DistinctQuestion } from 'inquirer'
 import path from 'path'
