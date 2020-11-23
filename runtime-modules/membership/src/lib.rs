@@ -7,6 +7,7 @@
 
 pub mod genesis;
 pub(crate) mod mock;
+pub mod staking_handler;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
