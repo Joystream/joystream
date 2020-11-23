@@ -1,13 +1,12 @@
 //! Mock runtime for the module testing.
 //!
 //! Submodules:
-//! - stakes: contains support for mocking external 'stake' module
-//! - balance_restorator: restores balances after unstaking
 //! - proposals: provides types for proposal execution tests
 //!
 
 #![cfg(test)]
 
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use frame_system;
 use sp_core::H256;
@@ -17,13 +16,11 @@ use sp_runtime::{
     Perbill,
 };
 
-mod balance_manager;
 pub(crate) mod proposals;
-mod stakes;
+pub(crate) mod staking_handler;
 
-use balance_manager::*;
+use crate::ProposalObserver;
 pub use proposals::*;
-pub use stakes::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -70,20 +67,13 @@ impl common::currency::GovernanceCurrency for Test {
 
 impl proposals::Trait for Test {}
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = BalanceManagerStakingEventsHandler;
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 parameter_types! {
     pub const CancellationFee: u64 = 5;
     pub const RejectionFee: u64 = 3;
     pub const TitleMaxLength: u32 = 100;
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
+    pub const LockId: LockIdentifier = [1; 8];
 }
 
 impl membership::Trait for Test {
@@ -100,13 +90,18 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+    type StakingHandler = staking_handler::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
+    type ProposalObserver = ();
+}
+
+impl ProposalObserver<Test> for () {
+    fn proposal_removed(_proposal_id: &u32) {}
 }
 
 impl Default for proposals::Call<Test> {

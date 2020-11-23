@@ -100,7 +100,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: RUNTIME=alexandria tests/network-tests/run-tests.sh full
+        run: RUNTIME=babylon tests/network-tests/run-tests.sh full
 
   basic_runtime:
     name: Integration Tests (New Chain)
@@ -148,7 +148,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace cd-schemas checks --quiet
       - name: Start chain
-        run: docker-compose up -d
+        run: docker-compose up -d joystream-node
       - name: Initialize the content directory
         run: yarn workspace cd-schemas initialize:dev
 
@@ -202,10 +202,14 @@ jobs:
       - name: Build storage node
         run: yarn workspace storage-node build
       - name: Start Services
-        run: docker-compose --file docker-compose-with-storage.yml up -d
-      - name: Add development storage node and initialize content directory
-        run: DEBUG=* yarn storage-cli dev-init
-      - name: Try uploading
+        run: |
+          docker-compose up -d ipfs
+          docker-compose up -d joystream-node
+      - name: Configure and start development storage node
+        run: |
+          DEBUG=* yarn storage-cli dev-init
+          docker-compose up -d colossus
+      - name: Test uploading
         run: |
           WAIT_TIME=90
           export DEBUG=joystream:*
