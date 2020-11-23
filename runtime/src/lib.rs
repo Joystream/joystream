@@ -606,6 +606,7 @@ impl proposals_engine::Trait for Runtime {
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
+    type WeightInfo = weights::proposals_engine::WeightInfo;
 }
 
 impl Default for Call {
@@ -625,6 +626,7 @@ impl proposals_discussion::Trait for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = weights::proposals_discussion::WeightInfo;
 }
 
 parameter_types! {

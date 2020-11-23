@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
@@ -103,6 +103,37 @@ impl crate::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
+    type WeightInfo = ();
+}
+
+impl crate::WeightInfo for () {
+    fn vote(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_proposal(_: u32) -> Weight {
+        0
+    }
+
+    fn veto_proposal() -> Weight {
+        0
+    }
+
+    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_rejected(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
 }
 
 impl ProposalObserver<Test> for () {

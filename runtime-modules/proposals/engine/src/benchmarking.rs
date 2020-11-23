@@ -330,12 +330,14 @@ benchmarks! {
             );
         }
 
-        for proposal_id in proposals.iter() {
-            assert_in_events::<T>(
-                RawEvent::ProposalExecuted(
-                    proposal_id.clone(),
-                    ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-            );
+        if cfg!(test) {
+            for proposal_id in proposals.iter() {
+                assert_in_events::<T>(
+                    RawEvent::ProposalExecuted(
+                        proposal_id.clone(),
+                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
+                );
+            }
         }
     }
 

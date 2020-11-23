@@ -134,10 +134,22 @@ use frame_support::{
 };
 use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{Saturating, Zero};
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 use membership::staking_handler::StakingHandler;
+
+// proposals_engine
+pub trait WeightInfo {
+    fn vote(i: u32) -> Weight;
+    fn cancel_proposal(i: u32) -> Weight;
+    fn veto_proposal() -> Weight;
+    fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
+    fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
+    fn on_initialize_rejected(i: u32) -> Weight;
+    fn on_initialize_slashed(i: u32) -> Weight;
+}
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -188,6 +200,9 @@ pub trait Trait:
 
     /// Proposal state change observer.
     type ProposalObserver: ProposalObserver<Self>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 /// Proposal state change observer.
@@ -357,12 +372,25 @@ decl_module! {
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_initialize() -> Weight {
-            10_000_000 // TODO: adjust weight
+            let max_active_proposals = T::MaxActiveProposalLimit::get();
+
+            <T as Trait>::WeightInfo::on_initialize_immediate_execution_decode_fails(max_active_proposals)
+                .max(
+                    <T as Trait>
+                        ::WeightInfo
+                        ::on_initialize_approved_pending_constitutionality(max_active_proposals)
+                )
+                .max(
+                    <T as Trait>::WeightInfo::on_initialize_rejected(max_active_proposals)
+                )
+                .max(
+                    <T as Trait>::WeightInfo::on_initialize_slashed(max_active_proposals)
+                )
                 .saturating_add(Self::process_proposals())
         }
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = <T as Trait>::WeightInfo::vote(_rationale.len().try_into().unwrap())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
@@ -394,7 +422,7 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = <T as Trait>::WeightInfo::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
 
@@ -411,7 +439,7 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = <T as Trait>::WeightInfo::veto_proposal()]
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 

@@ -1,13 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsDiscussion;
-use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_std::cmp::min;
+use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 
 const SEED: u32 = 0;
