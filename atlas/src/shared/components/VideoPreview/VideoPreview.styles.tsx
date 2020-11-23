@@ -55,7 +55,7 @@ export const CoverIcon = styled(Icon)`
   color: ${colors.white};
 `
 
-export const CoverPlayIcon = ({ ...props }) => <CoverIcon name="play" {...props} />
+export const CoverPlayIcon = ({ ...props }) => <CoverIcon name="play-outline" {...props} />
 
 export const ProgressOverlay = styled.div`
   position: absolute;

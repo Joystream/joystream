@@ -100,8 +100,6 @@ const disabled = ({ disabled }: ButtonStyleProps) =>
   disabled
     ? css`
         box-shadow: none;
-        fill: unset;
-        stroke: unset;
         color: ${colors.white};
         background-color: ${colors.gray[100]};
         border-color: ${colors.gray[100]};
@@ -120,8 +118,8 @@ const disabled = ({ disabled }: ButtonStyleProps) =>
 
 export const StyledIcon = styled(Icon)`
   flex-shrink: 0;
-  & > * {
-    stroke: currentColor;
+  & + * {
+    margin-left: 10px;
   }
 `
 export const StyledButton = styled.button<ButtonStyleProps>`
@@ -135,21 +133,8 @@ export const StyledButton = styled.button<ButtonStyleProps>`
   &:hover {
     cursor: ${(props) => (!props.disabled && props.clickable ? 'pointer' : '')};
   }
-  &::selected {
-    background: transparent;
-  }
-  ${colorsFromProps}
-  ${sizeFromProps}
-	${disabled}
-	& > ${StyledIcon} {
-    font-size: ${({ size }) =>
-      size === 'regular'
-        ? typography.sizes.icon.large
-        : size === 'small'
-        ? typography.sizes.icon.medium
-        : typography.sizes.icon.small};
-    & + * {
-      margin-left: 10px;
-    }
-  } ;
+
+  ${colorsFromProps};
+  ${sizeFromProps};
+  ${disabled};
 `

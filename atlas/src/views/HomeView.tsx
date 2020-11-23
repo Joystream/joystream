@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { ChannelGallery, FeaturedVideoHeader, ErrorFallback, VideoGallery } from '@/components'
+import { ChannelGallery, ErrorFallback, FeaturedVideoHeader, VideoGallery } from '@/components'
 
 import { RouteComponentProps } from '@reach/router'
 import { useQuery } from '@apollo/client'
@@ -10,7 +10,6 @@ import { GET_FEATURED_VIDEOS, GET_NEWEST_CHANNELS, GET_NEWEST_VIDEOS } from '@/a
 import { GetFeaturedVideos } from '@/api/queries/__generated__/GetFeaturedVideos'
 import { GetNewestVideos, GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
 import { GetNewestChannels, GetNewestChannelsVariables } from '@/api/queries/__generated__/GetNewestChannels'
-import { spacing } from '@/shared/theme'
 
 const NEWEST_VIDEOS_COUNT = 8
 const NEWEST_CHANNELS_COUNT = 8
@@ -84,7 +83,6 @@ const HomeView: React.FC<RouteComponentProps> = () => {
 
 const Container = styled.div`
   position: relative;
-  margin: ${spacing.xxxxl} 0;
   & > * {
     margin-bottom: 3rem;
   }

@@ -11,6 +11,10 @@ export { ReactComponent as ChevronLeft } from './chevron-left-big.svg'
 export { ReactComponent as Check } from './check.svg'
 export { ReactComponent as Dash } from './dash.svg'
 export { ReactComponent as Play } from './play.svg'
+export { ReactComponent as PlayOutline } from './play-outline.svg'
+export { ReactComponent as Pause } from './pause.svg'
+export { ReactComponent as SoundOn } from './sound-on.svg'
+export { ReactComponent as SoundOff } from './sound-off.svg'
 export { ReactComponent as Times } from './times.svg'
 
 const icons = [
@@ -27,6 +31,10 @@ const icons = [
   'check',
   'dash',
   'play',
+  'play-outline',
+  'pause',
+  'sound-on',
+  'sound-off',
   'times',
 ] as const
 

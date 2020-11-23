@@ -5,23 +5,32 @@ import { useVideoJsPlayer, VideoJsConfig } from './videoJsPlayer'
 type VideoPlayerProps = {
   className?: string
   autoplay?: boolean
+  isInBackground?: boolean
+  playing?: boolean
+  onDataLoaded?: () => void
 } & VideoJsConfig
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ className, autoplay, ...videoJsConfig }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  className,
+  autoplay,
+  isInBackground,
+  playing,
+  onDataLoaded,
+  ...videoJsConfig
+}) => {
   const [player, playerRef] = useVideoJsPlayer(videoJsConfig)
   const [playOverlayVisible, setPlayOverlayVisible] = useState(true)
+  const [initialized, setInitialized] = useState(false)
+
+  const displayPlayOverlay = playOverlayVisible && !isInBackground
 
   useEffect(() => {
-    if (!player || !autoplay) {
+    if (!player) {
       return
     }
 
-    const handler = async () => {
-      try {
-        await player.play()
-      } catch (e) {
-        console.warn('Autoplay failed:', e)
-      }
+    const handler = () => {
+      setInitialized(true)
     }
 
     player.on('loadstart', handler)
@@ -29,7 +38,57 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ className, autoplay, ...video
     return () => {
       player.off('loadstart', handler)
     }
-  }, [player, autoplay])
+  }, [player])
+
+  useEffect(() => {
+    if (!player) {
+      return
+    }
+
+    const handler = () => {
+      if (onDataLoaded) {
+        onDataLoaded()
+      }
+    }
+
+    player.on('loadeddata', handler)
+
+    return () => {
+      player.off('loadeddata', handler)
+    }
+  }, [player, onDataLoaded])
+
+  useEffect(() => {
+    if (!player || !initialized || !autoplay) {
+      return
+    }
+
+    const playPromise = player.play()
+    if (playPromise) {
+      playPromise.catch((e) => {
+        console.warn('Autoplay failed:', e)
+      })
+    }
+  }, [player, initialized, autoplay])
+
+  useEffect(() => {
+    if (!player) {
+      return
+    }
+
+    if (playing != null) {
+      if (playing) {
+        const playPromise = player.play()
+        if (playPromise) {
+          playPromise.catch((e) => {
+            console.error('Video play failed:', e)
+          })
+        }
+      } else {
+        player.pause()
+      }
+    }
+  })
 
   useEffect(() => {
     if (!player) {
@@ -56,8 +115,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ className, autoplay, ...video
   }
 
   return (
-    <Container className={className}>
-      {playOverlayVisible && (
+    <Container className={className} isInBackground={isInBackground}>
+      {displayPlayOverlay && (
         <PlayOverlay onClick={handlePlayOverlayClick}>
           <StyledPlayIcon />
         </PlayOverlay>

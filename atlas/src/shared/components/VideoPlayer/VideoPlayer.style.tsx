@@ -2,8 +2,27 @@ import React from 'react'
 import styled from '@emotion/styled'
 import { colors, spacing, typography } from '../../theme'
 import Icon from '../Icon'
+import { css } from '@emotion/core'
 
-export const Container = styled.div`
+type ContainerProps = {
+  isInBackground?: boolean
+}
+
+const backgroundContainerCss = css`
+  .vjs-waiting .vjs-loading-spinner {
+    display: none;
+  }
+
+  .vjs-control-bar {
+    display: none;
+  }
+`
+
+export const Container = styled.div<ContainerProps>`
+  video[poster] {
+    object-fit: fill;
+  }
+
   position: relative;
 
   *:focus {
@@ -116,6 +135,8 @@ export const Container = styled.div`
   .vjs-big-play-button {
     display: none !important;
   }
+
+  ${({ isInBackground }) => isInBackground && backgroundContainerCss};
 `
 
 export const PlayOverlay = styled.div`
@@ -140,4 +161,4 @@ const StyledIcon = styled(Icon)`
   width: 72px;
   color: ${colors.white};
 `
-export const StyledPlayIcon = ({ ...svgProps }) => <StyledIcon name="play" {...svgProps} />
+export const StyledPlayIcon = ({ ...svgProps }) => <StyledIcon name="play-outline" {...svgProps} />
