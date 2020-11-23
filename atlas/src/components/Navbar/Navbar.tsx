@@ -1,15 +1,18 @@
 import React, { useState } from 'react'
-import { RouteComponentProps, Link, navigate, LinkGetProps } from '@reach/router'
+import { LinkGetProps, navigate, RouteComponentProps } from '@reach/router'
 
 import routes from '@/config/routes'
 import {
+  ActiveIcon,
+  FullLogo,
   Header,
+  InactiveIcon,
+  LogoLink,
   NavigationContainer,
-  StyledIcon,
-  StyledSearchbar,
   SearchbarContainer,
-  Logo,
+  ShortLogo,
   StyledLink,
+  StyledSearchbar,
 } from './Navbar.style'
 
 type NavbarProps = RouteComponentProps
@@ -45,15 +48,18 @@ const Navbar: React.FC<NavbarProps> = () => {
   return (
     <Header hasFocus={isFocused}>
       <NavigationContainer>
-        <Link to="/">
-          <Logo />
-        </Link>
+        <LogoLink to="/">
+          <ShortLogo />
+          <FullLogo />
+        </LogoLink>
         <StyledLink to="/" getProps={isActive}>
-          <StyledIcon name="home" />
+          <ActiveIcon name="home-fill" />
+          <InactiveIcon name="home" />
           <span>Home</span>
         </StyledLink>
         <StyledLink to={routes.browse()} getProps={isActive}>
-          <StyledIcon name="binocular" />
+          <ActiveIcon name="binocular-fill" />
+          <InactiveIcon name="binocular" />
           <span>Browse</span>
         </StyledLink>
       </NavigationContainer>

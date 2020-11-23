@@ -1,13 +1,19 @@
 import styled from '@emotion/styled'
 import { colors, sizes } from '../../theme'
 import Button from '../Button'
+import { Icon } from '@/shared/components'
+
+export const StyledIcon = styled(Icon)`
+  height: 24px;
+  color: ${colors.white};
+`
 
 export const Input = styled.input`
   width: 100%;
   height: 100%;
   border: unset;
   padding: 14px ${sizes.b3}px;
-  background-color: ${colors.gray[800]};
+  background: none;
   color: ${colors.white};
 
   // override mobile Safari user agent styling
@@ -15,11 +21,7 @@ export const Input = styled.input`
   -webkit-appearance: none;
 
   ::placeholder {
-    color: ${colors.gray[400]};
-  }
-  :focus {
-    background-color: ${colors.gray[900]};
-    outline: 1px solid ${colors.gray[500]};
+    color: ${colors.gray[300]};
   }
   &::-webkit-search-cancel-button {
     -webkit-appearance: none;
@@ -47,5 +49,10 @@ export const Container = styled.div`
   position: relative;
   display: flex;
   align-items: center;
-  height: ${sizes.b12}px;
+  height: ${sizes.b1 * 14}px;
+  background-color: ${colors.gray[800]};
+  padding-left: ${sizes.b4}px;
+  :focus-within {
+    outline: 1px solid ${colors.gray[500]};
+  }
 `
