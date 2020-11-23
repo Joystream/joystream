@@ -88,6 +88,7 @@ const mainInfoContainerCss = css`
 `
 
 export const InfoContainer = styled.div<MainProps>`
+  min-height: 86px;
   width: 100%;
   display: flex;
   margin-top: ${({ main }) => (main ? spacing.m : spacing.s)};
