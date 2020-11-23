@@ -552,12 +552,79 @@ impl membership::Trait for Runtime {
     type ActorId = ActorId;
 }
 
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 5;
+
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxThreadsInCategory: u64 = 20;
+    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 20;
+    pub const MaxCategories: u64 = 20;
+}
+
+pub struct MapLimits;
+
+impl forum::StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxThreadsInCategory = MaxThreadsInCategory;
+    type MaxPostsInThread = MaxPostsInThread;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
+}
+
+// Alias for forum working group
+type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
+
 impl forum::Trait for Runtime {
     type Event = Event;
-    type MembershipRegistry = integration::forum::ShimMembershipRegistry;
+    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
+    type ForumUserId = ForumUserId;
+    type ModeratorId = ModeratorId;
+    type CategoryId = u64;
+    type PostReactionId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
+
+    type MapLimits = MapLimits;
+
+    fn is_lead(_account_id: &AccountId) -> bool {
+        // get current lead id
+        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
+        if let Some(ref current_lead_id) = maybe_current_lead_id {
+            if let Ok(worker) = ForumGroup::<Runtime>::ensure_worker_exists(current_lead_id) {
+                *_account_id == worker.role_account_id
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            _forum_user_id,
+            _account_id,
+        )
+        .is_ok()
+    }
+
+    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
+        if let Ok(worker) = ForumGroup::<Runtime>::ensure_worker_exists(_moderator_id) {
+            *_account_id == worker.role_account_id
+        } else {
+            false
+        }
+    }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hash::from_slice(text)
+    }
 }
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -567,6 +634,11 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+}
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -669,6 +741,11 @@ parameter_types! {
     pub const SurchargeReward: Balance = 0; // no reward
 }
 
+/// Forum identifiers for user, moderator and category
+pub type ForumUserId = u64;
+pub type ModeratorId = u64;
+pub type CategoryId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -735,7 +812,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
-        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
     }

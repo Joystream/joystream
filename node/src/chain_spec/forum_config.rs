@@ -1,21 +1,30 @@
 use codec::Decode;
 use node_runtime::{
-    common::constraints::InputValidationLengthConstraint,
-    forum::{Category, CategoryId, Post, Thread},
-    AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
+    forum,
+    forum::{Category, InputValidationLengthConstraint, Post, Thread},
+    AccountId, ForumConfig, Moment, PostId, Runtime, ThreadId,
 };
 use serde::Deserialize;
+use sp_core::H256;
 use std::{fs, path::Path};
 
-fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    InputValidationLengthConstraint { min, max_min_diff }
-}
+type CategoryId = <Runtime as forum::Trait>::CategoryId;
+type ForumUserId = <Runtime as forum::Trait>::ForumUserId;
+type ModeratorId = <Runtime as forum::Trait>::ModeratorId;
+type ThreadOf = (
+    CategoryId,
+    ThreadId,
+    Thread<ForumUserId, CategoryId, Moment, H256>,
+);
 
 #[derive(Decode)]
 struct ForumData {
-    categories: Vec<Category<BlockNumber, Moment, AccountId>>,
-    posts: Vec<Post<BlockNumber, Moment, AccountId, ThreadId, PostId>>,
-    threads: Vec<Thread<BlockNumber, Moment, AccountId, ThreadId>>,
+    categories: Vec<(CategoryId, Category<CategoryId, ThreadId, H256>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, H256>)>,
+    threads: Vec<ThreadOf>,
+    category_by_moderator: Vec<(CategoryId, ModeratorId, ())>,
+    poll_items_constraint: InputValidationLengthConstraint,
+    data_migration_done: bool,
 }
 
 #[derive(Deserialize)]
@@ -26,6 +35,12 @@ struct EncodedForumData {
     posts: Vec<String>,
     /// hex encoded threads
     threads: Vec<String>,
+    /// hex encoded categories by moderator set
+    category_by_moderator: Vec<String>,
+    /// hex encoded poll items input validation constraint
+    poll_items_constraint: String,
+    /// hex encoded data migration done bool flag
+    data_migration_done: String,
 }
 
 impl EncodedForumData {
@@ -58,6 +73,26 @@ impl EncodedForumData {
                     Decode::decode(&mut encoded_thread.as_slice()).unwrap()
                 })
                 .collect(),
+            category_by_moderator: self
+                .category_by_moderator
+                .iter()
+                .map(|category_by_moderator| {
+                    let category_by_moderator = hex::decode(&category_by_moderator[2..].as_bytes())
+                        .expect("failed to parse thread hex string");
+                    Decode::decode(&mut category_by_moderator.as_slice()).unwrap()
+                })
+                .collect(),
+            poll_items_constraint: {
+                let poll_items_constraint =
+                    hex::decode(&self.poll_items_constraint[2..].as_bytes())
+                        .expect("failed to parse thread hex string");
+                Decode::decode(&mut poll_items_constraint.as_slice()).unwrap()
+            },
+            data_migration_done: {
+                let data_migration_done = hex::decode(&self.data_migration_done[2..].as_bytes())
+                    .expect("failed to parse thread hex string");
+                Decode::decode(&mut data_migration_done.as_slice()).unwrap()
+            },
         }
     }
 }
@@ -81,69 +116,42 @@ pub fn empty(forum_sudo: AccountId) -> ForumConfig {
         categories: vec![],
         threads: vec![],
         posts: vec![],
+        category_by_moderator: vec![],
+        poll_items_constraint: String::new(),
+        data_migration_done: String::new(),
     };
     create(forum_sudo, forum_data)
 }
 
-fn create(forum_sudo: AccountId, forum_data: EncodedForumData) -> ForumConfig {
+fn create(_forum_sudo: AccountId, forum_data: EncodedForumData) -> ForumConfig {
     let first_id = 1;
     let forum_data = forum_data.decode();
 
-    let next_category_id: CategoryId = forum_data
-        .categories
-        .last()
-        .map_or(first_id, |category| category.id + 1);
+    let next_category_id = first_id + forum_data.categories.len() as CategoryId;
 
     assert_eq!(
         next_category_id,
         (forum_data.categories.len() + 1) as CategoryId
     );
 
-    let next_thread_id: ThreadId = forum_data
-        .threads
-        .last()
-        .map_or(first_id, |thread| thread.id + 1);
+    let next_thread_id = first_id + forum_data.threads.len() as ThreadId;
 
     assert_eq!(next_thread_id, (forum_data.threads.len() + 1) as ThreadId);
 
-    let next_post_id: PostId = forum_data.posts.last().map_or(first_id, |post| post.id + 1);
+    let next_post_id = first_id + forum_data.posts.len() as PostId;
 
     assert_eq!(next_post_id, (forum_data.posts.len() + 1) as PostId);
 
     ForumConfig {
-        category_by_id: forum_data
-            .categories
-            .into_iter()
-            .map(|encoded_category| {
-                let category = encoded_category;
-                (category.id, category)
-            })
-            .collect(),
-        thread_by_id: forum_data
-            .threads
-            .into_iter()
-            .map(|encoded_thread| {
-                let thread = encoded_thread;
-                (thread.id, thread)
-            })
-            .collect(),
-        post_by_id: forum_data
-            .posts
-            .into_iter()
-            .map(|encoded_post| {
-                let post = encoded_post;
-                (post.id, post)
-            })
-            .collect(),
+        category_by_id: forum_data.categories,
+        thread_by_id: forum_data.threads,
+        post_by_id: forum_data.posts,
+        category_by_moderator: forum_data.category_by_moderator,
+        poll_items_constraint: forum_data.poll_items_constraint,
         next_category_id,
         next_thread_id,
         next_post_id,
-        forum_sudo,
-        category_title_constraint: new_validation(10, 90),
-        category_description_constraint: new_validation(10, 490),
-        thread_title_constraint: new_validation(10, 90),
-        post_text_constraint: new_validation(10, 2990),
-        thread_moderation_rationale_constraint: new_validation(10, 290),
-        post_moderation_rationale_constraint: new_validation(10, 290),
+        category_counter: next_category_id - 1,
+        data_migration_done: forum_data.data_migration_done,
     }
 }
