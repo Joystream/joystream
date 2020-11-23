@@ -1388,10 +1388,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@^0.0.22":
-  version "0.0.22"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.22.tgz#0df5c4286370f23c3175a25c185f96daa4a40091"
-  integrity sha512-JnRGXbeWWtLQqbjyaZAYN4JvRBjivfxazJeWuipgZoqBNezIcFHbYiBC6Suut55PL6CRSOD9K5bwlAXOx/2RIg==
+"@dzlzv/hydra-cli@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.23.tgz#b483280c3b0137347f85158a89481990757e0e21"
+  integrity sha512-Ua11sQRRcGOcItvvXRHPxababZ7aSRV9BbUGpFKA3k+fr7dSbjT2v66RSix1+ktzQ1TUPUVwNYP2XZuHkq0FcQ==
   dependencies:
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
