@@ -31,6 +31,9 @@
   "engines": {
     "node": ">=12.18.0"
   },
+  "volta": {
+    "extends": "../package.json"
+  },
   "scripts": {
     "test": "mocha 'test/**/*.js'",
     "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'",
