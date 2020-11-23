@@ -1,7 +1,7 @@
 use codec::Decode;
 use node_runtime::{
     forum,
-    forum::{Category, InputValidationLengthConstraint, Post, Thread},
+    forum::{Category, Post, Thread},
     AccountId, ForumConfig, Moment, PostId, Runtime, ThreadId,
 };
 use serde::Deserialize;
@@ -23,7 +23,6 @@ struct ForumData {
     posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, H256>)>,
     threads: Vec<ThreadOf>,
     category_by_moderator: Vec<(CategoryId, ModeratorId, ())>,
-    poll_items_constraint: InputValidationLengthConstraint,
     data_migration_done: bool,
 }
 
@@ -37,8 +36,6 @@ struct EncodedForumData {
     threads: Vec<String>,
     /// hex encoded categories by moderator set
     category_by_moderator: Vec<String>,
-    /// hex encoded poll items input validation constraint
-    poll_items_constraint: String,
     /// hex encoded data migration done bool flag
     data_migration_done: String,
 }
@@ -82,12 +79,6 @@ impl EncodedForumData {
                     Decode::decode(&mut category_by_moderator.as_slice()).unwrap()
                 })
                 .collect(),
-            poll_items_constraint: {
-                let poll_items_constraint =
-                    hex::decode(&self.poll_items_constraint[2..].as_bytes())
-                        .expect("failed to parse thread hex string");
-                Decode::decode(&mut poll_items_constraint.as_slice()).unwrap()
-            },
             data_migration_done: {
                 let data_migration_done = hex::decode(&self.data_migration_done[2..].as_bytes())
                     .expect("failed to parse thread hex string");
@@ -117,7 +108,6 @@ pub fn empty(forum_sudo: AccountId) -> ForumConfig {
         threads: vec![],
         posts: vec![],
         category_by_moderator: vec![],
-        poll_items_constraint: String::new(),
         data_migration_done: String::new(),
     };
     create(forum_sudo, forum_data)
@@ -147,7 +137,6 @@ fn create(_forum_sudo: AccountId, forum_data: EncodedForumData) -> ForumConfig {
         thread_by_id: forum_data.threads,
         post_by_id: forum_data.posts,
         category_by_moderator: forum_data.category_by_moderator,
-        poll_items_constraint: forum_data.poll_items_constraint,
         next_category_id,
         next_thread_id,
         next_post_id,

@@ -84,6 +84,7 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
+    pub const MaxPollAlternativesNumber: u64 = 20;
 }
 
 pub struct MapLimits;
@@ -94,6 +95,7 @@ impl StorageLimits for MapLimits {
     type MaxPostsInThread = MaxPostsInThread;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
+    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 impl Trait for Runtime {
@@ -737,11 +739,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         next_post_id: 1,
 
         category_by_moderator: vec![],
-
-        poll_items_constraint: InputValidationLengthConstraint {
-            min: 4,
-            max_min_diff: 20,
-        },
 
         // data migration part
         data_migration_done: data_migration_done,
