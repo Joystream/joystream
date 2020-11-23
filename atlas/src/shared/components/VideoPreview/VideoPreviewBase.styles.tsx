@@ -26,6 +26,10 @@ const fadeIn = keyframes`
   }
 `
 
+export const fadeInAnimation = css`
+  animation: ${fadeIn} 0.5s ease-in;
+`
+
 export const CoverWrapper = styled.div`
   max-width: 650px;
   width: 100%;
@@ -55,7 +59,7 @@ export const CoverContainer = styled.div<ClickableProps>`
   transition-property: box-shadow, transform;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
-  animation: ${fadeIn} 0.5s ease-in;
+  ${fadeInAnimation};
   cursor: ${(props) => (props.clickable ? 'pointer' : 'auto')};
   :hover {
     ${(props) => clickableAnimation(props.clickable)}

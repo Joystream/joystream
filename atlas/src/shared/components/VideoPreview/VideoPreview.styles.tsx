@@ -1,11 +1,10 @@
 import React from 'react'
-import { keyframes } from '@emotion/core'
 import styled from '@emotion/styled'
 import { fluidRange } from 'polished'
 import { colors, spacing, typography } from '../../theme'
 import Avatar from '../Avatar'
 import Icon from '../Icon'
-import { HOVER_BORDER_SIZE } from './VideoPreviewBase.styles'
+import { HOVER_BORDER_SIZE, fadeInAnimation } from './VideoPreviewBase.styles'
 
 type MainProps = {
   main: boolean
@@ -92,16 +91,6 @@ export const StyledAvatar = styled(Avatar)<ChannelProps>`
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-const fadeIn = keyframes`
-  0% {
-    opacity: 0;
-
-  }
-  100% {
-    opacity: 1;
-
-  }
-`
 export const TitleHeader = styled.h3<MainProps & ScalesWithCoverProps & ClickableProps>`
   margin: 0;
   font-weight: ${typography.weights.bold};
@@ -109,7 +98,7 @@ export const TitleHeader = styled.h3<MainProps & ScalesWithCoverProps & Clickabl
   ${({ main }) => main && fluidRange({ prop: 'fontSize', fromSize: '24px', toSize: '40px' })};
   line-height: ${({ main }) => (main ? 1 : 1.25)};
   cursor: ${(props) => (props.clickable ? 'pointer' : 'auto')};
-  animation: ${fadeIn} 1.5s linear;
+  ${fadeInAnimation};
 `
 
 export const ChannelName = styled.span<ChannelProps & ScalesWithCoverProps>`
@@ -117,11 +106,11 @@ export const ChannelName = styled.span<ChannelProps & ScalesWithCoverProps>`
   line-height: 1.25rem;
   display: inline-block;
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
-  animation: ${fadeIn} 1.5s linear;
+  ${fadeInAnimation};
 `
 
 export const MetaText = styled.span<MainProps & ScalesWithCoverProps>`
   font-size: ${({ main, scalingFactor }) =>
     main ? typography.sizes.h6 : `calc(${scalingFactor}*${typography.sizes.subtitle2})`};
-  animation: ${fadeIn} 1.5s linear;
+  ${fadeInAnimation};
 `
