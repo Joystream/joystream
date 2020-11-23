@@ -67,7 +67,7 @@ async function createChannel(
   channel.id = id
   channel.handle = p.handle
   channel.description = p.description
-  channel.isCurated = p.isCurated || false
+  channel.isCurated = !!p.isCurated
   channel.isPublic = p.isPublic
   channel.coverPhotoUrl = p.coverPhotoUrl
   channel.avatarPhotoUrl = p.avatarPhotoUrl
@@ -237,8 +237,7 @@ async function createVideo(
   video.description = p.description
   video.duration = p.duration
   video.hasMarketing = p.hasMarketing
-  // TODO: needs to be handled correctly, from runtime CurationStatus is coming
-  video.isCurated = p.isCurated || true
+  video.isCurated = !!p.isCurated
   video.isExplicit = p.isExplicit
   video.isPublic = p.isPublic
   video.publishedBeforeJoystream = p.publishedBeforeJoystream
