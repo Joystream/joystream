@@ -13,32 +13,31 @@ type RouteProps = {
 } & RouteComponentProps
 const Route: React.FC<RouteProps> = ({ Component, ...pathProps }) => {
   return (
-    <ErrorBoundary
-      FallbackComponent={ViewErrorFallback}
-      onReset={() => {
-        navigate('/')
-      }}
-    >
-      <Component {...pathProps} />
-    </ErrorBoundary>
+    <MainContainer>
+      <ErrorBoundary
+        FallbackComponent={ViewErrorFallback}
+        onReset={() => {
+          navigate('/')
+        }}
+      >
+        <Component {...pathProps} />
+      </ErrorBoundary>
+    </MainContainer>
   )
 }
 
 const LayoutWithRouting: React.FC = () => (
   <>
     <GlobalStyle />
-    <Router primary>
-      <Navbar default />
+
+    <Navbar default />
+    <Router primary={false}>
+      <Route default Component={HomeView} />
+      <Route path={routes.video()} Component={VideoView} />
+      <Route path={routes.search()} Component={SearchView} />
+      <Route Component={BrowseView} path={routes.browse()} />
+      <Route Component={ChannelView} path={routes.channel()} />
     </Router>
-    <MainContainer>
-      <Router primary={false}>
-        <Route default Component={HomeView} />
-        <Route path={routes.video()} Component={VideoView} />
-        <Route path={routes.search()} Component={SearchView} />
-        <Route Component={BrowseView} path={routes.browse()} />
-        <Route Component={ChannelView} path={routes.channel()} />
-      </Router>
-    </MainContainer>
   </>
 )
 

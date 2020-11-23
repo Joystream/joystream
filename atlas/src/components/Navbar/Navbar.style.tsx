@@ -8,7 +8,7 @@ import { Link } from '@reach/router'
 type NavbarStyleProps = {
   hasFocus: boolean
 }
-
+export const NAVBAR_HEIGHT = 69
 export const Logo = styled(UnstyledLogo)`
   width: ${sizes.b12}px;
   height: ${sizes.b12}px;
@@ -77,6 +77,9 @@ export const StyledLink = styled(Link)`
 `
 
 export const Header = styled.header<NavbarStyleProps>`
+  position: sticky;
+  top: 0;
+  z-index: 99;
   display: grid;
   width: 100%;
 

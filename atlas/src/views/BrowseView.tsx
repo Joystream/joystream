@@ -4,6 +4,7 @@ import { RouteComponentProps } from '@reach/router'
 import { ErrorBoundary } from 'react-error-boundary'
 
 import { ErrorFallback } from '@/components'
+import { NAVBAR_HEIGHT } from '@/components/Navbar'
 import { CategoryPicker, InfiniteVideoGrid, Typography } from '@/shared/components'
 import { colors, sizes } from '@/shared/theme'
 import { useQuery } from '@apollo/client'
@@ -52,7 +53,7 @@ const Header = styled(Typography)`
 const StyledCategoryPicker = styled(CategoryPicker)`
   z-index: 10;
   position: sticky;
-  top: 0;
+  top: ${NAVBAR_HEIGHT}px;
   padding: ${sizes.b5}px ${sizes.b8}px ${sizes.b2}px;
   margin: 0 calc(-1 * var(--global-horizontal-padding));
   background-color: ${colors.black};
