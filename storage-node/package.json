@@ -48,5 +48,8 @@
     "prettier": "^2.0.5",
     "typescript": "^3.9.6",
     "wsrun": "^3.6.5"
+  },
+  "volta": {
+    "extends": "../package.json"
   }
 }
