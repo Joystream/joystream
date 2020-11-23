@@ -80,5 +80,8 @@ decl_error! {
 
         /// It's not enough budget for this spending.
         InsufficientBudgetForSpending,
+
+        /// Cannot fill opening - no applications provided.
+        NoApplicationsProvided,
     }
 }

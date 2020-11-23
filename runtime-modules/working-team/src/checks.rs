@@ -66,6 +66,12 @@ pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
 pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
     successful_application_ids: &BTreeSet<T::ApplicationId>,
 ) -> Result<Vec<ApplicationInfo<T, I>>, Error<T, I>> {
+    // Check for non-empty set of application ids.
+    ensure!(
+        !successful_application_ids.is_empty(),
+        crate::Error::<T, I>::NoApplicationsProvided
+    );
+
     // Make iterator over successful worker application
     let application_info_iterator = successful_application_ids
         .iter()

@@ -378,6 +378,23 @@ fn fill_opening_fails_with_invalid_application_id() {
 }
 
 #[test]
+fn fill_opening_fails_with_zero_application_ids() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let fill_opening_fixture = FillOpeningFixture::default_for_ids(opening_id, Vec::new());
+
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::NoApplicationsProvided.into(),
+        ));
+    });
+}
+
+#[test]
 fn cannot_hire_a_lead_twice() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
