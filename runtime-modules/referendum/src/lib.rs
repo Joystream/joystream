@@ -138,6 +138,10 @@ pub trait ReferendumManager<Origin, AccountId, Hash> {
     /// Start a new referendum.
     fn start_referendum(origin: Origin, extra_winning_target_count: u64) -> Result<(), ()>;
 
+    /// Start referendum independent of the current state.
+    /// If an election is running before calling this function, it will be discontinued without any winners selected.
+    fn force_start(extra_winning_target_count: u64);
+
     /// Calculate commitment for a vote.
     fn calculate_commitment(
         account_id: &AccountId,
@@ -231,6 +235,9 @@ decl_event! {
     {
         /// Referendum started
         ReferendumStarted(u64),
+
+        /// Referendum started
+        ReferendumStartedForcefully(u64),
 
         /// Revealing phase has begun
         RevealingStageStarted(),
@@ -358,7 +365,6 @@ decl_module! {
             Ok(())
         }
 
-
         /// Release a locked stake.
         #[weight = 10_000_000]
         pub fn release_voting_stake(origin) -> Result<(), Error<T, I>> {
@@ -447,6 +453,25 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Has
         Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
 
         Ok(())
+    }
+
+    /// Start referendum independent of the current state.
+    /// If an election is running before calling this function, it will be discontinued without any winners selected.
+    fn force_start(extra_winning_target_count: u64) {
+        let winning_target_count = extra_winning_target_count + 1;
+
+        // remember if referendum is running
+        let referendum_running = !matches!(Stage::<T, I>::get(), ReferendumStage::Inactive);
+
+        // update state
+        Mutations::<T, I>::start_voting_period(&winning_target_count);
+
+        // emit event
+        if referendum_running {
+            Self::deposit_event(RawEvent::ReferendumStartedForcefully(winning_target_count));
+        } else {
+            Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
+        }
     }
 
     /// Calculate commitment for a vote.
