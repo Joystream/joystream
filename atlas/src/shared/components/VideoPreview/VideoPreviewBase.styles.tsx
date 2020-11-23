@@ -30,7 +30,23 @@ export const CoverWrapper = styled.div`
   max-width: 650px;
   width: 100%;
 `
+const clickableAnimation = (clickable: boolean) =>
+  clickable
+    ? css`
+        transform: translate(-${spacing.xs}, -${spacing.xs});
+        box-shadow: ${spacing.xs} ${spacing.xs} 0 ${colors.blue['500']};
 
+        ${CoverHoverOverlay} {
+          opacity: 1;
+        }
+        ${CoverIcon} {
+          transform: translateY(0);
+        }
+        ${ProgressOverlay} {
+          bottom: ${HOVER_BORDER_SIZE};
+        }
+      `
+    : null
 export const CoverContainer = styled.div<ClickableProps>`
   position: relative;
   width: 100%;
@@ -42,21 +58,7 @@ export const CoverContainer = styled.div<ClickableProps>`
   animation: ${fadeIn} 0.5s ease-in;
   cursor: ${(props) => (props.clickable ? 'pointer' : 'auto')};
   :hover {
-    ${(props) =>
-      props.clickable
-        ? ` transform: translate(-${spacing.xs}, -${spacing.xs});
-      box-shadow: ${spacing.xs} ${spacing.xs} 0 ${colors.blue['500']};
-  
-      ${CoverHoverOverlay} {
-        opacity: 1;
-      }
-      ${CoverIcon} {
-        transform: translateY(0);
-      }
-      ${ProgressOverlay} {
-        bottom: ${HOVER_BORDER_SIZE};
-      }`
-        : null}
+    ${(props) => clickableAnimation(props.clickable)}
   }
 `
 
