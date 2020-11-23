@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react'
+import React, { useState } from 'react'
 import useResizeObserver from 'use-resize-observer'
 
 import {
@@ -41,7 +41,7 @@ type VideoPreviewProps = {
   showChannel?: boolean
   showMeta?: boolean
   main?: boolean
-  imgRef?: ((instance: HTMLImageElement | null) => void) | React.MutableRefObject<HTMLImageElement | null | undefined>
+  onCoverResize?: (width: number | undefined, height: number | undefined) => void
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void
   className?: string
@@ -62,27 +62,19 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   onClick,
   onChannelClick,
   className,
-  imgRef: externalImgRef,
+  onCoverResize,
 }) => {
   const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
   const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
     onResize: (size) => {
-      const { width: videoPreviewWidth } = size
+      const { width: videoPreviewWidth, height: videoPreviewHeight } = size
+      if (onCoverResize) {
+        onCoverResize(videoPreviewWidth, videoPreviewHeight)
+      }
       if (videoPreviewWidth && !main) {
         setScalingFactor(calculateScalingFactor(videoPreviewWidth))
       }
     },
-  })
-
-  useLayoutEffect(() => {
-    if (externalImgRef) {
-      if (typeof externalImgRef === 'function') {
-        externalImgRef(imgRef.current)
-        return
-      }
-
-      externalImgRef.current = imgRef.current
-    }
   })
 
   const channelClickable = !!onChannelClick

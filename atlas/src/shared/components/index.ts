@@ -1,6 +1,6 @@
 export { default as Avatar } from './Avatar'
 export { default as Button } from './Button'
-export { default as Carousel } from './Carousel'
+export { default as Carousel, CAROUSEL_ARROW_HEIGHT } from './Carousel'
 export { default as Dropdown } from './Dropdown'
 export { default as Link } from './Link'
 export { default as NavButton } from './NavButton'

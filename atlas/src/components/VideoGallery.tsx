@@ -1,8 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { css } from '@emotion/core'
 import styled from '@emotion/styled'
 
-import { breakpointsOfGrid, Gallery, MIN_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
+import {
+  breakpointsOfGrid,
+  Gallery,
+  MIN_VIDEO_PREVIEW_WIDTH,
+  VideoPreviewBase,
+  CAROUSEL_ARROW_HEIGHT,
+} from '@/shared/components'
 import VideoPreview from './VideoPreviewWithNavigation'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { sizes } from '@/shared/theme'
@@ -14,8 +20,6 @@ type VideoGalleryProps = {
 }
 
 const PLACEHOLDERS_COUNT = 12
-const CAROUSEL_ARROW_HEIGHT = 48
-const trackPadding = `${sizes.b2}px 0 0 ${sizes.b2}px`
 
 // This is needed since Gliderjs and the Grid have different resizing policies
 const breakpoints = breakpointsOfGrid({
@@ -32,27 +36,27 @@ const breakpoints = breakpointsOfGrid({
 }))
 
 const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) => {
-  const [imgHeight, setImgHeight] = useState<number>()
-  const imgRef = useCallback((img: HTMLImageElement | null) => {
-    setImgHeight(img?.clientHeight)
+  const [coverHeight, setCoverHeight] = useState<number>()
+  const onCoverResize = useCallback((_, imgHeight) => {
+    setCoverHeight(imgHeight)
   }, [])
-
   const arrowPosition = useMemo(() => {
-    if (!imgHeight) {
+    if (!coverHeight) {
       return
     }
-    const topPx = (imgHeight - CAROUSEL_ARROW_HEIGHT) / 2
+    const topPx = (coverHeight - CAROUSEL_ARROW_HEIGHT) / 2
     return css`
       top: ${topPx}px;
     `
-  }, [imgHeight])
+  }, [coverHeight])
 
   const displayPlaceholders = loading || !videos
 
   return (
     <Gallery
       title={title}
-      trackPadding={trackPadding}
+      paddingLeft={sizes.b2}
+      paddingTop={sizes.b2}
       responsive={breakpoints}
       itemWidth={MIN_VIDEO_PREVIEW_WIDTH}
       arrowCss={arrowPosition}
@@ -61,7 +65,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) =
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
             <StyledVideoPreviewBase key={`video-placeholder-${idx}`} />
           ))
-        : videos!.map((video, idx) => (
+        : videos!.map((video) => (
             <StyledVideoPreview
               id={video.id}
               channelId={video.channel.id}
@@ -73,7 +77,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) =
               duration={video.duration}
               posterURL={video.thumbnailUrl}
               key={video.id}
-              imgRef={idx === 0 ? imgRef : undefined}
+              onCoverResize={onCoverResize}
             />
           ))}
     </Gallery>
