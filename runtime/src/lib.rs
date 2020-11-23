@@ -16,13 +16,17 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 mod constants;
 mod integration;
 pub mod primitives;
+mod proposals_configuration;
 mod runtime_api;
 #[cfg(test)]
 mod tests;
 /// Weights for pallets used in the runtime.
 mod weights; // Runtime integration tests
 
-use frame_support::traits::KeyOwnerProofSystem;
+#[macro_use]
+extern crate lazy_static; // for proposals_configuration module
+
+use frame_support::traits::{KeyOwnerProofSystem, LockIdentifier};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
@@ -45,6 +49,7 @@ use sp_version::RuntimeVersion;
 
 pub use constants::*;
 pub use primitives::*;
+pub use proposals_configuration::*;
 pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
@@ -54,6 +59,10 @@ use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
+pub use content_directory;
+pub use content_directory::{
+    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+};
 pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
@@ -61,16 +70,11 @@ pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
-pub use proposals_codex::ProposalsConfigParameters;
+pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
-
-pub use content_directory;
-pub use content_directory::{
-    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
-};
 
 #[cfg(feature = "std")]
 /// Wasm binary unwrapped. If built with `BUILD_DUMMY_WASM_BINARY`, the function panics.
@@ -487,11 +491,8 @@ impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
-        crate::integration::proposals::StakingEventsHandler<Self>,
-        (
-            crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
-            crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-        ),
+        crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
+        crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
     );
     type StakeId = u64;
     type SlashId = u64;
@@ -662,6 +663,7 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
+    pub const ProposalsLockId: LockIdentifier = [5; 8];
 }
 
 impl proposals_engine::Trait for Runtime {
@@ -670,14 +672,16 @@ impl proposals_engine::Trait for Runtime {
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type StakingHandler = integration::staking_handler::StakingManager<Self, ProposalsLockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
+    type ProposalObserver = ProposalsCodex;
 }
+
 impl Default for Call {
     fn default() -> Self {
         panic!("shouldn't call default for Call");
@@ -685,21 +689,16 @@ impl Default for Call {
 }
 
 parameter_types! {
-    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
-    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
-    pub const ProposalThreadTitleLengthLimit: u32 = 40;
-    pub const ProposalPostLengthLimit: u32 = 1000;
+    pub const MaxWhiteListSize: u32 = 20;
 }
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type AuthorOriginValidator = MembershipOriginValidator<Self>;
+    type CouncilOriginValidator = CouncilManager<Self>;
     type ThreadId = ThreadId;
     type PostId = PostId;
-    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
-    type PostLengthLimit = ProposalPostLengthLimit;
-    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 parameter_types! {
@@ -708,10 +707,33 @@ parameter_types! {
 }
 
 impl proposals_codex::Trait for Runtime {
-    type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type ProposalEncoder = ExtrinsicProposalEncoder;
+    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
+    type TextProposalParameters = TextProposalParameters;
+    type SpendingProposalParameters = SpendingProposalParameters;
+    type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
+    type BeginReviewWorkingGroupApplicationsProposalParameters =
+        BeginReviewWorkingGroupApplicationsProposalParameters;
+    type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
+    type SetWorkingGroupMintCapacityProposalParameters =
+        SetWorkingGroupMintCapacityProposalParameters;
+    type DecreaseWorkingGroupLeaderStakeProposalParameters =
+        DecreaseWorkingGroupLeaderStakeProposalParameters;
+    type SlashWorkingGroupLeaderStakeProposalParameters =
+        SlashWorkingGroupLeaderStakeProposalParameters;
+    type SetWorkingGroupLeaderRewardProposalParameters =
+        SetWorkingGroupLeaderRewardProposalParameters;
+    type TerminateWorkingGroupLeaderRoleProposalParameters =
+        TerminateWorkingGroupLeaderRoleProposalParameters;
+    type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
+}
+
+impl constitution::Trait for Runtime {
+    type Event = Event;
 }
 
 parameter_types! {
@@ -781,6 +803,7 @@ construct_runtime!(
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        Constitution: constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
@@ -789,7 +812,7 @@ construct_runtime!(
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
