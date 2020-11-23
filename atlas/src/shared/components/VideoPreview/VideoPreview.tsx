@@ -108,7 +108,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   )
 
   const titleNode = (
-    <TitleHeader main={main} scalingFactor={scalingFactor}>
+    <TitleHeader main={main} scalingFactor={scalingFactor} onClick={onClick} clickable={Boolean(onClick)}>
       {title}
     </TitleHeader>
   )
