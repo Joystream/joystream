@@ -30,8 +30,6 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxPostEditionNumber: u32 = 5;
-    pub const MaxThreadInARowNumber: u32 = 3;
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
 }
@@ -57,6 +55,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
+    pub const MaxWhiteListSize: u32 = 4;
 }
 
 impl balances::Trait for Test {
@@ -83,18 +82,16 @@ impl membership::Trait for Test {
 
 impl crate::Trait for Test {
     type Event = TestEvent;
-    type PostAuthorOriginValidator = ();
+    type AuthorOriginValidator = ();
+    type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
-    type MaxPostEditionNumber = MaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
-    type PostLengthLimit = PostLengthLimit;
-    type MaxThreadInARowNumber = MaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
-        if frame_system::ensure_none(origin).is_ok() {
+        if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
 
@@ -102,7 +99,30 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
             return Ok(1);
         }
 
+        if actor_id == 2 {
+            return Ok(2);
+        }
+
+        if actor_id == 11 {
+            return Ok(11);
+        }
+
+        if actor_id == 12 && frame_system::ensure_signed(origin).unwrap_or_default() == 12 {
+            return Ok(12);
+        }
+
         Err("Invalid author")
+    }
+}
+
+pub struct CouncilMock;
+impl ActorOriginValidator<Origin, u64, u64> for CouncilMock {
+    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
+        if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
+            return Ok(2);
+        }
+
+        Err("Not a council")
     }
 }
 

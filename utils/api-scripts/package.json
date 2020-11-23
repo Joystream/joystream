@@ -22,5 +22,8 @@
     "@polkadot/ts": "^0.1.56",
     "typescript": "^3.9.7",
     "ts-node": "^8.6.2"
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }
