@@ -125,5 +125,9 @@
     "format": "prettier ./ --write",
     "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/"
   },
-  "types": "lib/index.d.ts"
+  "types": "lib/index.d.ts",
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
+  }
 }

@@ -486,10 +486,8 @@ decl_module! {
             rationale_text: Vec<u8>,
             slash_stake: bool,
         ) {
-            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
-
             // Ensure lead is set or it is the council terminating the leader.
-            let exit_origin = Self::ensure_origin_for_leader(cloned_origin1, worker_id)?;
+            let exit_origin = Self::ensure_origin_for_leader(origin.clone(), worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -502,7 +500,7 @@ decl_module! {
             //
 
             if slash_stake {
-                Self::slash_stake(cloned_origin2, worker_id, BalanceOf::<T>::max_value())?;
+                Self::slash_stake(origin, worker_id, BalanceOf::<T>::max_value())?;
             }
 
             Self::deactivate_worker(

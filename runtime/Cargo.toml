@@ -9,6 +9,9 @@ version = '7.8.0'
 [dependencies]
 # Third-party dependencies
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
+lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
+lite-json = { version = '0.1.3', default-features = false}
+hex-literal = { optional = true, version = '0.3.1' }
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
 
 # Substrate primitives
@@ -78,6 +81,7 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
+constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -155,6 +159,7 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
     'content-directory/std',
+    'constitution/std',
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
@@ -169,6 +174,8 @@ runtime-benchmarks = [
     "pallet-offences-benchmarking",
 	"pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
+    "proposals-discussion/runtime-benchmarks",
+    "hex-literal",
 ]
 
 
