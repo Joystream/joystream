@@ -594,9 +594,6 @@ decl_module! {
 
             Self::ensure_can_create_thread(account_id, &forum_user_id, &category_id)?;
 
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             // Check that thread can be added to category
             Self::ensure_category_is_mutable(&category_id)?;
 
