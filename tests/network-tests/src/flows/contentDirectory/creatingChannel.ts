@@ -6,7 +6,7 @@ import { assert } from 'chai'
 
 export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
-    handle: 'Example channel',
+    handle: 'New channel example',
     description: 'This is an example channel',
     // We can use "existing" syntax to reference either an on-chain entity or other entity that's part of the same batch.
     // Here we reference language that we assume was added by initialization script (initialize:dev), as it is part of

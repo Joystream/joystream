@@ -16,7 +16,7 @@ export function createUpdateChannelHandleFixture(api: QueryNodeApi, handle: stri
 }
 
 export default async function updateChannel(api: QueryNodeApi) {
-  const channelResult = await api.getChannelbyHandle('Example channel')
+  const channelResult = await api.getChannelbyHandle('New channel example')
   const channel = channelResult.data.channels[0]
 
   const handle = 'Updated handle'
