@@ -90,10 +90,8 @@ impl Default for DummyProposalFixture {
     fn default() -> Self {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
-        let dummy_proposal = crate::dummy_proposals::Call::<Test>::dummy_proposal(
-            title.clone(),
-            description.clone(),
-        );
+        let dummy_proposal =
+            mock::proposals::Call::<Test>::dummy_proposal(title.clone(), description.clone());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -426,7 +424,7 @@ fn proposal_execution_failed() {
 
         let parameters_fixture = ProposalParametersFixture::default();
 
-        let faulty_proposal = crate::dummy_proposals::Call::<Test>::faulty_proposal(
+        let faulty_proposal = mock::proposals::Call::<Test>::faulty_proposal(
             b"title".to_vec(),
             b"description".to_vec(),
         );

@@ -1,6 +1,5 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use crate::dummy_proposals;
 use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
@@ -12,10 +11,8 @@ use frame_system::RawOrigin;
 use governance::council::Module as Council;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
-use sp_std::cmp::min;
+use sp_std::cmp::{max, min};
 use sp_std::prelude::*;
-
-use codec::Encode;
 
 const SEED: u32 = 0;
 
@@ -90,18 +87,10 @@ fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-#[derive(Copy, Clone)]
-enum CallType {
-    Passing,
-    Failing,
-    FailingDecode,
-}
-
-fn create_proposal<T: Trait + dummy_proposals::Trait>(
+fn create_proposal<T: Trait>(
     id: u32,
     proposal_number: u32,
     constitutionality: u32,
-    call_type: CallType,
 ) -> (T::AccountId, T::MemberId, T::ProposalId) {
     let (account_id, member_id) = member_funded_account::<T>("member", id);
 
@@ -116,11 +105,7 @@ fn create_proposal<T: Trait + dummy_proposals::Trait>(
         constitutionality,
     };
 
-    let encoded_call = match call_type {
-        CallType::Passing => dummy_proposals::Call::<T>::dummy_proposal(vec![], vec![]).encode(),
-        CallType::Failing => dummy_proposals::Call::<T>::faulty_proposal(vec![], vec![]).encode(),
-        CallType::FailingDecode => vec![],
-    };
+    let call_code = vec![];
 
     let proposal_creation_parameters = ProposalCreationParameters {
         account_id: account_id.clone(),
@@ -129,7 +114,7 @@ fn create_proposal<T: Trait + dummy_proposals::Trait>(
         title: vec![0u8],
         description: vec![0u8],
         staking_account_id: Some(account_id.clone()),
-        encoded_dispatchable_call_code: encoded_call.clone(),
+        encoded_dispatchable_call_code: call_code.clone(),
         exact_execution_block: None,
     };
 
@@ -146,7 +131,7 @@ fn create_proposal<T: Trait + dummy_proposals::Trait>(
 
     assert_eq!(
         ProposalsEngine::<T>::proposal_codes(proposal_id),
-        encoded_call,
+        call_code,
         "Dispatchable code does not match"
     );
 
@@ -163,15 +148,17 @@ fn create_proposal<T: Trait + dummy_proposals::Trait>(
         "Created proposal not active"
     );
 
+    assert_eq!(
+        T::StakingHandler::current_stake(&account_id),
+        T::Balance::max_value()
+    );
+
     (account_id, member_id, proposal_id)
 }
 
-fn create_multiple_finalized_proposals<
-    T: Trait + governance::council::Trait + dummy_proposals::Trait,
->(
+fn create_multiple_finalized_proposals<T: Trait + governance::council::Trait>(
     number_of_proposals: u32,
     constitutionality: u32,
-    call_type: CallType,
     vote_kind: VoteKind,
     total_voters: u32,
 ) -> (Vec<T::AccountId>, Vec<T::ProposalId>) {
@@ -193,7 +180,7 @@ fn create_multiple_finalized_proposals<
     let mut proposals = Vec::new();
     for id in total_voters..number_of_proposals + total_voters {
         let (proposer_account_id, _, proposal_id) =
-            create_proposal::<T>(id, id - total_voters + 1, constitutionality, call_type);
+            create_proposal::<T>(id, id - total_voters + 1, constitutionality);
         proposers.push(proposer_account_id);
         proposals.push(proposal_id);
 
@@ -214,15 +201,10 @@ fn create_multiple_finalized_proposals<
 
 const MAX_BYTES: u32 = 16384;
 
-// In version 2.0 of substrate `T::MaxLocks` was added to balance
-// see: https://github.com/paritytech/substrate/pull/7103/commits/20a77424686b169d254b542ec4b128dce6a4ef8b
-// update this benchmark when updating.
-const MAX_LOCKS: u32 = 125;
-
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: governance::council::Trait, T: dummy_proposals::Trait
+        where T: governance::council::Trait
     }
 
     _ { }
@@ -230,7 +212,7 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (_, _, proposal_id) = create_proposal::<T>(0, 1, 0, CallType::Passing);
+        let (_, _, proposal_id) = create_proposal::<T>(0, 1, 0);
 
         let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
 
@@ -270,9 +252,9 @@ benchmarks! {
     }
 
     cancel_proposal {
-        let i in 1 .. MAX_LOCKS;
+        let i in 1 .. T::MaxLocks::get();
 
-        let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0, CallType::Passing);
+        let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0);
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
@@ -302,8 +284,7 @@ benchmarks! {
     }
 
     veto_proposal {
-        let i in 0 .. 1;
-        let (account_id, _, proposal_id) = create_proposal::<T>(0, 1, 0, CallType::Passing);
+        let (account_id, _, proposal_id) = create_proposal::<T>(0, 1, 0);
     }: _ (RawOrigin::Root, proposal_id)
     verify {
         assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
@@ -326,43 +307,16 @@ benchmarks! {
         );
     }
 
-    on_initialize_immediate_execution {
-        let i in 1 .. T::MaxActiveProposalLimit::get();
-
-        let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
-            i,
-            0,
-            CallType::Passing,
-            VoteKind::Approve,
-            1,
-        );
-
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
-    verify {
-        for proposer_account_id in proposers {
-            assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
-                Zero::zero(),
-                "Should've unlocked all stake"
-            );
-        }
-
-        /*
-        for proposal_id in proposals.iter() {
-            assert_in_events::<T>(
-                RawEvent::ProposalExecuted(proposal_id.clone(), ExecutionStatus::Executed).into()
-            );
-        }
-        */
-    }
-
+    // We use that branches for decode failing, failing and passing are very similar
+    // without any different DB access in each. To use the failing/passing branch
+    // we need to include the EncodeProposal trait from codex which depends on engine
+    // therefore we should move it to a common crate
     on_initialize_immediate_execution_decode_fails {
         let i in 1 .. T::MaxActiveProposalLimit::get();
 
         let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
             i,
             0,
-            CallType::FailingDecode,
             VoteKind::Approve,
             1
         );
@@ -378,34 +332,9 @@ benchmarks! {
 
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
-                RawEvent::ProposalExecuted(proposal_id.clone(), ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-            );
-        }
-    }
-
-    on_initialize_immediate_execution_fails {
-        let i in 1 .. T::MaxActiveProposalLimit::get();
-
-        let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
-            i,
-            0,
-            CallType::Failing,
-            VoteKind::Approve,
-            1
-        );
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
-    verify {
-        for proposer_account_id in proposers {
-            assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
-                Zero::zero(),
-                "Should've unlocked all stake"
-            );
-        }
-
-        for proposal_id in proposals.iter() {
-            assert_in_events::<T>(
-                RawEvent::ProposalExecuted(proposal_id.clone(), ExecutionStatus::failed_execution("ExecutionFailed")).into()
+                RawEvent::ProposalExecuted(
+                    proposal_id.clone(),
+                    ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
             );
         }
     }
@@ -416,7 +345,6 @@ benchmarks! {
         let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
             i,
             2,
-            CallType::Passing,
             VoteKind::Approve,
             1
         );
@@ -432,10 +360,16 @@ benchmarks! {
         }
 
         for proposal_id in proposals.iter() {
-
-            assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still be in the store");
+            assert!(
+                Proposals::<T>::contains_key(proposal_id),
+                "Proposal should still be in the store"
+            );
             let proposal = ProposalsEngine::<T>::proposals(proposal_id);
-            let status = ProposalStatus::approved(ApprovedProposalDecision::PendingConstitutionality ,System::<T>::block_number());
+            let status = ProposalStatus::approved(
+                ApprovedProposalDecision::PendingConstitutionality,
+                System::<T>::block_number()
+            );
+
             assert_eq!(proposal.status, status);
             assert_eq!(proposal.current_constitutionality_level, 1);
             assert_in_events::<T>(
@@ -450,9 +384,8 @@ benchmarks! {
         let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
             i,
             0,
-            CallType::Passing,
             VoteKind::Reject,
-            T::TotalVotersCounter::total_voters_count(),
+            max(T::TotalVotersCounter::total_voters_count(), 1),
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
@@ -466,14 +399,27 @@ benchmarks! {
 
         for proposal_id in proposals.iter() {
 
-            assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal should not be in store");
-            assert!(!DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable should not be in store");
+            assert!(
+                !Proposals::<T>::contains_key(proposal_id),
+                "Proposal should not be in store"
+            );
+
+            assert!(
+                !DispatchableCallCode::<T>::contains_key(proposal_id),
+                "Dispatchable should not be in store"
+            );
+
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::Rejected).into()
+                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::Rejected)
+                    .into()
             );
         }
 
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "There should not be any proposal left active");
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            0,
+            "There should not be any proposal left active"
+        );
     }
 
     on_initialize_slashed {
@@ -482,9 +428,8 @@ benchmarks! {
         let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
             i,
             0,
-            CallType::Passing,
             VoteKind::Slash,
-            T::TotalVotersCounter::total_voters_count(),
+            max(T::TotalVotersCounter::total_voters_count(), 1),
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
@@ -495,19 +440,37 @@ benchmarks! {
                 "Shouldn't have any stake locked"
             );
 
-            assert_eq!(Balances::<T>::free_balance(&proposer_account_id), Zero::zero(), "Should've all balance slashed");
+            assert_eq!(
+                Balances::<T>::free_balance(&proposer_account_id),
+                Zero::zero(),
+                "Should've all balance slashed"
+            );
         }
 
         for proposal_id in proposals.iter() {
 
-            assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal should not be in store");
-            assert!(!DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable should not be in store");
+            assert!(
+                !Proposals::<T>::contains_key(proposal_id),
+                "Proposal should not be in store"
+            );
+            assert!(
+                !DispatchableCallCode::<T>::contains_key(proposal_id),
+                "Dispatchable should not be in store"
+            );
+
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::Slashed).into()
+                RawEvent::ProposalDecisionMade(
+                    proposal_id.clone(),
+                    ProposalDecision::Slashed
+                ).into()
             );
         }
 
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "There should not be any proposal left active");
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            0,
+            "There should not be any proposal left active"
+        );
     }
 }
 
@@ -539,23 +502,9 @@ mod tests {
     }
 
     #[test]
-    fn test_on_initialize_immediate_execution() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_immediate_execution::<Test>());
-        });
-    }
-
-    #[test]
     fn test_on_initialize_immediate_execution_decode_fails() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_on_initialize_immediate_execution_decode_fails::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_on_initialize_immediate_execution_fails() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_immediate_execution_fails::<Test>());
         });
     }
 

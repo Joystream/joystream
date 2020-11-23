@@ -114,8 +114,6 @@ benchmarks! {
     }
 
     update_post {
-        // TODO: this parameter doesn't affect the running time
-        // maybe we should bound it here with the UI limit?
         let j in 0 .. MAX_BYTES;
 
         // We do this to ignore the id 0 because the `Test` runtime

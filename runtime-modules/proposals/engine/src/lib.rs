@@ -120,7 +120,6 @@ pub use types::{
 pub(crate) mod types;
 
 mod benchmarking;
-pub mod dummy_proposals;
 
 #[cfg(test)]
 mod tests;
