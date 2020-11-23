@@ -40,7 +40,7 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
     <Container>
       <ErrorIllustration />
       <Message>
-        <Title variant="h3">Ops! An Error occurred</Title>
+        <Title variant="h3">Oops! An Error occurred.</Title>
         <p>We could not acquire expected results. Please try reloading or return to the home page.</p>
       </Message>
       <Button onClick={resetErrorBoundary}>Return to home page</Button>
