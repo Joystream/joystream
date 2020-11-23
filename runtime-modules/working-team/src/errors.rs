@@ -83,5 +83,8 @@ decl_error! {
 
         /// Cannot fill opening - no applications provided.
         NoApplicationsProvided,
+
+        /// Cannot fill opening - no applications provided.
+        CannotDecreaseStakeDeltaGreaterThanStake,
     }
 }

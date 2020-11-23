@@ -765,12 +765,18 @@ impl IncreaseWorkerStakeFixture {
 
         if actual_result.is_ok() {
             // new stake was set
-            assert_eq!(self.balance, get_stake_balance(&self.account_id));
+            assert_eq!(
+                self.balance + old_stake,
+                get_stake_balance(&self.account_id)
+            );
 
             let new_balance = Balances::usable_balance(&self.account_id);
 
             // worker balance equilibrium
-            assert_eq!(old_balance + old_stake, new_balance + self.balance);
+            assert_eq!(
+                old_balance + old_stake,
+                new_balance + self.balance + old_stake
+            );
         }
     }
 }

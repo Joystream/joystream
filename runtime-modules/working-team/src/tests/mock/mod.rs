@@ -1,22 +1,20 @@
-use frame_support::traits::{
-    Currency, LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
-};
+use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, Perbill,
+    Perbill,
 };
 
-use crate::{BalanceOfCurrency, DefaultInstance, Module, StakingHandler, Trait};
-use common::currency::GovernanceCurrency;
-use frame_support::dispatch::DispatchResult;
+use crate::{DefaultInstance, Module, Trait};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
+
+mod staking_handler;
 
 mod working_team {
     pub use crate::Event;
@@ -122,7 +120,7 @@ impl Trait for Test {
     type ApplicationId = u64;
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = Test;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
@@ -145,112 +143,8 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 pub type TestWorkingTeam = Module<Test, DefaultInstance>;
 
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
-pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
-pub const LOCK_ID: LockIdentifier = [1; 8];
-
-impl StakingHandler<Test> for Test {
-    fn lock(
-        account_id: &<Test as frame_system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) {
-        <Test as GovernanceCurrency>::Currency::set_lock(
-            LOCK_ID,
-            &account_id,
-            amount,
-            WithdrawReasons::all(),
-        )
-    }
-
-    fn unlock(account_id: &<Test as frame_system::Trait>::AccountId) {
-        <Test as GovernanceCurrency>::Currency::remove_lock(LOCK_ID, &account_id);
-    }
-
-    fn slash(
-        account_id: &<Test as frame_system::Trait>::AccountId,
-        amount: Option<BalanceOfCurrency<Test>>,
-    ) -> BalanceOfCurrency<Test> {
-        let locks = Balances::locks(&account_id);
-
-        let existing_lock = locks.iter().find(|lock| lock.id == LOCK_ID);
-
-        let mut actually_slashed_balance = Default::default();
-        if let Some(existing_lock) = existing_lock {
-            Self::unlock(&account_id);
-
-            let mut slashable_amount = existing_lock.amount;
-            if let Some(amount) = amount {
-                if existing_lock.amount > amount {
-                    let new_amount = existing_lock.amount - amount;
-                    Self::lock(&account_id, new_amount);
-
-                    slashable_amount = amount;
-                }
-            }
-
-            let _ = Balances::slash(&account_id, slashable_amount);
-
-            actually_slashed_balance = slashable_amount
-        }
-
-        actually_slashed_balance
-    }
-
-    fn decrease_stake(
-        account_id: &<Test as frame_system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) {
-        Self::unlock(account_id);
-        Self::lock(account_id, amount);
-    }
-
-    fn increase_stake(
-        account_id: &<Test as frame_system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) -> DispatchResult {
-        if !Self::is_enough_balance_for_stake(account_id, amount) {
-            return Err(DispatchError::Other("External check failed"));
-        }
-
-        Self::unlock(account_id);
-        Self::lock(account_id, amount);
-
-        Ok(())
-    }
-
-    fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
-        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK {
-            return false;
-        }
-
-        true
-    }
-
-    fn is_account_free_of_conflicting_stakes(account_id: &u64) -> bool {
-        if *account_id == STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES {
-            return false;
-        }
-
-        true
-    }
-
-    fn is_enough_balance_for_stake(account_id: &u64, amount: u64) -> bool {
-        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK || amount > 1000 {
-            return false;
-        }
-
-        true
-    }
-
-    fn current_stake(account_id: &u64) -> u64 {
-        if *account_id == STAKING_ACCOUNT_ID_FOR_ZERO_STAKE {
-            return 0;
-        }
-
-        100 // random non-zero value
-    }
-}
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()

@@ -1,5 +1,5 @@
 use crate::{
-    BalanceOfCurrency, Instance, JobOpening, JobOpeningType, MemberId, RewardPolicy, StakePolicy,
+    BalanceOf, Instance, JobOpening, JobOpeningType, MemberId, RewardPolicy, StakePolicy,
     TeamWorker, TeamWorkerId, Trait,
 };
 
@@ -34,7 +34,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
     opening_id: &T::OpeningId,
-) -> Result<JobOpening<T::BlockNumber, BalanceOfCurrency<T>>, Error<T, I>> {
+) -> Result<JobOpening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
@@ -198,7 +198,7 @@ pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
 
 // Check opening: verifies stake policy for the opening.
 pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
-    stake_policy: &Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>,
+    stake_policy: &Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
 ) -> Result<(), DispatchError> {
     if let Some(stake_policy) = stake_policy {
         ensure!(
@@ -217,7 +217,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
 
 // Check opening: verifies reward policy for the opening.
 pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
-    reward_policy: &Option<RewardPolicy<BalanceOfCurrency<T>>>,
+    reward_policy: &Option<RewardPolicy<BalanceOf<T>>>,
 ) -> Result<(), DispatchError> {
     if let Some(reward_policy) = reward_policy {
         ensure!(
@@ -231,8 +231,8 @@ pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
 
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
-    opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
-    stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOfCurrency<T>>>,
+    opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
+    stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOf<T>>>,
 ) -> DispatchResult {
     let opening_stake_balance = opening
         .stake_policy

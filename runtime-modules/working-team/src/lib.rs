@@ -48,17 +48,18 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
 pub use errors::Error;
-use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
+use types::{ApplicationInfo, BalanceOf, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{
     ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
-    StakePolicy, StakingHandler,
+    StakePolicy,
 };
 
 use common::origin::ActorOriginValidator;
+use membership::staking_handler::StakingHandler;
 
 /// The _Team_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + membership::Trait + balances::Trait + common::currency::GovernanceCurrency
+    frame_system::Trait + membership::Trait + balances::Trait
 {
     /// OpeningId type
     type OpeningId: Parameter
@@ -108,7 +109,7 @@ decl_event!(
        ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
        TeamWorkerId = TeamWorkerId<T>,
        <T as frame_system::Trait>::AccountId,
-       Balance = BalanceOfCurrency<T>,
+       Balance = BalanceOf<T>,
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -165,13 +166,13 @@ decl_event!(
         /// Emits on decreasing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
-        /// - new stake amount
+        /// - stake delta amount
         StakeDecreased(TeamWorkerId, Balance),
 
         /// Emits on increasing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
-        /// - new stake amount
+        /// - stake delta amount
         StakeIncreased(TeamWorkerId, Balance),
 
         /// Emits on withdrawing the application for the regular worker/lead opening.
@@ -220,7 +221,7 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber, BalanceOfCurrency<T>>;
+            T::OpeningId => JobOpening<T::BlockNumber, BalanceOf<T>>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
@@ -243,7 +244,7 @@ decl_storage! {
         pub CurrentLead get(fn current_lead) : Option<TeamWorkerId<T>>;
 
         /// Budget for the working team.
-        pub Budget get(fn budget) : BalanceOfCurrency<T>;
+        pub Budget get(fn budget) : BalanceOf<T>;
 
         /// Status text hash.
         pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
@@ -285,8 +286,8 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: JobOpeningType,
-            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>,
-            reward_policy: Option<RewardPolicy<BalanceOfCurrency<T>>>
+            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
+            reward_policy: Option<RewardPolicy<BalanceOf<T>>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
 
@@ -491,7 +492,7 @@ decl_module! {
         pub fn terminate_role(
             origin,
             worker_id: TeamWorkerId<T>,
-            penalty: Option<Penalty<BalanceOfCurrency<T>>>,
+            penalty: Option<Penalty<BalanceOf<T>>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -531,7 +532,7 @@ decl_module! {
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, penalty: Penalty<BalanceOfCurrency<T>>) {
+        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -545,7 +546,7 @@ decl_module! {
             );
 
             ensure!(
-                penalty.slashing_amount != <BalanceOfCurrency<T>>::zero(),
+                penalty.slashing_amount != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
@@ -560,9 +561,10 @@ decl_module! {
 
         /// Decreases the regular worker/lead stake and returns the remainder to the
         /// worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+        /// Accepts the stake amount to decrease.
         /// Requires signed leader origin or the root (to decrease the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn decrease_stake(origin, worker_id: TeamWorkerId<T>, new_stake_balance: BalanceOfCurrency<T>) {
+        pub fn decrease_stake(origin, worker_id: TeamWorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Ensure lead is set or it is the council decreasing the leader's stake.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -577,28 +579,43 @@ decl_module! {
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
+            // Ensure non-zero stake delta.
             ensure!(
-                new_stake_balance != <BalanceOfCurrency<T>>::zero(),
+                stake_balance_delta != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
+
+            // Ensure enough stake to decrease.
+            if let Some(staking_account_id) = worker.staking_account_id.clone(){
+                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
+
+                ensure!(
+                    current_stake > stake_balance_delta,
+                    Error::<T, I>::CannotDecreaseStakeDeltaGreaterThanStake
+                );
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(staking_account_id) = worker.staking_account_id {
+             if let Some(staking_account_id) = worker.staking_account_id{
+                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
+
+                // Cannot possibly overflow because of the already performed check.
+                let new_stake = current_stake.saturating_sub(stake_balance_delta);
+
                 // This external module call both checks and mutates the state.
-                T::StakingHandler::decrease_stake(&staking_account_id, new_stake_balance);
+                T::StakingHandler::set_stake(&staking_account_id, new_stake)?;
 
-
-                Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+                Self::deposit_event(RawEvent::StakeDecreased(worker_id, stake_balance_delta));
             }
         }
 
         /// Increases the regular worker/lead stake, demands a worker origin.
         /// Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_stake(origin, worker_id: TeamWorkerId<T>, new_stake_balance: BalanceOfCurrency<T>) {
+        pub fn increase_stake(origin, worker_id: TeamWorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Checks worker origin and worker existence.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
@@ -612,13 +629,13 @@ decl_module! {
             );
 
             ensure!(
-                new_stake_balance != <BalanceOfCurrency<T>>::zero(),
+                stake_balance_delta != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
             if let Some(staking_account_id) = worker.staking_account_id.clone() {
                 ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, new_stake_balance),
+                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, stake_balance_delta),
                     Error::<T, I>::InsufficientBalanceToCoverStake
                 );
             }
@@ -628,10 +645,14 @@ decl_module! {
             //
 
             if let Some(staking_account_id) = worker.staking_account_id {
-                // This external module call both checks and mutates the state.
-                T::StakingHandler::increase_stake(&staking_account_id, new_stake_balance)?;
+                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
 
-                Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+                let new_stake = current_stake.saturating_add(stake_balance_delta);
+
+                // This external module call both checks and mutates the state.
+                T::StakingHandler::set_stake(&staking_account_id, new_stake)?;
+
+                Self::deposit_event(RawEvent::StakeIncreased(worker_id, stake_balance_delta));
             }
         }
 
@@ -695,7 +716,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_budget(
             origin,
-            new_budget: BalanceOfCurrency<T>,
+            new_budget: BalanceOf<T>,
         ) {
             ensure_root(origin)?;
 
@@ -742,7 +763,7 @@ decl_module! {
         pub fn update_reward_amount(
             origin,
             worker_id: TeamWorkerId<T>,
-            reward_per_block: Option<BalanceOfCurrency<T>>
+            reward_per_block: Option<BalanceOf<T>>
         ) {
             // Ensure lead is set or it is the council setting the leader's reward.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -798,7 +819,7 @@ decl_module! {
         pub fn spend_from_budget(
             origin,
             account_id: T::AccountId,
-            amount: BalanceOfCurrency<T>,
+            amount: BalanceOf<T>,
             rationale: Option<Vec<u8>>,
         ) {
             // Ensure team leader privilege.
@@ -845,7 +866,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
+        opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
@@ -868,7 +889,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Creates worker by the application. Deletes application from the storage.
     fn create_worker_by_application(
-        opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
+        opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
         application_info: &ApplicationInfo<T, I>,
     ) -> TeamWorkerId<T> {
         // Get worker id.
@@ -948,7 +969,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn slash(
         worker_id: TeamWorkerId<T>,
         staking_account_id: &T::AccountId,
-        balance: Option<BalanceOfCurrency<T>>,
+        balance: Option<BalanceOf<T>>,
     ) {
         let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
         Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
@@ -990,13 +1011,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Transfers the tokens if budget is sufficient. Infallible!
     // Should be accompanied with previous budget check.
-    fn pay_from_budget(account_id: &T::AccountId, amount: BalanceOfCurrency<T>) {
+    fn pay_from_budget(account_id: &T::AccountId, amount: BalanceOf<T>) {
         let budget = Self::budget();
 
         let new_budget = budget.saturating_sub(amount);
         <Budget<T, I>>::put(new_budget);
 
-        T::Currency::deposit_creating(account_id, amount);
+        let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
@@ -1027,7 +1048,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn save_missed_reward(
         worker_id: &TeamWorkerId<T>,
         worker: &TeamWorker<T>,
-        reward: BalanceOfCurrency<T>,
+        reward: BalanceOf<T>,
     ) {
         // Save unpaid reward.
         let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
@@ -1041,9 +1062,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Returns allowed payment by the team budget and possible missed payment
-    fn calculate_possible_payment(
-        amount: BalanceOfCurrency<T>,
-    ) -> (BalanceOfCurrency<T>, BalanceOfCurrency<T>) {
+    fn calculate_possible_payment(amount: BalanceOf<T>) -> (BalanceOf<T>, BalanceOf<T>) {
         let budget = Self::budget();
 
         if budget >= amount {
