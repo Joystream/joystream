@@ -1,16 +1,29 @@
 import styled from '@emotion/styled'
 import Button from '../Button'
 
+export const CAROUSEL_ARROW_HEIGHT = 48
+
 export const Container = styled.div`
   position: relative;
 `
 
-export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next' }>`
+type HasDirection = {
+  direction: 'prev' | 'next'
+}
+
+type HasPadding = {
+  paddingLeft: number
+  paddingTop: number
+}
+
+export const BackgroundGradient = styled.div<HasDirection & HasPadding>`
   position: absolute;
   top: 0;
   left: ${(props) => (props.direction === 'prev' ? 0 : 'auto')};
   right: ${(props) => (props.direction === 'next' ? 0 : 'auto')};
   bottom: 0;
+  margin-left: ${(props) => -props.paddingLeft}px;
+  margin-top: ${(props) => -props.paddingTop}px;
   width: 10%;
   z-index: 1;
   background-image: linear-gradient(
@@ -23,8 +36,8 @@ export const BackgroundGradient = styled.div<{ direction: 'prev' | 'next' }>`
 
 export const Arrow = styled(Button)`
   position: absolute;
-  width: 48px;
-  height: 48px;
+  width: ${CAROUSEL_ARROW_HEIGHT}px;
+  height: ${CAROUSEL_ARROW_HEIGHT}px;
   transition: none;
 
   &.disabled {
@@ -45,10 +58,14 @@ export const Arrow = styled(Button)`
   }
 `
 
-export const GliderContainer = styled.div`
+export const GliderContainer = styled.div<HasPadding>`
   scrollbar-width: none;
+  padding-left: ${(props) => props.paddingLeft}px;
+  padding-top: ${(props) => props.paddingTop}px;
+  margin-left: ${(props) => -props.paddingLeft}px;
+  margin-top: ${(props) => -props.paddingTop}px;
 `
-export const Track = styled.div<{ trackPadding: string }>`
+
+export const Track = styled.div`
   align-items: flex-start;
-  padding: ${(props) => props.trackPadding};
 `

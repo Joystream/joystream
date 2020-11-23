@@ -50,7 +50,7 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
 
   return (
     <Container main={main} className={className}>
-      <CoverWrapper onClick={onClick}>
+      <CoverWrapper main={main} onClick={onClick}>
         <CoverContainer clickable={clickable}>{coverNode || coverPlaceholder}</CoverContainer>
       </CoverWrapper>
       <InfoContainer main={main}>

@@ -30,9 +30,9 @@ export const fadeInAnimation = css`
   animation: ${fadeIn} 0.5s ease-in;
 `
 
-export const CoverWrapper = styled.div`
-  max-width: 650px;
+export const CoverWrapper = styled.div<MainProps>`
   width: 100%;
+  max-width: ${({ main }) => (main ? '650px' : '')};
 `
 const clickableAnimation = (clickable: boolean) =>
   clickable

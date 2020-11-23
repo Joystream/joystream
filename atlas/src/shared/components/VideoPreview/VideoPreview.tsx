@@ -41,8 +41,7 @@ type VideoPreviewProps = {
   showChannel?: boolean
   showMeta?: boolean
   main?: boolean
-
-  imgRef?: React.Ref<HTMLImageElement>
+  onCoverResize?: (width: number | undefined, height: number | undefined) => void
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void
   className?: string
@@ -63,11 +62,15 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   onClick,
   onChannelClick,
   className,
+  onCoverResize,
 }) => {
   const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
   const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
     onResize: (size) => {
-      const { width: videoPreviewWidth } = size
+      const { width: videoPreviewWidth, height: videoPreviewHeight } = size
+      if (onCoverResize) {
+        onCoverResize(videoPreviewWidth, videoPreviewHeight)
+      }
       if (videoPreviewWidth && !main) {
         setScalingFactor(calculateScalingFactor(videoPreviewWidth))
       }
