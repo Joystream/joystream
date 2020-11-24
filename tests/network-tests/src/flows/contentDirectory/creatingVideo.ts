@@ -83,8 +83,6 @@ export default async function createVideo(api: QueryNodeApi) {
   // Ensure channel contains only one video with right data
   const channelResult = await api.getChannelbyHandle(channelTitle)
 
-  console.log(channelResult.data.channels[0])
-
   assert(channelResult.data.channels[0].videos.length === 1, 'Given channel should contain exactly one video')
 
   assertVideoMatchQueriedResult(channelResult.data.channels[0].videos[0], createVideoHappyCaseFixture.videoEntity)
