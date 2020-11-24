@@ -16,20 +16,13 @@ pub trait ProposalEncoder<T: crate::Trait> {
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
 }
 
-/// Type alias for an application id.
-pub type ApplicationId<T> = <T as crate::Trait>::WorkingGroupApplicationId;
-
-/// Type alias for an opening id.
-pub type OpeningId<T> = <T as crate::Trait>::WorkingGroupOpeningId;
-
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfMint<T>,
     crate::BalanceOfGovernanceCurrency<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as frame_system::Trait>::AccountId,
-    OpeningId<T>,
-    ApplicationId<T>,
+    working_group::OpeningId,
     crate::BalanceOf<T>,
     working_group::WorkerId<T>,
     crate::MemberId<T>,
@@ -44,7 +37,6 @@ pub enum ProposalDetails<
     BlockNumber,
     AccountId,
     OpeningId,
-    ApplicationId,
     StakeBalance,
     WorkerId,
     MemberId,
@@ -95,7 +87,7 @@ pub enum ProposalDetails<
     DeprecatedBeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 
     /// Fill opening for the working group leader position.
-    FillWorkingGroupLeaderOpening(FillOpeningParameters<OpeningId, ApplicationId>),
+    FillWorkingGroupLeaderOpening(FillOpeningParameters),
 
     /// Set working group budget capacity.
     SetWorkingGroupBudgetCapacity(MintedBalance, WorkingGroup),
@@ -122,7 +114,6 @@ impl<
         BlockNumber,
         AccountId,
         OpeningId,
-        ApplicationId,
         StakeBalance,
         WorkerId,
         MemberId,
@@ -133,7 +124,6 @@ impl<
         BlockNumber,
         AccountId,
         OpeningId,
-        ApplicationId,
         StakeBalance,
         WorkerId,
         MemberId,
@@ -161,12 +151,12 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
 /// Parameters for the 'fill opening for the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub struct FillOpeningParameters<OpeningId, ApplicationId> {
+pub struct FillOpeningParameters {
     /// Finalizing opening id.
-    pub opening_id: OpeningId,
+    pub opening_id: working_group::OpeningId,
 
     /// Id of the selected application.
-    pub successful_application_id: ApplicationId,
+    pub successful_application_id: working_group::ApplicationId,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

@@ -572,8 +572,6 @@ parameter_types! {
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
-    type OpeningId = OpeningId;
-    type ApplicationId = ApplicationId;
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler =
@@ -584,8 +582,6 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
-    type OpeningId = OpeningId;
-    type ApplicationId = ApplicationId;
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler =
@@ -653,8 +649,6 @@ impl proposals_codex::Trait for Runtime {
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type ProposalEncoder = ExtrinsicProposalEncoder;
-    type WorkingGroupOpeningId = OpeningId;
-    type WorkingGroupApplicationId = ApplicationId;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
     type TextProposalParameters = TextProposalParameters;

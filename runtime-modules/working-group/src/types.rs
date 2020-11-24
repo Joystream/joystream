@@ -5,6 +5,7 @@ use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_std::marker::PhantomData;
 
 /// Group job application type alias.
 pub type JobApplication<T> = Application<<T as frame_system::Trait>::AccountId, MemberId<T>>;
@@ -15,16 +16,17 @@ pub type MemberId<T> = <T as membership::Trait>::MemberId;
 /// Type identifier for a worker role, which must be same as membership actor identifier.
 pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 
-/// Type alias for an application id.
-pub type ApplicationId<T> = <T as crate::Trait>::ApplicationId;
+/// Type for an application id.
+pub type ApplicationId = u64;
 
-/// Type alias for an opening id.
-pub type OpeningId<T> = <T as crate::Trait>::OpeningId;
+/// Type for an opening id.
+pub type OpeningId = u64;
 
 // ApplicationId - JobApplication - helper struct.
 pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
-    pub application_id: T::ApplicationId,
+    pub application_id: ApplicationId,
     pub application: JobApplication<T>,
+    pub marker: PhantomData<I>,
 }
 
 // WorkerId - GroupWorker - helper struct.
@@ -250,9 +252,9 @@ pub struct StakeParameters<AccountId, Balance> {
 }
 
 /// ApplyOnOpeningParams type alias.
-pub type ApplyOnOpeningParameters<T, I> = ApplyOnOpeningParams<
+pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     MemberId<T>,
-    <T as crate::Trait<I>>::OpeningId,
+    OpeningId,
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;

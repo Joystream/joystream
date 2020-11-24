@@ -1,6 +1,6 @@
 use crate::{
-    BalanceOf, GroupWorker, Instance, JobOpening, MemberId, OpeningType, RewardPolicy, StakePolicy,
-    Trait, WorkerId,
+    ApplicationId, BalanceOf, GroupWorker, Instance, JobOpening, MemberId, OpeningId, OpeningType,
+    RewardPolicy, StakePolicy, Trait, WorkerId,
 };
 
 use super::Error;
@@ -10,6 +10,7 @@ use frame_support::{ensure, StorageMap, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use crate::types::{ApplicationInfo, StakeParameters};
@@ -33,7 +34,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
-    opening_id: &T::OpeningId,
+    opening_id: &OpeningId,
 ) -> Result<JobOpening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
@@ -47,7 +48,7 @@ pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
 
 // Check application: returns applicationId and application tuple if exists.
 pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
-    application_id: &T::ApplicationId,
+    application_id: &ApplicationId,
 ) -> Result<ApplicationInfo<T, I>, Error<T, I>> {
     ensure!(
         <crate::ApplicationById::<T, I>>::contains_key(application_id),
@@ -59,12 +60,13 @@ pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
     Ok(ApplicationInfo {
         application_id: *application_id,
         application,
+        marker: PhantomData,
     })
 }
 
 // Check application: returns applicationId and application tuple if exists.
 pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
-    successful_application_ids: &BTreeSet<T::ApplicationId>,
+    successful_application_ids: &BTreeSet<ApplicationId>,
 ) -> Result<Vec<ApplicationInfo<T, I>>, Error<T, I>> {
     // Check for non-empty set of application ids.
     ensure!(

@@ -36,14 +36,13 @@ mod errors;
 mod tests;
 mod types;
 
-use codec::Codec;
 use frame_support::traits::{Currency, Get};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
+use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
-use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
@@ -63,26 +62,6 @@ use membership::staking_handler::StakingHandler;
 pub trait Trait<I: Instance = DefaultInstance>:
     frame_system::Trait + membership::Trait + balances::Trait
 {
-    /// OpeningId type
-    type OpeningId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// ApplicationId type
-    type ApplicationId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -106,9 +85,9 @@ decl_event!(
     /// _Group_ events
     pub enum Event<T, I = DefaultInstance>
     where
-       <T as Trait<I>>::OpeningId,
-       <T as Trait<I>>::ApplicationId,
-       ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, WorkerId<T>>,
+       OpeningId = OpeningId,
+       ApplicationId = ApplicationId,
+       ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
        WorkerId = WorkerId<T>,
        <T as frame_system::Trait>::AccountId,
        Balance = BalanceOf<T>,
@@ -219,21 +198,21 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance=DefaultInstance> as WorkingGroup {
         /// Next identifier value for new job opening.
-        pub NextOpeningId get(fn next_opening_id): T::OpeningId;
+        pub NextOpeningId get(fn next_opening_id): OpeningId;
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber, BalanceOf<T>>;
+            OpeningId => JobOpening<T::BlockNumber, BalanceOf<T>>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
         /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
-            T::ApplicationId => JobApplication<T>;
+            ApplicationId => JobApplication<T>;
 
         /// Next identifier value for new worker application.
-        pub NextApplicationId get(fn next_application_id) : T::ApplicationId;
+        pub NextApplicationId get(fn next_application_id) : ApplicationId;
 
         /// Next identifier for a new worker.
         pub NextWorkerId get(fn next_worker_id) : WorkerId<T>;
@@ -312,19 +291,19 @@ decl_module! {
                 reward_policy,
             };
 
-            let new_opening_id = NextOpeningId::<T, I>::get();
+            let new_opening_id = NextOpeningId::<I>::get();
 
             OpeningById::<T, I>::insert(new_opening_id, new_opening);
 
             // Update NextOpeningId
-            NextOpeningId::<T, I>::mutate(|id| *id += <T::OpeningId as One>::one());
+            NextOpeningId::<I>::mutate(|id| *id += <OpeningId as One>::one());
 
             Self::deposit_event(RawEvent::OpeningAdded(new_opening_id));
         }
 
         /// Apply on a worker opening.
         #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
-        pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T, I>) {
+        pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
             T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
 
@@ -372,13 +351,13 @@ decl_module! {
             );
 
             // Get id of new worker/lead application
-            let new_application_id = NextApplicationId::<T, I>::get();
+            let new_application_id = NextApplicationId::<I>::get();
 
             // Store an application.
             ApplicationById::<T, I>::insert(new_application_id, application);
 
             // Update the next application identifier value.
-            NextApplicationId::<T, I>::mutate(|id| *id += <T::ApplicationId as One>::one());
+            NextApplicationId::<I>::mutate(|id| *id += <ApplicationId as One>::one());
 
             // Trigger the event.
             Self::deposit_event(RawEvent::AppliedOnOpening(p.opening_id, new_application_id));
@@ -389,8 +368,8 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn fill_opening(
             origin,
-            opening_id: T::OpeningId,
-            successful_application_ids: BTreeSet<T::ApplicationId>,
+            opening_id: OpeningId,
+            successful_application_ids: BTreeSet<ApplicationId>,
         ) {
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
@@ -662,7 +641,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn withdraw_application(
             origin,
-            application_id: T::ApplicationId
+            application_id: ApplicationId
         ) {
             // Ensuring worker application actually exists
             let application_info = checks::ensure_application_exists::<T, I>(&application_id)?;
@@ -695,7 +674,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_opening(
             origin,
-            opening_id: T::OpeningId,
+            opening_id: OpeningId,
         ) {
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
@@ -870,7 +849,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn fulfill_successful_applications(
         opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
-    ) -> BTreeMap<T::ApplicationId, WorkerId<T>> {
+    ) -> BTreeMap<ApplicationId, WorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
 
         successful_applications_info

@@ -78,8 +78,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::DeprecatedBeginReviewWorkingGroupLeaderApplications(
-                opening_id,
-                working_group,
+                _opening_id,
+                _working_group,
             ) => {
                 print(
                     "Error: Calling deprecated BeginReviewWorkingGroupLeaderApplications encoding option.",
@@ -162,10 +162,7 @@ where
 
     // Generic call constructor for the add working group opening.
     fn create_fill_opening_call(
-        fill_opening_params: proposals_codex::FillOpeningParameters<
-            proposals_codex::OpeningId<T>,
-            proposals_codex::ApplicationId<T>,
-        >,
+        fill_opening_params: proposals_codex::FillOpeningParameters,
     ) -> working_group::Call<T, I> {
         let mut successful_application_ids = BTreeSet::new();
         successful_application_ids.insert(fill_opening_params.successful_application_id);
