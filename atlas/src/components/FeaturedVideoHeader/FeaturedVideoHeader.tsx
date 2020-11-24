@@ -50,7 +50,7 @@ const FeaturedVideoHeader: React.FC = () => {
               playing={videoPlaying}
               posterUrl={mockCoverVideo.thumbnailUrl}
               onDataLoaded={handlePlaybackDataLoaded}
-              src={mockCoverVideoMedia.location}
+              src={mockCoverVideoMedia.coverCutLocation!}
             />
           </PlayerContainer>
           <HorizontalGradientOverlay />
