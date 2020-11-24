@@ -80,5 +80,11 @@ decl_error! {
 
         /// It's not enough budget for this spending.
         InsufficientBudgetForSpending,
+
+        /// Cannot fill opening - no applications provided.
+        NoApplicationsProvided,
+
+        /// Cannot decrease stake - stake delta greater than initial stake.
+        CannotDecreaseStakeDeltaGreaterThanStake,
     }
 }

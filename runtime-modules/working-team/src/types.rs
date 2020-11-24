@@ -1,9 +1,6 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use common::currency::GovernanceCurrency;
-use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Currency;
 use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
@@ -25,13 +22,13 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 }
 
 // WorkerId - TeamWorker - helper struct.
-pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait> {
+pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait + balances::Trait> {
     pub worker_id: TeamWorkerId<T>,
     pub worker: TeamWorker<T>,
 }
 
-impl<T: membership::Trait + frame_system::Trait> From<(TeamWorkerId<T>, TeamWorker<T>)>
-    for WorkerInfo<T>
+impl<T: membership::Trait + frame_system::Trait + balances::Trait>
+    From<(TeamWorkerId<T>, TeamWorker<T>)> for WorkerInfo<T>
 {
     fn from((worker_id, worker): (TeamWorkerId<T>, TeamWorker<T>)) -> Self {
         WorkerInfo { worker_id, worker }
@@ -43,14 +40,11 @@ pub type TeamWorker<T> = Worker<
     <T as frame_system::Trait>::AccountId,
     MemberId<T>,
     <T as frame_system::Trait>::BlockNumber,
-    BalanceOfCurrency<T>,
+    BalanceOf<T>,
 >;
 
-/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
-pub type BalanceOfCurrency<T> =
-    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as frame_system::Trait>::AccountId,
-    >>::Balance;
+/// Balance alias for `balances` module.
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.
@@ -215,48 +209,6 @@ pub struct StakePolicy<BlockNumber, Balance> {
     pub leaving_unstaking_period: BlockNumber,
 }
 
-/// Defines abstract staking handler to manage user stakes for different activities
-/// like adding a proposal. Implementation should use built-in LockableCurrency
-/// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: frame_system::Trait + membership::Trait + GovernanceCurrency> {
-    /// Locks the specified balance on the account using specific lock identifier.
-    fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
-
-    /// Removes the specified lock on the account.
-    fn unlock(account_id: &T::AccountId);
-
-    /// Slash the specified balance on the account using specific lock identifier.
-    /// No limits, no actions on zero stake.
-    /// If slashing balance greater than the existing stake - stake is slashed to zero.
-    /// Returns actually slashed balance.
-    fn slash(
-        account_id: &T::AccountId,
-        amount: Option<BalanceOfCurrency<T>>,
-    ) -> BalanceOfCurrency<T>;
-
-    /// Decreases the stake for to a given amount.
-    fn decrease_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>);
-
-    /// Increases the stake for to a given amount.
-    fn increase_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>)
-        -> DispatchResult;
-
-    /// Verifies that staking account bound to the member.
-    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
-
-    /// Verifies that there no conflicting stakes on the staking account.
-    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool;
-
-    /// Verifies that staking account balance is sufficient for staking.
-    /// During the balance check we should consider already locked stake. Effective balance to check
-    /// is 'already locked funds' + 'usable funds'.
-    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
-        -> bool;
-
-    /// Returns the current stake on the account.
-    fn current_stake(account_id: &T::AccountId) -> BalanceOfCurrency<T>;
-}
-
 /// Parameters container for the apply_on_opening extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
@@ -296,7 +248,7 @@ pub type ApplyOnOpeningParameters<T, I> = ApplyOnOpeningParams<
     MemberId<T>,
     <T as crate::Trait<I>>::OpeningId,
     <T as frame_system::Trait>::AccountId,
-    BalanceOfCurrency<T>,
+    BalanceOf<T>,
 >;
 
 /// Contains information for the slashing.
