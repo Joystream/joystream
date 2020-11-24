@@ -38,7 +38,6 @@ pub(crate) use common::BlockAndTime;
 
 use working_group::ensure_worker_signed;
 
-
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::{MemberId, StorageProviderId, StorageWorkingGroupInstance};

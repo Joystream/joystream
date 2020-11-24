@@ -18,8 +18,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
-    GroupWorker,
+    DefaultInstance, Error, GroupWorker, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
 };
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,

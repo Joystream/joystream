@@ -9,8 +9,8 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
-    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, OpeningType, Penalty,
-    RawEvent, RewardPolicy, StakePolicy, GroupWorker,
+    ApplyOnOpeningParameters, DefaultInstance, GroupWorker, JobApplication, JobOpening,
+    OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
 };
 
 pub struct EventFixture;
@@ -532,7 +532,8 @@ impl LeaveWorkerRoleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::leave_role(self.origin.clone().into(), self.worker_id);
+        let actual_result =
+            TestWorkingGroup::leave_role(self.origin.clone().into(), self.worker_id);
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {

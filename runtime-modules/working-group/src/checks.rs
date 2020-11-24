@@ -1,6 +1,6 @@
 use crate::{
-    BalanceOf, Instance, JobOpening, OpeningType, MemberId, RewardPolicy, StakePolicy,
-    GroupWorker, WorkerId, Trait,
+    BalanceOf, GroupWorker, Instance, JobOpening, MemberId, OpeningType, RewardPolicy, StakePolicy,
+    Trait, WorkerId,
 };
 
 use super::Error;
@@ -97,8 +97,7 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures that group leader was hired.
-pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<T>, Error<T, I>>
-{
+pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<T>, Error<T, I>> {
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
     if let Some(leader_worker_id) = leader_worker_id {

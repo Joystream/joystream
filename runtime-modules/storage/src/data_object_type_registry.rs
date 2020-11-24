@@ -30,7 +30,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
-use crate::{StorageWorkingGroupInstance};
+use crate::StorageWorkingGroupInstance;
 
 use working_group::ensure_origin_is_active_leader;
 

@@ -171,8 +171,6 @@ where
     // Generic call constructor for the add working group opening.
     fn create_fill_opening_call(
         fill_opening_params: proposals_codex::FillOpeningParameters<
-            T::BlockNumber,
-            minting::BalanceOf<T>,
             working_group::OpeningId<T>,
             working_group::ApplicationId<T>,
         >,
@@ -189,7 +187,7 @@ where
 
     // Generic call constructor for the working group 'set mit capacity'.
     fn create_set_mint_capacity_call(
-        mint_balance: working_group::BalanceOfMint<T>,
+        mint_balance: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::set_mint_capacity(mint_balance)
     }
@@ -213,7 +211,7 @@ where
     // Generic call constructor for the working group 'update reward amount'.
     fn create_set_reward_call(
         worker_id: working_group::WorkerId<T>,
-        reward_amount: working_group::BalanceOfMint<T>,
+        reward_amount: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::update_reward_amount(worker_id, reward_amount)
     }

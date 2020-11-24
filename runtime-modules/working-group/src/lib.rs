@@ -48,13 +48,13 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
 pub use errors::Error;
-use types::{ApplicationInfo, BalanceOf, MemberId, GroupWorker, WorkerInfo};
 pub use types::{
-    ApplyOnOpeningParameters, JobApplication, JobOpening, OpeningType, Penalty, RewardPolicy,
-    StakePolicy, WorkerId, ApplicationId, OpeningId
+    ApplicationId, ApplyOnOpeningParameters, BalanceOf, JobApplication, JobOpening, OpeningId,
+    OpeningType, Penalty, RewardPolicy, StakePolicy, WorkerId,
 };
+use types::{ApplicationInfo, GroupWorker, MemberId, WorkerInfo};
 
-pub use checks::{ensure_worker_signed, ensure_origin_is_active_leader};
+pub use checks::{ensure_origin_is_active_leader, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
 use membership::staking_handler::StakingHandler;
@@ -1047,11 +1047,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Saves missed reward for a worker.
-    fn save_missed_reward(
-        worker_id: &WorkerId<T>,
-        worker: &GroupWorker<T>,
-        reward: BalanceOf<T>,
-    ) {
+    fn save_missed_reward(worker_id: &WorkerId<T>, worker: &GroupWorker<T>, reward: BalanceOf<T>) {
         // Save unpaid reward.
         let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
 

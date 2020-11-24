@@ -8,7 +8,7 @@ use sp_std::vec::Vec;
 use crate::ElectionParameters;
 use common::working_group::WorkingGroup;
 
-use working_group::{StakePolicy, RewardPolicy};
+use working_group::{RewardPolicy, StakePolicy};
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -87,9 +87,7 @@ pub enum ProposalDetails<
     BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 
     /// Fill opening for the working group leader position.
-    FillWorkingGroupLeaderOpening(
-        FillOpeningParameters<OpeningId, ApplicationId>,
-    ),
+    FillWorkingGroupLeaderOpening(FillOpeningParameters<OpeningId, ApplicationId>),
 
     /// Set working group mint capacity.
     SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
