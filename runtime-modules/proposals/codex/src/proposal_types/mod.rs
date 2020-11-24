@@ -8,6 +8,8 @@ use sp_std::vec::Vec;
 use crate::ElectionParameters;
 use common::working_group::WorkingGroup;
 
+use working_group::{StakePolicy, RewardPolicy};
+
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
     /// Encodes proposal using its details information.
@@ -86,7 +88,7 @@ pub enum ProposalDetails<
 
     /// Fill opening for the working group leader position.
     FillWorkingGroupLeaderOpening(
-        FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
+        FillOpeningParameters<OpeningId, ApplicationId>,
     ),
 
     /// Set working group mint capacity.
@@ -156,15 +158,12 @@ pub struct TerminateRoleParameters<WorkerId> {
 /// Parameters for the 'fill opening for the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub struct FillOpeningParameters<BlockNumber, Balance, OpeningId, ApplicationId> {
+pub struct FillOpeningParameters<OpeningId, ApplicationId> {
     /// Finalizing opening id.
     pub opening_id: OpeningId,
 
     /// Id of the selected application.
     pub successful_application_id: ApplicationId,
-
-    /// Position reward policy.
-    pub reward_policy: Option<working_group::RewardPolicy<Balance, BlockNumber>>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,
@@ -174,14 +173,14 @@ pub struct FillOpeningParameters<BlockNumber, Balance, OpeningId, ApplicationId>
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct AddOpeningParameters<BlockNumber, Balance> {
-    /// Activate opening at block.
-    pub activate_at: hiring::ActivateOpeningAt<BlockNumber>,
-
-    /// Opening conditions.
-    pub commitment: working_group::OpeningPolicyCommitment<BlockNumber, Balance>,
-
     /// Opening description.
-    pub human_readable_text: Vec<u8>,
+    pub description: Vec<u8>,
+
+    /// Stake policy for the opening.
+    pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
+
+    /// Reward policy for the opening.
+    pub reward_policy: Option<RewardPolicy<Balance>>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

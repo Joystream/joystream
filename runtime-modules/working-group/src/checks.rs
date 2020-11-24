@@ -1,6 +1,6 @@
 use crate::{
-    BalanceOf, Instance, JobOpening, JobOpeningType, MemberId, RewardPolicy, StakePolicy,
-    GroupWorker, GroupWorkerId, Trait,
+    BalanceOf, Instance, JobOpening, OpeningType, MemberId, RewardPolicy, StakePolicy,
+    GroupWorker, WorkerId, Trait,
 };
 
 use super::Error;
@@ -17,14 +17,14 @@ use crate::types::{ApplicationInfo, StakeParameters};
 // Check opening: verifies origin and opening type compatibility.
 pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
     origin: T::Origin,
-    opening_type: JobOpeningType,
+    opening_type: OpeningType,
 ) -> DispatchResult {
     match opening_type {
-        JobOpeningType::Regular => {
+        OpeningType::Regular => {
             // Ensure lead is set and is origin signer.
             ensure_origin_is_active_leader::<T, I>(origin)
         }
-        JobOpeningType::Leader => {
+        OpeningType::Leader => {
             // Council proposal.
             ensure_root(origin).map_err(|err| err.into())
         }
@@ -97,7 +97,7 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures that group leader was hired.
-pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<GroupWorkerId<T>, Error<T, I>>
+pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<T>, Error<T, I>>
 {
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
@@ -123,8 +123,8 @@ fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
     Ok(())
 }
 
-// Check leader: ensures origin is signed by the leader.
-pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
+/// Check leader: ensures origin is signed by the leader.
+pub fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
     origin: T::Origin,
 ) -> DispatchResult {
     // Ensure is signed
@@ -135,7 +135,7 @@ pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
 
 // Check worker: ensures the worker was already created.
 pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
-    worker_id: &GroupWorkerId<T>,
+    worker_id: &WorkerId<T>,
 ) -> Result<GroupWorker<T>, Error<T, I>> {
     ensure!(
         <crate::WorkerById::<T, I>>::contains_key(worker_id),
@@ -161,7 +161,7 @@ pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
 /// Check worker: ensures the origin contains signed account that belongs to existing worker.
 pub fn ensure_worker_signed<T: Trait<I>, I: Instance>(
     origin: T::Origin,
-    worker_id: &GroupWorkerId<T>,
+    worker_id: &WorkerId<T>,
 ) -> Result<GroupWorker<T>, DispatchError> {
     // Ensure that it is signed
     let signer_account = ensure_signed(origin)?;
@@ -181,14 +181,14 @@ pub fn ensure_worker_signed<T: Trait<I>, I: Instance>(
 // Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
 pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
     origin: T::Origin,
-    worker_id: GroupWorkerId<T>,
+    worker_id: WorkerId<T>,
 ) -> Result<bool, DispatchError> {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
 
     let (worker_opening_type, is_sudo) = if leader_worker_id == worker_id {
-        (JobOpeningType::Leader, true)
+        (OpeningType::Leader, true)
     } else {
-        (JobOpeningType::Regular, false)
+        (OpeningType::Regular, false)
     };
 
     ensure_origin_for_opening_type::<T, I>(origin, worker_opening_type)?;

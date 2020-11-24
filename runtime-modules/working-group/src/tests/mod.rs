@@ -18,7 +18,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    DefaultInstance, Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
+    DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
     GroupWorker,
 };
 use fixtures::{
@@ -61,7 +61,7 @@ fn add_opening_succeeded() {
 fn add_opening_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         let add_opening_fixture = AddOpeningFixture::default()
-            .with_opening_type(JobOpeningType::Leader)
+            .with_opening_type(OpeningType::Leader)
             .with_origin(RawOrigin::None);
 
         add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
@@ -128,7 +128,7 @@ fn add_opening_fails_with_incorrect_unstaking_period() {
 fn add_leader_opening_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         let add_opening_fixture =
-            AddOpeningFixture::default().with_opening_type(JobOpeningType::Leader);
+            AddOpeningFixture::default().with_opening_type(OpeningType::Leader);
 
         add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
@@ -409,7 +409,7 @@ fn cannot_hire_muptiple_leaders() {
     build_test_externalities().execute_with(|| {
         HiringWorkflow::default()
             .with_setup_environment(true)
-            .with_opening_type(JobOpeningType::Leader)
+            .with_opening_type(OpeningType::Leader)
             .add_default_application()
             .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(2), 2, Some(2))
             .expect(Err(
@@ -1120,7 +1120,7 @@ fn leave_worker_works_immediately_stake_is_zero() {
 
         let worker_id = HiringWorkflow::default()
             .with_setup_environment(true)
-            .with_opening_type(JobOpeningType::Regular)
+            .with_opening_type(OpeningType::Regular)
             //    .with_stake_policy(stake_policy.clone())
             .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
             .execute()

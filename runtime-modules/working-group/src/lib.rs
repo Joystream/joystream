@@ -50,11 +50,11 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOf, MemberId, GroupWorker, WorkerInfo};
 pub use types::{
-    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
-    StakePolicy, GroupWorkerId
+    ApplyOnOpeningParameters, JobApplication, JobOpening, OpeningType, Penalty, RewardPolicy,
+    StakePolicy, WorkerId, ApplicationId, OpeningId
 };
 
-pub use checks::ensure_worker_signed;
+pub use checks::{ensure_worker_signed, ensure_origin_is_active_leader};
 
 use common::origin::ActorOriginValidator;
 use membership::staking_handler::StakingHandler;
@@ -108,8 +108,8 @@ decl_event!(
     where
        <T as Trait<I>>::OpeningId,
        <T as Trait<I>>::ApplicationId,
-       ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, GroupWorkerId<T>>,
-       GroupWorkerId = GroupWorkerId<T>,
+       ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, WorkerId<T>>,
+       WorkerId = WorkerId<T>,
        <T as frame_system::Trait>::AccountId,
        Balance = BalanceOf<T>,
     {
@@ -133,13 +133,13 @@ decl_event!(
         /// Emits on setting the group leader.
         /// Params:
         /// - Group worker id.
-        LeaderSet(GroupWorkerId),
+        LeaderSet(WorkerId),
 
         /// Emits on updating the role account of the worker.
         /// Params:
         /// - Id of the worker.
         /// - Role account id of the worker.
-        WorkerRoleAccountUpdated(GroupWorkerId, AccountId),
+        WorkerRoleAccountUpdated(WorkerId, AccountId),
 
         /// Emits on un-setting the leader.
         LeaderUnset(),
@@ -147,35 +147,35 @@ decl_event!(
         /// Emits on exiting the worker.
         /// Params:
         /// - worker id.
-        WorkerExited(GroupWorkerId),
+        WorkerExited(WorkerId),
 
         /// Emits on terminating the worker.
         /// Params:
         /// - worker id.
-        TerminatedWorker(GroupWorkerId),
+        TerminatedWorker(WorkerId),
 
         /// Emits on terminating the leader.
         /// Params:
         /// - leader worker id.
-        TerminatedLeader(GroupWorkerId),
+        TerminatedLeader(WorkerId),
 
         /// Emits on slashing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
         /// - actual slashed balance.
-        StakeSlashed(GroupWorkerId, Balance),
+        StakeSlashed(WorkerId, Balance),
 
         /// Emits on decreasing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
         /// - stake delta amount
-        StakeDecreased(GroupWorkerId, Balance),
+        StakeDecreased(WorkerId, Balance),
 
         /// Emits on increasing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
         /// - stake delta amount
-        StakeIncreased(GroupWorkerId, Balance),
+        StakeIncreased(WorkerId, Balance),
 
         /// Emits on withdrawing the application for the regular worker/lead opening.
         /// Params:
@@ -196,13 +196,13 @@ decl_event!(
         /// Params:
         /// - Id of the worker.
         /// - Reward account id of the worker.
-        WorkerRewardAccountUpdated(GroupWorkerId, AccountId),
+        WorkerRewardAccountUpdated(WorkerId, AccountId),
 
         /// Emits on updating the reward amount of the worker.
         /// Params:
         /// - Id of the worker.
         /// - Reward per block
-        WorkerRewardAmountUpdated(GroupWorkerId, Option<Balance>),
+        WorkerRewardAmountUpdated(WorkerId, Option<Balance>),
 
         /// Emits on updating the status text of the working group.
         /// Params:
@@ -236,14 +236,14 @@ decl_storage! {
         pub NextApplicationId get(fn next_application_id) : T::ApplicationId;
 
         /// Next identifier for a new worker.
-        pub NextWorkerId get(fn next_worker_id) : GroupWorkerId<T>;
+        pub NextWorkerId get(fn next_worker_id) : WorkerId<T>;
 
         /// Maps identifier to corresponding worker.
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
-            GroupWorkerId<T> => GroupWorker<T>;
+            WorkerId<T> => GroupWorker<T>;
 
         /// Current group lead.
-        pub CurrentLead get(fn current_lead) : Option<GroupWorkerId<T>>;
+        pub CurrentLead get(fn current_lead) : Option<WorkerId<T>>;
 
         /// Budget for the working group.
         pub Budget get(fn budget) : BalanceOf<T>;
@@ -287,7 +287,7 @@ decl_module! {
         pub fn add_opening(
             origin,
             description: Vec<u8>,
-            opening_type: JobOpeningType,
+            opening_type: OpeningType,
             stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
             reward_policy: Option<RewardPolicy<BalanceOf<T>>>
         ){
@@ -406,14 +406,14 @@ decl_module! {
             );
 
             // Cannot hire a lead when another leader exists.
-            if matches!(opening.opening_type, JobOpeningType::Leader) {
+            if matches!(opening.opening_type, OpeningType::Leader) {
                 ensure!(!<CurrentLead<T,I>>::exists(), Error::<T, I>::CannotHireLeaderWhenLeaderExists);
             }
 
             let checked_applications_info = checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
 
             // Check for a single application for a leader.
-            if matches!(opening.opening_type, JobOpeningType::Leader) {
+            if matches!(opening.opening_type, OpeningType::Leader) {
                 ensure!(successful_application_ids.len() == 1, Error::<T, I>::CannotHireMultipleLeaders);
             }
 
@@ -438,7 +438,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_role_account(
             origin,
-            worker_id: GroupWorkerId<T>,
+            worker_id: WorkerId<T>,
             new_role_account_id: T::AccountId
         ) {
             // Ensuring worker actually exists
@@ -467,7 +467,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn leave_role(
             origin,
-            worker_id: GroupWorkerId<T>,
+            worker_id: WorkerId<T>,
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -493,7 +493,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn terminate_role(
             origin,
-            worker_id: GroupWorkerId<T>,
+            worker_id: WorkerId<T>,
             penalty: Option<Penalty<BalanceOf<T>>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
@@ -534,7 +534,7 @@ decl_module! {
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn slash_stake(origin, worker_id: GroupWorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
+        pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -566,7 +566,7 @@ decl_module! {
         /// Accepts the stake amount to decrease.
         /// Requires signed leader origin or the root (to decrease the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn decrease_stake(origin, worker_id: GroupWorkerId<T>, stake_balance_delta: BalanceOf<T>) {
+        pub fn decrease_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Ensure lead is set or it is the council decreasing the leader's stake.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -617,7 +617,7 @@ decl_module! {
         /// Increases the regular worker/lead stake, demands a worker origin.
         /// Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_stake(origin, worker_id: GroupWorkerId<T>, stake_balance_delta: BalanceOf<T>) {
+        pub fn increase_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Checks worker origin and worker existence.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
@@ -737,7 +737,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_reward_account(
             origin,
-            worker_id: GroupWorkerId<T>,
+            worker_id: WorkerId<T>,
             new_reward_account_id: T::AccountId
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
@@ -764,7 +764,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_reward_amount(
             origin,
-            worker_id: GroupWorkerId<T>,
+            worker_id: WorkerId<T>,
             reward_per_block: Option<BalanceOf<T>>
         ) {
             // Ensure lead is set or it is the council setting the leader's reward.
@@ -870,7 +870,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn fulfill_successful_applications(
         opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
-    ) -> BTreeMap<T::ApplicationId, GroupWorkerId<T>> {
+    ) -> BTreeMap<T::ApplicationId, WorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
 
         successful_applications_info
@@ -881,7 +881,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 
                 // Sets a leader on successful opening when opening is for leader.
-                if matches!(opening.opening_type, JobOpeningType::Leader) {
+                if matches!(opening.opening_type, OpeningType::Leader) {
                     Self::set_lead(new_worker_id);
                 }
             });
@@ -893,7 +893,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn create_worker_by_application(
         opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
         application_info: &ApplicationInfo<T, I>,
-    ) -> GroupWorkerId<T> {
+    ) -> WorkerId<T> {
         // Get worker id.
         let new_worker_id = <NextWorkerId<T, I>>::get();
 
@@ -916,7 +916,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::increase_active_worker_counter();
 
         // Update the next worker id.
-        <NextWorkerId<T, I>>::mutate(|id| *id += <GroupWorkerId<T> as One>::one());
+        <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
 
         // Remove an application.
         <ApplicationById<T, I>>::remove(application_info.application_id);
@@ -925,7 +925,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Set worker id as a leader id.
-    pub(crate) fn set_lead(worker_id: GroupWorkerId<T>) {
+    pub(crate) fn set_lead(worker_id: WorkerId<T>) {
         // Update current lead
         <CurrentLead<T, I>>::put(worker_id);
 
@@ -945,7 +945,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
     // Deposits an event.
-    fn remove_worker(worker_id: &GroupWorkerId<T>, worker: &GroupWorker<T>, event: Event<T, I>) {
+    fn remove_worker(worker_id: &WorkerId<T>, worker: &GroupWorker<T>, event: Event<T, I>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -969,7 +969,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Slash the stake.
     fn slash(
-        worker_id: GroupWorkerId<T>,
+        worker_id: WorkerId<T>,
         staking_account_id: &T::AccountId,
         balance: Option<BalanceOf<T>>,
     ) {
@@ -978,7 +978,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Reward a worker using reward presets and working group budget.
-    fn reward_worker(worker_id: &GroupWorkerId<T>, worker: &GroupWorker<T>) {
+    fn reward_worker(worker_id: &WorkerId<T>, worker: &GroupWorker<T>) {
         // If reward period is not set.
         let mut rewarding_period: u32 = T::RewardPeriod::get();
         if rewarding_period == 0u32 {
@@ -1023,7 +1023,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
-    fn try_to_pay_missed_reward(worker_id: &GroupWorkerId<T>, worker: &GroupWorker<T>) {
+    fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &GroupWorker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
             let (could_be_paid_reward, insufficient_amount) =
                 Self::calculate_possible_payment(missed_reward);
@@ -1048,7 +1048,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Saves missed reward for a worker.
     fn save_missed_reward(
-        worker_id: &GroupWorkerId<T>,
+        worker_id: &WorkerId<T>,
         worker: &GroupWorker<T>,
         reward: BalanceOf<T>,
     ) {

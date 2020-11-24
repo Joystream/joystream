@@ -39,7 +39,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
     staking_role: &StakingRole,
-    job_opening_type: &JobOpeningType,
+    job_opening_type: &OpeningType,
 ) -> T::OpeningId {
     let staking_policy = match staking_role {
         StakingRole::WithStakes => Some(StakePolicy {
@@ -116,7 +116,7 @@ fn add_opening_and_apply_with_multiple_ids<T: Trait<I>, I: Instance>(
     ids: &Vec<u32>,
     add_opening_origin: &T::Origin,
     staking_role: &StakingRole,
-    job_opening_type: &JobOpeningType,
+    job_opening_type: &OpeningType,
 ) -> (T::OpeningId, BTreeSet<T::ApplicationId>, Vec<T::AccountId>) {
     let opening_id =
         add_opening_helper::<T, I>(1, add_opening_origin, &staking_role, job_opening_type);
@@ -147,7 +147,7 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
     staking_role: &StakingRole,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
-    job_opening_type: &JobOpeningType,
+    job_opening_type: &OpeningType,
 ) -> (T::OpeningId, T::ApplicationId) {
     let opening_id =
         add_opening_helper::<T, I>(id, add_opening_origin, staking_role, job_opening_type);
@@ -215,16 +215,16 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
 
 fn insert_a_worker<T: Trait<I>, I: Instance>(
     staking_role: StakingRole,
-    job_opening_type: JobOpeningType,
+    job_opening_type: OpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
-) -> (T::AccountId, GroupWorkerId<T>)
+) -> (T::AccountId, WorkerId<T>)
 where
     WorkingGroup<T, I>: OnInitialize<T::BlockNumber>,
 {
     let add_worker_origin = match job_opening_type {
-        JobOpeningType::Leader => RawOrigin::Root,
-        JobOpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
+        OpeningType::Leader => RawOrigin::Root,
+        OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
     };
 
     let (caller_id, member_id) = member_funded_account::<T>("member", id);
@@ -251,7 +251,7 @@ where
     // remaining reward
     force_missed_reward::<T, I>();
 
-    let worker_id = GroupWorkerId::<T>::from(id.try_into().unwrap());
+    let worker_id = WorkerId::<T>::from(id.try_into().unwrap());
 
     assert!(WorkerById::<T, I>::contains_key(worker_id));
 
@@ -266,7 +266,7 @@ benchmarks_instance! {
 
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -276,7 +276,7 @@ benchmarks_instance! {
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithStakes,
-                &JobOpeningType::Regular
+                &OpeningType::Regular
             );
 
         WorkingGroup::<T, _>::fill_opening(
@@ -288,7 +288,7 @@ benchmarks_instance! {
         force_missed_reward::<T,I>();
 
         // Force all workers to leave (Including the lead)
-        // We should have every GroupWorkerId from 0 to i-1
+        // We should have every WorkerId from 0 to i-1
         // Corresponding to each account id
         let mut worker_id = Zero::zero();
         for id in application_account_id {
@@ -303,7 +303,7 @@ benchmarks_instance! {
         ).unwrap();
 
         for i in 1..successful_application_ids.len() {
-            let worker = GroupWorkerId::<T>::from(i.try_into().unwrap());
+            let worker = WorkerId::<T>::from(i.try_into().unwrap());
             assert!(WorkerById::<T, I>::contains_key(worker), "Not all workers added");
             assert_eq!(
                 WorkingGroup::<T, _>::worker_by_id(worker).started_leaving_at,
@@ -348,7 +348,7 @@ benchmarks_instance! {
 
         let (lead_id, _) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -358,7 +358,7 @@ benchmarks_instance! {
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithStakes,
-                &JobOpeningType::Regular
+                &OpeningType::Regular
             );
 
         WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
@@ -366,7 +366,7 @@ benchmarks_instance! {
 
         for i in 1..successful_application_ids.len() {
             assert!(
-                WorkerById::<T, I>::contains_key(GroupWorkerId::<T>::from(i.try_into().unwrap())),
+                WorkerById::<T, I>::contains_key(WorkerId::<T>::from(i.try_into().unwrap())),
                 "Not all workers added"
             );
         }
@@ -410,7 +410,7 @@ benchmarks_instance! {
 
         let (lead_id, _) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -420,7 +420,7 @@ benchmarks_instance! {
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithStakes,
-                &JobOpeningType::Regular
+                &OpeningType::Regular
             );
 
         WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
@@ -428,7 +428,7 @@ benchmarks_instance! {
 
         for i in 1..successful_application_ids.len() {
             assert!(
-                WorkerById::<T, I>::contains_key(GroupWorkerId::<T>::from(i.try_into().unwrap())),
+                WorkerById::<T, I>::contains_key(WorkerId::<T>::from(i.try_into().unwrap())),
                 "Not all workers added"
             );
         }
@@ -461,7 +461,7 @@ benchmarks_instance! {
 
         let (lead_id, _) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -471,7 +471,7 @@ benchmarks_instance! {
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithStakes,
-                &JobOpeningType::Regular
+                &OpeningType::Regular
             );
 
         WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
@@ -479,7 +479,7 @@ benchmarks_instance! {
 
         for i in 1..successful_application_ids.len() {
             assert!(
-                WorkerById::<T, I>::contains_key(GroupWorkerId::<T>::from(i.try_into().unwrap())),
+                WorkerById::<T, I>::contains_key(WorkerId::<T>::from(i.try_into().unwrap())),
                 "Not all workers added"
             );
         }
@@ -519,7 +519,7 @@ benchmarks_instance! {
             0,
             &T::Origin::from(RawOrigin::Root),
             &StakingRole::WithStakes,
-            &JobOpeningType::Leader
+            &OpeningType::Leader
         );
 
         let apply_on_opening_params = ApplyOnOpeningParameters::<T, I> {
@@ -558,7 +558,7 @@ benchmarks_instance! {
             &StakingRole::WithoutStakes,
             &lead_account_id,
             &lead_member_id,
-            &JobOpeningType::Leader
+            &OpeningType::Leader
         );
 
         let mut successful_application_ids: BTreeSet<T::ApplicationId> = BTreeSet::new();
@@ -587,7 +587,7 @@ benchmarks_instance! {
         let i in 1 .. T::MaxWorkerNumberLimit::get();
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -597,7 +597,7 @@ benchmarks_instance! {
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithoutStakes,
-                &JobOpeningType::Regular
+                &OpeningType::Regular
             );
     }: fill_opening(
             RawOrigin::Signed(lead_id.clone()),
@@ -609,10 +609,10 @@ benchmarks_instance! {
 
         let mut application_id_to_worker_id = BTreeMap::new();
         for (i, application_id) in successful_application_ids.iter().enumerate() {
-            let worker_id = GroupWorkerId::<T>::from((i + 1).try_into().unwrap());
+            let worker_id = WorkerId::<T>::from((i + 1).try_into().unwrap());
             application_id_to_worker_id.insert(*application_id, worker_id);
             assert!(
-                WorkerById::<T, I>::contains_key(GroupWorkerId::<T>::from(i.try_into().unwrap())),
+                WorkerById::<T, I>::contains_key(WorkerId::<T>::from(i.try_into().unwrap())),
                 "Not all workers added"
             );
         }
@@ -625,7 +625,7 @@ benchmarks_instance! {
     update_role_account{
         let i in 0 .. 1;
         let (lead_id, lead_worker_id) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let new_account_id = account::<T::AccountId>("new_lead_account", 1, SEED);
     }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id.clone())
     verify {
@@ -644,12 +644,12 @@ benchmarks_instance! {
         let i in 0 .. 1;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let opening_id = add_opening_helper::<T, I>(
             1,
             &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
             &StakingRole::WithoutStakes,
-            &JobOpeningType::Regular
+            &OpeningType::Regular
         );
 
     }: _ (RawOrigin::Signed(lead_id.clone()), opening_id)
@@ -667,7 +667,7 @@ benchmarks_instance! {
             &StakingRole::WithStakes,
             &caller_id,
             &member_id,
-            &JobOpeningType::Leader
+            &OpeningType::Leader
         );
 
     }: _ (RawOrigin::Signed(caller_id.clone()), application_id)
@@ -682,10 +682,10 @@ benchmarks_instance! {
         let i in 0 .. MAX_BYTES;
 
         let (lead_id, lead_worker_id) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             1,
             Some(lead_id.clone())
         );
@@ -703,10 +703,10 @@ benchmarks_instance! {
         let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             1,
             Some(lead_id.clone())
         );
@@ -727,7 +727,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_BYTES;
 
         let (_, lead_worker_id) =
-            insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithStakes, OpeningType::Leader, 0, None);
         let current_budget = BalanceOfCurrency::<T>::max_value();
         // To be able to pay unpaid reward
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
@@ -747,10 +747,10 @@ benchmarks_instance! {
         let i in 0 .. 1;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             1,
             Some(lead_id.clone())
         );
@@ -770,10 +770,10 @@ benchmarks_instance! {
         let i in 0 .. 1;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let (_, worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             1,
             Some(lead_id.clone())
         );
@@ -790,7 +790,7 @@ benchmarks_instance! {
 
         let (lead_id, _) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );
@@ -809,10 +809,10 @@ benchmarks_instance! {
         let i in 0 .. 1;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let (_, worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             1,
             Some(lead_id.clone())
         );
@@ -835,7 +835,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let status_text = Some(vec![0u8; i.try_into().unwrap()]);
 
     }: _ (RawOrigin::Signed(lead_id), status_text.clone())
@@ -855,7 +855,7 @@ benchmarks_instance! {
         let i in 0 .. 1;
 
         let (caller_id, worker_id) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
         let new_id = account::<T::AccountId>("new_id", 1, 0);
 
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id.clone())
@@ -886,7 +886,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_BYTES;
 
         let (lead_id, _) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
 
         let stake_policy = StakePolicy {
             stake_amount: BalanceOfCurrency::<T>::max_value(),
@@ -902,7 +902,7 @@ benchmarks_instance! {
     }: _(
             RawOrigin::Signed(lead_id),
             description,
-            JobOpeningType::Regular,
+            OpeningType::Regular,
             Some(stake_policy),
             Some(reward_policy)
         )
@@ -918,7 +918,7 @@ benchmarks_instance! {
         // could separate into new branch to tighten weight
         // Also, workers without stake can leave immediatly
         let (caller_id, lead_worker_id) =
-            insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+            insert_a_worker::<T, I>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
 
         // To be able to pay unpaid reward
         WorkingGroup::<T, _>::set_budget(
@@ -941,7 +941,7 @@ benchmarks_instance! {
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
-            JobOpeningType::Leader,
+            OpeningType::Leader,
             0,
             None
         );

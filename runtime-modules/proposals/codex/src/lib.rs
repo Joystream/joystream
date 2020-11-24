@@ -92,7 +92,7 @@ const MAX_VALIDATOR_COUNT: u32 = 100;
 
 // Data container struct to fix linter warning 'too many arguments for the function' for the
 // create_proposal() function.
-struct CreateProposalParameters<T: Trait> {
+struct CreateProposalParameters<T: Trait + working_group::Trait> {
     pub origin: T::Origin,
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
@@ -113,6 +113,7 @@ pub trait Trait:
     + governance::election::Trait
     + hiring::Trait
     + staking::Trait
+    + working_group::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -509,35 +510,6 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
-        /// Create 'Begin review working group leader applications' proposal type.
-        /// This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_begin_review_working_group_leader_applications_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
-            opening_id: working_group::OpeningId<T>,
-            working_group: WorkingGroup,
-            exact_execution_block: Option<T::BlockNumber>,
-        ) {
-            let proposal_details = ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id, working_group);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: T::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
-                exact_execution_block,
-            };
-
-            Self::create_proposal(params)?;
-        }
-
         /// Create 'Fill working group leader opening' proposal type.
         /// This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -548,8 +520,6 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             fill_opening_parameters: FillOpeningParameters<
-                T::BlockNumber,
-                BalanceOfMint<T>,
                 working_group::OpeningId<T>,
                 working_group::ApplicationId<T>
             >,

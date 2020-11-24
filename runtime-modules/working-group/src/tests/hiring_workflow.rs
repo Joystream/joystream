@@ -6,7 +6,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::mock::TestWorkingGroup;
 use crate::types::StakeParameters;
-use crate::{JobOpeningType, RewardPolicy, StakePolicy};
+use crate::{OpeningType, RewardPolicy, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -17,7 +17,7 @@ struct HiringWorkflowApplication {
 }
 
 pub struct HiringWorkflow {
-    opening_type: JobOpeningType,
+    opening_type: OpeningType,
     expected_result: DispatchResult,
     stake_policy: Option<StakePolicy<u64, u64>>,
     reward_policy: Option<RewardPolicy<u64>>,
@@ -28,7 +28,7 @@ pub struct HiringWorkflow {
 impl Default for HiringWorkflow {
     fn default() -> Self {
         Self {
-            opening_type: JobOpeningType::Regular,
+            opening_type: OpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: None,
             reward_policy: None,
@@ -67,7 +67,7 @@ impl HiringWorkflow {
         }
     }
 
-    pub fn with_opening_type(self, opening_type: JobOpeningType) -> Self {
+    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
         Self {
             opening_type,
             ..self
@@ -115,7 +115,7 @@ impl HiringWorkflow {
     }
 
     fn setup_environment(&self) {
-        if matches!(self.opening_type, JobOpeningType::Regular) {
+        if matches!(self.opening_type, OpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         } else {
             setup_members(6);
@@ -138,8 +138,8 @@ impl HiringWorkflow {
 
     fn fill_worker_position(&self) -> Result<u64, DispatchError> {
         let origin = match self.opening_type {
-            JobOpeningType::Leader => RawOrigin::Root,
-            JobOpeningType::Regular => {
+            OpeningType::Leader => RawOrigin::Root,
+            OpeningType::Regular => {
                 let leader_worker_id = TestWorkingGroup::current_lead().unwrap();
                 let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
                 let lead_account_id = leader.role_account_id;

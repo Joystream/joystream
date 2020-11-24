@@ -30,7 +30,9 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
-use crate::{StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::{StorageWorkingGroupInstance};
+
+use working_group::ensure_origin_is_active_leader;
 
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
@@ -138,7 +140,7 @@ decl_module! {
         /// Registers the new data object type. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
-            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure_origin_is_active_leader::<T, StorageWorkingGroupInstance>(origin)?;
 
             let new_do_type_id = Self::next_data_object_type_id();
             let do_type: DataObjectType = DataObjectType {
@@ -159,7 +161,7 @@ decl_module! {
         /// Updates existing data object type. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
-            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure_origin_is_active_leader::<T, StorageWorkingGroupInstance>(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -178,7 +180,7 @@ decl_module! {
         /// Activates existing data object type. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
-            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure_origin_is_active_leader::<T, StorageWorkingGroupInstance>(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -196,7 +198,7 @@ decl_module! {
         /// Deactivates existing data object type. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
-            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure_origin_is_active_leader::<T, StorageWorkingGroupInstance>(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 

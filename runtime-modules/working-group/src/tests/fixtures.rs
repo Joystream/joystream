@@ -9,7 +9,7 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
-    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, JobOpeningType, Penalty,
+    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, OpeningType, Penalty,
     RawEvent, RewardPolicy, StakePolicy, GroupWorker,
 };
 
@@ -37,7 +37,7 @@ impl EventFixture {
 pub struct AddOpeningFixture {
     origin: RawOrigin<u64>,
     description: Vec<u8>,
-    opening_type: JobOpeningType,
+    opening_type: OpeningType,
     starting_block: u64,
     stake_policy: Option<StakePolicy<u64, u64>>,
     reward_policy: Option<RewardPolicy<u64>>,
@@ -48,7 +48,7 @@ impl Default for AddOpeningFixture {
         Self {
             origin: RawOrigin::Signed(1),
             description: b"human_text".to_vec(),
-            opening_type: JobOpeningType::Regular,
+            opening_type: OpeningType::Regular,
             starting_block: 0,
             stake_policy: None,
             reward_policy: None,
@@ -100,7 +100,7 @@ impl AddOpeningFixture {
         Ok(saved_opening_next_id)
     }
 
-    pub fn with_opening_type(self, opening_type: JobOpeningType) -> Self {
+    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
         Self {
             opening_type,
             ..self
@@ -410,7 +410,7 @@ impl HireLeadFixture {
     pub fn hire_lead(self) -> u64 {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
-            .with_opening_type(JobOpeningType::Leader)
+            .with_opening_type(OpeningType::Leader)
             .with_stake_policy(self.stake_policy)
             .with_reward_policy(self.reward_policy)
             .add_application(b"leader".to_vec())
@@ -421,7 +421,7 @@ impl HireLeadFixture {
     pub fn expect(self, error: DispatchError) {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
-            .with_opening_type(JobOpeningType::Leader)
+            .with_opening_type(OpeningType::Leader)
             .with_stake_policy(self.stake_policy)
             .with_reward_policy(self.reward_policy)
             .add_application(b"leader".to_vec())
@@ -463,7 +463,7 @@ impl HireRegularWorkerFixture {
     pub fn hire(self) -> u64 {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
-            .with_opening_type(JobOpeningType::Regular)
+            .with_opening_type(OpeningType::Regular)
             .with_stake_policy(self.stake_policy)
             .with_reward_policy(self.reward_policy)
             .add_application(b"worker".to_vec())

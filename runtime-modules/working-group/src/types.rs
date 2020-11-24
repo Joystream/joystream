@@ -13,7 +13,13 @@ pub type JobApplication<T> = Application<<T as frame_system::Trait>::AccountId, 
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Type identifier for a worker role, which must be same as membership actor identifier.
-pub type GroupWorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+
+/// Type alias for an application id.
+pub type ApplicationId<T> = <T as crate::Trait>::ApplicationId;
+
+/// Type alias for an opening id.
+pub type OpeningId<T> = <T as crate::Trait>::OpeningId;
 
 // ApplicationId - JobApplication - helper struct.
 pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
@@ -23,14 +29,14 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 
 // WorkerId - GroupWorker - helper struct.
 pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait + balances::Trait> {
-    pub worker_id: GroupWorkerId<T>,
+    pub worker_id: WorkerId<T>,
     pub worker: GroupWorker<T>,
 }
 
 impl<T: membership::Trait + frame_system::Trait + balances::Trait>
-    From<(GroupWorkerId<T>, GroupWorker<T>)> for WorkerInfo<T>
+    From<(WorkerId<T>, GroupWorker<T>)> for WorkerInfo<T>
 {
-    fn from((worker_id, worker): (GroupWorkerId<T>, GroupWorker<T>)) -> Self {
+    fn from((worker_id, worker): (WorkerId<T>, GroupWorker<T>)) -> Self {
         WorkerInfo { worker_id, worker }
     }
 }
@@ -52,7 +58,7 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 #[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
 pub struct JobOpening<BlockNumber: Ord, Balance> {
     /// Defines opening type: Leader or worker.
-    pub opening_type: JobOpeningType,
+    pub opening_type: OpeningType,
 
     /// Block at which opening was added.
     pub created: BlockNumber,
@@ -70,7 +76,7 @@ pub struct JobOpening<BlockNumber: Ord, Balance> {
 /// Defines type of the opening: regular working group fellow or group leader.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
-pub enum JobOpeningType {
+pub enum OpeningType {
     /// Group leader.
     Leader,
 
@@ -80,7 +86,7 @@ pub enum JobOpeningType {
 
 /// Must be default constructible because it indirectly is a value in a storage map.
 /// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl Default for JobOpeningType {
+impl Default for OpeningType {
     fn default() -> Self {
         Self::Regular
     }

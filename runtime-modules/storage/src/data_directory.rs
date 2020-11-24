@@ -36,9 +36,12 @@ use serde::{Deserialize, Serialize};
 use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;
 
+use working_group::ensure_worker_signed;
+
+
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::{MemberId, StorageProviderId, StorageWorkingGroupInstance};
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
@@ -208,7 +211,7 @@ decl_module! {
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            T::MemberOriginValidator::ensure_actor_origin(
+            <T as Trait>::MemberOriginValidator::ensure_actor_origin(
                 origin,
                 member_id,
             )?;
@@ -248,7 +251,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
@@ -267,7 +270,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 

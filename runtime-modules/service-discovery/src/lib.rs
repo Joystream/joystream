@@ -54,11 +54,8 @@ pub type Url = Vec<u8>;
 // The storage working group instance alias.
 pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
 
-// Alias for storage working group.
-pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
-
 /// Storage provider is a worker from the  working_group module.
-pub type StorageProviderId<T> = working_group::GroupWorkerId<T>;
+pub type StorageProviderId<T> = working_group::WorkerId<T>;
 
 pub(crate) const MINIMUM_LIFETIME: u32 = 600; // 1hr assuming 6s block times
 pub(crate) const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
