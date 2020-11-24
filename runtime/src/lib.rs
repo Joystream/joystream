@@ -564,8 +564,9 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
-    pub const MinUnstakingPeriodLimit: u32 = 100;
-    pub const RewardPeriod: u32 = 100;
+    pub const MinUnstakingPeriodLimit: u32 = 43200;
+    pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
+    pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
 }
@@ -579,7 +580,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
         integration::staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = RewardPeriod;
+    type RewardPeriod = StorageWorkingGroupRewardPeriod;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -591,7 +592,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
         integration::staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = RewardPeriod;
+    type RewardPeriod = ContentWorkingGroupRewardPeriod;
 }
 
 impl service_discovery::Trait for Runtime {
