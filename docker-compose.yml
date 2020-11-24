@@ -88,8 +88,8 @@ services:
       - .env
     environment:
       - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:4000/graphql
-      - DB_HOST=db
       - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${PROCESSOR_DB_NAME}
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
     depends_on:

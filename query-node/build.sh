@@ -14,10 +14,10 @@ yarn clean
 # We generate the code for each service separately to be able to specify
 # separate database names.
 
-# Build indexer customizing DB name and port
+# Build indexer customizing DB name
 DB_NAME=${INDEXER_DB_NAME} yarn codegen:indexer
 
-# Build graphql-server customizing DB name and port
+# Build graphql-server customizing DB name
 DB_NAME=${PROCESSOR_DB_NAME} yarn codegen:server
 
 # We run yarn again to ensure processor and indexer dependencies are installed

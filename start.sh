@@ -30,6 +30,8 @@ yarn workspace @joystream/cd-schemas initialize:dev
 # Initialize a new database for the query node infrastructure
 docker-compose up -d db
 yarn workspace query-node-root db:migrate
+TYPEORM_DATABASE=query_node_processor yarn workspace query-node-root db:indexer:migrate
+
 # Startup all query-node infrastructure services
 docker-compose up -d graphql-server
 docker-compose up -d processor

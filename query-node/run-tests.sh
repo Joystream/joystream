@@ -36,6 +36,7 @@ docker-compose up -d db
 # Migrate the databases
 yarn workspace query-node-root db:indexer:migrate
 yarn workspace query-node-root db:schema:migrate
+TYPEORM_DATABASE=query_node_processor yarn workspace query-node-root db:indexer:migrate
 
 docker-compose up -d graphql-server
 
