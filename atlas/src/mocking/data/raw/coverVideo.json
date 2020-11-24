@@ -5,7 +5,7 @@
     "description": "How We Lost Trust In Authority, And Authority Taught Us To Distrust Ourselves",
     "views": 132,
     "createdAt": "2020-11-04T15:59:55.820Z",
-    "thumbnailUrl": "https://eu-central-1.linodeobjects.com/atlas-assets/featured-video-thumbnail.jpg"
+    "thumbnailUrl": "https://eu-central-1.linodeobjects.com/atlas-assets/cover-video/thumbnail.jpg"
   },
   "videoMedia": {
     "id": "4551c421-8edd-4d3b-8357-9fe825742775",
@@ -14,12 +14,13 @@
     "pixelHeight": 1440,
     "duration": 29,
     "size": 44851016,
-    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/1.mp4" }
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/cover-video/video.webm" },
+    "coverCutLocation": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/cover-video/cut.mp4" }
   },
   "channel": {
     "id": "d458e199-e1ae-4ccc-9f42-0ff8fbf9ab81",
     "handle": "SCHISM",
-    "avatarPhotoUrl": "https://eu-central-1.linodeobjects.com/atlas-assets/feautured-video-channel-avatar.png",
+    "avatarPhotoUrl": "https://eu-central-1.linodeobjects.com/atlas-assets/cover-video/channel-avatar.png",
     "coverPhotoUrl": null
   }
 }
