@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { FallbackProps } from 'react-error-boundary'
+import { FallbackRender } from '@sentry/react/dist/errorboundary'
 
 import { ReactComponent as ErrorIllustration } from '@/assets/error.svg'
 import { Button, Typography } from '@/shared/components'
@@ -34,7 +34,8 @@ const Title = styled(Typography)`
   line-height: 1.25;
 `
 
-const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+const ErrorFallback: FallbackRender = ({ error, componentStack, resetError }) => {
+  console.error(`An error occured in ${componentStack}`)
   console.error(error)
   return (
     <Container>
@@ -43,7 +44,7 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
         <Title variant="h3">Oops! An Error occurred.</Title>
         <p>We could not acquire expected results. Please try reloading or return to the home page.</p>
       </Message>
-      <Button onClick={resetErrorBoundary}>Return to home page</Button>
+      <Button onClick={resetError}>Return to home page</Button>
     </Container>
   )
 }

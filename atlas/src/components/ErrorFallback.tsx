@@ -1,7 +1,7 @@
 import React from 'react'
 
 import styled from '@emotion/styled'
-import { FallbackProps } from 'react-error-boundary'
+import { FallbackRender } from '@sentry/react/dist/errorboundary'
 
 import { Button } from '@/shared/components'
 import { sizes, colors } from '@/shared/theme'
@@ -16,13 +16,15 @@ const Container = styled.div`
 const StyledButton = styled(Button)`
   color: ${colors.white};
 `
+type FallbackProps = Partial<Parameters<FallbackRender>[0]>
 
-const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+const ErrorFallback: React.FC<FallbackProps> = ({ error, componentStack, resetError }) => {
+  console.error(`An error occured in ${componentStack}`)
   console.error(error)
   return (
     <Container>
       <p>Something went wrong...</p>
-      <StyledButton variant="tertiary" onClick={resetErrorBoundary}>
+      <StyledButton variant="tertiary" onClick={resetError}>
         Try again
       </StyledButton>
     </Container>
