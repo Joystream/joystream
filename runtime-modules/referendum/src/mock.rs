@@ -6,6 +6,8 @@ use crate::{
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
 };
 
+pub use crate::DefaultInstance;
+
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
@@ -41,9 +43,6 @@ pub struct Runtime;
 
 // module instances
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Instance0;
-
 parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: u64 = 5;
@@ -57,10 +56,10 @@ thread_local! {
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
     // complete intermediate results
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait<Instance0>>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait>::VotePower>::new());
 }
 
-impl Trait<Instance0> for Runtime {
+impl Trait for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
@@ -170,7 +169,7 @@ impl_outer_origin! {
 }
 
 mod event_mod {
-    pub use super::Instance0;
+    pub use super::DefaultInstance;
     pub use crate::Event;
 }
 
@@ -240,15 +239,15 @@ pub enum OriginType<AccountId> {
 
 /////////////////// Utility mocks //////////////////////////////////////////////s
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
-    GenesisConfig::<Runtime, Instance0> {
+pub fn default_genesis_config() -> GenesisConfig<Runtime, DefaultInstance> {
+    GenesisConfig::<Runtime, DefaultInstance> {
         stage: ReferendumStage::default(),
         votes: vec![],
     }
 }
 
 pub fn build_test_externalities(
-    config: GenesisConfig<Runtime, Instance0>,
+    config: GenesisConfig<Runtime, DefaultInstance>,
 ) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
@@ -268,7 +267,7 @@ pub fn build_test_externalities(
         topup_account(USER_REGULAR_3, amount);
         topup_account(USER_REGULAR_POWER_VOTES, amount);
 
-        InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1)
+        InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1)
     });
 
     result
@@ -389,7 +388,7 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl InstanceMocks<Runtime, Instance0> {
+impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         winning_target_count: u64,
@@ -400,8 +399,8 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::start_referendum(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+            Module::<Runtime>::start_referendum(
+                InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(origin),
                 extra_winning_target_count,
                 cycle_id,
             ),
@@ -426,7 +425,7 @@ impl InstanceMocks<Runtime, Instance0> {
                 <Runtime as common::Trait>::MemberId,
                 <Runtime as frame_system::Trait>::Hash,
             >>::start_referendum(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
+                InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
                 cycle_id,
             )
@@ -450,7 +449,7 @@ impl InstanceMocks<Runtime, Instance0> {
         let block_number = frame_system::Module::<Runtime>::block_number();
 
         assert_eq!(
-            Stage::<Runtime, Instance0>::get(),
+            Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
                 started: block_number + 1, // actual voting starts in the next block (thats why +1)
                 winning_target_count,
@@ -458,7 +457,7 @@ impl InstanceMocks<Runtime, Instance0> {
             }),
         );
 
-        InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1);
+        InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1);
 
         assert_eq!(
             frame_system::Module::<Runtime>::events()
@@ -473,7 +472,7 @@ impl InstanceMocks<Runtime, Instance0> {
         let block_number = frame_system::Module::<Runtime>::block_number();
 
         assert_eq!(
-            Stage::<Runtime, Instance0>::get(),
+            Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 started: block_number,
                 winning_target_count,
@@ -502,7 +501,7 @@ impl InstanceMocks<Runtime, Instance0> {
         expected_referendum_result: BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>,
     ) {
         assert_eq!(
-            Stage::<Runtime, Instance0>::get(),
+            Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Inactive,
         );
 
@@ -528,8 +527,8 @@ impl InstanceMocks<Runtime, Instance0> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::vote(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+            Module::<Runtime, DefaultInstance>::vote(
+                InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(origin),
                 commitment,
                 stake,
             ),
@@ -541,7 +540,7 @@ impl InstanceMocks<Runtime, Instance0> {
         }
 
         assert_eq!(
-            Votes::<Runtime, Instance0>::get(account_id),
+            Votes::<Runtime, DefaultInstance>::get(account_id),
             CastVote {
                 commitment,
                 cycle_id: cycle_id.clone(),
@@ -565,12 +564,12 @@ impl InstanceMocks<Runtime, Instance0> {
         account_id: <Runtime as frame_system::Trait>::AccountId,
         salt: Vec<u8>,
         vote_option_index: u64,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::reveal_vote(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+            Module::<Runtime, DefaultInstance>::reveal_vote(
+                InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(origin),
                 salt,
                 vote_option_index,
             ),

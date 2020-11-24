@@ -582,6 +582,61 @@ impl council::Trait for Runtime {
     }
 }
 
+/* === TODO ERASE === */
+pub type StorageReferendumInstance = referendum::Instance1;
+use frame_support::traits::LockIdentifier;
+parameter_types! {
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
+    pub const VoteStageDuration: BlockNumber = 5;
+    pub const RevealStageDuration: BlockNumber = 7;
+    pub const MinimumStake: u64 = 10000;
+    pub const LockId: LockIdentifier = *b"referend";
+}
+
+use system::{EnsureOneOf, EnsureSigned};
+
+impl referendum::Trait<StorageReferendumInstance> for Runtime {
+    type Event = Event;
+    type MaxSaltLength = MaxSaltLength;
+    type Currency = Balances;
+    type LockId = LockId;
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type VotePower = u64;
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+    type MinimumStake = MinimumStake;
+
+    fn caclulate_vote_power(
+        _: &<Self as system::Trait>::AccountId,
+        _: &referendum::Balance<Self, StorageReferendumInstance>,
+    ) -> <Self as referendum::Trait<StorageReferendumInstance>>::VotePower {
+        1
+    }
+
+    fn can_release_voting_stake(
+        _: &referendum::CastVote<Self::Hash, referendum::Balance<Self, StorageReferendumInstance>>,
+    ) -> bool {
+        true
+    }
+
+    fn process_results(_: &[referendum::OptionResult<Self::VotePower>]) {
+        // not used right now
+    }
+
+    fn is_valid_option_id(_: &u64) -> bool {
+        true
+    }
+
+    fn get_option_power(_: &u64) -> Self::VotePower {
+        100
+    }
+
+    fn increase_option_power(_: &u64, _: &Self::VotePower) {}
+}
+
+/* === HERE === */
+
 impl memo::Trait for Runtime {
     type Event = Event;
 }

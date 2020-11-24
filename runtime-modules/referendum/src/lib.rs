@@ -32,6 +32,9 @@
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
@@ -50,6 +53,7 @@ use sp_std::vec;
 use sp_std::vec::Vec;
 
 // declared modules
+mod benchmarking;
 mod mock;
 mod tests;
 
@@ -235,7 +239,7 @@ pub trait Trait<I: Instance>: frame_system::Trait + common::Trait {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance> as Referendum {
+    trait Store for Module<T: Trait<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
         pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
 
@@ -248,7 +252,7 @@ decl_storage! {
 }
 
 decl_event! {
-    pub enum Event<T, I>
+    pub enum Event<T, I = DefaultInstance>
     where
         Balance = Balance<T, I>,
         <T as frame_system::Trait>::Hash,
@@ -335,7 +339,7 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T, I>;
 

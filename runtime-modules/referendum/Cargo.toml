@@ -22,6 +22,7 @@ rand = "0.7.3"
 
 [features]
 default = ['std']
+runtime-benchmarks = ['frame-benchmarking']
 std = [
     'codec/std',
     'sp-core/std',
