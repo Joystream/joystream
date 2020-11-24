@@ -8,6 +8,8 @@ export class MintId extends u64 {}
 export class Setting extends u128 {}
 export class Adding extends u128 {}
 export class Reducing extends u128 {}
+export class MintBalanceOf extends u128 implements Balance {}
+export class BalanceOfMint extends u128 implements Balance {}
 
 export class AdjustCapacityBy extends JoyEnum({ Setting, Adding, Reducing } as const) {}
 
@@ -49,10 +51,10 @@ export class Mint
   implements IMint {}
 
 export const mintTypes: RegistryTypes = {
-  MintId: 'u64',
+  MintId,
   Mint,
-  MintBalanceOf: 'Balance',
-  BalanceOfMint: 'Balance',
+  MintBalanceOf,
+  BalanceOfMint,
   // Expose in registry for api.createType purposes:
   NextAdjustment,
   AdjustOnInterval,

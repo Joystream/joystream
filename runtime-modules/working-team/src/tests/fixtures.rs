@@ -1,9 +1,9 @@
 #![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::StorageMap;
+use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam};
@@ -72,7 +72,7 @@ impl AddOpeningFixture {
 
             let actual_opening = TestWorkingTeam::opening_by_id(opening_id);
 
-            let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
             let expected_opening = JobOpening {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
@@ -212,7 +212,7 @@ impl ApplyOnOpeningFixture {
 
             let actual_application = TestWorkingTeam::application_by_id(application_id);
 
-            let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
             let expected_application = JobApplication::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
@@ -542,7 +542,7 @@ impl LeaveWorkerRoleFixture {
                 if worker.job_unstaking_period > 0 {
                     assert_eq!(
                         worker.started_leaving_at,
-                        Some(<system::Module<Test>>::block_number())
+                        Some(<frame_system::Module<Test>>::block_number())
                     );
                     return;
                 }
@@ -1037,8 +1037,9 @@ impl SetStatusTextFixture {
         let new_text_hash = TestWorkingTeam::status_text_hash();
 
         if actual_result.is_ok() {
-            let expected_hash =
-                <Test as system::Trait>::Hashing::hash(&self.new_status_text.clone().unwrap());
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(
+                &self.new_status_text.clone().unwrap(),
+            );
 
             assert_eq!(new_text_hash, expected_hash.as_ref().to_vec());
         } else {

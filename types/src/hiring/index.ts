@@ -1,7 +1,6 @@
-import { Null, u128, u64, u32, Option, Text } from '@polkadot/types'
-import { BTreeSet } from '@polkadot/types/codec'
+import { Null, u128, u64, u32, Option, Text, BTreeSet } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { JoyEnum, JoyStructDecorated } from '../common'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from '../common'
 import { StakeId } from '../stake'
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
@@ -174,7 +173,7 @@ export type ActiveOpeningStageVariantType = {
 }
 export class ActiveOpeningStageVariant extends JoyStructDecorated({
   stage: ActiveOpeningStage,
-  applications_added: BTreeSet.with(ApplicationId),
+  applications_added: JoyBTreeSet(ApplicationId),
   active_application_count: u32,
   unstaking_application_count: u32,
   deactivated_application_count: u32,
@@ -222,20 +221,22 @@ export class StakingPolicy
   implements IStakingPolicy {}
 export const schemaValidator: Ajv.ValidateFunction = new Ajv({ allErrors: true }).compile(role_schema_json)
 
-const OpeningHRTFallback: GenericJoyStreamRoleSchema = {
-  version: 1,
-  headline: 'Unknown',
-  job: {
-    title: 'Unknown',
-    description: 'Unknown',
-  },
-  application: {},
-  reward: 'Unknown',
-  creator: {
-    membership: {
-      handle: 'Unknown',
+function openingHRTFallback(title = 'Working Group Opening', description = ''): GenericJoyStreamRoleSchema {
+  return {
+    version: 1,
+    headline: title,
+    job: {
+      title: title,
+      description,
     },
-  },
+    application: {},
+    reward: '? JOY',
+    creator: {
+      membership: {
+        handle: 'Unknown',
+      },
+    },
+  }
 }
 
 export type IOpening = {
@@ -281,11 +282,11 @@ export class Opening
     return str
   }
 
-  parse_human_readable_text_with_fallback(): GenericJoyStreamRoleSchema {
+  parse_human_readable_text_with_fallback(fallbackTitle?: string): GenericJoyStreamRoleSchema {
     const hrt = this.parse_human_readable_text()
 
     if (typeof hrt !== 'object') {
-      return OpeningHRTFallback
+      return openingHRTFallback(fallbackTitle, hrt)
     }
 
     return hrt
@@ -335,8 +336,8 @@ export class Application
   implements IApplication {}
 
 export const hiringTypes: RegistryTypes = {
-  ApplicationId: 'u64',
-  OpeningId: 'u64',
+  ApplicationId,
+  OpeningId,
   Application,
   ApplicationStage,
   ActivateOpeningAt,

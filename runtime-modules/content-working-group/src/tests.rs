@@ -4,9 +4,9 @@ use super::genesis;
 use super::mock::*;
 
 use frame_support::{assert_err, assert_ok, traits::Currency, StorageValue};
+use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use system::RawOrigin;
 
 use common::constraints::InputValidationLengthConstraint;
 use hiring;
@@ -879,7 +879,7 @@ struct UpdateCuratorRoleAccountFixture {
     pub origin: Origin,
     pub member_id: <Test as membership::Trait>::MemberId,
     pub curator_id: CuratorId<Test>,
-    pub new_role_account: <Test as system::Trait>::AccountId,
+    pub new_role_account: <Test as frame_system::Trait>::AccountId,
 }
 
 impl UpdateCuratorRoleAccountFixture {
@@ -956,7 +956,7 @@ fn update_curator_role_account_success() {
 struct UpdateCuratorRewardAccountFixture {
     pub origin: Origin,
     pub curator_id: CuratorId<Test>,
-    pub new_reward_account: <Test as system::Trait>::AccountId,
+    pub new_reward_account: <Test as frame_system::Trait>::AccountId,
 }
 
 impl UpdateCuratorRewardAccountFixture {
@@ -1176,7 +1176,7 @@ fn terminate_curator_role_success() {
 struct SetLeadFixture {
     pub origin: Origin,
     pub member_id: <Test as membership::Trait>::MemberId,
-    pub new_role_account: <Test as system::Trait>::AccountId,
+    pub new_role_account: <Test as frame_system::Trait>::AccountId,
 }
 
 impl SetLeadFixture {
@@ -1386,10 +1386,10 @@ fn account_can_act_as_principal_success() {}
  * Fixtures
  */
 
-static LEAD_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 1289;
-static LEAD_ROLE_ACCOUNT: <Test as system::Trait>::AccountId = 1289;
+static LEAD_ROOT_AND_CONTROLLER_ACCOUNT: <Test as frame_system::Trait>::AccountId = 1289;
+static LEAD_ROLE_ACCOUNT: <Test as frame_system::Trait>::AccountId = 1289;
 static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
-static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
+static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as frame_system::Trait>::AccountId = 11;
 static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator1";
 static CHANNEL_CREATOR_HANDLE2: &str = "Coolcreator2";
 
@@ -1404,7 +1404,7 @@ fn make_generic_add_member_params() -> AddMemberAndApplyOnOpeningParams {
 
 /// Made into function to avoid having to clone every time we read fields
 pub fn get_baseline_opening_policy(
-) -> OpeningPolicyCommitment<<Test as system::Trait>::BlockNumber, BalanceOf<Test>> {
+) -> OpeningPolicyCommitment<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>> {
     OpeningPolicyCommitment {
         application_rationing_policy: Some(hiring::ApplicationRationingPolicy {
             max_active_applicants: 5,
@@ -1456,17 +1456,17 @@ impl FillOpeningApplicantParams {
 
 #[derive(Clone)]
 pub struct AddMemberAndApplyOnOpeningParams {
-    pub curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+    pub curator_applicant_root_and_controller_account: <Test as frame_system::Trait>::AccountId,
     pub handle: Vec<u8>,
-    pub curator_applicant_role_account: <Test as system::Trait>::AccountId,
+    pub curator_applicant_role_account: <Test as frame_system::Trait>::AccountId,
     pub human_readable_text: Vec<u8>,
 }
 
 impl AddMemberAndApplyOnOpeningParams {
     pub fn new(
-        curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+        curator_applicant_root_and_controller_account: <Test as frame_system::Trait>::AccountId,
         handle: Vec<u8>,
-        curator_applicant_role_account: <Test as system::Trait>::AccountId,
+        curator_applicant_role_account: <Test as frame_system::Trait>::AccountId,
         human_readable_text: Vec<u8>,
     ) -> Self {
         Self {
@@ -1505,9 +1505,9 @@ struct NewMemberAppliedResult {
 
 fn add_member_and_apply_on_opening(
     curator_opening_id: CuratorOpeningId<Test>,
-    curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+    curator_applicant_root_and_controller_account: <Test as frame_system::Trait>::AccountId,
     handle: Vec<u8>,
-    curator_applicant_role_account: <Test as system::Trait>::AccountId,
+    curator_applicant_role_account: <Test as frame_system::Trait>::AccountId,
     human_readable_text: Vec<u8>,
 ) -> NewMemberAppliedResult {
     // Make membership
@@ -1925,8 +1925,8 @@ fn setup_lead_and_hire_curator() -> SetupLeadAndHireCuratorResult {
 
 struct CreateChannelFixture {
     pub channel_creator_member_id: <Test as membership::Trait>::MemberId,
-    pub controller_account: <Test as system::Trait>::AccountId,
-    pub channel_creator_role_account: <Test as system::Trait>::AccountId,
+    pub controller_account: <Test as frame_system::Trait>::AccountId,
+    pub channel_creator_role_account: <Test as frame_system::Trait>::AccountId,
     pub channel_handle: Vec<u8>,
     pub channel_title: OptionalText,
     pub description: OptionalText,
@@ -1939,7 +1939,7 @@ struct CreateChannelFixture {
 impl CreateChannelFixture {
     pub fn make_valid_unpulished_video_channel_for(
         channel_creator_member_id: <Test as membership::Trait>::MemberId,
-        override_controller_account: Option<<Test as system::Trait>::AccountId>,
+        override_controller_account: Option<<Test as frame_system::Trait>::AccountId>,
     ) -> Self {
         let controller_account = if let Some(account) = override_controller_account {
             account
@@ -2090,7 +2090,7 @@ pub fn add_channel_creator_member() -> <Test as membership::Trait>::MemberId {
 }
 
 pub fn add_member(
-    root_and_controller_account: <Test as system::Trait>::AccountId,
+    root_and_controller_account: <Test as frame_system::Trait>::AccountId,
     handle: Vec<u8>,
 ) -> <Test as membership::Trait>::MemberId {
     let next_member_id = membership::NextMemberId::<Test>::get();
@@ -2112,7 +2112,7 @@ pub fn add_member(
 
 pub fn set_lead(
     member_id: <Test as membership::Trait>::MemberId,
-    new_role_account: <Test as system::Trait>::AccountId,
+    new_role_account: <Test as frame_system::Trait>::AccountId,
 ) -> LeadId<Test> {
     /*
        Events are not emitted on block 0.

@@ -75,7 +75,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           stage: createType('OpeningStage', {
             Active: {
               stage: createType('ActiveOpeningStage', {
-                acceptingApplications: {
+                AcceptingApplications: {
                   started_accepting_applicants_at_block: 100
                 }
               })
@@ -101,7 +101,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           stage: createType('OpeningStage', {
             Active: {
               stage: createType('ActiveOpeningStage', {
-                reviewPeriod: {
+                ReviewPeriod: {
                   started_accepting_applicants_at_block: 100,
                   started_review_period_at_block: 100
                 }

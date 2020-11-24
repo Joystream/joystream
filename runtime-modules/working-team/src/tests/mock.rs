@@ -2,13 +2,13 @@ use frame_support::traits::{
     Currency, LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
 };
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     DispatchError, Perbill,
 };
-use system;
 
 use crate::{BalanceOfCurrency, DefaultInstance, Module, StakingHandler, Trait};
 use common::currency::GovernanceCurrency;
@@ -31,7 +31,7 @@ impl_outer_event! {
         balances<T>,
         crate DefaultInstance <T>,
         membership_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -49,7 +49,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -70,10 +70,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -84,6 +85,7 @@ impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl balances::Trait for Test {
@@ -92,6 +94,8 @@ impl balances::Trait for Test {
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl membership::Trait for Test {
@@ -104,7 +108,7 @@ impl membership::Trait for Test {
 
 pub type Membership = membership::Module<Test>;
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
@@ -128,7 +132,7 @@ pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
+        let signed_account_id = frame_system::ensure_signed(origin)?;
 
         if member_id > 10 {
             return Err(ACTOR_ORIGIN_ERROR);
@@ -147,7 +151,10 @@ pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
 pub const LOCK_ID: LockIdentifier = [1; 8];
 
 impl StakingHandler<Test> for Test {
-    fn lock(account_id: &<Test as system::Trait>::AccountId, amount: BalanceOfCurrency<Test>) {
+    fn lock(
+        account_id: &<Test as frame_system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) {
         <Test as GovernanceCurrency>::Currency::set_lock(
             LOCK_ID,
             &account_id,
@@ -156,12 +163,12 @@ impl StakingHandler<Test> for Test {
         )
     }
 
-    fn unlock(account_id: &<Test as system::Trait>::AccountId) {
+    fn unlock(account_id: &<Test as frame_system::Trait>::AccountId) {
         <Test as GovernanceCurrency>::Currency::remove_lock(LOCK_ID, &account_id);
     }
 
     fn slash(
-        account_id: &<Test as system::Trait>::AccountId,
+        account_id: &<Test as frame_system::Trait>::AccountId,
         amount: Option<BalanceOfCurrency<Test>>,
     ) -> BalanceOfCurrency<Test> {
         let locks = Balances::locks(&account_id);
@@ -191,7 +198,7 @@ impl StakingHandler<Test> for Test {
     }
 
     fn decrease_stake(
-        account_id: &<Test as system::Trait>::AccountId,
+        account_id: &<Test as frame_system::Trait>::AccountId,
         amount: BalanceOfCurrency<Test>,
     ) {
         Self::unlock(account_id);
@@ -199,7 +206,7 @@ impl StakingHandler<Test> for Test {
     }
 
     fn increase_stake(
-        account_id: &<Test as system::Trait>::AccountId,
+        account_id: &<Test as frame_system::Trait>::AccountId,
         amount: BalanceOfCurrency<Test>,
     ) -> DispatchResult {
         if !Self::is_enough_balance_for_stake(account_id, amount) {
@@ -246,7 +253,7 @@ impl StakingHandler<Test> for Test {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 

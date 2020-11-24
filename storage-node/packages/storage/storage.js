@@ -215,15 +215,20 @@ class Storage {
     this._timeout = this.options.timeout || DEFAULT_TIMEOUT
     this._resolve_content_id = this.options.resolve_content_id || DEFAULT_RESOLVE_CONTENT_ID
 
-    this.ipfs = ipfsClient(this.options.ipfs.connect_options)
+    this.ipfs = ipfsClient(this.options.ipfsHost || 'localhost', '5001', { protocol: 'http' })
 
-    this.pins = {}
+    this.pinned = {}
+    this.pinning = {}
 
     this.ipfs.id((err, identity) => {
       if (err) {
         debug(`Warning IPFS daemon not running: ${err.message}`)
       } else {
         debug(`IPFS node is up with identity: ${identity.id}`)
+        // TODO: wait for IPFS daemon to be online for this to be effective..?
+        // set the IPFS HTTP Gateway config we desire.. operator might need
+        // to restart their daemon if the config was changed.
+        this.ipfs.config.set('Gateway.PublicGateways', { 'localhost': null })
       }
     })
   }
@@ -363,27 +368,38 @@ class Storage {
   /*
    * Synchronize the given content ID
    */
-  async synchronize(contentId) {
+  async synchronize(contentId, callback) {
     const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
 
-    // validate resolved id is proper ipfs_cid, not null or empty string
+    // TODO: validate resolved id is proper ipfs_cid, not null or empty string
 
-    if (this.pins[resolved]) {
-      return
+    if (!this.pinning[resolved] && !this.pinned[resolved]) {
+      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
+      this.pinning[resolved] = true
+
+      // Callback passed to add() will be called on error or when the entire file
+      // is retrieved. So on success we consider the content synced.
+      this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
+        delete this.pinning[resolved]
+        if (err) {
+          debug(`Error Pinning: ${resolved}`)
+          callback && callback(err)
+        } else {
+          debug(`Pinned ${resolved}`)
+          this.pinned[resolved] = true
+          callback && callback(null, this.syncStatus(resolved))
+        }
+      })
+    } else {
+      callback && callback(null, this.syncStatus(resolved))
     }
+  }
 
-    debug(`Pinning ${resolved}`)
-
-    // This call blocks until file is retrieved..
-    this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
-      if (err) {
-        debug(`Error Pinning: ${resolved}`)
-        delete this.pins[resolved]
-      } else {
-        debug(`Pinned ${resolved}`)
-        // why aren't we doing this.pins[resolved] = true
-      }
-    })
+  syncStatus(ipfsHash) {
+    return {
+      syncing: this.pinning[ipfsHash] === true,
+      synced: this.pinned[ipfsHash] === true,
+    }
   }
 }
 

@@ -24,13 +24,13 @@ impl WeightToFeePolynomial for NoWeights {
 
 /// 'Create transaction' default implementation.
 pub(crate) fn create_transaction<
-    C: system::offchain::AppCrypto<
-        <Runtime as system::offchain::SigningTypes>::Public,
-        <Runtime as system::offchain::SigningTypes>::Signature,
+    C: frame_system::offchain::AppCrypto<
+        <Runtime as frame_system::offchain::SigningTypes>::Public,
+        <Runtime as frame_system::offchain::SigningTypes>::Signature,
     >,
 >(
     call: Call,
-    public: <<Runtime as system::offchain::SigningTypes>::Signature as sp_runtime::traits::Verify>::Signer,
+    public: <<Runtime as frame_system::offchain::SigningTypes>::Signature as sp_runtime::traits::Verify>::Signer,
     account: AccountId,
     nonce: Index,
 ) -> Option<(
@@ -44,19 +44,18 @@ pub(crate) fn create_transaction<
         .unwrap_or(2) as u64;
     let current_block = System::block_number()
         .saturated_into::<u64>()
-        // The `System::block_number` is initialized with `n+1`,
+        // The `frame_system::block_number` is initialized with `n+1`,
         // so the actual block number is `n`.
         .saturating_sub(1);
     let tip = 0;
     let extra: SignedExtra = (
-        system::CheckSpecVersion::<Runtime>::new(),
-        system::CheckTxVersion::<Runtime>::new(),
-        system::CheckGenesis::<Runtime>::new(),
-        system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
-        system::CheckNonce::<Runtime>::from(nonce),
-        system::CheckWeight::<Runtime>::new(),
+        frame_system::CheckSpecVersion::<Runtime>::new(),
+        frame_system::CheckTxVersion::<Runtime>::new(),
+        frame_system::CheckGenesis::<Runtime>::new(),
+        frame_system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
+        frame_system::CheckNonce::<Runtime>::from(nonce),
+        frame_system::CheckWeight::<Runtime>::new(),
         pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-        pallet_grandpa::ValidateEquivocationReport::<Runtime>::new(),
     );
     let raw_payload = SignedPayload::new(call, extra)
         .map_err(|e| {

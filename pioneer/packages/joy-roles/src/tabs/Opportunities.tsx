@@ -570,8 +570,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
             options={
               [groupOption(null, false)]
                 .concat(AvailableGroups.map((g) => groupOption(g)))
-                // Currently we filter-out content curators, because they don't use the new working-group module yet
-                .concat(AvailableGroups.filter((g) => g !== WorkingGroups.ContentCurators).map((g) => groupOption(g, true)))
+                .concat(AvailableGroups.map((g) => groupOption(g, true)))
             }
             value={groupOption(group, lead).value}
             onChange={onFilterChange}

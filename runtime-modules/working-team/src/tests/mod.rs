@@ -4,7 +4,7 @@ mod mock;
 
 pub use mock::{build_test_externalities, Test};
 
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
@@ -2316,7 +2316,7 @@ fn set_status_text_succeeded() {
             .with_status_text(Some(status_text.clone()))
             .call_and_assert(Ok(()));
 
-        let expected_hash = <Test as system::Trait>::Hashing::hash(&status_text);
+        let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&status_text);
         EventFixture::assert_last_crate_event(RawEvent::StatusTextChanged(
             expected_hash.as_ref().to_vec(),
         ));

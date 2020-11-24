@@ -29,12 +29,13 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
-    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
+    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig,
+    VersionedStorePermissionsConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -44,7 +45,6 @@ pub mod content_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
-pub mod proposals_config;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -132,7 +132,6 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
@@ -173,7 +172,6 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
@@ -219,7 +217,6 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
     versioned_store_config: VersionedStoreConfig,
@@ -234,8 +231,8 @@ pub fn testnet_genesis(
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
-        system: Some(SystemConfig {
-            code: WASM_BINARY.to_vec(),
+        frame_system: Some(SystemConfig {
+            code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         }),
         pallet_balances: Some(BalancesConfig {
@@ -260,6 +257,7 @@ pub fn testnet_genesis(
                 .collect(),
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
+            history_depth: 336,
             ..Default::default()
         }),
         pallet_sudo: Some(SudoConfig { key: root_key }),
@@ -314,75 +312,38 @@ pub fn testnet_genesis(
         }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
             phantom: Default::default(),
-            storage_working_group_mint_capacity: 0,
+            working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
+        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+        }),
+        content_directory: Some({
+            ContentDirectoryConfig {
+                class_by_id: vec![],
+                entity_by_id: vec![],
+                curator_group_by_id: vec![],
+                next_class_id: 1,
+                next_entity_id: 1,
+                next_curator_group_id: 1,
+            }
+        }),
         versioned_store: Some(versioned_store_config),
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
-        proposals_codex: Some(ProposalsCodexConfig {
-            set_validator_count_proposal_voting_period: cpcp
-                .set_validator_count_proposal_voting_period,
-            set_validator_count_proposal_grace_period: cpcp
-                .set_validator_count_proposal_grace_period,
-            runtime_upgrade_proposal_voting_period: cpcp.runtime_upgrade_proposal_voting_period,
-            runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
-            text_proposal_voting_period: cpcp.text_proposal_voting_period,
-            text_proposal_grace_period: cpcp.text_proposal_grace_period,
-            set_election_parameters_proposal_voting_period: cpcp
-                .set_election_parameters_proposal_voting_period,
-            set_election_parameters_proposal_grace_period: cpcp
-                .set_election_parameters_proposal_grace_period,
-            set_content_working_group_mint_capacity_proposal_voting_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_voting_period,
-            set_content_working_group_mint_capacity_proposal_grace_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_grace_period,
-            set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
-            set_lead_proposal_grace_period: cpcp.set_lead_proposal_grace_period,
-            spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
-            spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
-            add_working_group_opening_proposal_voting_period: cpcp
-                .add_working_group_opening_proposal_voting_period,
-            add_working_group_opening_proposal_grace_period: cpcp
-                .add_working_group_opening_proposal_grace_period,
-            begin_review_working_group_leader_applications_proposal_voting_period: cpcp
-                .begin_review_working_group_leader_applications_proposal_voting_period,
-            begin_review_working_group_leader_applications_proposal_grace_period: cpcp
-                .begin_review_working_group_leader_applications_proposal_grace_period,
-            fill_working_group_leader_opening_proposal_voting_period: cpcp
-                .fill_working_group_leader_opening_proposal_voting_period,
-            fill_working_group_leader_opening_proposal_grace_period: cpcp
-                .fill_working_group_leader_opening_proposal_grace_period,
-            set_working_group_mint_capacity_proposal_voting_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_voting_period,
-            set_working_group_mint_capacity_proposal_grace_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_grace_period,
-            decrease_working_group_leader_stake_proposal_voting_period: cpcp
-                .decrease_working_group_leader_stake_proposal_voting_period,
-            decrease_working_group_leader_stake_proposal_grace_period: cpcp
-                .decrease_working_group_leader_stake_proposal_grace_period,
-            slash_working_group_leader_stake_proposal_voting_period: cpcp
-                .slash_working_group_leader_stake_proposal_voting_period,
-            slash_working_group_leader_stake_proposal_grace_period: cpcp
-                .slash_working_group_leader_stake_proposal_grace_period,
-            set_working_group_leader_reward_proposal_voting_period: cpcp
-                .set_working_group_leader_reward_proposal_voting_period,
-            set_working_group_leader_reward_proposal_grace_period: cpcp
-                .set_working_group_leader_reward_proposal_grace_period,
-            terminate_working_group_leader_role_proposal_voting_period: cpcp
-                .terminate_working_group_leader_role_proposal_voting_period,
-            terminate_working_group_leader_role_proposal_grace_period: cpcp
-                .terminate_working_group_leader_role_proposal_grace_period,
-        }),
     }
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::service::{new_full, new_light};
+    use crate::service::{new_full_base, new_light_base, NewFullBase};
     use sc_service_test;
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
@@ -390,7 +351,6 @@ pub(crate) mod tests {
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             vec![get_authority_keys_from_seed("Alice").0],
-            proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             content_config::empty_versioned_store_config(),
@@ -427,7 +387,6 @@ pub(crate) mod tests {
                 get_authority_keys_from_seed("Alice").0,
                 get_authority_keys_from_seed("Bob").0,
             ],
-            proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             content_config::empty_versioned_store_config(),
@@ -458,8 +417,30 @@ pub(crate) mod tests {
     fn test_connectivity() {
         sc_service_test::connectivity(
             integration_test_config_with_two_authorities(),
-            |config| new_full(config),
-            |config| new_light(config),
+            |config| {
+                let NewFullBase {
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                    ..
+                } = new_full_base(config, |_, _| ())?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
+            |config| {
+                let (keep_alive, _, client, network, transaction_pool) = new_light_base(config)?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    keep_alive,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
         );
     }
 }

@@ -25,15 +25,16 @@ const ProposalDesc = styled.div`
 export type ProposalPreviewProps = {
   proposal: ParsedProposal;
   bestNumber?: BlockNumber;
+  historical?: boolean;
 };
 
-export default function ProposalPreview ({ proposal, bestNumber }: ProposalPreviewProps) {
-  const extendedStatus = getExtendedStatus(proposal, bestNumber);
+export default function ProposalPreview ({ proposal, bestNumber, historical }: ProposalPreviewProps) {
+  const extendedStatus = getExtendedStatus(proposal, historical ? undefined : bestNumber);
 
   return (
     <Card
       fluid
-      href={`#/proposals/${proposal.id.toString()}`}>
+      href={`#/proposals/${historical ? 'historical/' : ''}${proposal.id.toString()}`}>
       <ProposalIdBox>{ `#${proposal.id.toString()}` }</ProposalIdBox>
       <Card.Content>
         <Card.Header>

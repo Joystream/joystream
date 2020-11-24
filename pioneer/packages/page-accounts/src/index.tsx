@@ -7,9 +7,10 @@ import { AppProps as Props } from '@polkadot/react-components/types';
 import React, { useMemo } from 'react';
 import { Route, Switch } from 'react-router';
 import { useAccounts, useIpfs } from '@polkadot/react-hooks';
-import { HelpOverlay, Tabs } from '@polkadot/react-components';
+import { Tabs } from '@polkadot/react-components'; // HelpOverlay
+import { MemoForm } from '@polkadot/joy-utils/react/components/Memo';
 
-import basicMd from './md/basic.md';
+// import basicMd from './md/basic.md';
 import { useTranslation } from './translate';
 import useCounter from './useCounter';
 import Accounts from './Accounts';
@@ -35,6 +36,10 @@ function AccountsApp ({ basePath, onStatusChange }: Props): React.ReactElement<P
     {
       name: 'vanity',
       text: t<string>('Vanity generator')
+    },
+    {
+      name: 'memo',
+      text: t<string>('My Memo')
     }
   ], [t]);
   const hidden = useMemo(
@@ -44,7 +49,7 @@ function AccountsApp ({ basePath, onStatusChange }: Props): React.ReactElement<P
 
   return (
     <main className='accounts--App'>
-      <HelpOverlay md={basicMd as string} />
+      {/* <HelpOverlay md={basicMd as string} /> */}
       <header>
         <Tabs
           basePath={basePath}
@@ -64,6 +69,9 @@ function AccountsApp ({ basePath, onStatusChange }: Props): React.ReactElement<P
             basePath={basePath}
             onStatusChange={onStatusChange}
           />
+        </Route>
+        <Route path={`${basePath}/memo`}>
+          <MemoForm />
         </Route>
         <Route>
           <Accounts

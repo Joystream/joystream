@@ -51,7 +51,7 @@ jobs:
     - name: lint
       run: |
         yarn install --frozen-lockfile
-        yarn workspace pioneer lint
+        yarn workspace pioneer lint --quiet
 
   pioneer_lint_osx:
     name: MacOS Linting
@@ -68,4 +68,4 @@ jobs:
     - name: lint
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace pioneer lint
+        yarn workspace pioneer lint --quiet
