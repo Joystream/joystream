@@ -19,6 +19,8 @@ use sp_std::prelude::*;
 mod mock;
 mod tests;
 
+mod benchmarking;
+
 pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
     type ForumUserId: Parameter
