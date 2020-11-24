@@ -58,8 +58,8 @@ export default async function createVideo(api: QueryNodeApi) {
 
   await createVideoHappyCaseFixture.runner(false)
 
-  // Temporary solution (wait 3 minutes)
-  await Utils.wait(180000)
+  // Temporary solution (wait 2 minutes)
+  await Utils.wait(120000)
 
   // Perform number of full text searches on Channel title, that is a slight variation on title that one expects would return the video.
   let channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('video')
@@ -96,7 +96,7 @@ export default async function createVideo(api: QueryNodeApi) {
 
   videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('Example video')
 
-  assert(videoFullTextSearchResult.data.titles.length === 1, 'Should contain exactly one video')
+  assert(videoFullTextSearchResult.data.search.length === 1, 'Should contain exactly one video')
 
   // Perform number full text searches on Video title, that absolutely should NOT return the video.
   videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('unknown')

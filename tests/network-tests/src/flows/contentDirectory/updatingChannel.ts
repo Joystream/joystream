@@ -4,10 +4,14 @@ import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntit
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 
-export function createUpdateChannelHandleFixture(api: QueryNodeApi, handle: string): UpdateChannelFixture {
+export function createUpdateChannelHandleFixture(
+  api: QueryNodeApi,
+  handle: string,
+  description: string
+): UpdateChannelFixture {
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<ChannelEntity> = {
-    handle,
+    description,
   }
 
   const uniquePropVal: Record<string, any> = { handle }
@@ -16,11 +20,12 @@ export function createUpdateChannelHandleFixture(api: QueryNodeApi, handle: stri
 }
 
 export default async function updateChannel(api: QueryNodeApi) {
-  const channelResult = await api.getChannelbyHandle('New channel example')
+  const handle = 'New channel example'
+  const channelResult = await api.getChannelbyHandle(handle)
   const channel = channelResult.data.channels[0]
 
-  const handle = 'Updated handle'
-  const createUpdateChannelDescriptionHappyCaseFixture = createUpdateChannelHandleFixture(api, handle)
+  const description = 'Updated description'
+  const createUpdateChannelDescriptionHappyCaseFixture = createUpdateChannelHandleFixture(api, handle, description)
 
   await createUpdateChannelDescriptionHappyCaseFixture.runner(false)
 
@@ -30,10 +35,13 @@ export default async function updateChannel(api: QueryNodeApi) {
   const channelAfterUpdateResult = await api.getChannelbyHandle(handle)
   const channelAfterUpdate = channelAfterUpdateResult.data.channels[0]
 
-  // handle field should be updated to provided one
-  assert(channelAfterUpdate.handle === handle)
-  assert(channelAfterUpdate.description === channel.description, 'Should be equal')
+  console.log(channelAfterUpdate.description)
+
+  // description field should be updated to provided one
+  assert(channelAfterUpdate.description === description, 'Should be equal')
+
+  assert(channelAfterUpdate.handle === channel.handle, 'Should be equal')
   assert(channelAfterUpdate.coverPhotoUrl === channel.coverPhotoUrl, 'Should be equal')
-  assert(channelAfterUpdate.avatarPhotoUrl === channel.avatarPhotoURL, 'Should be equal')
+  assert(channelAfterUpdate.avatarPhotoUrl === channel.avatarPhotoUrl, 'Should be equal')
   assert(channelAfterUpdate.isPublic === channel.isPublic, 'Should be equal')
 }

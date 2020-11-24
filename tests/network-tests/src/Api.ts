@@ -323,9 +323,9 @@ export class Api {
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(
-        this.api.createType('OpeningId', 0)
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
@@ -362,19 +362,17 @@ export class Api {
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
@@ -423,10 +421,9 @@ export class Api {
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].slashStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
@@ -1481,12 +1478,9 @@ export class Api {
     type: string,
     module: WorkingGroups
   ): SubmittableExtrinsic<'promise'> {
-    return (this.api.tx[module].addOpening(
-      actiavteAt,
-      commitment,
-      text,
-      type
-    ) as unknown) as SubmittableExtrinsic<'promise'>
+    return (this.api.tx[module].addOpening(actiavteAt, commitment, text, type) as unknown) as SubmittableExtrinsic<
+      'promise'
+    >
   }
 
   public async acceptApplications(
@@ -1660,10 +1654,9 @@ export class Api {
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
-      (this.api.tx[module].updateRewardAccount(
-        workerId,
-        newRewardAccount
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      (this.api.tx[module].updateRewardAccount(workerId, newRewardAccount) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >,
       worker,
       false
     )
@@ -1839,9 +1832,9 @@ export class Api {
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[
-      module
-    ].applicationById.entries<Application>()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
+      Application
+    >()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]
@@ -2090,7 +2083,7 @@ export class QueryNodeApi extends Api {
         search(text: $text) {
           item {
             ... on Video {
-              handle
+              title
               description
               duration
               thumbnailUrl
