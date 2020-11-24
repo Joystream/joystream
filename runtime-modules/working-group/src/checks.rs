@@ -1,6 +1,6 @@
 use crate::{
     BalanceOf, Instance, JobOpening, JobOpeningType, MemberId, RewardPolicy, StakePolicy,
-    TeamWorker, TeamWorkerId, Trait,
+    GroupWorker, GroupWorkerId, Trait,
 };
 
 use super::Error;
@@ -96,8 +96,8 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
     Ok(result_applications_info)
 }
 
-// Check leader: ensures that team leader was hired.
-pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>>
+// Check leader: ensures that group leader was hired.
+pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<GroupWorkerId<T>, Error<T, I>>
 {
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
@@ -135,8 +135,8 @@ pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
 
 // Check worker: ensures the worker was already created.
 pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
-    worker_id: &TeamWorkerId<T>,
-) -> Result<TeamWorker<T>, Error<T, I>> {
+    worker_id: &GroupWorkerId<T>,
+) -> Result<GroupWorker<T>, Error<T, I>> {
     ensure!(
         <crate::WorkerById::<T, I>>::contains_key(worker_id),
         Error::<T, I>::WorkerDoesNotExist
@@ -158,11 +158,11 @@ pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
     Ok(())
 }
 
-// Check worker: ensures the origin contains signed account that belongs to existing worker.
-pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
+/// Check worker: ensures the origin contains signed account that belongs to existing worker.
+pub fn ensure_worker_signed<T: Trait<I>, I: Instance>(
     origin: T::Origin,
-    worker_id: &TeamWorkerId<T>,
-) -> Result<TeamWorker<T>, DispatchError> {
+    worker_id: &GroupWorkerId<T>,
+) -> Result<GroupWorker<T>, DispatchError> {
     // Ensure that it is signed
     let signer_account = ensure_signed(origin)?;
 
@@ -181,7 +181,7 @@ pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
 // Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
 pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
     origin: T::Origin,
-    worker_id: TeamWorkerId<T>,
+    worker_id: GroupWorkerId<T>,
 ) -> Result<bool, DispatchError> {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
 
@@ -251,7 +251,7 @@ pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
 
 // Check worker: verifies that worker has recurring rewards.
 pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
-    worker: &TeamWorker<T>,
+    worker: &GroupWorker<T>,
 ) -> DispatchResult {
     worker
         .reward_per_block

@@ -19,7 +19,7 @@ use crate::tests::mock::{
 use crate::types::StakeParameters;
 use crate::{
     DefaultInstance, Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
-    TeamWorker,
+    GroupWorker,
 };
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
@@ -29,7 +29,7 @@ use fixtures::{
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::StorageMap;
-use mock::{run_to_block, Balances, RewardPeriod, TestWorkingTeam, ACTOR_ORIGIN_ERROR};
+use mock::{run_to_block, Balances, RewardPeriod, TestWorkingGroup, ACTOR_ORIGIN_ERROR};
 use sp_runtime::traits::Hash;
 use sp_std::collections::btree_map::BTreeMap;
 
@@ -450,18 +450,18 @@ fn update_worker_role_account_by_leader_succeeds() {
         let new_account_id = 10;
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        let old_lead = TestWorkingTeam::worker_by_id(worker_id);
+        let old_lead = TestWorkingGroup::worker_by_id(worker_id);
 
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
 
         update_worker_account_fixture.call_and_assert(Ok(()));
 
-        let new_lead = TestWorkingTeam::worker_by_id(worker_id);
+        let new_lead = TestWorkingGroup::worker_by_id(worker_id);
 
         assert_eq!(
             new_lead,
-            TeamWorker::<Test> {
+            GroupWorker::<Test> {
                 role_account_id: new_account_id,
                 ..old_lead
             }
@@ -595,16 +595,16 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
 fn leave_worker_role_by_leader_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
-        assert_eq!(TestWorkingTeam::current_lead(), None);
+        assert_eq!(TestWorkingGroup::current_lead(), None);
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        assert!(TestWorkingTeam::current_lead().is_some());
+        assert!(TestWorkingGroup::current_lead().is_some());
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        assert_eq!(TestWorkingTeam::current_lead(), None);
+        assert_eq!(TestWorkingGroup::current_lead(), None);
     });
 }
 
@@ -745,7 +745,7 @@ fn terminate_leader_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(worker_id));
 
-        assert_eq!(TestWorkingTeam::current_lead(), None);
+        assert_eq!(TestWorkingGroup::current_lead(), None);
     });
 }
 
@@ -755,7 +755,7 @@ fn terminate_worker_role_fails_with_unset_lead() {
         let worker_id = HireRegularWorkerFixture::default().hire();
 
         // Remove the leader from the storage.
-        TestWorkingTeam::unset_lead();
+        TestWorkingGroup::unset_lead();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -810,7 +810,7 @@ fn unset_lead_event_emitted() {
         HireRegularWorkerFixture::default().hire();
 
         // Remove the leader from the storage.
-        TestWorkingTeam::unset_lead();
+        TestWorkingGroup::unset_lead();
 
         EventFixture::assert_last_crate_event(RawEvent::LeaderUnset());
     });
@@ -829,7 +829,7 @@ fn set_lead_event_emitted() {
         let worker_id = 10;
 
         // Add the leader to the storage.
-        TestWorkingTeam::set_lead(worker_id);
+        TestWorkingGroup::set_lead(worker_id);
 
         EventFixture::assert_last_crate_event(RawEvent::LeaderSet(worker_id));
     });
@@ -1949,7 +1949,7 @@ fn rewards_payments_are_successful() {
             .with_reward_policy(reward_policy)
             .hire();
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         let account_id = worker.role_account_id;
 
@@ -1977,7 +1977,7 @@ fn rewards_payments_with_no_budget() {
             .with_reward_policy(reward_policy)
             .hire();
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         let account_id = worker.role_account_id;
 
@@ -1988,7 +1988,7 @@ fn rewards_payments_with_no_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         assert_eq!(
             worker.missed_reward.unwrap(),
@@ -2007,7 +2007,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
             .with_reward_policy(reward_policy)
             .hire();
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         let account_id = worker.reward_account_id;
 
@@ -2025,7 +2025,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), first_budget);
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         let effective_missed_reward: u64 = block_number * reward_per_block - first_budget;
 
@@ -2058,7 +2058,7 @@ fn rewards_payments_with_starting_block() {
             .with_reward_policy(reward_policy)
             .hire();
 
-        let worker = TestWorkingTeam::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
 
         let account_id = worker.reward_account_id;
 

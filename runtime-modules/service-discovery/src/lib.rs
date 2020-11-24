@@ -30,6 +30,8 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_root;
 use sp_std::vec::Vec;
 
+use working_group::ensure_worker_signed;
+
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
   reuse the same key for the role account and ipns (and make this discovery module obselete)
@@ -56,7 +58,7 @@ pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
 pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 
 /// Storage provider is a worker from the  working_group module.
-pub type StorageProviderId<T> = working_group::WorkerId<T>;
+pub type StorageProviderId<T> = working_group::GroupWorkerId<T>;
 
 pub(crate) const MINIMUM_LIFETIME: u32 = 600; // 1hr assuming 6s block times
 pub(crate) const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
@@ -124,7 +126,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             id: Vec<u8>,
         ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // TODO: ensure id is a valid base58 encoded IPNS identity
 
@@ -144,7 +146,7 @@ decl_module! {
         /// Requires signed storage provider credentials.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_ipns_id(origin, storage_provider_id: StorageProviderId<T>) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 

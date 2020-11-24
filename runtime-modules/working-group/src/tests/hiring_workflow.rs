@@ -4,7 +4,7 @@ use frame_system::RawOrigin;
 use crate::tests::fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
-use crate::tests::mock::TestWorkingTeam;
+use crate::tests::mock::TestWorkingGroup;
 use crate::types::StakeParameters;
 use crate::{JobOpeningType, RewardPolicy, StakePolicy};
 
@@ -140,8 +140,8 @@ impl HiringWorkflow {
         let origin = match self.opening_type {
             JobOpeningType::Leader => RawOrigin::Root,
             JobOpeningType::Regular => {
-                let leader_worker_id = TestWorkingTeam::current_lead().unwrap();
-                let leader = TestWorkingTeam::worker_by_id(leader_worker_id);
+                let leader_worker_id = TestWorkingGroup::current_lead().unwrap();
+                let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
                 let lead_account_id = leader.role_account_id;
 
                 RawOrigin::Signed(lead_account_id)

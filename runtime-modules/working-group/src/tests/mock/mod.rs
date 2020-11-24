@@ -16,7 +16,7 @@ impl_outer_origin! {
 
 mod staking_handler;
 
-mod working_team {
+mod working_group {
     pub use crate::Event;
 }
 
@@ -140,7 +140,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-pub type TestWorkingTeam = Module<Test, DefaultInstance>;
+pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
@@ -159,9 +159,9 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 pub fn run_to_block(n: u64) {
     while System::block_number() < n {
         <System as OnFinalize<u64>>::on_finalize(System::block_number());
-        <TestWorkingTeam as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestWorkingGroup as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
-        <TestWorkingTeam as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestWorkingGroup as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }

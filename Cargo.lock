@@ -4406,30 +4406,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-working-team"
-version = "1.0.1"
+version = "4.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

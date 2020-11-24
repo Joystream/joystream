@@ -17,4 +17,4 @@ pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorking
 pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Storage provider is a worker from the working group module.
-pub type StorageProviderId<T> = working_group::WorkerId<T>;
+pub type StorageProviderId<T> = working_group::GroupWorkerId<T>;

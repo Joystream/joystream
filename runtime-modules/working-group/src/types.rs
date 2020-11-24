@@ -6,14 +6,14 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-/// Team job application type alias.
+/// Group job application type alias.
 pub type JobApplication<T> = Application<<T as frame_system::Trait>::AccountId, MemberId<T>>;
 
 /// Member identifier in membership::member module.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Type identifier for a worker role, which must be same as membership actor identifier.
-pub type TeamWorkerId<T> = <T as membership::Trait>::ActorId;
+pub type GroupWorkerId<T> = <T as membership::Trait>::ActorId;
 
 // ApplicationId - JobApplication - helper struct.
 pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
@@ -21,22 +21,22 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
     pub application: JobApplication<T>,
 }
 
-// WorkerId - TeamWorker - helper struct.
+// WorkerId - GroupWorker - helper struct.
 pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait + balances::Trait> {
-    pub worker_id: TeamWorkerId<T>,
-    pub worker: TeamWorker<T>,
+    pub worker_id: GroupWorkerId<T>,
+    pub worker: GroupWorker<T>,
 }
 
 impl<T: membership::Trait + frame_system::Trait + balances::Trait>
-    From<(TeamWorkerId<T>, TeamWorker<T>)> for WorkerInfo<T>
+    From<(GroupWorkerId<T>, GroupWorker<T>)> for WorkerInfo<T>
 {
-    fn from((worker_id, worker): (TeamWorkerId<T>, TeamWorker<T>)) -> Self {
+    fn from((worker_id, worker): (GroupWorkerId<T>, GroupWorker<T>)) -> Self {
         WorkerInfo { worker_id, worker }
     }
 }
 
-/// Team worker type alias.
-pub type TeamWorker<T> = Worker<
+/// Group worker type alias.
+pub type GroupWorker<T> = Worker<
     <T as frame_system::Trait>::AccountId,
     MemberId<T>,
     <T as frame_system::Trait>::BlockNumber,
@@ -125,7 +125,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
     }
 }
 
-/// Working team participant: regular worker or lead.
+/// Working group participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
@@ -161,7 +161,7 @@ pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
 impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
     Worker<AccountId, MemberId, BlockNumber, Balance>
 {
-    /// Creates a new _TeamWorker_ using parameters.
+    /// Creates a new _GroupWorker_ using parameters.
     pub fn new(
         member_id: &MemberId,
         role_account_id: &AccountId,

@@ -18,7 +18,7 @@ decl_error! {
         /// Worker application does not exist.
         WorkerApplicationDoesNotExist,
 
-        /// Working team size limit exceeded.
+        /// Working group size limit exceeded.
         MaxActiveWorkerNumberExceeded,
 
         /// Successful worker application does not exist.
@@ -69,7 +69,7 @@ decl_error! {
         /// Worker has no recurring reward.
         WorkerHasNoReward,
 
-        /// Specified unstaking period is less then minimum set for the team.
+        /// Specified unstaking period is less then minimum set for the group.
         UnstakingPeriodLessThanMinimum,
 
         /// Requested operation with stake is impossible because of stake was not defined for the role.
