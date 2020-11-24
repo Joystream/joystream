@@ -132,8 +132,8 @@ pub fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
     ensure_is_lead_account::<T, I>(signer)
 }
 
-// Check worker: ensures the worker was already created.
-pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
+/// Check worker: ensures the worker was already created.
+pub fn ensure_worker_exists<T: Trait<I>, I: Instance>(
     worker_id: &WorkerId<T>,
 ) -> Result<GroupWorker<T>, Error<T, I>> {
     ensure!(

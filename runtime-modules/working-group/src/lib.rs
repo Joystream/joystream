@@ -54,7 +54,7 @@ pub use types::{
 };
 use types::{ApplicationInfo, GroupWorker, MemberId, WorkerInfo};
 
-pub use checks::{ensure_origin_is_active_leader, ensure_worker_signed};
+pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
 use membership::staking_handler::StakingHandler;
@@ -1118,5 +1118,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
 
         false
+    }
+
+    /// Returns all existing worker id list.
+    pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
+        <WorkerById<T, I>>::iter()
+            .map(|(worker_id, _)| worker_id)
+            .collect()
     }
 }

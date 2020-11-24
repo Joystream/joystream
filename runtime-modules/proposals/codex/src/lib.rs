@@ -53,35 +53,37 @@
 // Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
 
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-// #![warn(missing_docs)]
-
 mod proposal_types;
 
 #[cfg(test)]
 mod tests;
 
+use codec::Codec;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use frame_support::{decl_error, decl_module, decl_storage, ensure, print, Parameter};
 use frame_system::ensure_root;
-use sp_arithmetic::traits::Zero;
+use sp_arithmetic::traits::{BaseArithmetic, Zero};
+use sp_runtime::traits::MaybeSerialize;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 
+pub use crate::proposal_types::{
+    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
+};
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
+use frame_support::sp_runtime::traits::Member;
 use governance::election_params::ElectionParameters;
+pub use proposal_types::{
+    ApplicationId, OpeningId, ProposalDetails, ProposalDetailsOf, ProposalEncoder,
+};
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
-
-pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
-};
-pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
+use working_group::Penalty;
 
 // 'Set working group mint capacity' proposal limit
 const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
@@ -92,7 +94,7 @@ const MAX_VALIDATOR_COUNT: u32 = 100;
 
 // Data container struct to fix linter warning 'too many arguments for the function' for the
 // create_proposal() function.
-struct CreateProposalParameters<T: Trait + working_group::Trait> {
+struct CreateProposalParameters<T: Trait> {
     pub origin: T::Origin,
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
@@ -113,7 +115,6 @@ pub trait Trait:
     + governance::election::Trait
     + hiring::Trait
     + staking::Trait
-    + working_group::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -130,6 +131,26 @@ pub trait Trait:
 
     /// Encodes the proposal usint its details.
     type ProposalEncoder: ProposalEncoder<Self>;
+
+    /// Working group OpeningId type
+    type WorkingGroupOpeningId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Working group ApplicationId type
+    type WorkingGroupApplicationId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// 'Set validator count' proposal parameters.
     type SetValidatorCountProposalParameters: Get<
@@ -520,8 +541,8 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             fill_opening_parameters: FillOpeningParameters<
-                working_group::OpeningId<T>,
-                working_group::ApplicationId<T>
+                OpeningId<T>,
+                ApplicationId<T>
             >,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -559,7 +580,7 @@ decl_module! {
                 Error::<T>::InvalidWorkingGroupMintCapacity
             );
 
-            let proposal_details = ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group);
+            let proposal_details = ProposalDetails::SetWorkingGroupBudgetCapacity(mint_balance, working_group);
             let params = CreateProposalParameters{
                 origin,
                 member_id,
@@ -622,15 +643,15 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
-            slashing_stake: BalanceOf<T>,
+            penalty: Penalty<BalanceOf<T>>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
-            ensure!(slashing_stake != Zero::zero(), Error::<T>::SlashingStakeIsZero);
+            ensure!(penalty.slashing_amount != Zero::zero(), Error::<T>::SlashingStakeIsZero);
 
             let proposal_details = ProposalDetails::SlashWorkingGroupLeaderStake(
                 worker_id,
-                slashing_stake,
+                penalty,
                 working_group
             );
 
@@ -659,7 +680,7 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
-            reward_amount: BalanceOfMint<T>,
+            reward_amount: Option<BalanceOfMint<T>>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -693,7 +714,7 @@ decl_module! {
             title: Vec<u8>,
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
-            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
+            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>, BalanceOf<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);

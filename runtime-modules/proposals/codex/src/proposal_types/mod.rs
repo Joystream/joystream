@@ -8,7 +8,7 @@ use sp_std::vec::Vec;
 use crate::ElectionParameters;
 use common::working_group::WorkingGroup;
 
-use working_group::{RewardPolicy, StakePolicy};
+use working_group::{Penalty, RewardPolicy, StakePolicy};
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -16,14 +16,20 @@ pub trait ProposalEncoder<T: crate::Trait> {
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
 }
 
+/// Type alias for an application id.
+pub type ApplicationId<T> = <T as crate::Trait>::WorkingGroupApplicationId;
+
+/// Type alias for an opening id.
+pub type OpeningId<T> = <T as crate::Trait>::WorkingGroupOpeningId;
+
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfMint<T>,
     crate::BalanceOfGovernanceCurrency<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as frame_system::Trait>::AccountId,
-    working_group::OpeningId<T>,
-    working_group::ApplicationId<T>,
+    OpeningId<T>,
+    ApplicationId<T>,
     crate::BalanceOf<T>,
     working_group::WorkerId<T>,
     crate::MemberId<T>,
@@ -83,26 +89,28 @@ pub enum ProposalDetails<
     /// Add opening for the working group leader position.
     AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
 
+    /// ********** Deprecated during the Olympia release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
     /// Begin review applications for the working group leader position.
-    BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
+    DeprecatedBeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 
     /// Fill opening for the working group leader position.
     FillWorkingGroupLeaderOpening(FillOpeningParameters<OpeningId, ApplicationId>),
 
-    /// Set working group mint capacity.
-    SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
+    /// Set working group budget capacity.
+    SetWorkingGroupBudgetCapacity(MintedBalance, WorkingGroup),
 
     /// Decrease the working group leader stake.
     DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
 
     /// Slash the working group leader stake.
-    SlashWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
+    SlashWorkingGroupLeaderStake(WorkerId, Penalty<StakeBalance>, WorkingGroup),
 
     /// Set working group leader reward balance.
-    SetWorkingGroupLeaderReward(WorkerId, MintedBalance, WorkingGroup),
+    SetWorkingGroupLeaderReward(WorkerId, Option<MintedBalance>, WorkingGroup),
 
     /// Fire the working group leader with possible slashing.
-    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
+    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId, StakeBalance>),
 
     /// Amend constitution.
     AmendConstitution(Vec<u8>),
@@ -139,15 +147,12 @@ impl<
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub struct TerminateRoleParameters<WorkerId> {
+pub struct TerminateRoleParameters<WorkerId, Balance> {
     /// Leader worker id to fire.
     pub worker_id: WorkerId,
 
-    /// Terminate role rationale.
-    pub rationale: Vec<u8>,
-
-    /// Slash the leader stake on terminating.
-    pub slash: bool,
+    /// Terminate role slash penalty.
+    pub penalty: Option<Penalty<Balance>>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

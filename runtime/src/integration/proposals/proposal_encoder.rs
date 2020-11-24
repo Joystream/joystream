@@ -3,7 +3,6 @@ use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
-use codec::Encode;
 use frame_support::print;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
@@ -77,24 +76,23 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     Wg::create_add_opening_call(add_opening_params)
                 )
             }
-            ProposalDetails::BeginReviewWorkingGroupLeaderApplications(
+            ProposalDetails::DeprecatedBeginReviewWorkingGroupLeaderApplications(
                 opening_id,
                 working_group,
-            ) => wrap_working_group_call!(
-                working_group,
-                Wg::create_begin_review_applications_call(opening_id)
-            ),
+            ) => {
+                print(
+                    "Error: Calling deprecated BeginReviewWorkingGroupLeaderApplications encoding option.",
+                );
+                return Vec::new();
+            }
             ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_params) => {
                 wrap_working_group_call!(
                     fill_opening_params.working_group,
                     Wg::create_fill_opening_call(fill_opening_params)
                 )
             }
-            ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group) => {
-                wrap_working_group_call!(
-                    working_group,
-                    Wg::create_set_mint_capacity_call(mint_balance)
-                )
+            ProposalDetails::SetWorkingGroupBudgetCapacity(budget, working_group) => {
+                wrap_working_group_call!(working_group, Wg::create_set_budget_capacity_call(budget))
             }
             ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 worker_id,
@@ -143,7 +141,7 @@ struct Wg<T, I> {
 
 impl<T, I> Wg<T, I>
 where
-    T: working_group::Trait<I>,
+    T: working_group::Trait<I> + proposals_codex::Trait,
     I: frame_support::traits::Instance,
 {
     // Generic call constructor for the add working group opening.
@@ -154,25 +152,18 @@ where
         >,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::add_opening(
-            add_opening_params.activate_at,
-            add_opening_params.commitment,
-            add_opening_params.human_readable_text,
+            add_opening_params.description,
             OpeningType::Leader,
+            add_opening_params.stake_policy,
+            add_opening_params.reward_policy,
         )
-    }
-
-    // Generic call constructor for the begin review working group applications.
-    fn create_begin_review_applications_call(
-        opening_id: working_group::OpeningId<T>,
-    ) -> working_group::Call<T, I> {
-        working_group::Call::<T, I>::begin_applicant_review(opening_id)
     }
 
     // Generic call constructor for the add working group opening.
     fn create_fill_opening_call(
         fill_opening_params: proposals_codex::FillOpeningParameters<
-            working_group::OpeningId<T>,
-            working_group::ApplicationId<T>,
+            proposals_codex::OpeningId<T>,
+            proposals_codex::ApplicationId<T>,
         >,
     ) -> working_group::Call<T, I> {
         let mut successful_application_ids = BTreeSet::new();
@@ -181,15 +172,7 @@ where
         working_group::Call::<T, I>::fill_opening(
             fill_opening_params.opening_id,
             successful_application_ids,
-            fill_opening_params.reward_policy,
         )
-    }
-
-    // Generic call constructor for the working group 'set mit capacity'.
-    fn create_set_mint_capacity_call(
-        mint_balance: working_group::BalanceOf<T>,
-    ) -> working_group::Call<T, I> {
-        working_group::Call::<T, I>::set_mint_capacity(mint_balance)
     }
 
     // Generic call constructor for the working group 'decrease stake'.
@@ -203,27 +186,36 @@ where
     // Generic call constructor for the working group 'slash stake'.
     fn create_slash_stake_call(
         worker_id: working_group::WorkerId<T>,
-        slashing_stake: working_group::BalanceOf<T>,
+        penalty: working_group::Penalty<working_group::BalanceOf<T>>,
     ) -> working_group::Call<T, I> {
-        working_group::Call::<T, I>::slash_stake(worker_id, slashing_stake)
+        working_group::Call::<T, I>::slash_stake(worker_id, penalty)
     }
 
     // Generic call constructor for the working group 'update reward amount'.
     fn create_set_reward_call(
         worker_id: working_group::WorkerId<T>,
-        reward_amount: working_group::BalanceOf<T>,
+        reward_amount: Option<working_group::BalanceOf<T>>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::update_reward_amount(worker_id, reward_amount)
     }
 
     // Generic call constructor for the working group 'terminate role'.
     fn terminate_role_call(
-        terminate_role_params: proposals_codex::TerminateRoleParameters<working_group::WorkerId<T>>,
+        terminate_role_params: proposals_codex::TerminateRoleParameters<
+            working_group::WorkerId<T>,
+            working_group::BalanceOf<T>,
+        >,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::terminate_role(
             terminate_role_params.worker_id,
-            terminate_role_params.rationale,
-            terminate_role_params.slash,
+            terminate_role_params.penalty,
         )
+    }
+
+    // Generic call constructor for the working group 'set budget'.
+    fn create_set_budget_capacity_call(
+        budget: working_group::BalanceOf<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::set_budget(budget)
     }
 }

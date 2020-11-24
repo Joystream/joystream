@@ -652,6 +652,8 @@ impl proposals_codex::Trait for Runtime {
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type ProposalEncoder = ExtrinsicProposalEncoder;
+    type WorkingGroupOpeningId = OpeningId;
+    type WorkingGroupApplicationId = ApplicationId;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
     type TextProposalParameters = TextProposalParameters;
