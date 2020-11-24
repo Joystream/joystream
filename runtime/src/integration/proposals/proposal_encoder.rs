@@ -3,6 +3,7 @@ use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
+use codec::Encode;
 use frame_support::print;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
