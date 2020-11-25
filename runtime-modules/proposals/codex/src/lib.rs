@@ -72,7 +72,6 @@ pub use crate::proposal_types::{
 };
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
-use governance::election_params::ElectionParameters;
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use proposals_discussion::ThreadMode;
 use proposals_engine::{

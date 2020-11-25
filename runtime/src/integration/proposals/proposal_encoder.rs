@@ -4,7 +4,6 @@ use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
 use codec::Encode;
-use frame_support::print;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
@@ -35,9 +34,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Text(text) => {
                 Call::ProposalsCodex(proposals_codex::Call::execute_text_proposal(text))
             }
-            ProposalDetails::SetElectionParameters(election_parameters) => Call::CouncilElection(
-                governance::election::Call::set_election_parameters(election_parameters),
-            ),
             ProposalDetails::Spending(balance, destination) => Call::Council(
                 governance::council::Call::spend_from_council_mint(balance, destination),
             ),
@@ -47,44 +43,11 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             ),
-            // ********** Deprecated during the Babylon release.
-            ProposalDetails::DeprecatedSetLead(_) => {
-                print("Error: Calling deprecated SetLead encoding option.");
-                return Vec::new();
-            }
-            // ********** Deprecated during the Babylon release.
-            ProposalDetails::DeprecatedSetContentWorkingGroupMintCapacity(_) => {
-                print(
-                    "Error: Calling deprecated SetContentWorkingGroupMintCapacity encoding option.",
-                );
-                return Vec::new();
-            }
-            // ********** Deprecated during the Nicaea release.
-            // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::DeprecatedEvictStorageProvider(_) => {
-                print("Error: Calling deprecated EvictStorageProvider encoding option.");
-                return Vec::new();
-            }
-            // ********** Deprecated during the Nicaea release.
-            // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::DeprecatedSetStorageRoleParameters(_) => {
-                print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
-                return Vec::new();
-            }
             ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_params) => {
                 wrap_working_group_call!(
                     add_opening_params.working_group,
                     Wg::create_add_opening_call(add_opening_params)
                 )
-            }
-            ProposalDetails::DeprecatedBeginReviewWorkingGroupLeaderApplications(
-                _opening_id,
-                _working_group,
-            ) => {
-                print(
-                    "Error: Calling deprecated BeginReviewWorkingGroupLeaderApplications encoding option.",
-                );
-                return Vec::new();
             }
             ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_params) => {
                 wrap_working_group_call!(

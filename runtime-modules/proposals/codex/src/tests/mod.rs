@@ -36,7 +36,7 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
