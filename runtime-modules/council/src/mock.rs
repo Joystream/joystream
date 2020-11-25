@@ -58,6 +58,8 @@ parameter_types! {
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    pub const BudgetRefillPeriod: u64 = 1000; // intentionally high number that prevents side-effecting tests other than  budget refill tests
 }
 
 impl Trait for Runtime {
@@ -77,6 +79,9 @@ impl Trait for Runtime {
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
 
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
@@ -343,6 +348,8 @@ pub struct CouncilSettings<T: Trait> {
     pub idle_stage_duration: T::BlockNumber,
     pub election_duration: T::BlockNumber,
     pub cycle_duration: T::BlockNumber,
+    pub budget_refill_amount: Balance<T>,
+    pub budget_refill_period: T::BlockNumber,
 }
 
 impl<T: Trait> CouncilSettings<T>
@@ -378,6 +385,9 @@ where
                 + announcing_stage_duration
                 + voting_stage_duration
                 + idle_stage_duration,
+
+            budget_refill_amount: <T as Trait>::BudgetRefillAmount::get(),
+            budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
         }
     }
 }

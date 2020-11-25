@@ -228,6 +228,11 @@ pub trait Trait: system::Trait {
     /// Interval for automatic reward payments.
     type ElectedMemberRewardPeriod: Get<Self::BlockNumber>;
 
+    /// Amount that will be added to the budget balance on every refill.
+    type BudgetRefillAmount: Get<Balance<Self>>;
+    /// Interval between automatic budget refills.
+    type BudgetRefillPeriod: Get<Self::BlockNumber>;
+
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
@@ -264,8 +269,11 @@ decl_storage! {
         /// Budget for the council's elected members rewards.
         pub Budget get(fn budget): Balance<T>;
 
-        /// The next block in which the budget will be increased.
+        /// The next block in which the elected council member rewards will be payed.
         pub NextRewardPayments get(fn next_reward_payments): T::BlockNumber;
+
+        /// The next block in which the budget will be increased.
+        pub NextBudgetRefill get(fn next_budget_refill): T::BlockNumber;
     }
 }
 
@@ -388,8 +396,8 @@ decl_module! {
             // council stage progress
             Self::try_progress_stage(now);
 
-            // budget reward payment
-            Self::try_reward_payments(now);
+            // budget reward payment + budget refill
+            Self::try_process_budget(now);
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -524,7 +532,17 @@ impl<T: Trait> Module<T> {
     }
 
     /// Checkout elected council members reward payments.
-    fn try_reward_payments(now: T::BlockNumber) {
+    fn try_process_budget(now: T::BlockNumber) {
+        // budget autorefill
+        let next_refill = NextBudgetRefill::<T>::get();
+        if next_refill == 0.into() {
+            // budget automatic refill initialization (this condition will be true only first time autorefill is planned)
+            Mutations::<T>::plan_budget_refill(now);
+        } else if next_refill == now {
+            // budget automatic refill
+            Mutations::<T>::refill_budget(now);
+        }
+
         // council members rewards
         if now == NextRewardPayments::<T>::get() {
             Self::pay_elected_member_rewards(now);
@@ -604,7 +622,7 @@ impl<T: Trait> Module<T> {
 
     /////////////////// Budget-related /////////////////////////////////////
 
-    /// pay rewards to elected council members
+    /// Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
         let reward_per_block = T::ElectedMemberRewardPerBlock::get();
         let starting_balance = Budget::<T>::get();
@@ -893,6 +911,21 @@ impl<T: Trait> Mutations<T> {
     /// Set budget balance
     fn set_budget(balance: &Balance<T>) {
         Budget::<T>::put(balance);
+    }
+
+    /// Refill budget's balance.
+    fn refill_budget(now: T::BlockNumber) {
+        let refill_amount = T::BudgetRefillAmount::get();
+
+        Budget::<T>::mutate(|balance| *balance += refill_amount);
+        Self::plan_budget_refill(now);
+    }
+
+    // Plan next budget refill.
+    fn plan_budget_refill(now: T::BlockNumber) {
+        let refill_period = T::BudgetRefillPeriod::get();
+
+        NextBudgetRefill::<T>::put(now + refill_period);
     }
 
     /// Pay reward to a single elected council member.

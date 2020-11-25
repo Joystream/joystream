@@ -1,6 +1,8 @@
 #![cfg(test)]
 
-use super::{CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error, Module, Trait};
+use super::{
+    Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error, Module, Trait,
+};
 use crate::mock::*;
 use crate::staking_handler::mocks::{CANDIDATE_BASE_ID, VOTER_CANDIDATE_OFFSET};
 use crate::staking_handler::StakingHandler2;
@@ -1140,5 +1142,37 @@ fn council_discard_remaining_rewards_on_depose() {
         for council_member in CouncilMembers::<Runtime>::get() {
             assert_eq!(council_member.unpaid_reward, 0,);
         }
+    });
+}
+
+/// Test that budget is periodicly refilled.
+#[test]
+fn council_budget_auto_refill() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+        let start_balance = Budget::<Runtime>::get();
+
+        // forward before next refill
+        MockUtils::increase_block_number(council_settings.budget_refill_period - 1);
+
+        assert_eq!(Budget::<Runtime>::get(), start_balance,);
+
+        // forward to next filling
+        MockUtils::increase_block_number(1);
+
+        assert_eq!(
+            Budget::<Runtime>::get(),
+            start_balance + council_settings.budget_refill_amount,
+        );
+
+        // forward to next filling
+        MockUtils::increase_block_number(council_settings.budget_refill_period);
+
+        assert_eq!(
+            Budget::<Runtime>::get(),
+            start_balance + 2 * council_settings.budget_refill_amount,
+        );
     });
 }
