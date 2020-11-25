@@ -4,7 +4,7 @@ use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
-use frame_support::traits::{Currency, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
@@ -91,12 +91,13 @@ fn create_proposal<T: Trait>(
     id: u32,
     proposal_number: u32,
     constitutionality: u32,
+    grace_period: u32,
 ) -> (T::AccountId, T::MemberId, T::ProposalId) {
     let (account_id, member_id) = member_funded_account::<T>("member", id);
 
     let proposal_parameters = ProposalParameters {
         voting_period: T::BlockNumber::from(1),
-        grace_period: Zero::zero(),
+        grace_period: T::BlockNumber::from(grace_period),
         approval_quorum_percentage: 1,
         approval_threshold_percentage: 1,
         slashing_quorum_percentage: 0,
@@ -161,6 +162,7 @@ fn create_multiple_finalized_proposals<T: Trait + governance::council::Trait>(
     constitutionality: u32,
     vote_kind: VoteKind,
     total_voters: u32,
+    grace_period: u32,
 ) -> (Vec<T::AccountId>, Vec<T::ProposalId>) {
     let mut voters = Vec::new();
     for i in 0..total_voters {
@@ -180,7 +182,7 @@ fn create_multiple_finalized_proposals<T: Trait + governance::council::Trait>(
     let mut proposals = Vec::new();
     for id in total_voters..number_of_proposals + total_voters {
         let (proposer_account_id, _, proposal_id) =
-            create_proposal::<T>(id, id - total_voters + 1, constitutionality);
+            create_proposal::<T>(id, id - total_voters + 1, constitutionality, grace_period);
         proposers.push(proposer_account_id);
         proposals.push(proposal_id);
 
@@ -212,7 +214,7 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (_, _, proposal_id) = create_proposal::<T>(0, 1, 0);
+        let (_, _, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
 
         let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
 
@@ -254,7 +256,7 @@ benchmarks! {
     cancel_proposal {
         let i in 1 .. T::MaxLocks::get();
 
-        let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0);
+        let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
@@ -284,7 +286,7 @@ benchmarks! {
     }
 
     veto_proposal {
-        let (account_id, _, proposal_id) = create_proposal::<T>(0, 1, 0);
+        let (account_id, _, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
     }: _ (RawOrigin::Root, proposal_id)
     verify {
         assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
@@ -318,8 +320,10 @@ benchmarks! {
             i,
             0,
             VoteKind::Approve,
-            1
+            1,
+            0,
         );
+
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
         for proposer_account_id in proposers {
@@ -328,6 +332,90 @@ benchmarks! {
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
+        }
+
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            0,
+            "Proposals should no longer be active"
+        );
+
+        for proposal_id in proposals.iter() {
+            assert!(
+                !Proposals::<T>::contains_key(proposal_id),
+                "Proposals should've been removed"
+            );
+
+            assert!(
+                !DispatchableCallCode::<T>::contains_key(proposal_id),
+                "Dispatchable code should've been removed"
+            );
+        }
+
+        if cfg!(test) {
+            for proposal_id in proposals.iter() {
+                assert_in_events::<T>(
+                    RawEvent::ProposalExecuted(
+                        proposal_id.clone(),
+                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
+                );
+            }
+        }
+    }
+
+    on_initialize_pending_execution_decode_fails {
+        let i in 1 .. T::MaxActiveProposalLimit::get();
+
+        let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
+            i,
+            0,
+            VoteKind::Approve,
+            1,
+            1,
+        );
+
+        let mut current_block_number = System::<T>::block_number();
+
+        System::<T>::on_finalize(current_block_number);
+        System::<T>::on_finalize(current_block_number);
+
+        current_block_number += One::one();
+
+        System::<T>::on_initialize(current_block_number);
+        ProposalsEngine::<T>::on_initialize(current_block_number);
+
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            i,
+            "Proposals should still be active"
+        );
+
+        for proposal_id in proposals.iter() {
+            assert!(
+                Proposals::<T>::contains_key(proposal_id),
+                "All proposals should still be stored"
+            );
+
+            assert!(
+                DispatchableCallCode::<T>::contains_key(proposal_id),
+                "All dispatchable call code should still be stored"
+            );
+        }
+
+    }: { ProposalsEngine::<T>::on_initialize(current_block_number) }
+    verify {
+        for proposer_account_id in proposers {
+            assert_eq!(
+                T::StakingHandler::current_stake(&proposer_account_id),
+                Zero::zero(),
+                "Should've unlocked all stake"
+            );
+        }
+
+        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "Proposals should no longer be active");
+        for proposal_id in proposals.iter() {
+            assert!(!Proposals::<T>::contains_key(proposal_id), "Proposals should've been removed");
+            assert!(!DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable code should've been removed");
         }
 
         if cfg!(test) {
@@ -348,7 +436,8 @@ benchmarks! {
             i,
             2,
             VoteKind::Approve,
-            1
+            1,
+            0,
         );
 
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
@@ -388,6 +477,7 @@ benchmarks! {
             0,
             VoteKind::Reject,
             max(T::TotalVotersCounter::total_voters_count(), 1),
+            0,
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
@@ -432,6 +522,7 @@ benchmarks! {
             0,
             VoteKind::Slash,
             max(T::TotalVotersCounter::total_voters_count(), 1),
+            0,
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
@@ -514,6 +605,13 @@ mod tests {
     fn test_on_initialize_approved_pending_constitutionality() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_on_initialize_approved_pending_constitutionality::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_on_initialize_pending_execution_decode_fails() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_on_initialize_pending_execution_decode_fails::<Test>());
         });
     }
 

@@ -92,7 +92,7 @@ impl crate::Trait for Test {
 }
 
 impl WeightInfo for () {
-    fn add_post(_: u32, _: u32) -> Weight {
+    fn add_post(_: u32) -> Weight {
         0
     }
 

@@ -140,12 +140,14 @@ use sp_std::vec::Vec;
 use common::origin::ActorOriginValidator;
 use membership::staking_handler::StakingHandler;
 
-// proposals_engine
+/// Proposals engine WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn vote(i: u32) -> Weight;
     fn cancel_proposal(i: u32) -> Weight;
     fn veto_proposal() -> Weight;
     fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
+    fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
     fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
@@ -372,21 +374,50 @@ decl_module! {
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_initialize() -> Weight {
+            // `process_proposal` returns the weight of the executed proposals. The weight of the
+            // executed proposals doesn't include any access to the store or calculation that
+            // `on_initialize` does. Therefore, to get the total weight of `on_initialize` we need
+            // to add the weight of the execution of `on_intialize` to the weight returned by
+            // `process_proposal`.
+            // To be safe, we use the worst possible case for `on_initialize`, meaning that there
+            // are as many proposals active as possible and they all take the worst possible branch.
+
             let max_active_proposals = T::MaxActiveProposalLimit::get();
 
-            <T as Trait>::WeightInfo::on_initialize_immediate_execution_decode_fails(max_active_proposals)
-                .max(
-                    <T as Trait>
-                        ::WeightInfo
-                        ::on_initialize_approved_pending_constitutionality(max_active_proposals)
-                )
-                .max(
-                    <T as Trait>::WeightInfo::on_initialize_rejected(max_active_proposals)
-                )
-                .max(
-                    <T as Trait>::WeightInfo::on_initialize_slashed(max_active_proposals)
-                )
-                .saturating_add(Self::process_proposals())
+            // Weight when all the proposals are immediatly approved and executed
+            let immediate_execution_branch_weight =
+                <T as Trait>::WeightInfo::
+                on_initialize_immediate_execution_decode_fails(max_active_proposals);
+
+            let pending_execution_branch_weight =
+                <T as Trait>::WeightInfo::
+                on_initialize_pending_execution_decode_fails(max_active_proposals);
+
+            // Weight when all the proposals are approved and pending constitutionality
+            let approved_pending_constitutionality_branch_weight =
+                <T as Trait>::WeightInfo::
+                on_initialize_approved_pending_constitutionality(max_active_proposals);
+
+            // Weight when all proposals are rejected
+            let rejected_branch_weight =
+                <T as Trait>::WeightInfo::on_initialize_rejected(max_active_proposals);
+
+            // Weight when all proposals are slashed
+            let slashed_branch_weight =
+                <T as Trait>::WeightInfo::on_initialize_slashed(max_active_proposals);
+
+            // Weight of the executed proposals
+            let executed_proposals_weight = Self::process_proposals();
+
+            // Maximum Weight of all possible worst case scenarios
+            let maximum_branch_weight = immediate_execution_branch_weight
+                .max(pending_execution_branch_weight)
+                .max(approved_pending_constitutionality_branch_weight)
+                .max(rejected_branch_weight)
+                .max(slashed_branch_weight);
+
+            // total_weight = executed_proposals_weight + maximum_branch_weight
+            executed_proposals_weight.saturating_add(maximum_branch_weight)
         }
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
@@ -729,8 +760,7 @@ impl<T: Trait> Module<T> {
 
             // immediately execute proposal if it ready for execution or save it for the future otherwise.
             if finalized_proposal.is_ready_for_execution(now) {
-                executed_weight =
-                    executed_weight.saturating_add(Self::execute_proposal(proposal_id));
+                executed_weight = Self::execute_proposal(proposal_id);
             } else {
                 <Proposals<T>>::insert(proposal_id, finalized_proposal);
             }

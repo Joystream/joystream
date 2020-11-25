@@ -123,6 +123,10 @@ impl crate::WeightInfo for () {
         0
     }
 
+    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
     fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
         0
     }

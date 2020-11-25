@@ -86,7 +86,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [2; 8];
 }
 
-pub struct MockEngineWeight;
+pub struct MockProposalsEngineWeight;
 
 impl proposals_engine::Trait for Test {
     type Event = ();
@@ -102,10 +102,10 @@ impl proposals_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
-    type WeightInfo = MockEngineWeight;
+    type WeightInfo = MockProposalsEngineWeight;
 }
 
-impl proposals_engine::WeightInfo for MockEngineWeight {
+impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
     fn vote(_: u32) -> Weight {
         0
     }
@@ -119,6 +119,10 @@ impl proposals_engine::WeightInfo for MockEngineWeight {
     }
 
     fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
         0
     }
 
@@ -165,7 +169,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
 }
 
-pub struct MockProposalWeight;
+pub struct MockProposalsDiscussionWeight;
 
 impl proposals_discussion::Trait for Test {
     type Event = ();
@@ -174,11 +178,11 @@ impl proposals_discussion::Trait for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
-    type WeightInfo = MockProposalWeight;
+    type WeightInfo = MockProposalsDiscussionWeight;
 }
 
-impl proposals_discussion::WeightInfo for MockProposalWeight {
-    fn add_post(_: u32, _: u32) -> Weight {
+impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {
+    fn add_post(_: u32) -> Weight {
         0
     }
 

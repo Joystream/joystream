@@ -68,8 +68,10 @@ pub use types::ThreadMode;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
+/// Proposals discussion WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn add_post(i: u32, j: u32) -> Weight;
+    fn add_post(i: u32) -> Weight; // Note: since parameter doesn't affect weight it's discarded
     fn update_post() -> Weight; // Note: since parameter doesn't affect weight it's discarded
     fn change_thread_mode(i: u32) -> Weight;
 }
@@ -184,7 +186,6 @@ decl_module! {
         /// Adds a post with author origin check.
         #[weight = <T as Trait>::WeightInfo::add_post(
             T::MaxWhiteListSize::get(),
-            _text.len().try_into().unwrap()
         )]
         pub fn add_post(
             origin,
