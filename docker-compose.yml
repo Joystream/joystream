@@ -71,6 +71,7 @@ services:
       - .env
     environment:
       - DB_HOST=db
+      - DB_NAME=${PROCESSOR_DB_NAME}
     ports:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on: 
