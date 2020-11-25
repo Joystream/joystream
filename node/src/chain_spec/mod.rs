@@ -347,10 +347,7 @@ pub(crate) mod tests {
             vec![get_authority_keys_from_seed("Alice").0],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
@@ -383,10 +380,7 @@ pub(crate) mod tests {
             ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
