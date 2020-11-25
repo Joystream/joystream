@@ -63,7 +63,6 @@ pub use content_directory;
 pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
-pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
 pub use membership;
@@ -72,8 +71,6 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
-pub use versioned_store;
-pub use versioned_store_permissions;
 pub use working_group;
 
 #[cfg(feature = "std")]
@@ -409,20 +406,6 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl versioned_store::Trait for Runtime {
-    type Event = Event;
-}
-
-impl versioned_store_permissions::Trait for Runtime {
-    type Credential = Credential;
-    type CredentialChecker = (
-        integration::content_working_group::ContentWorkingGroupCredentials,
-        integration::versioned_store_permissions::SudoKeyHasAllCredentials,
-    );
-    type CreateClassPermissionsChecker =
-        integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
-}
-
 type EntityId = <Runtime as content_directory::Trait>::EntityId;
 
 parameter_types! {
@@ -496,10 +479,6 @@ impl stake::Trait for Runtime {
     );
     type StakeId = u64;
     type SlashId = u64;
-}
-
-impl content_wg::Trait for Runtime {
-    type Event = Event;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {
@@ -795,13 +774,10 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
-        ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: constitution::{Module, Call, Storage, Event},
         // --- Storage
