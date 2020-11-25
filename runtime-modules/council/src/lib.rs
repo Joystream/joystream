@@ -59,7 +59,7 @@ use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
 
-use referendum::{OptionResult, ReferendumManager};
+use referendum::{CastVote, OptionResult, ReferendumManager};
 
 // declared modules
 mod mock;
@@ -152,6 +152,7 @@ pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::AccountId,
     <T as system::Trait>::Hash,
 >>::VotePower;
+pub type CastVoteOf<T> = CastVote<<T as system::Trait>::Hash, Balance<T>>;
 
 pub type CouncilMemberOf<T> =
     CouncilMember<<T as system::Trait>::AccountId, <T as Trait>::MembershipId, Balance<T>>;
@@ -175,7 +176,8 @@ pub trait Trait: system::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + From<u64>;
+        + From<u64>
+        + Into<u64>;
 
     /// Referendum used for council elections.
     type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::Hash>;
@@ -212,7 +214,10 @@ pub trait ReferendumConnection<T: Trait> {
         -> Result<(), Error<T>>;
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
-    fn can_release_vote_stake() -> Result<(), Error<T>>;
+    fn can_release_vote_stake(
+        vote: &CastVoteOf<T>,
+        current_voting_cycle_id: &u64,
+    ) -> Result<(), Error<T>>;
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
@@ -552,12 +557,35 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     /// Check that it is a proper time to release stake.
-    fn can_release_vote_stake() -> Result<(), Error<T>> {
-        // ensure it's proper time to release stake
-        match Stage::<T>::get().stage {
-            CouncilStage::Idle => (),
-            _ => return Err(Error::CantReleaseStakeNow),
-        };
+    fn can_release_vote_stake(
+        vote: &CastVoteOf<T>,
+        current_voting_cycle_id: &u64,
+    ) -> Result<(), Error<T>> {
+        // allow release for very old votes
+        if vote.cycle_id > current_voting_cycle_id + 1 {
+            return Ok(());
+        }
+
+        let voting_for_winner = CouncilMembers::<T>::get()
+            .iter()
+            .map(|council_member| council_member.membership_id)
+            .any(|membership_id| vote.vote_for == Some(membership_id.into()));
+
+        // allow release for vote from previous elections only when not voted for winner
+        if vote.cycle_id == current_voting_cycle_id + 1 {
+            // ensure vote was not cast for the one of winning candidates / council members
+            if voting_for_winner {
+                return Err(Error::CantReleaseStakeNow);
+            }
+
+            return Ok(());
+        }
+
+        // at this point vote.cycle_id == current_voting_cycle_id
+
+        if voting_for_winner {
+            return Err(Error::CantReleaseStakeNow);
+        }
 
         Ok(())
     }

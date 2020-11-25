@@ -23,7 +23,7 @@
 //!
 //! - [vote](./struct.Module.html#method.vote)
 //! - [reveal_vote](./struct.Module.html#method.reveal_vote)
-//! - [release_voting_stake](./struct.Module.html#method.release_voting_stake)
+//! - [release_vote_stake](./struct.Module.html#method.release_vote_stake)
 //!
 //! ## Notes
 //! This module is instantiable pallet as described here https://substrate.dev/recipes/3-entrees/instantiable.html
@@ -71,8 +71,8 @@ impl<BlockNumber, VotePower: Encode + Decode> Default for ReferendumStage<BlockN
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,      // block in which referendum started
-    winning_target_count: u64, // target number of winners
+    pub started: BlockNumber,      // block in which referendum started
+    pub winning_target_count: u64, // target number of winners
 }
 
 /// Representation for revealing stage state.
@@ -92,10 +92,10 @@ pub struct OptionResult<VotePower> {
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CastVote<Hash, Currency> {
-    commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for
-    cycle_id: u64,    // current referendum cycle number
-    stake: Currency,  // stake locked for vote
-    vote_for: Option<u64>, // target option this vote favors; is `None` before the vote is revealed
+    pub commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for
+    pub cycle_id: u64,    // current referendum cycle number
+    pub stake: Currency,  // stake locked for vote
+    pub vote_for: Option<u64>, // target option this vote favors; is `None` before the vote is revealed
 }
 
 /////////////////// Type aliases ///////////////////////////////////////////////
@@ -194,7 +194,10 @@ pub trait Trait<I: Instance>: system::Trait {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_release_voting_stake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+    fn can_release_vote_stake(
+        vote: &CastVote<Self::Hash, Balance<Self, I>>,
+        current_voting_cycle_id: &u64,
+    ) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(winners: &[OptionResult<Self::VotePower>]);
@@ -367,15 +370,15 @@ decl_module! {
 
         /// Release a locked stake.
         #[weight = 10_000_000]
-        pub fn release_voting_stake(origin) -> Result<(), Error<T, I>> {
-            let account_id = EnsureChecks::<T, I>::can_release_voting_stake(origin)?;
+        pub fn release_vote_stake(origin) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::<T, I>::can_release_vote_stake(origin)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::release_voting_stake(&account_id);
+            Mutations::<T, I>::release_vote_stake(&account_id);
 
             // emit event
             Self::deposit_event(RawEvent::StakeReleased(account_id));
@@ -607,7 +610,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Release stake associated to the user's last vote.
-    fn release_voting_stake(account_id: &<T as system::Trait>::AccountId) {
+    fn release_vote_stake(account_id: &<T as system::Trait>::AccountId) {
         // lock stake amount
         T::Currency::remove_lock(T::LockId::get(), account_id);
 
@@ -820,7 +823,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok((stage_data, account_id, cast_vote))
     }
 
-    fn can_release_voting_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn can_release_vote_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -834,7 +837,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ask runtime if stake can be released
-        if !T::can_release_voting_stake(&cast_vote) {
+        if !T::can_release_vote_stake(&cast_vote, &cycle_id) {
             return Err(Error::UnstakingForbidden);
         }
 

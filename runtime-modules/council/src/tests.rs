@@ -18,7 +18,7 @@ fn council_lifecycle() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        Mocks::run_full_council_cycle(0);
+        Mocks::run_full_council_cycle(0, &vec![], 0);
     });
 }
 
@@ -147,6 +147,43 @@ fn council_can_vote_for_yourself() {
             voter.vote_for,
             Ok(()),
         );
+    });
+}
+
+/// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle with succesfull council election
+#[test]
+fn council_vote_for_winner_stakes_longer() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // run first election round
+        let params = Mocks::run_full_council_cycle(0, &vec![], 0);
+        let second_round_user_offset = 100; // some number higher than the number of voters
+
+        let voter_for_winner = params.voters[0].clone();
+        let voter_for_looser = params.voters[params.voters.len() - 1].clone();
+
+        // try to release vote stake
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
+
+        // forward past idle stage
+        MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);
+
+        // try to release vote stake
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
+
+        // run second election round
+        Mocks::run_full_council_cycle(
+            council_settings.cycle_duration,
+            &params.expected_final_council_members,
+            second_round_user_offset,
+        );
+
+        // try to release vote stake
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Ok(()));
     });
 }
 
@@ -675,7 +712,7 @@ fn council_member_stake_automaticly_unlocked() {
             <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
         let not_reelected_candidate_index = 0;
 
-        let params = Mocks::run_full_council_cycle(0);
+        let params = Mocks::run_full_council_cycle(0, &vec![], 0);
 
         let candidates = params.candidates_announcing.clone();
 
@@ -851,7 +888,7 @@ fn council_repeated_candidacy_unstakes() {
         let not_elected_candidate_index = 2;
 
         // run one council cycle
-        let params = Mocks::run_full_council_cycle(0);
+        let params = Mocks::run_full_council_cycle(0, &vec![], 0);
 
         // forward to next candidacy announcing period
         MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);

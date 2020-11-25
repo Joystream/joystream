@@ -91,7 +91,10 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_release_voting_stake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
+    fn can_release_vote_stake(
+        _vote: &CastVote<Self::Hash, Balance<Self, Instance0>>,
+        _current_voting_cycle_id: &u64,
+    ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -556,10 +559,9 @@ impl InstanceMocks<Runtime, Instance0> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::release_voting_stake(InstanceMockUtils::<
-                Runtime,
-                Instance0,
-            >::mock_origin(origin),),
+            Module::<Runtime, Instance0>::release_vote_stake(
+                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+            ),
             expected_result,
         );
 

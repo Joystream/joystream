@@ -202,15 +202,20 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
         stake
     }
 
-    fn can_release_voting_stake(
-        _vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
+    fn can_release_vote_stake(
+        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
+        current_voting_cycle_id: &u64,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake().is_ok()
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake(
+            vote,
+            current_voting_cycle_id,
+        )
+        .is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
@@ -337,6 +342,9 @@ pub struct CouncilSettings<T: Trait> {
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
     pub idle_stage_duration: T::BlockNumber,
+
+    pub election_duration: T::BlockNumber,
+    pub cycle_duration: T::BlockNumber,
 }
 
 impl<T: Trait> CouncilSettings<T>
@@ -346,16 +354,32 @@ where
     pub fn extract_settings() -> CouncilSettings<T> {
         let council_size = T::CouncilSize::get();
 
+        let reveal_stage_duration =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(
+            )
+            .into();
+        let announcing_stage_duration = <T as Trait>::AnnouncingPeriodDuration::get();
+        let voting_stage_duration =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get()
+                .into();
+        let idle_stage_duration = <T as Trait>::IdlePeriodDuration::get();
+
         CouncilSettings {
             council_size,
             min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
             min_candidate_stake: T::MinCandidateStake::get(),
-            announcing_stage_duration: <T as Trait>::AnnouncingPeriodDuration::get(),
-            voting_stage_duration:
-                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into(),
-            reveal_stage_duration:
-                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into(),
+            announcing_stage_duration,
+            voting_stage_duration,
+            reveal_stage_duration,
             idle_stage_duration: <T as Trait>::IdlePeriodDuration::get(),
+
+            election_duration: reveal_stage_duration
+                + announcing_stage_duration
+                + voting_stage_duration,
+            cycle_duration: reveal_stage_duration
+                + announcing_stage_duration
+                + voting_stage_duration
+                + idle_stage_duration,
         }
     }
 }
@@ -720,6 +744,20 @@ where
         );
     }
 
+    pub fn release_vote_stake(
+        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        expected_result: Result<(), ()>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            referendum::Module::<RuntimeReferendum, ReferendumInstance>::release_vote_stake(
+                InstanceMockUtils::<Runtime>::mock_origin(origin),
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+    }
+
     /// simulate one council's election cycle
     pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
         let settings = params.council_settings;
@@ -833,7 +871,11 @@ where
     }
 
     /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
-    pub fn run_full_council_cycle(start_block_number: T::BlockNumber) -> CouncilCycleParams<T> {
+    pub fn run_full_council_cycle(
+        start_block_number: T::BlockNumber,
+        expected_initial_council_members: &[CouncilMemberOf<T>],
+        users_offset: u64,
+    ) -> CouncilCycleParams<T> {
         let council_settings = CouncilSettings::<T>::extract_settings();
         let vote_stake =
             <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
@@ -843,7 +885,7 @@ where
             as u64)
             .map(|i| {
                 InstanceMockUtils::<T>::generate_candidate(
-                    u64::from(i),
+                    u64::from(i) + users_offset,
                     council_settings.min_candidate_stake,
                 )
             })
@@ -866,9 +908,9 @@ where
         let voters = (0..votes_map.len())
             .map(|index| {
                 InstanceMockUtils::<T>::generate_voter(
-                    index as u64,
+                    index as u64 + users_offset,
                     vote_stake.into(),
-                    CANDIDATE_BASE_ID + votes_map[index],
+                    CANDIDATE_BASE_ID + votes_map[index] + users_offset,
                 )
             })
             .collect();
@@ -876,7 +918,7 @@ where
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<T>::extract_settings(),
             cycle_start_block_number: start_block_number,
-            expected_initial_council_members: vec![],
+            expected_initial_council_members: expected_initial_council_members.to_vec(),
             expected_final_council_members,
             candidates_announcing: candidates.clone(),
             expected_candidates,
