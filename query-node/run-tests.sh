@@ -11,8 +11,9 @@ cd $SCRIPT_PATH
 # typeorm commandline is used by db:migrate step below.
 ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
 
-# Move to root directory so docker-compose uses .env file from the project root directory
-cd ../
+set -a
+. ../.env
+set +a
 
 # Clean start
 docker-compose down -v
@@ -34,9 +35,7 @@ export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 docker-compose up -d db
 
 # Migrate the databases
-yarn workspace query-node-root db:indexer:migrate
-yarn workspace query-node-root db:schema:migrate
-TYPEORM_DATABASE=query_node_processor yarn workspace query-node-root db:indexer:migrate
+yarn workspace query-node-root db:migrate
 
 docker-compose up -d graphql-server
 
@@ -44,4 +43,4 @@ docker-compose up -d graphql-server
 docker-compose up -d processor
 
 # Run tests
-ATTACH_TO_NETWORK=joystream_default tests/network-tests/run-tests.sh content-directory
+ATTACH_TO_NETWORK=joystream_default ../tests/network-tests/run-tests.sh content-directory
