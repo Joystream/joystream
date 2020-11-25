@@ -153,6 +153,8 @@ pub trait WeightInfo {
     fn on_initialize_slashed(i: u32) -> Weight;
 }
 
+type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
+
 /// Proposals engine trait.
 pub trait Trait:
     frame_system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
@@ -386,25 +388,25 @@ decl_module! {
 
             // Weight when all the proposals are immediatly approved and executed
             let immediate_execution_branch_weight =
-                <T as Trait>::WeightInfo::
+                WeightInfoEngine::<T>::
                 on_initialize_immediate_execution_decode_fails(max_active_proposals);
 
             let pending_execution_branch_weight =
-                <T as Trait>::WeightInfo::
+                WeightInfoEngine::<T>::
                 on_initialize_pending_execution_decode_fails(max_active_proposals);
 
             // Weight when all the proposals are approved and pending constitutionality
             let approved_pending_constitutionality_branch_weight =
-                <T as Trait>::WeightInfo::
+                WeightInfoEngine::<T>::
                 on_initialize_approved_pending_constitutionality(max_active_proposals);
 
             // Weight when all proposals are rejected
             let rejected_branch_weight =
-                <T as Trait>::WeightInfo::on_initialize_rejected(max_active_proposals);
+                WeightInfoEngine::<T>::on_initialize_rejected(max_active_proposals);
 
             // Weight when all proposals are slashed
             let slashed_branch_weight =
-                <T as Trait>::WeightInfo::on_initialize_slashed(max_active_proposals);
+                WeightInfoEngine::<T>::on_initialize_slashed(max_active_proposals);
 
             // Weight of the executed proposals
             let executed_proposals_weight = Self::process_proposals();
@@ -421,7 +423,7 @@ decl_module! {
         }
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        #[weight = <T as Trait>::WeightInfo::vote(_rationale.len().try_into().unwrap())]
+        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().try_into().unwrap())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
@@ -453,7 +455,7 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
-        #[weight = <T as Trait>::WeightInfo::cancel_proposal(T::MaxLocks::get())]
+        #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
 
@@ -470,7 +472,7 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
-        #[weight = <T as Trait>::WeightInfo::veto_proposal()]
+        #[weight = WeightInfoEngine::<T>::veto_proposal()]
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 

@@ -76,6 +76,8 @@ pub trait WeightInfo {
     fn change_thread_mode(i: u32) -> Weight;
 }
 
+type WeightInfoDiscussion<T> = <T as Trait>::WeightInfo;
+
 decl_event!(
     /// Proposals engine events
     pub enum Event<T>
@@ -184,7 +186,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Adds a post with author origin check.
-        #[weight = <T as Trait>::WeightInfo::add_post(
+        #[weight = WeightInfoDiscussion::<T>::add_post(
             T::MaxWhiteListSize::get(),
         )]
         pub fn add_post(
@@ -218,7 +220,7 @@ decl_module! {
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
-        #[weight = <T as Trait>::WeightInfo::update_post()]
+        #[weight = WeightInfoDiscussion::<T>::update_post()]
         pub fn update_post(
             origin,
             post_author_id: MemberId<T>,
@@ -244,7 +246,7 @@ decl_module! {
        }
 
         /// Changes thread permission mode.
-        #[weight = <T as Trait>::WeightInfo::change_thread_mode(
+        #[weight = WeightInfoDiscussion::<T>::change_thread_mode(
             if let ThreadMode::Closed(ref list) = mode {
                 list.len().try_into().unwrap()
             } else {
