@@ -92,7 +92,6 @@
       "name": "isCensored",
       "description": "Video censorship status set by the Curator.",
       "required": false,
-      "unique": true,
       "property_type": { "Single": "Bool" },
       "locking_policy": { "is_locked_from_controller": true }
     }
