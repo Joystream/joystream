@@ -187,7 +187,7 @@ pub trait Trait<I: Instance>: system::Trait {
     type MinimumStake: Get<Balance<Self, I>>;
 
     /// Calculate the vote's power for user and his stake.
-    fn caclulate_vote_power(
+    fn calculate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &Balance<Self, I>,
     ) -> <Self as Trait<I>>::VotePower;
@@ -581,7 +581,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         cast_vote: CastVoteOf<T, I>,
     ) -> Result<(), Error<T, I>> {
         // prepare new values
-        let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
+        let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
         let option_result = OptionResult {
             option_id: *option_id,
             vote_power,
