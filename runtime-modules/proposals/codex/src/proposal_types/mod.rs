@@ -62,7 +62,7 @@ pub enum ProposalDetails<
 
     /// ********** Deprecated during the Babylon release.
     /// It is kept only for backward compatibility in the Pioneer. **********
-    /// Balance for the `set content working group mint capacity` proposal
+    /// Balance for the `set content working group budget capacity` proposal
     DeprecatedSetContentWorkingGroupMintCapacity(MintedBalance),
 
     /// ********** Deprecated during the Nicaea release.

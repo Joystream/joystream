@@ -9,8 +9,8 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
-    ApplyOnOpeningParameters, DefaultInstance, GroupWorker, JobApplication, JobOpening,
-    OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
+    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, OpeningType, Penalty,
+    RawEvent, RewardPolicy, StakePolicy, Worker,
 };
 
 pub struct EventFixture;
@@ -185,7 +185,7 @@ impl ApplyOnOpeningFixture {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
         TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
-            ApplyOnOpeningParameters::<Test, DefaultInstance> {
+            ApplyOnOpeningParameters::<Test> {
                 member_id: self.member_id,
                 opening_id: self.opening_id,
                 role_account_id: self.role_account_id,
@@ -338,7 +338,7 @@ impl FillOpeningFixture {
                 );
             }
 
-            let expected_worker = GroupWorker::<Test> {
+            let expected_worker = Worker::<Test> {
                 member_id: 1,
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,

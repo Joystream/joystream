@@ -6,9 +6,7 @@ use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
-use hiring::ActivateOpeningAt;
 use proposals_engine::ProposalParameters;
-use working_group::OpeningPolicyCommitment;
 
 use crate::*;
 use crate::{Error, ProposalDetails};
@@ -38,7 +36,7 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -412,9 +410,9 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
 ) {
     initial_test_ext().execute_with(|| {
         let add_opening_parameters = AddOpeningParameters {
-            activate_at: ActivateOpeningAt::CurrentBlock,
-            commitment: OpeningPolicyCommitment::default(),
-            human_readable_text: b"some text".to_vec(),
+            description: b"some text".to_vec(),
+            stake_policy: None,
+            reward_policy: None,
             working_group,
         };
 
@@ -465,69 +463,6 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
 }
 
 #[test]
-fn create_begin_review_working_group_leader_applications_proposal_common_checks_succeed() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_begin_review_working_group_leader_applications_proposal_common_checks_succeed(
-            group,
-        );
-    }
-}
-
-fn run_create_begin_review_working_group_leader_applications_proposal_common_checks_succeed(
-    working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        let opening_id = 1; // random opening id.
-
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    opening_id,
-                    working_group,
- 					None,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    opening_id,
-                    working_group,
- 					None,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
-                    opening_id,
-                    working_group,
- 					None,
-                )
-            },
-            proposal_parameters: <Test as crate::Trait>::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
-            proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
-                working_group),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
 fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
@@ -544,7 +479,6 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
         let fill_opening_parameters = FillOpeningParameters {
             opening_id,
             successful_application_id: 1,
-            reward_policy: None,
             working_group,
         };
 
@@ -609,17 +543,17 @@ fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters
         increase_total_balance_issuance_using_account_id(1, 500000);
 
         assert_eq!(
-            ProposalCodex::create_set_working_group_mint_capacity_proposal(
+            ProposalCodex::create_set_working_group_budget_capacity_proposal(
                 RawOrigin::Signed(1).into(),
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Some(1),
-                (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
+                (crate::WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE + 1) as u64,
                 working_group,
                 None,
             ),
-            Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
+            Err(Error::<Test>::InvalidWorkingGroupBudgetCapacity.into())
         );
     });
 }
@@ -640,7 +574,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
-                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::None.into(),
                     1,
                     b"title".to_vec(),
@@ -652,7 +586,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
@@ -664,7 +598,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 )
             },
             successful_call: || {
-                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
@@ -676,8 +610,8 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::SetWorkingGroupMintCapacityProposalParameters::get(),
-            proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(10, working_group),
+                <Test as crate::Trait>::SetWorkingGroupBudgetCapacityProposalParameters::get(),
+            proposal_details: ProposalDetails::SetWorkingGroupBudgetCapacity(10, working_group),
         };
         proposal_fixture.check_all();
     });
@@ -772,7 +706,10 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
+                    Penalty {
+                        slashing_amount: 10,
+                        slashing_text: Vec::new(),
+                    },
                     working_group,
                     None,
                 )
@@ -785,7 +722,10 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
+                    Penalty {
+                        slashing_amount: 10,
+                        slashing_text: Vec::new(),
+                    },
                     working_group,
                     None,
                 )
@@ -798,14 +738,24 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     Some(1),
                     10,
-                    10,
+                    Penalty {
+                        slashing_amount: 10,
+                        slashing_text: Vec::new(),
+                    },
                     working_group,
                     None,
                 )
             },
             proposal_parameters:
                 <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
-            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group),
+            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
+                10,
+                Penalty {
+                    slashing_amount: 10,
+                    slashing_text: Vec::new(),
+                },
+                working_group,
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -838,7 +788,10 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
                 b"body".to_vec(),
                 Some(1),
                 10,
-                0,
+                Penalty {
+                    slashing_amount: 0,
+                    slashing_text: Vec::new()
+                },
                 working_group,
                 None,
             ),
@@ -904,7 +857,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
+                    Some(10),
                     working_group,
                     None,
                 )
@@ -917,7 +870,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
+                    Some(10),
                     working_group,
                     None,
                 )
@@ -930,14 +883,18 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     Some(1),
                     10,
-                    10,
+                    Some(10),
                     working_group,
                     None,
                 )
             },
             proposal_parameters:
                 <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
-            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(10, 10, working_group),
+            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(
+                10,
+                Some(10),
+                working_group,
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -959,8 +916,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
 
         let terminate_role_parameters = TerminateRoleParameters {
             worker_id: 10,
-            rationale: Vec::new(),
-            slash: false,
+            penalty: None,
             working_group,
         };
 

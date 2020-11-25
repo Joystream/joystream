@@ -657,8 +657,8 @@ impl proposals_codex::Trait for Runtime {
     type BeginReviewWorkingGroupApplicationsProposalParameters =
         BeginReviewWorkingGroupApplicationsProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupMintCapacityProposalParameters =
-        SetWorkingGroupMintCapacityProposalParameters;
+    type SetWorkingGroupBudgetCapacityProposalParameters =
+        SetWorkingGroupBudgetCapacityProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters =
         DecreaseWorkingGroupLeaderStakeProposalParameters;
     type SlashWorkingGroupLeaderStakeProposalParameters =

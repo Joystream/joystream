@@ -48,10 +48,10 @@ use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::{
-    ApplicationId, ApplyOnOpeningParameters, BalanceOf, JobApplication, JobOpening, OpeningId,
-    OpeningType, Penalty, RewardPolicy, StakePolicy, WorkerId,
+    ApplicationId, ApplyOnOpeningParameters, BalanceOf, JobApplication, JobOpening, MemberId,
+    OpeningId, OpeningType, Penalty, RewardPolicy, StakePolicy, Worker, WorkerId,
 };
-use types::{ApplicationInfo, GroupWorker, MemberId, WorkerInfo};
+use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
@@ -219,7 +219,7 @@ decl_storage! {
 
         /// Maps identifier to corresponding worker.
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
-            WorkerId<T> => GroupWorker<T>;
+            WorkerId<T> => Worker<T>;
 
         /// Current group lead.
         pub CurrentLead get(fn current_lead) : Option<WorkerId<T>>;
@@ -877,7 +877,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let new_worker_id = <NextWorkerId<T, I>>::get();
 
         // Construct a worker.
-        let worker = GroupWorker::<T>::new(
+        let worker = Worker::<T>::new(
             &application_info.application.member_id,
             &application_info.application.role_account_id,
             &application_info.application.reward_account_id,
@@ -924,7 +924,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
     // Deposits an event.
-    fn remove_worker(worker_id: &WorkerId<T>, worker: &GroupWorker<T>, event: Event<T, I>) {
+    fn remove_worker(worker_id: &WorkerId<T>, worker: &Worker<T>, event: Event<T, I>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -957,7 +957,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Reward a worker using reward presets and working group budget.
-    fn reward_worker(worker_id: &WorkerId<T>, worker: &GroupWorker<T>) {
+    fn reward_worker(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         // If reward period is not set.
         let mut rewarding_period: u32 = T::RewardPeriod::get();
         if rewarding_period == 0u32 {
@@ -1002,7 +1002,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
-    fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &GroupWorker<T>) {
+    fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
             let (could_be_paid_reward, insufficient_amount) =
                 Self::calculate_possible_payment(missed_reward);
@@ -1026,7 +1026,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Saves missed reward for a worker.
-    fn save_missed_reward(worker_id: &WorkerId<T>, worker: &GroupWorker<T>, reward: BalanceOf<T>) {
+    fn save_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>, reward: BalanceOf<T>) {
         // Save unpaid reward.
         let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
 
@@ -1085,7 +1085,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Defines whether the worker staking parameters allow to leave without unstaking period.
-    fn can_leave_immediately(worker: &GroupWorker<T>) -> bool {
+    fn can_leave_immediately(worker: &Worker<T>) -> bool {
         if worker.job_unstaking_period == Zero::zero() {
             return true;
         }

@@ -29,22 +29,22 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
     pub marker: PhantomData<I>,
 }
 
-// WorkerId - GroupWorker - helper struct.
+// WorkerId - Worker - helper struct.
 pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait + balances::Trait> {
     pub worker_id: WorkerId<T>,
-    pub worker: GroupWorker<T>,
+    pub worker: Worker<T>,
 }
 
-impl<T: membership::Trait + frame_system::Trait + balances::Trait>
-    From<(WorkerId<T>, GroupWorker<T>)> for WorkerInfo<T>
+impl<T: membership::Trait + frame_system::Trait + balances::Trait> From<(WorkerId<T>, Worker<T>)>
+    for WorkerInfo<T>
 {
-    fn from((worker_id, worker): (WorkerId<T>, GroupWorker<T>)) -> Self {
+    fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {
         WorkerInfo { worker_id, worker }
     }
 }
 
 /// Group worker type alias.
-pub type GroupWorker<T> = Worker<
+pub type Worker<T> = GroupWorker<
     <T as frame_system::Trait>::AccountId,
     MemberId<T>,
     <T as frame_system::Trait>::BlockNumber,
@@ -136,7 +136,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
 /// Working group participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
+pub struct GroupWorker<AccountId, MemberId, BlockNumber, Balance> {
     /// Member id related to the worker/lead.
     pub member_id: MemberId,
 
@@ -167,7 +167,7 @@ pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
 }
 
 impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
-    Worker<AccountId, MemberId, BlockNumber, Balance>
+    GroupWorker<AccountId, MemberId, BlockNumber, Balance>
 {
     /// Creates a new _GroupWorker_ using parameters.
     pub fn new(
@@ -179,7 +179,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
         reward_per_block: Option<Balance>,
         created_at: BlockNumber,
     ) -> Self {
-        Worker {
+        GroupWorker {
             member_id: member_id.clone(),
             role_account_id: role_account_id.clone(),
             reward_account_id: reward_account_id.clone(),

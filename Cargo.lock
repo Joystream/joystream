@@ -4145,6 +4145,7 @@ dependencies = [
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
+ "sp-arithmetic",
  "sp-core",
  "sp-io",
  "sp-runtime",

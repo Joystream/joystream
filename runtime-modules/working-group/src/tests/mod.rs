@@ -18,7 +18,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    DefaultInstance, Error, GroupWorker, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
+    DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, Worker,
 };
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
@@ -460,7 +460,7 @@ fn update_worker_role_account_by_leader_succeeds() {
 
         assert_eq!(
             new_lead,
-            GroupWorker::<Test> {
+            Worker::<Test> {
                 role_account_id: new_account_id,
                 ..old_lead
             }

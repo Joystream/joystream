@@ -1,6 +1,6 @@
 use crate::{
-    ApplicationId, BalanceOf, GroupWorker, Instance, JobOpening, MemberId, OpeningId, OpeningType,
-    RewardPolicy, StakePolicy, Trait, WorkerId,
+    ApplicationId, BalanceOf, Instance, JobOpening, MemberId, OpeningId, OpeningType, RewardPolicy,
+    StakePolicy, Trait, Worker, WorkerId,
 };
 
 use super::Error;
@@ -137,7 +137,7 @@ pub fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
 /// Check worker: ensures the worker was already created.
 pub fn ensure_worker_exists<T: Trait<I>, I: Instance>(
     worker_id: &WorkerId<T>,
-) -> Result<GroupWorker<T>, Error<T, I>> {
+) -> Result<Worker<T>, Error<T, I>> {
     ensure!(
         <crate::WorkerById::<T, I>>::contains_key(worker_id),
         Error::<T, I>::WorkerDoesNotExist
@@ -163,7 +163,7 @@ pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
 pub fn ensure_worker_signed<T: Trait<I>, I: Instance>(
     origin: T::Origin,
     worker_id: &WorkerId<T>,
-) -> Result<GroupWorker<T>, DispatchError> {
+) -> Result<Worker<T>, DispatchError> {
     // Ensure that it is signed
     let signer_account = ensure_signed(origin)?;
 
@@ -252,7 +252,7 @@ pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
 
 // Check worker: verifies that worker has recurring rewards.
 pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
-    worker: &GroupWorker<T>,
+    worker: &Worker<T>,
 ) -> DispatchResult {
     worker
         .reward_per_block

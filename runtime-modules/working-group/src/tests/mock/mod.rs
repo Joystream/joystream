@@ -116,8 +116,6 @@ parameter_types! {
 }
 
 impl Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
