@@ -1,5 +1,5 @@
 use crate::{
-    ApplicationId, BalanceOf, Instance, JobOpening, MemberId, OpeningId, OpeningType, RewardPolicy,
+    ApplicationId, BalanceOf, Instance, MemberId, Opening, OpeningId, OpeningType, RewardPolicy,
     StakePolicy, Trait, Worker, WorkerId,
 };
 
@@ -35,7 +35,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
     opening_id: &OpeningId,
-) -> Result<JobOpening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
+) -> Result<Opening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
@@ -232,7 +232,7 @@ pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
 
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
-    opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
+    opening: &Opening<T::BlockNumber, BalanceOf<T>>,
     stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOf<T>>>,
 ) -> DispatchResult {
     let opening_stake_balance = opening

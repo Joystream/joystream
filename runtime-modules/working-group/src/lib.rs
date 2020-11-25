@@ -48,8 +48,8 @@ use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::{
-    ApplicationId, ApplyOnOpeningParameters, BalanceOf, JobApplication, JobOpening, MemberId,
-    OpeningId, OpeningType, Penalty, RewardPolicy, StakePolicy, Worker, WorkerId,
+    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, MemberId, Opening, OpeningId,
+    OpeningType, Penalty, RewardPolicy, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
@@ -202,14 +202,14 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            OpeningId => JobOpening<T::BlockNumber, BalanceOf<T>>;
+            OpeningId => Opening<T::BlockNumber, BalanceOf<T>>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
         /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
-            ApplicationId => JobApplication<T>;
+            ApplicationId => Application<T>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(fn next_application_id) : ApplicationId;
@@ -283,7 +283,7 @@ decl_module! {
             let hashed_description = T::Hashing::hash(&description);
 
             // Create and add worker opening.
-            let new_opening = JobOpening{
+            let new_opening = Opening{
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
@@ -342,7 +342,7 @@ decl_module! {
             let hashed_description = T::Hashing::hash(&p.description);
 
             // Make regular/lead application.
-            let application = JobApplication::<T>::new(
+            let application = Application::<T>::new(
                 &p.role_account_id,
                 &p.reward_account_id,
                 &p.stake_parameters.map(|sp| sp.staking_account_id),
@@ -847,7 +847,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
+        opening: &Opening<T::BlockNumber, BalanceOf<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<ApplicationId, WorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
@@ -870,7 +870,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Creates worker by the application. Deletes application from the storage.
     fn create_worker_by_application(
-        opening: &JobOpening<T::BlockNumber, BalanceOf<T>>,
+        opening: &Opening<T::BlockNumber, BalanceOf<T>>,
         application_info: &ApplicationInfo<T, I>,
     ) -> WorkerId<T> {
         // Get worker id.

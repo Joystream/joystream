@@ -9,7 +9,7 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
-    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, OpeningType, Penalty,
+    Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, Penalty,
     RawEvent, RewardPolicy, StakePolicy, Worker,
 };
 
@@ -73,7 +73,7 @@ impl AddOpeningFixture {
             let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
             let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
-            let expected_opening = JobOpening {
+            let expected_opening = Opening {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
@@ -213,7 +213,7 @@ impl ApplyOnOpeningFixture {
             let actual_application = TestWorkingGroup::application_by_id(application_id);
 
             let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
-            let expected_application = JobApplication::<Test> {
+            let expected_application = Application::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
                 staking_account_id: self

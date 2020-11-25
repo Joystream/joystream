@@ -7,8 +7,8 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 use sp_std::marker::PhantomData;
 
-/// Group job application type alias.
-pub type JobApplication<T> = Application<<T as frame_system::Trait>::AccountId, MemberId<T>>;
+/// Working group job application type alias.
+pub type Application<T> = JobApplication<<T as frame_system::Trait>::AccountId, MemberId<T>>;
 
 /// Member identifier in membership::member module.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -22,10 +22,10 @@ pub type ApplicationId = u64;
 /// Type for an opening id.
 pub type OpeningId = u64;
 
-// ApplicationId - JobApplication - helper struct.
+// ApplicationId - Application - helper struct.
 pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
     pub application_id: ApplicationId,
-    pub application: JobApplication<T>,
+    pub application: Application<T>,
     pub marker: PhantomData<I>,
 }
 
@@ -58,7 +58,7 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-pub struct JobOpening<BlockNumber: Ord, Balance> {
+pub struct Opening<BlockNumber: Ord, Balance> {
     /// Defines opening type: Leader or worker.
     pub opening_type: OpeningType,
 
@@ -97,7 +97,7 @@ impl Default for OpeningType {
 /// An application for the regular worker/lead role opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Application<AccountId, MemberId> {
+pub struct JobApplication<AccountId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
@@ -114,7 +114,7 @@ pub struct Application<AccountId, MemberId> {
     pub description_hash: Vec<u8>,
 }
 
-impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
+impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
     /// Creates a new job application using parameters.
     pub fn new(
         role_account_id: &AccountId,
@@ -123,7 +123,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
-        Application {
+        JobApplication {
             role_account_id: role_account_id.clone(),
             reward_account_id: reward_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
