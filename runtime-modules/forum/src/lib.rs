@@ -571,13 +571,6 @@ decl_module! {
         }
 
         /// Create new thread in category with poll
-        // TODO need a safer approach for frame_system call
-        // Interface to add a new thread.
-        // It can be call from other module and this module.
-        // Method not check the forum user. The extrinsic call it should check if forum id is valid.
-        // If other module call it, could set the forum user id as zero, which not used by forum module.
-        // Data structure of poll data: item description vector, poll description, start time, end time,
-        // minimum selected items, maximum selected items
         #[weight = 10_000_000] // TODO: adjust weight
         fn create_thread(
             origin,
@@ -822,12 +815,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Edit post text
-        // TODO need a safer approach for frame_system call
-        // Interface to add a new post.
-        // It can be call from other module and this module.
-        // Method not check the forum user. The extrinsic call it should check if forum id is valid.
-        // If other module call it, could set the forum user id as zero, which not used by forum module.
+        /// Add post
         #[weight = 10_000_000] // TODO: adjust weight
         fn add_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, text: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
