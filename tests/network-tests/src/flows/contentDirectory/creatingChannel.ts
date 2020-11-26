@@ -20,11 +20,11 @@ export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixt
 }
 
 function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEntity) {
-  assert(queriedChannel.handle === channel.handle, 'Should be equal')
-  assert(queriedChannel.description === channel.description, 'Should be equal')
-  assert(queriedChannel.coverPhotoUrl === channel.coverPhotoUrl, 'Should be equal')
-  assert(queriedChannel.avatarPhotoUrl === channel.avatarPhotoUrl, 'Should be equal')
-  assert(queriedChannel.isPublic === channel.isPublic, 'Should be equal')
+  assert.equal(queriedChannel.handle, channel.handle, 'Should be equal')
+  assert.equal(queriedChannel.description, channel.description, 'Should be equal')
+  assert.equal(queriedChannel.coverPhotoUrl, channel.coverPhotoUrl, 'Should be equal')
+  assert.equal(queriedChannel.avatarPhotoUrl, channel.avatarPhotoUrl, 'Should be equal')
+  assert.equal(queriedChannel.isPublic, channel.isPublic, 'Should be equal')
 }
 
 export default async function channelCreation(api: QueryNodeApi) {

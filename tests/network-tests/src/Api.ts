@@ -2084,11 +2084,6 @@ export class QueryNodeApi extends Api {
           item {
             ... on Video {
               title
-              description
-              duration
-              thumbnailUrl
-              isExplicit
-              isPublic
             }
           }
         }

@@ -1,4 +1,4 @@
-import { QueryNodeApi, WorkingGroups } from '../../Api'
+import { QueryNodeApi } from '../../Api'
 import { UpdateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
@@ -36,10 +36,10 @@ export default async function updateChannel(api: QueryNodeApi) {
   const channelAfterUpdate = channelAfterUpdateResult.data.channels[0]
 
   // description field should be updated to provided one
-  assert(channelAfterUpdate.description === description, 'Should be equal')
+  assert.equal(channelAfterUpdate.description, description, 'Should be equal')
 
-  assert(channelAfterUpdate.handle === channel.handle, 'Should be equal')
-  assert(channelAfterUpdate.coverPhotoUrl === channel.coverPhotoUrl, 'Should be equal')
-  assert(channelAfterUpdate.avatarPhotoUrl === channel.avatarPhotoUrl, 'Should be equal')
-  assert(channelAfterUpdate.isPublic === channel.isPublic, 'Should be equal')
+  assert.equal(channelAfterUpdate.handle, channel.handle, 'Should be equal')
+  assert.equal(channelAfterUpdate.coverPhotoUrl, channel.coverPhotoUrl, 'Should be equal')
+  assert.equal(channelAfterUpdate.avatarPhotoUrl, channel.avatarPhotoUrl, 'Should be equal')
+  assert.equal(channelAfterUpdate.isPublic, channel.isPublic, 'Should be equal')
 }

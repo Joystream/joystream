@@ -1,4 +1,4 @@
-import { QueryNodeApi, WorkingGroups } from '../../Api'
+import { QueryNodeApi } from '../../Api'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
@@ -44,12 +44,12 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi, handle: 
 }
 
 function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
-  assert(queriedVideo.title === video.title, 'Should be equal')
-  assert(queriedVideo.description === video.description, 'Should be equal')
-  assert(queriedVideo.duration === video.duration, 'Should be equal')
-  assert(queriedVideo.thumbnailUrl === video.thumbnailUrl, 'Should be equal')
-  assert(queriedVideo.isExplicit === video.isExplicit, 'Should be equal')
-  assert(queriedVideo.isPublic === video.isPublic, 'Should be equal')
+  assert.equal(queriedVideo.title, video.title, 'Should be equal')
+  assert.equal(queriedVideo.description, video.description, 'Should be equal')
+  assert.equal(queriedVideo.duration, video.duration, 'Should be equal')
+  assert.equal(queriedVideo.thumbnailUrl, video.thumbnailUrl, 'Should be equal')
+  assert.equal(queriedVideo.isExplicit, video.isExplicit, 'Should be equal')
+  assert.equal(queriedVideo.isPublic, video.isPublic, 'Should be equal')
 }
 
 export default async function createVideo(api: QueryNodeApi) {
