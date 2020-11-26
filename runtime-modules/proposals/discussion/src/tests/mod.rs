@@ -1,11 +1,12 @@
 mod mock;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use system::RawOrigin;
-use system::{EventRecord, Phase};
+use frame_system::RawOrigin;
+use frame_system::{EventRecord, Phase};
 
 use crate::*;
-use mock::*;
+
+pub(crate) use mock::*;
 
 struct EventFixture;
 impl EventFixture {
@@ -39,23 +40,16 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
 
     let actual_thread = <ThreadById<Test>>::get(thread_entry.thread_id);
     let expected_thread = DiscussionThread {
-        title: thread_entry.title,
-        created_at: 0,
+        activated_at: 0,
         author_id: 1,
+        mode: Default::default(),
     };
     assert_eq!(actual_thread, expected_thread);
 
     for post_entry in post_entries {
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
-        let expected_post = DiscussionPost {
-            text: post_entry.text,
-            created_at: 0,
-            updated_at: 0,
-            author_id: 1,
-            thread_id: thread_entry.thread_id,
-            edition_number: post_entry.edition_number,
-        };
+        let expected_post = DiscussionPost { author_id: 1 };
 
         assert_eq!(actual_post, expected_post);
     }
@@ -65,6 +59,7 @@ struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,
     pub author_id: u64,
+    pub mode: ThreadMode<u64>,
 }
 
 impl Default for DiscussionFixture {
@@ -73,18 +68,19 @@ impl Default for DiscussionFixture {
             title: b"title".to_vec(),
             origin: RawOrigin::Signed(1),
             author_id: 1,
+            mode: ThreadMode::Open,
         }
     }
 }
 
 impl DiscussionFixture {
-    fn with_title(self, title: Vec<u8>) -> Self {
-        DiscussionFixture { title, ..self }
+    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+        Self { mode, ..self }
     }
 
     fn create_discussion_and_assert(&self, result: Result<u64, DispatchError>) -> Option<u64> {
         let create_discussion_result =
-            Discussions::create_thread(self.author_id, self.title.clone());
+            Discussions::create_thread(self.author_id, self.mode.clone());
 
         assert_eq!(create_discussion_result, result);
 
@@ -109,10 +105,6 @@ impl PostFixture {
             origin: RawOrigin::Signed(1),
             post_id: None,
         }
-    }
-
-    fn with_text(self, text: Vec<u8>) -> Self {
-        PostFixture { text, ..self }
     }
 
     fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -192,6 +184,47 @@ fn create_post_call_succeeds() {
     });
 }
 
+struct ChangeThreadModeFixture {
+    pub origin: RawOrigin<u64>,
+    pub thread_id: u64,
+    pub member_id: u64,
+    pub mode: ThreadMode<u64>,
+}
+
+impl ChangeThreadModeFixture {
+    fn default_for_thread_id(thread_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            thread_id,
+            member_id: 1,
+            mode: ThreadMode::Open,
+        }
+    }
+
+    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+        Self { mode, ..self }
+    }
+
+    fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Discussions::change_thread_mode(
+            self.origin.clone().into(),
+            self.member_id,
+            self.thread_id,
+            self.mode.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 #[test]
 fn update_post_call_succeeds() {
     initial_test_ext().execute_with(|| {
@@ -222,27 +255,6 @@ fn update_post_call_succeeds() {
 }
 
 #[test]
-fn update_post_call_fails_because_of_post_edition_limit() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture = PostFixture::default_for_thread(thread_id);
-
-        post_fixture.add_post_and_assert(Ok(()));
-
-        for _ in 1..6 {
-            post_fixture.update_post_and_assert(Ok(()));
-        }
-
-        post_fixture.update_post_and_assert(Err(Error::<Test>::PostEditionNumberExceeded.into()));
-    });
-}
-
-#[test]
 fn update_post_call_fails_because_of_the_wrong_author() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -255,7 +267,7 @@ fn update_post_call_fails_because_of_the_wrong_author() {
 
         post_fixture.add_post_and_assert(Ok(()));
 
-        post_fixture = post_fixture.with_author(2);
+        post_fixture = post_fixture.with_author(5);
 
         post_fixture.update_post_and_assert(Err(DispatchError::Other("Invalid author")));
 
@@ -299,18 +311,6 @@ fn thread_content_check_succeeded() {
                 },
             ],
         );
-    });
-}
-
-#[test]
-fn create_discussion_call_with_bad_title_failed() {
-    initial_test_ext().execute_with(|| {
-        let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::EmptyTitleProvided.into()));
-
-        discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(Error::<Test>::TitleIsTooLong.into()));
     });
 }
 
@@ -360,57 +360,6 @@ fn update_post_call_with_invalid_thread_failed() {
 }
 
 #[test]
-fn add_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
-        post_fixture1.add_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture2 =
-            PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
-        post_fixture2.add_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
-    });
-}
-
-#[test]
-fn update_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
-        post_fixture1.add_post_and_assert(Ok(()));
-
-        let mut post_fixture2 = post_fixture1.with_text(Vec::new());
-        post_fixture2.update_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
-        post_fixture3.update_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
-    });
-}
-
-#[test]
-fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_limit_exceeded() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        for idx in 1..=3 {
-            discussion_fixture
-                .create_discussion_and_assert(Ok(idx))
-                .unwrap();
-        }
-
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::MaxThreadInARowLimitExceeded.into()));
-    });
-}
-
-#[test]
 fn discussion_thread_and_post_counters_are_valid() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -423,5 +372,191 @@ fn discussion_thread_and_post_counters_are_valid() {
 
         assert_eq!(Discussions::thread_count(), 1);
         assert_eq!(Discussions::post_count(), 1);
+    });
+}
+
+#[test]
+fn change_thread_mode_succeeds() {
+    initial_test_ext().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let thread_mode = ThreadMode::Closed(vec![2, 3]);
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(thread_mode.clone());
+        change_thread_mode_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_events(vec![
+            RawEvent::ThreadCreated(1, 1),
+            RawEvent::ThreadModeChanged(1, thread_mode),
+        ]);
+    });
+}
+
+#[test]
+fn change_mode_failed_with_invalid_origin() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_origin(RawOrigin::Root)
+            .with_member_id(12);
+        change_thread_mode_fixture.call_and_assert(Err(DispatchError::Other("Invalid author")));
+    });
+}
+
+#[test]
+fn change_mode_failed_with_invalid_thread_id() {
+    initial_test_ext().execute_with(|| {
+        let invalid_thread_id = 12;
+
+        let change_thread_mode_fixture =
+            ChangeThreadModeFixture::default_for_thread_id(invalid_thread_id);
+        change_thread_mode_fixture.call_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
+    });
+}
+
+#[test]
+fn change_mode_failed_with_not_thread_author_or_councilor() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_origin(RawOrigin::Signed(12))
+            .with_member_id(12);
+        change_thread_mode_fixture.call_and_assert(Err(Error::<Test>::NotAuthorOrCouncilor.into()));
+    });
+}
+
+#[test]
+fn change_thread_mode_succeeds_with_councilor() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_member_id(2)
+            .with_origin(RawOrigin::Signed(2));
+        change_thread_mode_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_post_call_succeeds_with_closed_mode_by_author() {
+    initial_test_ext().execute_with(|| {
+        let mode = ThreadMode::Closed(vec![2, 11]);
+        let discussion_fixture = DiscussionFixture::default().with_mode(mode);
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_author(1);
+
+        post_fixture.add_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_post_call_succeeds_with_closed_mode_by_councilor() {
+    initial_test_ext().execute_with(|| {
+        let mode = ThreadMode::Closed(vec![2, 11]);
+        let discussion_fixture = DiscussionFixture::default().with_mode(mode);
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_origin(RawOrigin::Signed(2))
+            .with_author(2);
+
+        post_fixture.add_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
+    initial_test_ext().execute_with(|| {
+        let mode = ThreadMode::Closed(vec![2, 11]);
+        let discussion_fixture = DiscussionFixture::default().with_mode(mode);
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_origin(RawOrigin::Signed(11))
+            .with_author(11);
+
+        post_fixture.add_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
+    initial_test_ext().execute_with(|| {
+        let mode = ThreadMode::Closed(vec![2, 10]);
+        let discussion_fixture = DiscussionFixture::default().with_mode(mode);
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_origin(RawOrigin::Signed(11))
+            .with_author(11);
+
+        post_fixture.add_post_and_assert(Err(Error::<Test>::CannotPostOnClosedThread.into()));
+    });
+}
+
+#[test]
+fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+        change_thread_mode_fixture
+            .call_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
+    });
+}
+
+#[test]
+fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture =
+            DiscussionFixture::default().with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+
+        discussion_fixture
+            .create_discussion_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
     });
 }

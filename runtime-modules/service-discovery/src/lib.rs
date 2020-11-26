@@ -10,8 +10,8 @@
 //!
 //! ## Supported extrinsics
 //!
-//! - [set_ipns_id](./struct.Module.html#method.set_ipns_id) - Creates the AccountInfo to save an IPNS identity for the storage provider.
-//! - [unset_ipns_id](./struct.Module.html#method.unset_ipns_id) - Deletes the AccountInfo with the IPNS identity for the storage provider.
+//! - [set_ipns_id](./struct.Module.html#method.set_ipns_id) - Creates the ServiceProviderRecord to save an IPNS identity for the storage provider.
+//! - [unset_ipns_id](./struct.Module.html#method.unset_ipns_id) - Deletes the ServiceProviderRecord with the IPNS identity for the storage provider.
 //! - [set_default_lifetime](./struct.Module.html#method.set_default_lifetime) - Sets default lifetime for storage providers accounts info.
 //! - [set_bootstrap_endpoints](./struct.Module.html#method.set_bootstrap_endpoints) - Sets bootstrap endpoints for the Colossus.
 //!
@@ -27,8 +27,9 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_root;
 use sp_std::vec::Vec;
-use system::ensure_root;
+
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
   reuse the same key for the role account and ipns (and make this discovery module obselete)
@@ -63,7 +64,7 @@ pub(crate) const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
 /// Defines the expiration date for the storage provider.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct AccountInfo<BlockNumber> {
+pub struct ServiceProviderRecord<BlockNumber> {
     /// IPNS Identity.
     pub identity: IPNSIdentity,
     /// Block at which information expires.
@@ -71,9 +72,9 @@ pub struct AccountInfo<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
+pub trait Trait: frame_system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Service discovery_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -81,11 +82,11 @@ decl_storage! {
         /// Bootstrap endpoints maintained by root
         pub BootstrapEndpoints get(fn bootstrap_endpoints): Vec<Url>;
 
-        /// Mapping of service providers' storage provider id to their AccountInfo
+        /// Mapping of service providers' storage provider id to their ServiceProviderRecord
         pub AccountInfoByStorageProviderId get(fn account_info_by_storage_provider_id):
-            map hasher(blake2_128_concat) StorageProviderId<T> => AccountInfo<T::BlockNumber>;
+            map hasher(blake2_128_concat) StorageProviderId<T> => ServiceProviderRecord<T::BlockNumber>;
 
-        /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
+        /// Lifetime of an ServiceProviderRecord record in AccountInfoByAccountId map
         pub DefaultLifetime get(fn default_lifetime) config():
             T::BlockNumber = T::BlockNumber::from(DEFAULT_LIFETIME);
     }
@@ -115,7 +116,7 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
-        /// Creates the AccountInfo to save an IPNS identity for the storage provider.
+        /// Creates the ServiceProviderRecord to save an IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_ipns_id(
@@ -131,15 +132,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, AccountInfo {
+            <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, ServiceProviderRecord {
                 identity: id.clone(),
-                expires_at: <system::Module<T>>::block_number() + Self::default_lifetime(),
+                expires_at: <frame_system::Module<T>>::block_number() + Self::default_lifetime(),
             });
 
             Self::deposit_event(RawEvent::AccountInfoUpdated(storage_provider_id, id));
         }
 
-        /// Deletes the AccountInfo with the IPNS identity for the storage provider.
+        /// Deletes the ServiceProviderRecord with the IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_ipns_id(origin, storage_provider_id: StorageProviderId<T>) {
@@ -183,7 +184,7 @@ impl<T: Trait> Module<T> {
     /// Verifies that account info for the storage provider is still valid.
     pub fn is_account_info_expired(storage_provider_id: &StorageProviderId<T>) -> bool {
         !<AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id)
-            || <system::Module<T>>::block_number()
+            || <frame_system::Module<T>>::block_number()
                 > <AccountInfoByStorageProviderId<T>>::get(storage_provider_id).expires_at
     }
 }

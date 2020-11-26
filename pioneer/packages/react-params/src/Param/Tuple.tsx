@@ -1,51 +1,48 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { TypeDef } from '@polkadot/types/types';
-import { ParamDef, Props, RawParam } from '../types';
+import { Props, RawParam } from '../types';
 
-import React, { useEffect, useState } from 'react';
-import { createType, getTypeDef } from '@polkadot/types';
+import React, { useCallback } from 'react';
 
 import Params from '../';
 import Base from './Base';
 import Static from './Static';
+import useParamDefs from './useParamDefs';
 
-export default function Tuple (props: Props): React.ReactElement<Props> {
-  const [params, setParams] = useState<ParamDef[]>([]);
-  const { className, isDisabled, label, onChange, style, type, withLabel } = props;
+function Tuple (props: Props): React.ReactElement<Props> {
+  const params = useParamDefs(props.type);
+  const { className = '', isDisabled, label, onChange, overrides, withLabel } = props;
 
-  useEffect((): void => {
-    const rawType = createType(type.type as any).toRawType();
-    const typeDef = getTypeDef(rawType);
-
-    setParams((typeDef.sub as TypeDef[]).map((type): ParamDef => ({ name: type.name, type })));
-  }, [type]);
+  const _onChangeParams = useCallback(
+    (values: RawParam[]): void => {
+      onChange && onChange({
+        isValid: values.reduce((result: boolean, { isValid }) => result && isValid, true),
+        value: values.map(({ value }) => value)
+      });
+    },
+    [onChange]
+  );
 
   if (isDisabled) {
     return <Static {...props} />;
   }
-
-  const _onChangeParams = (values: RawParam[]): void => {
-    onChange && onChange({
-      isValid: values.reduce((result, { isValid }): boolean => result && isValid, true as boolean),
-      value: values.map(({ value }): any => value)
-    });
-  };
 
   return (
     <div className='ui--Params-Tuple'>
       <Base
         className={className}
         label={label}
-        style={style}
         withLabel={withLabel}
       />
       <Params
         onChange={_onChangeParams}
+        overrides={overrides}
         params={params}
       />
     </div>
   );
 }
+
+export default React.memo(Tuple);

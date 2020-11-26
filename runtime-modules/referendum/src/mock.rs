@@ -11,6 +11,7 @@ use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use pallet_balances;
 use rand::Rng;
 use sp_core::H256;
@@ -23,7 +24,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
-use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::GenesisConfig;
 
@@ -80,7 +80,7 @@ impl Trait<Instance0> for Runtime {
     type MinimumStake = MinimumStake;
 
     fn calculate_vote_power(
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &Balance<Self, Instance0>,
     ) -> <Self as Trait<Instance0>>::VotePower {
         let stake: u64 = u64::from(*stake);
@@ -133,6 +133,7 @@ impl Trait<Instance0> for Runtime {
 
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
+    pub const MaxLocks: u32 = 50;
 }
 
 impl pallet_balances::Trait for Runtime {
@@ -140,7 +141,9 @@ impl pallet_balances::Trait for Runtime {
     type Event = TestEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = system::Module<Self>;
+    type AccountStore = frame_system::Module<Self>;
+    type WeightInfo = ();
+    type MaxLocks = MaxLocks;
 }
 
 impl Runtime {
@@ -175,7 +178,7 @@ mod tmp {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod Instance0 <T>,
-        system<T>,
+        frame_system<T>,
         tmp<T>,
     }
 }
@@ -193,7 +196,7 @@ impl Instance for Instance0 {
     const PREFIX: &'static str = "Instance0";
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -214,10 +217,11 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -244,7 +248,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
 pub fn build_test_externalities(
     config: GenesisConfig<Runtime, Instance0>,
 ) -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
@@ -305,18 +309,18 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let block_number = system::Module::<T>::block_number();
+        let block_number = frame_system::Module::<T>::block_number();
 
         for i in 0..increase {
             let tmp_index: T::BlockNumber = block_number + i.into();
 
             <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
-            system::Module::<T>::set_block_number(tmp_index + 1.into());
+            frame_system::Module::<T>::set_block_number(tmp_index + 1.into());
         }
     }
 
     pub fn calculate_commitment(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<I>::get();
@@ -324,7 +328,7 @@ where
     }
 
     pub fn calculate_commitment_custom_salt(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         vote_option_index: &u64,
         custom_salt: &[u8],
     ) -> (T::Hash, Vec<u8>) {
@@ -344,7 +348,7 @@ where
     }
 
     pub fn calculate_commitment_for_cycle(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         cycle_id: &u64,
         vote_option_index: &u64,
         custom_salt: Option<&[u8]>,
@@ -356,9 +360,9 @@ where
 
         (
             <Module<T, I> as ReferendumManager<
-                <T as system::Trait>::Origin,
-                <T as system::Trait>::AccountId,
-                <T as system::Trait>::Hash,
+                <T as frame_system::Trait>::Origin,
+                <T as frame_system::Trait>::AccountId,
+                <T as frame_system::Trait>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
@@ -384,7 +388,7 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 
 impl InstanceMocks<Runtime, Instance0> {
     pub fn start_referendum_extrinsic(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         winning_target_count: u64,
         expected_result: Result<(), ()>,
     ) -> () {
@@ -411,9 +415,9 @@ impl InstanceMocks<Runtime, Instance0> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime, Instance0> as ReferendumManager<
-                <Runtime as system::Trait>::Origin,
-                <Runtime as system::Trait>::AccountId,
-                <Runtime as system::Trait>::Hash,
+                <Runtime as frame_system::Trait>::Origin,
+                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as frame_system::Trait>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
@@ -431,7 +435,7 @@ impl InstanceMocks<Runtime, Instance0> {
         }
 
         let winning_target_count = extra_winning_target_count + 1;
-        let block_number = system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
@@ -444,13 +448,16 @@ impl InstanceMocks<Runtime, Instance0> {
         InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1);
 
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::from(RawEvent::ReferendumStarted(winning_target_count))
         );
     }
 
     pub fn check_voting_finished(winning_target_count: u64) {
-        let block_number = system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
@@ -463,7 +470,10 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check event was emitted
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::event_mod_Instance0(RawEvent::RevealingStageStarted())
         );
     }
@@ -479,7 +489,10 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check event was emitted
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(expected_winners,))
         );
 
@@ -487,9 +500,9 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     pub fn vote(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        account_id: <Runtime as system::Trait>::AccountId,
-        commitment: <Runtime as system::Trait>::Hash,
+        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        account_id: <Runtime as frame_system::Trait>::AccountId,
+        commitment: <Runtime as frame_system::Trait>::Hash,
         stake: Balance<Runtime, Instance0>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
@@ -519,14 +532,17 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check event was emitted
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
     pub fn reveal_vote(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        account_id: <Runtime as system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        account_id: <Runtime as frame_system::Trait>::AccountId,
         salt: Vec<u8>,
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
@@ -547,14 +563,17 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check event was emitted
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_option_index))
         );
     }
 
     pub fn release_stake(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        account_id: <Runtime as system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        account_id: <Runtime as frame_system::Trait>::AccountId,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
@@ -571,7 +590,10 @@ impl InstanceMocks<Runtime, Instance0> {
 
         // check event was emitted
         assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
             TestEvent::event_mod_Instance0(RawEvent::StakeReleased(account_id))
         );
     }

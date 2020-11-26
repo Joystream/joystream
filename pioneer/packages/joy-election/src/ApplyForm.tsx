@@ -3,21 +3,21 @@ import React from 'react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { Labelled } from '@polkadot/react-components/index';
 import { Balance } from '@polkadot/types/interfaces';
 
 import translate from './translate';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import InputStake from '@polkadot/joy-utils/InputStake';
-import { Stake } from '@joystream/types/council';
-import { calcTotalStake, ZERO } from '@polkadot/joy-utils/index';
-import { MyAddressProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
+import InputStake from '@polkadot/joy-utils/react/components/InputStake';
+import { ElectionStake } from '@joystream/types/council';
+import { calcTotalStake, ZERO } from '@polkadot/joy-utils/functions/misc';
+import { MyAddressProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 
 type Props = ApiProps & I18nProps & MyAddressProps & {
   minStake?: Balance;
-  alreadyStaked?: Stake;
-  myBalance?: Balance;
+  alreadyStaked?: ElectionStake;
 };
 
 type State = {
@@ -48,15 +48,16 @@ class ApplyForm extends React.PureComponent<Props, State> {
           isValid={isStakeValid}
           onChange={this.onChangeStake}
         />
-        <Labelled style={{ marginTop: '.5rem' }}>
-          <TxButton
-            size='large'
-            isDisabled={!isStakeValid}
-            label={buttonLabel}
-            params={[stake]}
-            tx='councilElection.apply'
-          />
-        </Labelled>
+        <div style={{ marginTop: '.5rem' }}>
+          <Labelled>
+            <TxButton
+              isDisabled={!isStakeValid}
+              label={buttonLabel}
+              params={[stake]}
+              tx='councilElection.apply'
+            />
+          </Labelled>
+        </div>
       </div>
     );
   }
@@ -71,10 +72,9 @@ class ApplyForm extends React.PureComponent<Props, State> {
 
   private onChangeStake = (stake?: BN): void => {
     stake = stake || ZERO;
-    const { myBalance = ZERO } = this.props;
-    const isStakeLteBalance = stake.lte(myBalance);
     const isStakeGteMinStake = stake.add(this.alreadyStaked()).gte(this.minStake());
-    const isStakeValid = !stake.isZero() && isStakeGteMinStake && isStakeLteBalance;
+    const isStakeValid = !stake.isZero() && isStakeGteMinStake;
+
     this.setState({ stake, isStakeValid });
   }
 }
@@ -88,8 +88,6 @@ export default withMulti(
     ['query.councilElection.minCouncilStake',
       { propName: 'minStake' }],
     ['query.councilElection.applicantStakes',
-      { paramName: 'myAddress', propName: 'alreadyStaked' }],
-    ['query.balances.freeBalance',
-      { paramName: 'myAddress', propName: 'myBalance' }]
+      { paramName: 'myAddress', propName: 'alreadyStaked' }]
   )
 );

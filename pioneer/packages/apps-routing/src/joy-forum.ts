@@ -1,15 +1,15 @@
-import { Routes } from './types';
+import { Route } from './types';
 
 import Forum from '@polkadot/joy-forum/index';
 
-export default ([
-  {
+export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Route {
+  return {
     Component: Forum,
-    display: {},
-    i18n: {
-      defaultValue: 'Forum'
+    display: {
+      needsApi: ['query.forum.threadById']
     },
-    icon: 'comment alternate outline',
+    text: t<string>('nav.forum', 'Forum', { ns: 'apps-routing' }),
+    icon: 'comment-dots',
     name: 'forum'
-  }
-] as Routes);
+  };
+}

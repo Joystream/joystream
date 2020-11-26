@@ -1,36 +1,24 @@
 import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
+import { createType } from '@joystream/types';
 
-import {
-  Container
-} from 'semantic-ui-react';
+import { Container } from 'semantic-ui-react';
 
-import {
-  u128
-} from '@polkadot/types';
-
-import {
-  CurrentRoles, CurrentRolesProps,
+import { CurrentRoles, CurrentRolesProps,
   Application, ApplicationProps,
   ApplicationStatus, ApplicationStatusProps,
-  Applications
-} from './MyRoles';
+  Applications } from './MyRoles';
 
-import {
-  CancelledReason
-  , OpeningState
-} from '../classifiers';
+import { CancelledReason
+  , OpeningState } from '../classifiers';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
 
-import {
-  opening,
+import { opening,
   tomorrow,
-  yesterday
-} from './Opportunities.stories';
+  yesterday } from './Opportunities.stories';
 
-import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroups, workerRoleNameByGroup } from '../working_groups';
 
 export default {
@@ -46,10 +34,10 @@ export function CurrentRolesFragment () {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
-        workerId: new CuratorId(1),
+        workerId: createType('CuratorId', 1),
         name: workerRoleNameByGroup[WorkingGroups.StorageProviders],
-        reward: new u128(321),
-        stake: new u128(100),
+        reward: createType('Balance', 321),
+        stake: createType('Balance', 100),
         group: WorkingGroups.StorageProviders,
         CTAs: [
           {
@@ -59,11 +47,11 @@ export function CurrentRolesFragment () {
         ]
       },
       {
-        workerId: new CuratorId(1),
+        workerId: createType('CuratorId', 1),
         name: 'Some other role',
         url: 'some URL',
-        reward: new u128(321),
-        stake: new u128(12343200),
+        reward: createType('Balance', 321),
+        stake: createType('Balance', 12343200),
         group: WorkingGroups.ContentCurators,
         CTAs: [
           {
@@ -75,6 +63,7 @@ export function CurrentRolesFragment () {
 
     ]
   };
+
   return (
     <CurrentRoles {...props} />
   );
@@ -150,9 +139,9 @@ export function ApplicationStatusFragment () {
   ];
 
   return (
-    <Container className="outer">
+    <Container className='outer'>
       {permutations.map((permutation, key) => (
-        <Container key={key} className="current-applications outer">
+        <Container key={key} className='current-applications outer'>
           <h4>{permutation._description}</h4>
           <ApplicationStatus {...permutation} />
         </Container>
@@ -176,8 +165,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
@@ -196,8 +185,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -218,8 +207,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       review_end_block: 12345
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
@@ -240,8 +229,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       review_end_block: 12345
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -260,8 +249,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -280,8 +269,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createType('Balance', 5),
+    roleStake: createType('Balance', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20,
@@ -291,9 +280,9 @@ const permutations: (ApplicationProps & TestProps)[] = [
 
 export function ApplicationFragment () {
   return (
-    <Container className="outer my-roles">
+    <Container className='outer my-roles'>
       {permutations.map((permutation, key) => (
-        <Container key={key} className="current-applications outer">
+        <Container key={key} className='current-applications outer'>
           <h4>{permutation._description}</h4>
           <Application {...permutation} />
         </Container>
@@ -304,8 +293,9 @@ export function ApplicationFragment () {
 
 export function ApplicationsFragment () {
   const cancelCallback = () => { /* do nothing */ };
+
   return (
-    <Container className="outer my-roles">
+    <Container className='outer my-roles'>
       <Applications applications={permutations} cancelCallback={cancelCallback} />
     </Container>
   );

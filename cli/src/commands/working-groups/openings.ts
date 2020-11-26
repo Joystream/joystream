@@ -13,7 +13,6 @@ export default class WorkingGroupsOpenings extends WorkingGroupsCommandBase {
 
     const openingsRows = openings.map((o) => ({
       'WG Opening ID': o.wgOpeningId,
-      'Opening ID': o.openingId,
       Type: o.type.type,
       Stage: `${_.startCase(o.stage.status)}${o.stage.block ? ` (#${o.stage.block})` : ''}`,
       Applications: o.applications.length,

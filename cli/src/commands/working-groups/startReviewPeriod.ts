@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
-import { OpeningId } from '@joystream/types/hiring'
 import chalk from 'chalk'
 
 export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommandBase {
@@ -13,6 +12,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
       description: 'Working Group Opening ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -29,9 +29,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'beginApplicantReview', [
-      new OpeningId(openingId),
-    ])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'beginApplicantReview', [openingId])
 
     this.log(chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${chalk.white('In Review')}`))
   }

@@ -56,11 +56,11 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{Bounded, One, Zero};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
 use common::constraints::InputValidationLengthConstraint;
@@ -89,18 +89,19 @@ pub type ApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime reward
 pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Negative imbalance of runtime.
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /// Alias for the worker application id to the worker id dictionary
 pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
@@ -114,7 +115,7 @@ pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 // Type simplification
 type OpeningInfo<T> = (
     OpeningOf<T>,
-    hiring::Opening<BalanceOf<T>, <T as system::Trait>::BlockNumber, HiringApplicationId<T>>,
+    hiring::Opening<BalanceOf<T>, <T as frame_system::Trait>::BlockNumber, HiringApplicationId<T>>,
 );
 
 // Type simplification
@@ -123,33 +124,37 @@ type ApplicationInfo<T> = (ApplicationOf<T>, ApplicationId<T>, OpeningOf<T>);
 // Type simplification
 type RewardSettings<T> = (
     <T as minting::Trait>::MintId,
-    RewardPolicy<BalanceOfMint<T>, <T as system::Trait>::BlockNumber>,
+    RewardPolicy<BalanceOfMint<T>, <T as frame_system::Trait>::BlockNumber>,
 );
 
 // Type simplification
 type WorkerOf<T> = Worker<
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     <T as recurringrewards::Trait>::RewardRelationshipId,
     <T as stake::Trait>::StakeId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
 >;
 
 // Type simplification
 type OpeningOf<T> = Opening<
     <T as hiring::Trait>::OpeningId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
     ApplicationId<T>,
 >;
 
 // Type simplification
-type ApplicationOf<T> =
-    Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>;
+type ApplicationOf<T> = Application<
+    <T as frame_system::Trait>::AccountId,
+    OpeningId<T>,
+    MemberId<T>,
+    HiringApplicationId<T>,
+>;
 
 /// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
-    system::Trait
+    frame_system::Trait
     + membership::Trait
     + hiring::Trait
     + minting::Trait
@@ -157,7 +162,7 @@ pub trait Trait<I: Instance>:
     + recurringrewards::Trait
 {
     /// _Working group_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines max workers number in the working group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -168,7 +173,7 @@ decl_event!(
     pub enum Event<T, I>
     where
         WorkerId = WorkerId<T>,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
         OpeningId = OpeningId<T>,
         ApplicationId = ApplicationId<T>,
         ApplicationIdToWorkerIdMap = ApplicationIdToWorkerIdMap<T>,
@@ -328,7 +333,7 @@ decl_storage! {
     }
         add_extra_genesis {
         config(phantom): sp_std::marker::PhantomData<I>;
-        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(working_group_mint_capacity): minting::BalanceOf<T>;
         config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
@@ -337,7 +342,7 @@ decl_storage! {
                 config.opening_human_readable_text_constraint,
                 config.worker_application_human_readable_text_constraint,
                 config.worker_exit_rationale_text_constraint,
-                config.storage_working_group_mint_capacity)
+                config.working_group_mint_capacity)
         });
     }
 }
@@ -481,10 +486,8 @@ decl_module! {
             rationale_text: Vec<u8>,
             slash_stake: bool,
         ) {
-            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
-
             // Ensure lead is set or it is the council terminating the leader.
-            let exit_origin = Self::ensure_origin_for_leader(cloned_origin1, worker_id)?;
+            let exit_origin = Self::ensure_origin_for_leader(origin.clone(), worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -497,7 +500,7 @@ decl_module! {
             //
 
             if slash_stake {
-                Self::slash_stake(cloned_origin2, worker_id, BalanceOf::<T>::max_value())?;
+                Self::slash_stake(origin, worker_id, BalanceOf::<T>::max_value())?;
             }
 
             Self::deactivate_worker(
@@ -816,7 +819,7 @@ decl_module! {
                 let mint_id = Self::mint();
 
                 // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                ensure!(policy.next_payment_at_block > <frame_system::Module<T>>::block_number(),
                     Error::<T, I>::FillOpeningInvalidNextPaymentBlock);
 
                 // The verified reward settings to use
@@ -1298,7 +1301,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(worker)
     }
 
-    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error<T, I>> {
+    /// Ensures worker under given id already exists
+    pub fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error<T, I>> {
         ensure!(
             WorkerById::<T, I>::contains_key(worker_id),
             Error::<T, I>::WorkerDoesNotExist
@@ -1395,6 +1399,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .collect()
     }
 
+    /// Returns all existing worker id list.
+    pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
+        <WorkerById<T, I>>::iter()
+            .map(|(worker_id, _)| worker_id)
+            .collect()
+    }
+
     fn make_stake_opt_imbalance(
         opt_balance: &Option<BalanceOf<T>>,
         source_account: &T::AccountId,
@@ -1475,7 +1486,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn initialize_working_group(
+    /// Initialize working group constraints and mint.
+    pub fn initialize_working_group(
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,

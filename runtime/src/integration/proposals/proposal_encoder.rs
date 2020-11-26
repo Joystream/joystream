@@ -18,7 +18,11 @@ use sp_std::vec::Vec;
 macro_rules! wrap_working_group_call {
     ($working_group:expr, $working_group_instance_call:expr) => {{
         match $working_group {
+            WorkingGroup::Content => {
+                Call::ContentDirectoryWorkingGroup($working_group_instance_call)
+            }
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
+            WorkingGroup::Forum => Call::ForumWorkingGroup($working_group_instance_call),
         }
     }};
 }
@@ -35,32 +39,36 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetElectionParameters(election_parameters) => Call::CouncilElection(
                 governance::election::Call::set_election_parameters(election_parameters),
             ),
-            ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance) => {
-                Call::ContentWorkingGroup(content_working_group::Call::set_mint_capacity(
-                    mint_balance,
-                ))
-            }
             ProposalDetails::Spending(balance, destination) => Call::Council(
                 governance::council::Call::spend_from_council_mint(balance, destination),
             ),
-            ProposalDetails::SetLead(new_lead) => {
-                Call::ContentWorkingGroup(content_working_group::Call::replace_lead(new_lead))
-            }
             ProposalDetails::SetValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),
             ),
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             ),
+            // ********** Deprecated during the Babylon release.
+            ProposalDetails::DeprecatedSetLead(_) => {
+                print("Error: Calling deprecated SetLead encoding option.");
+                return Vec::new();
+            }
+            // ********** Deprecated during the Babylon release.
+            ProposalDetails::DeprecatedSetContentWorkingGroupMintCapacity(_) => {
+                print(
+                    "Error: Calling deprecated SetContentWorkingGroupMintCapacity encoding option.",
+                );
+                return Vec::new();
+            }
             // ********** Deprecated during the Nicaea release.
             // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::EvictStorageProvider(_) => {
+            ProposalDetails::DeprecatedEvictStorageProvider(_) => {
                 print("Error: Calling deprecated EvictStorageProvider encoding option.");
                 return Vec::new();
             }
             // ********** Deprecated during the Nicaea release.
             // It is kept only for backward compatibility in the Pioneer. **********
-            ProposalDetails::SetStorageRoleParameters(_) => {
+            ProposalDetails::DeprecatedSetStorageRoleParameters(_) => {
                 print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
                 return Vec::new();
             }
@@ -119,6 +127,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     Wg::terminate_role_call(terminate_role_params)
                 )
             }
+            ProposalDetails::AmendConstitution(constitution_text) => {
+                Call::Constitution(constitution::Call::amend_constitution(constitution_text))
+            }
         };
 
         call.encode()
@@ -134,7 +145,7 @@ struct Wg<T, I> {
 impl<T, I> Wg<T, I>
 where
     T: working_group::Trait<I>,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 {
     // Generic call constructor for the add working group opening.
     fn create_add_opening_call(

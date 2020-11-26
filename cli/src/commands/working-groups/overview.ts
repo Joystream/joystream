@@ -25,16 +25,25 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
       this.log(chalk.yellow('No lead assigned!'))
     }
 
+    const accounts = this.fetchAccounts()
+
     displayHeader('Members')
     const membersRows = members.map((m) => ({
-      '': lead?.workerId.eq(m.workerId) ? '\u{2B50}' : '', // A nice star for the lead
       'Worker id': m.workerId.toString(),
       'Member id': m.memberId.toString(),
       'Member handle': m.profile.handle.toString(),
       Stake: formatBalance(m.stake),
       Earned: formatBalance(m.reward?.totalRecieved),
       'Role account': shortAddress(m.roleAccount),
+      '':
+        (lead?.workerId.eq(m.workerId) ? '\u{2B50}' : '  ') +
+        ' ' +
+        (accounts.some((a) => a.address === m.roleAccount.toString()) ? '\u{1F511}' : '  '),
     }))
     displayTable(membersRows, 5)
+
+    displayHeader('Legend')
+    this.log('\u{2B50} - Leader')
+    this.log('\u{1F511} - Role key available in CLI')
   }
 }

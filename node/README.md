@@ -26,7 +26,7 @@ cd joystream/
 Compile the node and runtime:
 
 ```bash
-cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release
 ```
 
 This produces the binary in `./target/release/joystream-node`
@@ -34,7 +34,7 @@ This produces the binary in `./target/release/joystream-node`
 ### Running local development chain
 
 ```bash
-cargo run --release -- --dev
+./target/release/joystream-node --dev
 ```
 
 If you repeatedly need to restart a new chain,
@@ -49,7 +49,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-cargo run --release -- --chain testnets/rome.json
+./target/release/joystream-node --chain testnets/joy-testnet-4.json
 ```
 
 ### Tests and code quality
@@ -57,7 +57,7 @@ cargo run --release -- --chain testnets/rome.json
 Running unit tests:
 
 ```bash
-cargo test --all
+cargo test --release --all
 ```
 
 Running full suite of checks, tests, formatting and linting:
@@ -72,15 +72,6 @@ Always format your rust code with `cargo fmt` before committing:
 cargo fmt --all
 ```
 
-### Integration tests
-
-```bash
-./scripts/run-test-chain.sh
-yarn workspace joystream-testing test
-```
-
-To run the integration tests with a different chain, you can omit the step of running the local development chain and simply set the node URL using `NODE_URL` environment variable.
-
 ### Installing a release build
 
 If you are building a tagged release from `master` branch and want to install the executable to your path follow the step below.
@@ -88,11 +79,11 @@ If you are building a tagged release from `master` branch and want to install th
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-cargo install joystream-node --path node/
+WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo install joystream-node --path node/ --locked
 ```
 
-Now you can run and connect to the Rome testnet:
+Now you can run and connect to the testnet:
 
 ```bash
-joystream-node --chain testnets/rome.json
+joystream-node --chain testnets/joy-testnet-4.json
 ```

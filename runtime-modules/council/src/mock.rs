@@ -12,6 +12,7 @@ use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
     Balance as BalanceReferendum, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
@@ -28,7 +29,6 @@ use sp_runtime::{
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
-use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
@@ -85,7 +85,7 @@ impl Trait for Runtime {
 
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
     }
@@ -109,7 +109,7 @@ mod referendum_mod {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -120,7 +120,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Index = u64;
@@ -141,10 +141,11 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 /////////////////// Election module ////////////////////////////////////////////
@@ -155,8 +156,8 @@ thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
-        <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as frame_system::Trait>::Origin, <RuntimeReferendum as frame_system::Trait>::AccountId, <RuntimeReferendum as frame_system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
+        <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as frame_system::Trait>::Origin, <RuntimeReferendum as frame_system::Trait>::AccountId, <RuntimeReferendum as frame_system::Trait>::Hash>>::VotePower>::new());
 }
 
 parameter_types! {
@@ -175,7 +176,7 @@ impl_outer_event! {
     pub enum TestReferendumEvent for RuntimeReferendum {
         referendum_mod Instance0 <T>,
         balances_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -201,7 +202,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     type MinimumStake = MinimumVotingStake;
 
     fn calculate_vote_power(
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
@@ -267,7 +268,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     }
 }
 
-impl system::Trait for RuntimeReferendum {
+impl frame_system::Trait for RuntimeReferendum {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Index = u64;
@@ -288,10 +289,11 @@ impl system::Trait for RuntimeReferendum {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl balances::Trait for RuntimeReferendum {
@@ -299,7 +301,9 @@ impl balances::Trait for RuntimeReferendum {
     type Event = TestReferendumEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = system::Module<Self>;
+    type AccountStore = frame_system::Module<Self>;
+    type WeightInfo = ();
+    type MaxLocks = MaxLocks;
 }
 
 impl Runtime {
@@ -312,6 +316,7 @@ impl Runtime {
 
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
+    pub const MaxLocks: u32 = 50;
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -446,7 +451,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 }
 
 pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
@@ -480,17 +485,17 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let block_number = system::Module::<T>::block_number();
+        let block_number = frame_system::Module::<T>::block_number();
 
         for i in 0..increase {
             let tmp_index: T::BlockNumber = block_number + i.into();
 
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
             <referendum::Module<RuntimeReferendum, ReferendumInstance> as OnFinalize<
-                <RuntimeReferendum as system::Trait>::BlockNumber,
+                <RuntimeReferendum as frame_system::Trait>::BlockNumber,
             >>::on_finalize(tmp_index.into());
 
-            system::Module::<T>::set_block_number(tmp_index + 1.into());
+            frame_system::Module::<T>::set_block_number(tmp_index + 1.into());
         }
     }
 
@@ -544,7 +549,7 @@ where
     }
 
     pub fn vote_commitment(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<ReferendumInstance>::get();
@@ -570,10 +575,10 @@ where
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 
-    T::Hash: From<<RuntimeReferendum as system::Trait>::Hash>
-        + Into<<RuntimeReferendum as system::Trait>::Hash>,
-    T::Origin: From<<RuntimeReferendum as system::Trait>::Origin>
-        + Into<<RuntimeReferendum as system::Trait>::Origin>,
+    T::Hash: From<<RuntimeReferendum as frame_system::Trait>::Hash>
+        + Into<<RuntimeReferendum as frame_system::Trait>::Hash>,
+    T::Origin: From<<RuntimeReferendum as frame_system::Trait>::Origin>
+        + Into<<RuntimeReferendum as frame_system::Trait>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MembershipId: Into<T::AccountId>,
@@ -760,7 +765,7 @@ where
     }
 
     pub fn release_vote_stake(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result

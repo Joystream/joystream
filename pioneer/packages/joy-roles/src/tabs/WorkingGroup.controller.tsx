@@ -1,16 +1,16 @@
 import React from 'react';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
-import {
-  ContentCurators,
+import { ContentCurators,
   WorkingGroupMembership,
-  StorageProviders
-} from './WorkingGroup';
+  StorageProviders } from './WorkingGroup';
 
 import styled from 'styled-components';
+import { normalizeError } from '@polkadot/joy-utils/functions/misc';
 
 type State = {
   contentCurators?: WorkingGroupMembership;
@@ -20,22 +20,29 @@ type State = {
 export class WorkingGroupsController extends Controller<State, ITransport> {
   constructor (transport: ITransport, initialState: State = {}) {
     super(transport, {});
+  }
+
+  refreshState () {
     this.getCurationGroup();
     this.getStorageGroup();
   }
 
   getCurationGroup () {
-    this.transport.curationGroup().then((value: WorkingGroupMembership) => {
-      this.setState({ contentCurators: value });
-      this.dispatch();
-    });
+    this.transport.curationGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ contentCurators: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 
   getStorageGroup () {
-    this.transport.storageGroup().then((value: WorkingGroupMembership) => {
-      this.setState({ storageProviders: value });
-      this.dispatch();
-    });
+    this.transport.storageGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ storageProviders: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 }
 
@@ -49,7 +56,7 @@ const WorkingGroupsOverview = styled.div`
 `;
 
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
-  (state) => (
+  ({ state }) => (
     <WorkingGroupsOverview>
       <ContentCurators {...state.contentCurators}/>
       <StorageProviders {...state.storageProviders}/>

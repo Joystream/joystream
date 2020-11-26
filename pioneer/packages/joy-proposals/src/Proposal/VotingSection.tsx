@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-import { Icon, Button, Message, Divider, Header } from 'semantic-ui-react';
-import useVoteStyles from './useVoteStyles';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { Icon, Message, Divider, Header } from 'semantic-ui-react';
+import getVoteStyles from './getVoteStyles';
+import { SemanticTxButton } from '@polkadot/joy-utils/react/components/TxButton';
 import { MemberId } from '@joystream/types/members';
 import { ProposalId, VoteKind, VoteKinds } from '@joystream/types/proposals';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -32,27 +32,28 @@ type VoteButtonProps = {
   proposalId: ProposalId;
   onSuccess: () => void;
 }
+
 function VoteButton ({ voteKind, proposalId, memberId, onSuccess }: VoteButtonProps) {
-  const { icon, color } = useVoteStyles(voteKind);
+  const { icon, color } = getVoteStyles(voteKind);
+
   return (
-    // Button.Group "cheat" to force TxButton color
-    <Button.Group color={color} style={{ marginRight: '5px' }}>
-      <TxButton
-        // isDisabled={ isSubmitting }
-        params={[
-          memberId,
-          proposalId,
-          voteKind
-        ]}
-        tx={ 'proposalsEngine.vote' }
-        onClick={ sendTx => sendTx() }
-        txFailedCb={ () => null }
-        txSuccessCb={ onSuccess }
-        className={'icon left labeled'}>
-        <Icon name={icon} inverted />
-        { voteKind }
-      </TxButton>
-    </Button.Group>
+    <SemanticTxButton
+      params={[
+        memberId,
+        proposalId,
+        voteKind
+      ]}
+      tx={ 'proposalsEngine.vote' }
+      onClick={ (sendTx) => sendTx() }
+      txFailedCb={ () => null }
+      txSuccessCb={ onSuccess }
+      color={color}
+      style={{ marginRight: '5px' }}
+      icon
+      labelPosition={ 'left' }>
+      <Icon name={icon} inverted />
+      { voteKind }
+    </SemanticTxButton>
   );
 }
 
@@ -82,13 +83,13 @@ export default function VotingSection ({
   const voteStr: VoteKindStr | null = voted || (vote && vote.type.toString() as VoteKindStr);
 
   if (voteStr) {
-    const { icon, color } = useVoteStyles(voteStr);
+    const { icon, color } = getVoteStyles(voteStr);
 
     return (
       <Message icon color={color}>
         <Icon name={icon} />
         <Message.Content>
-          You voted <span className="bold">{`"${voteStr}"`}</span>
+          You voted <span className='bold'>{`"${voteStr}"`}</span>
         </Message.Content>
       </Message>
     );
@@ -98,7 +99,7 @@ export default function VotingSection ({
 
   return (
     <>
-      <Header as="h3">Sumbit your vote</Header>
+      <Header as='h3'>Sumbit your vote</Header>
       <Divider />
       <VoteButtons>
         { VoteKinds.map((voteKind) =>

@@ -1,36 +1,19 @@
-import { Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, Text, u32 } from '@polkadot/types';
-import { BlockNumber } from '@polkadot/types/interfaces';
+import { Text, u32 } from '@polkadot/types'
+import { RegistryTypes } from '@polkadot/types/types'
+import { JoyStructDecorated } from './common'
 
 export class IPNSIdentity extends Text {}
 export class Url extends Text {}
 
-export class AccountInfo extends Struct {
-  constructor (value?: any) {
-    super({
-      identity: IPNSIdentity,
-      expires_at: u32 // BlockNumber
-    }, value);
-  }
+export class ServiceProviderRecord extends JoyStructDecorated({
+  identity: IPNSIdentity,
+  expires_at: u32, // BlockNumber
+}) {}
 
-  get identity (): IPNSIdentity {
-    return this.get('identity') as IPNSIdentity;
-  }
-
-  get expires_at (): BlockNumber {
-    return this.get('expires_at') as BlockNumber;
-  }
+export const discoveryTypes: RegistryTypes = {
+  Url,
+  IPNSIdentity,
+  ServiceProviderRecord,
 }
 
-export function registerDiscoveryTypes () {
-  try {
-    const typeRegistry = getTypeRegistry();
-    typeRegistry.register({
-      Url,
-      IPNSIdentity,
-      AccountInfo
-    });
-  } catch (err) {
-    console.error('Failed to register custom types of discovery module', err);
-  }
-}
+export default discoveryTypes

@@ -1,4 +1,4 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
@@ -9,7 +9,6 @@ import React from 'react';
 export interface CollectionProps extends I18nProps {
   banner?: React.ReactNode;
   buttons?: React.ReactNode;
-  topButtons?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   headerText?: React.ReactNode;
@@ -20,7 +19,7 @@ export interface CollectionProps extends I18nProps {
 
 export interface CollectionState {
   isEmpty: boolean;
-  showFullHeader?: boolean;
+  showHeader?: boolean;
 }
 
 export const collectionStyles = `
@@ -33,12 +32,6 @@ export const collectionStyles = `
       flex: 1 1;
       margin: 0;
       text-transform: lowercase;
-    }
-
-    .ui--Collection-buttons {
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
     }
   }
 
@@ -60,7 +53,7 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
     return !children || (Array.isArray(children) && children.length === 0);
   }
 
-  public static getDerivedStateFromProps ({ isEmpty, children }: CollectionProps): CollectionState {
+  public static getDerivedStateFromProps ({ children, isEmpty }: CollectionProps): CollectionState {
     return {
       isEmpty: isEmpty === undefined ? Collection.isEmpty(children) : isEmpty
     };
@@ -68,11 +61,11 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
 
   public render (): React.ReactNode {
     const { banner, className } = this.props;
-    const { isEmpty } = this.state;
+    const { isEmpty, showHeader } = this.state;
 
     return (
       <div className={className}>
-        {this.renderHeader()}
+        {showHeader && this.renderHeader()}
         {banner}
         {isEmpty
           ? this.renderEmpty()
@@ -83,24 +76,18 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
   }
 
   protected renderHeader (): React.ReactNode {
-    const { buttons, topButtons, headerText } = this.props;
-    const { showFullHeader } = this.state;
+    const { buttons, headerText } = this.props;
 
-    if (!headerText && !buttons && !topButtons) {
+    if (!headerText && !buttons) {
       return null;
     }
 
     return (
       <div className='ui--Collection-header'>
-        {headerText && <h1>{headerText}</h1>}
-        {(buttons || topButtons) && (
+        <h1>{headerText}</h1>
+        {buttons && (
           <div className='ui--Collection-buttons'>
-            <div>
-              {topButtons}
-            </div>
-            <div>
-              {showFullHeader && buttons}
-            </div>
+            {buttons}
           </div>
         )}
       </div>
@@ -125,6 +112,7 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
 
   protected renderCollection (): React.ReactNode {
     const { children } = this.props;
+
     return children;
   }
 }

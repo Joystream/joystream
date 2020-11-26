@@ -61,10 +61,14 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
     }
 }
 
-pub type ClassPermissionsType<T> =
-    ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
+pub type ClassPermissionsType<T> = ClassPermissions<
+    ClassId,
+    <T as Trait>::Credential,
+    u16,
+    <T as frame_system::Trait>::BlockNumber,
+>;
 
-pub trait Trait: system::Trait + versioned_store::Trait {
+pub trait Trait: frame_system::Trait + versioned_store::Trait {
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member
@@ -88,11 +92,11 @@ pub trait Trait: system::Trait + versioned_store::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
       /// ClassPermissions of corresponding Classes in the versioned store
-      pub ClassPermissionsByClassId get(fn class_permissions_by_class_id): map hasher(blake2_128_concat)
+      pub ClassPermissionsByClassId get(fn class_permissions_by_class_id) config(): map hasher(blake2_128_concat)
         ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityMaintainerByEntityId get(fn entity_maintainer_by_entity_id): map hasher(blake2_128_concat)
+      pub EntityMaintainerByEntityId get(fn entity_maintainer_by_entity_id) config(): map hasher(blake2_128_concat)
         EntityId => Option<T::Credential>;
     }
 }
@@ -257,8 +261,8 @@ decl_module! {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             let can_create_class = match raw_origin {
-                system::RawOrigin::Root => true,
-                system::RawOrigin::Signed(sender) => {
+                frame_system::RawOrigin::Root => true,
+                frame_system::RawOrigin::Signed(sender) => {
                     T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
                 },
                 _ => false
@@ -387,16 +391,18 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn ensure_root_or_signed(
         origin: T::Origin,
-    ) -> Result<system::RawOrigin<T::AccountId>, &'static str> {
+    ) -> Result<frame_system::RawOrigin<T::AccountId>, &'static str> {
         match origin.into() {
-            Ok(system::RawOrigin::Root) => Ok(system::RawOrigin::Root),
-            Ok(system::RawOrigin::Signed(account_id)) => Ok(system::RawOrigin::Signed(account_id)),
+            Ok(frame_system::RawOrigin::Root) => Ok(frame_system::RawOrigin::Root),
+            Ok(frame_system::RawOrigin::Signed(account_id)) => {
+                Ok(frame_system::RawOrigin::Signed(account_id))
+            }
             _ => Err("BadOrigin:ExpectedRootOrSigned"),
         }
     }
 
     fn do_create_entity(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         class_id: ClassId,
     ) -> Result<EntityId, &'static str> {
@@ -425,7 +431,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn do_update_entity_property_values(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
@@ -457,7 +463,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn do_add_schema_support_to_entity(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
@@ -494,13 +500,13 @@ impl<T: Trait> Module<T> {
     /// Derives the AccessLevel the caller is attempting to act with.
     /// It expects only signed or root origin.
     fn derive_access_level(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
     ) -> Result<AccessLevel<T::Credential>, &'static str> {
         match raw_origin {
-            system::RawOrigin::Root => Ok(AccessLevel::System),
-            system::RawOrigin::Signed(account_id) => {
+            frame_system::RawOrigin::Root => Ok(AccessLevel::System),
+            frame_system::RawOrigin::Signed(account_id) => {
                 if let Some(credential) = with_credential {
                     if T::CredentialChecker::account_has_credential(&account_id, credential) {
                         if let Some(entity_id) = as_entity_maintainer {
@@ -546,7 +552,7 @@ impl<T: Trait> Module<T> {
     /// Derives the access level of the caller.
     /// If the predicate passes, the mutate method is invoked.
     fn mutate_class_permissions<Predicate, Mutate>(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         // predicate to test
         predicate: Predicate,
@@ -564,7 +570,7 @@ impl<T: Trait> Module<T> {
 
         predicate(&class_permissions, &access_level)?;
         mutate(&mut class_permissions)?;
-        class_permissions.last_permissions_update = <system::Module<T>>::block_number();
+        class_permissions.last_permissions_update = <frame_system::Module<T>>::block_number();
         <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
         Ok(())
     }
@@ -584,7 +590,7 @@ impl<T: Trait> Module<T> {
     /// If the peridcate passes the callback is invoked. Returns result of the callback
     /// or error from failed predicate.
     fn if_class_permissions_satisfied<Predicate, Callback, R>(
-        raw_origin: &system::RawOrigin<T::AccountId>,
+        raw_origin: &frame_system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
         // predicate to test

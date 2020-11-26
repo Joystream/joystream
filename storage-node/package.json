@@ -3,8 +3,8 @@
   "name": "storage-node",
   "version": "1.0.0",
   "engines": {
-    "node": ">=10.15.3",
-    "yarn": "^1.15.2"
+    "node": ">=12.18.0",
+    "yarn": "^1.22.0"
   },
   "homepage": "https://github.com/Joystream/joystream/",
   "bugs": {
@@ -14,7 +14,7 @@
     "type": "git",
     "url": "https://github.com/Joystream/joystream.git"
   },
-  "license": "GPL-3.0",
+  "license": "GPL-3.0-only",
   "contributors": [
     {
       "name": "Joystream",
@@ -32,15 +32,15 @@
   ],
   "scripts": {
     "test": "wsrun --serial test",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "eslint --ext .js,.ts --ignore-path .gitignore .",
     "build": "yarn workspace @joystream/storage-cli run build",
-    "checks": "yarn lint && prettier . --check",
+    "checks": "prettier . --check && yarn lint",
     "format": "prettier . --write"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
-    "eslint": "^5.16.0",
+    "eslint": "^7.6.0",
     "eslint-config-esnext": "^4.1.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-babel": "^5.3.1",
@@ -48,5 +48,8 @@
     "prettier": "^2.0.5",
     "typescript": "^3.9.6",
     "wsrun": "^3.6.5"
+  },
+  "volta": {
+    "extends": "../package.json"
   }
 }

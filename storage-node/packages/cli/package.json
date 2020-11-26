@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/Joystream/joystream.git"
   },
-  "license": "GPL-3.0",
+  "license": "GPL-3.0-only",
   "contributors": [
     {
       "name": "Joystream",
@@ -24,11 +24,14 @@
     "linux"
   ],
   "engines": {
-    "node": ">=10.15.3"
+    "node": ">=12.18.0"
+  },
+  "volta": {
+    "extends": "../package.json"
   },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
-    "lint": "eslint --ext .ts,.tsx . && tsc --noEmit --pretty",
+    "lint": "eslint --ext .js,.ts . && tsc --noEmit --pretty",
     "build": "tsc --build"
   },
   "bin": {
@@ -36,7 +39,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "eslint": "^5.13.0",
+    "eslint": "^7.6.0",
     "mocha": "^5.2.0",
     "temp": "^0.9.0"
   },
@@ -44,7 +47,7 @@
     "@joystream/storage-runtime-api": "^0.1.0",
     "@joystream/service-discovery": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.11.0",
+    "@joystream/types": "^0.14.0",
     "axios": "^0.19.2",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",

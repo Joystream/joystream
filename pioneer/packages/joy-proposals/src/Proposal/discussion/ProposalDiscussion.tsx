@@ -3,7 +3,7 @@ import { Divider, Header } from 'semantic-ui-react';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { ProposalId } from '@joystream/types/proposals';
 import { ParsedDiscussion } from '@polkadot/joy-utils/types/proposals';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import DiscussionPost from './DiscussionPost';
 import DiscussionPostForm from './DiscussionPostForm';
 import { MemberId } from '@joystream/types/members';
@@ -11,16 +11,21 @@ import { MemberId } from '@joystream/types/members';
 type ProposalDiscussionProps = {
   proposalId: ProposalId;
   memberId?: MemberId;
+  historical?: boolean;
 };
 
 export default function ProposalDiscussion ({
   proposalId,
-  memberId
+  memberId,
+  historical
 }: ProposalDiscussionProps) {
   const transport = useTransport();
   const [discussion, error, loading, refreshDiscussion] = usePromise<ParsedDiscussion | null | undefined>(
-    () => transport.proposals.discussion(proposalId),
-    undefined
+    () => historical
+      ? transport.proposals.historicalDiscussion(proposalId)
+      : transport.proposals.discussion(proposalId),
+    undefined,
+    [historical]
   );
   const constraints = transport.proposals.discussionContraints();
 
@@ -28,7 +33,7 @@ export default function ProposalDiscussion ({
     <PromiseComponent error={error} loading={loading} message={'Fetching discussion posts...'}>
       { discussion && (
         <>
-          <Header as="h3">Discussion ({ discussion.posts.length})</Header>
+          <Header as='h3'>Discussion ({ discussion.posts.length})</Header>
           <Divider />
           { discussion.posts.length ? (
             discussion.posts.map((post, key) => (
@@ -36,14 +41,15 @@ export default function ProposalDiscussion ({
                 key={post.postId ? post.postId.toNumber() : `k-${key}`}
                 post={post}
                 memberId={memberId}
-                refreshDiscussion={refreshDiscussion}/>
+                refreshDiscussion={refreshDiscussion}
+                historical={historical}/>
             ))
           )
             : (
-              <Header as="h4" style={{ margin: '1rem 0' }}>Nothing has been posted here yet!</Header>
+              <Header as='h4' style={{ margin: '1rem 0' }}>Nothing has been posted here yet!</Header>
             )
           }
-          { memberId && (
+          { (memberId && !historical) && (
             <DiscussionPostForm
               threadId={discussion.threadId}
               memberId={memberId}

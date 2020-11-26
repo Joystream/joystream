@@ -36,9 +36,9 @@ const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and v
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
+pub trait Trait: frame_system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Data object type registry_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// _Data object type id_ type
     type DataObjectTypeId: Parameter
