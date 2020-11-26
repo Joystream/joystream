@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { VideoEntity } from '@joystream/cd-schemas/types/entities'
+import { VideoEntity, KnownLicenseEntity } from 'cd-schemas/types/entities'
 import fs from 'fs'
 import { DistinctQuestion } from 'inquirer'
 import path from 'path'
@@ -22,7 +22,21 @@ export default abstract class MediaCommandBase extends ContentDirectoryCommandBa
       ],
     })
     if (licenseType === 'known') {
-      license = { new: { knownLicense: await this.promptForEntityId('Choose License', 'KnownLicense', 'code') } }
+      const [id, knownLicenseEntity] = await this.promptForEntityEntry('Choose License', 'KnownLicense', 'code')
+      const knownLicense = await this.parseToKnownEntityJson<KnownLicenseEntity>(knownLicenseEntity)
+      if (knownLicense.attributionRequired) {
+        // Attribution required - convert to UserDefinedLicense
+        const attribution = await this.simplePrompt({ message: 'Attribution' })
+        const { name, code, description, url } = knownLicense
+        const licenseContent =
+          `${code}${name ? ` (${name})` : ''}\n\n` +
+          (description ? `${description}\n\n` : '') +
+          (url ? `${url}\n\n` : '') +
+          `Attribution: ${attribution}`
+        license = { new: { userDefinedLicense: { new: { content: licenseContent } } } }
+      } else {
+        license = { new: { knownLicense: id.toNumber() } }
+      }
     } else {
       let licenseContent: null | string = null
       while (licenseContent === null) {
