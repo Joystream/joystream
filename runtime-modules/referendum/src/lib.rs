@@ -322,6 +322,17 @@ decl_module! {
         /// Setup events
         fn deposit_event() = default;
 
+        /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
+        const MaxSaltLength: u64 = T::MaxSaltLength::get();
+        /// Identifier for currency locks used for staking.
+        const LockId: LockIdentifier = T::LockId::get();
+        /// Duration of voting stage (number of blocks)
+        const VoteStageDuration: T::BlockNumber = T::VoteStageDuration::get();
+        /// Duration of revealing stage (number of blocks)
+        const RevealStageDuration: T::BlockNumber = T::RevealStageDuration::get();
+        /// Minimum stake needed for voting
+        const MinimumStake: Balance<T, I> = T::MinimumStake::get();
+
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
