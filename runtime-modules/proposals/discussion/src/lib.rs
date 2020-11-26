@@ -58,7 +58,6 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, Parameter,
 };
 use sp_std::clone::Clone;
-use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
@@ -186,6 +185,15 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Adds a post with author origin check.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the number of whitelisted members for `thread_id`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::add_post(
             T::MaxWhiteListSize::get(),
         )]
@@ -220,6 +228,14 @@ decl_module! {
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::update_post()]
         pub fn update_post(
             origin,
@@ -246,9 +262,18 @@ decl_module! {
        }
 
         /// Changes thread permission mode.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` if ThreadMode is close or O(1) otherwise where:
+        /// - `W` is the number of whitelisted members in `mode`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::change_thread_mode(
             if let ThreadMode::Closed(ref list) = mode {
-                list.len().try_into().unwrap()
+                list.len().saturated_into()
             } else {
                 0
             }

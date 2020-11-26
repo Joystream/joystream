@@ -133,8 +133,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::{Saturating, Zero};
-use sp_std::convert::TryInto;
+use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
@@ -375,6 +374,15 @@ decl_module! {
 
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (P + I)` where:
+        /// - `P` is the weight of all executed proposals
+        /// - `I` is the weight of the worst branch for anything else in `on_initialize`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state
+        /// # </weight>
         fn on_initialize() -> Weight {
             // `process_proposal` returns the weight of the executed proposals. The weight of the
             // executed proposals doesn't include any access to the store or calculation that
@@ -384,46 +392,27 @@ decl_module! {
             // To be safe, we use the worst possible case for `on_initialize`, meaning that there
             // are as many proposals active as possible and they all take the worst possible branch.
 
-            let max_active_proposals = T::MaxActiveProposalLimit::get();
-
-            // Weight when all the proposals are immediatly approved and executed
-            let immediate_execution_branch_weight =
-                WeightInfoEngine::<T>::
-                on_initialize_immediate_execution_decode_fails(max_active_proposals);
-
-            let pending_execution_branch_weight =
-                WeightInfoEngine::<T>::
-                on_initialize_pending_execution_decode_fails(max_active_proposals);
-
-            // Weight when all the proposals are approved and pending constitutionality
-            let approved_pending_constitutionality_branch_weight =
-                WeightInfoEngine::<T>::
-                on_initialize_approved_pending_constitutionality(max_active_proposals);
-
-            // Weight when all proposals are rejected
-            let rejected_branch_weight =
-                WeightInfoEngine::<T>::on_initialize_rejected(max_active_proposals);
-
-            // Weight when all proposals are slashed
-            let slashed_branch_weight =
-                WeightInfoEngine::<T>::on_initialize_slashed(max_active_proposals);
+            // Maximum Weight of all possible worst case scenarios
+            let maximum_branch_weight = Self::weight_of_worst_on_initialize_branch();
 
             // Weight of the executed proposals
             let executed_proposals_weight = Self::process_proposals();
-
-            // Maximum Weight of all possible worst case scenarios
-            let maximum_branch_weight = immediate_execution_branch_weight
-                .max(pending_execution_branch_weight)
-                .max(approved_pending_constitutionality_branch_weight)
-                .max(rejected_branch_weight)
-                .max(slashed_branch_weight);
 
             // total_weight = executed_proposals_weight + maximum_branch_weight
             executed_proposals_weight.saturating_add(maximum_branch_weight)
         }
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().try_into().unwrap())]
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (R)` where:
+        /// - `R` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or paraemters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().saturated_into())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
@@ -455,6 +444,15 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (L)` where:
+        /// - `L` is the total number of locks in `Balances`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
@@ -472,6 +470,14 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoEngine::<T>::veto_proposal()]
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
@@ -678,12 +684,51 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // Helper to calculate the weight of the worst `on_initialize` branch
+    fn weight_of_worst_on_initialize_branch() -> Weight {
+        let max_active_proposals = T::MaxActiveProposalLimit::get();
+
+        // Weight when all the proposals are immediatly approved and executed
+        let immediate_execution_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_immediate_execution_decode_fails(
+                max_active_proposals,
+            );
+
+        let pending_execution_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_pending_execution_decode_fails(
+                max_active_proposals,
+            );
+
+        // Weight when all the proposals are approved and pending constitutionality
+        let approved_pending_constitutionality_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_approved_pending_constitutionality(
+                max_active_proposals,
+            );
+
+        // Weight when all proposals are rejected
+        let rejected_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_rejected(max_active_proposals);
+
+        // Weight when all proposals are slashed
+        let slashed_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_slashed(max_active_proposals);
+
+        // Maximum Weight of all possible worst case scenarios
+        immediate_execution_branch_weight
+            .max(pending_execution_branch_weight)
+            .max(approved_pending_constitutionality_branch_weight)
+            .max(rejected_branch_weight)
+            .max(slashed_branch_weight)
+    }
+
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
     }
 
     // Executes proposal code.
+    // Returns the weight of the proposal(wether execution failed or not) or 0 if the proposal
+    // couldn't be decoded.
     fn execute_proposal(proposal_id: T::ProposalId) -> Weight {
         let proposal_code = Self::proposal_codes(proposal_id);
 
@@ -723,6 +768,7 @@ impl<T: Trait> Module<T> {
     // - fire an event,
     // - update or delete proposal state.
     // Executes the proposal if it ready.
+    // If proposal was executed returns its weight otherwise it returns 0.
     fn finalize_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
@@ -845,6 +891,7 @@ impl<T: Trait> Module<T> {
 
     /// Perform voting period check, vote result tally, approved proposals
     /// grace period checks, and proposal execution.
+    /// Returns the total weight of all the executed proposals or 0 if none was executed.
     fn process_proposals() -> Weight {
         // Collect all proposals.
         let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
