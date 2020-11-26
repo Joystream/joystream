@@ -4,7 +4,7 @@ import _ from 'lodash'
 import RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import chalk from 'chalk'
 import { BOOL_PROMPT_OPTIONS } from './prompting'
-import { getSchemasLocation } from 'cd-schemas'
+import { getSchemasLocation } from '@joystream/cd-schemas'
 import path from 'path'
 
 type CustomPromptMethod = () => Promise<any>

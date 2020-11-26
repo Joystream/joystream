@@ -1,7 +1,7 @@
 import { QueryNodeApi } from '../../Api'
 import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
 

@@ -1,6 +1,6 @@
 import { QueryNodeApi, WorkingGroups } from '../../Api'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 
 export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateVideoFixture {

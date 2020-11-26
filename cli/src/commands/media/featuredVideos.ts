@@ -1,6 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayTable } from '../../helpers/display'
-import { FeaturedVideoEntity, VideoEntity } from 'cd-schemas/types/entities'
+import { FeaturedVideoEntity, VideoEntity } from '@joystream/cd-schemas/types/entities'
 import chalk from 'chalk'
 
 export default class FeaturedVideosCommand extends ContentDirectoryCommandBase {

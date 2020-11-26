@@ -5,8 +5,8 @@ import { Seat } from '@joystream/types/council'
 import { v4 as uuid } from 'uuid'
 import { Utils } from '../utils'
 import { Fixture } from '../Fixture'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 
 export class CreateChannelFixture implements Fixture {
   private api: QueryNodeApi

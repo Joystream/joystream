@@ -1,6 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { Entity } from '@joystream/types/content-directory'
-import { VideoEntity } from 'cd-schemas/types/entities'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities'
 import { createType } from '@joystream/types'
 
 export default class RemoveVideoCommand extends ContentDirectoryCommandBase {

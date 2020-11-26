@@ -23,7 +23,7 @@ docker-compose up -d joystream-node
 DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 docker-compose up -d colossus
 # Initialise the content directory with standard classes, schemas and initial entities
-yarn workspace cd-schemas initialize:dev
+yarn workspace @joystream/cd-schemas initialize:dev
 
 ## Query Node Infrastructure
 # Initialize a new database for the query node infrastructure
