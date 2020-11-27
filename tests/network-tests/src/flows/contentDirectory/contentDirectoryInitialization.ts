@@ -1,5 +1,4 @@
-import { Api, WorkingGroups } from '../../Api'
-import { assert } from 'chai'
+import { Api } from '../../Api'
 import { KeyringPair } from '@polkadot/keyring/types'
 
 export default async function initializeContentDirectory(api: Api, leadKeyPair: KeyringPair) {
