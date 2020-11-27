@@ -10,7 +10,6 @@ use system::Module as System;
 use system::RawOrigin;
 
 use crate::Module as Referendum;
-//use membership::Module as Membership;
 
 const SEED: u32 = 0;
 

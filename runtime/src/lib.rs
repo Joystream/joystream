@@ -59,6 +59,8 @@ use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
+use ::council as new_council;
+
 // Node dependencies
 pub use common;
 pub use content_directory;
@@ -635,6 +637,75 @@ impl referendum::Trait<StorageReferendumInstance> for Runtime {
     fn increase_option_power(_: &u64, _: &Self::VotePower) {}
 }
 
+parameter_types! {
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: u32 = 15;
+    pub const IdlePeriodDuration: u32 = 17;
+    pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const CandidacyLockId: LockIdentifier = *b"council1";
+    pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+}
+
+impl new_council::Trait for Runtime {
+    type Event = Event;
+
+    type Referendum = referendum::Module<Runtime, StorageReferendumInstance>;
+
+    type MembershipId = <Runtime as membership::Trait>::MemberId;
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = Runtime;
+    type ElectedMemberLock = Runtime;
+
+    fn is_council_member_account(
+        membership_id: &Self::MembershipId,
+        account_id: &<Self as system::Trait>::AccountId,
+    ) -> bool {
+        true
+    }
+}
+
+use frame_support::dispatch::DispatchResult;
+use sp_arithmetic::traits::Zero;
+
+impl new_council::staking_handler::StakingHandler2<AccountId, Balance, u64> for Runtime {
+    fn lock(_: &AccountId, _: Balance) {}
+
+    fn unlock(_: &AccountId) {}
+
+    fn slash(_: &AccountId, _: Option<Balance>) -> Balance {
+        Zero::zero()
+    }
+
+    fn set_stake(_: &AccountId, _: Balance) -> DispatchResult {
+        Ok(())
+    }
+
+    fn is_member_staking_account(
+        _: &<Self as membership::Trait>::MemberId,
+        _: &<Self as system::Trait>::AccountId,
+    ) -> bool {
+        true
+    }
+
+    fn is_account_free_of_conflicting_stakes(_: &AccountId) -> bool {
+        true
+    }
+
+    fn is_enough_balance_for_stake(_: &AccountId, _: Balance) -> bool {
+        true
+    }
+
+    fn current_stake(_: &AccountId) -> Balance {
+        Balance::max_value()
+    }
+}
+
 /* === HERE === */
 
 impl memo::Trait for Runtime {
@@ -969,6 +1040,7 @@ construct_runtime!(
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        NewCouncil: new_council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
