@@ -256,7 +256,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
     const videoProps = await videoPrompter.promptMultipleProps([
       'title',
       'description',
-      'thumbnailURL',
+      'thumbnailUrl',
       'duration',
       'isPublic',
       'isExplicit',
