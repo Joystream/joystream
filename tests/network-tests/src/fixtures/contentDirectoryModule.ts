@@ -28,7 +28,7 @@ export class CreateChannelFixture implements Fixture {
 
 export class CreateVideoFixture implements Fixture {
   private api: QueryNodeApi
-  private videoEntity: VideoEntity
+  public videoEntity: VideoEntity
 
   public constructor(api: QueryNodeApi, videoEntity: VideoEntity) {
     this.api = api

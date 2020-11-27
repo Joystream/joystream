@@ -2035,21 +2035,61 @@ export class QueryNodeApi extends Api {
     this.queryNodeProvider = queryNodeProvider
   }
 
-  public async getChannelbyTitle(title: string): Promise<ApolloQueryResult<any>> {
+  public async getChannelbyHandle(handle: string): Promise<ApolloQueryResult<any>> {
     const GET_CHANNEL_BY_TITLE = gql`
-      query($title: String!) {
-        channels(where: { title_eq: $title }) {
-          title
+      query($handle: String!) {
+        channels(where: { handle_eq: $handle }) {
+          handle
           description
           coverPhotoUrl
           avatarPhotoUrl
           isPublic
           isCurated
-          languageId
+          videos {
+            title
+            description
+            duration
+            thumbnailUrl
+            isExplicit
+            isPublic
+          }
         }
       }
     `
 
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { title } })
+    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { handle } })
+  }
+
+  public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
+    const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
+      query($text: String!) {
+        search(text: $text) {
+          item {
+            ... on Channel {
+              handle
+              description
+            }
+          }
+        }
+      }
+    `
+
+    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
+  }
+
+  public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
+    const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
+      query($text: String!) {
+        search(text: $text) {
+          item {
+            ... on Video {
+              title
+            }
+          }
+        }
+      }
+    `
+
+    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
   }
 }
