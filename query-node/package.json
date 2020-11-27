@@ -24,10 +24,10 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@dzlzv/hydra-cli": "^0.0.21"
+		"@dzlzv/hydra-cli": "^0.0.23"
 	},
 	"dependencies": {
-		"@dzlzv/hydra-indexer-lib": "^0.0.19-legacy.1.26.1",
+		"@dzlzv/hydra-indexer-lib": "^0.0.20-legacy.1.26.1",
 		"@joystream/types": "^0.14.0",
 		"@types/bn.js": "^4.11.6",
 		"@types/debug": "^4.1.5",

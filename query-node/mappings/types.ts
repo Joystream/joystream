@@ -45,7 +45,7 @@ export interface IChannel {
   coverPhotoUrl: string
   avatarPhotoUrl: string
   isPublic: boolean
-  isCurated: boolean
+  isCurated?: boolean
   language?: IReference
 }
 
@@ -107,7 +107,7 @@ export interface IVideo {
   hasMarketing?: boolean
   publishedBeforeJoystream?: number
   isPublic: boolean
-  isCurated: boolean
+  isCurated?: boolean
   isExplicit: boolean
   license?: IReference
 }

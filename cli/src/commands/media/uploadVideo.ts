@@ -17,12 +17,12 @@ import ipfsHttpClient from 'ipfs-http-client'
 import first from 'it-first'
 import last from 'it-last'
 import toBuffer from 'it-to-buffer'
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import MediaCommandBase from '../../base/MediaCommandBase'
 import { getInputJson, validateInput, IOFlags } from '../../helpers/InputOutput'
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
 const DATA_OBJECT_TYPE_ID = 1
 const MAX_FILE_SIZE = 500 * 1024 * 1024
