@@ -26,6 +26,7 @@ membership = { package = 'pallet-membership', default-features = false, path = '
 
 [features]
 default = ['std']
+runtime-benchmarks = ['frame-benchmarking']
 std = [
     'codec/std',
     'sp-core/std',
