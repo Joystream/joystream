@@ -35,7 +35,7 @@ fn add_maintainer_to_class_success() {
         ));
 
         // Event checked
-        assert_event_success(maintainer_added_event, number_of_events_before_call + 1);
+        assert_event(maintainer_added_event, number_of_events_before_call + 1);
     })
 }
 

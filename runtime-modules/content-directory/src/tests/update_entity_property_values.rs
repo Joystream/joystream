@@ -55,7 +55,7 @@ fn update_entity_property_values_success() {
         );
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_property_values_updated_event,
             number_of_events_before_calls + 1,
         );

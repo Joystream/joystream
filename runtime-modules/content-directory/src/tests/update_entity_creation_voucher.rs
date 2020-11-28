@@ -40,7 +40,7 @@ fn create_entity_creation_voucher_success() {
         );
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_creation_voucher_created_event,
             number_of_events_before_call + 1,
         );
@@ -101,7 +101,7 @@ fn update_entity_creation_voucher_success() {
         );
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_creation_voucher_created_event,
             number_of_events_before_call + 1,
         );

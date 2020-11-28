@@ -145,7 +145,7 @@ pub fn add_entity_schemas_support() -> (
     ));
 
     // Last event checked
-    assert_event_success(
+    assert_event(
         entity_schema_support_added_event,
         number_of_events_before_calls + 2,
     );
