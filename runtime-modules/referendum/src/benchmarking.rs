@@ -21,7 +21,7 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-const MAX_VOTERS: u32 = 500;
+const MAX_WINNERS: u32 = 500;
 
 fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     Referendum::<T, I>::force_start(winning_target_count.into());
@@ -187,6 +187,88 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: I
 benchmarks_instance! {
     _ { }
 
+    on_finalize_revealing {
+        let i in 0 .. MAX_WINNERS;
+
+        let salt = vec![0u8];
+        let vote_option = i;
+        let started_voting_block_number = System::<T>::block_number();
+
+        let (mut intermediate_winners, _, _) =
+            add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
+                i,
+                i,
+                vote_option,
+                One::one()
+            );
+
+        let target_block_number = T::RevealStageDuration::get() +
+            T::VoteStageDuration::get() +
+            started_voting_block_number;
+
+
+        let target_stage = ReferendumStage::Revealing(
+            ReferendumStageRevealingOf::<T, I> {
+                intermediate_winners: intermediate_winners.clone(),
+                started: started_voting_block_number + T::VoteStageDuration::get() + One::one(),
+                winning_target_count: (i + 1).into(),
+            }
+        );
+
+        move_to_block::<T, I>(
+            target_block_number,
+            target_stage
+        );
+    }: { Referendum::<T, I>::on_finalize(System::<T>::block_number()); }
+    verify {
+        assert_eq!(
+            Referendum::<T, I>::stage(),
+            ReferendumStage::Inactive,
+            "Reveal perdiod hasn't ended",
+        );
+
+        assert_eq!(
+            Referendum::<T, I>::current_cycle_id(),
+            1,
+            "Cycle haven't advanced"
+        );
+
+        assert_last_event::<T, I>(RawEvent::ReferendumFinished(intermediate_winners).into());
+    }
+
+    on_finalize_voting {
+        let i in 0 .. 1;
+
+        let winning_target_count = 0;
+        start_voting_cycle::<T, I>(winning_target_count);
+
+        let started_voting_block_number = System::<T>::block_number() + One::one();
+        let target_block_number =
+            T::VoteStageDuration::get() + started_voting_block_number - One::one();
+
+        let target_stage = ReferendumStage::Voting(ReferendumStageVoting {
+                started: System::<T>::block_number() + One::one(),
+                winning_target_count: (winning_target_count + 1).into(),
+        });
+
+        move_to_block::<T, I>(target_block_number, target_stage);
+    }: { Referendum::<T, I>::on_finalize(System::<T>::block_number()); }
+    verify {
+        let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
+            started: target_block_number + One::one(),
+            winning_target_count: 1,
+            intermediate_winners: vec![]
+        });
+
+        assert_eq!(
+            Referendum::<T, I>::stage(),
+            current_stage,
+            "Voting period not ended"
+        );
+
+        assert_last_event::<T, I>(RawEvent::RevealingStageStarted().into());
+    }
+
     vote {
         let i in 0 .. 1;
 
@@ -220,7 +302,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_for_new_winner {
-        let i in 0 .. MAX_VOTERS;
+        let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
         let vote_option = i;
@@ -270,7 +352,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_not_in_winners {
-        let i in 0 .. MAX_VOTERS;
+        let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
         let vote_option = i+1;
@@ -312,7 +394,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_replace_last_winner {
-        let i in 0 .. MAX_VOTERS;
+        let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
         let vote_option = i+1;
@@ -361,7 +443,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_already_existing {
-        let i in 0 .. MAX_VOTERS;
+        let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
         let vote_option = i;
@@ -502,6 +584,22 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(test_benchmark_release_voting_stake::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_on_finalize_voting() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_voting::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_on_finalize_revealing() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_revealing::<Runtime>());
         })
     }
 }
