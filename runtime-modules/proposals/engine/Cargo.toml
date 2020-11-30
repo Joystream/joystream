@@ -16,23 +16,27 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
+
+# Benchmark dependencies.
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
-# We need to add the following dependencies(governance, recurringrrewards and minting) for benchmarking
-# but since we also need them for the mock runtime for the benchmark tests, we need to implement the traits and events
-# in the Test runtime so we can't add them as optional dependncies(the test compilation without feature benchmark
-# breaks) and we can't add them as dev-dependencies since that would break the benchmarks
-governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
-recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
-minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
+governance = { package = 'pallet-governance', default-features = false, path = '../../governance', optional = true}
+recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward', optional = true}
+minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
+recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
+minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 
 [features]
 default = ['std']
 runtime-benchmarks = [
     'frame-benchmarking',
+    'governance',
+    'recurringrewards',
+    'minting',
 ]
 std = [
 	'serde',
