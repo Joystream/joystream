@@ -172,9 +172,6 @@ fn council_vote_for_winner_stakes_longer() {
         Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
         Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
 
-        // forward past idle stage
-        MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);
-
         // try to release vote stake
         Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
 

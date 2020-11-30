@@ -779,7 +779,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
             .any(|membership_id| vote.vote_for == Some(membership_id.into()));
 
         // allow release for vote from previous elections only when not voted for winner
-        if vote.cycle_id == current_voting_cycle_id + 1 {
+        if *current_voting_cycle_id == vote.cycle_id + 1 {
             // ensure vote was not cast for the one of winning candidates / council members
             if voting_for_winner {
                 return Err(Error::CantReleaseStakeNow);
