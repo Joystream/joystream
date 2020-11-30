@@ -283,7 +283,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       choices: entityEntries.map(([id, entity]) => {
         const parsedEntityPropertyValues = this.parseEntityPropertyValues(entity, entityClass)
         return {
-          name: (propName && parsedEntityPropertyValues[propName].value?.toString()) || `ID:${id.toString()}`,
+          name: (propName && parsedEntityPropertyValues[propName]?.value?.toString()) || `ID:${id.toString()}`,
           value: id.toString(), // With numbers there are issues with "default"
         }
       }),
