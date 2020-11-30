@@ -194,7 +194,7 @@ pub trait Trait<I: Instance>: system::Trait {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         vote: &CastVote<Self::Hash, Balance<Self, I>>,
         current_voting_cycle_id: &u64,
     ) -> bool;
@@ -837,7 +837,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ask runtime if stake can be released
-        if !T::can_release_vote_stake(&cast_vote, &cycle_id) {
+        if !T::can_unlock_vote_stake(&cast_vote, &cycle_id) {
             return Err(Error::UnstakingForbidden);
         }
 

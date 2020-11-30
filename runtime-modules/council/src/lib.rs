@@ -34,7 +34,7 @@
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
 //! - [recieve_referendum_results](./trait.ReferendumConnection.html#method.recieve_referendum_results)
-//! - [can_release_vote_stake](./trait.ReferendumConnection.html#method.can_release_vote_stake)
+//! - [can_unlock_vote_stake](./trait.ReferendumConnection.html#method.can_unlock_vote_stake)
 //!
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
@@ -214,7 +214,7 @@ pub trait ReferendumConnection<T: Trait> {
         -> Result<(), Error<T>>;
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         vote: &CastVoteOf<T>,
         current_voting_cycle_id: &u64,
     ) -> Result<(), Error<T>>;
@@ -557,7 +557,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     /// Check that it is a proper time to release stake.
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         vote: &CastVoteOf<T>,
         current_voting_cycle_id: &u64,
     ) -> Result<(), Error<T>> {

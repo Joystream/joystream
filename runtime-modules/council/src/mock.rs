@@ -202,7 +202,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
         stake
     }
 
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
         current_voting_cycle_id: &u64,
     ) -> bool {
@@ -211,7 +211,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
             return false;
         }
 
-        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake(
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(
             vote,
             current_voting_cycle_id,
         )

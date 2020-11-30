@@ -91,7 +91,7 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         _vote: &CastVote<Self::Hash, Balance<Self, Instance0>>,
         _current_voting_cycle_id: &u64,
     ) -> bool {
