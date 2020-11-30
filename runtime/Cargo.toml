@@ -82,6 +82,7 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
+staking-handler = { package = 'staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -160,6 +161,7 @@ std = [
     'proposals-codex/std',
     'content-directory/std',
     'constitution/std',
+    'staking-handler/std',
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",

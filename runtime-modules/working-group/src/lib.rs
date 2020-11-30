@@ -56,7 +56,7 @@ use types::{ApplicationInfo, WorkerInfo};
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
-use membership::staking_handler::StakingHandler;
+use staking_handler::StakingHandler;
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:

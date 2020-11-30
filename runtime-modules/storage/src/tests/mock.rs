@@ -17,8 +17,6 @@ pub use crate::{data_directory, data_object_storage_registry, data_object_type_r
 use common::currency::GovernanceCurrency;
 use membership;
 
-mod staking_handler;
-
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;

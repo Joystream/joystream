@@ -25,6 +25,7 @@ hiring = { package = 'pallet-hiring', default-features = false, path = '../hirin
 minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
+staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
 
 [features]
 default = ['std']

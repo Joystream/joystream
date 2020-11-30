@@ -2423,6 +2423,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "staking-handler",
  "strum 0.19.5",
  "substrate-wasm-builder-runner",
 ]
@@ -4059,6 +4060,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "staking-handler",
  "strum 0.19.5",
 ]
 
@@ -4098,6 +4100,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4150,6 +4153,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4259,6 +4263,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4423,6 +4428,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -7361,6 +7367,24 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "staking-handler"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "static_assertions"
