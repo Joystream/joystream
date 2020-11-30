@@ -14,6 +14,7 @@ export enum ContentDirectoryKnownClasses {
   VIDEO = 'Video',
   VIDEOMEDIA = 'VideoMedia',
   VIDEOMEDIAENCODING = 'VideoMediaEncoding',
+  FEATUREDVIDEOS = 'FeaturedVideo',
 }
 
 // Predefined content-directory classes, classId may change after the runtime seeding
@@ -30,6 +31,7 @@ export const contentDirectoryClassNamesWithId: { classId: number; name: string }
   { name: ContentDirectoryKnownClasses.VIDEO, classId: 10 },
   { name: ContentDirectoryKnownClasses.VIDEOMEDIA, classId: 11 },
   { name: ContentDirectoryKnownClasses.VIDEOMEDIAENCODING, classId: 12 },
+  { name: ContentDirectoryKnownClasses.FEATUREDVIDEOS, classId: 13 },
 ]
 
 export const categoryPropertyNamesWithId: IPropertyWithId = {
@@ -113,4 +115,8 @@ export const videoPropertyNamesWithId: IPropertyWithId = {
   12: { name: 'isExplicit', type: 'boolean', required: true },
   13: { name: 'license', type: 'number', required: true },
   14: { name: 'isCurated', type: 'boolean', required: true },
+}
+
+export const featuredVideoPropertyNamesWithId: IPropertyWithId = {
+  0: { name: 'video', type: 'number', required: true },
 }
