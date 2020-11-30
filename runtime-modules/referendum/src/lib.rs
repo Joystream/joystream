@@ -471,6 +471,9 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Has
 
         // emit event
         if referendum_running {
+            // distinguish between new and old cycles
+            Mutations::<T, I>::increase_cycle_id();
+
             Self::deposit_event(RawEvent::ReferendumStartedForcefully(winning_target_count));
         } else {
             Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
@@ -533,15 +536,15 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         revealing_stage: ReferendumStageRevealingOf<T, I>,
     ) -> Vec<OptionResult<<T as Trait<I>>::VotePower>> {
         // reset referendum state
-        Self::reset_referendum();
+        Stage::<T, I>::put(ReferendumStage::Inactive);
+        Self::increase_cycle_id();
 
         // return winning option
         revealing_stage.intermediate_winners
     }
 
-    /// Change the referendum stage from revealing to the inactive stage.
-    fn reset_referendum() {
-        Stage::<T, I>::put(ReferendumStage::Inactive);
+    /// Increase the cycle councter.
+    fn increase_cycle_id() {
         CurrentCycleId::<I>::put(CurrentCycleId::<I>::get() + 1);
     }
 

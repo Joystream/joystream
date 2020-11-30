@@ -584,7 +584,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         // at this point vote.cycle_id == current_voting_cycle_id
 
         // ensure election has ended and voter haven't voted for winner
-        if voting_for_winner || !matches(Stage::<T>::get().stage, CouncilStage::Idle) {
+        if voting_for_winner || !matches!(Stage::<T>::get().stage, CouncilStage::Idle) {
             return Err(Error::CantReleaseStakeNow);
         }
 
