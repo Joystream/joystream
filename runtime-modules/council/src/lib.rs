@@ -562,7 +562,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         current_voting_cycle_id: &u64,
     ) -> Result<(), Error<T>> {
         // allow release for very old votes
-        if vote.cycle_id > current_voting_cycle_id + 1 {
+        if *current_voting_cycle_id > vote.cycle_id + 1 {
             return Ok(());
         }
 
@@ -583,7 +583,8 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
 
         // at this point vote.cycle_id == current_voting_cycle_id
 
-        if voting_for_winner {
+        // ensure election has ended and voter haven't voted for winner
+        if voting_for_winner || !matches(Stage::<T>::get().stage, CouncilStage::Idle) {
             return Err(Error::CantReleaseStakeNow);
         }
 
