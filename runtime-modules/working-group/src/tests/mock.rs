@@ -14,8 +14,6 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-mod staking_handler;
-
 mod working_group {
     pub use crate::Event;
 }

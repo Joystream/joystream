@@ -16,8 +16,6 @@ use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
-mod staking_handler;
-
 impl_outer_origin! {
     pub enum Origin for Test {}
 }

@@ -4060,6 +4060,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "staking-handler",
  "strum 0.19.5",
 ]
 
@@ -4152,6 +4153,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4261,6 +4263,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]

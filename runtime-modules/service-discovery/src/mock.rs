@@ -13,8 +13,6 @@ use sp_runtime::{
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
-mod staking_handler;
-
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
