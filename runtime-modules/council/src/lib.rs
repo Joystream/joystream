@@ -31,6 +31,7 @@
 //! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
 //! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
 //! - [set_budget](./struct.Module.html#method.set_budget)
+//! - [plan_budget_refill](./struct.Module.html#method.plan_budget_refill)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
@@ -267,13 +268,13 @@ decl_storage! {
         pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
 
         /// Budget for the council's elected members rewards.
-        pub Budget get(fn budget): Balance<T>;
+        pub Budget get(fn budget) config(): Balance<T>;
 
         /// The next block in which the elected council member rewards will be payed.
-        pub NextRewardPayments get(fn next_reward_payments): T::BlockNumber;
+        pub NextRewardPayments get(fn next_reward_payments) config(): T::BlockNumber;
 
         /// The next block in which the budget will be increased.
-        pub NextBudgetRefill get(fn next_budget_refill): T::BlockNumber;
+        pub NextBudgetRefill get(fn next_budget_refill) config(): T::BlockNumber;
     }
 }
 
@@ -281,6 +282,7 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance::<T>,
+        <T as system::Trait>::BlockNumber,
         <T as Trait>::MembershipId,
         <T as system::Trait>::AccountId,
     {
@@ -316,6 +318,12 @@ decl_event! {
 
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
+
+        /// Budget balance was increased by automatic refill.
+        BudgetRefill(Balance),
+
+        /// The next budget refill was planned.
+        BudgetRefillPlanned(BlockNumber),
     }
 }
 
@@ -503,6 +511,25 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Plan the next budget refill.
+        #[weight = 10_000_000]
+        pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_plan_budget_refill(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::plan_budget_refill(&next_refill);
+
+            // emit event
+            Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
+
+            Ok(())
+        }
     }
 }
 
@@ -534,13 +561,8 @@ impl<T: Trait> Module<T> {
     /// Checkout elected council members reward payments.
     fn try_process_budget(now: T::BlockNumber) {
         // budget autorefill
-        let next_refill = NextBudgetRefill::<T>::get();
-        if next_refill == 0.into() {
-            // budget automatic refill initialization (this condition will be true only first time autorefill is planned)
-            Mutations::<T>::plan_budget_refill(now);
-        } else if next_refill == now {
-            // budget automatic refill
-            Mutations::<T>::refill_budget(now);
+        if now == NextBudgetRefill::<T>::get() {
+            Self::refill_budget(now);
         }
 
         // council members rewards
@@ -621,6 +643,26 @@ impl<T: Trait> Module<T> {
     }
 
     /////////////////// Budget-related /////////////////////////////////////
+
+    /// Refill (increase) the budget's balance.
+    fn refill_budget(now: T::BlockNumber) {
+        // get refill amount
+        let refill_amount = T::BudgetRefillAmount::get();
+
+        // refill budget
+        Mutations::<T>::refill_budget(&refill_amount);
+
+        // calculate next refill block number
+        let refill_period = T::BudgetRefillPeriod::get();
+        let next_refill = now + refill_period;
+
+        // plan next budget refill
+        Mutations::<T>::plan_budget_refill(&next_refill);
+
+        // emit events
+        Self::deposit_event(RawEvent::BudgetRefill(refill_amount));
+        Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
+    }
 
     /// Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
@@ -914,18 +956,13 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Refill budget's balance.
-    fn refill_budget(now: T::BlockNumber) {
-        let refill_amount = T::BudgetRefillAmount::get();
-
-        Budget::<T>::mutate(|balance| *balance += refill_amount);
-        Self::plan_budget_refill(now);
+    fn refill_budget(refill_amount: &Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance += *refill_amount);
     }
 
     // Plan next budget refill.
-    fn plan_budget_refill(now: T::BlockNumber) {
-        let refill_period = T::BudgetRefillPeriod::get();
-
-        NextBudgetRefill::<T>::put(now + refill_period);
+    fn plan_budget_refill(refill_at: &T::BlockNumber) {
+        NextBudgetRefill::<T>::put(refill_at);
     }
 
     /// Pay reward to a single elected council member.
@@ -1129,6 +1166,13 @@ impl<T: Trait> EnsureChecks<T> {
 
     // Ensures there is no problem in setting the budget balance.
     fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in planning next budget refill.
+    fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())

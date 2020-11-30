@@ -999,6 +999,34 @@ fn council_budget_can_be_set() {
     })
 }
 
+/// Test that budget balance can be set from external source.
+#[test]
+fn council_budget_refill_can_be_planned() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let next_refill = 1000;
+
+        Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - 1);
+
+        // check no refill happened yet
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased
+        Mocks::check_budget_refill(
+            <Runtime as Trait>::BudgetRefillAmount::get(),
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
+    })
+}
+
 /// Test that rewards for council members are paid.
 #[test]
 fn council_rewards_are_paid() {

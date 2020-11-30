@@ -4,7 +4,8 @@
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
     CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
+    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, ReferendumConnection,
+    Stage, Trait,
 };
 
 use balances;
@@ -437,6 +438,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         council_members: vec![],
         candidates: vec![],
         announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
     }
 }
 
@@ -675,6 +679,11 @@ where
         assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
     }
 
+    pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
+        assert_eq!(Budget::<T>::get(), expected_balance,);
+        assert_eq!(NextBudgetRefill::<T>::get(), expected_next_refill,);
+    }
+
     pub fn set_candidacy_note(
         origin: OriginType<T::AccountId>,
         membership_id: T::MembershipId,
@@ -770,6 +779,28 @@ where
         }
 
         assert_eq!(Budget::<T>::get(), amount,);
+    }
+
+    pub fn plan_budget_refill(
+        origin: OriginType<T::AccountId>,
+        next_refill: T::BlockNumber,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::plan_budget_refill(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                next_refill,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
     }
 
     /// simulate one council's election cycle
