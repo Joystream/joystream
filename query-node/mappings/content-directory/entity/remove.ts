@@ -136,7 +136,7 @@ async function removeVideoMediaEncoding(db: DB, where: IWhereCond): Promise<void
 }
 
 async function removeFeaturedVideo(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(FeaturedVideo, where)
+  const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
   if (!record) throw Error(`FeaturedVideo not found. id: ${where.where.id}`)
 
   record.video.isFeatured = false

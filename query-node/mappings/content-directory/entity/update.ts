@@ -290,13 +290,17 @@ async function updateFeaturedVideoEntityPropertyValues(
   props: IFeaturedVideo,
   entityIdBeforeTransaction: number
 ): Promise<void> {
-  const record = await db.get(FeaturedVideo, where)
+  const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
   if (record === undefined) throw Error(`FeaturedVideo entity not found: ${where.where.id}`)
 
   if (props.video) {
     const id = getEntityIdFromReferencedField(props.video, entityIdBeforeTransaction)
     const video = await db.get(Video, { where: { id } })
     if (!video) throw Error(`Video entity not found: ${id}`)
+
+    // Update old video isFeatured to false
+    record.video.isFeatured = false
+    await db.save<Video>(record.video)
 
     video.isFeatured = true
     record.video = video

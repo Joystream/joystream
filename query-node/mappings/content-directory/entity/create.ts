@@ -403,18 +403,19 @@ async function createFeaturedVideo(
   nextEntityIdBeforeTransaction: number
 ): Promise<void> {
   const featuredVideo = new FeaturedVideo()
-  featuredVideo.id = id
+
   featuredVideo.video = await getOrCreate.video(
     { db, block, id },
     classEntityMap,
     p.video!,
     nextEntityIdBeforeTransaction
   )
+
+  featuredVideo.id = id
   featuredVideo.version = block
-
   featuredVideo.video.isFeatured = true
-  await db.save<Video>(featuredVideo.video)
 
+  await db.save<Video>(featuredVideo.video)
   await db.save<FeaturedVideo>(featuredVideo)
 }
 
