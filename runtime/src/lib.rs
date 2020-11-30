@@ -782,7 +782,7 @@ construct_runtime!(
         Constitution: constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
