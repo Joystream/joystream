@@ -13,6 +13,8 @@ use sp_std::marker::PhantomData;
 
 #[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod test;
 
 /// Type alias for member id.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
