@@ -490,10 +490,7 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (
-        crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
-        crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-    );
+    type StakingEventsHandler = ();
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -567,16 +564,31 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+    pub const MinUnstakingPeriodLimit: u32 = 43200;
+    pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
+    pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
+    pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
+    pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler =
+        integration::staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = StorageWorkingGroupRewardPeriod;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler =
+        integration::staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = ContentWorkingGroupRewardPeriod;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -645,8 +657,8 @@ impl proposals_codex::Trait for Runtime {
     type BeginReviewWorkingGroupApplicationsProposalParameters =
         BeginReviewWorkingGroupApplicationsProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupMintCapacityProposalParameters =
-        SetWorkingGroupMintCapacityProposalParameters;
+    type SetWorkingGroupBudgetCapacityProposalParameters =
+        SetWorkingGroupBudgetCapacityProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters =
         DecreaseWorkingGroupLeaderStakeProposalParameters;
     type SlashWorkingGroupLeaderStakeProposalParameters =
@@ -736,7 +748,7 @@ construct_runtime!(
         ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
     }
 );

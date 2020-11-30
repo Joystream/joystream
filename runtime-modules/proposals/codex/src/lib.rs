@@ -25,7 +25,7 @@
 //! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
 //! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
-//! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
+//! - [create_set_working_group_budget_capacity_proposal](./struct.Module.html#method.create_set_working_group_budget_capacity_proposal)
 //! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
 //! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
 //! - [create_set_working_group_leader_reward_proposal](./struct.Module.html#method.create_set_working_group_leader_reward_proposal)
@@ -53,9 +53,6 @@
 // Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
 
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-// #![warn(missing_docs)]
-
 mod proposal_types;
 
 #[cfg(test)]
@@ -70,21 +67,20 @@ use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 
+pub use crate::proposal_types::{
+    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
+};
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
-use governance::election_params::ElectionParameters;
+pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
+use working_group::Penalty;
 
-pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
-};
-pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
-
-// 'Set working group mint capacity' proposal limit
-const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
+// 'Set working group budget capacity' proposal limit
+const WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
 // Max validator count for the 'set validator count' proposal
@@ -161,8 +157,8 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Set working group mint capacity' proposal parameters.
-    type SetWorkingGroupMintCapacityProposalParameters: Get<
+    /// 'Set working group budget capacity' proposal parameters.
+    type SetWorkingGroupBudgetCapacityProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
@@ -252,11 +248,8 @@ decl_error! {
         /// Invalid council election parameter - announcing_period
         InvalidCouncilElectionParameterAnnouncingPeriod,
 
-        /// Invalid content working group mint capacity parameter
-        InvalidContentWorkingGroupMintCapacity,
-
-        /// Invalid working group mint capacity parameter
-        InvalidWorkingGroupMintCapacity,
+        /// Invalid working group budget capacity parameter
+        InvalidWorkingGroupBudgetCapacity,
 
         /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
         InvalidSetLeadParameterCannotBeCouncilor,
@@ -315,9 +308,9 @@ decl_module! {
         const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::FillWorkingGroupOpeningProposalParameters::get();
 
-        /// Exports 'Set working group mint capacity' proposal parameters.
-        const SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SetWorkingGroupMintCapacityProposalParameters::get();
+        /// Exports 'Set working group budget capacity' proposal parameters.
+        const SetWorkingGroupBudgetCapacityProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupBudgetCapacityProposalParameters::get();
 
         /// Exports 'Decrease working group leader stake' proposal parameters.
         const DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
@@ -509,35 +502,6 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
-        /// Create 'Begin review working group leader applications' proposal type.
-        /// This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_begin_review_working_group_leader_applications_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
-            opening_id: working_group::OpeningId<T>,
-            working_group: WorkingGroup,
-            exact_execution_block: Option<T::BlockNumber>,
-        ) {
-            let proposal_details = ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id, working_group);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: T::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
-                exact_execution_block,
-            };
-
-            Self::create_proposal(params)?;
-        }
-
         /// Create 'Fill working group leader opening' proposal type.
         /// This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -547,12 +511,7 @@ decl_module! {
             title: Vec<u8>,
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
-            fill_opening_parameters: FillOpeningParameters<
-                T::BlockNumber,
-                BalanceOfMint<T>,
-                working_group::OpeningId<T>,
-                working_group::ApplicationId<T>
-            >,
+            fill_opening_parameters: FillOpeningParameters,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
@@ -571,10 +530,10 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
-        /// Create 'Set working group mint capacity' proposal type.
+        /// Create 'Set working group budget capacity' proposal type.
         /// This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_set_working_group_mint_capacity_proposal(
+        pub fn create_set_working_group_budget_capacity_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
@@ -585,11 +544,11 @@ decl_module! {
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(
-                mint_balance <= <BalanceOfMint<T>>::from(WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
-                Error::<T>::InvalidWorkingGroupMintCapacity
+                mint_balance <= <BalanceOfMint<T>>::from(WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE),
+                Error::<T>::InvalidWorkingGroupBudgetCapacity
             );
 
-            let proposal_details = ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group);
+            let proposal_details = ProposalDetails::SetWorkingGroupBudgetCapacity(mint_balance, working_group);
             let params = CreateProposalParameters{
                 origin,
                 member_id,
@@ -597,7 +556,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: T::SetWorkingGroupMintCapacityProposalParameters::get(),
+                proposal_parameters: T::SetWorkingGroupBudgetCapacityProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -652,15 +611,15 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
-            slashing_stake: BalanceOf<T>,
+            penalty: Penalty<BalanceOf<T>>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
-            ensure!(slashing_stake != Zero::zero(), Error::<T>::SlashingStakeIsZero);
+            ensure!(penalty.slashing_amount != Zero::zero(), Error::<T>::SlashingStakeIsZero);
 
             let proposal_details = ProposalDetails::SlashWorkingGroupLeaderStake(
                 worker_id,
-                slashing_stake,
+                penalty,
                 working_group
             );
 
@@ -689,7 +648,7 @@ decl_module! {
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
-            reward_amount: BalanceOfMint<T>,
+            reward_amount: Option<BalanceOfMint<T>>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -723,7 +682,7 @@ decl_module! {
             title: Vec<u8>,
             description: Vec<u8>,
             staking_account_id: Option<T::AccountId>,
-            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
+            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>, BalanceOf<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);
