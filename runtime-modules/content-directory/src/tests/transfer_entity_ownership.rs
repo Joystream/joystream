@@ -51,7 +51,7 @@ fn transfer_entity_ownership_success() {
         );
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_ownership_transfered_event,
             number_of_events_before_calls + 1,
         );

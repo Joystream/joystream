@@ -24,7 +24,7 @@ fn remove_curator_group_success() {
             get_test_event(RawEvent::CuratorGroupRemoved(FIRST_CURATOR_GROUP_ID));
 
         // Event checked
-        assert_event_success(
+        assert_event(
             curator_group_removed_event,
             number_of_events_before_call + 1,
         );
