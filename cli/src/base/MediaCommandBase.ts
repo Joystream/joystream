@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { VideoEntity, KnownLicenseEntity } from 'cd-schemas/types/entities'
+import { VideoEntity, KnownLicenseEntity, LicenseEntity } from '@joystream/cd-schemas/types/entities'
 import fs from 'fs'
 import { DistinctQuestion } from 'inquirer'
 import path from 'path'
@@ -12,7 +12,7 @@ const MAX_USER_LICENSE_CONTENT_LENGTH = 4096
  */
 export default abstract class MediaCommandBase extends ContentDirectoryCommandBase {
   async promptForNewLicense(): Promise<VideoEntity['license']> {
-    let license: VideoEntity['license']
+    let licenseInput: LicenseEntity
     const licenseType: 'known' | 'custom' = await this.simplePrompt({
       type: 'list',
       message: 'Choose license type',
@@ -24,18 +24,9 @@ export default abstract class MediaCommandBase extends ContentDirectoryCommandBa
     if (licenseType === 'known') {
       const [id, knownLicenseEntity] = await this.promptForEntityEntry('Choose License', 'KnownLicense', 'code')
       const knownLicense = await this.parseToKnownEntityJson<KnownLicenseEntity>(knownLicenseEntity)
+      licenseInput = { knownLicense: id.toNumber() }
       if (knownLicense.attributionRequired) {
-        // Attribution required - convert to UserDefinedLicense
-        const attribution = await this.simplePrompt({ message: 'Attribution' })
-        const { name, code, description, url } = knownLicense
-        const licenseContent =
-          `${code}${name ? ` (${name})` : ''}\n\n` +
-          (description ? `${description}\n\n` : '') +
-          (url ? `${url}\n\n` : '') +
-          `Attribution: ${attribution}`
-        license = { new: { userDefinedLicense: { new: { content: licenseContent } } } }
-      } else {
-        license = { new: { knownLicense: id.toNumber() } }
+        licenseInput.attribution = await this.simplePrompt({ message: 'Attribution' })
       }
     } else {
       let licenseContent: null | string = null
@@ -52,10 +43,10 @@ export default abstract class MediaCommandBase extends ContentDirectoryCommandBa
           licenseContent = null
         }
       }
-      license = { new: { userDefinedLicense: { new: { content: licenseContent } } } }
+      licenseInput = { userDefinedLicense: { new: { content: licenseContent } } }
     }
 
-    return license
+    return { new: licenseInput }
   }
 
   async promptForPublishedBeforeJoystream(current?: number | null): Promise<number | null> {

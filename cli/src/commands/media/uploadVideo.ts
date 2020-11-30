@@ -423,7 +423,9 @@ export default class UploadVideoCommand extends MediaCommandBase {
 
     this.jsonPrettyPrint(JSON.stringify(videoInput))
 
-    if (!confirm) await this.requireConfirmation('Do you confirm the provided input?')
+    if (!confirm) {
+      await this.requireConfirmation('Do you confirm the provided input?', true)
+    }
 
     // Parse inputs into operations and send final extrinsic
     const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi(), [
