@@ -2374,7 +2374,6 @@ dependencies = [
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
- "pallet-content-working-group",
  "pallet-finality-tracker",
  "pallet-forum",
  "pallet-governance",
@@ -2403,8 +2402,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -3826,31 +3823,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-content-working-group"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-finality-tracker"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -4365,40 +4337,6 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-versioned-store"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-common",
- "pallet-timestamp",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-versioned-store-permissions"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-common",
- "pallet-timestamp",
- "pallet-versioned-store",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
  "sp-core",
  "sp-io",
  "sp-runtime",
