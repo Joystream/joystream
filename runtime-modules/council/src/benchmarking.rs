@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks};
-//use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize};
 use sp_runtime::traits::{Bounded, One};
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
@@ -39,73 +39,260 @@ fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>
     >>::Currency::make_free_balance_be(&account_id, balance);
 }
 
+fn start_announcing_period<T: Trait>() {
+    Mutations::<T>::start_announcing_period();
+
+    let current_state = CouncilStageAnnouncing {
+        candidates_count: 0,
+    };
+    let current_block_number = System::<T>::block_number();
+
+    assert_eq!(
+        Council::<T>::stage(),
+        CouncilStageUpdate {
+            stage: CouncilStage::Announcing(current_state),
+            changed_at: current_block_number + One::one(),
+        },
+        "Announcement period not started"
+    );
+
+    assert_eq!(
+        Council::<T>::announcement_period_nr(),
+        1,
+        "Announcement period not updated"
+    );
+}
+
+fn start_period_announce_multiple_candidates<T: Trait>(number_of_candidates: u32)
+where
+    T::AccountId: CreateAccountId,
+    T::MembershipId: From<u32>,
+{
+    start_announcing_period::<T>();
+    for id in 0..number_of_candidates {
+        announce_candidate::<T>(id);
+    }
+}
+
+fn announce_candidate<T: Trait>(id: u32) -> (T::AccountId, T::MembershipId)
+where
+    T::AccountId: CreateAccountId,
+    T::MembershipId: From<u32>,
+{
+    let id = START_ID + id;
+
+    let account_id = T::AccountId::create_account_id(id);
+    let member_id = id.into();
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+
+    // Announce once before to take the branch that release the stake
+    Council::<T>::announce_candidacy(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+        Balance::<T>::max_value(),
+    )
+    .unwrap();
+
+    assert!(
+        Candidates::<T>::contains_key(member_id),
+        "Candidacy not announced"
+    );
+
+    assert_eq!(
+        Council::<T>::candidates(member_id),
+        Candidate {
+            staking_account_id: account_id.clone(),
+            cycle_id: 1,
+            stake: Balance::<T>::max_value(),
+            note_hash: None
+        },
+        "Candidacy hasn't been announced"
+    );
+
+    (account_id, member_id)
+}
+
+fn start_period_announce_candidacy<T: Trait>(id: u32) -> (T::AccountId, T::MembershipId)
+where
+    T::AccountId: CreateAccountId,
+    T::MembershipId: From<u32>,
+{
+    start_announcing_period::<T>();
+
+    announce_candidate::<T>(id)
+}
+
+fn start_period_announce_candidacy_and_restart_period<T: Trait>() -> (T::AccountId, T::MembershipId)
+where
+    T::AccountId: CreateAccountId,
+    T::MembershipId: From<u32>,
+{
+    let current_block_number = System::<T>::block_number();
+
+    let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
+
+    Mutations::<T>::start_announcing_period();
+
+    let current_state = CouncilStageAnnouncing {
+        candidates_count: 0,
+    };
+
+    assert_eq!(
+        Council::<T>::stage(),
+        CouncilStageUpdate {
+            stage: CouncilStage::Announcing(current_state),
+            changed_at: current_block_number + One::one(),
+        },
+        "Announcement period not started"
+    );
+
+    (account_id, member_id)
+}
+
+fn move_to_block<T: Trait>(
+    target_block: T::BlockNumber,
+    target_stage: CouncilStageUpdate<T::BlockNumber>,
+) {
+    let mut current_block_number = System::<T>::block_number();
+
+    while current_block_number < target_block {
+        System::<T>::on_finalize(current_block_number);
+        Council::<T>::on_finalize(current_block_number);
+
+        current_block_number = System::<T>::block_number() + One::one();
+        System::<T>::set_block_number(current_block_number);
+
+        System::<T>::on_initialize(current_block_number);
+        Council::<T>::on_initialize(current_block_number);
+    }
+
+    assert_eq!(Stage::<T>::get(), target_stage, "Stage not reached");
+}
+
 const MAX_BYTES: u32 = 50000;
+const MAX_CANDIDATES: u64 = 100;
+const START_ID: u32 = 5000;
 
 benchmarks! {
     where_clause { where T::AccountId: CreateAccountId, T::MembershipId: From<u32> }
     _ { }
 
+    on_finalize_idle {
+        let i in 0 .. 1;
+        let current_block_number = System::<T>::block_number();
+
+        let current_stage = CouncilStage::Idle;
+        let current_stage_update =
+            CouncilStageUpdate {
+                stage: current_stage,
+                changed_at: current_block_number + One::one(),
+            };
+
+        // Force idle state without depenending on Referndum
+        Stage::<T>::mutate(|value| {
+            *value = current_stage_update;
+        });
+
+        // Redefine `current_stage_update` simply because we haven't derived clone in the struct
+        let current_stage = CouncilStage::Idle;
+        let current_stage_update =
+            CouncilStageUpdate {
+                stage: current_stage,
+                changed_at: current_block_number + One::one(),
+            };
+
+        let target_block_number = current_block_number + T::IdlePeriodDuration::get();
+        move_to_block::<T>(target_block_number, current_stage_update);
+
+    }: { Council::<T>::on_finalize(System::<T>::block_number()); }
+    verify {
+        assert_eq!(
+            Council::<T>::stage(),
+            CouncilStageUpdate {
+                stage: CouncilStage::Announcing(CouncilStageAnnouncing {
+                    candidates_count: 0,
+                }),
+                changed_at: target_block_number + One::one(),
+            },
+            "Idle period didn't end"
+        );
+    }
+
+    on_finalize_announcing_start_election {
+        let i in
+            ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()).try_into().unwrap()) ..
+            ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get() + MAX_CANDIDATES)
+                .try_into().unwrap()) => {
+                    start_period_announce_multiple_candidates::<T>(i + 1);
+                };
+        let current_block_number = System::<T>::block_number();
+        let current_stage =
+            CouncilStage::Announcing(CouncilStageAnnouncing {
+                candidates_count: (i + 1).into()
+            });
+        let current_stage_update =
+            CouncilStageUpdate {
+                stage: current_stage,
+                changed_at: current_block_number + One::one(),
+            };
+
+        let target_block_number = current_block_number + T::AnnouncingPeriodDuration::get();
+        move_to_block::<T>(target_block_number, current_stage_update);
+
+    }: { Council::<T>::on_finalize(System::<T>::block_number()); }
+    verify {
+        assert_eq!(
+            Council::<T>::stage(),
+            CouncilStageUpdate {
+                stage: CouncilStage::Election(
+                    CouncilStageElection {
+                        candidates_count: (i + 1).into(),
+                    }),
+                changed_at: target_block_number + One::one(),
+            },
+            "Announcing period didn't end"
+        );
+    }
+
+    on_finalize_announcing_restart {
+        let i in 0 .. 1;
+        start_announcing_period::<T>();
+        let current_block_number = System::<T>::block_number();
+        let current_stage =
+            CouncilStage::Announcing(CouncilStageAnnouncing {
+                candidates_count: 0
+            });
+        let current_stage_update =
+            CouncilStageUpdate {
+                stage: current_stage,
+                changed_at: current_block_number + One::one(),
+            };
+
+        let target_block_number = current_block_number + T::AnnouncingPeriodDuration::get();
+        move_to_block::<T>(target_block_number, current_stage_update);
+    }: { Council::<T>::on_finalize(System::<T>::block_number()); }
+    verify {
+        let current_stage =
+            CouncilStage::Announcing(CouncilStageAnnouncing {
+                candidates_count: 0
+            });
+        let current_stage_update =
+            CouncilStageUpdate {
+                stage: current_stage,
+                changed_at: target_block_number + One::one(),
+            };
+
+        assert_eq!(Council::<T>::stage(), current_stage_update, "Council stage not restarted");
+
+        //assert_last_event::<T>()
+    }
+
     announce_candidacy {
         let i in 0 .. 1;
 
-        let id = 5000;
-
-        let account_id = T::AccountId::create_account_id(id);
-        let member_id = id.into();
-        make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
         let current_block_number = System::<T>::block_number();
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
-
-        assert_eq!(Council::<T>::announcement_period_nr(), 1, "Announcement period not updated");
-        // Announce once before to take the branch that release the stake
-        Council::<T>::announce_candidacy(
-            RawOrigin::Signed(account_id.clone()).into(),
-            member_id,
-            account_id.clone(),
-            Balance::<T>::max_value()
-        ).unwrap();
-
-        assert!(Candidates::<T>::contains_key(member_id), "Candidacy not announced");
-
-        assert_eq!(
-            Council::<T>::candidates(member_id),
-            Candidate {
-                staking_account_id: account_id.clone(),
-                cycle_id: 1,
-                stake: Balance::<T>::max_value(),
-                note_hash: None
-            },
-            "Candidacy hasn't been announced"
-        );
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
+        let (account_id, member_id) = start_period_announce_candidacy_and_restart_period::<T>();
 
     }: _ (
         RawOrigin::Signed(account_id.clone()),
@@ -151,63 +338,7 @@ benchmarks! {
     release_candidacy_stake {
         let i in 0 .. 1;
 
-        let id = 5000;
-
-        let account_id = T::AccountId::create_account_id(id);
-        let member_id = id.into();
-        make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
-        let current_block_number = System::<T>::block_number();
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
-
-        assert_eq!(Council::<T>::announcement_period_nr(), 1, "Announcement period not updated");
-        Council::<T>::announce_candidacy(
-            RawOrigin::Signed(account_id.clone()).into(),
-            member_id,
-            account_id.clone(),
-            Balance::<T>::max_value()
-        ).unwrap();
-
-        assert!(Candidates::<T>::contains_key(member_id), "Candidacy not announced");
-
-        assert_eq!(
-            Council::<T>::candidates(member_id),
-            Candidate {
-                staking_account_id: account_id.clone(),
-                cycle_id: 1,
-                stake: Balance::<T>::max_value(),
-                note_hash: None
-            },
-            "Candidacy hasn't been announced"
-        );
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
+        let (account_id, member_id) = start_period_announce_candidacy_and_restart_period::<T>();
     }: _ (RawOrigin::Signed(account_id.clone()), member_id)
     verify {
         assert!(
@@ -224,49 +355,7 @@ benchmarks! {
     set_candidacy_note {
         let i in 0 .. MAX_BYTES;
 
-        let id = 5000;
-
-        let account_id = T::AccountId::create_account_id(id);
-        let member_id = id.into();
-        make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
-
-        let current_block_number = System::<T>::block_number();
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
-
-        assert_eq!(Council::<T>::announcement_period_nr(), 1, "Announcement period not updated");
-        Council::<T>::announce_candidacy(
-            RawOrigin::Signed(account_id.clone()).into(),
-            member_id,
-            account_id.clone(),
-            Balance::<T>::max_value()
-        ).unwrap();
-
-        assert!(Candidates::<T>::contains_key(member_id), "Candidacy not announced");
-
-        assert_eq!(
-            Council::<T>::candidates(member_id),
-            Candidate {
-                staking_account_id: account_id.clone(),
-                cycle_id: 1,
-                stake: Balance::<T>::max_value(),
-                note_hash: None,
-            },
-            "Candidacy hasn't been announced"
-        );
+        let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
 
         let note = vec![0u8; i.try_into().unwrap()];
 
@@ -293,49 +382,7 @@ benchmarks! {
     withdraw_candidacy {
         let i in 0 .. 1;
 
-        let id = 5000;
-
-        let account_id = T::AccountId::create_account_id(id);
-        let member_id = id.into();
-        make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
-
-        Mutations::<T>::start_announcing_period();
-
-        let current_state = CouncilStageAnnouncing {
-            candidates_count: 0,
-        };
-
-        let current_block_number = System::<T>::block_number();
-
-        assert_eq!(
-            Council::<T>::stage(),
-            CouncilStageUpdate {
-                stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
-            },
-            "Announcement period not started"
-        );
-
-        assert_eq!(Council::<T>::announcement_period_nr(), 1, "Announcement period not updated");
-        Council::<T>::announce_candidacy(
-            RawOrigin::Signed(account_id.clone()).into(),
-            member_id,
-            account_id.clone(),
-            Balance::<T>::max_value()
-        ).unwrap();
-
-        assert!(Candidates::<T>::contains_key(member_id), "Candidacy not announced");
-
-        assert_eq!(
-            Council::<T>::candidates(member_id),
-            Candidate {
-                staking_account_id: account_id.clone(),
-                cycle_id: 1,
-                stake: Balance::<T>::max_value(),
-                note_hash: None
-            },
-            "Candidacy hasn't been announced"
-        );
+        let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
     }: _(RawOrigin::Signed(account_id.clone()), member_id)
     verify {
         assert!(
@@ -390,6 +437,32 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(test_benchmark_withdraw_candidacy::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_on_finalize_announcing_restart() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_announcing_restart::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_on_finalize_announcing_start_election() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_announcing_start_election::<
+                Runtime,
+            >());
+        })
+    }
+
+    #[test]
+    fn test_on_finalize_idle() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_on_finalize_idle::<Runtime>());
         })
     }
 }
