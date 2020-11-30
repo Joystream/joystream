@@ -1,3 +1,8 @@
+//! Staking handler module.
+//! Contains StakingHandler trait and its implementation - StakingManager.
+//! StakingHandler is responsible for staking logic in the Joystream runtime:
+//! https://joystream.gitbook.io/joystream-handbook/key-concepts/staking
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -121,6 +126,7 @@ impl<
         Ok(())
     }
 
+    // Membership support for staking accounts required.
     fn is_member_staking_account(_member_id: &MemberId<T>, _account_id: &T::AccountId) -> bool {
         true
     }
