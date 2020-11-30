@@ -25,7 +25,7 @@ import { getInputJson, validateInput, IOFlags } from '../../helpers/InputOutput'
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
 const DATA_OBJECT_TYPE_ID = 1
-const MAX_FILE_SIZE = 500 * 1024 * 1024
+const MAX_FILE_SIZE = 2000 * 1024 * 1024
 
 type VideoMetadata = {
   width?: number
