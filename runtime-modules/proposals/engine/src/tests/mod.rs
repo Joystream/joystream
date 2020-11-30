@@ -375,7 +375,7 @@ fn vote_fails_with_insufficient_rights() {
 fn proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(starting_block);
+        run_to_block(starting_block);
 
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
@@ -391,7 +391,7 @@ fn proposal_execution_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(2);
+        run_to_block(2);
 
         EventFixture::assert_events(vec![
             RawEvent::ProposalCreated(1, proposal_id),
@@ -405,7 +405,7 @@ fn proposal_execution_succeeds() {
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                ProposalStatus::PendingExecution(starting_block),
+                ProposalStatus::PendingExecution(starting_block + 1),
             ),
             RawEvent::ProposalExecuted(proposal_id, ExecutionStatus::Executed),
         ]);
@@ -420,7 +420,7 @@ fn proposal_execution_succeeds() {
 fn proposal_execution_failed() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(starting_block);
+        run_to_block(starting_block);
 
         let parameters_fixture = ProposalParametersFixture::default();
 
@@ -441,7 +441,7 @@ fn proposal_execution_failed() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(2);
+        run_to_block(2);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
@@ -457,7 +457,7 @@ fn proposal_execution_failed() {
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                ProposalStatus::PendingExecution(starting_block),
+                ProposalStatus::PendingExecution(starting_block + 1),
             ),
             RawEvent::ProposalExecuted(
                 proposal_id,
@@ -472,7 +472,7 @@ fn voting_results_calculation_succeeds() {
     initial_test_ext().execute_with(|| {
         // to enable events
         let starting_block = 1;
-        run_to_block_and_finalize(starting_block);
+        run_to_block(starting_block);
 
         let parameters = ProposalParameters {
             voting_period: 3,
@@ -494,7 +494,7 @@ fn voting_results_calculation_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         let block_number = 3;
-        run_to_block_and_finalize(block_number);
+        run_to_block(block_number);
 
         EventFixture::assert_events(vec![
             RawEvent::ProposalCreated(1, proposal_id),
@@ -508,7 +508,7 @@ fn voting_results_calculation_succeeds() {
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                ProposalStatus::PendingExecution(starting_block),
+                ProposalStatus::PendingExecution(starting_block + 1),
             ),
             RawEvent::ProposalExecuted(proposal_id, ExecutionStatus::Executed),
         ]);
@@ -877,8 +877,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(1);
-        run_to_block_and_finalize(2);
+        run_to_block(3);
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -888,7 +887,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 activated_at: 0,
-                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 0),
+                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 1),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -907,7 +906,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
 fn proposal_execution_vetoed_successfully_during_the_grace_period() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(starting_block);
+        run_to_block(starting_block);
 
         let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
         let dummy_proposal =
@@ -921,8 +920,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(1);
-        run_to_block_and_finalize(2);
+        run_to_block(3);
 
         let pre_veto_proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -934,7 +932,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
                     ApprovedProposalDecision::PendingExecution,
-                    starting_block
+                    starting_block + 1
                 ),
                 voting_results: VotingResults {
                     abstentions: 0,
@@ -962,7 +960,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
 fn proposal_execution_succeeds_after_the_grace_period() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(starting_block);
+        run_to_block(starting_block);
 
         let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
         let dummy_proposal =
@@ -975,7 +973,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(1);
+        run_to_block(2);
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -985,7 +983,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             activated_at: starting_block,
             status: ProposalStatus::approved(
                 ApprovedProposalDecision::PendingExecution,
-                starting_block,
+                starting_block + 1,
             ),
             voting_results: VotingResults {
                 abstentions: 0,
@@ -1000,8 +998,8 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         assert_eq!(proposal, expected_proposal);
 
-        let finalization_block = 3;
-        run_to_block_and_finalize(finalization_block);
+        let finalization_block = 4;
+        run_to_block(finalization_block);
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalExecuted(
             proposal_id,
@@ -1535,7 +1533,7 @@ fn proposal_execution_with_exact_execution_works() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
         // Proposal exists after the grace period
-        run_to_block_and_finalize(5);
+        run_to_block(5);
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -1545,7 +1543,7 @@ fn proposal_execution_with_exact_execution_works() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 activated_at: 0,
-                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 0),
+                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 1),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -1559,7 +1557,7 @@ fn proposal_execution_with_exact_execution_works() {
         );
 
         // Exact execution block time.
-        run_to_block_and_finalize(exact_block);
+        run_to_block(exact_block);
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalExecuted(
             proposal_id,
@@ -1719,7 +1717,7 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
 fn proposal_with_pending_constitutionality_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(1);
+        run_to_block(starting_block);
 
         let account_id = 1;
         let total_balance = 1000;
@@ -1749,7 +1747,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block_and_finalize(2);
+        run_to_block(2);
 
         // first chain of event from the creation to the approval
         EventFixture::assert_global_events(vec![
@@ -1780,7 +1778,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
                     ApprovedProposalDecision::PendingConstitutionality,
-                    starting_block
+                    starting_block + 1
                 ),
                 voting_results: VotingResults {
                     abstentions: 0,
@@ -1800,7 +1798,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         );
 
         let reactivation_block = 5;
-        run_to_block_and_finalize(reactivation_block);
+        run_to_block(reactivation_block);
 
         ProposalsEngine::reactivate_pending_constitutionality_proposals();
 
@@ -1822,8 +1820,8 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        let next_block_after_approval = 6;
-        run_to_block_and_finalize(next_block_after_approval);
+        let next_block_after_approval = 7;
+        run_to_block(next_block_after_approval);
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
@@ -1863,7 +1861,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
             )),
             TestEvent::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                ProposalStatus::PendingExecution(reactivation_block),
+                ProposalStatus::PendingExecution(reactivation_block + 1),
             )),
             // execution
             TestEvent::engine(RawEvent::ProposalExecuted(

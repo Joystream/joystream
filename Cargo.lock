@@ -4036,7 +4036,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4055,14 +4055,18 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-governance",
  "pallet-membership",
+ "pallet-recurring-reward",
  "pallet-timestamp",
+ "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",

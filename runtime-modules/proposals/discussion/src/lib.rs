@@ -54,7 +54,9 @@ mod types;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, Parameter,
+};
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
@@ -64,6 +66,16 @@ use types::{DiscussionPost, DiscussionThread};
 pub use types::ThreadMode;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
+
+/// Proposals discussion WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn add_post(i: u32) -> Weight; // Note: since parameter doesn't affect weight it's discarded
+    fn update_post() -> Weight; // Note: since parameter doesn't affect weight it's discarded
+    fn change_thread_mode(i: u32) -> Weight;
+}
+
+type WeightInfoDiscussion<T> = <T as Trait>::WeightInfo;
 
 decl_event!(
     /// Proposals engine events
@@ -112,6 +124,9 @@ pub trait Trait: frame_system::Trait + membership::Trait {
 
     /// Defines author list size limit for the Closed discussion.
     type MaxWhiteListSize: Get<u32>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 decl_error! {
@@ -170,7 +185,18 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Adds a post with author origin check.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the number of whitelisted members for `thread_id`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::add_post(
+            T::MaxWhiteListSize::get(),
+        )]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
@@ -202,7 +228,15 @@ decl_module! {
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::update_post()]
         pub fn update_post(
             origin,
             post_author_id: MemberId<T>,
@@ -228,7 +262,22 @@ decl_module! {
        }
 
         /// Changes thread permission mode.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` if ThreadMode is close or O(1) otherwise where:
+        /// - `W` is the number of whitelisted members in `mode`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::change_thread_mode(
+            if let ThreadMode::Closed(ref list) = mode {
+                list.len().saturated_into()
+            } else {
+                0
+            }
+        )]
         pub fn change_thread_mode(
             origin,
             member_id: MemberId<T>,
@@ -260,6 +309,7 @@ decl_module! {
             <ThreadById<T>>::mutate(thread_id, |thread| {
                 thread.mode = mode.clone();
             });
+
             Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode));
        }
     }
