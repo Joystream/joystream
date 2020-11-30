@@ -1,7 +1,7 @@
 //! Staking handler module.
 //! Contains StakingHandler trait and its implementation - StakingManager.
 //! StakingHandler is responsible for staking logic in the Joystream runtime:
-//! https://joystream.gitbook.io/joystream-handbook/key-concepts/staking
+//! https://joystream.gitbook.io/joystream-handbook/key-concepts/stakingmock.rs
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -10,6 +10,9 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
 use sp_std::marker::PhantomData;
+
+#[cfg(test)]
+mod mock;
 
 /// Type alias for member id.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
