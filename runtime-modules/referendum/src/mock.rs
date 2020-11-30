@@ -79,7 +79,7 @@ impl Trait<Instance0> for Runtime {
 
     type MinimumStake = MinimumStake;
 
-    fn caclulate_vote_power(
+    fn calculate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &Balance<Self, Instance0>,
     ) -> <Self as Trait<Instance0>>::VotePower {

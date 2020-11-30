@@ -2,9 +2,10 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, Balance, CandidateOf, Candidates, CouncilMemberOf, CouncilMembers,
-    CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
+    AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
+    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
+    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, ReferendumConnection,
+    Stage, Trait,
 };
 
 use balances;
@@ -51,11 +52,15 @@ pub struct Runtime;
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
-    pub const IdlePeriodDuration: u64 = 17;
+    pub const IdlePeriodDuration: u64 = 27;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u64 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    pub const BudgetRefillPeriod: u64 = 1000; // intentionally high number that prevents side-effecting tests other than  budget refill tests
 }
 
 impl Trait for Runtime {
@@ -72,6 +77,12 @@ impl Trait for Runtime {
 
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
 
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
@@ -190,7 +201,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     type MinimumStake = MinimumVotingStake;
 
-    fn caclulate_vote_power(
+    fn calculate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
     ) -> Self::VotePower {
@@ -228,8 +239,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
             .collect();
         <Module<Runtime> as ReferendumConnection<Runtime>>::recieve_referendum_results(
             tmp_winners.as_slice(),
-        )
-        .unwrap();
+        );
 
         INTERMEDIATE_RESULTS.with(|value| value.replace(BTreeMap::new()));
     }
@@ -342,9 +352,10 @@ pub struct CouncilSettings<T: Trait> {
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
     pub idle_stage_duration: T::BlockNumber,
-
     pub election_duration: T::BlockNumber,
     pub cycle_duration: T::BlockNumber,
+    pub budget_refill_amount: Balance<T>,
+    pub budget_refill_period: T::BlockNumber,
 }
 
 impl<T: Trait> CouncilSettings<T>
@@ -380,6 +391,9 @@ where
                 + announcing_stage_duration
                 + voting_stage_duration
                 + idle_stage_duration,
+
+            budget_refill_amount: <T as Trait>::BudgetRefillAmount::get(),
+            budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
         }
     }
 }
@@ -429,6 +443,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         council_members: vec![],
         candidates: vec![],
         announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
     }
 }
 
@@ -491,6 +508,7 @@ where
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
             staking_account_id: account_id.into(),
+            reward_account_id: account_id.into(),
             cycle_id: AnnouncementPeriodNr::get(),
             stake,
             note_hash: None,
@@ -666,6 +684,11 @@ where
         assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
     }
 
+    pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
+        assert_eq!(Budget::<T>::get(), expected_balance,);
+        assert_eq!(NextBudgetRefill::<T>::get(), expected_next_refill,);
+    }
+
     pub fn set_candidacy_note(
         origin: OriginType<T::AccountId>,
         membership_id: T::MembershipId,
@@ -700,7 +723,8 @@ where
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
-                member_id.into(),
+                member_id.into(), // use member id as staking account
+                member_id.into(), // use member id as reward account
                 stake
             ),
             expected_result,
@@ -756,6 +780,46 @@ where
             .is_ok(),
             expected_result.is_ok(),
         );
+    }
+
+    pub fn set_budget(
+        origin: OriginType<T::AccountId>,
+        amount: Balance<T>,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_budget(InstanceMockUtils::<T>::mock_origin(origin), amount,).is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(Budget::<T>::get(), amount,);
+    }
+
+    pub fn plan_budget_refill(
+        origin: OriginType<T::AccountId>,
+        next_refill: T::BlockNumber,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::plan_budget_refill(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                next_refill,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
     }
 
     /// simulate one council's election cycle
@@ -868,6 +932,9 @@ where
                 + settings.voting_stage_duration,
         );
         Self::check_council_members(params.expected_final_council_members.clone());
+
+        // finish idle period
+        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
     }
 
     /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
@@ -898,9 +965,27 @@ where
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<T>> = vec![
-            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
-            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
-            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].membership_id,
+                start_block_number + council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].membership_id,
+                start_block_number + council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].membership_id,
+                start_block_number + council_settings.election_duration - 1.into(),
+                0.into(),
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
