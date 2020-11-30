@@ -2423,6 +2423,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "staking-handler",
  "strum 0.19.5",
  "substrate-wasm-builder-runner",
 ]
@@ -4098,6 +4099,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4423,6 +4425,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]

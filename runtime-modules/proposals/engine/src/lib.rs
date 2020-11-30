@@ -134,7 +134,7 @@ use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
-use membership::staking_handler::StakingHandler;
+use staking_handler::StakingHandler;
 
 /// Proposals engine trait.
 pub trait Trait:
