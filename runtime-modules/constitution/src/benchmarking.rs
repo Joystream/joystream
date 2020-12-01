@@ -2,12 +2,12 @@
 
 use crate::{Call, ConstitutionInfo, Event, Module, Trait};
 use frame_benchmarking::benchmarks;
+use frame_system::Module as System;
+use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::Hash;
 use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use frame_system::Module as System;
-use frame_system::{EventRecord, RawOrigin};
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
