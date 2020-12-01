@@ -8,10 +8,8 @@ use strum_macros::EnumIter;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
 pub enum WorkingGroup {
-    /* Reserved
-        /// Forum working group: working_group::Instance1.
-        Forum,
-    */
+    /// Forum working group: working_group::Instance1.
+    Forum,
     /// Storage working group: working_group::Instance2.
     Storage,
     /// Storage working group: working_group::Instance3.

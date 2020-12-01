@@ -22,3 +22,6 @@ pub mod pallet_session;
 pub mod pallet_staking;
 pub mod pallet_timestamp;
 pub mod pallet_utility;
+
+pub mod proposals_discussion;
+pub mod proposals_engine;

@@ -3,7 +3,7 @@
 pub use frame_system;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -12,6 +12,7 @@ use sp_runtime::{
 };
 
 use crate::ActorOriginValidator;
+use crate::WeightInfo;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -87,6 +88,21 @@ impl crate::Trait for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = ();
+}
+
+impl WeightInfo for () {
+    fn add_post(_: u32) -> Weight {
+        0
+    }
+
+    fn update_post() -> Weight {
+        0
+    }
+
+    fn change_thread_mode(_: u32) -> Weight {
+        0
+    }
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {

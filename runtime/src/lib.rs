@@ -63,7 +63,6 @@ pub use content_directory;
 pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
-pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
 pub use membership;
@@ -72,8 +71,6 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
-pub use versioned_store;
-pub use versioned_store_permissions;
 pub use working_group;
 
 #[cfg(feature = "std")]
@@ -409,20 +406,6 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl versioned_store::Trait for Runtime {
-    type Event = Event;
-}
-
-impl versioned_store_permissions::Trait for Runtime {
-    type Credential = Credential;
-    type CredentialChecker = (
-        integration::content_working_group::ContentWorkingGroupCredentials,
-        integration::versioned_store_permissions::SudoKeyHasAllCredentials,
-    );
-    type CreateClassPermissionsChecker =
-        integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
-}
-
 type EntityId = <Runtime as content_directory::Trait>::EntityId;
 
 parameter_types! {
@@ -495,10 +478,6 @@ impl stake::Trait for Runtime {
     type SlashId = u64;
 }
 
-impl content_wg::Trait for Runtime {
-    type Event = Event;
-}
-
 impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
@@ -549,12 +528,87 @@ impl membership::Trait for Runtime {
     type ActorId = ActorId;
 }
 
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 5;
+
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxThreadsInCategory: u64 = 20;
+    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 20;
+    pub const MaxCategories: u64 = 20;
+    pub const MaxPollAlternativesNumber: u64 = 20;
+}
+
+pub struct MapLimits;
+
+impl forum::StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxThreadsInCategory = MaxThreadsInCategory;
+    type MaxPostsInThread = MaxPostsInThread;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
+    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
+}
+
+// Alias for forum working group
+type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
+
 impl forum::Trait for Runtime {
     type Event = Event;
-    type MembershipRegistry = integration::forum::ShimMembershipRegistry;
+    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
+    type ForumUserId = ForumUserId;
+    type ModeratorId = ModeratorId;
+    type CategoryId = u64;
+    type PostReactionId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
+
+    type MapLimits = MapLimits;
+
+    fn is_lead(_account_id: &AccountId) -> bool {
+        // get current lead id
+        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
+        if let Some(ref current_lead_id) = maybe_current_lead_id {
+            if let Ok(worker) = working_group::ensure_worker_exists::<
+                Runtime,
+                ForumWorkingGroupInstance,
+            >(current_lead_id)
+            {
+                *_account_id == worker.role_account_id
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            _forum_user_id,
+            _account_id,
+        )
+        .is_ok()
+    }
+
+    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
+        if let Ok(worker) =
+            working_group::ensure_worker_exists::<Runtime, ForumWorkingGroupInstance>(_moderator_id)
+        {
+            *_account_id == worker.role_account_id
+        } else {
+            false
+        }
+    }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hash::from_slice(text)
+    }
 }
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -565,10 +619,21 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const MinUnstakingPeriodLimit: u32 = 43200;
+    pub const ForumWorkingGroupRewardPeriod: u32 = 14400 + 10;
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
+    pub const ForumGroupLockId: LockIdentifier = [8; 8];
+}
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = ForumWorkingGroupRewardPeriod;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -616,6 +681,7 @@ impl proposals_engine::Trait for Runtime {
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
+    type WeightInfo = weights::proposals_engine::WeightInfo;
 }
 
 impl Default for Call {
@@ -635,6 +701,7 @@ impl proposals_discussion::Trait for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = weights::proposals_discussion::WeightInfo;
 }
 
 parameter_types! {
@@ -678,6 +745,11 @@ parameter_types! {
     pub const RentDepositOffset: Balance = 0; // no rent deposit
     pub const SurchargeReward: Balance = 0; // no reward
 }
+
+/// Forum identifiers for user, moderator and category
+pub type ForumUserId = u64;
+pub type ModeratorId = u64;
+pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -726,18 +798,15 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
-        ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
@@ -745,7 +814,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
-        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
     }
