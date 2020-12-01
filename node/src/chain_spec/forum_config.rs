@@ -108,7 +108,8 @@ pub fn empty(forum_sudo: AccountId) -> ForumConfig {
         threads: vec![],
         posts: vec![],
         category_by_moderator: vec![],
-        data_migration_done: String::new(),
+        // true
+        data_migration_done: String::from("0x01"),
     };
     create(forum_sudo, forum_data)
 }
