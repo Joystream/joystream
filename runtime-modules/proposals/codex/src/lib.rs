@@ -40,7 +40,6 @@
 //! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
 //! - [membership](../substrate_membership_module/index.html)
 //! - [governance](../substrate_governance_module/index.html)
-//! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
 //! ### Notes
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using

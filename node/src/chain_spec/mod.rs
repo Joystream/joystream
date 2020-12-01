@@ -30,17 +30,15 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
-    DataDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, Moment,
-    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
+    ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
-pub mod content_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
@@ -133,10 +131,6 @@ impl Alternative {
                         ],
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
-                        content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -173,10 +167,6 @@ impl Alternative {
                         ],
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
-                        content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -218,10 +208,6 @@ pub fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
-    versioned_store_config: VersionedStoreConfig,
-    versioned_store_permissions_config: VersionedStorePermissionsConfig,
-    data_directory_config: DataDirectoryConfig,
-    content_working_group_config: ContentWorkingGroupConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
@@ -300,7 +286,6 @@ pub fn testnet_genesis(
             members,
         }),
         forum: Some(forum_config),
-        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -317,9 +302,6 @@ pub fn testnet_genesis(
                 next_curator_group_id: 1,
             }
         }),
-        versioned_store: Some(versioned_store_config),
-        versioned_store_permissions: Some(versioned_store_permissions_config),
-        content_wg: Some(content_working_group_config),
     }
 }
 
@@ -336,10 +318,6 @@ pub(crate) mod tests {
             vec![get_authority_keys_from_seed("Alice").0],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
-            content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
@@ -372,10 +350,6 @@ pub(crate) mod tests {
             ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
-            content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }

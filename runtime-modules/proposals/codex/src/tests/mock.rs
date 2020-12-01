@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
@@ -84,6 +84,8 @@ parameter_types! {
     pub const LockId: LockIdentifier = [2; 8];
 }
 
+pub struct MockProposalsEngineWeight;
+
 impl proposals_engine::Trait for Test {
     type Event = ();
     type ProposerOriginValidator = ();
@@ -98,6 +100,41 @@ impl proposals_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
+    type WeightInfo = MockProposalsEngineWeight;
+}
+
+impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
+    fn vote(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_proposal(_: u32) -> Weight {
+        0
+    }
+
+    fn veto_proposal() -> Weight {
+        0
+    }
+
+    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_rejected(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
 }
 
 impl Default for crate::Call<Test> {
@@ -130,6 +167,8 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
 }
 
+pub struct MockProposalsDiscussionWeight;
+
 impl proposals_discussion::Trait for Test {
     type Event = ();
     type AuthorOriginValidator = ();
@@ -137,6 +176,21 @@ impl proposals_discussion::Trait for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = MockProposalsDiscussionWeight;
+}
+
+impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {
+    fn add_post(_: u32) -> Weight {
+        0
+    }
+
+    fn update_post() -> Weight {
+        0
+    }
+
+    fn change_thread_mode(_: u32) -> Weight {
+        0
+    }
 }
 
 pub struct MockVotersParameters;

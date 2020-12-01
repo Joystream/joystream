@@ -119,6 +119,8 @@ pub use types::{
 
 pub(crate) mod types;
 
+mod benchmarking;
+
 #[cfg(test)]
 mod tests;
 
@@ -126,15 +128,31 @@ use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::Get;
+use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::Zero;
+use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 use staking_handler::StakingHandler;
+
+/// Proposals engine WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn vote(i: u32) -> Weight;
+    fn cancel_proposal(i: u32) -> Weight;
+    fn veto_proposal() -> Weight;
+    fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
+    fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
+    fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
+    fn on_initialize_rejected(i: u32) -> Weight;
+    fn on_initialize_slashed(i: u32) -> Weight;
+}
+
+type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -178,10 +196,16 @@ pub trait Trait:
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
+    type DispatchableCallCode: Parameter
+        + UnfilteredDispatchable<Origin = Self::Origin>
+        + GetDispatchInfo
+        + Default;
 
     /// Proposal state change observer.
     type ProposalObserver: ProposalObserver<Self>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 /// Proposal state change observer.
@@ -348,8 +372,47 @@ decl_module! {
         /// Exports const -  max simultaneous active proposals number.
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
 
+        /// Block Initialization. Perform voting period check, vote result tally, approved proposals
+        /// grace period checks, and proposal execution.
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (P + I)` where:
+        /// - `P` is the weight of all executed proposals
+        /// - `I` is the weight of the worst branch for anything else in `on_initialize`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state
+        /// # </weight>
+        fn on_initialize() -> Weight {
+            // `process_proposal` returns the weight of the executed proposals. The weight of the
+            // executed proposals doesn't include any access to the store or calculation that
+            // `on_initialize` does. Therefore, to get the total weight of `on_initialize` we need
+            // to add the weight of the execution of `on_intialize` to the weight returned by
+            // `process_proposal`.
+            // To be safe, we use the worst possible case for `on_initialize`, meaning that there
+            // are as many proposals active as possible and they all take the worst possible branch.
+
+            // Maximum Weight of all possible worst case scenarios
+            let maximum_branch_weight = Self::weight_of_worst_on_initialize_branch();
+
+            // Weight of the executed proposals
+            let executed_proposals_weight = Self::process_proposals();
+
+            // total_weight = executed_proposals_weight + maximum_branch_weight
+            executed_proposals_weight.saturating_add(maximum_branch_weight)
+        }
+
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (R)` where:
+        /// - `R` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or paraemters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().saturated_into())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
@@ -381,7 +444,16 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (L)` where:
+        /// - `L` is the total number of locks in `Balances`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
 
@@ -398,7 +470,15 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::veto_proposal()]
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 
@@ -415,11 +495,6 @@ decl_module! {
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
 
-        /// Block finalization. Perform voting period check, vote result tally, approved proposals
-        /// grace period checks, and proposal execution.
-        fn on_finalize(_n: T::BlockNumber) {
-            Self::process_proposals();
-        }
     }
 }
 
@@ -609,19 +684,62 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // Helper to calculate the weight of the worst `on_initialize` branch
+    fn weight_of_worst_on_initialize_branch() -> Weight {
+        let max_active_proposals = T::MaxActiveProposalLimit::get();
+
+        // Weight when all the proposals are immediatly approved and executed
+        let immediate_execution_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_immediate_execution_decode_fails(
+                max_active_proposals,
+            );
+
+        let pending_execution_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_pending_execution_decode_fails(
+                max_active_proposals,
+            );
+
+        // Weight when all the proposals are approved and pending constitutionality
+        let approved_pending_constitutionality_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_approved_pending_constitutionality(
+                max_active_proposals,
+            );
+
+        // Weight when all proposals are rejected
+        let rejected_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_rejected(max_active_proposals);
+
+        // Weight when all proposals are slashed
+        let slashed_branch_weight =
+            WeightInfoEngine::<T>::on_initialize_slashed(max_active_proposals);
+
+        // Maximum Weight of all possible worst case scenarios
+        immediate_execution_branch_weight
+            .max(pending_execution_branch_weight)
+            .max(approved_pending_constitutionality_branch_weight)
+            .max(rejected_branch_weight)
+            .max(slashed_branch_weight)
+    }
+
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
     }
 
     // Executes proposal code.
-    fn execute_proposal(proposal_id: T::ProposalId) {
+    // Returns the weight of the proposal(wether execution failed or not) or 0 if the proposal
+    // couldn't be decoded.
+    fn execute_proposal(proposal_id: T::ProposalId) -> Weight {
         let proposal_code = Self::proposal_codes(proposal_id);
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
+        let mut execution_code_weight = 0;
+
         let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
+                execution_code_weight = proposal_code.get_dispatch_info().weight;
+
                 if let Err(dispatch_error) =
                     proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
                 {
@@ -638,6 +756,8 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
         Self::remove_proposal_data(&proposal_id);
+
+        execution_code_weight
     }
 
     // Computes a finalized proposal:
@@ -648,16 +768,19 @@ impl<T: Trait> Module<T> {
     // - fire an event,
     // - update or delete proposal state.
     // Executes the proposal if it ready.
+    // If proposal was executed returns its weight otherwise it returns 0.
     fn finalize_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
         proposal_decision: ProposalDecision,
-    ) {
+    ) -> Weight {
         // fire the proposal decision event
         Self::deposit_event(RawEvent::ProposalDecisionMade(
             proposal_id,
             proposal_decision.clone(),
         ));
+
+        let mut executed_weight = 0;
 
         // deal with stakes if necessary
         if proposal_decision
@@ -685,13 +808,15 @@ impl<T: Trait> Module<T> {
 
             // immediately execute proposal if it ready for execution or save it for the future otherwise.
             if finalized_proposal.is_ready_for_execution(now) {
-                Self::execute_proposal(proposal_id);
+                executed_weight = Self::execute_proposal(proposal_id);
             } else {
                 <Proposals<T>>::insert(proposal_id, finalized_proposal);
             }
         } else {
             Self::remove_proposal_data(&proposal_id);
         }
+
+        executed_weight
     }
 
     // Slashes the stake and perform unstake only in case of existing stake.
@@ -766,10 +891,13 @@ impl<T: Trait> Module<T> {
 
     /// Perform voting period check, vote result tally, approved proposals
     /// grace period checks, and proposal execution.
-    fn process_proposals() {
+    /// Returns the total weight of all the executed proposals or 0 if none was executed.
+    fn process_proposals() -> Weight {
         // Collect all proposals.
         let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
         let now = Self::current_block();
+
+        let mut executed_weight = 0;
 
         for (proposal_id, proposal) in proposals {
             match proposal.status {
@@ -780,18 +908,25 @@ impl<T: Trait> Module<T> {
 
                     // If decision is calculated for a proposal - finalize it.
                     if let Some(decision_status) = decision_status {
-                        Self::finalize_proposal(proposal_id, proposal, decision_status);
+                        executed_weight.saturating_add(Self::finalize_proposal(
+                            proposal_id,
+                            proposal,
+                            decision_status,
+                        ));
                     }
                 }
                 // Execute the proposal code if the proposal is ready for execution.
                 ProposalStatus::PendingExecution(_) => {
                     if proposal.is_ready_for_execution(now) {
-                        Self::execute_proposal(proposal_id);
+                        executed_weight =
+                            executed_weight.saturating_add(Self::execute_proposal(proposal_id));
                     }
                 }
                 // Skip the proposal until it gets reactivated.
                 ProposalStatus::PendingConstitutionality => {}
             }
         }
+
+        executed_weight
     }
 }
