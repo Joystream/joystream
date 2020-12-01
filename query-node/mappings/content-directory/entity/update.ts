@@ -34,6 +34,7 @@ import {
   KnownLicense,
   UserDefinedLicense,
 } from '../../../generated/graphql-server/src/modules/variants/variants.model'
+import { videoPropertyNamesWithId } from '../content-dir-consts'
 
 function getEntityIdFromReferencedField(ref: IReference, entityIdBeforeTransaction: number): string {
   const { entityId, existing } = ref
@@ -74,11 +75,28 @@ async function updateLicenseEntityPropertyValues(
   const { knownLicense, userDefinedLicense } = props
   if (knownLicense) {
     const id = getEntityIdFromReferencedField(knownLicense, entityIdBeforeTransaction)
-    record.knownLicense = await db.get(KnownLicenseEntity, { where: { id } })
+    const kLicense = await db.get(KnownLicenseEntity, { where: { id } })
+    if (!kLicense) throw Error(`KnownLicense not found ${id}`)
+
+    const k = new KnownLicense()
+    k.isTypeOf = 'KnownLicense'
+    k.code = kLicense.code
+    k.description = kLicense.description
+    k.name = kLicense.name
+    k.url = kLicense.url
+    // Set the license type
+    record.type = k
   }
   if (userDefinedLicense) {
     const id = getEntityIdFromReferencedField(userDefinedLicense, entityIdBeforeTransaction)
-    record.userdefinedLicense = await db.get(UserDefinedLicenseEntity, { where: { id } })
+    const udl = await db.get(UserDefinedLicenseEntity, { where: { id } })
+    if (!udl) throw Error(`UserDefinedLicense not found ${id}`)
+
+    const u = new UserDefinedLicense()
+    u.isTypeOf = 'UserDefinedLicense'
+    u.content = udl.content
+    // Set the license type
+    record.type = u
   }
   await db.save<LicenseEntity>(record)
 }
@@ -89,6 +107,7 @@ async function updateCategoryEntityPropertyValues(db: DB, where: IWhereCond, pro
   Object.assign(record, props)
   await db.save<Category>(record)
 }
+
 async function updateChannelEntityPropertyValues(
   db: DB,
   where: IWhereCond,
@@ -110,6 +129,7 @@ async function updateChannelEntityPropertyValues(
   record.language = lang
   await db.save<Channel>(record)
 }
+
 async function updateVideoMediaEntityPropertyValues(
   db: DB,
   where: IWhereCond,
@@ -154,6 +174,7 @@ async function updateVideoMediaEntityPropertyValues(
   record.location = mediaLoc
   await db.save<VideoMedia>(record)
 }
+
 async function updateVideoEntityPropertyValues(
   db: DB,
   where: IWhereCond,
@@ -167,7 +188,6 @@ async function updateVideoEntityPropertyValues(
   let cat: Category | undefined
   let lang: Language | undefined
   let vMedia: VideoMedia | undefined
-  let lic: KnownLicense | UserDefinedLicense = record.license
 
   const { channel, category, language, media, license } = props
   if (channel) {
@@ -195,20 +215,7 @@ async function updateVideoEntityPropertyValues(
       relations: ['knownLicense', 'userdefinedLicense'],
     })
     if (!licenseEntity) throw Error(`License entity not found: ${id}`)
-    const { knownLicense, userdefinedLicense } = licenseEntity
-    if (knownLicense) {
-      lic = new KnownLicense()
-      lic.code = knownLicense.code
-      lic.description = knownLicense.description
-      lic.isTypeOf = 'KnownLicense'
-      lic.name = knownLicense.name
-      lic.url = knownLicense.url
-    }
-    if (userdefinedLicense) {
-      lic = new UserDefinedLicense()
-      lic.content = userdefinedLicense.content
-      lic.isTypeOf = 'UserDefinedLicense'
-    }
+    record.license = licenseEntity
     props.license = undefined
   }
   if (language) {
@@ -223,11 +230,11 @@ async function updateVideoEntityPropertyValues(
   record.channel = chann || record.channel
   record.category = cat || record.category
   record.media = vMedia || record.media
-  record.license = lic
   record.language = lang
 
   await db.save<Video>(record)
 }
+
 async function updateUserDefinedLicenseEntityPropertyValues(
   db: DB,
   where: IWhereCond,
@@ -238,12 +245,14 @@ async function updateUserDefinedLicenseEntityPropertyValues(
   Object.assign(record, props)
   await db.save<UserDefinedLicenseEntity>(record)
 }
+
 async function updateKnownLicenseEntityPropertyValues(db: DB, where: IWhereCond, props: IKnownLicense): Promise<void> {
   const record = await db.get(KnownLicenseEntity, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
   await db.save<KnownLicenseEntity>(record)
 }
+
 async function updateHttpMediaLocationEntityPropertyValues(
   db: DB,
   where: IWhereCond,
@@ -265,12 +274,14 @@ async function updateJoystreamMediaLocationEntityPropertyValues(
   Object.assign(record, props)
   await db.save<JoystreamMediaLocationEntity>(record)
 }
+
 async function updateLanguageEntityPropertyValues(db: DB, where: IWhereCond, props: ILanguage): Promise<void> {
   const record = await db.get(Language, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
   Object.assign(record, props)
   await db.save<Language>(record)
 }
+
 async function updateVideoMediaEncodingEntityPropertyValues(
   db: DB,
   where: IWhereCond,
