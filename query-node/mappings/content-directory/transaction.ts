@@ -90,11 +90,13 @@ export async function contentDirectory_TransactionFailed(db: DB, event: Substrat
 
   if (operations.length === 0 || operations.length === 1) return
 
+  const successfulOperations = operations.filter((op, index) => index < failedOperationIndex)
+
   const {
     addSchemaSupportToEntityOperations,
     createEntityOperations,
     updatePropertyValuesOperations,
-  } = decode.getOperationsByTypes(operations.slice(0, failedOperationIndex - 1))
+  } = decode.getOperationsByTypes(successfulOperations)
 
   await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
   await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
