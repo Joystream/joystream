@@ -98,6 +98,8 @@ async function updateLicenseEntityPropertyValues(
     // Set the license type
     record.type = u
   }
+
+  record.attribution = props.attribution || record.attribution
   await db.save<LicenseEntity>(record)
 }
 
