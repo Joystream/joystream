@@ -349,7 +349,7 @@ async function license(
 
   const id = generateEntityIdFromIndex(nextEntityIdBeforeTransaction + entityId)
   // could be created in the transaction
-  lic = await db.get(LicenseEntity, { where: { id }, relations: ['knownLicense', 'userdefinedLicense'] })
+  lic = await db.get(LicenseEntity, { where: { id } })
   if (lic) return lic
 
   const { properties } = findEntity(entityId, 'License', classEntityMap)

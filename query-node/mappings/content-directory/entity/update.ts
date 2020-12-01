@@ -34,7 +34,6 @@ import {
   KnownLicense,
   UserDefinedLicense,
 } from '../../../generated/graphql-server/src/modules/variants/variants.model'
-import { videoPropertyNamesWithId } from '../content-dir-consts'
 
 function getEntityIdFromReferencedField(ref: IReference, entityIdBeforeTransaction: number): string {
   const { entityId, existing } = ref
@@ -212,10 +211,7 @@ async function updateVideoEntityPropertyValues(
   }
   if (license) {
     const id = getEntityIdFromReferencedField(license, entityIdBeforeTransaction)
-    const licenseEntity = await db.get(LicenseEntity, {
-      where: { id },
-      relations: ['knownLicense', 'userdefinedLicense'],
-    })
+    const licenseEntity = await db.get(LicenseEntity, { where: { id } })
     if (!licenseEntity) throw Error(`License entity not found: ${id}`)
     record.license = licenseEntity
     props.license = undefined
