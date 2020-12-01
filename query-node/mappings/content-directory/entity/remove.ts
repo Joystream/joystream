@@ -69,7 +69,7 @@ async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
 async function removeMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(MediaLocationEntity, where)
   if (record === undefined) throw Error(`MediaLocation not found`)
-  if (record.videoMedia) await removeVideo(db, { where: { id: record.videoMedia.id } })
+  if (record.videoMedia) await removeVideoMedia(db, { where: { id: record.videoMedia.id } })
 
   const { httpMediaLocation, joystreamMediaLocation } = record
 
