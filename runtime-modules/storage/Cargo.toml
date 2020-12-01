@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-storage'
-version = '3.1.0'
+version = '4.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -25,6 +25,7 @@ stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
 hiring = { package = 'pallet-hiring', default-features = false, path = '../hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
+staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
 
 [features]
 default = ['std']

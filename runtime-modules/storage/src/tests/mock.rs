@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::storage::StorageMap;
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -152,11 +152,24 @@ impl GovernanceCurrency for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: LockIdentifier = [2; 8];
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+}
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
 }
 
 impl data_object_type_registry::Trait for Test {
@@ -176,14 +189,6 @@ impl data_directory::Trait for Test {
 impl crate::data_directory::StorageProviderHelper<Test> for () {
     fn get_random_storage_provider() -> Result<u32, &'static str> {
         Ok(1)
-    }
-}
-
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = frame_system::ensure_signed(origin)?;
-
-        Ok(signed_account_id)
     }
 }
 
@@ -320,11 +325,16 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
     let storage_provider_id = 1;
     let role_account_id = 1;
 
-    let storage_provider = working_group::Worker {
+    let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        reward_relationship: None,
-        role_stake_profile: None,
+        staking_account_id: None,
+        reward_account_id: role_account_id,
+        started_leaving_at: None,
+        job_unstaking_period: 0,
+        reward_per_block: None,
+        missed_reward: None,
+        created_at: 1,
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

@@ -359,9 +359,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.54"
+version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2baad346b2d4e94a24347adeee9c7a93f412ee94b9cc26e5b59dea23848e9f28"
+checksum = "ef5140344c85b01f9bbb4d4b7288a8aa4b3287ccef913a14bcc78a1063623598"
 dependencies = [
  "addr2line",
  "cfg-if 1.0.0",
@@ -635,9 +635,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "cc"
-version = "1.0.62"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1770ced377336a88a67c473594ccc14eca6f4559217c34f64aac8f83d641b40"
+checksum = "92cc7b4cfeaa608da27ccbd00af8e1485761334821791ccf5ce88e9a2bb949e7"
 dependencies = [
  "jobserver",
 ]
@@ -1712,7 +1712,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -2133,7 +2133,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "socket2",
  "tokio 0.2.23",
  "tower-service",
@@ -2222,9 +2222,9 @@ dependencies = [
 
 [[package]]
 name = "instant"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb1fc4429a33e1f80d41dc9fea4d108a88bec1de8053878898ae448a0b52f613"
+checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if 1.0.0",
 ]
@@ -2420,6 +2420,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "staking-handler",
  "strum 0.19.5",
  "substrate-wasm-builder-runner",
 ]
@@ -3485,7 +3486,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures 0.3.8",
  "log",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "smallvec 1.5.0",
  "unsigned-varint 0.5.1",
 ]
@@ -4031,6 +4032,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "staking-handler",
  "strum 0.19.5",
 ]
 
@@ -4074,6 +4076,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4106,7 +4109,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-service-discovery"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4121,10 +4124,12 @@ dependencies = [
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
+ "sp-arithmetic",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4214,7 +4219,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4234,6 +4239,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4348,18 +4354,15 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-hiring",
  "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
  "pallet-timestamp",
- "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4367,6 +4370,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]
@@ -4682,11 +4686,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee41d838744f60d959d7074e3afb6b35c7456d0f61cad38a24e35e6553f73841"
+checksum = "9ccc2237c2c489783abd8c4c80e5450fc0e98644555b1364da68cc29aa151ca7"
 dependencies = [
- "pin-project-internal 1.0.1",
+ "pin-project-internal 1.0.2",
 ]
 
 [[package]]
@@ -4702,9 +4706,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a4ffa594b66bff340084d4081df649a7dc049ac8d7fc458d8e628bfbbb2f86"
+checksum = "f8e8d2bf0b23038a4424865103a4df472855692821aab4e4f5c3312d461d9e5f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7307,6 +7311,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
+name = "staking-handler"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7644,9 +7666,9 @@ dependencies = [
 
 [[package]]
 name = "termcolor"
-version = "1.1.0"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb6bfa289a4d7c5766392812c0a1f4c1ba45afa1ad47803c11e1f407d846d75f"
+checksum = "2dfed899f0eb03f32ee8c6a0aabdb8a7949659e3466561fc0adf54e26d88c5f4"
 dependencies = [
  "winapi-util",
 ]
@@ -7736,9 +7758,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b78a366903f506d2ad52ca8dc552102ffdd3e937ba8a227f024dc1d1eae28575"
+checksum = "ccf8dbc19eb42fba10e8feaaec282fb50e2c14b2726d6301dbfeed0f73306a6f"
 dependencies = [
  "tinyvec_macros",
 ]
@@ -8218,9 +8240,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1e9a0b71dba18b6fa17c7b3dcf1440bb3522552deb2f84bf47dabd9fb7e5570"
+checksum = "a13e63ab62dbe32aeee58d1c5408d35c36c392bba5d9d3142287219721afe606"
 dependencies = [
  "tinyvec",
 ]

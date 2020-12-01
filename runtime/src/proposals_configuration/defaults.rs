@@ -100,9 +100,9 @@ pub(crate) fn fill_working_group_opening_proposal() -> ProposalParameters<BlockN
     }
 }
 
-// Proposal parameters for the 'Set working group mint capacity' proposal
-pub(crate) fn set_working_group_mint_capacity_proposal() -> ProposalParameters<BlockNumber, Balance>
-{
+// Proposal parameters for the 'Set working group budget capacity' proposal
+pub(crate) fn set_working_group_budget_capacity_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 43200,
         grace_period: 0,

@@ -30,7 +30,9 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::{StorageProviderId, StorageWorkingGroupInstance};
+
+use working_group::ensure_worker_signed;
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
@@ -144,7 +146,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), Error::<T>::CidNotFound);
@@ -209,7 +211,7 @@ impl<T: Trait> Module<T> {
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
     ) -> DispatchResult {
-        <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+        ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr =
