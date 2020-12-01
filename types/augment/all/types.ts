@@ -530,6 +530,9 @@ export interface ExitedLeadRole extends Struct {
   readonly initiated_at_block_number: u32;
 }
 
+/** @name FailedAt */
+export interface FailedAt extends u32 {}
+
 /** @name FillOpeningParameters */
 export interface FillOpeningParameters extends Struct {
   readonly opening_id: OpeningId;
