@@ -8,7 +8,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 use codec::{Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage};

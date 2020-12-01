@@ -11,7 +11,6 @@ version = '7.8.0'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
 lite-json = { version = '0.1.3', default-features = false}
-hex-literal = { optional = true, version = '0.3.1' }
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
 
 # Substrate primitives
@@ -60,6 +59,7 @@ frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev 
 frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
 pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
 pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
+hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
@@ -170,7 +170,8 @@ runtime-benchmarks = [
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
-    "hex-literal",
+    "constitution/runtime-benchmarks",
+    "hex-literal"
 ]
 
 
