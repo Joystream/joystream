@@ -18,6 +18,7 @@ members = [
 	"runtime-modules/working-group",
 	"runtime-modules/content-directory",
 	"runtime-modules/constitution",
+	"runtime-modules/staking-handler",
 	"node",
 	"utils/chain-spec-builder/"
 ]

@@ -30,11 +30,10 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig,
-    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ElectionParameters, ForumConfig, ForumWorkingGroupConfig, GrandpaConfig, ImOnlineConfig,
+    ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -214,8 +213,6 @@ pub fn testnet_genesis(
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
-    let default_text_constraint = node_runtime::working_group::default_text_constraint();
-
     GenesisConfig {
         frame_system: Some(SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
@@ -294,27 +291,6 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
-        }),
-        working_group_Instance1: Some(ForumWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-        }),
-        working_group_Instance2: Some(StorageWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-        }),
-        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         content_directory: Some({
             ContentDirectoryConfig {

@@ -17,7 +17,6 @@ use sp_runtime::{
 };
 
 pub(crate) mod proposals;
-pub(crate) mod staking_handler;
 
 use crate::ProposalObserver;
 pub use proposals::*;

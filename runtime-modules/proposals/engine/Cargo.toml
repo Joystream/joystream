@@ -16,6 +16,7 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
+staking-handler = { package = 'staking-handler', default-features = false, path = '../../staking-handler'}
 
 # Benchmark dependencies.
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
@@ -50,4 +51,5 @@ std = [
 	'balances/std',
     'membership/std',
     'common/std',
+    'staking-handler/std',
 ]

@@ -13,8 +13,10 @@ impl content_directory::ActorAuthenticator for Runtime {
         // get current lead id
         let maybe_current_lead_id = ContentDirectoryWorkingGroup::<Runtime>::current_lead();
         if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) =
-                ContentDirectoryWorkingGroup::<Runtime>::ensure_worker_exists(current_lead_id)
+            if let Ok(worker) = working_group::ensure_worker_exists::<
+                Runtime,
+                ContentDirectoryWorkingGroupInstance,
+            >(current_lead_id)
             {
                 *account_id == worker.role_account_id
             } else {
@@ -26,8 +28,10 @@ impl content_directory::ActorAuthenticator for Runtime {
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
-        if let Ok(worker) =
-            ContentDirectoryWorkingGroup::<Runtime>::ensure_worker_exists(curator_id)
+        if let Ok(worker) = working_group::ensure_worker_exists::<
+            Runtime,
+            ContentDirectoryWorkingGroupInstance,
+        >(curator_id)
         {
             *account_id == worker.role_account_id
         } else {

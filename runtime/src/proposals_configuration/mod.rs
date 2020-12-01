@@ -29,7 +29,7 @@ parameter_types! {
     pub AddWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.add_working_group_opening_proposal;
     pub BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.begin_review_working_group_applications_proposal;
     pub FillWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_opening_proposal;
-    pub SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_mint_capacity_proposal;
+    pub SetWorkingGroupBudgetCapacityProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_budget_capacity_proposal;
     pub DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.decrease_working_group_leader_stake_proposal;
     pub SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.slash_working_group_leader_stake_proposal;
     pub SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_leader_reward_proposal;
@@ -47,7 +47,7 @@ struct AllProposalsParameters {
     pub add_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
     pub begin_review_working_group_applications_proposal: ProposalParameters<BlockNumber, Balance>,
     pub fill_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub set_working_group_mint_capacity_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_working_group_budget_capacity_proposal: ProposalParameters<BlockNumber, Balance>,
     pub decrease_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
     pub slash_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_working_group_leader_reward_proposal: ProposalParameters<BlockNumber, Balance>,
@@ -119,7 +119,7 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(
             params,
             jo.clone(),
-            set_working_group_mint_capacity_proposal
+            set_working_group_budget_capacity_proposal
         );
         init_proposal_parameter_object!(
             params,
@@ -254,8 +254,8 @@ fn default_parameters() -> AllProposalsParameters {
         begin_review_working_group_applications_proposal:
             defaults::begin_review_working_group_applications_proposal(),
         fill_working_group_opening_proposal: defaults::fill_working_group_opening_proposal(),
-        set_working_group_mint_capacity_proposal:
-            defaults::set_working_group_mint_capacity_proposal(),
+        set_working_group_budget_capacity_proposal:
+            defaults::set_working_group_budget_capacity_proposal(),
         decrease_working_group_leader_stake_proposal:
             defaults::decrease_working_group_leader_stake_proposal(),
         slash_working_group_leader_stake_proposal:
