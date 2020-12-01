@@ -576,7 +576,6 @@ impl council::Trait for Runtime {
 
 /* === TODO ERASE === */
 pub type StorageReferendumInstance = referendum::Instance1;
-use frame_support::traits::LockIdentifier;
 parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: BlockNumber = 5;
@@ -585,7 +584,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = *b"referend";
 }
 
-use system::{EnsureOneOf, EnsureSigned};
+use frame_system::{EnsureOneOf, EnsureSigned};
 
 impl referendum::Trait<StorageReferendumInstance> for Runtime {
     type Event = Event;
@@ -599,15 +598,16 @@ impl referendum::Trait<StorageReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
     type MinimumStake = MinimumStake;
 
-    fn caclulate_vote_power(
-        _: &<Self as system::Trait>::AccountId,
+    fn calculate_vote_power(
+        _: &<Self as frame_system::Trait>::AccountId,
         _: &referendum::Balance<Self, StorageReferendumInstance>,
     ) -> <Self as referendum::Trait<StorageReferendumInstance>>::VotePower {
         1
     }
 
-    fn can_release_voting_stake(
+    fn can_release_vote_stake(
         _: &referendum::CastVote<Self::Hash, referendum::Balance<Self, StorageReferendumInstance>>,
+        _: &u64,
     ) -> bool {
         true
     }
@@ -635,6 +635,10 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u32 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    pub const BudgetRefillPeriod: u32 = 1000; // intentionally high number that prevents side-effecting tests other than  budget refill tests
 }
 
 impl new_council::Trait for Runtime {
@@ -652,9 +656,15 @@ impl new_council::Trait for Runtime {
     type CandidacyLock = Runtime;
     type ElectedMemberLock = Runtime;
 
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         true
     }
@@ -678,7 +688,7 @@ impl new_council::staking_handler::StakingHandler2<AccountId, Balance, u64> for 
 
     fn is_member_staking_account(
         _: &<Self as membership::Trait>::MemberId,
-        _: &<Self as system::Trait>::AccountId,
+        _: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         true
     }

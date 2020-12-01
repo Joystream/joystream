@@ -2,13 +2,14 @@
 use super::*;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_system::EventRecord;
+use frame_system::Module as System;
+use frame_system::RawOrigin;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
-use system as frame_system;
-//use system::EventRecord;
-use system::Module as System;
-use system::RawOrigin;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 use crate::Module as Council;
 
@@ -18,7 +19,6 @@ pub trait CreateAccountId {
     fn create_account_id(id: u32) -> Self;
 }
 
-/*
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
@@ -29,13 +29,12 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
-*/
 
 fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
     <<T as Trait>::Referendum as ReferendumManager<
-        <T as system::Trait>::Origin,
-        <T as system::Trait>::AccountId,
-        <T as system::Trait>::Hash,
+        <T as frame_system::Trait>::Origin,
+        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Trait>::Hash,
     >>::Currency::make_free_balance_be(&account_id, balance);
 }
 
@@ -90,6 +89,7 @@ where
         RawOrigin::Signed(account_id.clone()).into(),
         member_id,
         account_id.clone(),
+        account_id.clone(),
         Balance::<T>::max_value(),
     )
     .unwrap();
@@ -105,7 +105,8 @@ where
             staking_account_id: account_id.clone(),
             cycle_id: 1,
             stake: Balance::<T>::max_value(),
-            note_hash: None
+            note_hash: None,
+            reward_account_id: account_id.clone(),
         },
         "Candidacy hasn't been announced"
     );
@@ -298,6 +299,7 @@ benchmarks! {
         RawOrigin::Signed(account_id.clone()),
         member_id,
         account_id.clone(),
+        account_id.clone(),
         Balance::<T>::max_value()
     )
     verify{
@@ -309,7 +311,8 @@ benchmarks! {
                 staking_account_id: account_id.clone(),
                 cycle_id: 2,
                 stake: Balance::<T>::max_value(),
-                note_hash: None
+                note_hash: None,
+                reward_account_id: account_id.clone(),
             },
             "Candidacy hasn't been announced"
         );
@@ -368,6 +371,7 @@ benchmarks! {
                 cycle_id: 1,
                 stake: Balance::<T>::max_value(),
                 note_hash: Some(T::Hashing::hash(&note)),
+                reward_account_id: account_id.clone(),
             },
             "Note not set"
         );
@@ -390,10 +394,7 @@ benchmarks! {
             "Candidate still in council candidates"
         );
 
-        /*
-         * TODO: Why no event is deposited
-        assert_last_event::<T>(RawEvent::CandidacyStakeReleas(member_id).into());
-        */
+        assert_last_event::<T>(RawEvent::CandidacyWithdraw(member_id).into());
     }
 }
 
