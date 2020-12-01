@@ -16,6 +16,7 @@ import {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 } from './update'
 import {
   removeCategory,
@@ -30,6 +31,7 @@ import {
   removeVideoMediaEncoding,
   removeLicense,
   removeMediaLocation,
+  removeFeaturedVideo,
 } from './remove'
 import {
   createCategory,
@@ -43,6 +45,7 @@ import {
   createLanguage,
   createVideoMediaEncoding,
   createBlockOrGetFromDatabase,
+  createFeaturedVideo,
 } from './create'
 import {
   categoryPropertyNamesWithId,
@@ -56,6 +59,7 @@ import {
   videoPropertyNamesWithId,
   contentDirectoryClassNamesWithId,
   ContentDirectoryKnownClasses,
+  featuredVideoPropertyNamesWithId,
 } from '../content-dir-consts'
 
 import {
@@ -74,6 +78,7 @@ import {
   IEntity,
   ILicense,
   IMediaLocation,
+  IFeaturedVideo,
 } from '../../types'
 import { getOrCreate } from '../get-or-create'
 
@@ -168,6 +173,14 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
       )
       break
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await createFeaturedVideo(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
+        0
+      )
+      break
 
     default:
       throw new Error(`Unknown class name: ${cls.name}`)
@@ -239,6 +252,10 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
 
     case ContentDirectoryKnownClasses.MEDIALOCATION:
       await removeMediaLocation(db, where)
+      break
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await removeFeaturedVideo(db, where)
       break
 
     default:
@@ -375,6 +392,15 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
         db,
         where,
         decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
+        0
+      )
+      break
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await updateFeaturedVideoEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
         0
       )
       break

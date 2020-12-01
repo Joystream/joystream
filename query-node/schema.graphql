@@ -278,6 +278,11 @@ type Video @entity {
   license: LicenseEntity!
 
   happenedIn: Block!
+
+  "Is video featured or not"
+  isFeatured: Boolean!
+
+  featured: FeaturedVideo @derivedFrom(field: "video")
 }
 
 type JoystreamMediaLocation @variant {
@@ -326,4 +331,12 @@ type LicenseEntity @entity {
   attribution: String
 
   happenedIn: Block!
+}
+
+type FeaturedVideo @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  "Reference to a video"
+  video: Video!
 }

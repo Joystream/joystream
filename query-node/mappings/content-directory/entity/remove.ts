@@ -1,3 +1,5 @@
+import Debug from 'debug'
+
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
@@ -11,8 +13,11 @@ import { Language } from '../../../generated/graphql-server/src/modules/language
 import { VideoMediaEncoding } from '../../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
 import { LicenseEntity } from '../../../generated/graphql-server/src/modules/license-entity/license-entity.model'
 import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
+import { FeaturedVideo } from '../../../generated/graphql-server/src/modules/featured-video/featured-video.model'
 
 import { IWhereCond } from '../../types'
+
+const debug = Debug('mappings:remove-entity')
 
 async function removeChannel(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Channel, where)
@@ -20,6 +25,7 @@ async function removeChannel(db: DB, where: IWhereCond): Promise<void> {
   if (record.videos) record.videos.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<Channel>(record)
 }
+
 async function removeCategory(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Category, where)
   if (record === undefined) throw Error(`Category not found`)
@@ -108,6 +114,17 @@ async function removeVideoMediaEncoding(db: DB, where: IWhereCond): Promise<void
   await db.remove<VideoMediaEncoding>(record)
 }
 
+async function removeFeaturedVideo(db: DB, where: IWhereCond): Promise<void> {
+  const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
+  if (!record) throw Error(`FeaturedVideo not found. id: ${where.where.id}`)
+
+  record.video.isFeatured = false
+  record.video.featured = undefined
+
+  await db.save<Video>(record.video)
+  await db.remove<FeaturedVideo>(record)
+}
+
 export {
   removeCategory,
   removeChannel,
@@ -121,4 +138,5 @@ export {
   removeVideoMediaEncoding,
   removeMediaLocation,
   removeLicense,
+  removeFeaturedVideo,
 }

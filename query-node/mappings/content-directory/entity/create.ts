@@ -13,6 +13,7 @@ import { VideoMediaEncoding } from '../../../generated/graphql-server/src/module
 import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 import { LicenseEntity } from '../../../generated/graphql-server/src/modules/license-entity/license-entity.model'
 import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
+import { FeaturedVideo } from '../../../generated/graphql-server/src/modules/featured-video/featured-video.model'
 
 import { contentDirectoryClassNamesWithId } from '../content-dir-consts'
 import {
@@ -22,6 +23,7 @@ import {
   ICreateEntityOperation,
   IDBBlockId,
   IEntity,
+  IFeaturedVideo,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
   IKnownLicense,
@@ -244,6 +246,7 @@ async function createVideo(
   video.skippableIntroDuration = p.skippableIntroDuration
   video.thumbnailUrl = p.thumbnailUrl
   video.version = block
+  video.isFeatured = false
 
   const { language, license, category, channel, media } = p
   if (language !== undefined) {
@@ -389,6 +392,29 @@ async function createMediaLocation(
   return location
 }
 
+async function createFeaturedVideo(
+  { db, block, id }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  p: IFeaturedVideo,
+  nextEntityIdBeforeTransaction: number
+): Promise<void> {
+  const featuredVideo = new FeaturedVideo()
+
+  featuredVideo.video = await getOrCreate.video(
+    { db, block, id },
+    classEntityMap,
+    p.video!,
+    nextEntityIdBeforeTransaction
+  )
+
+  featuredVideo.id = id
+  featuredVideo.version = block
+  featuredVideo.video.isFeatured = true
+
+  await db.save<Video>(featuredVideo.video)
+  await db.save<FeaturedVideo>(featuredVideo)
+}
+
 async function getClassName(
   db: DB,
   entity: IEntity,
@@ -430,4 +456,5 @@ export {
   createMediaLocation,
   createBlockOrGetFromDatabase,
   getClassName,
+  createFeaturedVideo,
 }

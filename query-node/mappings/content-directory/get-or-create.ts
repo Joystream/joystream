@@ -9,6 +9,7 @@ import { Language } from '../../generated/graphql-server/src/modules/language/la
 import { VideoMediaEncoding } from '../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
 import { LicenseEntity } from '../../generated/graphql-server/src/modules/license-entity/license-entity.model'
 import { MediaLocationEntity } from '../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
+import { Video } from '../../generated/graphql-server/src/modules/video/video.model'
 import { NextEntityId } from '../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
 
 import { decode } from './decode'
@@ -39,6 +40,7 @@ import {
   IMediaLocation,
   IReference,
   IUserDefinedLicense,
+  IVideo,
   IVideoMedia,
   IVideoMediaEncoding,
 } from '../types'
@@ -55,6 +57,7 @@ import {
   createVideoMediaEncoding,
   createLicense,
   createMediaLocation,
+  createVideo,
 } from './entity/create'
 
 import { DB } from '../../generated/indexer'
@@ -394,6 +397,32 @@ async function mediaLocation(
   )
 }
 
+async function video(
+  { db, block }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  video: IReference,
+  nextEntityIdBeforeTransaction: number
+): Promise<Video> {
+  const { existing, entityId } = video
+  if (existing) {
+    const v = await db.get(Video, { where: { id: entityId.toString() } })
+    if (!v) throw Error(`Video not found. id ${entityId}`)
+    return v
+  }
+
+  const id = generateEntityIdFromIndex(nextEntityIdBeforeTransaction + entityId)
+  const v = await db.get(Video, { where: { id } })
+  if (v) return v
+
+  const { properties } = findEntity(entityId, 'MediaVideo', classEntityMap)
+  return await createVideo(
+    { db, block, id },
+    classEntityMap,
+    decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
+    nextEntityIdBeforeTransaction
+  )
+}
+
 export const getOrCreate = {
   language,
   videoMediaEncoding,
@@ -407,4 +436,5 @@ export const getOrCreate = {
   license,
   mediaLocation,
   nextEntityId,
+  video,
 }
