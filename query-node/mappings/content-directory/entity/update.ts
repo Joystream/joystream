@@ -11,10 +11,12 @@ import { LicenseEntity } from '../../../generated/graphql-server/src/modules/lic
 import { MediaLocationEntity } from '../../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
 import { HttpMediaLocationEntity } from '../../../generated/graphql-server/src/modules/http-media-location-entity/http-media-location-entity.model'
 import { JoystreamMediaLocationEntity } from '../../../generated/graphql-server/src/modules/joystream-media-location-entity/joystream-media-location-entity.model'
+import { FeaturedVideo } from '../../../generated/graphql-server/src/modules/featured-video/featured-video.model'
 
 import {
   ICategory,
   IChannel,
+  IFeaturedVideo,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
   IKnownLicense,
@@ -282,6 +284,32 @@ async function updateVideoMediaEncodingEntityPropertyValues(
   await db.save<VideoMediaEncoding>(record)
 }
 
+async function updateFeaturedVideoEntityPropertyValues(
+  db: DB,
+  where: IWhereCond,
+  props: IFeaturedVideo,
+  entityIdBeforeTransaction: number
+): Promise<void> {
+  const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
+  if (record === undefined) throw Error(`FeaturedVideo entity not found: ${where.where.id}`)
+
+  if (props.video) {
+    const id = getEntityIdFromReferencedField(props.video, entityIdBeforeTransaction)
+    const video = await db.get(Video, { where: { id } })
+    if (!video) throw Error(`Video entity not found: ${id}`)
+
+    // Update old video isFeatured to false
+    record.video.isFeatured = false
+    await db.save<Video>(record.video)
+
+    video.isFeatured = true
+    record.video = video
+
+    await db.save<Video>(video)
+    await db.save<FeaturedVideo>(record)
+  }
+}
+
 export {
   updateCategoryEntityPropertyValues,
   updateChannelEntityPropertyValues,
@@ -295,4 +323,5 @@ export {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 }

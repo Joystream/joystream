@@ -197,3 +197,7 @@ export interface IDBBlockId {
 }
 
 export type ClassEntityMap = Map<string, IEntity[]>
+
+export interface IFeaturedVideo {
+  video?: IReference
+}
