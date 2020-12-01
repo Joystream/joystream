@@ -724,8 +724,9 @@ impl proposals_codex::Trait for Runtime {
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
 }
 
-impl constitution::Trait for Runtime {
+impl pallet_constitution::Trait for Runtime {
     type Event = Event;
+    type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
 parameter_types! {
@@ -790,7 +791,7 @@ construct_runtime!(
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        Constitution: constitution::{Module, Call, Storage, Event},
+        Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

@@ -14,15 +14,28 @@ pub(crate) mod tests;
 mod benchmarking;
 
 use codec::{Decode, Encode};
+use frame_support::weights::Weight;
 use frame_support::{decl_event, decl_module, decl_storage};
 use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
+use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
+
+/// pallet_constitution WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn amend_constitution(i: u32) -> Weight;
+}
+
+type WeightInfoConstitution<T> = <T as Trait>::WeightInfo;
 
 pub trait Trait: frame_system::Trait {
     type Event: From<Event> + Into<<Self as frame_system::Trait>::Event>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 /// Contains constitution text hash and its amendment number.
@@ -53,7 +66,12 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Sets the current constitution hash. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// # <weight>
+        /// - Complexity: `O(C)` where C is the length of the constitution text.
+        /// - Db reads: 0
+        /// - Db writes: 1 (constant value)
+        /// # </weight>
+        #[weight = WeightInfoConstitution::<T>::amend_constitution(constitution_text.len().saturated_into())]
         fn amend_constitution(origin, constitution_text: Vec<u8>) {
             ensure_root(origin)?;
 
