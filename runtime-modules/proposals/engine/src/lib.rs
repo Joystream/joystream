@@ -436,7 +436,9 @@ decl_module! {
 
             proposal.voting_results.add_vote(vote.clone());
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
@@ -464,7 +466,9 @@ decl_module! {
             ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
             ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
@@ -490,7 +494,9 @@ decl_module! {
                 Error::<T>::ProposalFinalized
             );
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
@@ -516,8 +522,9 @@ impl<T: Trait> Module<T> {
             creation_params.exact_execution_block,
         )?;
 
-        // checks passed
-        // mutation
+        //
+        // == MUTATION SAFE ==
+        //
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
