@@ -15,8 +15,8 @@ use frame_support::{
 };
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing,
+    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
+    ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -215,7 +215,6 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     fn can_unlock_vote_stake(
         vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
-        current_voting_cycle_id: &u64,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -224,7 +223,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
         <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(
             vote,
-            current_voting_cycle_id,
+            &AnnouncementPeriodNr::get(),
         )
         .is_ok()
     }
@@ -524,10 +523,16 @@ where
         }
     }
 
-    pub fn generate_voter(index: u64, stake: Balance<T>, vote_for_index: u64) -> VoterInfo<T> {
+    pub fn generate_voter(
+        index: u64,
+        stake: Balance<T>,
+        vote_for_index: u64,
+        cycle_id: u64,
+    ) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
+        let (commitment, salt) =
+            Self::vote_commitment(&account_id.into(), &vote_for_index.into(), &cycle_id);
 
         Self::topup_account(account_id.into(), stake);
 
@@ -550,8 +555,8 @@ where
     pub fn vote_commitment(
         account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
+        cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycleId::<ReferendumInstance>::get();
         let salt = Self::generate_salt();
 
         (
@@ -653,6 +658,7 @@ where
                         vote_power: item.vote_power.into(),
                     })
                     .collect(),
+                current_cycle_id: AnnouncementPeriodNr::get(),
             }),
         );
 
@@ -996,6 +1002,7 @@ where
                     index as u64 + users_offset,
                     vote_stake.into(),
                     CANDIDATE_BASE_ID + votes_map[index] + users_offset,
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();

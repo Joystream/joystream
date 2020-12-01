@@ -882,7 +882,7 @@ impl<T: Trait> Mutations<T> {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
-        T::Referendum::force_start(extra_winning_target_count);
+        T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
         let block_number = <system::Module<T>>::block_number();
 

@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use super::{
-    Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error, Module, Trait,
+    AnnouncementPeriodNr, Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error,
+    Module, Trait,
 };
 use crate::mock::*;
 use crate::staking_handler::mocks::{CANDIDATE_BASE_ID, VOTER_CANDIDATE_OFFSET};
@@ -133,6 +134,7 @@ fn council_can_vote_for_yourself() {
             VOTER_CANDIDATE_OFFSET,
             vote_stake,
             self_voting_candidate_index,
+            AnnouncementPeriodNr::get(),
         );
         Mocks::vote_for_candidate(
             voter.origin.clone(),
@@ -283,6 +285,7 @@ fn council_announcement_reset_on_not_enough_winners() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -374,6 +377,7 @@ fn council_two_consecutive_rounds() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -399,6 +403,7 @@ fn council_two_consecutive_rounds() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map2[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -563,6 +568,7 @@ fn council_candidate_stake_can_be_unlocked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -669,6 +675,7 @@ fn council_candidate_stake_automaticly_converted() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -759,6 +766,7 @@ fn council_member_stake_is_locked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -816,6 +824,7 @@ fn council_member_stake_automaticly_unlocked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map2[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -897,6 +906,7 @@ fn council_candidacy_set_note() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
