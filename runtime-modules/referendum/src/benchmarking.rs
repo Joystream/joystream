@@ -2,12 +2,11 @@
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_system::EventRecord;
+use frame_system::Module as System;
+use frame_system::RawOrigin;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::prelude::*;
-use system as frame_system;
-use system::EventRecord;
-use system::Module as System;
-use system::RawOrigin;
 
 use crate::Module as Referendum;
 
@@ -60,7 +59,7 @@ fn make_multiple_votes_for_multiple_options<T: Trait<I>, I: Instance>(
 
         intermediate_winners.push(OptionResult {
             option_id: option.into(),
-            vote_power: T::caclulate_vote_power(&account_id, &stake),
+            vote_power: T::calculate_vote_power(&account_id, &stake),
         });
         votes.push((account_id, commitment, salt, option));
     }
@@ -323,7 +322,7 @@ benchmarks_instance! {
             0,
             OptionResult{
                 option_id: vote_option.into(),
-                vote_power: T::caclulate_vote_power(&account_id.clone(), &stake),
+                vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
             }
         );
 
@@ -415,7 +414,7 @@ benchmarks_instance! {
 
         intermediate_winners.insert(0, OptionResult{
             option_id: vote_option.into(),
-            vote_power: T::caclulate_vote_power(&account_id.clone(), &stake),
+            vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
         });
 
         assert_eq!(
@@ -462,7 +461,7 @@ benchmarks_instance! {
         let stake = T::MinimumStake::get() + One::one();
 
         let old_vote_power = intermediate_winners[i as usize].vote_power;
-        let new_vote_power = old_vote_power + T::caclulate_vote_power(&account_id, &stake);
+        let new_vote_power = old_vote_power + T::calculate_vote_power(&account_id, &stake);
 
         intermediate_winners[i as usize] = OptionResult {
             option_id: i.into(),
@@ -495,7 +494,7 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, vote_option.into()).into());
     }
 
-    release_voting_stake {
+    release_vote_stake {
         let i in 0 .. 1;
 
         start_voting_cycle::<T, I>(0);
@@ -580,10 +579,10 @@ mod tests {
     }
 
     #[test]
-    fn test_release_voting_stake() {
+    fn test_release_vote_stake() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_voting_stake::<Runtime>());
+            assert_ok!(test_benchmark_release_vote_stake::<Runtime>());
         })
     }
 

@@ -2392,6 +2392,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "strum 0.19.5",
+ "substrate-referendum-module",
  "substrate-wasm-builder-runner",
 ]
 
@@ -5498,7 +5499,7 @@ dependencies = [
  "fnv",
  "futures 0.3.8",
  "hash-db",
- "hex-literal 0.2.1",
+ "hex-literal",
  "kvdb",
  "lazy_static",
  "log",

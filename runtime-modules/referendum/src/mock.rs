@@ -79,8 +79,8 @@ impl Trait for Runtime {
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &Balance<Self, Instance0>,
-    ) -> <Self as Trait<Instance0>>::VotePower {
+        stake: &Balance<Self, DefaultInstance>,
+    ) -> <Self as Trait<DefaultInstance>>::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
@@ -179,7 +179,7 @@ mod tmp {
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
-        event_mod Instance0 <T>,
+        crate DefaultInstance <T>,
         frame_system<T>,
         tmp<T>,
     }
@@ -191,11 +191,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-}
-
-//#[allow(non_upper_case_globals)] // `decl_storage` macro defines this weird name
-impl Instance for Instance0 {
-    const PREFIX: &'static str = "Instance0";
 }
 
 impl frame_system::Trait for Runtime {
@@ -555,7 +550,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, stake))
+            TestEvent::crate_DefaultInstance(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
@@ -586,20 +581,23 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_option_index))
+            TestEvent::crate_DefaultInstance(RawEvent::VoteRevealed(account_id, vote_option_index))
         );
     }
 
     pub fn release_stake(
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         account_id: <Runtime as frame_system::Trait>::AccountId,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::release_vote_stake(
-                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-            ),
+            Module::<Runtime, DefaultInstance>::release_vote_stake(InstanceMockUtils::<
+                Runtime,
+                DefaultInstance,
+            >::mock_origin(
+                origin
+            ),),
             expected_result,
         );
 
@@ -613,7 +611,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_Instance0(RawEvent::StakeReleased(account_id))
+            TestEvent::crate_DefaultInstance(RawEvent::StakeReleased(account_id))
         );
     }
 }
