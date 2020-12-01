@@ -522,6 +522,14 @@ impl<T: Trait> Module<T> {
             creation_params.exact_execution_block,
         )?;
 
+        if creation_params.proposal_parameters.required_stake.is_some() {
+            // Return an error if no staking account provided.
+            ensure!(
+                creation_params.staking_account_id.is_some(),
+                Error::<T>::EmptyStake
+            );
+        }
+
         //
         // == MUTATION SAFE ==
         //
@@ -534,11 +542,8 @@ impl<T: Trait> Module<T> {
         if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
             if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
                 T::StakingHandler::lock(&staking_account_id, stake_balance);
-            } else {
-                // Return an error if no staking account provided.
-                return Err(Error::<T>::EmptyStake.into());
             }
-        };
+        }
 
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
