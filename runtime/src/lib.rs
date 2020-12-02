@@ -448,13 +448,6 @@ impl content_directory::Trait for Runtime {
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
-impl hiring::Trait for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type MintId = u64;
@@ -801,7 +794,6 @@ construct_runtime!(
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
-        Hiring: hiring::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: constitution::{Module, Call, Storage, Event},
         // --- Storage

@@ -18,7 +18,6 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
 governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../../hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
@@ -51,7 +50,6 @@ std = [
     'membership/std',
     'stake/std',
     'governance/std',
-    'hiring/std',
     'minting/std',
     'working-group/std',
     'common/std',

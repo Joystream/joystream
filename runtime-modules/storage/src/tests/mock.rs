@@ -225,13 +225,6 @@ impl recurringrewards::Trait for Test {
     type RewardRelationshipId = u64;
 }
 
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
     first_content_id: u64,

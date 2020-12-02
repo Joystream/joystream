@@ -19,8 +19,6 @@ use strum::IntoEnumIterator;
 
 type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
 
-type Hiring = hiring::Module<Runtime>;
-
 fn add_opening(
     member_id: MemberId,
     account_id: [u8; 32],

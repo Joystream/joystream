@@ -68,7 +68,6 @@ forum = { package = 'pallet-forum', default-features = false, path = '../runtime
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
 stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
 governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
@@ -144,7 +143,6 @@ std = [
     'membership/std',
     'stake/std',
     'governance/std',
-    'hiring/std',
     'minting/std',
     'recurring-rewards/std',
     'working-group/std',

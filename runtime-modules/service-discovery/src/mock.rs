@@ -86,13 +86,6 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
