@@ -249,10 +249,7 @@ pub trait ReferendumConnection<T: Trait> {
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
-    fn can_unlock_vote_stake(
-        vote: &CastVoteOf<T>,
-        current_voting_cycle_id: &u64,
-    ) -> Result<(), Error<T>>;
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>>;
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
@@ -756,12 +753,11 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     /// Check that it is a proper time to release stake.
-    fn can_unlock_vote_stake(
-        vote: &CastVoteOf<T>,
-        current_voting_cycle_id: &u64,
-    ) -> Result<(), Error<T>> {
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
+        let current_voting_cycle_id = AnnouncementPeriodNr::get();
+
         // allow release for very old votes
-        if *current_voting_cycle_id > vote.cycle_id + 1 {
+        if current_voting_cycle_id > vote.cycle_id + 1 {
             return Ok(());
         }
 
@@ -771,7 +767,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
             .any(|membership_id| vote.vote_for == Some(membership_id.into()));
 
         // allow release for vote from previous elections only when not voted for winner
-        if *current_voting_cycle_id == vote.cycle_id + 1 {
+        if current_voting_cycle_id == vote.cycle_id + 1 {
             // ensure vote was not cast for the one of winning candidates / council members
             if voting_for_winner {
                 return Err(Error::CantReleaseStakeNow);

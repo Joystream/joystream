@@ -221,11 +221,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
             return false;
         }
 
-        <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(
-            vote,
-            &AnnouncementPeriodNr::get(),
-        )
-        .is_ok()
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
