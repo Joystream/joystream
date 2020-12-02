@@ -833,18 +833,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        // get current cycle id
-        let current_cycle_id = match Stage::<T, I>::get() {
-            ReferendumStage::Voting(stage_data) => Some(stage_data.current_cycle_id),
-            ReferendumStage::Revealing(stage_data) => Some(stage_data.current_cycle_id),
-            _ => None,
-        };
-
-        // allow release only for past cycles
-        if current_cycle_id == Some(cast_vote.cycle_id) {
-            return Err(Error::UnstakingVoteInSameCycle);
-        }
-
         // ask runtime if stake can be released
         if !T::can_unlock_vote_stake(&cast_vote) {
             return Err(Error::UnstakingForbidden);

@@ -761,6 +761,13 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
             return Ok(());
         }
 
+        // allow release for current cycle only in idle stage
+        if current_voting_cycle_id == vote.cycle_id
+            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
+        {
+            return Err(Error::CantReleaseStakeNow);
+        }
+
         let voting_for_winner = CouncilMembers::<T>::get()
             .iter()
             .map(|council_member| council_member.membership_id)
