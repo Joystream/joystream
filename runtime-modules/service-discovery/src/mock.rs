@@ -50,7 +50,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
 }
 
@@ -89,14 +88,6 @@ impl Trait for Test {
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 impl membership::Trait for Test {

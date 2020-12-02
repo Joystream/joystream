@@ -133,7 +133,6 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -204,14 +203,6 @@ impl membership::Trait for Test {
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 impl minting::Trait for Test {
