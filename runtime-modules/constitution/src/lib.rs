@@ -10,7 +10,6 @@
 #[cfg(test)]
 pub(crate) mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
 use codec::{Decode, Encode};

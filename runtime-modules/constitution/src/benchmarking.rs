@@ -17,11 +17,13 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
+const MAX_BYTES: u32 = 50000;
+
 benchmarks! {
     _{ }
 
     amend_constitution{
-        let i in 1 .. 50000;
+        let i in 1 .. MAX_BYTES;
         let text = vec![0u8].repeat(i as usize);
 
     }: _ (RawOrigin::Root, text.clone())
