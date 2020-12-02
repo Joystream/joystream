@@ -52,6 +52,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -109,8 +110,8 @@ impl stake::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl common::currency::GovernanceCurrency for Test {

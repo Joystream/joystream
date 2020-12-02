@@ -25,6 +25,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -74,8 +75,8 @@ impl election::Trait for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u32;
     type ActorId = u32;
+    type MembershipFee = MembershipFee;
 }
 impl minting::Trait for Test {
     type Currency = Balances;

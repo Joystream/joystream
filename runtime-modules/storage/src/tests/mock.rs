@@ -153,6 +153,7 @@ impl GovernanceCurrency for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [2; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
@@ -201,8 +202,8 @@ impl data_object_storage_registry::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type PaidTermId = u32;
     type ActorId = u32;
+    type MembershipFee = MembershipFee;
 }
 
 impl stake::Trait for Test {
@@ -284,7 +285,6 @@ impl ExtBuilder {
         .unwrap();
 
         membership::GenesisConfig::<Test> {
-            default_paid_membership_fee: 0,
             members: vec![membership::genesis::Member {
                 member_id: 0,
                 root_account: 1,

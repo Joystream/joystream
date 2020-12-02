@@ -67,7 +67,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     /// Construct GenesisConfig for mocked testing purposes only
     pub fn build(&self) -> GenesisConfig<T> {
         GenesisConfig::<T> {
-            default_paid_membership_fee: self.default_paid_membership_fee,
             members: self.generate_mock_members(),
         }
     }
