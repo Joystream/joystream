@@ -140,11 +140,10 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: I
     let (votes, intermediate_winners) =
         make_multiple_votes_for_multiple_options::<T, I>(number_of_voters, cycle_id);
 
-    let vote_option = extra_vote_option;
     let (account_id, commitment) = create_account_and_vote::<T, I>(
         "caller",
         number_of_voters + 1,
-        vote_option,
+        extra_vote_option,
         cycle_id,
         extra_stake,
     );
@@ -193,7 +192,7 @@ benchmarks_instance! {
         let vote_option = i;
         let started_voting_block_number = System::<T>::block_number();
 
-        let (mut intermediate_winners, _, _) =
+        let (intermediate_winners, _, _) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i,
@@ -204,7 +203,6 @@ benchmarks_instance! {
         let target_block_number = T::RevealStageDuration::get() +
             T::VoteStageDuration::get() +
             started_voting_block_number;
-
 
         let target_stage = ReferendumStage::Revealing(
             ReferendumStageRevealingOf::<T, I> {
@@ -456,12 +454,11 @@ benchmarks_instance! {
                 Zero::zero()
             );
 
+        let old_vote_power = intermediate_winners[i as usize].vote_power;
+        let new_vote_power = old_vote_power + T::get_option_power(&vote_option.into());
     }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, vote_option.into())
     verify {
         let stake = T::MinimumStake::get() + One::one();
-
-        let old_vote_power = intermediate_winners[i as usize].vote_power;
-        let new_vote_power = old_vote_power + T::calculate_vote_power(&account_id, &stake);
 
         intermediate_winners[i as usize] = OptionResult {
             option_id: i.into(),
