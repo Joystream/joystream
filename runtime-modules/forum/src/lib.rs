@@ -18,6 +18,7 @@ use sp_std::prelude::*;
 
 mod mock;
 mod tests;
+pub(crate) use mock::*;
 
 mod benchmarking;
 

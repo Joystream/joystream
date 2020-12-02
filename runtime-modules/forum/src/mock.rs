@@ -2,7 +2,7 @@
 
 use crate::*;
 
-pub use frame_support::assert_err;
+pub use frame_support::{assert_err, assert_ok};
 use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
@@ -153,7 +153,7 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 110;
+pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 0;
 
 pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
 
