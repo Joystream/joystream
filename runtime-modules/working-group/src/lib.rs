@@ -29,7 +29,8 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-mod benchmarking;
+pub mod benchmarking;
+
 mod checks;
 mod errors;
 #[cfg(test)]
