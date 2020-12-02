@@ -681,7 +681,7 @@ impl<T: Trait> Module<T> {
 
                 // depleted budget or no accumulated reward to be paid?
                 if balance == 0.into() || unpaid_reward == 0.into() {
-                    // no need to save anything because unpaid_reward will be recalculated next time rewards are paid
+                    // no need to update council member record here their; unpaid reward will be recalculated next time rewards are paid
 
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
