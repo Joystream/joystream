@@ -84,7 +84,6 @@ impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
 }
 

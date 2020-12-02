@@ -86,7 +86,6 @@ impl Trait for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u32;
-    type SubscriptionId = u32;
     type ActorId = u32;
 }
 
