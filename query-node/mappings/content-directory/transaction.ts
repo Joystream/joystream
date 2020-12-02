@@ -86,32 +86,44 @@ async function getNextEntityId(db: DB): Promise<number> {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
-  debug(`TransactionCompleted event: ${JSON.stringify(event)}`)
+export async function contentDirectory_TransactionFailed(db: DB, event: SubstrateEvent): Promise<void> {
+  debug(`TransactionFailed event: ${JSON.stringify(event)}`)
 
-  const { extrinsic, blockNumber: block } = event
-  if (!extrinsic) {
-    throw Error(`No extrinsic found for the event: ${event.id}`)
-  }
+  const failedOperationIndex = event.params[1].value as number
+  const operations = decode.getOperations(event)
 
-  const { 1: operations } = extrinsic.args
-  if (operations.name.toString() !== 'operations') {
-    throw Error(`Could not found 'operations' in the extrinsic.args[1]`)
-  }
+  if (operations.length === 0 || operations.length === 1) return
+
+  const successfulOperations = operations.filter((op, index) => index < failedOperationIndex)
 
   const {
     addSchemaSupportToEntityOperations,
     createEntityOperations,
     updatePropertyValuesOperations,
-  } = decode.getOperations(event)
+  } = decode.getOperationsByTypes(successfulOperations)
+
+  await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
+  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
+  await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
+  debug(`TransactionCompleted event: ${JSON.stringify(event)}`)
+
+  const operations = decode.getOperations(event)
+
+  const {
+    addSchemaSupportToEntityOperations,
+    createEntityOperations,
+    updatePropertyValuesOperations,
+  } = decode.getOperationsByTypes(operations)
 
   // Create entities before adding schema support
   // We need this to know which entity belongs to which class(we will need to know to update/create
   // Channel, Video etc.). For example if there is a property update operation there is no class id
-  await batchCreateClassEntities(db, block, createEntityOperations)
-
-  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, block)
-
+  await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
+  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
   await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
 }
 
