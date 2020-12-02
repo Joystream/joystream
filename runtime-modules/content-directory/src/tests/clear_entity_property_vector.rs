@@ -53,7 +53,7 @@ fn clear_entity_property_vector_success() {
         ));
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_property_vector_cleared_event,
             number_of_events_before_calls + 1,
         );

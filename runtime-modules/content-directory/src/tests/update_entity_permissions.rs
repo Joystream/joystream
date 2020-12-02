@@ -43,7 +43,7 @@ fn update_entity_permissions_success() {
             get_test_event(RawEvent::EntityPermissionsUpdated(FIRST_ENTITY_ID));
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             entity_permissions_updated_event,
             number_of_events_before_call + 1,
         );

@@ -38,7 +38,7 @@
       "property_type": { "Single": "Uint16" }
     },
     {
-      "name": "thumbnailURL",
+      "name": "thumbnailUrl",
       "description": "Video thumbnail url (recommended ratio: 16:9)",
       "required": true,
       "property_type": { "Single": { "Text": 256 } }
@@ -92,7 +92,6 @@
       "name": "isCensored",
       "description": "Video censorship status set by the Curator.",
       "required": false,
-      "unique": true,
       "property_type": { "Single": "Bool" },
       "locking_policy": { "is_locked_from_controller": true }
     }

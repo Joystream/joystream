@@ -52,7 +52,7 @@ fn add_class_schema_success() {
             get_test_event(RawEvent::ClassSchemaAdded(FIRST_CLASS_ID, SECOND_SCHEMA_ID));
 
         // Last event checked
-        assert_event_success(class_schema_added_event, number_of_events_before_call + 2);
+        assert_event(class_schema_added_event, number_of_events_before_call + 2);
     })
 }
 

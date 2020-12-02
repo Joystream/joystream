@@ -12,6 +12,7 @@ import {
   ICreateEntityOperation,
   IDBBlockId,
   IEntity,
+  IFeaturedVideo,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
   IKnownLicense,
@@ -25,7 +26,7 @@ import {
   IWhereCond,
 } from '../types'
 import {
-  CategoryPropertyNamesWithId,
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   knownLicensePropertyNamesWIthId,
   userDefinedLicensePropertyNamesWithId,
@@ -38,6 +39,7 @@ import {
   ContentDirectoryKnownClasses,
   licensePropertyNamesWithId,
   mediaLocationPropertyNamesWithId,
+  featuredVideoPropertyNamesWithId,
 } from './content-dir-consts'
 import {
   updateCategoryEntityPropertyValues,
@@ -52,6 +54,7 @@ import {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 } from './entity/update'
 
 import {
@@ -69,6 +72,7 @@ import {
   createLicense,
   createMediaLocation,
   createBlockOrGetFromDatabase,
+  createFeaturedVideo,
 } from './entity/create'
 import { getOrCreate } from './get-or-create'
 
@@ -167,7 +171,7 @@ async function batchAddSchemaSupportToEntity(
 
       switch (className) {
         case ContentDirectoryKnownClasses.CATEGORY:
-          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId))
+          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId))
           break
 
         case ContentDirectoryKnownClasses.CHANNEL:
@@ -256,6 +260,15 @@ async function batchAddSchemaSupportToEntity(
           )
           break
 
+        case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+          await createFeaturedVideo(
+            arg,
+            classEntityMap,
+            decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
+          )
+          break
+
         default:
           console.log(`Unknown class name: ${className}`)
           break
@@ -299,7 +312,7 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateCategoryEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId)
+          decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId)
         )
         break
 
@@ -381,6 +394,14 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
           db,
           where,
           decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
+          entityIdBeforeTransaction
+        )
+        break
+      case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+        await updateFeaturedVideoEntityPropertyValues(
+          db,
+          where,
+          decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
           entityIdBeforeTransaction
         )
         break

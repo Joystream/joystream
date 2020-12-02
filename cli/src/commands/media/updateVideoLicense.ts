@@ -1,6 +1,6 @@
 import MediaCommandBase from '../../base/MediaCommandBase'
-import { LicenseEntity, VideoEntity } from 'cd-schemas/types/entities'
-import { InputParser } from 'cd-schemas'
+import { LicenseEntity, VideoEntity } from '@joystream/cd-schemas/types/entities'
+import { InputParser } from '@joystream/cd-schemas'
 import { Entity } from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
 

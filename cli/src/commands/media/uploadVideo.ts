@@ -1,8 +1,8 @@
-import VideoEntitySchema from 'cd-schemas/schemas/entities/VideoEntity.schema.json'
-import VideoMediaEntitySchema from 'cd-schemas/schemas/entities/VideoMediaEntity.schema.json'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { VideoMediaEntity } from 'cd-schemas/types/entities/VideoMediaEntity'
-import { InputParser } from 'cd-schemas'
+import VideoEntitySchema from '@joystream/cd-schemas/schemas/entities/VideoEntity.schema.json'
+import VideoMediaEntitySchema from '@joystream/cd-schemas/schemas/entities/VideoMediaEntity.schema.json'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
+import { VideoMediaEntity } from '@joystream/cd-schemas/types/entities/VideoMediaEntity'
+import { InputParser } from '@joystream/cd-schemas'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { flags } from '@oclif/command'
@@ -17,11 +17,11 @@ import ipfsHttpClient from 'ipfs-http-client'
 import first from 'it-first'
 import last from 'it-last'
 import toBuffer from 'it-to-buffer'
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import MediaCommandBase from '../../base/MediaCommandBase'
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
 const DATA_OBJECT_TYPE_ID = 1
 const MAX_FILE_SIZE = 500 * 1024 * 1024
@@ -255,7 +255,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
       channelId = await this.promptForEntityId(
         'Select a channel to publish the video under',
         'Channel',
-        'title',
+        'handle',
         memberId
       )
     } else {
@@ -335,7 +335,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
     const videoProps = await videoPrompter.promptMultipleProps([
       'title',
       'description',
-      'thumbnailURL',
+      'thumbnailUrl',
       'duration',
       'isPublic',
       'isExplicit',

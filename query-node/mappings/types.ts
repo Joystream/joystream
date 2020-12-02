@@ -40,12 +40,12 @@ export interface IReference {
 }
 
 export interface IChannel {
-  title: string
+  handle: string
   description: string
-  coverPhotoURL: string
-  avatarPhotoURL: string
+  coverPhotoUrl: string
+  avatarPhotoUrl: string
   isPublic: boolean
-  isCurated: boolean
+  isCurated?: boolean
   language?: IReference
 }
 
@@ -100,14 +100,14 @@ export interface IVideo {
   description: string
   duration: number
   skippableIntroDuration?: number
-  thumbnailURL: string
+  thumbnailUrl: string
   language?: IReference
   // referenced entity's id
   media?: IReference
   hasMarketing?: boolean
   publishedBeforeJoystream?: number
   isPublic: boolean
-  isCurated: boolean
+  isCurated?: boolean
   isExplicit: boolean
   license?: IReference
 }
@@ -170,9 +170,14 @@ export interface IEntity {
   properties: IProperty[]
 }
 
-export interface IPropertyIdWithName {
-  // propertyId - property name
-  [propertyId: string]: string
+export interface IPropertyDef {
+  name: string
+  type: string
+  required: boolean
+}
+
+export interface IPropertyWithId {
+  [inClassIndex: string]: IPropertyDef
 }
 
 export interface IWhereCond {
@@ -192,3 +197,7 @@ export interface IDBBlockId {
 }
 
 export type ClassEntityMap = Map<string, IEntity[]>
+
+export interface IFeaturedVideo {
+  video?: IReference
+}
