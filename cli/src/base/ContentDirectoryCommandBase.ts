@@ -11,10 +11,13 @@ import {
   Entity,
   EntityId,
   Actor,
+  PropertyType,
 } from '@joystream/types/content-directory'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
+import AbstractInt from '@polkadot/types/codec/AbstractInt'
+import { AnyJson } from '@polkadot/types/types/helpers'
 import _ from 'lodash'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
@@ -23,6 +26,8 @@ import { flags } from '@oclif/command'
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
 type Context = typeof CONTEXTS[number]
+
+type ParsedPropertyValue = { value: Codec | null; type: PropertyType['type']; subtype: PropertyType['subtype'] }
 
 /**
  * Abstract base class for commands related to content directory
@@ -278,7 +283,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       choices: entityEntries.map(([id, entity]) => {
         const parsedEntityPropertyValues = this.parseEntityPropertyValues(entity, entityClass)
         return {
-          name: (propName && parsedEntityPropertyValues[propName]?.value.toString()) || `ID:${id.toString()}`,
+          name: (propName && parsedEntityPropertyValues[propName]?.value?.toString()) || `ID:${id.toString()}`,
           value: id.toString(), // With numbers there are issues with "default"
         }
       }),
@@ -298,31 +303,46 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
 
+  parseStoredPropertyInnerValue(value: Codec | null): AnyJson {
+    if (value === null) {
+      return null
+    }
+
+    if (value instanceof AbstractInt) {
+      return value.toNumber() // Integers (signed ones) are by default converted to hex when using .toJson()
+    }
+
+    return value.toJSON()
+  }
+
   parseEntityPropertyValues(
     entity: Entity,
     entityClass: Class,
     includedProperties?: string[]
-  ): Record<string, { value: Codec; type: string }> {
+  ): Record<string, ParsedPropertyValue> {
     const { properties } = entityClass
     return Array.from(entity.getField('values').entries()).reduce((columns, [propId, propValue]) => {
       const prop = properties[propId.toNumber()]
       const propName = prop.name.toString()
       const included = !includedProperties || includedProperties.some((p) => p.toLowerCase() === propName.toLowerCase())
+      const { type: propType, subtype: propSubtype } = prop.property_type
 
       if (included) {
         columns[propName] = {
-          value: propValue.getValue(),
-          type: `${prop.property_type.type}<${prop.property_type.subtype}>`,
+          // If type doesn't match (Boolean(false) for optional fields case) - use "null" as value
+          value: propType !== propValue.type || propSubtype !== propValue.subtype ? null : propValue.getValue(),
+          type: propType,
+          subtype: propSubtype,
         }
       }
       return columns
-    }, {} as Record<string, { value: Codec; type: string }>)
+    }, {} as Record<string, ParsedPropertyValue>)
   }
 
   async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
     const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
-      v.type !== 'Single<Bool>' && v.value.toJSON() === false ? null : v.value.toJSON()
+      this.parseStoredPropertyInnerValue(v.value)
     ) as unknown) as FlattenRelations<T>
   }
 
@@ -349,7 +369,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         'ID': id.toString(),
         ...defaultValues,
         ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
-          v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()
+          v.value === null ? chalk.grey('[not set]') : v.value.toString()
         ),
       }))
     )) as Record<string, string>[]
