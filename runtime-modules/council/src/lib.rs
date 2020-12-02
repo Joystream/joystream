@@ -682,18 +682,10 @@ impl<T: Trait> Module<T> {
                 let unpaid_reward =
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
-                if unpaid_reward == 0.into() {
-                    Self::deposit_event(RawEvent::RewardPayment(
-                        council_member.membership_id,
-                        council_member.reward_account_id.clone(),
-                        0.into(),
-                        0.into(),
-                    ));
-                    return balance;
-                }
+                // depleted budget or no accumulated reward to be paid?
+                if balance == 0.into() || unpaid_reward == 0.into() {
+                    // no need to save anything because unpaid_reward will be recalculated next time rewards are paid
 
-                // stop iterating if budget is completely depleted
-                if balance == 0.into() {
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
