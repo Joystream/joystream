@@ -56,7 +56,6 @@ fn buy_default_membership_as_alice() -> crate::DispatchResult {
     let info = get_alice_info();
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
-        DEFAULT_PAID_TERM_ID as u32,
         info.handle,
         info.avatar_uri,
         info.about,
@@ -69,45 +68,18 @@ fn set_alice_free_balance(balance: u64) {
 }
 
 #[test]
-fn initial_state() {
-    const DEFAULT_FEE: u64 = 500;
-    let initial_members = [(0, 1), (1, 2), (2, 3)];
-
-    TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
-                .members(initial_members.to_vec())
-                .build(),
-        )
-        .build()
-        .execute_with(|| {
-            let default_terms = if <crate::PaidMembershipTermsById<Test>>::contains_key(
-                DEFAULT_PAID_TERM_ID as u32,
-            ) {
-                Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID as u32)
-            } else {
-                panic!("default terms not initialized");
-            };
-
-            assert_eq!(default_terms.fee, DEFAULT_FEE);
-        });
-}
-
-#[test]
 fn buy_membership() {
-    const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
             genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
+                .default_paid_membership_fee(MembershipFee::get())
                 .build(),
         )
         .build()
         .execute_with(|| {
-            let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
+            let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
             let next_member_id = Members::members_created();
@@ -136,17 +108,15 @@ fn buy_membership() {
 
 #[test]
 fn buy_membership_fails_without_enough_balance() {
-    const DEFAULT_FEE: u64 = 500;
-
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
             genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
+                .default_paid_membership_fee(MembershipFee::get())
                 .build(),
         )
         .build()
         .execute_with(|| {
-            let initial_balance = DEFAULT_FEE - 1;
+            let initial_balance = MembershipFee::get() - 1;
             set_alice_free_balance(initial_balance);
 
             assert_dispatch_error_message(
@@ -158,17 +128,15 @@ fn buy_membership_fails_without_enough_balance() {
 
 #[test]
 fn new_memberships_allowed_flag() {
-    const DEFAULT_FEE: u64 = 500;
-
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
             genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
+                .default_paid_membership_fee(MembershipFee::get())
                 .build(),
         )
         .build()
         .execute_with(|| {
-            let initial_balance = DEFAULT_FEE + 1;
+            let initial_balance = MembershipFee::get() + 1;
             set_alice_free_balance(initial_balance);
 
             crate::NewMembershipsAllowed::put(false);
@@ -182,18 +150,17 @@ fn new_memberships_allowed_flag() {
 
 #[test]
 fn unique_handles() {
-    const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
             genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
+                .default_paid_membership_fee(MembershipFee::get())
                 .build(),
         )
         .build()
         .execute_with(|| {
-            let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
+            let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
             // alice's handle already taken
@@ -209,18 +176,17 @@ fn unique_handles() {
 
 #[test]
 fn update_profile() {
-    const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
             genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(DEFAULT_FEE)
+                .default_paid_membership_fee(MembershipFee::get())
                 .build(),
         )
         .build()
         .execute_with(|| {
-            let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
+            let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
             let next_member_id = Members::members_created();
@@ -240,38 +206,6 @@ fn update_profile() {
             assert_eq!(Some(profile.handle), get_bob_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_bob_info().avatar_uri);
             assert_eq!(Some(profile.about), get_bob_info().about);
-        });
-}
-
-#[test]
-fn add_screened_member() {
-    TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
-        .build()
-        .execute_with(|| {
-            let screening_authority = 5;
-            <crate::ScreeningAuthority<Test>>::put(&screening_authority);
-
-            let next_member_id = Members::members_created();
-
-            let info = get_alice_info();
-            assert_ok!(Members::add_screened_member(
-                Origin::signed(screening_authority),
-                ALICE_ACCOUNT_ID,
-                info.handle,
-                info.avatar_uri,
-                info.about
-            ));
-
-            let profile = get_membership_by_id(next_member_id);
-
-            assert_eq!(Some(profile.handle), get_alice_info().handle);
-            assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
-            assert_eq!(Some(profile.about), get_alice_info().about);
-            assert_eq!(
-                crate::EntryMethod::Screening(screening_authority),
-                profile.entry
-            );
         });
 }
 

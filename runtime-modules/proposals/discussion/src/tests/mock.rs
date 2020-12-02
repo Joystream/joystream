@@ -56,6 +56,7 @@ parameter_types! {
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
     pub const MaxWhiteListSize: u32 = 4;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -75,8 +76,8 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {
