@@ -200,7 +200,6 @@ impl data_object_storage_registry::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
 }

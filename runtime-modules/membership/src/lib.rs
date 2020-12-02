@@ -46,15 +46,6 @@ pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Tr
         + MaybeSerialize
         + PartialEq;
 
-    type SubscriptionId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
         + Member
@@ -83,13 +74,12 @@ pub type Membership<T> = MembershipObject<
     <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as Trait>::PaidTermId,
-    <T as Trait>::SubscriptionId,
     <T as frame_system::Trait>::AccountId,
 >;
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct MembershipObject<BlockNumber, Moment, PaidTermId, SubscriptionId, AccountId> {
+pub struct MembershipObject<BlockNumber, Moment, PaidTermId, AccountId> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -107,12 +97,6 @@ pub struct MembershipObject<BlockNumber, Moment, PaidTermId, SubscriptionId, Acc
 
     /// How the member was registered
     pub entry: EntryMethod<PaidTermId, AccountId>,
-
-    /// Whether the member is suspended or not.
-    pub suspended: bool,
-
-    /// The type of subscription the member has purchased if any.
-    pub subscription: Option<SubscriptionId>,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
     /// and update the controller account. Other modules may only allow certain actions if
@@ -595,8 +579,6 @@ impl<T: Trait> Module<T> {
             registered_at_block,
             registered_at_time,
             entry: entry_method,
-            suspended: false,
-            subscription: None,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
         };
