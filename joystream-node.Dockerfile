@@ -4,7 +4,7 @@ RUN rustup install nightly-2020-10-06 --force
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 \
-  libgflags-dev libsnappy-dev install zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+  libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
 
 FROM rustup AS builder
 LABEL description="Compiles all workspace artifacts"
