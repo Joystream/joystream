@@ -7,7 +7,6 @@ members = [
 	"runtime-modules/common",
 	"runtime-modules/forum",
 	"runtime-modules/governance",
-	"runtime-modules/hiring",
 	"runtime-modules/membership",
 	"runtime-modules/memo",
 	"runtime-modules/recurring-reward",
