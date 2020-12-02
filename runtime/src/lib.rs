@@ -610,9 +610,9 @@ impl referendum::Trait<StorageReferendumInstance> for Runtime {
 
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,
-        _: &referendum::Balance<Self, StorageReferendumInstance>,
+        stake: &referendum::Balance<Self, StorageReferendumInstance>,
     ) -> <Self as referendum::Trait<StorageReferendumInstance>>::VotePower {
-        1
+        *stake as u64
     }
 
     fn can_release_vote_stake(
@@ -673,8 +673,8 @@ impl new_council::Trait for Runtime {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     fn is_council_member_account(
-        membership_id: &Self::MembershipId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        _: &Self::MembershipId,
+        _: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         true
     }
