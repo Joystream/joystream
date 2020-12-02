@@ -48,49 +48,28 @@ async function removeLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(LicenseEntity, where)
   if (record === undefined) throw Error(`License not found`)
 
-  const { knownLicense, userdefinedLicense } = record
-  let videos: Video[] = []
-
-  if (knownLicense) {
-    videos = await db.getMany(Video, {
-      where: {
-        license: {
-          isTypeOf: 'KnownLicense',
-          code: knownLicense.code,
-          description: knownLicense.description,
-          name: knownLicense.name,
-          url: knownLicense.url,
-        },
-      },
-    })
+  if (record.videolicense) {
+    // Remove all the videos under this license
+    record.videolicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   }
-  if (userdefinedLicense) {
-    videos = await db.getMany(Video, {
-      where: { license: { isTypeOf: 'UserDefinedLicense', content: userdefinedLicense.content } },
-    })
-  }
-  // Remove all the videos under this license
-  videos.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<LicenseEntity>(record)
 }
+
 async function removeUserDefinedLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(UserDefinedLicenseEntity, where)
   if (record === undefined) throw Error(`UserDefinedLicense not found`)
-  if (record.licenseentityuserdefinedLicense)
-    record.licenseentityuserdefinedLicense.map(async (l) => await removeLicense(db, { where: { id: l.id } }))
   await db.remove<UserDefinedLicenseEntity>(record)
 }
+
 async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(KnownLicenseEntity, where)
   if (record === undefined) throw Error(`KnownLicense not found`)
-  if (record.licenseentityknownLicense)
-    record.licenseentityknownLicense.map(async (k) => await removeLicense(db, { where: { id: k.id } }))
   await db.remove<KnownLicenseEntity>(record)
 }
 async function removeMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(MediaLocationEntity, where)
   if (record === undefined) throw Error(`MediaLocation not found`)
-  if (record.videoMedia) await removeVideo(db, { where: { id: record.videoMedia.id } })
+  if (record.videoMedia) await removeVideoMedia(db, { where: { id: record.videoMedia.id } })
 
   const { httpMediaLocation, joystreamMediaLocation } = record
 

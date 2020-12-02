@@ -52,6 +52,7 @@ export const channelPropertyNamesWithId: IPropertyWithId = {
 export const licensePropertyNamesWithId: IPropertyWithId = {
   0: { name: 'knownLicense', type: 'number', required: false },
   1: { name: 'userDefinedLicense', type: 'number', required: false },
+  2: { name: 'attribution', type: 'string', required: false },
 }
 
 export const knownLicensePropertyNamesWIthId: IPropertyWithId = {

@@ -163,21 +163,6 @@ type UserDefinedLicenseEntity @entity {
   happenedIn: Block!
 }
 
-type LicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  # One of the following field will be non-null
-
-  "Reference to a known license"
-  knownLicense: KnownLicenseEntity
-
-  "Reference to user-defined license"
-  userdefinedLicense: UserDefinedLicenseEntity
-
-  happenedIn: Block!
-}
-
 type MediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -290,7 +275,7 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
-  license: License!
+  license: LicenseEntity!
 
   happenedIn: Block!
 
@@ -313,6 +298,8 @@ type HttpMediaLocation @variant {
   port: Int
 }
 
+union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
+
 type KnownLicense @variant {
   "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
   code: String!
@@ -332,9 +319,19 @@ type UserDefinedLicense @variant {
   content: String!
 }
 
-union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
-
 union License = KnownLicense | UserDefinedLicense
+
+type LicenseEntity @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  type: License!
+
+  "Attribution (if required by the license)"
+  attribution: String
+
+  happenedIn: Block!
+}
 
 type FeaturedVideo @entity {
   "Runtime entity identifier (EntityId)"

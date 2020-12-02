@@ -257,28 +257,9 @@ async function createVideo(
       nextEntityIdBeforeTransaction
     )
   }
-  if (license !== undefined) {
-    const { knownLicense, userdefinedLicense } = await getOrCreate.license(
-      { db, block, id },
-      classEntityMap,
-      license,
-      nextEntityIdBeforeTransaction
-    )
-    if (knownLicense) {
-      const lic = new KnownLicense()
-      lic.code = knownLicense.code
-      lic.description = knownLicense.description
-      lic.isTypeOf = 'KnownLicense'
-      lic.name = knownLicense.name
-      lic.url = knownLicense.url
-      video.license = lic
-    }
-    if (userdefinedLicense) {
-      const lic = new UserDefinedLicense()
-      lic.content = userdefinedLicense.content
-      lic.isTypeOf = 'UserDefinedLicense'
-      video.license = lic
-    }
+  if (license) {
+    const lic = await getOrCreate.license({ db, block, id }, classEntityMap, license, nextEntityIdBeforeTransaction)
+    video.license = lic
   }
   if (category !== undefined) {
     video.category = await getOrCreate.category(
@@ -340,27 +321,42 @@ async function createLicense(
   const record = await db.get(LicenseEntity, { where: { id } })
   if (record) return record
 
-  const { knownLicense, userDefinedLicense } = p
-
   const license = new LicenseEntity()
+
+  if (p.knownLicense) {
+    const kLicense = await getOrCreate.knownLicense(
+      { db, block, id },
+      classEntityMap,
+      p.knownLicense,
+      nextEntityIdBeforeTransaction
+    )
+    const k = new KnownLicense()
+    k.isTypeOf = 'KnownLicense'
+    k.code = kLicense.code
+    k.description = kLicense.description
+    k.name = kLicense.name
+    k.url = kLicense.url
+    // Set the license type
+    license.type = k
+  }
+  if (p.userDefinedLicense) {
+    const { content } = await getOrCreate.userDefinedLicense(
+      { db, block, id },
+      classEntityMap,
+      p.userDefinedLicense,
+      nextEntityIdBeforeTransaction
+    )
+    const u = new UserDefinedLicense()
+    u.isTypeOf = 'UserDefinedLicense'
+    u.content = content
+    // Set the license type
+    license.type = u
+  }
+
   license.id = id
-  if (knownLicense !== undefined) {
-    license.knownLicense = await getOrCreate.knownLicense(
-      { db, block, id },
-      classEntityMap,
-      knownLicense,
-      nextEntityIdBeforeTransaction
-    )
-  }
-  if (userDefinedLicense !== undefined) {
-    license.userdefinedLicense = await getOrCreate.userDefinedLicense(
-      { db, block, id },
-      classEntityMap,
-      userDefinedLicense,
-      nextEntityIdBeforeTransaction
-    )
-  }
+  license.attribution = p.attribution
   license.happenedIn = await createBlockOrGetFromDatabase(db, block)
+
   await db.save<LicenseEntity>(license)
   return license
 }
