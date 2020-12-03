@@ -278,6 +278,14 @@ decl_module! {
         /// Exports const -  max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the number of workers currently present in the `working_group`
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
         fn on_initialize() -> Weight {
             let leaving_workers = Self::get_workers_with_finished_unstaking_period();
             let mut biggest_number_of_processed_workers = leaving_workers.len();
@@ -303,6 +311,15 @@ decl_module! {
 
         /// Add a job opening for a regular worker/lead role.
         /// Require signed leader origin or the root (to add opening for the leader position).
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (D)` where:
+        /// - `D` is the length of `description`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::add_opening(description.len().saturated_into())]
         pub fn add_opening(
             origin,
@@ -343,6 +360,15 @@ decl_module! {
         }
 
         /// Apply on a worker opening.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (D)` where:
+        /// - `D` is the length of `p.description`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
@@ -406,6 +432,14 @@ decl_module! {
 
         /// Fill opening for the regular/lead position.
         /// Require signed leader origin or the root (to fill opening for the leader position).
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `successful_application_ids`
+        /// - DB:
+        ///    - O(A)
+        /// # </weight>
         #[weight =
             WeightInfoWorkingGroup::<T, I>::fill_opening_worker(successful_application_ids.len().saturated_into())
             .max(WeightInfoWorkingGroup::<T, I>::fill_opening_lead())
@@ -458,6 +492,14 @@ decl_module! {
         }
 
         /// Update the associated role account of the active regular worker/lead.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::update_role_account()]
         pub fn update_role_account(
             origin,
@@ -487,6 +529,13 @@ decl_module! {
         }
 
         /// Leave the role by the active worker.
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::leave_role_immediatly()
             .max(WeightInfoWorkingGroup::<T, I>::leave_role_later())]
         pub fn leave_role(
@@ -514,6 +563,13 @@ decl_module! {
 
         /// Terminate the active worker by the lead.
         /// Requires signed leader origin or the root (to terminate the leader role).
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::terminate_role_lead()
                 .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker())]
         pub fn terminate_role(
@@ -558,6 +614,13 @@ decl_module! {
         /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake()]
         pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
@@ -590,6 +653,14 @@ decl_module! {
         /// worker staking_account_id. Can be decreased to zero, no actions on zero stake.
         /// Accepts the stake amount to decrease.
         /// Requires signed leader origin or the root (to decrease the leader stake).
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::decrease_stake()]
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Ensure lead is set or it is the council decreasing the leader's stake.
@@ -641,6 +712,14 @@ decl_module! {
 
         /// Increases the regular worker/lead stake, demands a worker origin.
         /// Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::increase_stake()]
         pub fn increase_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Checks worker origin and worker existence.
@@ -684,6 +763,14 @@ decl_module! {
         }
 
         /// Withdraw the worker application. Can be done by the worker only.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::withdraw_application()]
         pub fn withdraw_application(
             origin,
@@ -717,6 +804,14 @@ decl_module! {
 
         /// Cancel an opening for the regular worker/lead position.
         /// Require signed leader origin or the root (to cancel opening for the leader position).
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::cancel_opening()]
         pub fn cancel_opening(
             origin,
@@ -740,6 +835,14 @@ decl_module! {
 
         /// Sets a new budget for the working group.
         /// Requires root origin.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::set_budget()]
         pub fn set_budget(
             origin,
@@ -759,6 +862,14 @@ decl_module! {
         }
 
         /// Update the reward account associated with a set reward relationship for the active worker.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::update_reward_account()]
         pub fn update_reward_account(
             origin,
@@ -786,6 +897,14 @@ decl_module! {
 
         /// Update the reward per block for the active worker.
         /// Require signed leader origin or the root (to update leader's reward amount).
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::update_reward_amount()]
         pub fn update_reward_amount(
             origin,
@@ -813,6 +932,16 @@ decl_module! {
 
         /// Sets a new status text for the working group.
         /// Requires root origin.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (S)` where:
+        /// - `S` is the length of the contents of `status_text` when it is not none
+        ///
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::set_status_text(
             if let Some(status_text) = status_text {
                 status_text.len().saturated_into()
@@ -848,6 +977,14 @@ decl_module! {
 
         /// Transfers specified amount to any account.
         /// Requires leader origin.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
         pub fn spend_from_budget(
             origin,
