@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-mod mocks;
+pub(crate) mod mocks;
 
 use crate::{ConstitutionInfo, Event};
 use frame_support::dispatch::DispatchResult;

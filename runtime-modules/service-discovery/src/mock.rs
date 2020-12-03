@@ -52,6 +52,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -109,9 +110,8 @@ impl stake::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -136,11 +136,24 @@ impl recurringrewards::Trait for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId1: [u8; 8] = [1; 8];
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+}
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -163,14 +176,19 @@ pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 
 pub(crate) fn hire_storage_provider() -> (u64, u64) {
-    let storage_provider_id = 1;
-    let role_account_id = 1;
+    let storage_provider_id = 1u64;
+    let role_account_id = 1u64;
 
-    let storage_provider = working_group::Worker {
+    let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        reward_relationship: None,
-        role_stake_profile: None,
+        staking_account_id: None,
+        reward_account_id: role_account_id,
+        started_leaving_at: None,
+        job_unstaking_period: 0,
+        reward_per_block: None,
+        missed_reward: None,
+        created_at: 1,
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

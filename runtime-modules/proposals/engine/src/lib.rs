@@ -137,7 +137,7 @@ use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
-use membership::staking_handler::StakingHandler;
+use staking_handler::StakingHandler;
 
 /// Proposals engine WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag

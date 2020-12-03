@@ -242,7 +242,6 @@ parameter_types! {
     pub const ExistentialDeposit: u128 = 0;
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
-    pub const InitialMembersBalance: u32 = 2000;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -473,10 +472,7 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (
-        crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
-        crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-    );
+    type StakingEventsHandler = ();
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -501,6 +497,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
+    pub const MembershipFee: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -526,14 +523,12 @@ impl storage::data_object_storage_registry::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = ActorId;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 5;
-
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
@@ -573,7 +568,11 @@ impl forum::Trait for Runtime {
         // get current lead id
         let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
         if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) = ForumGroup::<Runtime>::ensure_worker_exists(current_lead_id) {
+            if let Ok(worker) = working_group::ensure_worker_exists::<
+                Runtime,
+                ForumWorkingGroupInstance,
+            >(current_lead_id)
+            {
                 *_account_id == worker.role_account_id
             } else {
                 false
@@ -592,7 +591,9 @@ impl forum::Trait for Runtime {
     }
 
     fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
-        if let Ok(worker) = ForumGroup::<Runtime>::ensure_worker_exists(_moderator_id) {
+        if let Ok(worker) =
+            working_group::ensure_worker_exists::<Runtime, ForumWorkingGroupInstance>(_moderator_id)
+        {
             *_account_id == worker.role_account_id
         } else {
             false
@@ -615,21 +616,40 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+    pub const MinUnstakingPeriodLimit: u32 = 43200;
+    pub const ForumWorkingGroupRewardPeriod: u32 = 14400 + 10;
+    pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
+    pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
+    pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
+    pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
+    pub const ForumGroupLockId: LockIdentifier = [8; 8];
 }
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = ForumWorkingGroupRewardPeriod;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = StorageWorkingGroupRewardPeriod;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = ContentWorkingGroupRewardPeriod;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -651,7 +671,7 @@ impl proposals_engine::Trait for Runtime {
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakingHandler = integration::staking_handler::StakingManager<Self, ProposalsLockId>;
+    type StakingHandler = staking_handler::StakingManager<Self, ProposalsLockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;
@@ -700,8 +720,8 @@ impl proposals_codex::Trait for Runtime {
     type BeginReviewWorkingGroupApplicationsProposalParameters =
         BeginReviewWorkingGroupApplicationsProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupMintCapacityProposalParameters =
-        SetWorkingGroupMintCapacityProposalParameters;
+    type SetWorkingGroupBudgetCapacityProposalParameters =
+        SetWorkingGroupBudgetCapacityProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters =
         DecreaseWorkingGroupLeaderStakeProposalParameters;
     type SlashWorkingGroupLeaderStakeProposalParameters =
@@ -713,8 +733,9 @@ impl proposals_codex::Trait for Runtime {
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
 }
 
-impl constitution::Trait for Runtime {
+impl pallet_constitution::Trait for Runtime {
     type Event = Event;
+    type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
 parameter_types! {
@@ -781,7 +802,7 @@ construct_runtime!(
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        Constitution: constitution::{Module, Call, Storage, Event},
+        Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
@@ -792,8 +813,8 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
-        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
     }
 );

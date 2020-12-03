@@ -2,9 +2,18 @@
 use super::*;
 use frame_benchmarking::benchmarks;
 use frame_support::assert_ok;
-use frame_system::RawOrigin;
+use frame_system::Module as System;
+use frame_system::{EventRecord, RawOrigin};
 
 const MAX_BYTES: u32 = 16384;
+
+fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
+}
 
 benchmarks! {
     _{ }
@@ -60,26 +69,28 @@ benchmarks! {
                     parent_category.num_direct_subcategories + 1
                 );
             }
-
+            assert_last_event::<T>(RawEvent::CategoryCreated(category_id).into());
     }
     update_category_membership_of_moderator{
         let i in 0 .. 1;
 
-        let new_value_flag = if i == 0 {
-            true
-        } else {
-            false
-        };
-
-        let new_value_flags = [true, false];
         let text = vec![0u8];
 
         // Create category
-        Module::<T>::create_category(
+        assert_ok!(Module::<T>::create_category(
             RawOrigin::Signed(T::AccountId::default()).into(), None, text.clone(), text.clone()
-        );
+        ));
 
         let category_id = Module::<T>::next_category_id() - T::CategoryId::one();
+
+        let new_value_flag = if i == 0 {
+            true
+        } else {
+            assert_ok!(
+                Module::<T>::update_category_membership_of_moderator(RawOrigin::Signed(T::AccountId::default()).into(), T::ModeratorId::one(), category_id, true)
+            );
+            false
+        };
 
     }: _ (RawOrigin::Signed(T::AccountId::default()), T::ModeratorId::one(), category_id, new_value_flag)
     verify {
@@ -99,6 +110,7 @@ benchmarks! {
             parent_category_id: None,
             sticky_thread_ids: vec![],
         };
+
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
     }
 }

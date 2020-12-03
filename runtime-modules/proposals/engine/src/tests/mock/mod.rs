@@ -17,7 +17,6 @@ use sp_runtime::{
 };
 
 pub(crate) mod proposals;
-pub(crate) mod staking_handler;
 
 use crate::ProposalObserver;
 pub use proposals::*;
@@ -79,14 +78,14 @@ parameter_types! {
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [1; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {

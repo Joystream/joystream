@@ -16,8 +16,6 @@ use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
-mod staking_handler;
-
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -50,12 +48,12 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
+    pub const MembershipFee: u64 = 100;
     pub const ExistentialDeposit: u32 = 0;
 }
 
@@ -220,16 +218,26 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+    pub const LockId1: [u8; 8] = [1; 8];
+    pub const LockId2: [u8; 8] = [2; 8];
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
 }
 
 impl recurring_rewards::Trait for Test {
@@ -338,7 +346,7 @@ impl crate::Trait for Test {
     type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
     type BeginReviewWorkingGroupApplicationsProposalParameters = DefaultProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type SetWorkingGroupMintCapacityProposalParameters = DefaultProposalParameters;
+    type SetWorkingGroupBudgetCapacityProposalParameters = DefaultProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
     type SlashWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
     type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;

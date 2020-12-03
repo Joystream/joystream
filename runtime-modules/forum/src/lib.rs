@@ -295,6 +295,9 @@ decl_error! {
         /// Category does not exist.
         CategoryDoesNotExist,
 
+        /// Provided moderator is not given category moderator
+        CategoryModeratorDoesNotExist,
+
         /// Category still contains some threads.
         CategoryNotEmptyThreads,
 
@@ -443,7 +446,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            Self::ensure_can_update_category_membership_of_moderator(account_id, &category_id, new_value)?;
+            Self::ensure_can_update_category_membership_of_moderator(account_id, &category_id, &moderator_id, new_value)?;
 
             //
             // == MUTATION SAFE ==
@@ -1410,6 +1413,7 @@ impl<T: Trait> Module<T> {
     fn ensure_can_update_category_membership_of_moderator(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
+        moderator_id: &T::ModeratorId,
         new_value: bool,
     ) -> Result<(), Error<T>> {
         // Not signed by forum LEAD
@@ -1422,6 +1426,11 @@ impl<T: Trait> Module<T> {
             Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
                 category.num_direct_moderators as u64,
             )?;
+        } else {
+            ensure!(
+                <CategoryByModerator<T>>::contains_key(category_id, moderator_id),
+                Error::<T>::CategoryModeratorDoesNotExist
+            );
         }
 
         Ok(())
