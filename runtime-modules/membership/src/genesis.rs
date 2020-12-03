@@ -1,7 +1,7 @@
 #![cfg(feature = "std")]
 
+use crate::BalanceOf;
 use crate::{GenesisConfig, Trait};
-use common::currency::BalanceOf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]

@@ -3,6 +3,7 @@
 use super::genesis;
 use super::mock::*;
 
+use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::*;
 
 fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
@@ -117,6 +118,28 @@ fn buy_membership_fails_without_enough_balance() {
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() - 1;
+            set_alice_free_balance(initial_balance);
+
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "not enough balance to buy membership",
+            );
+        });
+}
+
+#[test]
+fn buy_membership_fails_without_enough_balance_with_locked_balance() {
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(MembershipFee::get())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+            let initial_balance = MembershipFee::get();
+            let lock_id = LockIdentifier::default();
+            Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
             set_alice_free_balance(initial_balance);
 
             assert_dispatch_error_message(
