@@ -2,7 +2,7 @@
 
 use crate::*;
 
-pub use frame_support::{assert_err, assert_ok};
+pub use frame_support::assert_err;
 use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
