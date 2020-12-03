@@ -89,7 +89,7 @@ export async function contentDirectory_TransactionFailed(db: DB, event: Substrat
   const failedOperationIndex = event.params[1].value as number
   const operations = decode.getOperations(event)
 
-  const successfulOperations = operations.toArray().slice(2, failedOperationIndex)
+  const successfulOperations = operations.toArray().slice(0, failedOperationIndex)
   if (!successfulOperations.length) return // No succesfull operations
 
   await applyOperations(decode.getOperationsByTypes(successfulOperations), db, event)
