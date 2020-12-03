@@ -155,10 +155,10 @@ impl crate::WeightInfo for () {
     fn withdraw_application() -> Weight {
         0
     }
-    fn slash_stake() -> Weight {
+    fn slash_stake(_: u32) -> Weight {
         0
     }
-    fn terminate_role_worker() -> Weight {
+    fn terminate_role_worker(_: u32) -> Weight {
         0
     }
     fn terminate_role_lead() -> Weight {

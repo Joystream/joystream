@@ -74,8 +74,8 @@ pub trait WeightInfo {
     fn update_role_account() -> Weight;
     fn cancel_opening() -> Weight;
     fn withdraw_application() -> Weight;
-    fn slash_stake() -> Weight; // Parameter not used so it's discarded
-    fn terminate_role_worker() -> Weight; // Parameter not used so it's discarded
+    fn slash_stake(i: u32) -> Weight;
+    fn terminate_role_worker(i: u32) -> Weight;
     fn terminate_role_lead() -> Weight; // Parameter not used so it's discarded
     fn increase_stake() -> Weight;
     fn decrease_stake() -> Weight;
@@ -566,12 +566,17 @@ decl_module! {
         /// # <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (P)` where:
+        /// - `P` is the length of `penalty.slashing_text`
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::terminate_role_lead()
-                .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker())]
+                .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
+                        penalty.as_ref().map(|penalty| penalty.slashing_text.len().saturated_into())
+                            .unwrap_or_else(|| 0)
+                    )
+        )]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -617,11 +622,12 @@ decl_module! {
         /// # <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (P)` where:
+        /// - `P` is the length of `penality.slashing_text`
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake()]
+        #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake(penalty.slashing_text.len().saturated_into())]
         pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;

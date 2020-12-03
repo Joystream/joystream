@@ -577,7 +577,7 @@ benchmarks_instance! {
     }
 
     fill_opening_worker {
-        let i in 2 .. T::MaxWorkerNumberLimit::get();
+        let i in 1 .. T::MaxWorkerNumberLimit::get() - 1;
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
             OpeningType::Leader,
@@ -587,7 +587,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i+1).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithoutStakes,
                 &OpeningType::Regular
