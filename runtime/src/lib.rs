@@ -607,6 +607,7 @@ impl referendum::Trait<StorageReferendumInstance> for Runtime {
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
     type MinimumStake = MinimumStake;
+    type WeightInfo = weights::referendum::WeightInfo;
 
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,
@@ -671,6 +672,8 @@ impl new_council::Trait for Runtime {
 
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    type WeightInfo = weights::council::WeightInfo;
 
     fn is_council_member_account(
         _: &Self::MembershipId,

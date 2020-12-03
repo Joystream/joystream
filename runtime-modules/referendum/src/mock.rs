@@ -9,6 +9,7 @@ use crate::{
 pub use crate::DefaultInstance;
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
+use frame_support::weights::Weight;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
@@ -76,6 +77,7 @@ impl Trait for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumStake;
+    type WeightInfo = ();
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,

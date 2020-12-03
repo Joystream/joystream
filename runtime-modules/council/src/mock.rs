@@ -11,6 +11,7 @@ use crate::{
 use balances;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
+use frame_support::weights::Weight;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
@@ -98,6 +99,8 @@ impl Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
+    type WeightInfo = ();
+
     fn is_council_member_account(
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -111,6 +114,36 @@ impl Trait for Runtime {
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
         });
+    }
+}
+
+impl WeightInfo for () {
+    fn try_process_budget() -> Weight {
+        0
+    }
+    fn try_progress_stage_idle() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_restart() -> Weight {
+        0
+    }
+    fn announce_candidacy() -> Weight {
+        0
+    }
+    fn release_candidacy_stake() -> Weight {
+        0
+    }
+    fn set_candidacy_note(_: u32) -> Weight {
+        0
+    }
+    fn withdraw_candidacy() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
     }
 }
 
@@ -221,6 +254,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
+    type WeightInfo = ReferendumWeightInfo;
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
