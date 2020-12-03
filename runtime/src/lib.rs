@@ -242,7 +242,6 @@ parameter_types! {
     pub const ExistentialDeposit: u128 = 0;
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
-    pub const InitialMembersBalance: u32 = 2000;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -498,6 +497,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
+    pub const MembershipFee: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -523,14 +523,12 @@ impl storage::data_object_storage_registry::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = ActorId;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 5;
-
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;

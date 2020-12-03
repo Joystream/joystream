@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Trait, DEFAULT_PAID_TERM_ID};
+pub use crate::{GenesisConfig, Trait};
 
 pub use frame_support::traits::Currency;
 use frame_support::{impl_outer_origin, parameter_types};
@@ -66,6 +66,7 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -85,9 +86,8 @@ impl GovernanceCurrency for Test {
 impl Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u32;
-    type SubscriptionId = u32;
     type ActorId = u32;
+    type MembershipFee = MembershipFee;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {

@@ -19,33 +19,22 @@ use frame_support::{StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
 
-use super::initial_test_ext;
+use super::{increase_total_balance_issuance_using_account_id, initial_test_ext, insert_member};
 
 use crate::CouncilManager;
 
 pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
-pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
 pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
-    let authority_account_id = <Runtime as frame_system::Trait>::AccountId::default();
-    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id.clone())
-        .unwrap();
-
     for i in 0..count {
         let account_id: [u8; 32] = [i; 32];
-        Membership::add_screened_member(
-            RawOrigin::Signed(authority_account_id.clone().into()).into(),
-            account_id.clone().into(),
-            Some(account_id.to_vec()),
-            None,
-            None,
-        )
-        .unwrap();
+        let account_id_converted: AccountId32 = account_id.clone().into();
+        insert_member(account_id_converted);
     }
 }
 
@@ -68,18 +57,6 @@ fn setup_council() {
         ]
     )
     .is_ok());
-}
-
-pub(crate) fn increase_total_balance_issuance_using_account_id(
-    account_id: AccountId32,
-    balance: u128,
-) {
-    type Balances = pallet_balances::Module<Runtime>;
-    let initial_balance = Balances::total_issuance();
-    {
-        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
-    }
-    assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
 
 // Recommendation from Parity on testing on_finalize

@@ -48,12 +48,12 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
+    pub const MembershipFee: u64 = 100;
     pub const ExistentialDeposit: u32 = 0;
 }
 

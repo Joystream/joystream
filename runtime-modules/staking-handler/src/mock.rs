@@ -23,6 +23,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -70,9 +71,8 @@ impl pallet_balances::Trait for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl common::currency::GovernanceCurrency for Test {
