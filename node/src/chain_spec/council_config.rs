@@ -1,9 +1,9 @@
 use node_runtime::council::{CouncilStageUpdate, Trait as CouncilTrait};
 use node_runtime::referendum::ReferendumStage;
-use node_runtime::{CouncilConfig, ReferendumConfig, Runtime};
+use node_runtime::{NewCouncilConfig, ReferendumConfig, Runtime};
 
-pub fn create_council_config() -> CouncilConfig {
-    CouncilConfig {
+pub fn create_council_config() -> NewCouncilConfig {
+    NewCouncilConfig {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],

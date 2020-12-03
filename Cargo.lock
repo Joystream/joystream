@@ -2399,7 +2399,6 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "strum 0.19.5",
- "substrate-referendum-module",
  "substrate-wasm-builder-runner",
 ]
 
@@ -4034,6 +4033,7 @@ dependencies = [
 name = "pallet-referendum"
 version = "1.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

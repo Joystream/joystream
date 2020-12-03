@@ -41,12 +41,11 @@ use core::marker::PhantomData;
 use frame_support::traits::{
     Currency, EnsureOrigin, Get, LockIdentifier, LockableCurrency, WithdrawReason,
 };
+use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
 };
 use frame_system::ensure_signed;
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec;
@@ -142,7 +141,22 @@ pub type CanRevealResult<T, I> = (
     CastVoteOf<T, I>,
 );
 
-/////////////////// Trait, Storage, Errors, and Events /////////////////////////
+/////////////////// Traits, Storage, Errors, and Events /////////////////////////
+
+/// referendum WeightInfo
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn on_finalize_revealing(i: u32) -> Weight;
+    fn on_finalize_voting() -> Weight;
+    fn vote() -> Weight;
+    fn reveal_vote_space_for_new_winner(i: u32) -> Weight;
+    fn reveal_vote_space_not_in_winners(i: u32) -> Weight;
+    fn reveal_vote_space_replace_last_winner(i: u32) -> Weight;
+    fn reveal_vote_already_existing(i: u32) -> Weight;
+    fn release_vote_stake() -> Weight;
+}
+
+const MAX_WINNERS: u32 = 500; // TODO: Replace with a trait type
 
 /// Trait that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
@@ -213,6 +227,9 @@ pub trait Trait<I: Instance>: frame_system::Trait + common::Trait {
 
     /// Minimum stake needed for voting
     type MinimumStake: Get<Balance<Self, I>>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
@@ -367,7 +384,15 @@ decl_module! {
         /////////////////// User actions ///////////////////////////////////////
 
         /// Cast a sealed vote in the referendum.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::vote()]
         pub fn vote(origin, commitment: T::Hash, stake: Balance<T, I>) -> Result<(), Error<T, I>> {
             // ensure action can be started
             let (current_cycle_id, account_id) = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
@@ -404,7 +429,14 @@ decl_module! {
         }
 
         /// Release a locked stake.
-        #[weight = 10_000_000]
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::release_vote_stake()]
         pub fn release_vote_stake(origin) -> Result<(), Error<T, I>> {
             let account_id = EnsureChecks::<T, I>::can_release_vote_stake(origin)?;
 

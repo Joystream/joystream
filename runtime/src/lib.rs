@@ -496,6 +496,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MinimumStake = MinimumVotingStake;
 
+    type WeightInfo = weights::referendum::WeightInfo;
+
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
@@ -557,6 +559,8 @@ impl council::Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
+    type WeightInfo = weights::council::WeightInfo;
+
     fn is_council_member_account(
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -573,140 +577,6 @@ impl council::Trait for Runtime {
         <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
 }
-
-/* === TODO ERASE === */
-pub type StorageReferendumInstance = referendum::Instance1;
-parameter_types! {
-    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const VoteStageDuration: BlockNumber = 5;
-    pub const RevealStageDuration: BlockNumber = 7;
-    pub const MinimumStake: u64 = 10000;
-    pub const LockId: LockIdentifier = *b"referend";
-}
-
-use frame_system::{EnsureOneOf, EnsureSigned};
-
-impl referendum::Trait<StorageReferendumInstance> for Runtime {
-    type Event = Event;
-    type MaxSaltLength = MaxSaltLength;
-    type Currency = Balances;
-    type LockId = LockId;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
-    type VotePower = u64;
-    type VoteStageDuration = VoteStageDuration;
-    type RevealStageDuration = RevealStageDuration;
-    type MinimumStake = MinimumStake;
-
-    fn calculate_vote_power(
-        _: &<Self as frame_system::Trait>::AccountId,
-        stake: &referendum::Balance<Self, StorageReferendumInstance>,
-    ) -> <Self as referendum::Trait<StorageReferendumInstance>>::VotePower {
-        *stake as u64
-    }
-
-    fn can_release_vote_stake(
-        _: &referendum::CastVote<Self::Hash, referendum::Balance<Self, StorageReferendumInstance>>,
-        _: &u64,
-    ) -> bool {
-        true
-    }
-
-    fn process_results(_: &[referendum::OptionResult<Self::VotePower>]) {
-        // not used right now
-    }
-
-    fn is_valid_option_id(_: &u64) -> bool {
-        true
-    }
-
-    fn get_option_power(_: &u64) -> Self::VotePower {
-        100
-    }
-
-    fn increase_option_power(_: &u64, _: &Self::VotePower) {}
-}
-
-parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
-    pub const AnnouncingPeriodDuration: u32 = 15;
-    pub const IdlePeriodDuration: u32 = 17;
-    pub const CouncilSize: u64 = 3;
-    pub const MinCandidateStake: u64 = 11000;
-    pub const CandidacyLockId: LockIdentifier = *b"council1";
-    pub const ElectedMemberLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
-    pub const ElectedMemberRewardPeriod: u32 = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
-    pub const BudgetRefillPeriod: u32 = 1000; // intentionally high number that prevents side-effecting tests other than  budget refill tests
-}
-
-impl new_council::Trait for Runtime {
-    type Event = Event;
-
-    type Referendum = referendum::Module<Runtime, StorageReferendumInstance>;
-
-    type MembershipId = <Runtime as membership::Trait>::MemberId;
-    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
-    type CouncilSize = CouncilSize;
-    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
-    type IdlePeriodDuration = IdlePeriodDuration;
-    type MinCandidateStake = MinCandidateStake;
-
-    type CandidacyLock = Runtime;
-    type ElectedMemberLock = Runtime;
-
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
-    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
-
-    type BudgetRefillAmount = BudgetRefillAmount;
-    type BudgetRefillPeriod = BudgetRefillPeriod;
-
-    fn is_council_member_account(
-        _: &Self::MembershipId,
-        _: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        true
-    }
-}
-
-use frame_support::dispatch::DispatchResult;
-use sp_arithmetic::traits::Zero;
-
-impl new_council::staking_handler::StakingHandler2<AccountId, Balance, u64> for Runtime {
-    fn lock(_: &AccountId, _: Balance) {}
-
-    fn unlock(_: &AccountId) {}
-
-    fn slash(_: &AccountId, _: Option<Balance>) -> Balance {
-        Zero::zero()
-    }
-
-    fn set_stake(_: &AccountId, _: Balance) -> DispatchResult {
-        Ok(())
-    }
-
-    fn is_member_staking_account(
-        _: &<Self as membership::Trait>::MemberId,
-        _: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        true
-    }
-
-    fn is_account_free_of_conflicting_stakes(_: &AccountId) -> bool {
-        true
-    }
-
-    fn is_enough_balance_for_stake(_: &AccountId, _: Balance) -> bool {
-        true
-    }
-
-    fn current_stake(_: &AccountId) -> Balance {
-        Balance::max_value()
-    }
-}
-
-/* === HERE === */
 
 impl memo::Trait for Runtime {
     type Event = Event;
@@ -1045,7 +915,6 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
-        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         NewCouncil: new_council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},

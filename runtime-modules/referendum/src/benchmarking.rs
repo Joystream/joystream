@@ -234,8 +234,6 @@ benchmarks_instance! {
     }
 
     on_finalize_voting {
-        let i in 0 .. 1;
-
         let winning_target_count = 0;
         start_voting_cycle::<T, I>(winning_target_count);
 
@@ -267,8 +265,6 @@ benchmarks_instance! {
     }
 
     vote {
-        let i in 0 .. 1;
-
         start_voting_cycle::<T, I>(0);
 
         let account_id = funded_account::<T, I>("caller", 0);
@@ -492,8 +488,6 @@ benchmarks_instance! {
     }
 
     release_vote_stake {
-        let i in 0 .. 1;
-
         start_voting_cycle::<T, I>(0);
 
         let cycle_id = 0;

@@ -43,6 +43,7 @@
 // used dependencies
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
+use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
@@ -195,7 +196,21 @@ pub type CandidateOf<T> = Candidate<
 >;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
 
-/////////////////// Trait, Storage, Errors, and Events /////////////////////////
+/////////////////// Traits, Storage, Errors, and Events /////////////////////////
+
+/// council WeightInfo
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn try_process_budget() -> Weight;
+    fn try_progress_stage_idle() -> Weight;
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
+    fn try_progress_stage_announcing_restart() -> Weight;
+    fn announce_candidacy() -> Weight;
+    fn release_candidacy_stake() -> Weight;
+    fn set_candidacy_note(i: u32) -> Weight;
+    fn withdraw_candidacy() -> Weight;
+    fn set_budget() -> Weight;
+}
 
 /// The main council trait.
 pub trait Trait: frame_system::Trait + common::Trait {
@@ -235,6 +250,9 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type BudgetRefillAmount: Get<Balance<Self>>;
     /// Interval between automatic budget refills.
     type BudgetRefillPeriod: Get<Self::BlockNumber>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
@@ -551,7 +569,15 @@ decl_module! {
         }
 
         /// Sets the budget balance.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::set_budget()]
         pub fn set_budget(origin, balance: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget(origin)?;
