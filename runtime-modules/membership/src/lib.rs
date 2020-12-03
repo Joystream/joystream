@@ -14,13 +14,14 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
-use common::currency::{BalanceOf, GovernanceCurrency};
+// Balance type alias
+type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 //TODO: Convert errors to the Substrate decl_error! macro.
 /// Result with string error message. This exists for backward compatibility purpose.
 pub type DispatchResult = Result<(), &'static str>;
 
-pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type MemberId: Parameter
@@ -212,7 +213,10 @@ decl_module! {
             let fee = T::MembershipFee::get();
 
             // ensure enough free balance to cover terms fees
-            ensure!(T::Currency::can_slash(&who, fee), "not enough balance to buy membership");
+            ensure!(
+                balances::Module::<T>::usable_balance(&who) >= fee,
+                "not enough balance to buy membership"
+            );
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
@@ -225,7 +229,7 @@ decl_module! {
                 <pallet_timestamp::Module<T>>::now()
             )?;
 
-            let _ = T::Currency::slash(&who, fee);
+            let _ = balances::Module::<T>::slash(&who, fee);
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }

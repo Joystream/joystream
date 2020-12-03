@@ -80,7 +80,7 @@ impl<
     }
 
     fn unlock(account_id: &T::AccountId) {
-        T::Currency::remove_lock(LockId::get(), &account_id);
+        <pallet_balances::Module<T>>::remove_lock(LockId::get(), &account_id);
     }
 
     fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T> {
