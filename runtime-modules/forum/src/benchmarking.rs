@@ -19,6 +19,7 @@ benchmarks! {
         let mut category_id: Option<T::CategoryId> = None;
         let mut parent_category_id = None;
 
+        // Generate categories tree
         for n in 1..=i {
             if n > 1 {
                 category_id = Some(((n - 1) as u64).into());
@@ -61,6 +62,45 @@ benchmarks! {
             }
 
     }
+    update_category_membership_of_moderator{
+        let i in 0 .. 1;
+
+        let new_value_flag = if i == 0 {
+            true
+        } else {
+            false
+        };
+
+        let new_value_flags = [true, false];
+        let text = vec![0u8];
+
+        // Create category
+        Module::<T>::create_category(
+            RawOrigin::Signed(T::AccountId::default()).into(), None, text.clone(), text.clone()
+        );
+
+        let category_id = Module::<T>::next_category_id() - T::CategoryId::one();
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ModeratorId::one(), category_id, new_value_flag)
+    verify {
+        let num_direct_moderators = if new_value_flag {
+            1
+        } else {
+            0
+        };
+
+        let new_category = Category {
+            title_hash: T::calculate_hash(text.as_slice()),
+            description_hash: T::calculate_hash(text.as_slice()),
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators,
+            parent_category_id: None,
+            sticky_thread_ids: vec![],
+        };
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+    }
 }
 
 #[cfg(test)]
@@ -72,6 +112,15 @@ mod tests {
     fn test_create_category() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_create_category::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_category_membership_of_moderator() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_membership_of_moderator::<
+                Runtime,
+            >());
         });
     }
 }
