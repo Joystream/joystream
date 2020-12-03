@@ -115,7 +115,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     let members_config_builder = membership::genesis::GenesisConfigBuilder::<Test>::default()
-        .default_paid_membership_fee(0)
         .members(vec![
             // member_id, account_id
             (0, 1),

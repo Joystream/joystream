@@ -73,11 +73,7 @@ fn buy_membership() {
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
@@ -110,11 +106,7 @@ fn buy_membership() {
 #[test]
 fn buy_membership_fails_without_enough_balance() {
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() - 1;
@@ -130,11 +122,7 @@ fn buy_membership_fails_without_enough_balance() {
 #[test]
 fn buy_membership_fails_without_enough_balance_with_locked_balance() {
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get();
@@ -152,11 +140,7 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
 #[test]
 fn new_memberships_allowed_flag() {
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() + 1;
@@ -176,11 +160,7 @@ fn unique_handles() {
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
@@ -202,11 +182,7 @@ fn update_profile() {
     const SURPLUS_BALANCE: u64 = 500;
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
-                .default_paid_membership_fee(MembershipFee::get())
-                .build(),
-        )
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
         .build()
         .execute_with(|| {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
