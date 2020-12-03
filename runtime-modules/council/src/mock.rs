@@ -4,7 +4,8 @@
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
     CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
+    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, ReferendumConnection,
+    Stage, Trait,
 };
 
 use balances;
@@ -14,8 +15,8 @@ use frame_support::{
 };
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing,
+    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
+    ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -212,20 +213,15 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
         stake
     }
 
-    fn can_release_vote_stake(
+    fn can_unlock_vote_stake(
         vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
-        current_voting_cycle_id: &u64,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake(
-            vote,
-            current_voting_cycle_id,
-        )
-        .is_ok()
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
@@ -442,6 +438,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         council_members: vec![],
         candidates: vec![],
         announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
     }
 }
 
@@ -520,10 +519,16 @@ where
         }
     }
 
-    pub fn generate_voter(index: u64, stake: Balance<T>, vote_for_index: u64) -> VoterInfo<T> {
+    pub fn generate_voter(
+        index: u64,
+        stake: Balance<T>,
+        vote_for_index: u64,
+        cycle_id: u64,
+    ) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
+        let (commitment, salt) =
+            Self::vote_commitment(&account_id.into(), &vote_for_index.into(), &cycle_id);
 
         Self::topup_account(account_id.into(), stake);
 
@@ -546,8 +551,8 @@ where
     pub fn vote_commitment(
         account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
+        cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycleId::<ReferendumInstance>::get();
         let salt = Self::generate_salt();
 
         (
@@ -649,6 +654,7 @@ where
                         vote_power: item.vote_power.into(),
                     })
                     .collect(),
+                current_cycle_id: AnnouncementPeriodNr::get(),
             }),
         );
 
@@ -678,6 +684,11 @@ where
         };
 
         assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
+    }
+
+    pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
+        assert_eq!(Budget::<T>::get(), expected_balance,);
+        assert_eq!(NextBudgetRefill::<T>::get(), expected_next_refill,);
     }
 
     pub fn set_candidacy_note(
@@ -789,6 +800,28 @@ where
         }
 
         assert_eq!(Budget::<T>::get(), amount,);
+    }
+
+    pub fn plan_budget_refill(
+        origin: OriginType<T::AccountId>,
+        next_refill: T::BlockNumber,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::plan_budget_refill(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                next_refill,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
     }
 
     /// simulate one council's election cycle
@@ -965,6 +998,7 @@ where
                     index as u64 + users_offset,
                     vote_stake.into(),
                     CANDIDATE_BASE_ID + votes_map[index] + users_offset,
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
