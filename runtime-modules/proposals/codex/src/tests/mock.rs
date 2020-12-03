@@ -222,6 +222,7 @@ parameter_types! {
     pub const LockId2: [u8; 8] = [2; 8];
 }
 
+pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -229,6 +230,79 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::WeightInfo for WorkingGroupWeightInfo {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake() -> Weight {
+        0
+    }
+    fn terminate_role_worker() -> Weight {
+        0
+    }
+    fn terminate_role_lead() -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role_immediatly() -> Weight {
+        0
+    }
+    fn leave_role_later() -> Weight {
+        0
+    }
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
@@ -238,6 +312,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
 }
 
 impl recurring_rewards::Trait for Test {

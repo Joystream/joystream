@@ -634,6 +634,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -643,6 +644,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -652,6 +654,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl service_discovery::Trait for Runtime {
