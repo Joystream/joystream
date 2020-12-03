@@ -7,6 +7,7 @@ import { ClassEntity } from '../../generated/graphql-server/src/modules/class-en
 import { decode } from './decode'
 import {
   ClassEntityMap,
+  IBatchOperation,
   ICategory,
   IChannel,
   ICreateEntityOperation,
@@ -88,19 +89,10 @@ export async function contentDirectory_TransactionFailed(db: DB, event: Substrat
   const failedOperationIndex = event.params[1].value as number
   const operations = decode.getOperations(event)
 
-  if (operations.length === 0 || operations.length === 1) return
+  const successfulOperations = operations.toArray().slice(2, failedOperationIndex)
+  if (!successfulOperations.length) return // No succesfull operations
 
-  const successfulOperations = operations.filter((op, index) => index < failedOperationIndex)
-
-  const {
-    addSchemaSupportToEntityOperations,
-    createEntityOperations,
-    updatePropertyValuesOperations,
-  } = decode.getOperationsByTypes(successfulOperations)
-
-  await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
-  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
-  await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
+  await applyOperations(decode.getOperationsByTypes(successfulOperations), db, event)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -109,12 +101,11 @@ export async function contentDirectory_TransactionCompleted(db: DB, event: Subst
 
   const operations = decode.getOperations(event)
 
-  const {
-    addSchemaSupportToEntityOperations,
-    createEntityOperations,
-    updatePropertyValuesOperations,
-  } = decode.getOperationsByTypes(operations)
+  await applyOperations(decode.getOperationsByTypes(operations), db, event)
+}
 
+async function applyOperations(operations: IBatchOperation, db: DB, event: SubstrateEvent) {
+  const { addSchemaSupportToEntityOperations, createEntityOperations, updatePropertyValuesOperations } = operations
   // Create entities before adding schema support
   // We need this to know which entity belongs to which class(we will need to know to update/create
   // Channel, Video etc.). For example if there is a property update operation there is no class id
