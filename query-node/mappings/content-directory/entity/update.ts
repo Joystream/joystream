@@ -80,7 +80,6 @@ async function updateLicenseEntityPropertyValues(
     if (!kLicense) throw Error(`KnownLicense not found ${id}`)
 
     const k = new KnownLicense()
-    k.isTypeOf = 'KnownLicense'
     k.code = kLicense.code
     k.description = kLicense.description
     k.name = kLicense.name
@@ -94,7 +93,6 @@ async function updateLicenseEntityPropertyValues(
     if (!udl) throw Error(`UserDefinedLicense not found ${id}`)
 
     const u = new UserDefinedLicense()
-    u.isTypeOf = 'UserDefinedLicense'
     u.content = udl.content
     // Set the license type
     record.type = u
@@ -160,13 +158,11 @@ async function updateVideoMediaEntityPropertyValues(
 
     if (httpMediaLocation) {
       mediaLoc = new HttpMediaLocation()
-      mediaLoc.isTypeOf = typeof HttpMediaLocation
       mediaLoc.url = httpMediaLocation.url
       mediaLoc.port = httpMediaLocation.port
     }
     if (joystreamMediaLocation) {
       mediaLoc = new JoystreamMediaLocation()
-      mediaLoc.isTypeOf = typeof JoystreamMediaLocation
       mediaLoc.dataObjectId = joystreamMediaLocation.dataObjectId
     }
     props.location = undefined

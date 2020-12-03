@@ -205,14 +205,12 @@ async function createVideoMedia(
     const { httpMediaLocation, joystreamMediaLocation } = m
     if (httpMediaLocation) {
       const mediaLoc = new HttpMediaLocation()
-      mediaLoc.isTypeOf = 'HttpMediaLocation'
       mediaLoc.port = httpMediaLocation.port
       mediaLoc.url = httpMediaLocation.url
       videoMedia.location = mediaLoc
     }
     if (joystreamMediaLocation) {
       const mediaLoc = new JoystreamMediaLocation()
-      mediaLoc.isTypeOf = 'JoystreamMediaLocation'
       mediaLoc.dataObjectId = joystreamMediaLocation.dataObjectId
       videoMedia.location = mediaLoc
     }
@@ -331,7 +329,7 @@ async function createLicense(
       nextEntityIdBeforeTransaction
     )
     const k = new KnownLicense()
-    k.isTypeOf = 'KnownLicense'
+    // k.isTypeOf = 'KnownLicense'
     k.code = kLicense.code
     k.description = kLicense.description
     k.name = kLicense.name
