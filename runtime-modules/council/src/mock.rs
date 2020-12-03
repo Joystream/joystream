@@ -15,8 +15,8 @@ use frame_support::{
 };
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing,
+    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
+    ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -213,15 +213,15 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
         stake
     }
 
-    fn can_release_voting_stake(
-        _vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
+    fn can_unlock_vote_stake(
+        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake().is_ok()
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
@@ -519,10 +519,16 @@ where
         }
     }
 
-    pub fn generate_voter(index: u64, stake: Balance<T>, vote_for_index: u64) -> VoterInfo<T> {
+    pub fn generate_voter(
+        index: u64,
+        stake: Balance<T>,
+        vote_for_index: u64,
+        cycle_id: u64,
+    ) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
+        let (commitment, salt) =
+            Self::vote_commitment(&account_id.into(), &vote_for_index.into(), &cycle_id);
 
         Self::topup_account(account_id.into(), stake);
 
@@ -545,8 +551,8 @@ where
     pub fn vote_commitment(
         account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
+        cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycleId::<ReferendumInstance>::get();
         let salt = Self::generate_salt();
 
         (
@@ -648,6 +654,7 @@ where
                         vote_power: item.vote_power.into(),
                     })
                     .collect(),
+                current_cycle_id: AnnouncementPeriodNr::get(),
             }),
         );
 
@@ -757,6 +764,20 @@ where
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
                 salt,
                 vote_option,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+    }
+
+    pub fn release_vote_stake(
+        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        expected_result: Result<(), ()>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            referendum::Module::<RuntimeReferendum, ReferendumInstance>::release_vote_stake(
+                InstanceMockUtils::<Runtime>::mock_origin(origin),
             )
             .is_ok(),
             expected_result.is_ok(),
@@ -977,6 +998,7 @@ where
                     index as u64 + users_offset,
                     vote_stake.into(),
                     CANDIDATE_BASE_ID + votes_map[index] + users_offset,
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();

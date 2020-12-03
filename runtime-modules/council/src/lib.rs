@@ -36,7 +36,7 @@
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
 //! - [recieve_referendum_results](./trait.ReferendumConnection.html#method.recieve_referendum_results)
-//! - [can_release_vote_stake](./trait.ReferendumConnection.html#method.can_release_vote_stake)
+//! - [can_unlock_vote_stake](./trait.ReferendumConnection.html#method.can_unlock_vote_stake)
 //!
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
@@ -61,7 +61,7 @@ use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Satu
 use std::marker::PhantomData;
 use system::{ensure_root, ensure_signed};
 
-use referendum::{OptionResult, ReferendumManager};
+use referendum::{CastVote, OptionResult, ReferendumManager};
 
 // declared modules
 mod mock;
@@ -174,6 +174,7 @@ pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::AccountId,
     <T as system::Trait>::Hash,
 >>::VotePower;
+pub type CastVoteOf<T> = CastVote<<T as system::Trait>::Hash, Balance<T>>;
 
 pub type CouncilMemberOf<T> = CouncilMember<
     <T as system::Trait>::AccountId,
@@ -201,7 +202,8 @@ pub trait Trait: system::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + From<u64>;
+        + From<u64>
+        + Into<u64>;
 
     /// Referendum used for council elections.
     type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::Hash>;
@@ -247,7 +249,7 @@ pub trait ReferendumConnection<T: Trait> {
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
-    fn can_release_vote_stake() -> Result<(), Error<T>>;
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>>;
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
@@ -677,18 +679,10 @@ impl<T: Trait> Module<T> {
                 let unpaid_reward =
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
-                if unpaid_reward == 0.into() {
-                    Self::deposit_event(RawEvent::RewardPayment(
-                        council_member.membership_id,
-                        council_member.reward_account_id.clone(),
-                        0.into(),
-                        0.into(),
-                    ));
-                    return balance;
-                }
+                // depleted budget or no accumulated reward to be paid?
+                if balance == 0.into() || unpaid_reward == 0.into() {
+                    // no need to update council member record here; their unpaid reward will be recalculated next time rewards are paid
 
-                // stop iterating if budget is completely depleted
-                if balance == 0.into() {
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
@@ -759,12 +753,42 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     /// Check that it is a proper time to release stake.
-    fn can_release_vote_stake() -> Result<(), Error<T>> {
-        // ensure it's proper time to release stake
-        match Stage::<T>::get().stage {
-            CouncilStage::Idle => (),
-            _ => return Err(Error::CantReleaseStakeNow),
-        };
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
+        let current_voting_cycle_id = AnnouncementPeriodNr::get();
+
+        // allow release for very old votes
+        if current_voting_cycle_id > vote.cycle_id + 1 {
+            return Ok(());
+        }
+
+        // allow release for current cycle only in idle stage
+        if current_voting_cycle_id == vote.cycle_id
+            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
+        {
+            return Err(Error::CantReleaseStakeNow);
+        }
+
+        let voting_for_winner = CouncilMembers::<T>::get()
+            .iter()
+            .map(|council_member| council_member.membership_id)
+            .any(|membership_id| vote.vote_for == Some(membership_id.into()));
+
+        // allow release for vote from previous elections only when not voted for winner
+        if current_voting_cycle_id == vote.cycle_id + 1 {
+            // ensure vote was not cast for the one of winning candidates / council members
+            if voting_for_winner {
+                return Err(Error::CantReleaseStakeNow);
+            }
+
+            return Ok(());
+        }
+
+        // at this point vote.cycle_id == current_voting_cycle_id
+
+        // ensure election has ended and voter haven't voted for winner
+        if voting_for_winner || !matches!(Stage::<T>::get().stage, CouncilStage::Idle) {
+            return Err(Error::CantReleaseStakeNow);
+        }
 
         Ok(())
     }
@@ -853,7 +877,7 @@ impl<T: Trait> Mutations<T> {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
-        T::Referendum::force_start(extra_winning_target_count);
+        T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
         let block_number = <system::Module<T>>::block_number();
 
