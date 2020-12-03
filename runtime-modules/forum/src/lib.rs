@@ -372,6 +372,7 @@ decl_event!(
     pub enum Event<T>
     where
         <T as Trait>::CategoryId,
+        <T as Trait>::ModeratorId,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
@@ -424,6 +425,9 @@ decl_event!(
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
+
+        /// An moderator ability to moderate a category and its subcategories updated
+        CategoryMembershipOfModeratorUpdated(ModeratorId, CategoryId, bool),
     }
 );
 
@@ -459,6 +463,9 @@ decl_module! {
 
                 <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators -= 1);
             }
+
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryMembershipOfModeratorUpdated(moderator_id, category_id, new_value));
 
             Ok(())
         }
