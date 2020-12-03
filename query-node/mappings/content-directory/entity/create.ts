@@ -329,7 +329,6 @@ async function createLicense(
       nextEntityIdBeforeTransaction
     )
     const k = new KnownLicense()
-    // k.isTypeOf = 'KnownLicense'
     k.code = kLicense.code
     k.description = kLicense.description
     k.name = kLicense.name
@@ -345,7 +344,6 @@ async function createLicense(
       nextEntityIdBeforeTransaction
     )
     const u = new UserDefinedLicense()
-    u.isTypeOf = 'UserDefinedLicense'
     u.content = content
     // Set the license type
     license.type = u
