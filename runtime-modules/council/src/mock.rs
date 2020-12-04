@@ -4,8 +4,8 @@
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
     CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, ReferendumConnection,
-    Stage, Trait,
+    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
+    ReferendumConnection, Stage, Trait,
 };
 
 use balances;
@@ -669,6 +669,13 @@ where
         if expected_result.is_err() {
             return;
         }
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::CandidacyNoteSet(
+                membership_id.into().into(),
+                note.into()
+            )),
+        );
 
         Self::check_candidacy_note(&membership_id, Some(note));
     }
@@ -689,6 +696,18 @@ where
                 stake
             ),
             expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::NewCandidate(
+                member_id.into().into(),
+                stake.into()
+            )),
         );
     }
 
@@ -759,6 +778,11 @@ where
         }
 
         assert_eq!(Budget::<T>::get(), amount,);
+
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::BudgetBalanceSet(amount.into())),
+        );
     }
 
     pub fn plan_budget_refill(
@@ -781,6 +805,11 @@ where
         }
 
         assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
+
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+        );
     }
 
     /// simulate one council's election cycle
