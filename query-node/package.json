@@ -6,7 +6,7 @@
 		"build": "./build.sh",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"clean": "rm -rf ./generated",
-		"processor:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:processor --env ../../../.env)",
+		"processor:start": "./processor-start.sh",
 		"indexer:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:indexer --env ../../../.env)",
 		"server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
 		"server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
