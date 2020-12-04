@@ -620,10 +620,18 @@ parameter_types! {
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
 }
 
+// Staking managers type aliases.
+pub type ForumWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ForumGroupLockId>;
+pub type ContentDirectoryWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
+pub type StorageWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
+
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type StakingHandler = ForumWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
@@ -632,7 +640,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
+    type StakingHandler = StorageWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
@@ -641,7 +649,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
+    type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
