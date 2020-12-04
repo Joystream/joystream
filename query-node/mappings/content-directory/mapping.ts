@@ -4,4 +4,4 @@ export {
   contentDirectory_EntityCreated,
   contentDirectory_EntityPropertyValuesUpdated,
 } from './entity'
-export { contentDirectory_TransactionCompleted } from './transaction'
+export { contentDirectory_TransactionCompleted, contentDirectory_TransactionFailed } from './transaction'
