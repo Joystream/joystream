@@ -12,6 +12,12 @@
       "description": "Reference to user-defined license",
       "required": false,
       "property_type": { "Single": { "Reference": { "className": "UserDefinedLicense", "sameOwner": true } } }
+    },
+    {
+      "name": "attribution",
+      "description": "Attribution (if required by the license)",
+      "required": false,
+      "property_type": { "Single": { "Text": 512 } }
     }
   ]
 }
