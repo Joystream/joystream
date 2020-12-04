@@ -115,6 +115,7 @@ export interface IVideo {
 export interface ILicense {
   knownLicense?: IReference
   userDefinedLicense?: IReference
+  attribution?: string
 }
 
 export interface IMediaLocation {
