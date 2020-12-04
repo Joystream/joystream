@@ -77,7 +77,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     type Balances = pallet_balances::Module<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+        let _ = Balances::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
@@ -305,17 +305,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_proposer(member_id);
 
         let account_balance = 500000;
-        let _imbalance =
-            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+        let _imbalance = Balances::deposit_creating(&account_id, account_balance);
 
-        assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
-            account_balance
-        );
+        assert_eq!(Balances::usable_balance(&account_id), account_balance);
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
+            Balances::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -341,7 +337,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         let cancellation_fee = ProposalCancellationFee::get() as u128;
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
+            Balances::usable_balance(&account_id),
             account_balance - cancellation_fee
         );
     });

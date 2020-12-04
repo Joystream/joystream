@@ -2364,7 +2364,6 @@ dependencies = [
  "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
- "pallet-stake",
  "pallet-staking",
  "pallet-staking-reward-curve",
  "pallet-storage",
