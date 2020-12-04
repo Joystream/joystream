@@ -161,7 +161,7 @@ impl crate::WeightInfo for () {
     fn terminate_role_worker(_: u32) -> Weight {
         0
     }
-    fn terminate_role_lead() -> Weight {
+    fn terminate_role_lead(_: u32) -> Weight {
         0
     }
     fn increase_stake() -> Weight {

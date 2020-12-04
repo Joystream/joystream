@@ -76,7 +76,7 @@ pub trait WeightInfo {
     fn withdraw_application() -> Weight;
     fn slash_stake(i: u32) -> Weight;
     fn terminate_role_worker(i: u32) -> Weight;
-    fn terminate_role_lead() -> Weight; // Parameter not used so it's discarded
+    fn terminate_role_lead(i: u32) -> Weight;
     fn increase_stake() -> Weight;
     fn decrease_stake() -> Weight;
     fn spend_from_budget() -> Weight;
@@ -571,7 +571,10 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::terminate_role_lead()
+        #[weight = WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
+                    penalty.as_ref().map(|penalty| penalty.slashing_text.len().saturated_into())
+                    .unwrap_or_else(|| 0)
+                )
                 .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
                         penalty.as_ref().map(|penalty| penalty.slashing_text.len().saturated_into())
                             .unwrap_or_else(|| 0)
