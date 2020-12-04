@@ -112,6 +112,8 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(T::ModeratorId::one(), category_id, new_value_flag).into());
+
     }
 }
 
