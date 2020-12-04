@@ -66,7 +66,7 @@ parameter_types! {
 impl Trait for Runtime {
     type Event = TestEvent;
 
-    type Referendum = referendum::Module<RuntimeReferendum, ReferendumInstance>;
+    type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
     type MembershipId = <Lock1 as membership::Trait>::MemberId;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
@@ -111,6 +111,8 @@ impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
         system<T>,
+        referendum_mod Instance0 <T>,
+        balances_mod<T>,
     }
 }
 
@@ -156,8 +158,8 @@ thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
-        <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<Runtime as system::Trait>::Origin, <Runtime as system::Trait>::AccountId, <Runtime as system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
+        <<Runtime as Trait>::Referendum as ReferendumManager<<Runtime as system::Trait>::Origin, <Runtime as system::Trait>::AccountId, <Runtime as system::Trait>::Hash>>::VotePower>::new());
 }
 
 parameter_types! {
@@ -172,19 +174,8 @@ mod balances_mod {
     pub use balances::Event;
 }
 
-impl_outer_event! {
-    pub enum TestReferendumEvent for RuntimeReferendum {
-        referendum_mod Instance0 <T>,
-        balances_mod<T>,
-        system<T>,
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct RuntimeReferendum;
-
-impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
-    type Event = TestReferendumEvent;
+impl referendum::Trait<ReferendumInstance> for Runtime {
+    type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -263,36 +254,9 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     }
 }
 
-impl system::Trait for RuntimeReferendum {
-    type BaseCallFilter = ();
-    type Origin = Origin;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Call = ();
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type AccountId = u64;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = TestReferendumEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
-    type Version = ();
-    type ModuleToIndex = ();
-    type AccountData = balances::AccountData<u64>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-}
-
-impl balances::Trait for RuntimeReferendum {
+impl balances::Trait for Runtime {
     type Balance = u64;
-    type Event = TestReferendumEvent;
+    type Event = TestEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = system::Module<Self>;
@@ -361,13 +325,10 @@ where
         let council_size = T::CouncilSize::get();
 
         let reveal_stage_duration =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(
-            )
-            .into();
+            <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into();
         let announcing_stage_duration = <T as Trait>::AnnouncingPeriodDuration::get();
         let voting_stage_duration =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get()
-                .into();
+            <Runtime as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into();
         let idle_stage_duration = <T as Trait>::IdlePeriodDuration::get();
 
         CouncilSettings {
@@ -485,8 +446,8 @@ where
             let tmp_index: T::BlockNumber = block_number + i.into();
 
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
-            <referendum::Module<RuntimeReferendum, ReferendumInstance> as OnFinalize<
-                <RuntimeReferendum as system::Trait>::BlockNumber,
+            <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
+                <Runtime as system::Trait>::BlockNumber,
             >>::on_finalize(tmp_index.into());
 
             system::Module::<T>::set_block_number(tmp_index + 1.into());
@@ -495,7 +456,7 @@ where
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: Balance<T>) {
-        let _ = balances::Module::<RuntimeReferendum>::deposit_creating(&account_id, amount.into());
+        let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(index: u64, stake: Balance<T>) -> CandidateInfo<T> {
@@ -575,10 +536,8 @@ where
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 
-    T::Hash: From<<RuntimeReferendum as system::Trait>::Hash>
-        + Into<<RuntimeReferendum as system::Trait>::Hash>,
-    T::Origin: From<<RuntimeReferendum as system::Trait>::Origin>
-        + Into<<RuntimeReferendum as system::Trait>::Origin>,
+    T::Hash: From<<Runtime as system::Trait>::Hash> + Into<<Runtime as system::Trait>::Hash>,
+    T::Origin: From<<Runtime as system::Trait>::Origin> + Into<<Runtime as system::Trait>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MembershipId: Into<T::AccountId>,
@@ -643,7 +602,7 @@ where
     ) {
         // check stage is in proper state
         assert_eq!(
-            referendum::Stage::<RuntimeReferendum, ReferendumInstance>::get(),
+            referendum::Stage::<Runtime, ReferendumInstance>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 winning_target_count,
                 started: expected_update_block_number.into(),
@@ -741,7 +700,7 @@ where
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            referendum::Module::<RuntimeReferendum, ReferendumInstance>::vote(
+            referendum::Module::<Runtime, ReferendumInstance>::vote(
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
                 commitment.into(),
                 stake.into(),
@@ -760,7 +719,7 @@ where
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            referendum::Module::<RuntimeReferendum, ReferendumInstance>::reveal_vote(
+            referendum::Module::<Runtime, ReferendumInstance>::reveal_vote(
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
                 salt,
                 vote_option,
@@ -776,7 +735,7 @@ where
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            referendum::Module::<RuntimeReferendum, ReferendumInstance>::release_vote_stake(
+            referendum::Module::<Runtime, ReferendumInstance>::release_vote_stake(
                 InstanceMockUtils::<Runtime>::mock_origin(origin),
             )
             .is_ok(),
@@ -946,8 +905,7 @@ where
         users_offset: u64,
     ) -> CouncilCycleParams<T> {
         let council_settings = CouncilSettings::<T>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<T>> = (0..(council_settings.min_candidate_count + 1)
