@@ -145,11 +145,6 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Begin review working group applications' proposal parameters.
-    type BeginReviewWorkingGroupApplicationsProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
     /// 'Fill working group opening' proposal parameters.
     type FillWorkingGroupOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
@@ -297,10 +292,6 @@ decl_module! {
         /// Exports 'Add working group opening' proposal parameters.
         const AddWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::AddWorkingGroupOpeningProposalParameters::get();
-
-        /// Exports 'Begin review working group applications' proposal parameters.
-        const BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::BeginReviewWorkingGroupApplicationsProposalParameters::get();
 
         /// Exports 'Fill working group opening' proposal parameters.
         const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
