@@ -208,6 +208,54 @@ fn council_candidacy_invalid_member() {
     });
 }
 
+// Test that candidate can withdraw valid candidacy.
+#[test]
+fn council_candidacy_withdraw_candidacy() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        let stake = council_settings.min_candidate_stake;
+        let candidate = MockUtils::generate_candidate(0, stake);
+
+        Mocks::announce_candidacy(
+            candidate.origin.clone(),
+            candidate.account_id.clone(),
+            candidate.candidate.stake.clone(),
+            Ok(()),
+        );
+
+        Mocks::withdraw_candidacy(
+            candidate.origin.clone(),
+            candidate.account_id.clone(),
+            Ok(()),
+        );
+    });
+}
+
+// Test that candidate can withdraw valid candidacy.
+#[test]
+fn council_candidacy_release_candidate_stake() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let not_elected_candidate_index = 2;
+
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
+
+        Mocks::release_candidacy_stake(
+            params.candidates_announcing[not_elected_candidate_index]
+                .origin
+                .clone(),
+            params.candidates_announcing[not_elected_candidate_index]
+                .account_id
+                .clone(),
+            Ok(()),
+        );
+    });
+}
+
 // Test that only valid members can candidate.
 #[test]
 fn council_announcement_reset_on_insufficient_candidates() {

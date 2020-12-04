@@ -711,6 +711,51 @@ where
         );
     }
 
+    pub fn withdraw_candidacy(
+        origin: OriginType<T::AccountId>,
+        member_id: T::MembershipId,
+        expected_result: Result<(), Error<T>>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::withdraw_candidacy(InstanceMockUtils::<T>::mock_origin(origin), member_id,),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::CandidacyWithdraw(member_id.into().into(),)),
+        );
+    }
+
+    pub fn release_candidacy_stake(
+        origin: OriginType<T::AccountId>,
+        member_id: T::MembershipId,
+        expected_result: Result<(), Error<T>>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::release_candidacy_stake(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                member_id,
+            ),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::CandidacyStakeRelease(member_id.into().into(),)),
+        );
+    }
+
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
