@@ -53,15 +53,7 @@ mod tests {
     use frame_system::RawOrigin;
     use sp_runtime::AccountId32;
 
-    type Membership = membership::Module<Runtime>;
-
-    fn initial_test_ext() -> sp_io::TestExternalities {
-        let t = frame_system::GenesisConfig::default()
-            .build_storage::<Runtime>()
-            .unwrap();
-
-        t.into()
-    }
+    use crate::tests::{initial_test_ext, insert_member};
 
     #[test]
     fn membership_origin_validator_fails_with_unregistered_member() {
@@ -82,21 +74,7 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id.clone(),
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id.clone());
             let member_id = 0; // newly created member_id
 
             let validation_result =
@@ -112,21 +90,8 @@ mod tests {
             let account_id = AccountId32::default();
             let error =
                 "Membership validation failed: given account doesn't match with profile accounts";
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
 
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id,
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id.clone());
             let member_id = 0; // newly created member_id
 
             let invalid_account_id: [u8; 32] = [2; 32];

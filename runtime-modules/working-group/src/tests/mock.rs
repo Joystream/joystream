@@ -38,6 +38,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 0;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -96,14 +97,13 @@ impl balances::Trait for Test {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
-pub type Membership = membership::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
+pub type Membership = membership::Module<Test>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;

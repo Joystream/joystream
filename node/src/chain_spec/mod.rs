@@ -281,10 +281,7 @@ pub fn testnet_genesis(
                 min_voting_stake: 100,
             },
         }),
-        membership: Some(MembersConfig {
-            default_paid_membership_fee: 100u128,
-            members,
-        }),
+        membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
