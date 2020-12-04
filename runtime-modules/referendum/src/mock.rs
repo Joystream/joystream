@@ -2,9 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CastVote, CurrentCycleId, Error, Instance, Module, OptionResult, RawEvent,
-    ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
-    Trait, Votes,
+    Balance, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
+    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
 };
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
@@ -91,10 +90,7 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_release_vote_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, Instance0>>,
-        _current_voting_cycle_id: &u64,
-    ) -> bool {
+    fn can_unlock_vote_stake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -241,7 +237,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
     GenesisConfig::<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
-        current_cycle_id: 0,
     }
 }
 
@@ -322,8 +317,8 @@ where
     pub fn calculate_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
         vote_option_index: &u64,
+        cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycleId::<I>::get();
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
     }
 
@@ -331,8 +326,8 @@ where
         account_id: &<T as frame_system::Trait>::AccountId,
         vote_option_index: &u64,
         custom_salt: &[u8],
+        cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycleId::<I>::get();
         Self::calculate_commitment_for_cycle(
             account_id,
             &cycle_id,
@@ -390,6 +385,7 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         winning_target_count: u64,
+        cycle_id: u64,
         expected_result: Result<(), ()>,
     ) -> () {
         let extra_winning_target_count = winning_target_count - 1;
@@ -399,15 +395,17 @@ impl InstanceMocks<Runtime, Instance0> {
             Module::<Runtime, Instance0>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
                 extra_winning_target_count,
+                cycle_id,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(extra_winning_target_count, expected_result)
+        Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
     }
 
     pub fn start_referendum_manager(
         winning_target_count: u64,
+        cycle_id: u64,
         expected_result: Result<(), ()>,
     ) -> () {
         let extra_winning_target_count = winning_target_count - 1;
@@ -421,15 +419,20 @@ impl InstanceMocks<Runtime, Instance0> {
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
+                cycle_id,
             )
             .is_ok(),
             expected_result.is_ok(),
         );
 
-        Self::start_referendum_inner(extra_winning_target_count, expected_result)
+        Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
     }
 
-    fn start_referendum_inner(extra_winning_target_count: u64, expected_result: Result<(), ()>) {
+    fn start_referendum_inner(
+        extra_winning_target_count: u64,
+        cycle_id: u64,
+        expected_result: Result<(), ()>,
+    ) {
         if expected_result.is_err() {
             return;
         }
@@ -442,6 +445,7 @@ impl InstanceMocks<Runtime, Instance0> {
             ReferendumStage::Voting(ReferendumStageVoting {
                 started: block_number + 1, // actual voting starts in the next block (thats why +1)
                 winning_target_count,
+                current_cycle_id: cycle_id,
             }),
         );
 
@@ -456,7 +460,7 @@ impl InstanceMocks<Runtime, Instance0> {
         );
     }
 
-    pub fn check_voting_finished(winning_target_count: u64) {
+    pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
         let block_number = frame_system::Module::<Runtime>::block_number();
 
         assert_eq!(
@@ -465,6 +469,7 @@ impl InstanceMocks<Runtime, Instance0> {
                 started: block_number,
                 winning_target_count,
                 intermediate_winners: vec![],
+                current_cycle_id: cycle_id,
             }),
         );
 
@@ -504,6 +509,7 @@ impl InstanceMocks<Runtime, Instance0> {
         account_id: <Runtime as frame_system::Trait>::AccountId,
         commitment: <Runtime as frame_system::Trait>::Hash,
         stake: Balance<Runtime, Instance0>,
+        cycle_id: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
@@ -524,7 +530,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Votes::<Runtime, Instance0>::get(account_id),
             CastVote {
                 commitment,
-                cycle_id: CurrentCycleId::<Instance0>::get(),
+                cycle_id: cycle_id.clone(),
                 stake,
                 vote_for: None,
             },

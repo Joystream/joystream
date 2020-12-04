@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use super::{
-    Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error, Module, Trait,
+    AnnouncementPeriodNr, Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error,
+    Module, Trait,
 };
 use crate::mock::*;
 use crate::staking_handler::mocks::{CANDIDATE_BASE_ID, VOTER_CANDIDATE_OFFSET};
@@ -133,6 +134,7 @@ fn council_can_vote_for_yourself() {
             VOTER_CANDIDATE_OFFSET,
             vote_stake,
             self_voting_candidate_index,
+            AnnouncementPeriodNr::get(),
         );
         Mocks::vote_for_candidate(
             voter.origin.clone(),
@@ -162,7 +164,7 @@ fn council_vote_for_winner_stakes_longer() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         // run first election round
-        let params = Mocks::run_full_council_cycle(0, &vec![], 0);
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
         let second_round_user_offset = 100; // some number higher than the number of voters
 
         let voter_for_winner = params.voters[0].clone();
@@ -283,6 +285,7 @@ fn council_announcement_reset_on_not_enough_winners() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -374,6 +377,7 @@ fn council_two_consecutive_rounds() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -399,6 +403,7 @@ fn council_two_consecutive_rounds() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map2[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -563,6 +568,7 @@ fn council_candidate_stake_can_be_unlocked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -669,6 +675,7 @@ fn council_candidate_stake_automaticly_converted() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -759,6 +766,7 @@ fn council_member_stake_is_locked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -816,6 +824,7 @@ fn council_member_stake_automaticly_unlocked() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map2[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -897,6 +906,7 @@ fn council_candidacy_set_note() {
                     index as u64,
                     vote_stake,
                     CANDIDATE_BASE_ID + votes_map[index],
+                    AnnouncementPeriodNr::get(),
                 )
             })
             .collect();
@@ -1030,6 +1040,34 @@ fn council_budget_can_be_set() {
         for balance in &balances {
             Mocks::set_budget(origin.clone(), *balance, Ok(()));
         }
+    })
+}
+
+/// Test that budget balance can be set from external source.
+#[test]
+fn council_budget_refill_can_be_planned() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let next_refill = 1000;
+
+        Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - 1);
+
+        // check no refill happened yet
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased
+        Mocks::check_budget_refill(
+            <Runtime as Trait>::BudgetRefillAmount::get(),
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
     })
 }
 

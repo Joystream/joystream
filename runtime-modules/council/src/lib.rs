@@ -31,11 +31,12 @@
 //! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
 //! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
 //! - [set_budget](./struct.Module.html#method.set_budget)
+//! - [plan_budget_refill](./struct.Module.html#method.plan_budget_refill)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
 //! - [recieve_referendum_results](./trait.ReferendumConnection.html#method.recieve_referendum_results)
-//! - [can_release_vote_stake](./trait.ReferendumConnection.html#method.can_release_vote_stake)
+//! - [can_unlock_vote_stake](./trait.ReferendumConnection.html#method.can_unlock_vote_stake)
 //!
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
@@ -248,10 +249,7 @@ pub trait ReferendumConnection<T: Trait> {
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
-    fn can_release_vote_stake(
-        vote: &CastVoteOf<T>,
-        current_voting_cycle_id: &u64,
-    ) -> Result<(), Error<T>>;
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>>;
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
@@ -272,13 +270,13 @@ decl_storage! {
         pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
 
         /// Budget for the council's elected members rewards.
-        pub Budget get(fn budget): Balance<T>;
+        pub Budget get(fn budget) config(): Balance<T>;
 
         /// The next block in which the elected council member rewards will be payed.
-        pub NextRewardPayments get(fn next_reward_payments): T::BlockNumber;
+        pub NextRewardPayments get(fn next_reward_payments) config(): T::BlockNumber;
 
         /// The next block in which the budget will be increased.
-        pub NextBudgetRefill get(fn next_budget_refill): T::BlockNumber;
+        pub NextBudgetRefill get(fn next_budget_refill) config(): T::BlockNumber;
     }
 }
 
@@ -286,6 +284,7 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance::<T>,
+        <T as system::Trait>::BlockNumber,
         <T as Trait>::MembershipId,
         <T as frame_system::Trait>::AccountId,
     {
@@ -321,6 +320,12 @@ decl_event! {
 
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
+
+        /// Budget balance was increased by automatic refill.
+        BudgetRefill(Balance),
+
+        /// The next budget refill was planned.
+        BudgetRefillPlanned(BlockNumber),
     }
 }
 
@@ -528,6 +533,25 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Plan the next budget refill.
+        #[weight = 10_000_000]
+        pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_plan_budget_refill(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::plan_budget_refill(&next_refill);
+
+            // emit event
+            Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
+
+            Ok(())
+        }
     }
 }
 
@@ -559,13 +583,8 @@ impl<T: Trait> Module<T> {
     /// Checkout elected council members reward payments.
     fn try_process_budget(now: T::BlockNumber) {
         // budget autorefill
-        let next_refill = NextBudgetRefill::<T>::get();
-        if next_refill == 0.into() {
-            // budget automatic refill initialization (this condition will be true only first time autorefill is planned)
-            Mutations::<T>::plan_budget_refill(now);
-        } else if next_refill == now {
-            // budget automatic refill
-            Mutations::<T>::refill_budget(now);
+        if now == NextBudgetRefill::<T>::get() {
+            Self::refill_budget(now);
         }
 
         // council members rewards
@@ -647,6 +666,26 @@ impl<T: Trait> Module<T> {
 
     /////////////////// Budget-related /////////////////////////////////////
 
+    /// Refill (increase) the budget's balance.
+    fn refill_budget(now: T::BlockNumber) {
+        // get refill amount
+        let refill_amount = T::BudgetRefillAmount::get();
+
+        // refill budget
+        Mutations::<T>::refill_budget(&refill_amount);
+
+        // calculate next refill block number
+        let refill_period = T::BudgetRefillPeriod::get();
+        let next_refill = now + refill_period;
+
+        // plan next budget refill
+        Mutations::<T>::plan_budget_refill(&next_refill);
+
+        // emit events
+        Self::deposit_event(RawEvent::BudgetRefill(refill_amount));
+        Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
+    }
+
     /// Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
         let reward_per_block = T::ElectedMemberRewardPerBlock::get();
@@ -660,18 +699,10 @@ impl<T: Trait> Module<T> {
                 let unpaid_reward =
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
-                if unpaid_reward == 0.into() {
-                    Self::deposit_event(RawEvent::RewardPayment(
-                        council_member.membership_id,
-                        council_member.reward_account_id.clone(),
-                        0.into(),
-                        0.into(),
-                    ));
-                    return balance;
-                }
+                // depleted budget or no accumulated reward to be paid?
+                if balance == 0.into() || unpaid_reward == 0.into() {
+                    // no need to update council member record here; their unpaid reward will be recalculated next time rewards are paid
 
-                // stop iterating if budget is completely depleted
-                if balance == 0.into() {
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
@@ -742,13 +773,19 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     /// Check that it is a proper time to release stake.
-    fn can_release_vote_stake(
-        vote: &CastVoteOf<T>,
-        current_voting_cycle_id: &u64,
-    ) -> Result<(), Error<T>> {
+    fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
+        let current_voting_cycle_id = AnnouncementPeriodNr::get();
+
         // allow release for very old votes
-        if vote.cycle_id > current_voting_cycle_id + 1 {
+        if current_voting_cycle_id > vote.cycle_id + 1 {
             return Ok(());
+        }
+
+        // allow release for current cycle only in idle stage
+        if current_voting_cycle_id == vote.cycle_id
+            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
+        {
+            return Err(Error::CantReleaseStakeNow);
         }
 
         let voting_for_winner = CouncilMembers::<T>::get()
@@ -757,7 +794,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
             .any(|membership_id| vote.vote_for == Some(membership_id.into()));
 
         // allow release for vote from previous elections only when not voted for winner
-        if vote.cycle_id == current_voting_cycle_id + 1 {
+        if current_voting_cycle_id == vote.cycle_id + 1 {
             // ensure vote was not cast for the one of winning candidates / council members
             if voting_for_winner {
                 return Err(Error::CantReleaseStakeNow);
@@ -768,7 +805,8 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
 
         // at this point vote.cycle_id == current_voting_cycle_id
 
-        if voting_for_winner {
+        // ensure election has ended and voter haven't voted for winner
+        if voting_for_winner || !matches!(Stage::<T>::get().stage, CouncilStage::Idle) {
             return Err(Error::CantReleaseStakeNow);
         }
 
@@ -859,7 +897,7 @@ impl<T: Trait> Mutations<T> {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
-        T::Referendum::force_start(extra_winning_target_count);
+        T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
         let block_number = <frame_system::Module<T>>::block_number();
 
@@ -962,18 +1000,13 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Refill budget's balance.
-    fn refill_budget(now: T::BlockNumber) {
-        let refill_amount = T::BudgetRefillAmount::get();
-
-        Budget::<T>::mutate(|balance| *balance += refill_amount);
-        Self::plan_budget_refill(now);
+    fn refill_budget(refill_amount: &Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance += *refill_amount);
     }
 
     // Plan next budget refill.
-    fn plan_budget_refill(now: T::BlockNumber) {
-        let refill_period = T::BudgetRefillPeriod::get();
-
-        NextBudgetRefill::<T>::put(now + refill_period);
+    fn plan_budget_refill(refill_at: &T::BlockNumber) {
+        NextBudgetRefill::<T>::put(refill_at);
     }
 
     /// Pay reward to a single elected council member.
@@ -1177,6 +1210,13 @@ impl<T: Trait> EnsureChecks<T> {
 
     // Ensures there is no problem in setting the budget balance.
     fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in planning next budget refill.
+    fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
