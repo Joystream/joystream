@@ -68,14 +68,11 @@ fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
-    let authority_account = account::<T::AccountId>(name, 0, SEED);
+    // Give balance for buying membership
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 
-    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
-        .unwrap();
-
-    Membership::<T>::add_screened_member(
-        RawOrigin::Signed(authority_account.clone()).into(),
-        account_id.clone(),
+    Membership::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
         Some(handle),
         None,
         None,
