@@ -50,7 +50,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     type Balances = pallet_balances::Module<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+        let _ = Balances::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
