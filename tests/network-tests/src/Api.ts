@@ -35,6 +35,7 @@ import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser, ExtrinsicsHelper } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
+import { ContentId, DataObject } from '@joystream/types/media'
 
 import Debugger from 'debug'
 const debug = Debugger('api')
@@ -1987,7 +1988,12 @@ export class Api {
     return await this.sendContentDirectoryTransaction(updateOperations)
   }
 
-  public async initializeContentDirectory(leadKeyPair: KeyringPair) {
+  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+    return dataObject.unwrapOr(null)
+  }
+
+  public async initializeContentDirectory(leadKeyPair: KeyringPair): Promise<void> {
     await initializeContentDir(this.api, leadKeyPair)
   }
 }
@@ -2091,5 +2097,23 @@ export class QueryNodeApi extends Api {
     `
 
     return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
+  }
+
+  public async performWhereQueryByVideoTitle(title: string): Promise<ApolloQueryResult<any>> {
+    const WHERE_QUERY_ON_VIDEO_TITLE = gql`
+      query($title: String!) {
+        videos(where: { title_eq: $title }) {
+          media {
+            location {
+              __typename
+              ... on JoystreamMediaLocation {
+                dataObjectId
+              }
+            }
+          }
+        }
+      }
+    `
+    return await this.queryNodeProvider.query({ query: WHERE_QUERY_ON_VIDEO_TITLE, variables: { title } })
   }
 }
