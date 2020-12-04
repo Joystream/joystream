@@ -3,10 +3,10 @@
 
 use super::*;
 
-use frame_system::RawOrigin;
-
 use common::working_group::WorkingGroup;
+use frame_system::RawOrigin;
 use proposals_codex::AddOpeningParameters;
+use strum::IntoEnumIterator;
 use working_group::{Penalty, StakeParameters};
 
 use crate::primitives::{ActorId, MemberId};
@@ -16,8 +16,6 @@ use crate::{
     ForumWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
     StorageWorkingGroupStakingManager,
 };
-use frame_support::traits;
-use strum::IntoEnumIterator;
 
 type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
 
@@ -113,14 +111,6 @@ fn fill_opening(
     .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-}
-
-fn get_stake_balance(stake: stake::Stake<BlockNumber, Balance, u64>) -> Balance {
-    if let stake::StakingStatus::Staked(stake) = stake.staking_status {
-        return stake.staked_amount;
-    }
-
-    panic!("Not staked.");
 }
 
 fn decrease_stake(
@@ -313,7 +303,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
 }
 
 fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
@@ -369,7 +359,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
 }
 
 fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
@@ -450,20 +440,17 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
 }
 
 fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
-        T: working_group::Trait<I> + frame_system::Trait + stake::Trait + membership::Trait + pallet_balances::Trait,
-        I: frame_support::traits::Instance,
-        SM: staking_handler::StakingHandler<T>
-    >(
-        working_group: WorkingGroup,
-    ) where
-        <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-        <T as membership::Trait>::MemberId: From<u64>,
-        <T as membership::Trait>::ActorId: Into<u64>,
-        <<T as stake::Trait>::Currency as traits::Currency<
-            <T as frame_system::Trait>::AccountId,
-        >>::Balance: From<u128>,
-        <T as pallet_balances::Trait>::Balance: From<u128>,
-    {
+    T: working_group::Trait<I> + frame_system::Trait + membership::Trait + pallet_balances::Trait,
+    I: frame_support::traits::Instance,
+    SM: staking_handler::StakingHandler<T>,
+>(
+    working_group: WorkingGroup,
+) where
+    <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
+    <T as membership::Trait>::MemberId: From<u64>,
+    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as pallet_balances::Trait>::Balance: From<u128>,
+{
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
         let account_id: [u8; 32] = [member_id as u8; 32];
@@ -571,18 +558,17 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
 }
 
 fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
-        T: working_group::Trait<I> + frame_system::Trait + stake::Trait,
-        I: frame_support::traits::Instance,
-        SM: staking_handler::StakingHandler<T>
-> (working_group: WorkingGroup) where
-        <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-        <T as membership::Trait>::MemberId: From<u64>,
-        <T as membership::Trait>::ActorId: Into<u64>,
-        <<T as stake::Trait>::Currency as traits::Currency<
-            <T as frame_system::Trait>::AccountId,
-        >>::Balance: From<u128>,
-        <T as pallet_balances::Trait>::Balance: From<u128>,
-    {
+    T: working_group::Trait<I> + frame_system::Trait,
+    I: frame_support::traits::Instance,
+    SM: staking_handler::StakingHandler<T>,
+>(
+    working_group: WorkingGroup,
+) where
+    <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
+    <T as membership::Trait>::MemberId: From<u64>,
+    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as pallet_balances::Trait>::Balance: From<u128>,
+{
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
         let account_id: [u8; 32] = [member_id as u8; 32];
