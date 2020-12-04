@@ -565,7 +565,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Delete thread
+            // Delete category
             <CategoryById<T>>::remove(category_id);
             if let Some(parent_category_id) = category.parent_category_id {
                 <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);

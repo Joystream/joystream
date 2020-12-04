@@ -40,7 +40,7 @@ benchmarks! {
 
         let text = vec![0u8].repeat(j as usize);
 
-        let mut category_id: Option<T::CategoryId> = None;
+        let mut category_id = None;
         let mut parent_category_id = None;
 
         // Generate categories tree
@@ -61,6 +61,8 @@ benchmarks! {
             None
         };
 
+        let category_counter = <Module<T>>::category_counter();
+
     }: _ (RawOrigin::Signed(T::AccountId::default()), parent_category_id, text.clone(), text.clone())
     verify {
 
@@ -77,6 +79,7 @@ benchmarks! {
 
             let category_id = Module::<T>::next_category_id() - T::CategoryId::one();
             assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+            assert_eq!(<Module<T>>::category_counter(), category_counter + T::CategoryId::one());
 
             if let (Some(parent_category), Some(parent_category_id)) = (parent_category, parent_category_id) {
                 assert_eq!(
@@ -150,6 +153,40 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
         assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
     }
+    delete_category {
+        let text = vec![0u8];
+
+        // Create parent category
+        let parent_category_id = create_new_category::<T>(T::AccountId::default(), None, text.clone(), text.clone());
+
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), Some(parent_category_id), text.clone(), text.clone());
+
+        let category_counter = <Module<T>>::category_counter();
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id)
+    verify {
+        let new_category = Category {
+            title_hash: T::calculate_hash(text.as_slice()),
+            description_hash: T::calculate_hash(text.as_slice()),
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 0,
+            parent_category_id: None,
+            sticky_thread_ids: vec![],
+        };
+
+        // Ensure number of direct subcategories for parent category decremented successfully
+        assert_eq!(Module::<T>::category_by_id(parent_category_id), new_category);
+
+        assert_eq!(<Module<T>>::category_counter(), category_counter - T::CategoryId::one());
+
+        // Ensure category removed successfully
+        assert!(!<CategoryById<T>>::contains_key(category_id));
+
+        assert_last_event::<T>(RawEvent::CategoryDeleted(category_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -177,6 +214,13 @@ mod tests {
     fn test_update_category_archival_status() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_update_category_archival_status::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_delete_category() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_delete_category::<Runtime>());
         });
     }
 }
