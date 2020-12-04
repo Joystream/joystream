@@ -11,7 +11,6 @@ members = [
 	"runtime-modules/memo",
 	"runtime-modules/recurring-reward",
 	"runtime-modules/service-discovery",
-	"runtime-modules/stake",
 	"runtime-modules/storage",
 	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
