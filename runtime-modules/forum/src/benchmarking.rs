@@ -15,6 +15,21 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
+fn create_new_category<T: Trait>(
+    account_id: T::AccountId,
+    parent_category_id: Option<T::CategoryId>,
+    title: Vec<u8>,
+    description: Vec<u8>,
+) -> T::CategoryId {
+    assert_ok!(Module::<T>::create_category(
+        RawOrigin::Signed(account_id).into(),
+        parent_category_id,
+        title,
+        description
+    ));
+    Module::<T>::next_category_id() - T::CategoryId::one()
+}
+
 benchmarks! {
     _{ }
 
@@ -77,11 +92,7 @@ benchmarks! {
         let text = vec![0u8];
 
         // Create category
-        assert_ok!(Module::<T>::create_category(
-            RawOrigin::Signed(T::AccountId::default()).into(), None, text.clone(), text.clone()
-        ));
-
-        let category_id = Module::<T>::next_category_id() - T::CategoryId::one();
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, text.clone(), text.clone());
 
         let new_value_flag = if i == 0 {
             true
@@ -115,6 +126,30 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(T::ModeratorId::one(), category_id, new_value_flag).into());
 
     }
+    update_category_archival_status{
+        let text = vec![0u8];
+
+        let new_archival_status = true;
+
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, text.clone(), text.clone());
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, new_archival_status)
+    verify {
+        let new_category = Category {
+            title_hash: T::calculate_hash(text.as_slice()),
+            description_hash: T::calculate_hash(text.as_slice()),
+            archived: new_archival_status,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 0,
+            parent_category_id: None,
+            sticky_thread_ids: vec![],
+        };
+
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
+    }
 }
 
 #[cfg(test)]
@@ -135,6 +170,13 @@ mod tests {
             assert_ok!(test_benchmark_update_category_membership_of_moderator::<
                 Runtime,
             >());
+        });
+    }
+
+    #[test]
+    fn test_update_category_archival_status() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_archival_status::<Runtime>());
         });
     }
 }
