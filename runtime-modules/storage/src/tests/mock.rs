@@ -133,7 +133,6 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -206,14 +205,6 @@ impl membership::Trait for Test {
     type MembershipFee = MembershipFee;
 }
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
@@ -223,13 +214,6 @@ impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 pub struct ExtBuilder {

@@ -1043,12 +1043,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "difference"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1096,12 +1090,6 @@ dependencies = [
  "byteorder 1.3.4",
  "quick-error",
 ]
-
-[[package]]
-name = "downcast"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb454f0228b18c7f4c3b0ebbee346ed9c52e7443b0999cd543ff3571205701d"
 
 [[package]]
 name = "dyn-clonable"
@@ -1319,15 +1307,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "float-cmp"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1350,12 +1329,6 @@ dependencies = [
  "matches",
  "percent-encoding 2.1.0",
 ]
-
-[[package]]
-name = "fragile"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69a039c3498dc930fe810151a34ba0c1c70b02b8625035592e74432f678591f2"
 
 [[package]]
 name = "frame-benchmarking"
@@ -2385,7 +2358,6 @@ dependencies = [
  "pallet-forum",
  "pallet-governance",
  "pallet-grandpa",
- "pallet-hiring",
  "pallet-im-online",
  "pallet-membership",
  "pallet-memo",
@@ -2399,7 +2371,6 @@ dependencies = [
  "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
- "pallet-stake",
  "pallet-staking",
  "pallet-staking-reward-curve",
  "pallet-storage",
@@ -3446,33 +3417,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mockall"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01458f8a19b10cb28195290942e3149161c75acf67ebc8fbf714ab67a2b943bc"
-dependencies = [
- "cfg-if 0.1.10",
- "downcast",
- "fragile",
- "lazy_static",
- "mockall_derive",
- "predicates",
- "predicates-tree",
-]
-
-[[package]]
-name = "mockall_derive"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a673cb441f78cd9af4f5919c28576a3cc325fb6b54e42f7047dacce3c718c17b"
-dependencies = [
- "cfg-if 0.1.10",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "multihash"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3605,12 +3549,6 @@ dependencies = [
  "memchr",
  "version_check",
 ]
-
-[[package]]
-name = "normalize-line-endings"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61807f77802ff30975e01f4f071c8ba10c022052f98b3294119f3e615d13e5be"
 
 [[package]]
 name = "num-bigint"
@@ -3917,24 +3855,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-hiring"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "mockall",
- "pallet-balances",
- "pallet-stake",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-im-online"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -4030,12 +3950,10 @@ dependencies = [
  "pallet-common",
  "pallet-constitution",
  "pallet-governance",
- "pallet-hiring",
  "pallet-membership",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-recurring-reward",
- "pallet-stake",
  "pallet-staking",
  "pallet-staking-reward-curve",
  "pallet-timestamp",
@@ -4132,10 +4050,8 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-hiring",
  "pallet-membership",
  "pallet-recurring-reward",
- "pallet-stake",
  "pallet-timestamp",
  "pallet-token-mint",
  "pallet-working-group",
@@ -4186,22 +4102,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-stake"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-timestamp",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-staking"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -4242,10 +4142,8 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-hiring",
  "pallet-membership",
  "pallet-recurring-reward",
- "pallet-stake",
  "pallet-timestamp",
  "pallet-token-mint",
  "pallet-working-group",
@@ -4799,35 +4697,6 @@ name = "ppv-lite86"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
-
-[[package]]
-name = "predicates"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96bfead12e90dccead362d62bb2c90a5f6fc4584963645bc7f71a735e0b0735a"
-dependencies = [
- "difference",
- "float-cmp",
- "normalize-line-endings",
- "predicates-core",
- "regex",
-]
-
-[[package]]
-name = "predicates-core"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06075c3a3e92559ff8929e7a280684489ea27fe44805174c3ebd9328dcb37178"
-
-[[package]]
-name = "predicates-tree"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e63c4859013b38a76eca2414c64911fba30def9e3202ac461a2d22831220124"
-dependencies = [
- "predicates-core",
- "treeline",
-]
 
 [[package]]
 name = "primitive-types"
@@ -8179,12 +8048,6 @@ dependencies = [
  "tracing-log",
  "tracing-serde",
 ]
-
-[[package]]
-name = "treeline"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7f741b240f1a48843f9b8e0444fb55fb2a4ff67293b50a9179dfd5ea67f8d41"
 
 [[package]]
 name = "trie-db"

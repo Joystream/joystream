@@ -106,7 +106,6 @@ pub trait Trait:
     + proposals_discussion::Trait
     + membership::Trait
     + governance::election::Trait
-    + hiring::Trait
     + staking::Trait
 {
     /// Defines max allowed text proposal length.
