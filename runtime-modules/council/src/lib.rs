@@ -399,6 +399,26 @@ decl_module! {
         /// Setup events
         fn deposit_event() = default;
 
+        /// Minimum number of extra candidates needed for the valid election.
+        /// Number of total candidates is equal to council size plus extra candidates.
+        const MinNumberOfExtraCandidates: u64 = T::MinNumberOfExtraCandidates::get();
+        /// Council member count
+        const CouncilSize: u64 = T::CouncilSize::get();
+        /// Minimum stake candidate has to lock
+        const MinCandidateStake: Balance<T> = T::MinCandidateStake::get();
+        /// Duration of annoncing period
+        const AnnouncingPeriodDuration: T::BlockNumber = T::AnnouncingPeriodDuration::get();
+        /// Duration of idle period
+        const IdlePeriodDuration: T::BlockNumber = T::IdlePeriodDuration::get();
+        /// The value elected members will be awarded each block of their reign.
+        const ElectedMemberRewardPerBlock: Balance<T> = T::ElectedMemberRewardPerBlock::get();
+        /// Interval for automatic reward payments.
+        const ElectedMemberRewardPeriod: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
+        /// Amount that will be added to the budget balance on every refill.
+        const BudgetRefillAmount: Balance<T> = T::BudgetRefillAmount::get();
+        /// Interval between automatic budget refills.
+        const BudgetRefillPeriod: T::BlockNumber = T::BudgetRefillPeriod::get();
+
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call

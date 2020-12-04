@@ -15,7 +15,6 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 #![warn(unused_extern_crates)]
-
 // Substrate implementation issue.
 #![allow(clippy::redundant_closure_call)]
 
