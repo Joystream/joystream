@@ -61,7 +61,7 @@ use staking_handler::StakingHandler;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
 
-/// working_group WeightInfo
+/// Working group WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn on_initialize_leaving(i: u32) -> Weight;
@@ -571,15 +571,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
-                    penalty.as_ref().map(|penalty| penalty.slashing_text.len().saturated_into())
-                    .unwrap_or_else(|| 0)
-                )
-                .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
-                        penalty.as_ref().map(|penalty| penalty.slashing_text.len().saturated_into())
-                            .unwrap_or_else(|| 0)
-                    )
-        )]
+        #[weight = Module::<T, I>::terminate_role_weight(&penalty)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -952,11 +944,7 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::set_status_text(
-            if let Some(status_text) = status_text {
-                status_text.len().saturated_into()
-            } else {
-              0
-            }
+            status_text.as_ref().map(|status_text| status_text.len().saturated_into()).unwrap_or_default()
         )]
         pub fn set_status_text(
             origin,
@@ -1045,6 +1033,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         )
         .max(WeightInfoWorkingGroup::<T, I>::on_initialize_leaving(
             workers,
+        ))
+    }
+
+    // Calculate weights for terminate_role
+    fn terminate_role_weight(penalty: &Option<Penalty<BalanceOf<T>>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
+            penalty
+                .as_ref()
+                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .unwrap_or_default(),
+        )
+        .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
+            penalty
+                .as_ref()
+                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .unwrap_or_default(),
         ))
     }
 
