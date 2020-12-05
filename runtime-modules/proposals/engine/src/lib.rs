@@ -540,7 +540,7 @@ impl<T: Trait> Module<T> {
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: creation_params.exact_execution_block,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: creation_params.staking_account_id,
         };
 

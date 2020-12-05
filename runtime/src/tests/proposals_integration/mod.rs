@@ -301,7 +301,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: Some(account_id.clone()),
         };
 
