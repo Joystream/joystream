@@ -55,6 +55,9 @@ services:
       - "127.0.0.1:${DB_PORT}:5432"
     volumes:
       - /var/lib/postgresql/data
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -67,7 +70,7 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
+      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - DB_HOST=db
@@ -85,10 +88,10 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
+      # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:4000/graphql
+      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:${WARTHOG_APP_PORT}/graphql
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${PROCESSOR_DB_NAME}
       - DEBUG=index-builder:*
@@ -104,7 +107,7 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
+      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - TYPEORM_HOST=db
@@ -121,6 +124,9 @@ services:
   indexer-api-gateway:
     image: joystream/hydra-indexer-gateway:latest
     restart: unless-stopped
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     environment:
       - WARTHOG_STARTER_DB_DATABASE=${INDEXER_DB_NAME}
       - WARTHOG_STARTER_DB_HOST=db
@@ -128,9 +134,11 @@ services:
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
-      - PORT=4000
+      - WARTHOG_APP_PORT=${WARTHOG_APP_PORT}
+      - PORT=${WARTHOG_APP_PORT}
+      - DEBUG=*
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:4000:4002"
     depends_on:
       - redis
       - db
