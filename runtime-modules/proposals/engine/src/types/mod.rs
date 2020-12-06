@@ -359,8 +359,7 @@ where
 
     // Council approved the proposal enough times.
     pub fn is_constitutionality_reached_on_approval(&self) -> bool {
-        self.proposal.nr_of_council_confirmations + 1
-            >= self.proposal.parameters.constitutionality
+        self.proposal.nr_of_council_confirmations + 1 >= self.proposal.parameters.constitutionality
     }
 }
 
