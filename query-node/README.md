@@ -11,6 +11,10 @@ $ cd query-node
 $ yarn build
 ```
 
+## Starting services
+
+To start services defined in the project docker-compose.yml, you should run docker-compose from the project root folder to use the correct .env file
+
 ## Run mapping processor
 
 Before running mappings make sure indexer(`yarn indexer:start`) and indexer-api-server (mappings get the chain data from this graphql server) are both running:
@@ -26,7 +30,7 @@ Once processor start to store event data you will be able to query this data fro
 ```graphql
 query {
   channels {
-    title
+    handle
   }
 }
 ```

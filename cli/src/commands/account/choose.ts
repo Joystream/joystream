@@ -9,13 +9,19 @@ export default class AccountChoose extends AccountsCommandBase {
   static flags = {
     showSpecial: flags.boolean({
       description: 'Whether to show special (DEV chain) accounts',
+      char: 'S',
+      required: false,
+    }),
+    address: flags.string({
+      description: 'Select account by address (if available)',
+      char: 'a',
       required: false,
     }),
   }
 
   async run() {
-    const { showSpecial } = this.parse(AccountChoose).flags
-    const accounts: NamedKeyringPair[] = this.fetchAccounts(showSpecial)
+    const { showSpecial, address } = this.parse(AccountChoose).flags
+    const accounts: NamedKeyringPair[] = this.fetchAccounts(!!address || showSpecial)
     const selectedAccount: NamedKeyringPair | null = this.getSelectedAccount()
 
     this.log(chalk.white(`Found ${accounts.length} existing accounts...\n`))
@@ -25,9 +31,18 @@ export default class AccountChoose extends AccountsCommandBase {
       this.exit(ExitCodes.NoAccountFound)
     }
 
-    const choosenAccount: NamedKeyringPair = await this.promptForAccount(accounts, selectedAccount)
+    let choosenAccount: NamedKeyringPair
+    if (address) {
+      const matchingAccount = accounts.find((a) => a.address === address)
+      if (!matchingAccount) {
+        this.error(`No matching account found by address: ${address}`, { exit: ExitCodes.InvalidInput })
+      }
+      choosenAccount = matchingAccount
+    } else {
+      choosenAccount = await this.promptForAccount(accounts, selectedAccount)
+    }
 
     await this.setSelectedAccount(choosenAccount)
-    this.log(chalk.greenBright('\nAccount switched!'))
+    this.log(chalk.greenBright(`\nAccount switched to ${chalk.white(choosenAccount.address)}!`))
   }
 }

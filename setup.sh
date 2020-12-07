@@ -21,8 +21,8 @@ rustup install 1.47.0
 rustup default 1.47.0
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
-    apt-get install -y docker.io docker-compose
+    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
+    sudo apt-get install -y docker.io docker-compose
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install b2sum gnu-tar jq curl
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"

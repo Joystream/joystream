@@ -10,8 +10,13 @@ import {
 } from '../types'
 import Debug from 'debug'
 
-import { ParametrizedClassPropertyValue, UpdatePropertyValuesOperation } from '@joystream/types/content-directory'
+import {
+  OperationType,
+  ParametrizedClassPropertyValue,
+  UpdatePropertyValuesOperation,
+} from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
+import { Vec } from '@polkadot/types'
 
 const debug = Debug('mappings:cd:decode')
 
@@ -108,9 +113,12 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
   return properties
 }
 
-function getOperations({ extrinsic }: SubstrateEvent): IBatchOperation {
-  const operations = createType('Vec<OperationType>', extrinsic!.args[1].value as any)
+function getOperations(event: SubstrateEvent): Vec<OperationType> {
+  if (!event.extrinsic) throw Error(`No extrinsic found for ${event.id}`)
+  return createType('Vec<OperationType>', (event.extrinsic.args[1].value as unknown) as Vec<OperationType>)
+}
 
+function getOperationsByTypes(operations: OperationType[]): IBatchOperation {
   const updatePropertyValuesOperations: IEntity[] = []
   const addSchemaSupportToEntityOperations: IEntity[] = []
   const createEntityOperations: ICreateEntityOperation[] = []
@@ -160,6 +168,7 @@ export const decode = {
   getClassEntity,
   setEntityPropertyValues,
   getEntityProperties,
-  getOperations,
+  getOperationsByTypes,
   setProperties,
+  getOperations,
 }

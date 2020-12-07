@@ -67,7 +67,7 @@
       "name": "publishedBeforeJoystream",
       "description": "If the Video was published on other platform before beeing published on Joystream - the original publication date",
       "required": false,
-      "property_type": { "Single": "Uint32" }
+      "property_type": { "Single": "Int32" }
     },
     {
       "name": "isPublic",

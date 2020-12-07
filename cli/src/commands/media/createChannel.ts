@@ -5,12 +5,15 @@ import { InputParser } from '@joystream/cd-schemas'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
+
+import { flags } from '@oclif/command'
 import _ from 'lodash'
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create a new channel on Joystream (requires a membership).'
   static flags = {
     ...IOFlags,
+    confirm: flags.boolean({ char: 'y', name: 'confirm', required: false, description: 'Confirm the provided input' }),
   }
 
   async run() {
@@ -22,7 +25,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
     const channelJsonSchema = (ChannelEntitySchema as unknown) as JSONSchema
 
-    const { input, output } = this.parse(CreateChannelCommand).flags
+    const { input, output, confirm } = this.parse(CreateChannelCommand).flags
 
     let inputJson = await getInputJson<ChannelEntity>(input, channelJsonSchema)
     if (!inputJson) {
@@ -37,7 +40,8 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     }
 
     this.jsonPrettyPrint(JSON.stringify(inputJson))
-    const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
+    const confirmed =
+      confirm || (await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' }))
 
     if (confirmed) {
       saveOutputJson(output, `${_.startCase(inputJson.handle)}Channel.json`, inputJson)
