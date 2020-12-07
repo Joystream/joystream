@@ -10,9 +10,6 @@ use sp_runtime::{
     Perbill,
 };
 
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;

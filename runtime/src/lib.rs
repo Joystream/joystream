@@ -593,10 +593,13 @@ impl forum::Trait for Runtime {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
+pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
 
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = membership::MembershipWorkingGroupInstance;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -604,9 +607,11 @@ parameter_types! {
     pub const ForumWorkingGroupRewardPeriod: u32 = 14400 + 10;
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
+    pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
+    pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
 }
 
 // Staking managers type aliases.
@@ -616,6 +621,8 @@ pub type ContentDirectoryWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
 pub type StorageWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
+pub type MembershipWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
@@ -642,6 +649,15 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
+}
+
+impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = MembershipWorkingGroupStakingManager;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = MembershipRewardPeriod;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -804,5 +820,6 @@ construct_runtime!(
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
     }
 );

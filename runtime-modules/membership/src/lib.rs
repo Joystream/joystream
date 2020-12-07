@@ -13,14 +13,18 @@ use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
-// The storage working group instance alias.
-//pub type StorageWorkingGroupInstance = working_group::Instance2;
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub trait Trait:
-    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
+    frame_system::Trait
+    + balances::Trait
+    + pallet_timestamp::Trait
+    + common::Trait
+    + working_group::Trait<MembershipWorkingGroupInstance>
 {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

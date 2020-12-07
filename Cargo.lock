@@ -3884,6 +3884,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-timestamp",
+ "pallet-working-group",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
