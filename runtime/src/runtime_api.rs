@@ -256,13 +256,26 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use sp_std::vec;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-            use frame_system_benchmarking::Module as SystemBench;
-            impl frame_system_benchmarking::Trait for Runtime {}
 
+            // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
+            // To get around that, we separated the Session benchmarks into its own crate, which is why
+            // we need these two lines below.
+            use pallet_session_benchmarking::Module as SessionBench;
+            // use pallet_offences_benchmarking::Module as OffencesBench;
+            use frame_system_benchmarking::Module as SystemBench;
             use crate::ProposalsDiscussion;
             use crate::ProposalsEngine;
             use crate::Constitution;
             use crate::ContentDirectoryWorkingGroup;
+            use crate::Utility;
+            use crate::Babe;
+            use crate::Timestamp;
+            use crate::Grandpa;
+            use crate::ImOnline;
+
+            impl pallet_session_benchmarking::Trait for Runtime {}
+            // impl pallet_offences_benchmarking::Trait for Runtime {}
+            impl frame_system_benchmarking::Trait for Runtime {}
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -284,7 +297,20 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, system, SystemBench::<Runtime>);
+            // Frame benchmarks
+            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
+            add_benchmark!(params, batches, pallet_utility, Utility);
+            // TODO: They are not benchmarking this in polkadot, why?
+            add_benchmark!(params, batches, pallet_babe, Babe);
+            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+            //add_benchmark!(params, batches, pallet_balances, Balances);
+            //add_benchmark!(params, batches, pallet_staking, Staking);
+            add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+            // TODO: They are not benchmarking this in polkadot, why?
+            add_benchmark!(params, batches, pallet_grandpa, Grandpa);
+            add_benchmark!(params, batches, pallet_im_online, ImOnline);
+            // Pallet offences doesn't expose WeightInfo and when running the benchmarks it fails
+            // add_benchmark!(params, batches, pallet_offences, OffencesBench::<Runtime>);
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
