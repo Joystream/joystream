@@ -1,8 +1,8 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import CreateClassSchema from 'cd-schemas/schemas/extrinsics/CreateClass.schema.json'
+import CreateClassSchema from '@joystream/cd-schemas/schemas/extrinsics/CreateClass.schema.json'
 import chalk from 'chalk'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
-import { CreateClass } from 'cd-schemas/types/extrinsics/CreateClass'
+import { CreateClass } from '@joystream/cd-schemas/types/extrinsics/CreateClass'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 
 export default class UpdateClassPermissionsCommand extends ContentDirectoryCommandBase {

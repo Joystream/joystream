@@ -1,6 +1,6 @@
-import VideoEntitySchema from 'cd-schemas/schemas/entities/VideoEntity.schema.json'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { InputParser } from 'cd-schemas'
+import VideoEntitySchema from '@joystream/cd-schemas/schemas/entities/VideoEntity.schema.json'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
+import { InputParser } from '@joystream/cd-schemas'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { Actor, Entity } from '@joystream/types/content-directory'
@@ -83,7 +83,7 @@ export default class UpdateVideoCommand extends MediaCommandBase {
       'category',
       'title',
       'description',
-      'thumbnailURL',
+      'thumbnailUrl',
       'duration',
       'isPublic',
       'isExplicit',

@@ -17,11 +17,12 @@ const scenario = async () => {
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
 
-  const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8080/graphql'
+  const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 
   const queryNodeProvider = new ApolloClient({
     uri: queryNodeUrl,
     cache: new InMemoryCache(),
+    defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
   })
 
   const api: QueryNodeApi = await QueryNodeApi.new(

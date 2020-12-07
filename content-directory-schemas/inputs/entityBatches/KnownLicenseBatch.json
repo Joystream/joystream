@@ -1,11 +1,53 @@
 {
   "className": "KnownLicense",
   "entries": [
-    { "code": "CC_BY" },
-    { "code": "CC_BY_SA" },
-    { "code": "CC_BY_ND" },
-    { "code": "CC_BY_NC" },
-    { "code": "CC_BY_NC_SA" },
-    { "code": "CC_BY_NC_ND" }
+    {
+      "code": "PDM",
+      "name": "Public Domain",
+      "url": "https://creativecommons.org/share-your-work/public-domain/pdm",
+      "attributionRequired": false
+    },
+    {
+      "code": "CC0",
+      "name": "Public Domain Dedication",
+      "url": "https://creativecommons.org/share-your-work/public-domain/cc0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY",
+      "name": "Creative Commons Attribution License",
+      "url": "https://creativecommons.org/licenses/by/4.0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY_SA",
+      "name": "Creative Commons Attribution-ShareAlike License",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY_ND",
+      "name": "Creative Commons Attribution-NoDerivs License",
+      "url": "https://creativecommons.org/licenses/by-nd/4.0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY_NC",
+      "name": "Creative Commons Attribution-NonCommercial License",
+      "url": "https://creativecommons.org/licenses/by-nc/4.0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY_NC_SA",
+      "name": "Creative Commons Attribution-NonCommercial-ShareAlike License",
+      "url": "https://creativecommons.org/licenses/by-nc-sa/4.0",
+      "attributionRequired": true
+    },
+    {
+      "code": "CC_BY_NC_ND",
+      "name": "Creative Commons Attribution-NonCommercial-NoDerivs License",
+      "url": "https://creativecommons.org/licenses/by-nc-nd/4.0",
+      "attributionRequired": true
+    }
   ]
 }

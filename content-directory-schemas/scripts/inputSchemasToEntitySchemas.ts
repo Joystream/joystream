@@ -42,7 +42,7 @@ const HashPropertyDef = ({ Hash: maxLength }: HashProperty): JSONSchema7 => ({
 
 const ReferencePropertyDef = ({ Reference: ref }: ReferenceProperty): JSONSchema7 => ({
   'oneOf': [
-    onePropertyObjectDef('new', { '$ref': `./${ref.className}Entity.schema.json` }),
+    onePropertyObjectDef('new', { '$ref': `../entities/${ref.className}Entity.schema.json` }),
     onePropertyObjectDef('existing', { '$ref': `../entityReferences/${ref.className}Ref.schema.json` }),
     PRIMITIVE_PROPERTY_DEFS.definitions.Uint64 as JSONSchema7,
   ],

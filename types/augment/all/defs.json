@@ -970,5 +970,6 @@
     "ClassPermissionsType": "Null",
     "ClassPropertyValue": "Null",
     "Operation": "Null",
-    "ReferenceConstraint": "Null"
+    "ReferenceConstraint": "Null",
+    "FailedAt": "u32"
 }
