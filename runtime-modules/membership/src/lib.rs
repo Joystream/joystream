@@ -17,10 +17,6 @@ use sp_std::vec::Vec;
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
-//TODO: Convert errors to the Substrate decl_error! macro.
-/// Result with string error message. This exists for backward compatibility purpose.
-pub type DispatchResult = Result<(), &'static str>;
-
 pub trait Trait: frame_system::Trait + balances::Trait + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -420,7 +416,7 @@ impl<T: Trait> Module<T> {
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
-    fn ensure_unique_handle(handle: &Vec<u8>) -> DispatchResult {
+    fn ensure_unique_handle(handle: &Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
             !<MemberIdByHandle<T>>::contains_key(handle),
             Error::<T>::HandleAlreadyRegistered
@@ -428,7 +424,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn validate_handle(handle: &[u8]) -> DispatchResult {
+    fn validate_handle(handle: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
             Error::<T>::HandleTooShort
@@ -446,7 +442,7 @@ impl<T: Trait> Module<T> {
         text
     }
 
-    fn validate_avatar(uri: &[u8]) -> DispatchResult {
+    fn validate_avatar(uri: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
             Error::<T>::AvatarUriTooLong
@@ -459,7 +455,7 @@ impl<T: Trait> Module<T> {
         handle: Option<Vec<u8>>,
         avatar_uri: Option<Vec<u8>>,
         about: Option<Vec<u8>>,
-    ) -> Result<ValidatedUserInfo, &'static str> {
+    ) -> Result<ValidatedUserInfo, Error<T>> {
         // Handle is required during registration
         let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
         Self::validate_handle(&handle)?;
@@ -482,7 +478,7 @@ impl<T: Trait> Module<T> {
         entry_method: EntryMethod,
         registered_at_block: T::BlockNumber,
         registered_at_time: T::Moment,
-    ) -> Result<T::MemberId, &'static str> {
+    ) -> Result<T::MemberId, Error<T>> {
         Self::ensure_unique_handle(&user_info.handle)?;
 
         let new_member_id = Self::members_created();
@@ -512,7 +508,7 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
+    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
         membership.about = text;
@@ -521,7 +517,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> DispatchResult {
+    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(uri)?;
         membership.avatar_uri = uri.to_owned();
@@ -530,7 +526,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> DispatchResult {
+    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;
