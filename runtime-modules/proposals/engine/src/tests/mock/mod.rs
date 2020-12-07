@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
@@ -17,7 +17,6 @@ use sp_runtime::{
 };
 
 pub(crate) mod proposals;
-pub(crate) mod staking_handler;
 
 use crate::ProposalObserver;
 pub use proposals::*;
@@ -38,12 +37,17 @@ mod membership_mod {
     pub use membership::Event;
 }
 
+mod council {
+    pub use governance::council::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         engine<T>,
         membership_mod<T>,
         frame_system<T>,
+        council<T>,
     }
 }
 
@@ -74,14 +78,14 @@ parameter_types! {
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [1; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {
@@ -98,6 +102,41 @@ impl crate::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
+    type WeightInfo = ();
+}
+
+impl crate::WeightInfo for () {
+    fn vote(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_proposal(_: u32) -> Weight {
+        0
+    }
+
+    fn veto_proposal() -> Weight {
+        0
+    }
+
+    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_rejected(_: u32) -> Weight {
+        0
+    }
+
+    fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
 }
 
 impl ProposalObserver<Test> for () {
@@ -132,7 +171,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl frame_system::Trait for Test {
@@ -168,6 +206,22 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl governance::council::Trait for Test {
+    type Event = TestEvent;
+    type CouncilTermEnded = ();
+}
+
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {

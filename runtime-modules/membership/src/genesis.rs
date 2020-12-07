@@ -1,7 +1,6 @@
 #![cfg(feature = "std")]
 
 use crate::{GenesisConfig, Trait};
-use common::currency::BalanceOf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -17,29 +16,16 @@ pub struct Member<MemberId, AccountId, Moment> {
 
 /// Builder fo membership module genesis configuration.
 pub struct GenesisConfigBuilder<T: Trait> {
-    default_paid_membership_fee: BalanceOf<T>,
     members: Vec<(T::MemberId, T::AccountId)>,
 }
 
 impl<T: Trait> Default for GenesisConfigBuilder<T> {
     fn default() -> Self {
-        Self {
-            default_paid_membership_fee: BalanceOf::<T>::default(), // Was 100, will this break any tests??
-            members: vec![],
-        }
+        Self { members: vec![] }
     }
 }
 
 impl<T: Trait> GenesisConfigBuilder<T> {
-    /// Assign default paid membeship fee
-    pub fn default_paid_membership_fee(
-        mut self,
-        default_paid_membership_fee: BalanceOf<T>,
-    ) -> Self {
-        self.default_paid_membership_fee = default_paid_membership_fee;
-        self
-    }
-
     /// Assign a collection of MemberId and AccountId pairs, used to derive mock member at genesis
     pub fn members(mut self, members: Vec<(T::MemberId, T::AccountId)>) -> Self {
         self.members = members;
@@ -67,7 +53,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     /// Construct GenesisConfig for mocked testing purposes only
     pub fn build(&self) -> GenesisConfig<T> {
         GenesisConfig::<T> {
-            default_paid_membership_fee: self.default_paid_membership_fee,
             members: self.generate_mock_members(),
         }
     }

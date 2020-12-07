@@ -1,5 +1,5 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
+use frame_support::traits::{KeyOwnerProofSystem, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
@@ -11,7 +11,6 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
-use crate::integration::content_directory::ContentDirectoryWorkingGroup;
 use crate::{
     AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
@@ -20,7 +19,6 @@ use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
     RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
-use frame_support::weights::Weight;
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
@@ -54,36 +52,32 @@ pub type BlockId = generic::BlockId<Block>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
-// pub type Executive =
-//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
-
-/// Custom runtime upgrade handler.
-pub struct CustomOnRuntimeUpgrade;
-impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
-    fn on_runtime_upgrade() -> Weight {
-        let default_text_constraint = crate::working_group::default_text_constraint();
-        let default_content_working_group_mint_capacity = 0;
-
-        ContentDirectoryWorkingGroup::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        10_000_000 // TODO: adjust weight
-    }
-}
-
-/// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllModules,
-    CustomOnRuntimeUpgrade,
 >;
+
+// /// Custom runtime upgrade handler.
+// pub struct CustomOnRuntimeUpgrade;
+// impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+//     fn on_runtime_upgrade() -> Weight {
+//
+//         10_000_000 // TODO: adjust weight
+//     }
+// }
+//
+// /// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
+// pub type Executive = frame_executive::Executive<
+//     Runtime,
+//     Block,
+//     frame_system::ChainContext<Runtime>,
+//     Runtime,
+//     AllModules,
+//     CustomOnRuntimeUpgrade,
+// >;
 
 /// Export of the private const generated within the macro.
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;
@@ -255,48 +249,46 @@ impl_runtime_apis! {
         }
     }
 
-     #[cfg(feature = "runtime-benchmarks")]
+    #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn dispatch_benchmark(
-            pallet: Vec<u8>,
-            benchmark: Vec<u8>,
-            lowest_range_values: Vec<u32>,
-            highest_range_values: Vec<u32>,
-            steps: Vec<u32>,
-            repeat: u32,
+            config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            /*
-             * TODO: remember to benchhmark every pallet
-             */
             use sp_std::vec;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark};
+            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
             use frame_system_benchmarking::Module as SystemBench;
             impl frame_system_benchmarking::Trait for Runtime {}
 
             use crate::ProposalsDiscussion;
+            use crate::ProposalsEngine;
+            use crate::Constitution;
+            use crate::ContentDirectoryWorkingGroup;
 
-            let whitelist: Vec<Vec<u8>> = vec![
+            let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
                 // Total Issuance
-                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec(),
+                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec().into(),
                 // Execution Phase
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec().into(),
                 // Event Count
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec().into(),
                 // System Events
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
                 // Caller 0 Account
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da946c154ffd9992e395af90b5b13cc6f295c77033fce8a9045824a6690bbf99c6db269502f0a8d1d2a008542d5690a0749").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da946c154ffd9992e395af90b5b13cc6f295c77033fce8a9045824a6690bbf99c6db269502f0a8d1d2a008542d5690a0749").to_vec().into(),
                 // Treasury Account
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da95ecffd7b6c0f78751baa9d281e0bfa3a6d6f646c70792f74727372790000000000000000000000000000000000000000").to_vec(),
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da95ecffd7b6c0f78751baa9d281e0bfa3a6d6f646c70792f74727372790000000000000000000000000000000000000000").to_vec().into(),
             ];
 
             let mut batches = Vec::<BenchmarkBatch>::new();
-            let params = (&pallet, &benchmark, &lowest_range_values, &highest_range_values, &steps, repeat, &whitelist);
+            let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, b"system", SystemBench::<Runtime>);
-            add_benchmark!(params, batches, b"proposals-discussion", ProposalsDiscussion);
+            add_benchmark!(params, batches, system, SystemBench::<Runtime>);
+            add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
+            add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, pallet_constitution, Constitution);
+            add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

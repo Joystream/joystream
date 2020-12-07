@@ -514,6 +514,15 @@ pub fn update_category_membership_of_moderator_mock(
             <CategoryByModerator<Runtime>>::contains_key(category_id, moderator_id),
             new_value
         );
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryMembershipOfModeratorUpdated(
+                moderator_id,
+                category_id,
+                new_value
+            ))
+        );
     };
     category_id
 }

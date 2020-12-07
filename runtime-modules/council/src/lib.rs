@@ -284,7 +284,7 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance::<T>,
-        <T as system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::BlockNumber,
         <T as Trait>::MembershipId,
         <T as frame_system::Trait>::AccountId,
     {

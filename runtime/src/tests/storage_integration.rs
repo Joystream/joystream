@@ -20,9 +20,9 @@ fn storage_provider_helper_succeeds() {
 		let worker_id2 = 7;
 		let worker_id3 = 19;
 
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::default());
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::default());
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::<Runtime>::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::<Runtime>::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::<Runtime>::default());
 
 		// Still error - not registered in the service discovery.
 		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();

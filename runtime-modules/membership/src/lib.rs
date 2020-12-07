@@ -1,53 +1,30 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-// Clippy linter requirement.
-// Disable it because of the substrate lib design
-// Example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
-#![allow(clippy::redundant_closure_call)]
 
 pub mod genesis;
 pub(crate) mod mock;
-pub mod staking_handler;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, Get};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
-use frame_system::{ensure_root, ensure_signed};
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::borrow::ToOwned;
-use sp_std::vec;
 use sp_std::vec::Vec;
 
-use common::currency::{BalanceOf, GovernanceCurrency};
+// Balance type alias
+type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 //TODO: Convert errors to the Substrate decl_error! macro.
 /// Result with string error message. This exists for backward compatibility purpose.
 pub type DispatchResult = Result<(), &'static str>;
 
-pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    type PaidTermId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    type SubscriptionId: Parameter
         + Member
         + BaseArithmetic
         + Codec
@@ -66,12 +43,10 @@ pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Tr
         + MaybeSerialize
         + PartialEq
         + Ord;
+
+    /// Defines the default membership fee.
+    type MembershipFee: Get<BalanceOf<Self>>;
 }
-
-const FIRST_PAID_TERMS_ID: u8 = 1;
-
-// Default paid membership terms
-pub const DEFAULT_PAID_TERM_ID: u8 = 0;
 
 // Default user info constraints
 const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
@@ -83,14 +58,12 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 pub type Membership<T> = MembershipObject<
     <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
-    <T as Trait>::PaidTermId,
-    <T as Trait>::SubscriptionId,
     <T as frame_system::Trait>::AccountId,
 >;
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct MembershipObject<BlockNumber, Moment, PaidTermId, SubscriptionId, AccountId> {
+pub struct MembershipObject<BlockNumber, Moment, AccountId> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -107,13 +80,7 @@ pub struct MembershipObject<BlockNumber, Moment, PaidTermId, SubscriptionId, Acc
     pub registered_at_time: Moment,
 
     /// How the member was registered
-    pub entry: EntryMethod<PaidTermId, AccountId>,
-
-    /// Whether the member is suspended or not.
-    pub suspended: bool,
-
-    /// The type of subscription the member has purchased if any.
-    pub subscription: Option<SubscriptionId>,
+    pub entry: EntryMethod,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
     /// and update the controller account. Other modules may only allow certain actions if
@@ -135,26 +102,17 @@ struct ValidatedUserInfo {
 }
 
 #[derive(Encode, Decode, Debug, PartialEq)]
-pub enum EntryMethod<PaidTermId, AccountId> {
-    Paid(PaidTermId),
-    Screening(AccountId),
+pub enum EntryMethod {
+    Paid,
     Genesis,
 }
 
 /// Must be default constructible because it indirectly is a value in a storage map.
 /// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<PaidTermId, AccountId> Default for EntryMethod<PaidTermId, AccountId> {
+impl Default for EntryMethod {
     fn default() -> Self {
         Self::Genesis
     }
-}
-
-#[derive(Encode, Decode, Eq, PartialEq, Default)]
-pub struct PaidMembershipTerms<Balance> {
-    /// Quantity of native tokens which must be provably burned
-    pub fee: Balance,
-    /// String of capped length describing human readable conditions which are being agreed upon
-    pub text: Vec<u8>,
 }
 
 decl_storage! {
@@ -179,33 +137,8 @@ decl_storage! {
         pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
 
-        /// Next paid membership terms id
-        pub NextPaidMembershipTermsId get(fn next_paid_membership_terms_id) :
-            T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
-
-        /// Paid membership terms record
-        // Remember to add _genesis_phantom_data: std::marker::PhantomData{} to membership
-        // genesis config if not providing config() or extra_genesis
-        pub PaidMembershipTermsById get(fn paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {
-            // This method only gets called when initializing storage, and is
-            // compiled as native code. (Will be called when building `raw` chainspec)
-            // So it can't be relied upon to initialize storage for runtimes updates.
-            // Initialization for updated runtime is done in run_migration()
-            let terms = PaidMembershipTerms {
-                fee:  config.default_paid_membership_fee,
-                text: Vec::default(),
-            };
-            vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
-        }) : map hasher(blake2_128_concat) T::PaidTermId => PaidMembershipTerms<BalanceOf<T>>;
-
-        /// Active Paid membership terms
-        pub ActivePaidMembershipTerms get(fn active_paid_membership_terms) :
-            Vec<T::PaidTermId> = vec![T::PaidTermId::from(DEFAULT_PAID_TERM_ID)];
-
         /// Is the platform is accepting new members or not
         pub NewMembershipsAllowed get(fn new_memberships_allowed) : bool = true;
-
-        pub ScreeningAuthority get(fn screening_authority) : T::AccountId;
 
         // User Input Validation parameters - do these really need to be state variables
         // I don't see a need to adjust these in future?
@@ -216,7 +149,6 @@ decl_storage! {
 
     }
     add_extra_genesis {
-        config(default_paid_membership_fee): BalanceOf<T>;
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId, T::Moment>>;
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
@@ -234,6 +166,8 @@ decl_storage! {
                     T::BlockNumber::from(1),
                     member.registered_at_time
                 ).expect("Importing Member Failed");
+
+
 
                 // ensure imported member id matches assigned id
                 assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
@@ -260,11 +194,13 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
+        /// Exports const - membership fee.
+        const MembershipFee: BalanceOf<T> = T::MembershipFee::get();
+
         /// Non-members can buy membership
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
             origin,
-            paid_terms_id: T::PaidTermId,
             handle: Option<Vec<u8>>,
             avatar_uri: Option<Vec<u8>>,
             about: Option<Vec<u8>>
@@ -274,11 +210,13 @@ decl_module! {
             // make sure we are accepting new memberships
             ensure!(Self::new_memberships_allowed(), "new members not allowed");
 
-            // ensure paid_terms_id is active
-            let terms = Self::ensure_active_terms_id(paid_terms_id)?;
+            let fee = T::MembershipFee::get();
 
             // ensure enough free balance to cover terms fees
-            ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
+            ensure!(
+                balances::Module::<T>::usable_balance(&who) >= fee,
+                "not enough balance to buy membership"
+            );
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
@@ -286,12 +224,12 @@ decl_module! {
                 &who,
                 &who,
                 &user_info,
-                EntryMethod::Paid(paid_terms_id),
+                EntryMethod::Paid,
                 <frame_system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
 
-            let _ = T::Currency::slash(&who, terms.fee);
+            let _ = balances::Module::<T>::slash(&who, fee);
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
@@ -406,47 +344,6 @@ decl_module! {
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
         }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_screened_member(
-            origin,
-            new_member_account: T::AccountId,
-            handle: Option<Vec<u8>>,
-            avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
-        ) {
-            // ensure sender is screening authority
-            let sender = ensure_signed(origin)?;
-
-            if <ScreeningAuthority<T>>::exists() {
-                ensure!(sender == Self::screening_authority(), "not screener");
-            } else {
-                // no screening authority defined. Cannot accept this request
-                return Err("no screening authority defined".into());
-            }
-
-            // make sure we are accepting new memberships
-            ensure!(Self::new_memberships_allowed(), "new members not allowed");
-
-            let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
-
-            let member_id = Self::insert_member(
-                &new_member_account,
-                &new_member_account,
-                &user_info,
-                EntryMethod::Screening(sender),
-                <frame_system::Module<T>>::block_number(),
-                <pallet_timestamp::Module<T>>::now()
-            )?;
-
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_screening_authority(origin, authority: T::AccountId) {
-            ensure_root(origin)?;
-            <ScreeningAuthority<T>>::put(authority);
-        }
     }
 }
 
@@ -503,22 +400,6 @@ impl<T: Trait> Module<T> {
     pub fn is_member_account(who: &T::AccountId) -> bool {
         <MemberIdsByRootAccountId<T>>::contains_key(who)
             || <MemberIdsByControllerAccountId<T>>::contains_key(who)
-    }
-
-    fn ensure_active_terms_id(
-        terms_id: T::PaidTermId,
-    ) -> Result<PaidMembershipTerms<BalanceOf<T>>, &'static str> {
-        let active_terms = Self::active_paid_membership_terms();
-        ensure!(
-            active_terms.iter().any(|&id| id == terms_id),
-            "paid terms id not active"
-        );
-
-        if <PaidMembershipTermsById<T>>::contains_key(terms_id) {
-            Ok(Self::paid_membership_terms_by_id(terms_id))
-        } else {
-            Err("paid membership term id does not exist")
-        }
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
@@ -581,7 +462,7 @@ impl<T: Trait> Module<T> {
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
         user_info: &ValidatedUserInfo,
-        entry_method: EntryMethod<T::PaidTermId, T::AccountId>,
+        entry_method: EntryMethod,
         registered_at_block: T::BlockNumber,
         registered_at_time: T::Moment,
     ) -> Result<T::MemberId, &'static str> {
@@ -596,8 +477,6 @@ impl<T: Trait> Module<T> {
             registered_at_block,
             registered_at_time,
             entry: entry_method,
-            suspended: false,
-            subscription: None,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
         };

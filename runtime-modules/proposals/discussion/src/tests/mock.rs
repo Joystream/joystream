@@ -3,7 +3,7 @@
 pub use frame_system;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -12,6 +12,7 @@ use sp_runtime::{
 };
 
 use crate::ActorOriginValidator;
+use crate::WeightInfo;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -26,7 +27,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 parameter_types! {
@@ -56,6 +56,7 @@ parameter_types! {
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
     pub const MaxWhiteListSize: u32 = 4;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -75,9 +76,8 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {
@@ -87,6 +87,21 @@ impl crate::Trait for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = ();
+}
+
+impl WeightInfo for () {
+    fn add_post(_: u32) -> Weight {
+        0
+    }
+
+    fn update_post() -> Weight {
+        0
+    }
+
+    fn change_thread_mode(_: u32) -> Weight {
+        0
+    }
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {

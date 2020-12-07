@@ -465,6 +465,7 @@ pub mod mocks {
         pub const MinimumPeriod: u64 = 5;
         pub const ExistentialDeposit: u32 = 0;
         pub const MaxLocks: u32 = 50;
+        pub const MembershipFee: u64 = 100;
     }
 
     mod membership_mod {
@@ -482,9 +483,8 @@ pub mod mocks {
     impl membership::Trait for Lock1 {
         type Event = TestEvent;
         type MemberId = u64;
-        type PaidTermId = u64;
-        type SubscriptionId = u64;
         type ActorId = u64;
+        type MembershipFee = MembershipFee;
     }
 
     impl timestamp::Trait for Lock1 {
@@ -635,9 +635,8 @@ pub mod mocks {
     impl membership::Trait for Lock2 {
         type Event = TestEvent;
         type MemberId = u64;
-        type PaidTermId = u64;
-        type SubscriptionId = u64;
         type ActorId = u64;
+        type MembershipFee = MembershipFee;
     }
 
     impl timestamp::Trait for Lock2 {

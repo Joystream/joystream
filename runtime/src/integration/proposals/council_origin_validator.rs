@@ -52,17 +52,9 @@ mod tests {
     use proposals_engine::VotersParameters;
     use sp_runtime::AccountId32;
 
+    use crate::tests::{initial_test_ext, insert_member};
+
     type Council = governance::council::Module<Runtime>;
-
-    fn initial_test_ext() -> sp_io::TestExternalities {
-        let t = frame_system::GenesisConfig::default()
-            .build_storage::<Runtime>()
-            .unwrap();
-
-        t.into()
-    }
-
-    type Membership = membership::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {
@@ -93,21 +85,7 @@ mod tests {
 
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id.clone(),
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id.clone());
             let member_id = 0; // newly created member_id
 
             let validation_result =
@@ -123,21 +101,7 @@ mod tests {
             let account_id = AccountId32::default();
             let error =
                 "Membership validation failed: given account doesn't match with profile accounts";
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id.clone(),
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id);
             let member_id = 0; // newly created member_id
 
             let invalid_account_id: [u8; 32] = [2; 32];
@@ -156,21 +120,7 @@ mod tests {
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
             let error = "Council validation failed: account id doesn't belong to a council member";
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id,
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id);
             let member_id = 0; // newly created member_id
 
             let validation_result =

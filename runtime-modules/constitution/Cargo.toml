@@ -11,14 +11,15 @@ sp-std = { package = 'sp-std', default-features = false, git = 'https://github.c
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
-
 [features]
 default = ['std']
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
     'serde',
     'codec/std',

@@ -2,6 +2,7 @@
 
 pub use crate::*;
 
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -50,8 +51,8 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -86,32 +87,16 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
 }
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -136,11 +121,98 @@ impl recurringrewards::Trait for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId1: [u8; 8] = [1; 8];
 }
 
+pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::WeightInfo for WorkingGroupWeightInfo {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_worker(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_lead(_: u32) -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role_immediatly() -> Weight {
+        0
+    }
+    fn leave_role_later() -> Weight {
+        0
+    }
+}
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -163,14 +235,19 @@ pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 
 pub(crate) fn hire_storage_provider() -> (u64, u64) {
-    let storage_provider_id = 1;
-    let role_account_id = 1;
+    let storage_provider_id = 1u64;
+    let role_account_id = 1u64;
 
-    let storage_provider = working_group::Worker {
+    let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        reward_relationship: None,
-        role_stake_profile: None,
+        staking_account_id: None,
+        reward_account_id: role_account_id,
+        started_leaving_at: None,
+        job_unstaking_period: 0,
+        reward_per_block: None,
+        missed_reward: None,
+        created_at: 1,
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

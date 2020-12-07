@@ -71,21 +71,6 @@ pub(crate) fn add_working_group_opening_proposal() -> ProposalParameters<BlockNu
     }
 }
 
-// Proposal parameters for the 'Begin review working group applications' proposal
-pub(crate) fn begin_review_working_group_applications_proposal(
-) -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200,
-        grace_period: 14400,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
-        constitutionality: 1,
-    }
-}
-
 // Proposal parameters for the 'Fill working group opening' proposal
 pub(crate) fn fill_working_group_opening_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
@@ -100,9 +85,9 @@ pub(crate) fn fill_working_group_opening_proposal() -> ProposalParameters<BlockN
     }
 }
 
-// Proposal parameters for the 'Set working group mint capacity' proposal
-pub(crate) fn set_working_group_mint_capacity_proposal() -> ProposalParameters<BlockNumber, Balance>
-{
+// Proposal parameters for the 'Set working group budget capacity' proposal
+pub(crate) fn set_working_group_budget_capacity_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 43200,
         grace_period: 0,

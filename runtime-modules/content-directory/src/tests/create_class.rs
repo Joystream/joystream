@@ -23,7 +23,7 @@ fn create_class_success() {
         let class_created_event = get_test_event(RawEvent::ClassCreated(FIRST_CLASS_ID));
 
         // Event checked
-        assert_event_success(class_created_event, number_of_events_before_call + 1);
+        assert_event(class_created_event, number_of_events_before_call + 1);
     })
 }
 

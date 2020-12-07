@@ -30,18 +30,15 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, ForumWorkingGroupConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
+    ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
-pub mod content_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
@@ -134,10 +131,6 @@ impl Alternative {
                         ],
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
-                        content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -174,10 +167,6 @@ impl Alternative {
                         ],
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
-                        content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -219,16 +208,10 @@ pub fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
-    versioned_store_config: VersionedStoreConfig,
-    versioned_store_permissions_config: VersionedStorePermissionsConfig,
-    data_directory_config: DataDirectoryConfig,
-    content_working_group_config: ContentWorkingGroupConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
-
-    let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
         frame_system: Some(SystemConfig {
@@ -298,38 +281,13 @@ pub fn testnet_genesis(
                 min_voting_stake: 100,
             },
         }),
-        membership: Some(MembersConfig {
-            default_paid_membership_fee: 100u128,
-            members,
-        }),
+        membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
-        }),
-        working_group_Instance1: Some(ForumWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-        }),
-        working_group_Instance2: Some(StorageWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-        }),
-        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         content_directory: Some({
             ContentDirectoryConfig {
@@ -341,9 +299,6 @@ pub fn testnet_genesis(
                 next_curator_group_id: 1,
             }
         }),
-        versioned_store: Some(versioned_store_config),
-        versioned_store_permissions: Some(versioned_store_permissions_config),
-        content_wg: Some(content_working_group_config),
     }
 }
 
@@ -360,10 +315,6 @@ pub(crate) mod tests {
             vec![get_authority_keys_from_seed("Alice").0],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
-            content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
@@ -396,10 +347,6 @@ pub(crate) mod tests {
             ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
-            content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }

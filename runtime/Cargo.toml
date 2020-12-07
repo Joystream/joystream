@@ -11,7 +11,6 @@ version = '7.8.0'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
 lite-json = { version = '0.1.3', default-features = false}
-hex-literal = { optional = true, version = '0.3.1' }
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
 
 # Substrate primitives
@@ -60,28 +59,25 @@ frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev 
 frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
 pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
 pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
+hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
 memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
 governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
-content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../runtime-modules/content-working-group'}
-versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../runtime-modules/versioned-store'}
-versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../runtime-modules/versioned-store-permissions'}
 storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
 service-discovery = { package = 'pallet-service-discovery', default-features = false, path = '../runtime-modules/service-discovery'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
+pallet_constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
+staking-handler = { package = 'staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -144,37 +140,36 @@ std = [
     'memo/std',
     'forum/std',
     'membership/std',
-    'stake/std',
     'governance/std',
-    'hiring/std',
     'minting/std',
     'recurring-rewards/std',
     'working-group/std',
-    'content-working-group/std',
-    'versioned-store/std',
-    'versioned-store-permissions/std',
     'storage/std',
     'service-discovery/std',
     'proposals-engine/std',
     'proposals-discussion/std',
     'proposals-codex/std',
     'content-directory/std',
-    'constitution/std',
+    'pallet_constitution/std',
+    'staking-handler/std',
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "pallet-balances/runtime-benchmarks",
+    "pallet-im-online/runtime-benchmarks",
+    "pallet-staking/runtime-benchmarks",
+    "pallet-timestamp/runtime-benchmarks",
     "frame-benchmarking",
     "frame-system-benchmarking",
     "pallet-offences-benchmarking",
-	"pallet-session-benchmarking",
+    "pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
+    "proposals-engine/runtime-benchmarks",
+    "pallet_constitution/runtime-benchmarks",
+    "working-group/runtime-benchmarks",
     "hex-literal",
 ]
 

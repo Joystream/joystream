@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import Ajv from 'ajv'
 import $RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import { getSchemasLocation } from 'cd-schemas'
+import { getSchemasLocation } from '@joystream/cd-schemas'
 import chalk from 'chalk'
 
 // Default schema path for resolving refs
@@ -39,18 +39,22 @@ export async function getInputJson<T>(inputPath?: string, schema?: JSONSchema, s
       throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
     }
     if (schema) {
-      const ajv = new Ajv()
-      schema = await $RefParser.dereference(schemaPath || DEFAULT_SCHEMA_PATH, schema, {})
-      const valid = ajv.validate(schema, jsonObj) as boolean
-      if (!valid) {
-        throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
-      }
+      await validateInput(jsonObj, schema, schemaPath)
     }
 
     return jsonObj as T
   }
 
   return null
+}
+
+export async function validateInput(input: unknown, schema: JSONSchema, schemaPath?: string): Promise<void> {
+  const ajv = new Ajv({ allErrors: true })
+  schema = await $RefParser.dereference(schemaPath || DEFAULT_SCHEMA_PATH, schema, {})
+  const valid = ajv.validate(schema, input) as boolean
+  if (!valid) {
+    throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
+  }
 }
 
 export function saveOutputJson(outputPath: string | undefined, fileName: string, data: any): void {

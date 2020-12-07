@@ -74,6 +74,30 @@ fn update_category_membership_of_moderator_category() {
 }
 
 #[test]
+// test an attempt to slash category_membership_of_moderator when provided moderator is not given category moderator.
+fn update_category_membership_category_moderator_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            false,
+            Err(Error::<Runtime>::CategoryModeratorDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
 // test case for check if origin is forum lead
 fn create_category_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
