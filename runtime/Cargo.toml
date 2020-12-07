@@ -155,21 +155,22 @@ std = [
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "pallet-balances/runtime-benchmarks",
+    "pallet-im-online/runtime-benchmarks",
+    "pallet-staking/runtime-benchmarks",
+    "pallet-timestamp/runtime-benchmarks",
     "frame-benchmarking",
     "frame-system-benchmarking",
     "pallet-offences-benchmarking",
-	"pallet-session-benchmarking",
+    "pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "pallet_constitution/runtime-benchmarks",
-    "hex-literal"
+    "working-group/runtime-benchmarks",
+    "hex-literal",
 ]
 
 
