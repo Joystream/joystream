@@ -20,11 +20,7 @@ pub type MembershipWorkingGroupInstance = working_group::Instance4;
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub trait Trait:
-    frame_system::Trait
-    + balances::Trait
-    + pallet_timestamp::Trait
-    + common::Trait
-    + working_group::Trait<MembershipWorkingGroupInstance>
+    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

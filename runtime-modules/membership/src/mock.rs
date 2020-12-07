@@ -2,7 +2,7 @@
 
 pub use crate::{GenesisConfig, Trait};
 
-pub use frame_support::traits::Currency;
+pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_origin, parameter_types};
 pub use frame_system;
 use sp_core::H256;
@@ -82,6 +82,28 @@ impl balances::Trait for Test {
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u32;
+}
+
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: LockIdentifier = [9; 8];
+}
+
+impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+}
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
 }
 
 impl Trait for Test {

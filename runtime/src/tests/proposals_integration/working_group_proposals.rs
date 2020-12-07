@@ -13,7 +13,8 @@ use crate::primitives::{ActorId, MemberId};
 use crate::{
     Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
     ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
-    ForumWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
+    ForumWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
+    MembershipWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
     StorageWorkingGroupStakingManager,
 };
 
@@ -51,6 +52,14 @@ fn add_opening(
             assert!(!<working_group::OpeningById<
                 Runtime,
                 ForumWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::Membership => {
+            let opening_id = MembershipWorkingGroup::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                MembershipWorkingGroupInstance,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -298,6 +307,12 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -352,6 +367,12 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
                     ForumWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
                 >(group);
             }
         }
@@ -433,6 +454,13 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
                     Runtime,
                     ForumWorkingGroupInstance,
                     ForumWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
                 >(group);
             }
         }
@@ -553,6 +581,13 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
                     ForumWorkingGroupStakingManager,
                 >(group)
             }
+            WorkingGroup::Membership => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
+                >(group)
+            }
         }
     }
 }
@@ -669,6 +704,12 @@ fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -719,6 +760,12 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
                 run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
                     Runtime,
                     ForumWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
                 >(group);
             }
         }
@@ -820,6 +867,13 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
                     Runtime,
                     ForumWorkingGroupInstance,
                     ForumWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
                 >(group);
             }
         }
@@ -939,6 +993,13 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
                     Runtime,
                     ForumWorkingGroupInstance,
                     ForumWorkingGroupStakingManager,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
                 >(group);
             }
         }
