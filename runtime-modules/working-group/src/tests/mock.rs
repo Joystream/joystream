@@ -18,15 +18,10 @@ mod working_group {
     pub use crate::Event;
 }
 
-mod membership_mod {
-    pub use membership::Event;
-}
-
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         crate DefaultInstance <T>,
-        membership_mod<T>,
         frame_system<T>,
     }
 }
@@ -99,14 +94,8 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
-    type MembershipFee = MembershipFee;
-}
-
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
-pub type Membership = membership::Module<Test>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;

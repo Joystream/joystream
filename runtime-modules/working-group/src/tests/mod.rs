@@ -21,10 +21,9 @@ use crate::{
     DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, Worker,
 };
 use fixtures::{
-    increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
-    ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
-    HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
-    UpdateWorkerRoleAccountFixture,
+    increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
+    EventFixture, FillOpeningFixture, HireLeadFixture, HireRegularWorkerFixture,
+    LeaveWorkerRoleFixture, TerminateWorkerRoleFixture, UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::StorageMap;
@@ -159,8 +158,6 @@ fn apply_on_opening_succeeded() {
 #[test]
 fn apply_on_opening_fails_with_invalid_opening_id() {
     build_test_externalities().execute_with(|| {
-        setup_members(2);
-
         let invalid_opening_id = 22;
 
         let apply_on_opening_fixture =
