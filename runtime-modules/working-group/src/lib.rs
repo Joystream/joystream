@@ -49,7 +49,7 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, MemberId, Opening, OpeningId,
-    OpeningType, Penalty, RewardPolicy, StakePolicy, Worker, WorkerId,
+    OpeningType, Penalty, RewardPolicy, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 

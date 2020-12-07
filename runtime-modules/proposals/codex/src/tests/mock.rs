@@ -29,7 +29,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl_outer_dispatch! {
@@ -48,12 +47,12 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
+    pub const MembershipFee: u64 = 100;
     pub const ExistentialDeposit: u32 = 0;
 }
 
@@ -65,14 +64,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 parameter_types! {
@@ -246,13 +237,6 @@ impl recurring_rewards::Trait for Test {
     type RewardRelationshipId = u64;
 }
 
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
@@ -344,7 +328,6 @@ impl crate::Trait for Test {
     type TextProposalParameters = DefaultProposalParameters;
     type SpendingProposalParameters = DefaultProposalParameters;
     type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type BeginReviewWorkingGroupApplicationsProposalParameters = DefaultProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
     type SetWorkingGroupBudgetCapacityProposalParameters = DefaultProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;

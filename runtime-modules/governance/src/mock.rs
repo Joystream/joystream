@@ -25,6 +25,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -74,9 +75,8 @@ impl election::Trait for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
-    type SubscriptionId = u32;
-    type PaidTermId = u32;
     type ActorId = u32;
+    type MembershipFee = MembershipFee;
 }
 impl minting::Trait for Test {
     type Currency = Balances;
@@ -115,7 +115,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     let members_config_builder = membership::genesis::GenesisConfigBuilder::<Test>::default()
-        .default_paid_membership_fee(0)
         .members(vec![
             // member_id, account_id
             (0, 1),

@@ -242,7 +242,6 @@ parameter_types! {
     pub const ExistentialDeposit: u128 = 0;
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
-    pub const InitialMembersBalance: u32 = 2000;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -448,13 +447,6 @@ impl content_directory::Trait for Runtime {
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
-impl hiring::Trait for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type MintId = u64;
@@ -464,18 +456,6 @@ impl recurring_rewards::Trait for Runtime {
     type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-parameter_types! {
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-}
-
-impl stake::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {
@@ -498,6 +478,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
+    pub const MembershipFee: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -523,14 +504,12 @@ impl storage::data_object_storage_registry::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = ActorId;
+    type MembershipFee = MembershipFee;
 }
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 5;
-
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
@@ -627,10 +606,18 @@ parameter_types! {
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
 }
 
+// Staking managers type aliases.
+pub type ForumWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ForumGroupLockId>;
+pub type ContentDirectoryWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
+pub type StorageWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
+
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type StakingHandler = ForumWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
@@ -639,7 +626,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
+    type StakingHandler = StorageWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
@@ -648,7 +635,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
+    type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
@@ -719,8 +706,6 @@ impl proposals_codex::Trait for Runtime {
     type TextProposalParameters = TextProposalParameters;
     type SpendingProposalParameters = SpendingProposalParameters;
     type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
-    type BeginReviewWorkingGroupApplicationsProposalParameters =
-        BeginReviewWorkingGroupApplicationsProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
     type SetWorkingGroupBudgetCapacityProposalParameters =
         SetWorkingGroupBudgetCapacityProposalParameters;
@@ -735,8 +720,9 @@ impl proposals_codex::Trait for Runtime {
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
 }
 
-impl constitution::Trait for Runtime {
+impl pallet_constitution::Trait for Runtime {
     type Event = Event;
+    type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
 parameter_types! {
@@ -798,12 +784,10 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
-        Hiring: hiring::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        Constitution: constitution::{Module, Call, Storage, Event},
+        Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

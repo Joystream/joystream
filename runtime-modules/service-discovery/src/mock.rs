@@ -50,8 +50,8 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -86,32 +86,16 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
 }
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl common::currency::GovernanceCurrency for Test {

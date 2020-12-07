@@ -232,15 +232,11 @@ impl ApplyOnOpeningFixture {
 }
 
 pub fn setup_members(count: u8) {
-    let authority_account_id = 1;
-    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id).unwrap();
-
     for i in 0..count {
         let account_id: u64 = i as u64;
         let handle: [u8; 20] = [i; 20];
-        Membership::add_screened_member(
-            RawOrigin::Signed(authority_account_id).into(),
-            account_id,
+        Membership::buy_membership(
+            RawOrigin::Signed(account_id).into(),
             Some(handle.to_vec()),
             None,
             None,

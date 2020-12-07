@@ -64,6 +64,13 @@ impl frame_system::Trait for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
+    type WeightInfo = ();
+}
+
+impl crate::WeightInfo for () {
+    fn amend_constitution(_: u32) -> u64 {
+        0
+    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {

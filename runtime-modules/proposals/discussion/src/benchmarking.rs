@@ -1,7 +1,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsDiscussion;
+use balances::Module as Balances;
 use frame_benchmarking::{account, benchmarks};
+use frame_support::sp_runtime::traits::Bounded;
+use frame_support::traits::Currency;
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
@@ -42,21 +45,23 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: membership::Trait>(
+fn member_account<T: membership::Trait + balances::Trait>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
-    let authority_account = account::<T::AccountId>(name, 0, SEED);
+    // Give balance for buying membership
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    assert_eq!(
+        Balances::<T>::usable_balance(&account_id),
+        T::Balance::max_value(),
+        "Balance not added",
+    );
 
-    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
-        .unwrap();
-
-    Membership::<T>::add_screened_member(
-        RawOrigin::Signed(authority_account.clone()).into(),
-        account_id.clone(),
+    Membership::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
         Some(handle),
         None,
         None,
@@ -69,6 +74,7 @@ fn member_account<T: membership::Trait>(
 const MAX_BYTES: u32 = 16384;
 
 benchmarks! {
+    where_clause { where T: balances::Trait }
     _ { }
 
     add_post {

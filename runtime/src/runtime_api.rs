@@ -261,6 +261,7 @@ impl_runtime_apis! {
 
             use crate::ProposalsDiscussion;
             use crate::ProposalsEngine;
+            use crate::Constitution;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -285,6 +286,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, system, SystemBench::<Runtime>);
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, pallet_constitution, Constitution);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

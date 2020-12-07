@@ -106,7 +106,6 @@ pub trait Trait:
     + proposals_discussion::Trait
     + membership::Trait
     + governance::election::Trait
-    + hiring::Trait
     + staking::Trait
 {
     /// Defines max allowed text proposal length.
@@ -143,11 +142,6 @@ pub trait Trait:
 
     /// 'Add working group opening' proposal parameters.
     type AddWorkingGroupOpeningProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// 'Begin review working group applications' proposal parameters.
-    type BeginReviewWorkingGroupApplicationsProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
@@ -298,10 +292,6 @@ decl_module! {
         /// Exports 'Add working group opening' proposal parameters.
         const AddWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::AddWorkingGroupOpeningProposalParameters::get();
-
-        /// Exports 'Begin review working group applications' proposal parameters.
-        const BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::BeginReviewWorkingGroupApplicationsProposalParameters::get();
 
         /// Exports 'Fill working group opening' proposal parameters.
         const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>

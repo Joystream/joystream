@@ -78,14 +78,14 @@ parameter_types! {
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [1; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {
@@ -171,7 +171,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl frame_system::Trait for Test {

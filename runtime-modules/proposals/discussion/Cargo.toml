@@ -13,6 +13,7 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -23,7 +24,10 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'balances'
+]
 std = [
 	'serde',
 	'codec/std',

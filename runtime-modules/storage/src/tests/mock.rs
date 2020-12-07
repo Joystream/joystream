@@ -133,7 +133,6 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -153,6 +152,7 @@ impl GovernanceCurrency for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [2; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
@@ -201,17 +201,8 @@ impl data_object_storage_registry::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type SubscriptionId = u32;
-    type PaidTermId = u32;
     type ActorId = u32;
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl minting::Trait for Test {
@@ -223,13 +214,6 @@ impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 pub struct ExtBuilder {
@@ -285,7 +269,6 @@ impl ExtBuilder {
         .unwrap();
 
         membership::GenesisConfig::<Test> {
-            default_paid_membership_fee: 0,
             members: vec![membership::genesis::Member {
                 member_id: 0,
                 root_account: 1,
