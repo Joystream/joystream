@@ -183,19 +183,15 @@ fn member_funded_account<T: Trait<I>, I: Instance>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    let authority_account = account::<T::AccountId>(name, 0, SEED);
-
-    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
-        .unwrap();
-
-    Membership::<T>::add_screened_member(
-        RawOrigin::Signed(authority_account.clone()).into(),
-        account_id.clone(),
+    Membership::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
         Some(handle),
         None,
         None,
     )
     .unwrap();
+
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
