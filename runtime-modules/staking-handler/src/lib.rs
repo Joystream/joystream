@@ -56,7 +56,7 @@ pub trait StakingHandler<T: frame_system::Trait + common::Trait + pallet_balance
 
 /// Implementation of the StakingHandler.
 pub struct StakingManager<
-    T: frame_system::Trait + membership::Trait + pallet_balances::Trait,
+    T: frame_system::Trait + common::Trait + pallet_balances::Trait,
     LockId: Get<LockIdentifier>,
 > {
     trait_marker: PhantomData<T>,
@@ -64,7 +64,7 @@ pub struct StakingManager<
 }
 
 impl<
-        T: frame_system::Trait + membership::Trait + pallet_balances::Trait,
+        T: frame_system::Trait + common::Trait + pallet_balances::Trait,
         LockId: Get<LockIdentifier>,
     > StakingHandler<T> for StakingManager<T, LockId>
 {

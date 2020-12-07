@@ -14,7 +14,6 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 staking-handler = { package = 'staking-handler', default-features = false, path = '../../staking-handler'}
 
@@ -30,6 +29,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 
 [features]
 default = ['std']
@@ -49,7 +49,6 @@ std = [
 	'sp-arithmetic/std',
 	'sp-runtime/std',
 	'balances/std',
-    'membership/std',
     'common/std',
     'staking-handler/std',
 ]

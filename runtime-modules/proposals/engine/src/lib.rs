@@ -59,7 +59,7 @@
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Trait: engine::Trait + membership::Trait {}
+//! pub trait Trait: engine::Trait + common::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -157,7 +157,7 @@ type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + common::Trait + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;

@@ -24,7 +24,7 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + membership::Trait {}
+//! pub trait Trait: discussions::Trait + common::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -105,7 +105,7 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + membership::Trait {
+pub trait Trait: frame_system::Trait + common::Trait {
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
