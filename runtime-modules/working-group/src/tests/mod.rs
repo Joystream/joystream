@@ -510,9 +510,7 @@ fn update_worker_role_account_fails_with_invalid_origin() {
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
                 .with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::InvalidMemberOrigin.into(),
-        ));
+        update_worker_account_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
     });
 }
 

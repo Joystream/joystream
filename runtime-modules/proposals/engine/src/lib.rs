@@ -109,7 +109,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use types::{MemberId, ProposalOf};
+use types::ProposalOf;
 
 pub use types::{
     ApprovedProposalDecision, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
@@ -137,6 +137,7 @@ use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use staking_handler::StakingHandler;
 
 /// Proposals engine WeightInfo.

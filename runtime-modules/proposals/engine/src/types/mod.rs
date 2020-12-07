@@ -13,6 +13,8 @@ use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
 use sp_std::vec::Vec;
 
+use common::MemberId;
+
 mod proposal_statuses;
 
 pub use proposal_statuses::{
@@ -406,9 +408,6 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
     /// Should be greater than starting block + grace_period if set.
     pub exact_execution_block: Option<BlockNumber>,
 }
-
-// Type alias for member id.
-pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;

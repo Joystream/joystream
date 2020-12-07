@@ -3,9 +3,10 @@
 use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use proposals_engine::VotersParameters;
 
-use super::{MemberId, MembershipOriginValidator};
+use super::MembershipOriginValidator;
 
 /// Handles work with the council.
 /// Provides implementations for ActorOriginValidator and VotersParameters.

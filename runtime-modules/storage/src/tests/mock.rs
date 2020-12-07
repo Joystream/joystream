@@ -198,10 +198,13 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl membership::Trait for Test {
-    type Event = MetaEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u32;
+}
+
+impl membership::Trait for Test {
+    type Event = MetaEvent;
     type MembershipFee = MembershipFee;
 }
 

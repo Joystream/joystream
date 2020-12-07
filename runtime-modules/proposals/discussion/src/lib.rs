@@ -61,11 +61,10 @@ use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
 pub use types::ThreadMode;
-
-type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals discussion WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag

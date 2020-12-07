@@ -501,10 +501,13 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl membership::Trait for Runtime {
-    type Event = Event;
+impl common::Trait for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
+}
+
+impl membership::Trait for Runtime {
+    type Event = Event;
     type MembershipFee = MembershipFee;
 }
 

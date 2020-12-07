@@ -94,10 +94,13 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
     type MembershipFee = MembershipFee;
 }
 

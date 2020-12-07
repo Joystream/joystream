@@ -5,40 +5,24 @@ pub mod genesis;
 pub(crate) mod mock;
 mod tests;
 
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_signed;
-use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
+
+// The storage working group instance alias.
+//pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
-pub trait Trait: frame_system::Trait + balances::Trait + pallet_timestamp::Trait {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// Describes the common type for the working group members (workers).
-    type ActorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
 
     /// Defines the default membership fee.
     type MembershipFee: Get<BalanceOf<Self>>;
@@ -213,7 +197,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as frame_system::Trait>::AccountId,
-      <T as Trait>::MemberId,
+      <T as common::Trait>::MemberId,
     {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),

@@ -48,7 +48,7 @@ use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::{
-    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, MemberId, Opening, OpeningId,
+    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
     OpeningType, Penalty, RewardPolicy, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
@@ -56,11 +56,12 @@ use types::{ApplicationInfo, WorkerInfo};
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use staking_handler::StakingHandler;
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + balances::Trait + common::Trait
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -423,8 +424,8 @@ decl_module! {
             // Ensuring worker actually exists
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
-            // Ensure that origin is signed by member with given id.
-            checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
+            // Ensure the origin of a member with given id.
+            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);

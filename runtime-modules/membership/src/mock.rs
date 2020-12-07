@@ -79,14 +79,13 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
+impl common::Trait for Test {
+    type MemberId = u64;
+    type ActorId = u32;
 }
 
 impl Trait for Test {
     type Event = ();
-    type MemberId = u64;
-    type ActorId = u32;
     type MembershipFee = MembershipFee;
 }
 
