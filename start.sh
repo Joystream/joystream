@@ -21,7 +21,6 @@ trap down EXIT
 
 # Run a local development chain
 docker-compose up -d joystream-node
-export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 
 ## Storage Infrastructure
 # Configure a dev storage node and start storage node
