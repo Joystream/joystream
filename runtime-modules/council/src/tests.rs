@@ -98,8 +98,7 @@ fn council_can_vote_for_yourself() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -209,6 +208,54 @@ fn council_candidacy_invalid_member() {
     });
 }
 
+// Test that candidate can withdraw valid candidacy.
+#[test]
+fn council_candidacy_withdraw_candidacy() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        let stake = council_settings.min_candidate_stake;
+        let candidate = MockUtils::generate_candidate(0, stake);
+
+        Mocks::announce_candidacy(
+            candidate.origin.clone(),
+            candidate.account_id.clone(),
+            candidate.candidate.stake.clone(),
+            Ok(()),
+        );
+
+        Mocks::withdraw_candidacy(
+            candidate.origin.clone(),
+            candidate.account_id.clone(),
+            Ok(()),
+        );
+    });
+}
+
+// Test that candidate can withdraw valid candidacy.
+#[test]
+fn council_candidacy_release_candidate_stake() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let not_elected_candidate_index = 2;
+
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
+
+        Mocks::release_candidacy_stake(
+            params.candidates_announcing[not_elected_candidate_index]
+                .origin
+                .clone(),
+            params.candidates_announcing[not_elected_candidate_index]
+                .account_id
+                .clone(),
+            Ok(()),
+        );
+    });
+}
+
 // Test that only valid members can candidate.
 #[test]
 fn council_announcement_reset_on_insufficient_candidates() {
@@ -260,8 +307,7 @@ fn council_announcement_reset_on_not_enough_winners() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count
@@ -328,8 +374,7 @@ fn council_two_consecutive_rounds() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -517,8 +562,7 @@ fn council_candidate_stake_can_be_unlocked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         let not_elected_candidate_index = 2;
 
@@ -626,8 +670,7 @@ fn council_candidate_stake_automaticly_converted() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -717,8 +760,7 @@ fn council_member_stake_is_locked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -803,8 +845,7 @@ fn council_member_stake_automaticly_unlocked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
         let not_reelected_candidate_index = 0;
 
         let params = Mocks::run_full_council_cycle(0, &[], 0);
@@ -881,8 +922,7 @@ fn council_candidacy_set_note() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
