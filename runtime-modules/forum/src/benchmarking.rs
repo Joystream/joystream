@@ -277,6 +277,8 @@ benchmarks! {
 
         assert_eq!(Module::<T>::post_by_id(next_thread_id, next_post_id), new_post);
         assert_eq!(Module::<T>::next_post_id(), next_post_id + T::PostId::one());
+
+        assert_last_event::<T>(RawEvent::ThreadCreated(next_thread_id).into());
     }
 }
 
