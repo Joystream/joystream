@@ -45,7 +45,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: membership::Trait + balances::Trait>(
+fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -74,7 +74,7 @@ fn member_account<T: membership::Trait + balances::Trait>(
 const MAX_BYTES: u32 = 16384;
 
 benchmarks! {
-    where_clause { where T: balances::Trait }
+    where_clause { where T: balances::Trait, T: membership::Trait }
     _ { }
 
     add_post {

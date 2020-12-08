@@ -64,7 +64,10 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     }));
 }
 
-fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId, T::MemberId) {
+fn member_funded_account<T: Trait + membership::Trait>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
@@ -84,7 +87,7 @@ fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn create_proposal<T: Trait>(
+fn create_proposal<T: Trait + membership::Trait>(
     id: u32,
     proposal_number: u32,
     constitutionality: u32,
@@ -154,7 +157,9 @@ fn create_proposal<T: Trait>(
     (account_id, member_id, proposal_id)
 }
 
-fn create_multiple_finalized_proposals<T: Trait + governance::council::Trait>(
+fn create_multiple_finalized_proposals<
+    T: Trait + governance::council::Trait + membership::Trait,
+>(
     number_of_proposals: u32,
     constitutionality: u32,
     vote_kind: VoteKind,
@@ -203,7 +208,7 @@ const MAX_BYTES: u32 = 16384;
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: governance::council::Trait
+        where T: governance::council::Trait, T: membership::Trait
     }
 
     _ { }

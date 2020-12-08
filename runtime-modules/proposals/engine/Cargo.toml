@@ -22,6 +22,7 @@ frame-benchmarking = { package = 'frame-benchmarking', default-features = false,
 governance = { package = 'pallet-governance', default-features = false, path = '../../governance', optional = true}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward', optional = true}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting', optional = true}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -38,6 +39,7 @@ runtime-benchmarks = [
     'governance',
     'recurringrewards',
     'minting',
+    'membership',
 ]
 std = [
 	'serde',
