@@ -27,6 +27,7 @@ docker-compose up -d joystream-node
 DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 docker-compose up -d colossus
 
+# Query node is expected to have been already built
 docker-compose up -d db
 yarn workspace query-node-root db:migrate
 docker-compose up -d graphql-server

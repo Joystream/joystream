@@ -102,3 +102,7 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
+echo "Waiting for chain to startup..."
+sleep 5s
+
+./run-test-scenario.sh $1
