@@ -137,4 +137,8 @@ impl UpdateMembershipVerificationFixture {
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
     }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
 }

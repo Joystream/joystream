@@ -4,7 +4,7 @@ pub(crate) mod fixtures;
 pub(crate) mod mock;
 
 use super::genesis;
-use crate::{Error, Event};
+use crate::{Error, Event, MembershipWorkingGroupInstance};
 use fixtures::*;
 use mock::*;
 
@@ -259,5 +259,27 @@ fn update_verification_status_fails_with_invalid_member_id() {
         UpdateMembershipVerificationFixture::default()
             .with_member_id(invalid_member_id)
             .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let next_member_id = Membership::members_created();
+        assert_ok!(buy_default_membership_as_alice());
+
+        let invalid_worker_id = 44;
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .with_worker_id(invalid_worker_id)
+            .call_and_assert(Err(working_group::Error::<
+                Test,
+                MembershipWorkingGroupInstance,
+            >::WorkerDoesNotExist
+                .into()));
     });
 }
