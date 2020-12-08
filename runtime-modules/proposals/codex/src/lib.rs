@@ -58,6 +58,7 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
