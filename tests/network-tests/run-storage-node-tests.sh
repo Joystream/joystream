@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
-# SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
-# cd $SCRIPT_PATH
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+set -a
+. ../../.env
+set +a
 
 function cleanup() {
     # Show tail end of logs for the processor and indexer containers to
@@ -13,15 +17,6 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-
-export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
-
-# Only run codegen if no generated files found
-[ ! -d "query-node/generated/" ] && yarn workspace query-node-root build
-
-# Make sure typeorm is available.. it get removed again when yarn is run again
-# typeorm commandline is used by db:migrate step below.
-ln -s ../../../../../node_modules/typeorm/cli.js query-node/generated/graphql-server/node_modules/.bin/typeorm || :
 
 # clean start
 docker-compose down -v
@@ -52,4 +47,4 @@ yes | yarn joystream-cli media:uploadVideo ./tests/network-tests/assets/joystrea
   --input ./tests/network-tests/assets/TestVideo.json \
   --confirm 
 
-time DEBUG=* yarn workspace network-tests test-run src/scenarios/storage-node.ts
+time DEBUG=* yarn workspace network-tests run-test-scenario storage-node
