@@ -121,16 +121,19 @@ impl<
     ) -> DispatchResult {
         let current_stake = Self::current_stake(account_id);
 
-        //Unlock previous stake if its not zero.
-        if current_stake > Zero::zero() {
-            Self::unlock(account_id);
+        // setting zero stake?
+        if new_stake == Zero::zero() {
+            // unlock stake if any
+            if current_stake > Zero::zero() {
+                Self::unlock(account_id);
+            }
+
+            return Ok(());
         }
 
-        if !Self::is_enough_balance_for_stake(account_id, new_stake) {
-            //Restore previous stake if its not zero.
-            if current_stake > Zero::zero() {
-                Self::lock(account_id, current_stake);
-            }
+        let usable_balance = <pallet_balances::Module<T>>::usable_balance(account_id);
+
+        if new_stake > current_stake + usable_balance {
             return Err(DispatchError::Other("Not enough balance for a new stake."));
         }
 
