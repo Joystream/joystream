@@ -280,6 +280,28 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadCreated(next_thread_id).into());
     }
+    edit_thread_title {
+        let j in 0 .. MAX_BYTES;
+
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff));
+
+        let thread_id = create_new_thread::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], poll);
+        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+
+        let text = vec![0u8].repeat(j as usize);
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ForumUserId::default(), category_id, thread_id, text.clone())
+    verify {
+        thread.title_hash = T::calculate_hash(&text);
+        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        assert_last_event::<T>(RawEvent::ThreadTitleUpdated(thread_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -321,6 +343,13 @@ mod tests {
     fn test_create_thread() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_create_thread::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_edit_thread_title() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_edit_thread_title::<Runtime>());
         });
     }
 }
