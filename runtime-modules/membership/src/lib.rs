@@ -72,6 +72,10 @@ pub struct MembershipObject<BlockNumber, Moment, AccountId> {
     /// a member to act under their identity in other modules. It will usually be used more
     /// online and will have less funds in its balance.
     pub controller_account: AccountId,
+
+    /// An indicator that reflects whether the implied real world identity in the profile
+    /// corresponds to the true actor behind the membership.
+    pub verified: bool,
 }
 
 // Contains valid or default user details
@@ -476,6 +480,7 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
+            verified: false,
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
