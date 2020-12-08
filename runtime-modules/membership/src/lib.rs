@@ -12,6 +12,8 @@ use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
+use common::working_group::Interface;
+
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
@@ -25,6 +27,9 @@ pub trait Trait:
 
     /// Defines the default membership fee.
     type MembershipFee: Get<BalanceOf<Self>>;
+
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::Interface<Self>;
 }
 
 // Default user info constraints
@@ -370,11 +375,11 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_profile_verification(
             origin,
-            _worker_id: T::ActorId,
+            worker_id: T::ActorId,
             target_member_id: T::MemberId,
             is_verified: bool
         ) {
-            ensure_signed(origin)?;
+            T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
             Self::ensure_membership(target_member_id)?;
 

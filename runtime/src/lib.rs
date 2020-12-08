@@ -509,6 +509,7 @@ impl common::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = MembershipWorkingGroup;
 }
 
 parameter_types! {
