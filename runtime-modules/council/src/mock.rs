@@ -27,6 +27,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::{BalanceLock, LockComparator, StakingManager};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -75,8 +76,8 @@ impl Trait for Runtime {
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
 
-    type CandidacyLock = staking_handler::StakingManager<Self, CandidacyLockId>;
-    type ElectedMemberLock = staking_handler::StakingManager<Self, ElectedMemberLockId>;
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type ElectedMemberLock = StakingManager<Self, ElectedMemberLockId>;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
@@ -297,6 +298,15 @@ impl Runtime {
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
     pub const MaxLocks: u32 = 50;
+}
+
+impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[BalanceLock<<Runtime as balances::Trait>::Balance>],
+    ) -> bool {
+        true
+    }
 }
 
 /////////////////// Data structures ////////////////////////////////////////////

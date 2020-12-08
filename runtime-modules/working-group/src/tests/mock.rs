@@ -1,3 +1,4 @@
+use frame_support::traits::LockIdentifier;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -8,6 +9,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::{BalanceLock, LockComparator, StakingManager};
 
 use crate::{DefaultInstance, Module, Trait};
 
@@ -102,6 +104,15 @@ impl membership::Trait for Test {
     type MembershipFee = MembershipFee;
 }
 
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[BalanceLock<<Test as balances::Trait>::Balance>],
+    ) -> bool {
+        true
+    }
+}
+
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Membership = membership::Module<Test>;
@@ -116,7 +127,7 @@ parameter_types! {
 impl Trait for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingHandler = StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;

@@ -373,7 +373,6 @@ fn council_announcement_reset_on_not_enough_winners() {
 
 // Test that two consecutive election rounds can be run and expected council members are elected.
 #[test]
-#[ignore] // ignore until `StakeHandler::is_account_free_of_conflicting_stakes()` reimplemented
 fn council_two_consecutive_rounds() {
     let config = default_genesis_config();
 
@@ -499,7 +498,6 @@ fn council_two_consecutive_rounds() {
 
 // Test that repeated candidacy announcement is forbidden.
 #[test]
-#[ignore] // ignore until `StakeHandler::is_account_free_of_conflicting_stakes()` reimplemented
 fn council_cant_candidate_repeatedly() {
     let config = default_genesis_config();
 
@@ -846,7 +844,6 @@ fn council_member_stake_is_locked() {
 
 // Test that council member's stake is automaticly released after next council is elected.
 #[test]
-#[ignore] // ignore until `StakeHandler::is_account_free_of_conflicting_stakes()` reimplemented
 fn council_member_stake_automaticly_unlocked() {
     let config = default_genesis_config();
 
@@ -1039,7 +1036,6 @@ fn council_candidacy_set_note() {
 
 /// Test that candidating in 2nd council cycle after failed candidacy in 1st cycle releases the 1st cycle's stake.
 #[test]
-#[ignore] // ignore until `StakeHandler::is_account_free_of_conflicting_stakes()` reimplemented
 fn council_repeated_candidacy_unstakes() {
     let config = default_genesis_config();
 
@@ -1121,7 +1117,6 @@ fn council_budget_refill_can_be_planned() {
 
 /// Test that rewards for council members are paid.
 #[test]
-#[ignore] // ignore until `StakeHandler::is_account_free_of_conflicting_stakes()` reimplemented
 fn council_rewards_are_paid() {
     let config = default_genesis_config();
 

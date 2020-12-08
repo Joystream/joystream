@@ -20,6 +20,7 @@ pub(crate) mod proposals;
 
 use crate::ProposalObserver;
 pub use proposals::*;
+use staking_handler::{BalanceLock, LockComparator, StakingManager};
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -94,7 +95,7 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakingHandler = staking_handler::StakingManager<Test, LockId>;
+    type StakingHandler = StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -222,6 +223,15 @@ impl recurringrewards::Trait for Test {
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[BalanceLock<<Test as balances::Trait>::Balance>],
+    ) -> bool {
+        true
+    }
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
