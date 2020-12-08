@@ -1,72 +1,17 @@
 #![cfg(test)]
 
+pub(crate) mod fixtures;
+pub(crate) mod mock;
+
 use super::genesis;
-use super::mock::*;
 use crate::{Error, Event};
+use fixtures::*;
+use mock::*;
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
-use frame_support::*;
-
-fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
-    if <crate::MembershipById<Test>>::contains_key(member_id) {
-        Membership::membership(member_id)
-    } else {
-        panic!("member profile not created");
-    }
-}
-
-fn assert_dispatch_error_message(result: DispatchResult, expected_result: DispatchResult) {
-    assert!(result.is_err());
-    assert_eq!(result, expected_result);
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct TestUserInfo {
-    pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
-}
-
-fn get_alice_info() -> TestUserInfo {
-    TestUserInfo {
-        handle: Some(String::from("alice").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/alice")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is alice").as_bytes().to_vec()),
-    }
-}
-
-fn get_bob_info() -> TestUserInfo {
-    TestUserInfo {
-        handle: Some(String::from("bobby").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/bob")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is bob").as_bytes().to_vec()),
-    }
-}
-
-const ALICE_ACCOUNT_ID: u64 = 1;
-
-fn buy_default_membership_as_alice() -> DispatchResult {
-    let info = get_alice_info();
-    Membership::buy_membership(
-        Origin::signed(ALICE_ACCOUNT_ID),
-        info.handle,
-        info.avatar_uri,
-        info.about,
-    )
-}
-
-fn set_alice_free_balance(balance: u64) {
-    let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
-}
+use frame_support::{assert_ok, StorageMap, StorageValue};
+use frame_system::RawOrigin;
+use sp_runtime::DispatchError;
 
 #[test]
 fn buy_membership() {
@@ -277,33 +222,42 @@ fn update_verification_status_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let worker_id = 1;
-
         let initial_balance = MembershipFee::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
         assert_ok!(buy_default_membership_as_alice());
 
-        let membership = get_membership_by_id(next_member_id);
-        assert_eq!(membership.verified, false);
-
-        let verified = true;
-        let result = Membership::update_profile_verification(
-            Origin::signed(ALICE_ACCOUNT_ID),
-            worker_id,
-            next_member_id,
-            verified,
-        );
-
-        assert_ok!(result);
-
-        let membership = get_membership_by_id(next_member_id);
-        assert_eq!(membership.verified, verified);
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberVerificationStatusUpdated(
             next_member_id,
-            verified,
+            true,
         ));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let next_member_id = Membership::members_created();
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_invalid_member_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_member_id = 44;
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
     });
 }

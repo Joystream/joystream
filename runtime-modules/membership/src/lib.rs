@@ -2,7 +2,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod genesis;
-pub(crate) mod mock;
 mod tests;
 
 use codec::{Decode, Encode};

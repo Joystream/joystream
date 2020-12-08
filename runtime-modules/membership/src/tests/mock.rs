@@ -12,10 +12,6 @@ use sp_runtime::{
     Perbill,
 };
 
-pub use common::currency::GovernanceCurrency;
-use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_system::{EventRecord, Phase};
-
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -96,7 +92,7 @@ impl balances::Trait for Test {
 
 impl common::Trait for Test {
     type MemberId = u64;
-    type ActorId = u32;
+    type ActorId = u64;
 }
 
 parameter_types! {
@@ -165,37 +161,6 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     TestExternalitiesBuilder::<Test>::default().build()
-}
-
-// Recommendation from Parity on testing on_finalize
-// https://substrate.dev/docs/en/next/development/module/tests
-pub fn run_to_block(n: u64) {
-    while System::block_number() < n {
-        <System as OnFinalize<u64>>::on_finalize(System::block_number());
-        <Membership as OnFinalize<u64>>::on_finalize(System::block_number());
-        System::set_block_number(System::block_number() + 1);
-        <System as OnInitialize<u64>>::on_initialize(System::block_number());
-        <Membership as OnInitialize<u64>>::on_initialize(System::block_number());
-    }
-}
-
-pub struct EventFixture;
-impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
-        let converted_event = TestEvent::membership_mod(expected_raw_event);
-
-        Self::assert_last_global_event(converted_event)
-    }
-
-    pub fn assert_last_global_event(expected_event: TestEvent) {
-        let expected_event = EventRecord {
-            phase: Phase::Initialization,
-            event: expected_event,
-            topics: vec![],
-        };
-
-        assert_eq!(System::events().pop().unwrap(), expected_event);
-    }
 }
 
 pub type Balances = balances::Module<Test>;
