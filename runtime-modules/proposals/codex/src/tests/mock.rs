@@ -191,10 +191,6 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
-parameter_types! {
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
-}
-
 impl governance::election::Trait for Test {
     type Event = ();
     type CouncilElected = ();
@@ -393,7 +389,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 }
 
 impl crate::Trait for Test {
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type SetValidatorCountProposalParameters = DefaultProposalParameters;

@@ -198,24 +198,8 @@ fn create_runtime_upgrade_common_checks_succeed() {
 }
 
 #[test]
-fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
+fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::Signed(1).into();
-
-        let long_wasm = [0u8; 30000].to_vec();
-        assert_eq!(
-            ProposalCodex::create_runtime_upgrade_proposal(
-                origin,
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
-                long_wasm,
-                None,
-            ),
-            Err(Error::<Test>::RuntimeProposalSizeExceeded.into())
-        );
-
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 RawOrigin::Signed(1).into(),
