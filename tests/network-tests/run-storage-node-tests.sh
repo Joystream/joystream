@@ -41,11 +41,11 @@ sleep 1m
 
 echo "Creating channel..."
 yarn joystream-cli media:createChannel \
-  --input ./tests/network-tests/assets/TestChannel.json --confirm
+  --input ./assets/TestChannel.json --confirm
 
 echo "Uploading video..."
-yes | yarn joystream-cli media:uploadVideo ./tests/network-tests/assets/joystream.MOV \
-  --input ./tests/network-tests/assets/TestVideo.json \
+yes | yarn joystream-cli media:uploadVideo ./assets/joystream.MOV \
+  --input ./assets/TestVideo.json \
   --confirm 
 
 time DEBUG=* yarn workspace network-tests run-test-scenario storage-node
