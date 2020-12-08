@@ -62,13 +62,11 @@ use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Satu
 use std::marker::PhantomData;
 
 use referendum::{CastVote, OptionResult, ReferendumManager};
+use staking_handler::StakingHandler;
 
 // declared modules
 mod mock;
-mod staking_handler;
 mod tests;
-
-use staking_handler::StakingHandler2;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
@@ -217,9 +215,9 @@ pub trait Trait: frame_system::Trait {
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLock: StakingHandler2<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
     /// Identifier for currency lock used for candidacy staking.
-    type ElectedMemberLock: StakingHandler2<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type ElectedMemberLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;

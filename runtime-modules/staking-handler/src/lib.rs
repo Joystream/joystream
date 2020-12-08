@@ -16,44 +16,38 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-/// Type alias for member id.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
-
-/// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as pallet_balances::Trait>::Balance;
-
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: frame_system::Trait + membership::Trait + pallet_balances::Trait> {
+pub trait StakingHandler<AccountId, Balance, MemberId> {
     /// Locks the specified balance on the account using specific lock identifier.
-    fn lock(account_id: &T::AccountId, amount: BalanceOf<T>);
+    fn lock(account_id: &AccountId, amount: Balance);
 
     /// Removes the specified lock on the account.
-    fn unlock(account_id: &T::AccountId);
+    fn unlock(account_id: &AccountId);
 
     /// Slash the specified balance on the account using specific lock identifier.
     /// No limits, no actions on zero stake.
     /// If slashing balance greater than the existing stake - stake is slashed to zero.
     /// Returns actually slashed balance.
-    fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T>;
+    fn slash(account_id: &AccountId, amount: Option<Balance>) -> Balance;
 
     /// Sets the new stake to a given amount.
-    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult;
+    fn set_stake(account_id: &AccountId, new_stake: Balance) -> DispatchResult;
 
     /// Verifies that staking account bound to the member.
-    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
+    fn is_member_staking_account(member_id: &MemberId, account_id: &AccountId) -> bool;
 
     /// Verifies that there no conflicting stakes on the staking account.
-    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool;
+    fn is_account_free_of_conflicting_stakes(account_id: &AccountId) -> bool;
 
     /// Verifies that staking account balance is sufficient for staking.
     /// During the balance check we should consider already locked stake. Effective balance to check
     /// is 'already locked funds' + 'usable funds'.
-    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOf<T>) -> bool;
+    fn is_enough_balance_for_stake(account_id: &AccountId, amount: Balance) -> bool;
 
     /// Returns the current stake on the account.
-    fn current_stake(account_id: &T::AccountId) -> BalanceOf<T>;
+    fn current_stake(account_id: &AccountId) -> Balance;
 }
 
 /// Implementation of the StakingHandler.
@@ -68,9 +62,17 @@ pub struct StakingManager<
 impl<
         T: frame_system::Trait + membership::Trait + pallet_balances::Trait,
         LockId: Get<LockIdentifier>,
-    > StakingHandler<T> for StakingManager<T, LockId>
+    >
+    StakingHandler<
+        <T as frame_system::Trait>::AccountId,
+        <T as pallet_balances::Trait>::Balance,
+        <T as membership::Trait>::MemberId,
+    > for StakingManager<T, LockId>
 {
-    fn lock(account_id: &T::AccountId, amount: BalanceOf<T>) {
+    fn lock(
+        account_id: &<T as frame_system::Trait>::AccountId,
+        amount: <T as pallet_balances::Trait>::Balance,
+    ) {
         <pallet_balances::Module<T>>::set_lock(
             LockId::get(),
             &account_id,
@@ -79,12 +81,15 @@ impl<
         )
     }
 
-    fn unlock(account_id: &T::AccountId) {
+    fn unlock(account_id: &<T as frame_system::Trait>::AccountId) {
         <pallet_balances::Module<T>>::remove_lock(LockId::get(), &account_id);
     }
 
-    fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T> {
-        let locks = <pallet_balances::Module<T>>::locks(&account_id);
+    fn slash(
+        account_id: &<T as frame_system::Trait>::AccountId,
+        amount: Option<<T as pallet_balances::Trait>::Balance>,
+    ) -> <T as pallet_balances::Trait>::Balance {
+        let locks = pallet_balances::Module::<T>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 
@@ -102,7 +107,7 @@ impl<
                 }
             }
 
-            let _ = <pallet_balances::Module<T>>::slash(&account_id, slashable_amount);
+            let _ = pallet_balances::Module::<T>::slash(&account_id, slashable_amount);
 
             actually_slashed_balance = slashable_amount
         }
@@ -110,7 +115,10 @@ impl<
         actually_slashed_balance
     }
 
-    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult {
+    fn set_stake(
+        account_id: &<T as frame_system::Trait>::AccountId,
+        new_stake: <T as pallet_balances::Trait>::Balance,
+    ) -> DispatchResult {
         let current_stake = Self::current_stake(account_id);
 
         //Unlock previous stake if its not zero.
@@ -132,11 +140,16 @@ impl<
     }
 
     // Membership support for staking accounts required.
-    fn is_member_staking_account(_member_id: &MemberId<T>, _account_id: &T::AccountId) -> bool {
+    fn is_member_staking_account(
+        _member_id: &<T as membership::Trait>::MemberId,
+        _account_id: &<T as frame_system::Trait>::AccountId,
+    ) -> bool {
         true
     }
 
-    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
+    fn is_account_free_of_conflicting_stakes(
+        account_id: &<T as frame_system::Trait>::AccountId,
+    ) -> bool {
         let locks = <pallet_balances::Module<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
@@ -144,11 +157,16 @@ impl<
         existing_lock.is_none()
     }
 
-    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOf<T>) -> bool {
+    fn is_enough_balance_for_stake(
+        account_id: &<T as frame_system::Trait>::AccountId,
+        amount: <T as pallet_balances::Trait>::Balance,
+    ) -> bool {
         <pallet_balances::Module<T>>::usable_balance(account_id) >= amount
     }
 
-    fn current_stake(account_id: &T::AccountId) -> BalanceOf<T> {
+    fn current_stake(
+        account_id: &<T as frame_system::Trait>::AccountId,
+    ) -> <T as pallet_balances::Trait>::Balance {
         let locks = <pallet_balances::Module<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
