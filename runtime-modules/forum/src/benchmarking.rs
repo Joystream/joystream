@@ -30,6 +30,52 @@ fn create_new_category<T: Trait>(
     Module::<T>::next_category_id() - T::CategoryId::one()
 }
 
+fn create_new_thread<T: Trait>(
+    account_id: T::AccountId,
+    forum_user_id: T::ForumUserId,
+    category_id: T::CategoryId,
+    title: Vec<u8>,
+    text: Vec<u8>,
+    poll: Option<Poll<T::Moment, T::Hash>>,
+) -> T::ThreadId {
+    assert_ok!(Module::<T>::create_thread(
+        RawOrigin::Signed(account_id).into(),
+        forum_user_id,
+        category_id,
+        title,
+        text,
+        poll
+    ));
+    Module::<T>::next_thread_id() - T::ThreadId::one()
+}
+
+pub fn good_poll_alternative_text() -> Vec<u8> {
+    b"poll alternative".to_vec()
+}
+
+pub fn good_poll_description() -> Vec<u8> {
+    b"poll description".to_vec()
+}
+
+pub fn generate_poll<T: Trait>(expiration_diff: T::Moment) -> Poll<T::Moment, T::Hash> {
+    Poll {
+        description_hash: T::calculate_hash(good_poll_description().as_slice()),
+        end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
+        poll_alternatives: {
+            let mut alternatives = vec![];
+            for _ in 0..5 {
+                alternatives.push(PollAlternative {
+                    alternative_text_hash: T::calculate_hash(
+                        good_poll_alternative_text().as_slice(),
+                    ),
+                    vote_count: 0,
+                });
+            }
+            alternatives
+        },
+    }
+}
+
 benchmarks! {
     _{ }
 
@@ -187,6 +233,51 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::CategoryDeleted(category_id).into());
     }
+    create_thread {
+        let j in 0 .. MAX_BYTES;
+
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+        let mut category = Module::<T>::category_by_id(category_id);
+
+        let text = vec![0u8].repeat(j as usize);
+
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff));
+
+        let next_thread_id = Module::<T>::next_thread_id();
+        let next_post_id = Module::<T>::next_post_id();
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ForumUserId::default(), category_id, text.clone(), text.clone(), poll.clone())
+    verify {
+
+        // Ensure category num_direct_threads updated successfully.
+        category.num_direct_threads+=1;
+        assert_eq!(Module::<T>::category_by_id(category_id), category);
+
+        // Ensure new thread created successfully
+        let new_thread = Thread {
+            category_id,
+            title_hash: T::calculate_hash(&text),
+            author_id: T::ForumUserId::default(),
+            archived: false,
+            poll,
+            // initial posts number
+            num_direct_posts: 1,
+        };
+        assert_eq!(Module::<T>::thread_by_id(category_id, next_thread_id), new_thread);
+        assert_eq!(Module::<T>::next_thread_id(), next_thread_id + T::ThreadId::one());
+
+        // Ensure initial post added successfully
+        let new_post = Post {
+            thread_id: next_thread_id,
+            text_hash: T::calculate_hash(&text),
+            author_id: T::ForumUserId::default(),
+        };
+
+        assert_eq!(Module::<T>::post_by_id(next_thread_id, next_post_id), new_post);
+        assert_eq!(Module::<T>::next_post_id(), next_post_id + T::PostId::one());
+    }
 }
 
 #[cfg(test)]
@@ -221,6 +312,13 @@ mod tests {
     fn test_delete_category() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_delete_category::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_create_thread() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_create_thread::<Runtime>());
         });
     }
 }
