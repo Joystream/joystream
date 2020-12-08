@@ -209,6 +209,7 @@ decl_event! {
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
+        MemberVerificationStatusUpdated(MemberId, bool),
     }
 }
 
@@ -365,6 +366,30 @@ decl_module! {
                 <MembershipById<T>>::insert(member_id, membership);
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_profile_verification(
+            origin,
+            _worker_id: T::ActorId,
+            target_member_id: T::MemberId,
+            is_verified: bool
+        ) {
+            ensure_signed(origin)?;
+
+            Self::ensure_membership(target_member_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&target_member_id, |membership| {
+                    membership.verified = is_verified;
+            });
+
+            Self::deposit_event(
+                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
+            );
         }
     }
 }

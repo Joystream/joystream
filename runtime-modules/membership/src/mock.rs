@@ -3,7 +3,7 @@
 pub use crate::{GenesisConfig, Trait};
 
 pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
@@ -13,9 +13,24 @@ use sp_runtime::{
 };
 
 pub use common::currency::GovernanceCurrency;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_system::{EventRecord, Phase};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
+}
+
+mod membership_mod {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        membership_mod<T>,
+        frame_system<T>,
+        balances<T>,
+        working_group Instance4 <T>,
+    }
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -40,7 +55,7 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
@@ -72,7 +87,7 @@ parameter_types! {
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -90,7 +105,7 @@ parameter_types! {
 }
 
 impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
@@ -107,7 +122,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 }
 
 impl Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MembershipFee = MembershipFee;
 }
 
@@ -148,6 +163,41 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
     }
 }
 
+pub fn build_test_externalities() -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::<Test>::default().build()
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <Membership as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Membership as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}
+
+pub struct EventFixture;
+impl EventFixture {
+    pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
+        let converted_event = TestEvent::membership_mod(expected_raw_event);
+
+        Self::assert_last_global_event(converted_event)
+    }
+
+    pub fn assert_last_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+}
+
 pub type Balances = balances::Module<Test>;
-pub type Members = crate::Module<Test>;
+pub type Membership = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;

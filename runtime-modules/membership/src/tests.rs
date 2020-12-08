@@ -2,7 +2,7 @@
 
 use super::genesis;
 use super::mock::*;
-use crate::Error;
+use crate::{Error, Event};
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
@@ -10,7 +10,7 @@ use frame_support::*;
 
 fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
-        Members::membership(member_id)
+        Membership::membership(member_id)
     } else {
         panic!("member profile not created");
     }
@@ -56,7 +56,7 @@ const ALICE_ACCOUNT_ID: u64 = 1;
 
 fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
-    Members::buy_membership(
+    Membership::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
         info.handle,
         info.avatar_uri,
@@ -79,7 +79,7 @@ fn buy_membership() {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            let next_member_id = Members::members_created();
+            let next_member_id = Membership::members_created();
 
             assert_ok!(buy_default_membership_as_alice());
 
@@ -188,11 +188,11 @@ fn update_profile() {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            let next_member_id = Members::members_created();
+            let next_member_id = Membership::members_created();
 
             assert_ok!(buy_default_membership_as_alice());
             let info = get_bob_info();
-            assert_ok!(Members::update_membership(
+            assert_ok!(Membership::update_membership(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 next_member_id,
                 info.handle,
@@ -223,7 +223,7 @@ fn set_controller_key() {
         .execute_with(|| {
             let member_id = 0;
 
-            assert_ok!(Members::set_controller_account(
+            assert_ok!(Membership::set_controller_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 member_id,
                 ALICE_CONTROLLER_ID
@@ -257,16 +257,53 @@ fn set_root_account() {
         .execute_with(|| {
             let member_id = 0;
 
-            assert_ok!(Members::set_root_account(
+            assert_ok!(Membership::set_root_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 member_id,
                 ALICE_NEW_ROOT_ACCOUNT
             ));
 
-            let membership = Members::membership(member_id);
+            let membership = Membership::membership(member_id);
 
             assert_eq!(ALICE_NEW_ROOT_ACCOUNT, membership.root_account);
 
             assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
         });
+}
+
+#[test]
+fn update_verification_status_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let worker_id = 1;
+
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let next_member_id = Membership::members_created();
+        assert_ok!(buy_default_membership_as_alice());
+
+        let membership = get_membership_by_id(next_member_id);
+        assert_eq!(membership.verified, false);
+
+        let verified = true;
+        let result = Membership::update_profile_verification(
+            Origin::signed(ALICE_ACCOUNT_ID),
+            worker_id,
+            next_member_id,
+            verified,
+        );
+
+        assert_ok!(result);
+
+        let membership = get_membership_by_id(next_member_id);
+        assert_eq!(membership.verified, verified);
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberVerificationStatusUpdated(
+            next_member_id,
+            verified,
+        ));
+    });
 }
