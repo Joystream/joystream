@@ -7,6 +7,8 @@ mod working_group_proposals;
 use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election_params::ElectionParameters;
+use membership;
+use proposals_codex::GeneralProposalParameters;
 use proposals_engine::{
     ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
@@ -503,12 +505,16 @@ fn text_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+            };
+
             ProposalCodex::create_text_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
+                general_proposal_parameters,
                 b"text".to_vec(),
                 None,
             )
@@ -531,12 +537,16 @@ fn spending_proposal_execution_succeeds() {
         assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+            };
+
             ProposalCodex::create_spending_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
+                general_proposal_parameters,
                 new_balance,
                 target_account_id.clone().into(),
                 None,
@@ -565,12 +575,16 @@ fn set_validator_count_proposal_execution_succeeds() {
         assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+            };
+
             ProposalCodex::create_set_validator_count_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
+                general_proposal_parameters,
                 new_validator_count,
                 None,
             )
@@ -590,12 +604,16 @@ fn amend_constitution_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+            };
+
             ProposalCodex::create_amend_constitution_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
+                general_proposal_parameters,
                 b"Constitution text".to_vec(),
                 None,
             )

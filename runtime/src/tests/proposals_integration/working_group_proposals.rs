@@ -66,12 +66,16 @@ fn add_opening(
     };
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_add_working_group_leader_opening_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             AddOpeningParameters {
                 description: Vec::new(),
                 stake_policy: stake_policy.clone(),
@@ -101,12 +105,16 @@ fn fill_opening(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_fill_working_group_leader_opening_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             proposals_codex::FillOpeningParameters {
                 opening_id,
                 successful_application_id,
@@ -134,12 +142,16 @@ fn decrease_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_decrease_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             leader_worker_id,
             stake_amount,
             working_group,
@@ -165,12 +177,16 @@ fn slash_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_slash_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             leader_worker_id,
             Penalty {
                 slashing_amount: stake_amount,
@@ -199,12 +215,16 @@ fn set_reward(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_set_working_group_leader_reward_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             leader_worker_id,
             Some(reward_amount),
             working_group,
@@ -233,12 +253,16 @@ fn set_mint_capacity<
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_set_working_group_budget_capacity_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             mint_capacity,
             working_group,
             None,
@@ -263,12 +287,16 @@ fn terminate_role(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+        };
+
         ProposalCodex::create_terminate_working_group_leader_role_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
+            general_proposal_parameters,
             proposals_codex::TerminateRoleParameters {
                 worker_id: leader_worker_id,
                 penalty: penalty.clone(),

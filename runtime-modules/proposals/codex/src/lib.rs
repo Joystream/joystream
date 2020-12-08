@@ -57,6 +57,7 @@ mod proposal_types;
 #[cfg(test)]
 mod tests;
 
+use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
@@ -65,6 +66,9 @@ use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 pub use crate::proposal_types::{
     AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
@@ -99,6 +103,18 @@ struct CreateProposalParameters<T: Trait> {
     pub proposal_details: ProposalDetailsOf<T>,
     pub exact_execution_block: Option<T::BlockNumber>,
 }
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+pub struct GeneralProposalParams<MemberId, AccountId> {
+    pub member_id: MemberId,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
+    pub staking_account_id: Option<AccountId>,
+}
+
+pub type GeneralProposalParameters<T> =
+    GeneralProposalParams<MemberId<T>, <T as frame_system::Trait>::AccountId>;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -313,10 +329,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_text_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -325,10 +338,10 @@ decl_module! {
             let proposal_details = ProposalDetails::Text(text);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::TextProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -343,10 +356,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_runtime_upgrade_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             wasm: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -355,10 +365,10 @@ decl_module! {
             let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::RuntimeUpgradeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -373,10 +383,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_spending_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
             exact_execution_block: Option<T::BlockNumber>,
@@ -390,10 +397,10 @@ decl_module! {
             let proposal_details = ProposalDetails::Spending(balance, destination);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::SpendingProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -408,10 +415,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_validator_count_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             new_validator_count: u32,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -428,10 +432,10 @@ decl_module! {
             let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::SetValidatorCountProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -446,20 +450,17 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_add_working_group_leader_opening_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters. title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::AddWorkingGroupOpeningProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -474,20 +475,17 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_fill_working_group_leader_opening_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             fill_opening_parameters: FillOpeningParameters,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::FillWorkingGroupOpeningProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -502,10 +500,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_working_group_budget_capacity_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             mint_balance: BalanceOfMint<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -518,10 +513,10 @@ decl_module! {
             let proposal_details = ProposalDetails::SetWorkingGroupBudgetCapacity(mint_balance, working_group);
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::SetWorkingGroupBudgetCapacityProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -536,10 +531,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_decrease_working_group_leader_stake_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             worker_id: working_group::WorkerId<T>,
             decreasing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -555,10 +547,10 @@ decl_module! {
 
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::DecreaseWorkingGroupLeaderStakeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -573,10 +565,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_slash_working_group_leader_stake_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             worker_id: working_group::WorkerId<T>,
             penalty: Penalty<BalanceOf<T>>,
             working_group: WorkingGroup,
@@ -592,10 +581,10 @@ decl_module! {
 
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::SlashWorkingGroupLeaderStakeProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -610,10 +599,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_working_group_leader_reward_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             worker_id: working_group::WorkerId<T>,
             reward_amount: Option<BalanceOfMint<T>>,
             working_group: WorkingGroup,
@@ -627,10 +613,10 @@ decl_module! {
 
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::SetWorkingGroupLeaderRewardProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -645,10 +631,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_terminate_working_group_leader_role_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>, BalanceOf<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -656,10 +639,10 @@ decl_module! {
 
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::TerminateWorkingGroupLeaderRoleProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -674,10 +657,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_amend_constitution_proposal(
             origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            staking_account_id: Option<T::AccountId>,
+            general_proposal_parameters: GeneralProposalParameters<T>,
             constitution_text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -685,10 +665,10 @@ decl_module! {
 
             let params = CreateProposalParameters{
                 origin,
-                member_id,
-                title,
-                description,
-                staking_account_id,
+                member_id: general_proposal_parameters.member_id,
+                title: general_proposal_parameters.title,
+                description: general_proposal_parameters.description,
+                staking_account_id: general_proposal_parameters.staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: T::AmendConstitutionProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),

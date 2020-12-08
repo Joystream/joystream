@@ -92,14 +92,25 @@ fn create_text_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_text_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"text".to_vec(),
                     None,
                 )
@@ -107,10 +118,7 @@ fn create_text_proposal_common_checks_succeed() {
             empty_stake_call: || {
                 ProposalCodex::create_text_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"text".to_vec(),
                     None,
                 )
@@ -118,10 +126,7 @@ fn create_text_proposal_common_checks_succeed() {
             successful_call: || {
                 ProposalCodex::create_text_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     b"text".to_vec(),
                     None,
                 )
@@ -136,13 +141,17 @@ fn create_text_proposal_common_checks_succeed() {
 #[test]
 fn create_text_proposal_codex_call_fails_without_text() {
     initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
+                general_proposal_parameters.clone(),
                 Vec::new(),
                 None,
             ),
@@ -156,14 +165,25 @@ fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 5000000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -171,10 +191,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
             empty_stake_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -182,10 +199,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
             successful_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -200,13 +214,17 @@ fn create_runtime_upgrade_common_checks_succeed() {
 #[test]
 fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
     initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
+                general_proposal_parameters.clone(),
                 Vec::new(),
                 None,
             ),
@@ -220,14 +238,25 @@ fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_spending_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     20,
                     10,
                     None,
@@ -236,10 +265,7 @@ fn create_spending_proposal_common_checks_succeed() {
             empty_stake_call: || {
                 ProposalCodex::create_spending_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     20,
                     10,
                     None,
@@ -248,10 +274,7 @@ fn create_spending_proposal_common_checks_succeed() {
             successful_call: || {
                 ProposalCodex::create_spending_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     100,
                     2,
                     None,
@@ -269,13 +292,17 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(500000, 1);
 
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         assert_eq!(
             ProposalCodex::create_spending_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
+                general_proposal_parameters.clone(),
                 0,
                 2,
                 None,
@@ -286,10 +313,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
         assert_eq!(
             ProposalCodex::create_spending_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
+                general_proposal_parameters.clone(),
                 5000001,
                 2,
                 None,
@@ -304,14 +328,25 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     4,
                     None,
                 )
@@ -319,10 +354,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
             empty_stake_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     4,
                     None,
                 )
@@ -330,10 +362,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
             successful_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     4,
                     None,
                 )
@@ -350,13 +379,17 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
         staking::MinimumValidatorCount::put(10);
 
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(<BalanceOf<Test>>::from(100_000_u32)),
+        };
+
         assert_eq!(
             ProposalCodex::create_set_validator_count_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(100_000_u32)),
+                general_proposal_parameters.clone(),
                 3,
                 None,
             ),
@@ -377,6 +410,20 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let add_opening_parameters = AddOpeningParameters {
             description: b"some text".to_vec(),
             stake_policy: None,
@@ -390,10 +437,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
             insufficient_rights_call: || {
                 ProposalCodex::create_add_working_group_leader_opening_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -401,10 +445,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
             empty_stake_call: || {
                 ProposalCodex::create_add_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -412,10 +453,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
             successful_call: || {
                 ProposalCodex::create_add_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -444,6 +482,20 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
     initial_test_ext().execute_with(|| {
         let opening_id = 1; // random opening id.
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let fill_opening_parameters = FillOpeningParameters {
             opening_id,
             successful_application_id: 1,
@@ -456,10 +508,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             insufficient_rights_call: || {
                 ProposalCodex::create_fill_working_group_leader_opening_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -467,10 +516,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             empty_stake_call: || {
                 ProposalCodex::create_fill_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -478,10 +524,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             successful_call: || {
                 ProposalCodex::create_fill_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -510,13 +553,17 @@ fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         assert_eq!(
             ProposalCodex::create_set_working_group_budget_capacity_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
+                general_proposal_parameters.clone(),
                 (crate::WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE + 1) as u64,
                 working_group,
                 None,
@@ -540,14 +587,25 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     working_group,
                     None,
@@ -556,10 +614,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
             empty_stake_call: || {
                 ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     working_group,
                     None,
@@ -568,10 +623,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
             successful_call: || {
                 ProposalCodex::create_set_working_group_budget_capacity_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     10,
                     working_group,
                     None,
@@ -599,14 +651,25 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_decrease_working_group_leader_stake_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     10,
                     working_group,
@@ -616,10 +679,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             empty_stake_call: || {
                 ProposalCodex::create_decrease_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     10,
                     working_group,
@@ -629,10 +689,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             successful_call: || {
                 ProposalCodex::create_decrease_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     10,
                     10,
                     working_group,
@@ -665,14 +722,25 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_slash_working_group_leader_stake_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     Penalty {
                         slashing_amount: 10,
@@ -685,10 +753,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             empty_stake_call: || {
                 ProposalCodex::create_slash_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     Penalty {
                         slashing_amount: 10,
@@ -701,10 +766,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             successful_call: || {
                 ProposalCodex::create_slash_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     10,
                     Penalty {
                         slashing_amount: 10,
@@ -741,6 +803,13 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let lead_account_id = 20;
         <governance::council::Module<Test>>::set_council(
             RawOrigin::Root.into(),
@@ -751,10 +820,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
         assert_eq!(
             ProposalCodex::create_slash_working_group_leader_stake_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
+                general_proposal_parameters.clone(),
                 10,
                 Penalty {
                     slashing_amount: 0,
@@ -780,6 +846,13 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let lead_account_id = 20;
         <governance::council::Module<Test>>::set_council(
             RawOrigin::Root.into(),
@@ -790,10 +863,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
         assert_eq!(
             ProposalCodex::create_decrease_working_group_leader_stake_proposal(
                 RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(1),
+                general_proposal_parameters.clone(),
                 10,
                 0,
                 working_group,
@@ -816,14 +886,25 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_working_group_leader_reward_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     Some(10),
                     working_group,
@@ -833,10 +914,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             empty_stake_call: || {
                 ProposalCodex::create_set_working_group_leader_reward_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     0,
                     Some(10),
                     working_group,
@@ -846,10 +924,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             successful_call: || {
                 ProposalCodex::create_set_working_group_leader_reward_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     10,
                     Some(10),
                     working_group,
@@ -882,6 +957,20 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let terminate_role_parameters = TerminateRoleParameters {
             worker_id: 10,
             penalty: None,
@@ -892,10 +981,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             insufficient_rights_call: || {
                 ProposalCodex::create_terminate_working_group_leader_role_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     terminate_role_parameters.clone(),
                     None,
                 )
@@ -903,10 +989,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             empty_stake_call: || {
                 ProposalCodex::create_terminate_working_group_leader_role_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     terminate_role_parameters.clone(),
                     None,
                 )
@@ -914,10 +997,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             successful_call: || {
                 ProposalCodex::create_terminate_working_group_leader_role_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     terminate_role_parameters.clone(),
                     None,
                 )
@@ -937,14 +1017,25 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 1_500_000);
 
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+        };
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_amend_constitution_proposal(
                     RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"constitution text".to_vec(),
                     None,
                 )
@@ -952,10 +1043,7 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             empty_stake_call: || {
                 ProposalCodex::create_amend_constitution_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
+                    general_proposal_parameters_no_staking.clone(),
                     b"constitution text".to_vec(),
                     None,
                 )
@@ -963,10 +1051,7 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             successful_call: || {
                 ProposalCodex::create_amend_constitution_proposal(
                     RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(1),
+                    general_proposal_parameters_with_staking.clone(),
                     b"constitution text".to_vec(),
                     None,
                 )
