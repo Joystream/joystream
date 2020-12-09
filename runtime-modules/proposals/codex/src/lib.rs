@@ -108,12 +108,6 @@ pub trait Trait:
     + governance::election::Trait
     + staking::Trait
 {
-    /// Defines max allowed text proposal length.
-    type TextProposalMaxLength: Get<u32>;
-
-    /// Defines max wasm code length of the runtime upgrade proposal.
-    type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
-
     /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<
         Self::Origin,
@@ -196,14 +190,8 @@ type MemberId<T> = <T as membership::Trait>::MemberId;
 decl_error! {
     /// Codex module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// The size of the provided text for text proposal exceeded the limit
-        TextProposalSizeExceeded,
-
         /// Provided text for text proposal is empty
         TextProposalIsEmpty,
-
-        /// The size of the provided WASM code for the runtime upgrade proposal exceeded the limit
-        RuntimeProposalSizeExceeded,
 
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
@@ -321,11 +309,6 @@ decl_module! {
         const AmendConstitutionProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::AmendConstitutionProposalParameters::get();
 
-        /// Exports max allowed text proposal length const.
-        const TextProposalMaxLength: u32 = T::TextProposalMaxLength::get();
-
-        /// Exports max wasm code length of the runtime upgrade proposal const.
-        const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
 
         /// Create 'Text (signal)' proposal type.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -339,8 +322,6 @@ decl_module! {
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(!text.is_empty(), Error::<T>::TextProposalIsEmpty);
-            ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
-                Error::<T>::TextProposalSizeExceeded);
 
             let proposal_details = ProposalDetails::Text(text);
             let params = CreateProposalParameters{
@@ -371,8 +352,6 @@ decl_module! {
             exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(!wasm.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
-            ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
-                Error::<T>::RuntimeProposalSizeExceeded);
 
             let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
             let params = CreateProposalParameters{
