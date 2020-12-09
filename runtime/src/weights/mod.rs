@@ -18,7 +18,6 @@
 // FRAME pallets
 pub mod frame_system;
 pub mod pallet_balances;
-pub mod pallet_constitution;
 pub mod pallet_im_online;
 pub mod pallet_session;
 pub mod pallet_staking;
@@ -26,6 +25,7 @@ pub mod pallet_timestamp;
 pub mod pallet_utility;
 
 // Joystream pallets
+pub mod pallet_constitution;
 pub mod proposals_discussion;
 pub mod proposals_engine;
 pub mod working_group;
