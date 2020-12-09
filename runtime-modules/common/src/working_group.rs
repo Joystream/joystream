@@ -19,7 +19,7 @@ pub enum WorkingGroup {
 }
 
 /// Working group interface to use in the in the pallets with working groups.
-pub trait Interface<T: crate::Trait> {
+pub trait WorkingGroupIntegration<T: crate::Trait> {
     /// Defines whether the member is the worker of the working group.
     fn is_working_group_member(member_id: &T::MemberId) -> bool;
 
