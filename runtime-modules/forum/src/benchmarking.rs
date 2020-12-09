@@ -49,6 +49,23 @@ fn create_new_thread<T: Trait>(
     Module::<T>::next_thread_id() - T::ThreadId::one()
 }
 
+fn add_thread_post<T: Trait>(
+    account_id: T::AccountId,
+    forum_user_id: T::ForumUserId,
+    category_id: T::CategoryId,
+    thread_id: T::ThreadId,
+    text: Vec<u8>,
+) -> T::PostId {
+    assert_ok!(Module::<T>::add_post(
+        RawOrigin::Signed(account_id).into(),
+        forum_user_id,
+        category_id,
+        thread_id,
+        text
+    ));
+    Module::<T>::next_post_id() - T::PostId::one()
+}
+
 pub fn good_poll_alternative_text() -> Vec<u8> {
     b"poll alternative".to_vec()
 }
@@ -316,6 +333,37 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
     }
+    delete_thread {
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff));
+
+        let thread_id = create_new_thread::<T>(
+            T::AccountId::default(), T::ForumUserId::default(), category_id,
+            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), poll
+        );
+
+        let mut category = Module::<T>::category_by_id(category_id);
+
+        for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
+            add_thread_post::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, thread_id, vec![1u8].repeat(MAX_BYTES as usize));
+        }
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, thread_id)
+    verify {
+        // Ensure category num_direct_threads updated successfully.
+        category.num_direct_threads-=1;
+        assert_eq!(Module::<T>::category_by_id(category_id), category);
+
+        // Ensure thread was successfully deleted
+        assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
+        assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
+
+        assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -371,6 +419,13 @@ mod tests {
     fn test_update_thread_archival_status() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_update_thread_archival_status::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_delete_thread() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_delete_thread::<Runtime>());
         });
     }
 }
