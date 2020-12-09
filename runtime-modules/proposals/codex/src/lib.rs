@@ -71,6 +71,7 @@ pub use crate::proposal_types::{
 };
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
+use common::MemberId;
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
@@ -104,7 +105,7 @@ pub trait Trait:
     frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
-    + membership::Trait
+    + common::Trait
     + governance::election::Trait
     + staking::Trait
 {
@@ -184,8 +185,6 @@ pub type BalanceOfGovernanceCurrency<T> =
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
     <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-
-type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_error! {
     /// Codex module predefined errors

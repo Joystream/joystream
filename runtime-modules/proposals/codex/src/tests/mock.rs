@@ -44,10 +44,13 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl membership::Trait for Test {
-    type Event = ();
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = ();
     type MembershipFee = MembershipFee;
 }
 

@@ -2,7 +2,7 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
-    setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
+    AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
 use crate::tests::mock::TestWorkingGroup;
 use crate::types::StakeParameters;
@@ -118,7 +118,7 @@ impl HiringWorkflow {
         if matches!(self.opening_type, OpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         } else {
-            setup_members(6);
+            //         setup_members(6);
         }
     }
 

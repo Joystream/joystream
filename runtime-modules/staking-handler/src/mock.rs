@@ -67,15 +67,14 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl membership::Trait for Test {
-    type Event = ();
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
-    type MembershipFee = MembershipFee;
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
+impl membership::Trait for Test {
+    type Event = ();
+    type MembershipFee = MembershipFee;
 }
 
 impl pallet_timestamp::Trait for Test {

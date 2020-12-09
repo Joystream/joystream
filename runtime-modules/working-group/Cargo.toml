@@ -13,7 +13,6 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
-membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
 staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
@@ -35,7 +34,6 @@ std = [
 	'sp-arithmetic/std',
 	'sp-std/std',
 	'common/std',
-	'membership/std',
 	'balances/std',
 	'staking-handler/std',
 ]

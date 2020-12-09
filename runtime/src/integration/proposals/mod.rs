@@ -7,5 +7,5 @@ mod proposal_encoder;
 
 pub use council_elected_handler::CouncilElectedHandler;
 pub use council_origin_validator::CouncilManager;
-pub use membership_origin_validator::{MemberId, MembershipOriginValidator};
+pub use membership_origin_validator::MembershipOriginValidator;
 pub use proposal_encoder::ExtrinsicProposalEncoder;

@@ -72,10 +72,12 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 }
+impl common::Trait for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
 impl membership::Trait for Test {
     type Event = ();
-    type MemberId = u64;
-    type ActorId = u32;
     type MembershipFee = MembershipFee;
 }
 impl minting::Trait for Test {

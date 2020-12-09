@@ -2,7 +2,9 @@
 
 use super::genesis;
 use super::mock::*;
+use crate::Error;
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::*;
 
@@ -14,10 +16,9 @@ fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     }
 }
 
-fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
+fn assert_dispatch_error_message(result: DispatchResult, expected_result: DispatchResult) {
     assert!(result.is_err());
-    let message = result.err().unwrap();
-    assert_eq!(message, expected_message);
+    assert_eq!(result, expected_result);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -53,7 +54,7 @@ fn get_bob_info() -> TestUserInfo {
 
 const ALICE_ACCOUNT_ID: u64 = 1;
 
-fn buy_default_membership_as_alice() -> crate::DispatchResult {
+fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
@@ -61,7 +62,6 @@ fn buy_default_membership_as_alice() -> crate::DispatchResult {
         info.avatar_uri,
         info.about,
     )
-    .map_err(|err| err.into())
 }
 
 fn set_alice_free_balance(balance: u64) {
@@ -114,7 +114,7 @@ fn buy_membership_fails_without_enough_balance() {
 
             assert_dispatch_error_message(
                 buy_default_membership_as_alice(),
-                "not enough balance to buy membership",
+                Err(Error::<Test>::NotEnoughBalanceToBuyMembership.into()),
             );
         });
 }
@@ -132,7 +132,7 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
 
             assert_dispatch_error_message(
                 buy_default_membership_as_alice(),
-                "not enough balance to buy membership",
+                Err(Error::<Test>::NotEnoughBalanceToBuyMembership.into()),
             );
         });
 }
@@ -150,7 +150,7 @@ fn new_memberships_allowed_flag() {
 
             assert_dispatch_error_message(
                 buy_default_membership_as_alice(),
-                "new members not allowed",
+                Err(Error::<Test>::NewMembersNotAllowed.into()),
             );
         });
 }
@@ -172,7 +172,7 @@ fn unique_handles() {
             // should not be allowed to buy membership with that handle
             assert_dispatch_error_message(
                 buy_default_membership_as_alice(),
-                "handle already registered",
+                Err(Error::<Test>::HandleAlreadyRegistered.into()),
             );
         });
 }

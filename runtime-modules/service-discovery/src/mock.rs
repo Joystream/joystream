@@ -11,9 +11,6 @@ use sp_runtime::{
     Perbill,
 };
 
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
@@ -92,10 +89,13 @@ impl minting::Trait for Test {
     type MintId = u64;
 }
 
-impl membership::Trait for Test {
-    type Event = MetaEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = MetaEvent;
     type MembershipFee = MembershipFee;
 }
 

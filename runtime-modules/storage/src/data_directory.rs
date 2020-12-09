@@ -47,7 +47,7 @@ pub trait Trait:
     pallet_timestamp::Trait
     + frame_system::Trait
     + data_object_type_registry::Trait
-    + membership::Trait
+    + common::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data directory_ event type.
