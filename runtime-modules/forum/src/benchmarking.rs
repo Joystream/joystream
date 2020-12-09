@@ -364,6 +364,34 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
     }
+    move_thread_to_category {
+        // Create first category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create second category
+        let new_category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let thread_id = create_new_thread::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], None);
+        let thread = Module::<T>::thread_by_id(category_id, thread_id);
+
+        let mut category = Module::<T>::category_by_id(category_id);
+        let mut new_category = Module::<T>::category_by_id(new_category_id);
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, thread_id, new_category_id)
+    verify {
+        // Ensure thread was successfully moved to the new category
+        category.num_direct_threads-=1;
+        new_category.num_direct_threads+=1;
+
+        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
+
+        assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
+        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+
+        assert_last_event::<T>(RawEvent::ThreadMoved(thread_id, new_category_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -426,6 +454,13 @@ mod tests {
     fn test_delete_thread() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_delete_thread::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_move_thread_to_category() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_move_thread_to_category::<Runtime>());
         });
     }
 }
