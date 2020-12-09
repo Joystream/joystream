@@ -14,6 +14,9 @@ $SCRIPT_DIR/../target/release/joystream-node benchmark \
     --execution=wasm \
     --output=.  > /dev/null
 
-mv $SCRIPT_DIR/../*.rs $SCRIPT_DIR/../runtime/src/weights/
-
-echo "Weights generated successfully"
+if [ $? -eq 0 ]; then
+    mv $SCRIPT_DIR/../*.rs $SCRIPT_DIR/../runtime/src/weights/
+    echo "Weights generated successfully"
+else
+    echo "There was a problem generating the new weights, check the error above"
+fi
