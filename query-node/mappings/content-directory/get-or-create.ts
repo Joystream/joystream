@@ -11,11 +11,13 @@ import { LicenseEntity } from '../../generated/graphql-server/src/modules/licens
 import { MediaLocationEntity } from '../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
 import { Video } from '../../generated/graphql-server/src/modules/video/video.model'
 import { NextEntityId } from '../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
+import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
 import { decode } from './decode'
 import {
   categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
+  contentDirectoryClassNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
   knownLicensePropertyNamesWIthId,
@@ -43,6 +45,7 @@ import {
   IVideo,
   IVideoMedia,
   IVideoMediaEncoding,
+  IWhereCond,
 } from '../types'
 
 import {
@@ -421,6 +424,18 @@ async function video(
     decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
     nextEntityIdBeforeTransaction
   )
+}
+
+export async function getKnownClass(db: DB, where: IWhereCond): Promise<{ classId: number; name: string } | undefined> {
+  const ce = await db.get(ClassEntity, where)
+  if (!ce) {
+    console.log(`Class not found for the EntityId: ${where.where.id} or the entity has not been created.`)
+    return
+  }
+
+  const knownClass = contentDirectoryClassNamesWithId.find((c) => c.classId === ce.classId)
+  if (!knownClass) console.log('Unknown class')
+  return knownClass
 }
 
 export const getOrCreate = {
