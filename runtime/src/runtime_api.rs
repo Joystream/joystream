@@ -70,8 +70,9 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             default_content_working_group_mint_capacity,
         );
 
-        // Next Id's are configured at genesis. Our applications are harcoded to expect initial
-        // values of the ids to start at 1
+        // Next Id's are configured at genesis. Applications and tools are harcoded to expect initial
+        // values of the ids to start at 1. With a runtime upgrade the initial values will not be
+        // configured and get an initial default value of zero. This corrects this problem.
         content_directory::Module::<Runtime>::set_initial_ids_to_one();
 
         10_000_000 // TODO: adjust weight
