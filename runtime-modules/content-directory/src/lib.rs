@@ -2864,6 +2864,14 @@ impl<T: Trait> Module<T> {
     }
 }
 
+impl<T: Trait> Module<T> {
+    pub fn set_initial_ids_to_one() {
+        <NextEntityId<T>>::put(T::EntityId::one());
+        <NextClassId<T>>::put(T::ClassId::one());
+        <NextCuratorGroupId<T>>::put(T::CuratorGroupId::one());
+    }
+}
+
 decl_event!(
     pub enum Event<T>
     where
