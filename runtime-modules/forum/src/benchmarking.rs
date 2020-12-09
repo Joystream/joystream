@@ -287,10 +287,7 @@ benchmarks! {
         let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
 
         // Create thread
-        let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff));
-
-        let thread_id = create_new_thread::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], poll);
+        let thread_id = create_new_thread::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], None);
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let text = vec![0u8].repeat(j as usize);
@@ -301,6 +298,23 @@ benchmarks! {
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert_last_event::<T>(RawEvent::ThreadTitleUpdated(thread_id).into());
+    }
+    update_thread_archival_status {
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let thread_id = create_new_thread::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], None);
+        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let new_archival_status = true;
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, thread_id, new_archival_status)
+    verify {
+        thread.archived = new_archival_status;
+
+        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
     }
 }
 
@@ -350,6 +364,13 @@ mod tests {
     fn test_edit_thread_title() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_edit_thread_title::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_thread_archival_status() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_thread_archival_status::<Runtime>());
         });
     }
 }
