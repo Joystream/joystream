@@ -322,6 +322,9 @@ decl_error! {
 
         /// There is not enough balance for a stake.
         InsufficientBalanceForStake,
+
+        /// The conflicting stake discovered. Cannot stake.
+        ConflictingStakes,
     }
 }
 
@@ -522,14 +525,6 @@ impl<T: Trait> Module<T> {
             creation_params.exact_execution_block,
         )?;
 
-        if creation_params.proposal_parameters.required_stake.is_some() {
-            // Return an error if no staking account provided.
-            ensure!(
-                creation_params.staking_account_id.is_some(),
-                Error::<T>::EmptyStake
-            );
-        }
-
         //
         // == MUTATION SAFE ==
         //
@@ -621,6 +616,11 @@ impl<T: Trait> Module<T> {
 
         if let Some(stake_balance) = parameters.required_stake {
             if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    Error::<T>::ConflictingStakes
+                );
+
                 ensure!(
                     T::StakingHandler::is_enough_balance_for_stake(
                         &staking_account_id,

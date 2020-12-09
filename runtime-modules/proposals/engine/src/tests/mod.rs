@@ -6,7 +6,9 @@ use mock::*;
 
 use codec::Encode;
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{
+    Currency, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
+};
 use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use frame_system::{EventRecord, Phase};
@@ -1101,6 +1103,40 @@ fn create_proposal_fais_with_insufficient_stake_parameters() {
 
         dummy_proposal
             .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
+    });
+}
+
+#[test]
+fn create_proposal_fais_with_empty_stake() {
+    initial_test_ext().execute_with(|| {
+        let parameters_fixture = ProposalParametersFixture::default().with_required_stake(300);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::EmptyStake.into()));
+    });
+}
+
+#[test]
+fn create_proposal_fais_with_conflicting_stakes() {
+    initial_test_ext().execute_with(|| {
+        let staking_account_id = 1;
+
+        let initial_balance = 100000;
+        increase_total_balance_issuance_using_account_id(staking_account_id, initial_balance);
+        Balances::set_lock(
+            LockId::get(),
+            &staking_account_id,
+            100,
+            WithdrawReasons::all(),
+        );
+
+        let parameters_fixture = ProposalParametersFixture::default().with_required_stake(300);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.params())
+            .with_stake(staking_account_id);
+
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::ConflictingStakes.into()));
     });
 }
 
