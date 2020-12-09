@@ -26,3 +26,4 @@ pub mod pallet_utility;
 pub mod pallet_constitution;
 pub mod proposals_discussion;
 pub mod proposals_engine;
+pub mod working_group;

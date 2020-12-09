@@ -18,7 +18,7 @@ import { ApiPromise } from '@polkadot/api'
 import { JoyBTreeSet } from '@joystream/types/common'
 import { CreateClass } from '../../types/extrinsics/CreateClass'
 import { EntityBatch } from '../../types/EntityBatch'
-import { getInputs } from './inputs'
+import { getInitializationInputs, getInputs } from './inputs'
 
 type SimpleEntityValue = string | boolean | number | string[] | boolean[] | number[] | undefined | null
 // Input without "new" or "extising" keywords
@@ -38,12 +38,8 @@ export class InputParser {
   private classIdByNameMap = new Map<string, number>()
 
   static createWithInitialInputs(api: ApiPromise): InputParser {
-    return new InputParser(
-      api,
-      getInputs<CreateClass>('classes').map(({ data }) => data),
-      getInputs<AddClassSchema>('schemas').map(({ data }) => data),
-      getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
-    )
+    const { classInputs, schemaInputs, entityBatchInputs } = getInitializationInputs()
+    return new InputParser(api, classInputs, schemaInputs, entityBatchInputs)
   }
 
   static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]): InputParser {
@@ -198,7 +194,7 @@ export class InputParser {
         const schemaPropertyType = schema.newProperties.find((p) => p.name === propertyName)!.property_type
         // Handle entities "nested" via "new"
         if (isSingle(schemaPropertyType) && isReference(schemaPropertyType.Single)) {
-          if (Object.keys(propertyValue).includes('new')) {
+          if (propertyValue !== null && Object.keys(propertyValue).includes('new')) {
             const refEntitySchema = this.schemaByClassName(schemaPropertyType.Single.Reference.className)
             this.includeEntityInputInUniqueQueryMap(propertyValue.new, refEntitySchema)
           }

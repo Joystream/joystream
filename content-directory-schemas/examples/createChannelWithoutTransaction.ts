@@ -1,10 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types as joyTypes } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
-// Import input parser and channel entity from cd-schemas (we use it as library here)
-import { InputParser } from 'cd-schemas'
-import { ChannelEntity } from 'cd-schemas/types/entities'
-import { FlattenRelations } from 'cd-schemas/types/utility'
+// Import input parser and channel entity from @joystream/cd-schemas (we use it as library here)
+import { InputParser } from '@joystream/cd-schemas'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities'
+import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 import { EntityId } from '@joystream/types/content-directory'
 
 // Alternative way of creating a channel using separate extrinsics (instead of contentDirectory.transaction)
@@ -26,11 +26,11 @@ async function main() {
 
   // We use FlattenRelations to exlude { new } and { existing } (which are not allowed if we want to parse only a single entity)
   const channel: FlattenRelations<ChannelEntity> = {
-    title: 'Example channel 2',
+    handle: 'Example channel 2',
     description: 'This is an example channel',
     language: languageEntityId,
     coverPhotoUrl: '',
-    avatarPhotoURL: '',
+    avatarPhotoUrl: '',
     isPublic: true,
   }
 

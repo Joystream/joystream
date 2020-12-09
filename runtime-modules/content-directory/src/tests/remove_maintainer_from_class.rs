@@ -54,7 +54,7 @@ fn remove_maintainer_from_class_success() {
         ));
 
         // Event checked
-        assert_event_success(maintainer_removed_event, number_of_events_before_call + 1);
+        assert_event(maintainer_removed_event, number_of_events_before_call + 1);
     })
 }
 

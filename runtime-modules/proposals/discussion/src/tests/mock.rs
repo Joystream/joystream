@@ -84,7 +84,7 @@ impl membership::Trait for Test {
     type WorkingGroup = ();
 }
 
-impl common::working_group::Interface<Test> for () {
+impl common::working_group::WorkingGroupIntegration<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,

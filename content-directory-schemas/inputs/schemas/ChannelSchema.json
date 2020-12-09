@@ -2,8 +2,8 @@
   "className": "Channel",
   "newProperties": [
     {
-      "name": "title",
-      "description": "The title of the Channel",
+      "name": "handle",
+      "description": "The handle of the Channel",
       "required": true,
       "unique": true,
       "property_type": { "Single": { "Text": 64 } }
@@ -17,13 +17,13 @@
     {
       "name": "coverPhotoUrl",
       "description": "Url for Channel's cover (background) photo. Recommended ratio: 16:9.",
-      "required": true,
+      "required": false,
       "property_type": { "Single": { "Text": 256 } }
     },
     {
-      "name": "avatarPhotoURL",
+      "name": "avatarPhotoUrl",
       "description": "Channel's avatar photo.",
-      "required": true,
+      "required": false,
       "property_type": { "Single": { "Text": 256 } }
     },
     {
@@ -36,7 +36,6 @@
       "name": "isCensored",
       "description": "Channel censorship status set by the Curator.",
       "required": false,
-      "unique": true,
       "property_type": { "Single": "Bool" },
       "locking_policy": { "is_locked_from_controller": true }
     },

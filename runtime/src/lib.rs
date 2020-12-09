@@ -632,6 +632,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -641,6 +642,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -650,6 +652,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
@@ -659,6 +662,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -712,13 +716,10 @@ impl proposals_discussion::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;

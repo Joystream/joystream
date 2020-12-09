@@ -71,7 +71,7 @@ fn create_entity_success() {
             get_test_event(RawEvent::EntityCreated(actor, next_entity_id() - 1));
 
         // Last event checked
-        assert_event_success(entity_created_event, number_of_events_before_call + 1);
+        assert_event(entity_created_event, number_of_events_before_call + 1);
     })
 }
 

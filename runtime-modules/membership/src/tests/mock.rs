@@ -109,6 +109,103 @@ impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = Weights;
+}
+
+// Weights info stub
+pub struct Weights;
+impl working_group::WeightInfo for Weights {
+    fn on_initialize_leaving(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn apply_on_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_lead() -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_role_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn cancel_opening() -> u64 {
+        unimplemented!()
+    }
+
+    fn withdraw_application() -> u64 {
+        unimplemented!()
+    }
+
+    fn slash_stake(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_lead(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn increase_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn spend_from_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_amount() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_status_text(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn add_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_immediatly() -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_later() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
@@ -125,7 +222,7 @@ impl Trait for Test {
     type WorkingGroup = ();
 }
 
-impl common::working_group::Interface<Test> for () {
+impl common::working_group::WorkingGroupIntegration<Test> for () {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
         worker_id: &<Test as common::Trait>::ActorId,

@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { displayTable } from '../../helpers/display'
 import chalk from 'chalk'
 import { flags } from '@oclif/command'

@@ -1,21 +1,28 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { CreateClass } from 'cd-schemas/types/extrinsics/CreateClass'
-import { getInputs, InputParser, ExtrinsicsHelper } from 'cd-schemas'
-import { AddClassSchema } from 'cd-schemas/types/extrinsics/AddClassSchema'
-import { EntityBatch } from 'cd-schemas/types/EntityBatch'
+import { InputParser, ExtrinsicsHelper, getInitializationInputs } from '@joystream/cd-schemas'
+import { flags } from '@oclif/command'
 
 export default class InitializeCommand extends ContentDirectoryCommandBase {
   static description =
-    'Initialize content directory with input data from @joystream/content library. Requires lead access.'
+    'Initialize content directory with input data from @joystream/content library or custom, provided one. Requires lead access.'
+
+  static flags = {
+    rootInputsDir: flags.string({
+      required: false,
+      description: 'Custom inputs directory (must follow @joystream/content directory structure)',
+    }),
+  }
 
   async run() {
     const account = await this.getRequiredSelectedAccount()
     await this.requireLead()
     await this.requestAccountDecoding(account)
 
-    const classInputs = getInputs<CreateClass>('classes').map(({ data }) => data)
-    const schemaInputs = getInputs<AddClassSchema>('schemas').map(({ data }) => data)
-    const entityBatchInputs = getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
+    const {
+      flags: { rootInputsDir },
+    } = this.parse(InitializeCommand)
+
+    const { classInputs, schemaInputs, entityBatchInputs } = getInitializationInputs(rootInputsDir)
 
     const currentClasses = await this.getApi().availableClasses()
 

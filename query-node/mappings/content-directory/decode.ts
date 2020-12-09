@@ -1,17 +1,22 @@
 import { SubstrateEvent } from '../../generated/indexer'
 import {
-  IPropertyIdWithName,
   IClassEntity,
   IProperty,
   IBatchOperation,
   ICreateEntityOperation,
   IEntity,
   IReference,
+  IPropertyWithId,
 } from '../types'
 import Debug from 'debug'
 
-import { ParametrizedClassPropertyValue, UpdatePropertyValuesOperation } from '@joystream/types/content-directory'
+import {
+  OperationType,
+  ParametrizedClassPropertyValue,
+  UpdatePropertyValuesOperation,
+} from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
+import { Vec } from '@polkadot/types'
 
 const debug = Debug('mappings:cd:decode')
 
@@ -20,18 +25,23 @@ function stringIfyEntityId(event: SubstrateEvent): string {
   return entityId.value as string
 }
 
-function setProperties<T>({ extrinsic, blockNumber }: SubstrateEvent, propNamesWithId: IPropertyIdWithName): T {
+function setProperties<T>({ extrinsic, blockNumber }: SubstrateEvent, propNamesWithId: IPropertyWithId): T {
   if (extrinsic === undefined) throw Error('Undefined extrinsic')
 
   const { 3: newPropertyValues } = extrinsic!.args
   const properties: { [key: string]: any; reference?: IReference } = {}
 
   for (const [k, v] of Object.entries(newPropertyValues.value)) {
-    const propertyName = propNamesWithId[k]
+    const prop = propNamesWithId[k]
     const singlePropVal = createType('InputPropertyValue', v as any).asType('Single')
-    properties[propertyName] = singlePropVal.isOfType('Reference')
-      ? { entityId: singlePropVal.asType('Reference').toJSON(), existing: true }
-      : singlePropVal.value.toJSON()
+
+    if (singlePropVal.isOfType('Reference')) {
+      properties[prop.name] = { entityId: singlePropVal.asType('Reference').toJSON(), existing: true }
+    } else {
+      const val = singlePropVal.value.toJSON()
+      if (typeof val !== prop.type && !prop.required) properties[prop.name] = undefined
+      else properties[prop.name] = val
+    }
   }
   properties.version = blockNumber
 
@@ -54,16 +64,18 @@ function getClassEntity(event: SubstrateEvent): IClassEntity {
  * @param properties
  * @param propertyNamesWithId
  */
-function setEntityPropertyValues<T>(properties: IProperty[], propertyNamesWithId: IPropertyIdWithName): T {
+function setEntityPropertyValues<T>(properties: IProperty[], propertyNamesWithId: IPropertyWithId): T {
   const entityProperties: { [key: string]: any; reference?: IReference } = {}
 
   for (const [propId, propName] of Object.entries(propertyNamesWithId)) {
     // get the property value by id
     const p = properties.find((p) => p.id === propId)
     if (!p) continue
-    entityProperties[propName] = p.reference ? p.reference : p.value
+
+    if (typeof p.value !== propName.type && !propName.required) entityProperties[propName.name] = undefined
+    else entityProperties[propName.name] = p.reference ? p.reference : p.value
   }
-  // debug(`Entity properties ${JSON.stringify(entityProperties)}`)
+  debug(`Entity properties: ${JSON.stringify(entityProperties)}`)
   return entityProperties as T
 }
 
@@ -101,9 +113,12 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
   return properties
 }
 
-function getOperations({ extrinsic }: SubstrateEvent): IBatchOperation {
-  const operations = createType('Vec<OperationType>', extrinsic!.args[1].value as any)
+function getOperations(event: SubstrateEvent): Vec<OperationType> {
+  if (!event.extrinsic) throw Error(`No extrinsic found for ${event.id}`)
+  return createType('Vec<OperationType>', (event.extrinsic.args[1].value as unknown) as Vec<OperationType>)
+}
 
+function getOperationsByTypes(operations: OperationType[]): IBatchOperation {
   const updatePropertyValuesOperations: IEntity[] = []
   const addSchemaSupportToEntityOperations: IEntity[] = []
   const createEntityOperations: ICreateEntityOperation[] = []
@@ -153,6 +168,7 @@ export const decode = {
   getClassEntity,
   setEntityPropertyValues,
   getEntityProperties,
-  getOperations,
+  getOperationsByTypes,
   setProperties,
+  getOperations,
 }

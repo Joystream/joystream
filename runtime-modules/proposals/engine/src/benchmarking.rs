@@ -464,7 +464,7 @@ benchmarks! {
             );
 
             assert_eq!(proposal.status, status);
-            assert_eq!(proposal.current_constitutionality_level, 1);
+            assert_eq!(proposal.nr_of_council_confirmations, 1);
             assert_in_events::<T>(
                 RawEvent::ProposalStatusUpdated(proposal_id.clone(), status).into()
             );

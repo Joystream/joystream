@@ -16,3 +16,8 @@ echo "Benchmarking pallet_constitution..."
 ./target/release/joystream-node benchmark --pallet=pallet_constitution --extrinsic=* --chain=dev --steps=50 --repeat=20 --execution=wasm --output=. > /dev/null
 mv pallet_constitution.rs runtime/src/weights/
 echo "pallet_constitution benchmarked"
+
+echo "Benchmarking working_group..."
+./target/release/joystream-node benchmark --pallet=working_group --extrinsic=* --chain=dev --steps=50 --repeat=20 --execution=wasm --output=. > /dev/null
+mv working_group.rs runtime/src/weights/
+echo "working_group benchmarked"

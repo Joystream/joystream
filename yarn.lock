@@ -1388,10 +1388,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@^0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.20.tgz#8837ab287966ba30130cecfa77f27a2d6aad7061"
-  integrity sha512-pFDL2ZkbUyvSGgklmFNAxA2Y/afCJSxvKQHspjuxwhscsjTq0ay05mEtARbvDhLI1yN7jWedfyzQNUtQPCYHuA==
+"@dzlzv/hydra-cli@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.24.tgz#ec56e89f97ce85e7f1f717a0a8cf7022831c3455"
+  integrity sha512-jdL13WdjBW7bXFAwb4m7twFPbxjzlWzHw9q7C/4j2zNN45BPH2izXipue3oFinvLCUOqiBqTQuslIR6G/Cu3/g==
   dependencies:
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
@@ -1411,16 +1411,18 @@
     listr "^0.14.3"
     lodash "^4.17.15"
     mustache "^4.0.1"
+    pluralize "^8.0.0"
     tslib "1.11.2"
     typeorm-model-generator "^0.4.2"
-    warthog "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz"
+    warthog "https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz"
 
-"@dzlzv/hydra-indexer-lib@0.0.19-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.19-legacy.1.26.1":
-  version "0.0.19-legacy.1.26.1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.19-legacy.1.26.1.tgz#346b564845b2014f7a4d9b3976c03e30da8dd309"
-  integrity sha512-4pwaSDRIo/1MqxjfSotjv91fkIj/bfZcZx5nqjB9gRT85X28b3WqkqTFrzlGsGGbvUFWAx4WIeQKnY1yrpX89Q==
+"@dzlzv/hydra-indexer-lib@0.0.21-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.21-legacy.1.26.1":
+  version "0.0.21-legacy.1.26.1"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.21-legacy.1.26.1.tgz#c6a3ff3905cce03e139852900e074abb67c19efd"
+  integrity sha512-yUDqhl+ZlSo+t3qtIqqsYwh/vXUGwgsBOOToV+Bdry1Ngzw1+zQ0jh4fVItPMZMAAjGiw8AKoVbDu9kgAR1nEA==
   dependencies:
     "@polkadot/api" "^1.26.1"
+    "@types/express" "^4.17.8"
     "@types/ioredis" "^4.17.4"
     "@types/lodash" "^4.14.161"
     "@types/shortid" "^0.0.29"
@@ -1628,53 +1630,53 @@
     unique-filename "^1.1.1"
     which "^1.3.1"
 
-"@ffmpeg-installer/darwin-x64@4.1.0":
+"@ffprobe-installer/darwin-x64@4.1.0":
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/darwin-x64/-/darwin-x64-4.1.0.tgz#48e1706c690e628148482bfb64acb67472089aaa"
-  integrity sha512-Z4EyG3cIFjdhlY8wI9aLUXuH8nVt7E9SlMVZtWvSPnm2sm37/yC2CwjUzyCQbJbySnef1tQwGG2Sx+uWhd9IAw==
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/darwin-x64/-/darwin-x64-4.1.0.tgz#025c5108faf3e456e6a407dd65b798f8dcc805dd"
+  integrity sha512-ESwvOnbGVGK0r7bUdThSZAYipQOH0X79M4SoNZ5Tg77lq/RVbEdpObNEM2oRfLINbMlQQrezA4VYzt0n/DOkcQ==
 
-"@ffmpeg-installer/ffmpeg@^1.0.20":
-  version "1.0.20"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/ffmpeg/-/ffmpeg-1.0.20.tgz#d3c9c2bbcd76149468fb0886c2b3fe9e4795490b"
-  integrity sha512-wbgd//6OdwbFXYgV68ZyKrIcozEQpUKlvV66XHaqO2h3sFbX0jYLzx62Q0v8UcFWN21LoxT98NU2P+K0OWsKNA==
+"@ffprobe-installer/ffprobe@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/ffprobe/-/ffprobe-1.1.0.tgz#a2f6fbd383f90d9359dc6c0552dca9793a884b3c"
+  integrity sha512-koiZrWEC4hrzCuN+/ijHkeiyx7CnUr/cnGynQAgHMDphsDgZkXivNzZrtT6VI5Nf0SkQqC2ZPU5rx3nZ8yEqLQ==
   optionalDependencies:
-    "@ffmpeg-installer/darwin-x64" "4.1.0"
-    "@ffmpeg-installer/linux-arm" "4.1.3"
-    "@ffmpeg-installer/linux-arm64" "4.1.4"
-    "@ffmpeg-installer/linux-ia32" "4.1.0"
-    "@ffmpeg-installer/linux-x64" "4.1.0"
-    "@ffmpeg-installer/win32-ia32" "4.1.0"
-    "@ffmpeg-installer/win32-x64" "4.1.0"
+    "@ffprobe-installer/darwin-x64" "4.1.0"
+    "@ffprobe-installer/linux-arm" "4.3.2"
+    "@ffprobe-installer/linux-arm64" "4.3.2"
+    "@ffprobe-installer/linux-ia32" "4.1.0"
+    "@ffprobe-installer/linux-x64" "4.1.0"
+    "@ffprobe-installer/win32-ia32" "4.1.0"
+    "@ffprobe-installer/win32-x64" "4.1.0"
 
-"@ffmpeg-installer/linux-arm64@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/linux-arm64/-/linux-arm64-4.1.4.tgz#7219f3f901bb67f7926cb060b56b6974a6cad29f"
-  integrity sha512-dljEqAOD0oIM6O6DxBW9US/FkvqvQwgJ2lGHOwHDDwu/pX8+V0YsDL1xqHbj1DMX/+nP9rxw7G7gcUvGspSoKg==
+"@ffprobe-installer/linux-arm64@4.3.2":
+  version "4.3.2"
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/linux-arm64/-/linux-arm64-4.3.2.tgz#a64ed27672d55460bdea59bc63da0cf3731f19e8"
+  integrity sha512-9mCINruqx30UqB7kRvc75sj0yAPiDy21Fowow8bQDaAYAuO39MrFt/caLJrX11vCUfx2awolxKeuzTqcO9JjMQ==
 
-"@ffmpeg-installer/linux-arm@4.1.3":
-  version "4.1.3"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/linux-arm/-/linux-arm-4.1.3.tgz#c554f105ed5f10475ec25d7bec94926ce18db4c1"
-  integrity sha512-NDf5V6l8AfzZ8WzUGZ5mV8O/xMzRag2ETR6+TlGIsMHp81agx51cqpPItXPib/nAZYmo55Bl2L6/WOMI3A5YRg==
+"@ffprobe-installer/linux-arm@4.3.2":
+  version "4.3.2"
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/linux-arm/-/linux-arm-4.3.2.tgz#09347e67539544168d9815486cd543c3e88cba29"
+  integrity sha512-nZJbpTdh29swlgjVWi2fcV5jvbDFgo2y6a7X/uBsbely/TB158Fg0AncWJm7BbC0CwasGmSdqBsLtoSwXIcrlQ==
 
-"@ffmpeg-installer/linux-ia32@4.1.0":
+"@ffprobe-installer/linux-ia32@4.1.0":
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/linux-ia32/-/linux-ia32-4.1.0.tgz#adad70b0d0d9d8d813983d6e683c5a338a75e442"
-  integrity sha512-0LWyFQnPf+Ij9GQGD034hS6A90URNu9HCtQ5cTqo5MxOEc7Rd8gLXrJvn++UmxhU0J5RyRE9KRYstdCVUjkNOQ==
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/linux-ia32/-/linux-ia32-4.1.0.tgz#50b5952927b8b1bc42c3f2edd788b995e8470d17"
+  integrity sha512-V2NeZpnly4HP1IU5IrsbbcRg8SWzC/SS0YDNSCjmhxGV2U8MUpW8c8KREE6nX56Dml8B8do5NNkTnaYCDPt3Xw==
 
-"@ffmpeg-installer/linux-x64@4.1.0":
+"@ffprobe-installer/linux-x64@4.1.0":
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/linux-x64/-/linux-x64-4.1.0.tgz#b4a5d89c4e12e6d9306dbcdc573df716ec1c4323"
-  integrity sha512-Y5BWhGLU/WpQjOArNIgXD3z5mxxdV8c41C+U15nsE5yF8tVcdCGet5zPs5Zy3Ta6bU7haGpIzryutqCGQA/W8A==
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/linux-x64/-/linux-x64-4.1.0.tgz#b67c96748457677171ca31b0fb83e4bd3c644ab5"
+  integrity sha512-Id+irHoI+Arq6tb3sHNQyzRrgUVVDgbmwpREDqQ+GDydiCw5ca7VnvRGXE/tBM2mVQ3/6m9wWHR7+xaW3gKJlA==
 
-"@ffmpeg-installer/win32-ia32@4.1.0":
+"@ffprobe-installer/win32-ia32@4.1.0":
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/win32-ia32/-/win32-ia32-4.1.0.tgz#6eac4fb691b64c02e7a116c1e2d167f3e9b40638"
-  integrity sha512-FV2D7RlaZv/lrtdhaQ4oETwoFUsUjlUiasiZLDxhEUPdNDWcH1OU9K1xTvqz+OXLdsmYelUDuBS/zkMOTtlUAw==
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/win32-ia32/-/win32-ia32-4.1.0.tgz#19cc6d1043f7e54c2764ada6af8f7f26f98bbad8"
+  integrity sha512-G1pbRfk7XDi9EioT0gSR+O4ARdppS9kSXRzhnJOojUFD6x1k8Qv27RoOXeE5DtIE7TdX6UTywj8qA1BXI5zUUA==
 
-"@ffmpeg-installer/win32-x64@4.1.0":
+"@ffprobe-installer/win32-x64@4.1.0":
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@ffmpeg-installer/win32-x64/-/win32-x64-4.1.0.tgz#17e8699b5798d4c60e36e2d6326a8ebe5e95a2c5"
-  integrity sha512-Drt5u2vzDnIONf4ZEkKtFlbvwj6rI3kxw1Ck9fpudmtgaZIHD4ucsWB2lCZBXRxJgXR+2IMSti+4rtM4C4rXgg==
+  resolved "https://registry.yarnpkg.com/@ffprobe-installer/win32-x64/-/win32-x64-4.1.0.tgz#ed3e8a329eeb6c0625ac439e31ad9ec43001b33c"
+  integrity sha512-gPW2FZxexzCAOhGch0JFkeSSln+wcL5d1JDlJwfSJVEAShHf9MmxiWq0NpHoCSzFvK5qwl0C58KG180eKvd3mA==
 
 "@fortawesome/fontawesome-common-types@^0.2.30":
   version "0.2.30"
@@ -4645,6 +4647,16 @@
   version "4.17.7"
   resolved "https://registry.yarnpkg.com/@types/express/-/express-4.17.7.tgz#42045be6475636d9801369cd4418ef65cdb0dd59"
   integrity sha512-dCOT5lcmV/uC2J9k0rPafATeeyz+99xTt54ReX11/LObZgfzJqZNcW27zGhYyX+9iSEGXGt5qLPwRSvBZcLvtQ==
+  dependencies:
+    "@types/body-parser" "*"
+    "@types/express-serve-static-core" "*"
+    "@types/qs" "*"
+    "@types/serve-static" "*"
+
+"@types/express@^4.17.8":
+  version "4.17.9"
+  resolved "https://registry.yarnpkg.com/@types/express/-/express-4.17.9.tgz#f5f2df6add703ff28428add52bdec8a1091b0a78"
+  integrity sha512-SDzEIZInC4sivGIFY4Sz1GG6J9UObPwCInYJjko2jzOf/Imx/dlpume6Xxwj1ORL82tBbmN4cPDIDkLbWHk9hw==
   dependencies:
     "@types/body-parser" "*"
     "@types/express-serve-static-core" "*"
@@ -22452,9 +22464,9 @@ pg@^7.12.1:
     semver "4.3.2"
 
 pg@^8.0.3:
-  version "8.5.0"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-8.5.0.tgz#c29332763ffd51ce52b07dc20dc2337f4d213d08"
-  integrity sha512-h+KHEwce67pAQilZhMCpCx1RC7rR1US7mdjwvKzHRaRxKQxbbFtv5UlwjzqILQ1dwhK+RVGqOVcahE/2KOcaeA==
+  version "8.5.1"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.5.1.tgz#34dcb15f6db4a29c702bf5031ef2e1e25a06a120"
+  integrity sha512-9wm3yX9lCfjvA98ybCyw2pADUivyNWT/yIP4ZcDVpMN0og70BUWYEGXPCTAQdGTAqnytfRADb7NERrY1qxhIqw==
   dependencies:
     buffer-writer "2.0.0"
     packet-reader "1.0.0"
@@ -29145,9 +29157,9 @@ warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-"warthog@https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz":
-  version "2.20.0"
-  resolved "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz#c655c7da3279b958d8fd6549be30d9eb811d48c7"
+"warthog@https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz":
+  version "2.22.0"
+  resolved "https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz#33162a65e2897c79f9b5c6c214565e85685108d3"
   dependencies:
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"

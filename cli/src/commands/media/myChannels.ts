@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { displayTable } from '../../helpers/display'
 import chalk from 'chalk'
 
@@ -9,7 +9,7 @@ export default class MyChannelsCommand extends ContentDirectoryCommandBase {
   async run() {
     const memberId = await this.getRequiredMemberId()
 
-    const props: (keyof ChannelEntity)[] = ['title', 'isPublic']
+    const props: (keyof ChannelEntity)[] = ['handle', 'isPublic']
 
     const list = await this.createEntityList('Channel', props, [], memberId)
 

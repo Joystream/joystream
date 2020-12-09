@@ -31,7 +31,7 @@ fn add_curator_group_success() {
             get_test_event(RawEvent::CuratorGroupAdded(FIRST_CURATOR_GROUP_ID));
 
         // Event checked
-        assert_event_success(
+        assert_event(
             curator_group_created_event,
             number_of_events_before_call + 1,
         );

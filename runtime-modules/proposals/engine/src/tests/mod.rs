@@ -895,7 +895,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: None,
             }
         );
@@ -941,7 +941,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: None,
             }
         );
@@ -992,7 +992,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 slashes: 0,
             },
             exact_execution_block: None,
-            current_constitutionality_level: 1,
+            nr_of_council_confirmations: 1,
             staking_account_id: None,
         };
 
@@ -1057,7 +1057,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 activated_at: 0,
                 voting_results: VotingResults::default(),
                 exact_execution_block: None,
-                current_constitutionality_level: 0,
+                nr_of_council_confirmations: 0,
                 staking_account_id: Some(1),
                 status: ProposalStatus::Active,
             }
@@ -1155,7 +1155,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: Some(1),
         };
 
@@ -1227,7 +1227,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: Some(1),
         };
 
@@ -1551,7 +1551,7 @@ fn proposal_execution_with_exact_execution_works() {
                     slashes: 0,
                 },
                 exact_execution_block: Some(exact_block),
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: None,
             }
         );
@@ -1623,7 +1623,7 @@ fn proposal_with_pending_constitutionality_succeeds() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: None,
             }
         );
@@ -1686,7 +1686,7 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: None,
             }
         );
@@ -1787,7 +1787,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
-                current_constitutionality_level: 1,
+                nr_of_council_confirmations: 1,
                 staking_account_id: Some(account_id),
             }
         );

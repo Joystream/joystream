@@ -16,6 +16,7 @@ import {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 } from './update'
 import {
   removeCategory,
@@ -30,6 +31,7 @@ import {
   removeVideoMediaEncoding,
   removeLicense,
   removeMediaLocation,
+  removeFeaturedVideo,
 } from './remove'
 import {
   createCategory,
@@ -43,9 +45,10 @@ import {
   createLanguage,
   createVideoMediaEncoding,
   createBlockOrGetFromDatabase,
+  createFeaturedVideo,
 } from './create'
 import {
-  CategoryPropertyNamesWithId,
+  categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
@@ -56,6 +59,7 @@ import {
   videoPropertyNamesWithId,
   contentDirectoryClassNamesWithId,
   ContentDirectoryKnownClasses,
+  featuredVideoPropertyNamesWithId,
 } from '../content-dir-consts'
 
 import {
@@ -74,6 +78,7 @@ import {
   IEntity,
   ILicense,
   IMediaLocation,
+  IFeaturedVideo,
 } from '../../types'
 import { getOrCreate } from '../get-or-create'
 
@@ -112,7 +117,7 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
-      await createCategory(arg, decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId))
+      await createCategory(arg, decode.setProperties<ICategory>(event, categoryPropertyNamesWithId))
       break
 
     case ContentDirectoryKnownClasses.KNOWNLICENSE:
@@ -166,6 +171,14 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       await createVideoMediaEncoding(
         arg,
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await createFeaturedVideo(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
+        0
       )
       break
 
@@ -241,6 +254,10 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
       await removeMediaLocation(db, where)
       break
 
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await removeFeaturedVideo(db, where)
+      break
+
     default:
       throw new Error(`Unknown class name: ${cls.name}`)
   }
@@ -296,7 +313,7 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateCategoryEntityPropertyValues(
         db,
         where,
-        decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId)
+        decode.setProperties<ICategory>(event, categoryPropertyNamesWithId)
       )
       break
 
@@ -375,6 +392,15 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
         db,
         where,
         decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
+        0
+      )
+      break
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await updateFeaturedVideoEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
         0
       )
       break

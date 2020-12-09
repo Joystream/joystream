@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { Entity } from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
-import { ChannelEntity } from 'cd-schemas/types/entities'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities'
 
 export default class RemoveChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Removes a channel (required controller access).'
@@ -29,13 +29,13 @@ export default class RemoveChannelCommand extends ContentDirectoryCommandBase {
       channelId = parseInt(id)
       channelEntity = await this.getEntity(channelId, 'Channel', memberId)
     } else {
-      const [id, channel] = await this.promptForEntityEntry('Select a channel to remove', 'Channel', 'title', memberId)
+      const [id, channel] = await this.promptForEntityEntry('Select a channel to remove', 'Channel', 'handle', memberId)
       channelId = id.toNumber()
       channelEntity = channel
     }
     const channel = await this.parseToKnownEntityJson<ChannelEntity>(channelEntity)
 
-    await this.requireConfirmation(`Are you sure you want to remove "${channel.title}" channel?`)
+    await this.requireConfirmation(`Are you sure you want to remove "${channel.handle}" channel?`)
 
     const api = this.getOriginalApi()
     this.log(`Removing Channel entity (ID: ${channelId})...`)

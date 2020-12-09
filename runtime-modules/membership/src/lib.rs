@@ -12,7 +12,7 @@ use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
-use common::working_group::Interface;
+use common::working_group::WorkingGroupIntegration;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
@@ -29,7 +29,7 @@ pub trait Trait:
     type MembershipFee: Get<BalanceOf<Self>>;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::Interface<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
 }
 
 // Default user info constraints
