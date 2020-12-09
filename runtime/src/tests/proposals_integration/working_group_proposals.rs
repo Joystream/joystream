@@ -71,18 +71,18 @@ fn add_opening(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_add_working_group_leader_opening_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            AddOpeningParameters {
+            ProposalDetails::AddWorkingGroupLeaderOpening(AddOpeningParameters {
                 description: Vec::new(),
                 stake_policy: stake_policy.clone(),
                 reward_policy: None,
                 working_group,
-            },
-            None,
+            }),
         )
     })
     .with_expected_proposal_id(expected_proposal_id)
@@ -110,17 +110,19 @@ fn fill_opening(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_fill_working_group_leader_opening_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            proposals_codex::FillOpeningParameters {
-                opening_id,
-                successful_application_id,
-                working_group,
-            },
-            None,
+            ProposalDetails::FillWorkingGroupLeaderOpening(
+                proposals_codex::FillOpeningParameters {
+                    opening_id,
+                    successful_application_id,
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -147,15 +149,17 @@ fn decrease_stake(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            leader_worker_id,
-            stake_amount,
-            working_group,
-            None,
+            ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                leader_worker_id,
+                stake_amount,
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -182,18 +186,20 @@ fn slash_stake(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_slash_working_group_leader_stake_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            leader_worker_id,
-            Penalty {
-                slashing_amount: stake_amount,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-            None,
+            ProposalDetails::SlashWorkingGroupLeaderStake(
+                leader_worker_id,
+                Penalty {
+                    slashing_amount: stake_amount,
+                    slashing_text: Vec::new(),
+                },
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -220,15 +226,17 @@ fn set_reward(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_set_working_group_leader_reward_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            leader_worker_id,
-            Some(reward_amount),
-            working_group,
-            None,
+            ProposalDetails::SetWorkingGroupLeaderReward(
+                leader_worker_id,
+                Some(reward_amount),
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -258,14 +266,13 @@ fn set_mint_capacity<
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_set_working_group_budget_capacity_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            mint_capacity,
-            working_group,
-            None,
+            ProposalDetails::SetWorkingGroupBudgetCapacity(mint_capacity, working_group),
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -292,17 +299,19 @@ fn terminate_role(
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
         };
 
-        ProposalCodex::create_terminate_working_group_leader_role_proposal(
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            proposals_codex::TerminateRoleParameters {
-                worker_id: leader_worker_id,
-                penalty: penalty.clone(),
-                working_group,
-            },
-            None,
+            ProposalDetails::TerminateWorkingGroupLeaderRole(
+                proposals_codex::TerminateRoleParameters {
+                    worker_id: leader_worker_id,
+                    penalty: penalty.clone(),
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()

@@ -8,7 +8,7 @@ use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
-use proposals_codex::GeneralProposalParameters;
+use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
@@ -510,13 +510,13 @@ fn text_proposal_execution_succeeds() {
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
             };
 
-            ProposalCodex::create_text_proposal(
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
-                b"text".to_vec(),
-                None,
+                ProposalDetails::Text(b"text".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
@@ -542,14 +542,13 @@ fn spending_proposal_execution_succeeds() {
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
             };
 
-            ProposalCodex::create_spending_proposal(
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                new_balance,
-                target_account_id.clone().into(),
-                None,
+                ProposalDetails::Spending(new_balance, target_account_id.clone().into()),
             )
         })
         .with_member_id(member_id as u64);
@@ -580,13 +579,13 @@ fn set_validator_count_proposal_execution_succeeds() {
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
             };
 
-            ProposalCodex::create_set_validator_count_proposal(
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                new_validator_count,
-                None,
+                ProposalDetails::SetValidatorCount(new_validator_count),
             )
         });
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
@@ -609,13 +608,13 @@ fn amend_constitution_proposal_execution_succeeds() {
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
             };
 
-            ProposalCodex::create_amend_constitution_proposal(
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
-                b"Constitution text".to_vec(),
-                None,
+                ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
