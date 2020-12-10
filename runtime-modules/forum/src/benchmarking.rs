@@ -446,6 +446,38 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, i - 1).into());
     }
+    moderate_thread {
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+
+        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let thread_id = create_new_thread::<T>(
+            T::AccountId::default(), T::ForumUserId::default(), category_id,
+            text.clone(), text.clone(), poll
+        );
+
+        let mut category = Module::<T>::category_by_id(category_id);
+
+        for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
+            add_thread_post::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, thread_id, text.clone());
+        }
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, thread_id, text.clone())
+    verify {
+        // Ensure category num_direct_threads updated successfully.
+        category.num_direct_threads-=1;
+        assert_eq!(Module::<T>::category_by_id(category_id), category);
+
+        // Ensure thread was successfully deleted
+        assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
+        assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
+
+        assert_last_event::<T>(RawEvent::ThreadModerated(thread_id, text).into());
+    }
 }
 
 #[cfg(test)]
@@ -522,6 +554,13 @@ mod tests {
     fn test_vote_on_poll() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_vote_on_poll::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_moderate_thread() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_moderate_thread::<Runtime>());
         });
     }
 }
