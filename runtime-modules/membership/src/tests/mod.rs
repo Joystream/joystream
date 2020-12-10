@@ -13,7 +13,7 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 #[test]
-fn buy_membership() {
+fn buy_membership_succeeds() {
     build_test_externalities().execute_with(|| {
         let initial_balance = MembershipFee::get();
         set_alice_free_balance(initial_balance);
@@ -70,7 +70,7 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
 }
 
 #[test]
-fn new_memberships_allowed_flag() {
+fn new_memberships_allowed_flag_works() {
     build_test_externalities().execute_with(|| {
         let initial_balance = MembershipFee::get() + 1;
         set_alice_free_balance(initial_balance);
@@ -85,7 +85,7 @@ fn new_memberships_allowed_flag() {
 }
 
 #[test]
-fn unique_handles() {
+fn buy_membership_fails_with_non_unique_handle() {
     build_test_externalities().execute_with(|| {
         let initial_balance = MembershipFee::get();
         set_alice_free_balance(initial_balance);
@@ -102,7 +102,7 @@ fn unique_handles() {
 }
 
 #[test]
-fn update_profile() {
+fn update_profile_succeeds() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -139,49 +139,100 @@ fn update_profile() {
 }
 
 #[test]
-fn set_controller_key() {
-    let initial_members = [(0u64, ALICE_ACCOUNT_ID)];
+fn update_profile_has_no_effect_on_empty_parameters() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
 
-    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
-        const ALICE_CONTROLLER_ID: u64 = 2;
-        let member_id = 0;
+        let next_member_id = Membership::members_created();
 
-        assert_ok!(Membership::set_controller_account(
+        assert_ok!(buy_default_membership_as_alice());
+        assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
-            member_id,
-            ALICE_CONTROLLER_ID
+            next_member_id,
+            None,
+            None,
+            None,
+            None,
         ));
 
-        let profile = get_membership_by_id(member_id);
+        let profile = get_membership_by_id(next_member_id);
 
-        assert_eq!(profile.controller_account, ALICE_CONTROLLER_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_CONTROLLER_ID),
-            vec![member_id]
-        );
-        assert!(<crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
+        assert_eq!(Some(profile.name), get_alice_info().name);
+        assert_eq!(Some(profile.handle), get_alice_info().handle);
+        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
+        assert_eq!(Some(profile.about), get_alice_info().about);
+
+        assert!(<crate::MemberIdByHandle<Test>>::contains_key(
+            get_alice_info().handle.unwrap()
+        ));
     });
 }
 
 #[test]
-fn set_root_account() {
-    let initial_members = [(0u64, ALICE_ACCOUNT_ID)];
+fn update_profile_accounts_succeeds() {
+    let member_id = 0u64;
+    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
-        const ALICE_NEW_ROOT_ACCOUNT: u64 = 2;
-        let member_id = 0;
+        let starting_block = 1;
+        run_to_block(starting_block);
 
-        assert_ok!(Membership::set_root_account(
+        const ALICE_NEW_ACCOUNT_ID: u64 = 2;
+
+        assert_ok!(Membership::update_accounts(
             Origin::signed(ALICE_ACCOUNT_ID),
             member_id,
-            ALICE_NEW_ROOT_ACCOUNT
+            Some(ALICE_NEW_ACCOUNT_ID),
+            Some(ALICE_NEW_ACCOUNT_ID),
         ));
 
-        let membership = Membership::membership(member_id);
+        let profile = get_membership_by_id(member_id);
 
-        assert_eq!(ALICE_NEW_ROOT_ACCOUNT, membership.root_account);
+        assert_eq!(profile.controller_account, ALICE_NEW_ACCOUNT_ID);
+        assert_eq!(
+            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
+            vec![member_id]
+        );
+        assert!(<crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
 
+        assert_eq!(profile.root_account, ALICE_NEW_ACCOUNT_ID);
+        assert_eq!(
+            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
+            vec![member_id]
+        );
         assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(member_id));
+    });
+}
+
+#[test]
+fn update_accounts_has_effect_on_empty_account_parameters() {
+    let member_id = 0u64;
+    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        assert_ok!(Membership::update_accounts(
+            Origin::signed(ALICE_ACCOUNT_ID),
+            member_id,
+            None,
+            None,
+        ));
+
+        let profile = get_membership_by_id(member_id);
+
+        assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
+        assert_eq!(
+            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
+            vec![member_id]
+        );
+
+        assert_eq!(profile.root_account, ALICE_ACCOUNT_ID);
+        assert_eq!(
+            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
+            vec![member_id]
+        );
     });
 }
 
