@@ -2,7 +2,7 @@
 
 pub use crate::{GenesisConfig, Trait};
 
-use crate::MembershipWorkingGroupInstance;
+use crate::{genesis, MembershipWorkingGroupInstance};
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use frame_system;
@@ -281,6 +281,18 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     TestExternalitiesBuilder::<Test>::default().build()
+}
+
+pub fn build_test_externalities_with_initial_members(
+    initial_members: Vec<(u64, u64)>,
+) -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .members(initial_members)
+                .build(),
+        )
+        .build()
 }
 
 pub type Balances = balances::Module<Test>;

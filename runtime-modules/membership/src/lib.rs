@@ -173,8 +173,6 @@ decl_storage! {
                     &checked_user_info,
                 ).expect("Importing Member Failed");
 
-
-
                 // ensure imported member id matches assigned id
                 assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
             }
@@ -188,9 +186,7 @@ decl_event! {
       <T as common::Trait>::MemberId,
     {
         MemberRegistered(MemberId, AccountId),
-        MemberUpdatedAboutText(MemberId),
-        MemberUpdatedAvatar(MemberId),
-        MemberUpdatedHandle(MemberId),
+        MemberProfileUpdated(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
         MemberVerificationStatusUpdated(MemberId, bool),
@@ -239,67 +235,63 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
 
-        /// Change member's about text
+        /// Update member's all or some of name, handle, avatar and about text.
+        /// No effect if no changed fields.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
-            let sender = ensure_signed(origin)?;
-
-            let membership = Self::ensure_membership(member_id)?;
-
-            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
-
-            Self::_change_member_about_text(member_id, &text)?;
-        }
-
-        /// Change member's avatar
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
-            let sender = ensure_signed(origin)?;
-
-            let membership = Self::ensure_membership(member_id)?;
-
-            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
-
-            Self::_change_member_avatar(member_id, &uri)?;
-        }
-
-        /// Change member's handle. Will ensure new handle is unique and old one will be available
-        /// for other members to use.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
-            let sender = ensure_signed(origin)?;
-
-            let membership = Self::ensure_membership(member_id)?;
-
-            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
-
-            Self::_change_member_handle(member_id, handle)?;
-        }
-
-        /// Update member's all or some of handle, avatar and about text.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_membership(
+        pub fn update_profile(
             origin,
             member_id: T::MemberId,
+            name: Option<Vec<u8>>,
             handle: Option<Vec<u8>>,
             avatar_uri: Option<Vec<u8>>,
             about: Option<Vec<u8>>
         ) {
-            let sender = ensure_signed(origin)?;
+            // No effect if no changes.
+            if name.is_none() && handle.is_none() && avatar_uri.is_none() && about.is_none() {
+                return Ok(())
+            }
 
-            let membership = Self::ensure_membership(member_id)?;
+            Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
-            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
+            let mut membership = Self::ensure_membership(member_id)?;
 
+            // Prepare for possible handle change;
+            let old_handle = membership.handle.clone();
+            let mut new_handle: Option<Vec<u8>> = None;
+
+            // Update fields if needed
             if let Some(uri) = avatar_uri {
-                Self::_change_member_avatar(member_id, &uri)?;
+                Self::validate_avatar(&uri)?;
+                membership.avatar_uri = uri;
+            }
+            if let Some(name) = name {
+                Self::validate_name(&name)?;
+                membership.name = name;
             }
             if let Some(about) = about {
-                Self::_change_member_about_text(member_id, &about)?;
+                let text = Self::validate_text(&about);
+                membership.about = text;
             }
             if let Some(handle) = handle {
-                Self::_change_member_handle(member_id, handle)?;
+                Self::validate_handle(&handle)?;
+                Self::ensure_unique_handle(&handle)?;
+
+                new_handle = Some(handle.clone());
+                membership.handle = handle;
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::insert(member_id, membership);
+
+            if let Some(new_handle) = new_handle {
+                <MemberIdByHandle<T>>::remove(&old_handle);
+                <MemberIdByHandle<T>>::insert(new_handle, member_id);
+            }
+
+            Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -511,36 +503,7 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> Result<(), Error<T>> {
-        let mut membership = Self::ensure_membership(id)?;
-        let text = Self::validate_text(text);
-        membership.about = text;
-        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id));
-        <MembershipById<T>>::insert(id, membership);
-        Ok(())
-    }
-
-    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> Result<(), Error<T>> {
-        let mut membership = Self::ensure_membership(id)?;
-        Self::validate_avatar(uri)?;
-        membership.avatar_uri = uri.to_owned();
-        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
-        <MembershipById<T>>::insert(id, membership);
-        Ok(())
-    }
-
-    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> Result<(), Error<T>> {
-        let mut membership = Self::ensure_membership(id)?;
-        Self::validate_handle(&handle)?;
-        Self::ensure_unique_handle(&handle)?;
-        <MemberIdByHandle<T>>::remove(&membership.handle);
-        <MemberIdByHandle<T>>::insert(handle.clone(), id);
-        membership.handle = handle;
-        Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
-        <MembershipById<T>>::insert(id, membership);
-        Ok(())
-    }
-
+    /// Ensure origin corresponds to the controller account of the member.
     pub fn ensure_member_controller_account_signed(
         origin: T::Origin,
         member_id: &T::MemberId,
