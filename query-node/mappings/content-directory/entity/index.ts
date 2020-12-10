@@ -91,7 +91,7 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
   const { blockNumber: block } = event
   const entityId = decode.stringIfyEntityId(event)
 
-  const knownClass = await getKnownClass(db, { where: { id: entityId } })
+  const [knownClass] = await getKnownClass(db, { where: { id: entityId } })
   if (!knownClass) return
 
   const arg: IDBBlockId = { db, block, id: entityId }
@@ -184,7 +184,7 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
   const entityId = decode.stringIfyEntityId(event)
   const where: IWhereCond = { where: { id: entityId } }
 
-  const knownClass = await getKnownClass(db, where)
+  const [knownClass, classEntity] = await getKnownClass(db, where)
   if (!knownClass) return
 
   switch (knownClass.name) {
@@ -242,8 +242,7 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
     default:
       throw new Error(`Unknown class name: ${knownClass.name}`)
   }
-  const ce = await db.get(ClassEntity, where)
-  if (ce) await db.remove<ClassEntity>(ce)
+  await db.remove<ClassEntity>(classEntity)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -275,7 +274,7 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
   const entityId = decode.stringIfyEntityId(event)
   const where: IWhereCond = { where: { id: entityId } }
 
-  const knownClass = await getKnownClass(db, where)
+  const [knownClass] = await getKnownClass(db, where)
   if (!knownClass) return
 
   // TODO: change setProperties method signature to accecpt SubstrateExtrinsic, then remove the following

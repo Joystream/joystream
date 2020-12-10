@@ -36,6 +36,7 @@ import {
   IEntity,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
+  IKnownClass,
   IKnownLicense,
   ILanguage,
   ILicense,
@@ -426,16 +427,15 @@ async function video(
   )
 }
 
-export async function getKnownClass(db: DB, where: IWhereCond): Promise<{ classId: number; name: string } | undefined> {
+export async function getKnownClass(db: DB, where: IWhereCond): Promise<[IKnownClass | undefined, ClassEntity]> {
   const ce = await db.get(ClassEntity, where)
   if (!ce) {
-    console.log(`Class not found for the EntityId: ${where.where.id} or the entity has not been created.`)
-    return
+    throw Error(`Class not found for the EntityId: ${where.where.id} or the entity has not been created.`)
   }
 
   const knownClass = contentDirectoryClassNamesWithId.find((c) => c.classId === ce.classId)
   if (!knownClass) console.log('Unknown class')
-  return knownClass
+  return [knownClass, ce]
 }
 
 export const getOrCreate = {
