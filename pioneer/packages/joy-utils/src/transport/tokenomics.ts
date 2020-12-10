@@ -299,7 +299,7 @@ export default class TokenomicsTransport extends BaseTransport {
     const blockHeight = (await this.api.derive.chain.bestNumber()).toNumber();
     const numberOfMembers = (await this.api.query.members.nextMemberId() as MemberId).toNumber();
     const content = await this.api.query.dataDirectory.knownContentIds() as Vec<ContentId>;
-    const numberOfChannels = (await this.api.query.contentWorkingGroup.nextChannelId() as ChannelId).toNumber();
+    const numberOfChannels = (await this.api.query.contentWorkingGroup.nextChannelId() as ChannelId).toNumber() - 1;
     const proposalCount = (await this.api.query.proposalsEngine.proposalCount() as u32).toNumber();
     const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber() - 1;
     const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber() - 1;
@@ -357,18 +357,8 @@ export default class TokenomicsTransport extends BaseTransport {
 
     proposalData.map((proposal, index) => {
       const proposalType = proposals[index][1].type;
-      let definedProposalType: 'text' | 'spending' | 'networkChanges' | 'workingGroups';
+      const definedProposalType = genericTypes[proposalType];
       const proposalStatus = proposal.status.isOfType('Active') ? 'Active' as const : proposal.status.asType('Finalized').proposalStatus.type;
-
-      if (proposalType === 'Text') {
-        definedProposalType = 'text';
-      } else if (proposalType === 'Spending') {
-        definedProposalType = 'spending';
-      } else if (proposalType === 'RuntimeUpgrade' || proposalType === 'SetElectionParameters' || proposalType === 'SetValidatorCount') {
-        definedProposalType = 'networkChanges';
-      } else {
-        definedProposalType = 'workingGroups';
-      }
 
       returnData[definedProposalType].all++;
       returnData[definedProposalType][proposalStatus]++;
