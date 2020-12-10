@@ -50,6 +50,7 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestUserInfo {
+    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
     pub avatar_uri: Option<Vec<u8>>,
     pub about: Option<Vec<u8>>,
@@ -57,25 +58,19 @@ pub struct TestUserInfo {
 
 pub fn get_alice_info() -> TestUserInfo {
     TestUserInfo {
-        handle: Some(String::from("alice").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/alice")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is alice").as_bytes().to_vec()),
+        name: Some(b"Alice".to_vec()),
+        handle: Some(b"alice".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
+        about: Some(b"my name is alice".to_vec()),
     }
 }
 
 pub fn get_bob_info() -> TestUserInfo {
     TestUserInfo {
-        handle: Some(String::from("bobby").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/bob")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is bob").as_bytes().to_vec()),
+        name: Some(b"Bob".to_vec()),
+        handle: Some(b"bobby".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
+        about: Some(b"my name is bob".to_vec()),
     }
 }
 
@@ -85,6 +80,7 @@ pub fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
     Membership::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
+        info.name,
         info.handle,
         info.avatar_uri,
         info.about,

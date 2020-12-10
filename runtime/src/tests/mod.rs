@@ -36,6 +36,7 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     let handle: &[u8] = account_id.as_ref();
     Membership::buy_membership(
         RawOrigin::Signed(account_id.clone()).into(),
+        None,
         Some(handle.to_vec()),
         None,
         None,
