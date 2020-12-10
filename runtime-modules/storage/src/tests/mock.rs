@@ -366,7 +366,7 @@ impl ExtBuilder {
                 handle: "alice".into(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                registered_at_time: 0,
+                name: "".into(),
             }],
         }
         .assimilate_storage(&mut t)

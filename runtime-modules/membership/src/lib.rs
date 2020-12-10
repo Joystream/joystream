@@ -156,11 +156,11 @@ decl_storage! {
         pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
     }
     add_extra_genesis {
-        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId, T::Moment>>;
+        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
                 let checked_user_info = <Module<T>>::check_user_registration_info(
-                    None,
+                    Some(member.name.clone().into_bytes()),
                     Some(member.handle.clone().into_bytes()),
                     Some(member.avatar_uri.clone().into_bytes()),
                     Some(member.about.clone().into_bytes())
