@@ -12,8 +12,8 @@ benchmark() {
       --pallet=$1 \
       --extrinsic=* \
       --chain=dev \
-      --steps=5 \
-      --repeat=2 \
+      --steps=50 \
+      --repeat=20 \
       --execution=wasm \
       --output=.  > /dev/null
 
@@ -31,9 +31,14 @@ benchmark() {
 # FRAME benchmarks
 benchmark frame_system
 benchmark pallet_utility
-benchmark pallet_timestamp
 benchmark pallet_session
-benchmark pallet_im_online
+benchmark pallet_timestamp
+
+# This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
+# Will have it commented out until we test it in the reference machine. If there
+# it still takes too long we will get rid of this benchmark for good and use always
+# the default weights.
+# benchmark pallet_im_online
 
 # Joystrem benchmarks
 benchmark proposals_discussion

@@ -377,8 +377,10 @@ impl pallet_im_online::Trait for Runtime {
     type Event = Event;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
+    // Using the default weights until we check if we can run the benchmarks for this pallet in
+    // the reference machine in an acceptable time.
+    type WeightInfo = ();
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = weights::pallet_im_online::WeightInfo;
 }
 
 parameter_types! {
