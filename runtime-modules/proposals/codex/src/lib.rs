@@ -158,6 +158,10 @@ pub trait Trait:
     type AmendConstitutionProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    type CancelWorkingGroupLeaderOpeningParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -434,6 +438,12 @@ impl<T: Trait> Module<T> {
             ProposalDetails::AmendConstitution(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::CancelWorkingGroupLeaderOpening(_, _) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetMembershipPrice(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -475,6 +485,9 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetailsOf::<T>::AmendConstitution(..) => {
                 T::AmendConstitutionProposalParameters::get()
+            }
+            ProposalDetails::CancelWorkingGroupLeaderOpening(_, _) => {
+                T::CancelWorkingGroupLeaderOpeningParameters::get()
             }
         }
     }

@@ -34,6 +34,7 @@ parameter_types! {
     pub SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_leader_reward_proposal;
     pub TerminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.terminate_working_group_leader_role_proposal;
     pub AmendConstitutionProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.amend_constitution_proposal;
+    pub CancelWorkingGroupLeaderOpeningParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.cancel_working_group_leader_opening;
 }
 
 ///////////
@@ -51,6 +52,7 @@ struct AllProposalsParameters {
     pub set_working_group_leader_reward_proposal: ProposalParameters<BlockNumber, Balance>,
     pub terminate_working_group_leader_role_proposal: ProposalParameters<BlockNumber, Balance>,
     pub amend_constitution_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub cancel_working_group_leader_opening: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -134,7 +136,8 @@ fn convert_json_object_to_proposal_parameters(
             jo.clone(),
             terminate_working_group_leader_role_proposal
         );
-        init_proposal_parameter_object!(params, jo, amend_constitution_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), amend_constitution_proposal);
+        init_proposal_parameter_object!(params, jo, cancel_working_group_leader_opening);
     }
 
     params
@@ -256,5 +259,6 @@ fn default_parameters() -> AllProposalsParameters {
         terminate_working_group_leader_role_proposal:
             defaults::terminate_working_group_leader_role_proposal(),
         amend_constitution_proposal: defaults::amend_constitution_proposal(),
+        cancel_working_group_leader_opening: defaults::cancel_working_group_leader_opening(),
     }
 }

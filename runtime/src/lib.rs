@@ -812,6 +812,7 @@ impl proposals_codex::Trait for Runtime {
     type TerminateWorkingGroupLeaderRoleProposalParameters =
         TerminateWorkingGroupLeaderRoleProposalParameters;
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
+    type CancelWorkingGroupLeaderOpeningParameters = CancelWorkingGroupLeaderOpeningParameters;
 }
 
 impl pallet_constitution::Trait for Runtime {

@@ -17,16 +17,17 @@ pub trait ProposalEncoder<T: crate::Trait> {
 
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
+    crate::BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as frame_system::Trait>::AccountId,
-    crate::BalanceOf<T>,
     working_group::WorkerId<T>,
+    working_group::OpeningId,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub enum ProposalDetails<BlockNumber, AccountId, Balance, WorkerId> {
+pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
@@ -62,10 +63,16 @@ pub enum ProposalDetails<BlockNumber, AccountId, Balance, WorkerId> {
 
     /// Amend constitution.
     AmendConstitution(Vec<u8>),
+
+    /// Cancel working group leader opening.
+    CancelWorkingGroupLeaderOpening(OpeningId, WorkingGroup),
+
+    /// Set the membership price.
+    SetMembershipPrice(Balance),
 }
 
-impl<BlockNumber, AccountId, Balance, WorkerId> Default
-    for ProposalDetails<BlockNumber, AccountId, Balance, WorkerId>
+impl<BlockNumber, AccountId, Balance, WorkerId, OpeningId> Default
+    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId>
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())

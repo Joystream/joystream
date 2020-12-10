@@ -243,7 +243,10 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
 #[test]
 fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        let total_balance_issuance = 500000;
+        increase_total_balance_issuance(total_balance_issuance);
+        let mint_id = governance::council::Module::<Test>::council_mint();
+        minting::Module::<Test>::set_mint_capacity(mint_id, total_balance_issuance).unwrap();
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -263,6 +266,10 @@ fn create_spending_proposal_common_checks_succeed() {
 
         let spending_proposal_details = ProposalDetails::Spending(20, 10);
         let spending_proposal_details_succesful = ProposalDetails::Spending(100, 2);
+        assert_eq!(
+            minting::Module::<Test>::mints(mint_id).capacity(),
+            total_balance_issuance
+        );
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -306,11 +313,23 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
             exact_execution_block: None,
         };
 
+        let mint_id = governance::council::Module::<Test>::council_mint();
+        let budget = minting::Module::<Test>::mints(mint_id).capacity();
+
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::Spending(0, 2),
+            ),
+            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
+        );
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::Spending(budget + 1, 2),
             ),
             Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
@@ -1109,6 +1128,68 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             },
             proposal_parameters: <Test as crate::Trait>::AmendConstitutionProposalParameters::get(),
             proposal_details: amend_constitution_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_cancel_working_group_leader_opening_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let opening_id = 0;
+        let cancel_opening_details =
+            ProposalDetails::CancelWorkingGroupLeaderOpening(opening_id, working_group);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::CancelWorkingGroupLeaderOpeningParameters::get(),
+            proposal_details: cancel_opening_details.clone(),
         };
         proposal_fixture.check_all();
     });

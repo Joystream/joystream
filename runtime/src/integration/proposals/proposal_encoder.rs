@@ -95,6 +95,12 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::AmendConstitution(constitution_text) => Call::Constitution(
                 pallet_constitution::Call::amend_constitution(constitution_text),
             ),
+            ProposalDetails::CancelWorkingGroupLeaderOpening(opening_id, working_group) => {
+                wrap_working_group_call!(
+                    working_group,
+                    Wg::cancel_working_group_leader_opening(opening_id)
+                )
+            }
         };
 
         call.encode()
@@ -183,5 +189,11 @@ where
         budget: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::set_budget(budget)
+    }
+
+    fn cancel_working_group_leader_opening(
+        opening_id: working_group::OpeningId,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::cancel_opening(opening_id)
     }
 }

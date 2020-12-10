@@ -444,6 +444,7 @@ impl crate::Trait for Test {
     type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
     type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
     type AmendConstitutionProposalParameters = DefaultProposalParameters;
+    type CancelWorkingGroupLeaderOpeningParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -682,9 +683,11 @@ impl LockComparator<<Test as balances::Trait>::Balance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
+
+    council_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }

@@ -172,3 +172,18 @@ pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, B
         constitutionality: 1,
     }
 }
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Amend constitution' proposal
+pub(crate) fn cancel_working_group_leader_opening() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

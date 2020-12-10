@@ -1,24 +1,25 @@
 {
-  "_comment": "This is a sample 'Proposal parameters' JSON file to enable conditional runtime compilation.",
-  "set_validator_count_proposal": {
-    "voting_period": 1,
-    "grace_period": 2,
-    "approval_quorum_percentage": 3,
-    "approval_threshold_percentage": 4,
-    "slashing_quorum_percentage": 5,
-    "slashing_threshold_percentage": 6,
-    "required_stake": 7,
-    "constitutionality": 8
-  },
-  "runtime_upgrade_proposal" : {},
-  "text_proposal": {},
-  "spending_proposal": {},
-  "add_working_group_opening_proposal": {},
-  "fill_working_group_opening_proposal": {},
-  "set_working_group_budget_capacity_proposal": {},
-  "decrease_working_group_leader_stake_proposal": {},
-  "slash_working_group_leader_stake_proposal": {},
-  "set_working_group_leader_reward_proposal": {},
-  "terminate_working_group_leader_role_proposal": {},
-  "amend_constitution_proposal": {}
+    "_comment": "This is a sample 'Proposal parameters' JSON file to enable conditional runtime compilation.",
+    "set_validator_count_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    },
+    "runtime_upgrade_proposal": {},
+    "text_proposal": {},
+    "spending_proposal": {},
+    "add_working_group_opening_proposal": {},
+    "fill_working_group_opening_proposal": {},
+    "set_working_group_budget_capacity_proposal": {},
+    "decrease_working_group_leader_stake_proposal": {},
+    "slash_working_group_leader_stake_proposal": {},
+    "set_working_group_leader_reward_proposal": {},
+    "terminate_working_group_leader_role_proposal": {},
+    "amend_constitution_proposal": {},
+    "cancel_working_group_leader_opening": {}
 }
