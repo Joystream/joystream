@@ -511,6 +511,37 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::PostAdded(post_id).into());
     }
+    react_post {
+
+        // Generate categories tree
+        let mut parent_category_id: Option<T::CategoryId> = None;
+        let mut category_id = T::CategoryId::default();
+
+        for n in 0..T::MaxCategoryDepth::get() {
+            if n > 1 {
+                parent_category_id = Some((n as u64).into());
+            }
+
+            category_id = create_new_category::<T>(T::AccountId::default(), parent_category_id, vec![0u8], vec![0u8]);
+        }
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+
+        let thread_id = create_new_thread::<T>(
+            T::AccountId::default(), T::ForumUserId::default(), category_id,
+            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), poll
+        );
+
+        let post_id = add_thread_post::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, thread_id, vec![1u8].repeat(MAX_BYTES as usize));
+
+        let react = T::PostReactionId::one();
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ForumUserId::default(), category_id, thread_id, post_id, react)
+    verify {
+        assert_last_event::<T>(RawEvent::PostReacted(T::ForumUserId::default(), post_id, react).into());
+    }
 }
 
 #[cfg(test)]
@@ -601,6 +632,13 @@ mod tests {
     fn test_add_post() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_add_post::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_react_post() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_react_post::<Runtime>());
         });
     }
 }
