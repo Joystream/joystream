@@ -82,3 +82,5 @@ export type ProposalStatisticsData = {
   networkChanges: ProposalStatistics;
   all: ProposalStatistics
 }
+
+export type GenericProposalType = 'text' | 'spending' | 'networkChanges' | 'workingGroups';
