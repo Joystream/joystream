@@ -1,3 +1,5 @@
+//! Membership genesis module.
+
 #![cfg(feature = "std")]
 
 use crate::{GenesisConfig, Trait};

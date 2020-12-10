@@ -1,3 +1,42 @@
+//! Joystream membership module.
+//!
+//! Memberships are the stable identifier under which actors occupy roles,
+//! submit proposals and communicate on the platform.
+//!
+//! ### Overview
+//! A membership is a representation of an actor on the platform,
+//! and it exist to serve the profile and reputation purposes.
+//!
+//! #### Profile
+//! A membership has an associated rich profile that includes information that support presenting
+//! the actor in a human friendly way in applications, much more so than raw accounts in isolation.
+//!
+//! #### Reputation
+//!
+//! Facilitates the consolidation of all activity under one stable identifier,
+//! allowing an actor to invest in the reputation of a membership through prolonged participation
+//! with good conduct. This gives honest and competent actors a practical way to signal quality,
+//! and this quality signal is a key screening parameter allowing entry into more important and
+//! sensitive activities. While nothing technically prevents an actor from registering for multiple
+//! memberships, the value of doing a range of activities under one membership should be greater
+//! than having it fragmented, since reputation, in essence, increases with the length and scope of
+//! the history of consistent good conduct.
+//!
+//! It's important to be aware that a membership is not an account, but a higher level concept that
+//! involves accounts for authentication. The membership subsystem is responsible for storing and
+//! managing all memberships on the platform, as well as enabling the creation of new memberships,
+//! and the terms under which this may happen.
+//!
+//! Supported extrinsics:
+//! - [update_profile](./struct.Module.html#method.update_profile) - updates profile parameters.
+//! - [buy_membership](./struct.Module.html#method.buy_membership) - allows to buy membership
+//! for non-members.
+//! - [update_accounts](./struct.Module.html#method.update_accounts) - updates member accounts.
+//! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
+//! updates member profile verification status.
+//!
+//! [Joystream handbook description](https://joystream.gitbook.io/joystream-handbook/subsystems/membership)
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -14,7 +53,7 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupIntegration;
 
-// The membership working group instance alias.
+/// The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 // Balance type alias
@@ -23,6 +62,7 @@ type BalanceOf<T> = <T as balances::Trait>::Balance;
 pub trait Trait:
     frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
 {
+    /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines the default membership fee.
@@ -39,22 +79,22 @@ const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
 
-/// Public membership object alias.
+/// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
 #[derive(Encode, Decode, Default)]
-/// Stored information about a registered user
+/// Stored information about a registered user.
 pub struct MembershipObject<AccountId> {
-    /// User name
+    /// User name.
     pub name: Vec<u8>,
 
-    /// The unique handle chosen by member
+    /// The unique handle chosen by member.
     pub handle: Vec<u8>,
 
-    /// A Url to member's Avatar image
+    /// A Url to member's Avatar image.
     pub avatar_uri: Vec<u8>,
 
-    /// Short text chosen by member to share information about themselves
+    /// Short text chosen by member to share information about themselves.
     pub about: Vec<u8>,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
@@ -84,40 +124,40 @@ struct ValidatedUserInfo {
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// New members not allowed
+        /// New members not allowed.
         NewMembersNotAllowed,
 
-        /// Not enough balance to buy membership
+        /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
-        /// Controller account required
+        /// Controller account required.
         ControllerAccountRequired,
 
-        /// Root account required
+        /// Root account required.
         RootAccountRequired,
 
-        /// Invalid origin
+        /// Invalid origin.
         UnsignedOrigin,
 
         /// Member profile not found (invalid member id).
         MemberProfileNotFound,
 
-        /// Handle already registered
+        /// Handle already registered.
         HandleAlreadyRegistered,
 
-        /// Handle too short
+        /// Handle too short.
         HandleTooShort,
 
-        /// Handle too long
+        /// Handle too long.
         HandleTooLong,
 
-        /// Avatar uri too long
+        /// Avatar uri too long.
         AvatarUriTooLong,
 
-        /// Name too long
+        /// Name too long.
         NameTooLong,
 
-        /// Handle must be provided during registration
+        /// Handle must be provided during registration.
         HandleMustBeProvidedDuringRegistration,
     }
 }
@@ -128,7 +168,7 @@ decl_storage! {
         /// total number of members created. MemberIds start at Zero.
         pub NextMemberId get(fn members_created) : T::MemberId;
 
-        /// Mapping of member's id to their membership profile
+        /// Mapping of member's id to their membership profile.
         pub MembershipById get(fn membership) : map hasher(blake2_128_concat)
             T::MemberId => Membership<T>;
 
@@ -136,23 +176,30 @@ decl_storage! {
         pub(crate) MemberIdsByRootAccountId : map hasher(blake2_128_concat)
             T::AccountId => Vec<T::MemberId>;
 
-        /// Mapping of a controller account id to vector of member ids it controls
+        /// Mapping of a controller account id to vector of member ids it controls.
         pub(crate) MemberIdsByControllerAccountId : map hasher(blake2_128_concat)
             T::AccountId => Vec<T::MemberId>;
 
-        /// Registered unique handles and their mapping to their owner
+        /// Registered unique handles and their mapping to their owner.
         pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
 
-        /// Is the platform is accepting new members or not
+        /// Is the platform is accepting new members or not.
         pub NewMembershipsAllowed get(fn new_memberships_allowed) : bool = true;
 
-        // User Input Validation parameters - do these really need to be state variables
-        // I don't see a need to adjust these in future?
+        /// Minimum allowed handle length.
         pub MinHandleLength get(fn min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
+
+        /// Maximum allowed handle length.
         pub MaxHandleLength get(fn max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
+
+        /// Maximum allowed avatar URI length.
         pub MaxAvatarUriLength get(fn max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
+
+        /// Maximum allowed 'about' text length.
         pub MaxAboutTextLength get(fn max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
+
+        /// Maximum allowed name length.
         pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
     }
     add_extra_genesis {
@@ -198,7 +245,7 @@ decl_module! {
         /// Exports const - membership fee.
         const MembershipFee: BalanceOf<T> = T::MembershipFee::get();
 
-        /// Non-members can buy membership
+        /// Non-members can buy membership.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
             origin,
@@ -292,8 +339,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
         }
 
-        /// Updates member root or controller accounts.
-        /// No effect if both new accounts are empty.
+        /// Updates member root or controller accounts. No effect if both new accounts are empty.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_accounts(
             origin,
@@ -452,7 +498,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Basic user input validation
+    // Basic user input validation
     fn check_user_registration_info(
         name: Option<Vec<u8>>,
         handle: Option<Vec<u8>>,
