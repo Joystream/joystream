@@ -37,6 +37,7 @@ const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
 const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
+const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
 
 /// Public membership object alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
@@ -113,6 +114,9 @@ decl_error! {
         /// Avatar uri too long
         AvatarUriTooLong,
 
+        /// Name too long
+        NameTooLong,
+
         /// Handle must be provided during registration
         HandleMustBeProvidedDuringRegistration,
     }
@@ -149,6 +153,7 @@ decl_storage! {
         pub MaxHandleLength get(fn max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
         pub MaxAvatarUriLength get(fn max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(fn max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
+        pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
 
     }
     add_extra_genesis {
@@ -440,6 +445,14 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn validate_name(name: &[u8]) -> Result<(), Error<T>> {
+        ensure!(
+            name.len() <= Self::max_name_length() as usize,
+            Error::<T>::NameTooLong
+        );
+        Ok(())
+    }
+
     /// Basic user input validation
     fn check_user_registration_info(
         name: Option<Vec<u8>>,
@@ -455,6 +468,7 @@ impl<T: Trait> Module<T> {
         let avatar_uri = avatar_uri.unwrap_or_default();
         Self::validate_avatar(&avatar_uri)?;
         let name = name.unwrap_or_default();
+        Self::validate_name(&name)?;
 
         Ok(ValidatedUserInfo {
             name,

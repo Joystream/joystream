@@ -33,6 +33,7 @@ fn buy_membership() {
 
             let profile = get_membership_by_id(next_member_id);
 
+            assert_eq!(Some(profile.name), get_alice_info().name);
             assert_eq!(Some(profile.handle), get_alice_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
             assert_eq!(Some(profile.about), get_alice_info().about);
@@ -281,5 +282,26 @@ fn update_verification_status_fails_with_invalid_worker_id() {
                 MembershipWorkingGroupInstance,
             >::WorkerDoesNotExist
                 .into()));
+    });
+}
+
+#[test]
+fn buy_membership_fails_with_invalid_name() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let mut alice = get_alice_info();
+        let name: [u8; 500] = [1; 500];
+        alice.name = Some(name.to_vec());
+
+        let result = Membership::buy_membership(
+            Origin::signed(ALICE_ACCOUNT_ID),
+            alice.name,
+            alice.handle,
+            alice.avatar_uri,
+            alice.about);
+
+        assert_eq!(result, Err(Error::<Test>::NameTooLong.into()));
     });
 }
