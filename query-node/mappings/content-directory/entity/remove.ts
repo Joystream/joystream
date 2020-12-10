@@ -1,4 +1,5 @@
 import assert from 'assert'
+import Debug from 'debug'
 
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
@@ -17,63 +18,70 @@ import { FeaturedVideo } from '../../../generated/graphql-server/src/modules/fea
 
 import { IWhereCond } from '../../types'
 
+const debug = Debug(`mappings:remove-entity`)
+
 function assertKeyViolation(entityName: string, entityId: string) {
   assert(false, `Can not remove ${entityName}(${entityId})! There are references to this entity`)
 }
 
+function logEntityNotFound(className: string, where: IWhereCond) {
+  debug(`${className}(${where.where.id}) not found. This happen when schema support is not added for the entity.`)
+}
+
 async function removeChannel(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Channel, where)
-  if (!record) throw Error(`Channel(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`Channel`, where)
   if (record.videos && record.videos.length) assertKeyViolation(`Channel`, record.id)
   await db.remove<Channel>(record)
 }
 
 async function removeCategory(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Category, where)
-  if (!record) throw Error(`Category(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`Category`, where)
   if (record.videos && record.videos.length) assertKeyViolation(`Category`, record.id)
   await db.remove<Category>(record)
 }
 async function removeVideoMedia(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(VideoMedia, where)
-  if (!record) throw Error(`VideoMedia(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`VideoMedia`, where)
   if (record.video) assertKeyViolation(`VideoMedia`, record.id)
   await db.remove<VideoMedia>(record)
 }
+
 async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Video, where)
-  if (!record) throw Error(`Video(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`Video`, where)
   await db.remove<Video>(record)
 }
 
 async function removeLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(LicenseEntity, where)
-  if (!record) throw Error(`License(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`License`, where)
   if (record.videolicense && record.videolicense.length) assertKeyViolation(`License`, record.id)
   await db.remove<LicenseEntity>(record)
 }
 
 async function removeUserDefinedLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(UserDefinedLicenseEntity, where)
-  if (!record) throw Error(`UserDefinedLicense(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`UserDefinedLicense`, where)
   await db.remove<UserDefinedLicenseEntity>(record)
 }
 
 async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(KnownLicenseEntity, where)
-  if (!record) throw Error(`KnownLicense(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`KnownLicense`, where)
   await db.remove<KnownLicenseEntity>(record)
 }
 async function removeMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(MediaLocationEntity, where)
-  if (!record) throw Error(`MediaLocation(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`MediaLocation`, where)
   if (record.videoMedia) assertKeyViolation('MediaLocation', record.id)
   await db.remove<MediaLocationEntity>(record)
 }
 
 async function removeHttpMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(HttpMediaLocationEntity, where)
-  if (!record) throw Error(`HttpMediaLocation(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`HttpMediaLocation`, where)
   if (record.medialocationentityhttpMediaLocation && record.medialocationentityhttpMediaLocation.length) {
     assertKeyViolation('HttpMediaLocation', record.id)
   }
@@ -82,7 +90,7 @@ async function removeHttpMediaLocation(db: DB, where: IWhereCond): Promise<void>
 
 async function removeJoystreamMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(JoystreamMediaLocationEntity, where)
-  if (!record) throw Error(`JoystreamMediaLocation(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`JoystreamMediaLocation`, where)
   if (record.medialocationentityjoystreamMediaLocation && record.medialocationentityjoystreamMediaLocation.length) {
     assertKeyViolation('JoystreamMediaLocation', record.id)
   }
@@ -91,7 +99,7 @@ async function removeJoystreamMediaLocation(db: DB, where: IWhereCond): Promise<
 
 async function removeLanguage(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Language, where)
-  if (!record) throw Error(`Language(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`Language`, where)
   if (record.channellanguage && record.channellanguage.length) assertKeyViolation('Language', record.id)
   if (record.videolanguage && record.videolanguage.length) assertKeyViolation('Language', record.id)
   await db.remove<Language>(record)
@@ -99,13 +107,13 @@ async function removeLanguage(db: DB, where: IWhereCond): Promise<void> {
 
 async function removeVideoMediaEncoding(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(VideoMediaEncoding, where)
-  if (!record) throw Error(`VideoMediaEncoding(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`VideoMediaEncoding`, where)
   await db.remove<VideoMediaEncoding>(record)
 }
 
 async function removeFeaturedVideo(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
-  if (!record) throw Error(`FeaturedVideo(${where.where.id}) not found`)
+  if (!record) return logEntityNotFound(`FeaturedVideo`, where)
 
   record.video.isFeatured = false
   record.video.featured = undefined
