@@ -4,7 +4,9 @@ pub use crate::{GenesisConfig, Trait};
 
 use crate::MembershipWorkingGroupInstance;
 pub use frame_support::traits::{Currency, LockIdentifier};
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -102,6 +104,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [9; 8];
 }
 
+pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
