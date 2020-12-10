@@ -39,15 +39,14 @@ const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
 /// Public membership object alias.
-pub type Membership<T> = MembershipObject<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as pallet_timestamp::Trait>::Moment,
-    <T as frame_system::Trait>::AccountId,
->;
+pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct MembershipObject<BlockNumber, Moment, AccountId> {
+pub struct MembershipObject<AccountId> {
+    /// User name
+    pub name: Vec<u8>,
+
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -56,15 +55,6 @@ pub struct MembershipObject<BlockNumber, Moment, AccountId> {
 
     /// Short text chosen by member to share information about themselves
     pub about: Vec<u8>,
-
-    /// Block number when member was registered
-    pub registered_at_block: BlockNumber,
-
-    /// Timestamp when member was registered
-    pub registered_at_time: Moment,
-
-    /// How the member was registered
-    pub entry: EntryMethod,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
     /// and update the controller account. Other modules may only allow certain actions if
@@ -84,23 +74,10 @@ pub struct MembershipObject<BlockNumber, Moment, AccountId> {
 
 // Contains valid or default user details
 struct ValidatedUserInfo {
+    name: Vec<u8>,
     handle: Vec<u8>,
     avatar_uri: Vec<u8>,
     about: Vec<u8>,
-}
-
-#[derive(Encode, Decode, Debug, PartialEq)]
-pub enum EntryMethod {
-    Paid,
-    Genesis,
-}
-
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl Default for EntryMethod {
-    fn default() -> Self {
-        Self::Genesis
-    }
 }
 
 decl_error! {
@@ -179,6 +156,7 @@ decl_storage! {
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
                 let checked_user_info = <Module<T>>::check_user_registration_info(
+                    None,
                     Some(member.handle.clone().into_bytes()),
                     Some(member.avatar_uri.clone().into_bytes()),
                     Some(member.about.clone().into_bytes())
@@ -188,9 +166,6 @@ decl_storage! {
                     &member.root_account,
                     &member.controller_account,
                     &checked_user_info,
-                    EntryMethod::Genesis,
-                    T::BlockNumber::from(1),
-                    member.registered_at_time
                 ).expect("Importing Member Failed");
 
 
@@ -228,6 +203,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
             origin,
+            name: Option<Vec<u8>>,
             handle: Option<Vec<u8>>,
             avatar_uri: Option<Vec<u8>>,
             about: Option<Vec<u8>>
@@ -245,15 +221,12 @@ decl_module! {
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
-            let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
+            let user_info = Self::check_user_registration_info(name, handle, avatar_uri, about)?;
 
             let member_id = Self::insert_member(
                 &who,
                 &who,
                 &user_info,
-                EntryMethod::Paid,
-                <frame_system::Module<T>>::block_number(),
-                <pallet_timestamp::Module<T>>::now()
             )?;
 
             let _ = balances::Module::<T>::slash(&who, fee);
@@ -469,6 +442,7 @@ impl<T: Trait> Module<T> {
 
     /// Basic user input validation
     fn check_user_registration_info(
+        name: Option<Vec<u8>>,
         handle: Option<Vec<u8>>,
         avatar_uri: Option<Vec<u8>>,
         about: Option<Vec<u8>>,
@@ -480,8 +454,10 @@ impl<T: Trait> Module<T> {
         let about = Self::validate_text(&about.unwrap_or_default());
         let avatar_uri = avatar_uri.unwrap_or_default();
         Self::validate_avatar(&avatar_uri)?;
+        let name = name.unwrap_or_default();
 
         Ok(ValidatedUserInfo {
+            name,
             handle,
             avatar_uri,
             about,
@@ -492,21 +468,16 @@ impl<T: Trait> Module<T> {
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
         user_info: &ValidatedUserInfo,
-        entry_method: EntryMethod,
-        registered_at_block: T::BlockNumber,
-        registered_at_time: T::Moment,
     ) -> Result<T::MemberId, Error<T>> {
         Self::ensure_unique_handle(&user_info.handle)?;
 
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
+            name: user_info.name.clone(),
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
-            registered_at_block,
-            registered_at_time,
-            entry: entry_method,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
