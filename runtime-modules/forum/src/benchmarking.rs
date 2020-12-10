@@ -478,6 +478,39 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadModerated(thread_id, text).into());
     }
+    add_post {
+        let i in 0 .. MAX_BYTES;
+
+        let text = vec![0u8].repeat(i as usize);
+
+        // Create category
+        let category_id = create_new_category::<T>(T::AccountId::default(), None, vec![0u8], vec![0u8]);
+
+        // Create thread
+        let thread_id = create_new_thread::<T>(
+            T::AccountId::default(), T::ForumUserId::default(), category_id, vec![1u8], vec![1u8], None
+        );
+        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let post_id = Module::<T>::next_post_id();
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ForumUserId::default(), category_id, thread_id, text.clone())
+    verify {
+        // Ensure thread posts counter updated successfully
+        thread.num_direct_posts+=1;
+        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        // Ensure initial post added successfully
+        let new_post = Post {
+            thread_id,
+            text_hash: T::calculate_hash(&text),
+            author_id: T::ForumUserId::default(),
+        };
+
+        assert_eq!(Module::<T>::post_by_id(thread_id, post_id), new_post);
+        assert_eq!(Module::<T>::next_post_id(), post_id + T::PostId::one());
+
+        assert_last_event::<T>(RawEvent::PostAdded(post_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -561,6 +594,13 @@ mod tests {
     fn test_moderate_thread() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_moderate_thread::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_add_post() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_add_post::<Runtime>());
         });
     }
 }
