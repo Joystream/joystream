@@ -154,7 +154,6 @@ decl_storage! {
         pub MaxAvatarUriLength get(fn max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(fn max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
         pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
-
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId, T::Moment>>;
@@ -187,8 +186,7 @@ decl_event! {
     {
         MemberRegistered(MemberId, AccountId),
         MemberProfileUpdated(MemberId),
-        MemberSetRootAccount(MemberId, AccountId),
-        MemberSetControllerAccount(MemberId, AccountId),
+        MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
     }
 }
@@ -294,54 +292,58 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
         }
 
+        /// Updates member root or controller accounts.
+        /// No effect if both new accounts are empty.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_controller_account(origin, member_id: T::MemberId, new_controller_account: T::AccountId) {
-            let sender = ensure_signed(origin)?;
-
-            let mut membership = Self::ensure_membership(member_id)?;
-
-            ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
-
-            // only update if new_controller_account is different than current one
-            if membership.controller_account != new_controller_account {
-                <MemberIdsByControllerAccountId<T>>::mutate(&membership.controller_account, |ids| {
-                    ids.retain(|id| *id != member_id);
-                });
-
-                <MemberIdsByControllerAccountId<T>>::mutate(&new_controller_account, |ids| {
-                    ids.push(member_id);
-                });
-
-                membership.controller_account = new_controller_account.clone();
-                <MembershipById<T>>::insert(member_id, membership);
-                Self::deposit_event(RawEvent::MemberSetControllerAccount(member_id, new_controller_account));
+        pub fn update_accounts(
+            origin,
+            member_id: T::MemberId,
+            new_root_account: Option<T::AccountId>,
+            new_controller_account: Option<T::AccountId>,
+        ) {
+            // No effect if no changes.
+            if new_root_account.is_none() && new_controller_account.is_none() {
+                return Ok(())
             }
-        }
 
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_root_account(origin, member_id: T::MemberId, new_root_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-
             let mut membership = Self::ensure_membership(member_id)?;
 
             ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
-            // only update if new root account is different than current one
-            if membership.root_account != new_root_account {
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(root_account) = new_root_account {
                 <MemberIdsByRootAccountId<T>>::mutate(&membership.root_account, |ids| {
                     ids.retain(|id| *id != member_id);
                 });
 
-                <MemberIdsByRootAccountId<T>>::mutate(&new_root_account, |ids| {
+                <MemberIdsByRootAccountId<T>>::mutate(&root_account, |ids| {
                     ids.push(member_id);
                 });
 
-                membership.root_account = new_root_account.clone();
-                <MembershipById<T>>::insert(member_id, membership);
-                Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
+                membership.root_account = root_account;
             }
+
+            if let Some(controller_account) = new_controller_account {
+                <MemberIdsByControllerAccountId<T>>::mutate(&membership.controller_account, |ids| {
+                    ids.retain(|id| *id != member_id);
+                });
+
+                <MemberIdsByControllerAccountId<T>>::mutate(&controller_account, |ids| {
+                    ids.push(member_id);
+                });
+
+                membership.controller_account = controller_account;
+            }
+
+            <MembershipById<T>>::insert(member_id, membership);
+            Self::deposit_event(RawEvent::MemberAccountsUpdated(member_id));
         }
 
+        /// Updates member profile verification status. Requires working group member origin.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_profile_verification(
             origin,
@@ -402,6 +404,7 @@ impl<T: Trait> Module<T> {
             || <MemberIdsByControllerAccountId<T>>::contains_key(who)
     }
 
+    // Ensure possible member handle is unique.
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
     fn ensure_unique_handle(handle: &Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
@@ -411,6 +414,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Provides possible handle validation.
     fn validate_handle(handle: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
@@ -423,12 +427,14 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Provides possible member about text validation.
     fn validate_text(text: &[u8]) -> Vec<u8> {
         let mut text = text.to_owned();
         text.truncate(Self::max_about_text_length() as usize);
         text
     }
 
+    // Provides possible member avatar uri validation.
     fn validate_avatar(uri: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
@@ -437,6 +443,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Provides possible member name validation.
     fn validate_name(name: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             name.len() <= Self::max_name_length() as usize,
@@ -470,6 +477,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
+    // Inserts a member using a validated information. Sets handle, accounts caches.
     fn insert_member(
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
@@ -522,6 +530,7 @@ impl<T: Trait> Module<T> {
         Ok(signer_account)
     }
 
+    /// Validates that a member has the controller account.
     pub fn ensure_member_controller_account(
         signer_account: &T::AccountId,
         member_id: &T::MemberId,
@@ -532,21 +541,6 @@ impl<T: Trait> Module<T> {
         ensure!(
             membership.controller_account == *signer_account,
             Error::<T>::ControllerAccountRequired
-        );
-
-        Ok(())
-    }
-
-    pub fn ensure_member_root_account(
-        signer_account: &T::AccountId,
-        member_id: &T::MemberId,
-    ) -> Result<(), Error<T>> {
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
-
-        ensure!(
-            membership.root_account == *signer_account,
-            Error::<T>::RootAccountRequired
         );
 
         Ok(())
