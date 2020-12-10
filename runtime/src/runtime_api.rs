@@ -286,11 +286,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, system, SystemBench::<Runtime>);
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
-<<<<<<< HEAD
             add_benchmark!(params, batches, proposals_engine, Forum);
-=======
             add_benchmark!(params, batches, pallet_constitution, Constitution);
->>>>>>> origin/olympia
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
