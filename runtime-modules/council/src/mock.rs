@@ -158,9 +158,6 @@ pub type ReferendumInstance = referendum::Instance0;
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
-
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<Runtime as frame_system::Trait>::Origin, <Runtime as frame_system::Trait>::AccountId, <Runtime as frame_system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
-        <<Runtime as Trait>::Referendum as ReferendumManager<<Runtime as frame_system::Trait>::Origin, <Runtime as frame_system::Trait>::AccountId, <Runtime as frame_system::Trait>::Hash>>::VotePower>::new());
 }
 
 parameter_types! {
@@ -227,8 +224,6 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         <Module<Runtime> as ReferendumConnection<Runtime>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
-
-        INTERMEDIATE_RESULTS.with(|value| value.replace(BTreeMap::new()));
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
@@ -240,18 +235,13 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
-            Some(vote_power) => *vote_power,
-            None => 0,
-        })
+        <Module<Runtime> as ReferendumConnection<Runtime>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        INTERMEDIATE_RESULTS.with(|value| {
-            let current = Self::get_option_power(option_id);
-
-            value.borrow_mut().insert(*option_id, amount + current);
-        });
+        <Module<Runtime> as ReferendumConnection<Runtime>>::increase_option_power(
+            option_id, amount,
+        );
     }
 }
 
@@ -471,6 +461,7 @@ where
             reward_account_id: account_id.into(),
             cycle_id: AnnouncementPeriodNr::get(),
             stake,
+            vote_power: 0.into(),
             note_hash: None,
         };
 
@@ -623,15 +614,13 @@ where
             }),
         );
 
-        INTERMEDIATE_RESULTS.with(|value| {
-            assert_eq!(
-                *value.borrow(),
-                intermediate_results
-                    .iter()
-                    .map(|(key, value)| (*key, value.clone().into()))
-                    .collect(),
-            )
-        });
+        // check intermediate results
+        for (key, value) in intermediate_results {
+            let membership_id: T::MembershipId = key.into();
+
+            assert!(Candidates::<T>::contains_key(membership_id));
+            assert_eq!(Candidates::<T>::get(membership_id).vote_power, value);
+        }
     }
 
     pub fn check_announcing_stake(membership_id: &T::MembershipId, amount: Balance<T>) {
