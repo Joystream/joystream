@@ -10,9 +10,7 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
 use sp_std::marker::PhantomData;
-
-// re-export BalanceLock used in LockComparator so that modules using StakingHandler don't have to depend on pallet_balances
-pub use pallet_balances::BalanceLock;
+use sp_std::vec::Vec;
 
 #[cfg(test)]
 mod mock;
@@ -22,10 +20,7 @@ mod test;
 /// Trait for (dis)allowing certain stake locks combinations.
 pub trait LockComparator<Balance> {
     /// Checks if stake lock that is about to be used is conflicting with existing locks.
-    fn are_locks_conflicting(
-        new_lock: &LockIdentifier,
-        existing_locks: &[BalanceLock<Balance>],
-    ) -> bool;
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool;
 }
 
 /// Defines abstract staking handler to manage user stakes for different activities
@@ -172,8 +167,10 @@ impl<
         account_id: &<T as frame_system::Trait>::AccountId,
     ) -> bool {
         let locks = <pallet_balances::Module<T>>::locks(&account_id);
+        let lock_ids: Vec<LockIdentifier> =
+            locks.iter().map(|balance_lock| balance_lock.id).collect();
 
-        T::are_locks_conflicting(&LockId::get(), locks.as_slice())
+        T::are_locks_conflicting(&LockId::get(), lock_ids.as_slice())
     }
 
     fn is_enough_balance_for_stake(

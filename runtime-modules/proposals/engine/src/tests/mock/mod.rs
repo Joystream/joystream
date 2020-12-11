@@ -20,7 +20,7 @@ pub(crate) mod proposals;
 
 use crate::ProposalObserver;
 pub use proposals::*;
-use staking_handler::{BalanceLock, LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingManager};
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -228,7 +228,7 @@ impl minting::Trait for Test {
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
-        _existing_locks: &[BalanceLock<<Test as balances::Trait>::Balance>],
+        _existing_locks: &[LockIdentifier],
     ) -> bool {
         true
     }

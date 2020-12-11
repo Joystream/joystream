@@ -27,7 +27,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use staking_handler::{BalanceLock, LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingManager};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -303,7 +303,7 @@ parameter_types! {
 impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
-        _existing_locks: &[BalanceLock<<Runtime as balances::Trait>::Balance>],
+        _existing_locks: &[LockIdentifier],
     ) -> bool {
         true
     }

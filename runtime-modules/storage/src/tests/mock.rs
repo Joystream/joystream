@@ -10,7 +10,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use staking_handler::{BalanceLock, LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingManager};
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
@@ -295,7 +295,7 @@ impl recurringrewards::Trait for Test {
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
-        _existing_locks: &[BalanceLock<<Test as balances::Trait>::Balance>],
+        _existing_locks: &[LockIdentifier],
     ) -> bool {
         true
     }

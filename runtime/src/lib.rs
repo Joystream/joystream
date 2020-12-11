@@ -55,7 +55,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use staking_handler::{BalanceLock, LockComparator};
+use staking_handler::LockComparator;
 use storage::data_object_storage_registry;
 
 // Node dependencies
@@ -588,12 +588,9 @@ impl forum::Trait for Runtime {
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
-    fn are_locks_conflicting(
-        new_lock: &LockIdentifier,
-        existing_locks: &[BalanceLock<<Runtime as pallet_balances::Trait>::Balance>],
-    ) -> bool {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         for lock in existing_locks {
-            if !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, lock.id)) {
+            if !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)) {
                 return false;
             }
         }

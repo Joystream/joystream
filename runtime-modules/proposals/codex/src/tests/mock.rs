@@ -11,7 +11,7 @@ use sp_runtime::{
     Perbill,
 };
 use sp_staking::SessionIndex;
-use staking_handler::{BalanceLock, LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
@@ -457,7 +457,7 @@ impl pallet_timestamp::Trait for Test {
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
-        _existing_locks: &[BalanceLock<<Test as balances::Trait>::Balance>],
+        _existing_locks: &[LockIdentifier],
     ) -> bool {
         true
     }

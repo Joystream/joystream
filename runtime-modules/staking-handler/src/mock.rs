@@ -1,4 +1,4 @@
-use crate::{BalanceLock, LockComparator};
+use crate::LockComparator;
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_origin, parameter_types};
 use frame_system;
@@ -77,14 +77,11 @@ impl membership::Trait for Test {
 }
 
 impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        new_lock: &LockIdentifier,
-        existing_locks: &[BalanceLock<<Test as pallet_balances::Trait>::Balance>],
-    ) -> bool {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         // simple check preventing lock reuse
         existing_locks
             .iter()
-            .find(|lock| &lock.id == new_lock)
+            .find(|lock| *lock == new_lock)
             .is_none()
     }
 }
