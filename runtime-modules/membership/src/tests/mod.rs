@@ -15,6 +15,9 @@ use sp_runtime::DispatchError;
 #[test]
 fn buy_membership_succeeds() {
     build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
         let initial_balance = MembershipFee::get();
         set_alice_free_balance(initial_balance);
 
@@ -38,6 +41,8 @@ fn buy_membership_succeeds() {
             <crate::MemberIdsByControllerAccountId<Test>>::get(ALICE_ACCOUNT_ID),
             vec![next_member_id]
         );
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(next_member_id));
     });
 }
 
@@ -310,18 +315,92 @@ fn buy_membership_fails_with_invalid_name() {
         let initial_balance = MembershipFee::get();
         set_alice_free_balance(initial_balance);
 
-        let mut alice = get_alice_info();
         let name: [u8; 500] = [1; 500];
-        alice.name = Some(name.to_vec());
 
-        let result = Membership::buy_membership(
-            Origin::signed(ALICE_ACCOUNT_ID),
-            alice.name,
-            alice.handle,
-            alice.avatar_uri,
-            alice.about,
+        let buy_membership_fixture = BuyMembershipFixture::default().with_name(name.to_vec());
+
+        buy_membership_fixture.call_and_assert(Err(Error::<Test>::NameTooLong.into()));
+    });
+}
+
+#[test]
+fn buy_membership_fails_with_non_member_referrer_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let invalid_member_id = 111;
+
+        let buy_membership_fixture =
+            BuyMembershipFixture::default().with_referrer_id(invalid_member_id);
+
+        buy_membership_fixture.call_and_assert(Err(Error::<Test>::ReferrerIsNotMember.into()));
+    });
+}
+
+#[test]
+fn buy_membership_with_referral_cut_succeeds() {
+    let member_id = 0u64;
+    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let initial_balance = 10000;
+        increase_total_balance_issuance_using_account_id(BOB_ACCOUNT_ID, initial_balance);
+
+        let buy_membership_fixture = BuyMembershipFixture::default()
+            .with_handle(b"bobs_handle".to_vec())
+            .with_accounts(BOB_ACCOUNT_ID)
+            .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
+            .with_referrer_id(member_id);
+
+        buy_membership_fixture.call_and_assert(Ok(()));
+
+        let referral_cut = Membership::get_referral_bonus();
+
+        assert_eq!(Balances::usable_balance(&ALICE_ACCOUNT_ID), referral_cut);
+        assert_eq!(
+            Balances::usable_balance(&BOB_ACCOUNT_ID),
+            initial_balance - MembershipFee::get()
         );
+    });
+}
 
-        assert_eq!(result, Err(Error::<Test>::NameTooLong.into()));
+#[test]
+fn referral_bonus_calculated_successfully() {
+    build_test_externalities().execute_with(|| {
+        // it should take minimum of the referral cut and membership fee
+        let membership_fee = MembershipFee::get();
+        let diff = 10;
+
+        let referral_cut = membership_fee.saturating_sub(diff);
+        <crate::ReferralCut<Test>>::put(referral_cut);
+        assert_eq!(Membership::get_referral_bonus(), referral_cut);
+
+        let referral_cut = membership_fee.saturating_add(diff);
+        <crate::ReferralCut<Test>>::put(referral_cut);
+        assert_eq!(Membership::get_referral_bonus(), membership_fee);
+    });
+}
+
+#[test]
+fn set_referral_cut_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        SetReferralCutFixture::default().call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::ReferralCutUpdated(
+            DEFAULT_REFERRAL_CUT_VALUE,
+        ));
+    });
+}
+
+#[test]
+fn set_referral_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetReferralCutFixture::default()
+            .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }

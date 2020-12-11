@@ -34,14 +34,18 @@ pub(crate) fn insert_member(account_id: AccountId32) {
         crate::MembershipFee::get(),
     );
     let handle: &[u8] = account_id.as_ref();
-    Membership::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        None,
-        Some(handle.to_vec()),
-        None,
-        None,
-    )
-    .unwrap();
+
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle.to_vec()),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 }
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(
