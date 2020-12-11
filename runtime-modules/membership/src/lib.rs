@@ -47,7 +47,7 @@ use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_signed;
-use sp_arithmetic::traits::One;
+use sp_arithmetic::traits::{One, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
@@ -121,6 +121,31 @@ struct ValidatedUserInfo {
     about: Vec<u8>,
 }
 
+/// Parameters for the buy_membership extrinsic.
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+pub struct BuyMembershipParameters<AccountId, MemberId> {
+    /// New member root account.
+    pub root_account: AccountId,
+
+    /// New member controller account.
+    pub controller_account: AccountId,
+
+    /// New member user name.
+    pub name: Option<Vec<u8>>,
+
+    /// New member handle.
+    pub handle: Option<Vec<u8>>,
+
+    /// New member avatar URI.
+    pub avatar_uri: Option<Vec<u8>>,
+
+    /// New member 'about' text.
+    pub about: Option<Vec<u8>>,
+
+    /// Referrer member id.
+    pub referrer_id: Option<MemberId>,
+}
+
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Trait> {
@@ -159,6 +184,9 @@ decl_error! {
 
         /// Handle must be provided during registration.
         HandleMustBeProvidedDuringRegistration,
+
+        /// Cannot find a membership for a provided referrer id.
+        ReferrerIsNotMember,
     }
 }
 
@@ -201,6 +229,9 @@ decl_storage! {
 
         /// Maximum allowed name length.
         pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
+
+        /// Referral cut to receive during on buying the membership.
+        pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -228,10 +259,9 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as frame_system::Trait>::AccountId,
       <T as common::Trait>::MemberId,
     {
-        MemberRegistered(MemberId, AccountId),
+        MemberRegistered(MemberId),
         MemberProfileUpdated(MemberId),
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
@@ -249,35 +279,64 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
             origin,
-            name: Option<Vec<u8>>,
-            handle: Option<Vec<u8>>,
-            avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
+            params: BuyMembershipParameters<T::AccountId, T::MemberId>
         ) {
             let who = ensure_signed(origin)?;
 
-            // make sure we are accepting new memberships
+            // Make sure we are accepting new memberships.
             ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
 
             let fee = T::MembershipFee::get();
 
-            // ensure enough free balance to cover terms fees
+            // Ensure enough free balance to cover terms fees.
             ensure!(
                 balances::Module::<T>::usable_balance(&who) >= fee,
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
-            let user_info = Self::check_user_registration_info(name, handle, avatar_uri, about)?;
+            // Verify user parameters.
+            let user_info = Self::check_user_registration_info(
+                params.name,
+                params.handle,
+                params.avatar_uri,
+                params.about)
+            ?;
+
+            let mut referrer: Option<Membership<T>> = None;
+            if let Some(referrer_id) = params.referrer_id{
+                let referrer_membership =
+                    Self::ensure_membership_with_error(referrer_id, Error::<T>::ReferrerIsNotMember)?;
+
+                referrer = Some(referrer_membership);
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             let member_id = Self::insert_member(
-                &who,
-                &who,
+                &params.root_account,
+                &params.controller_account,
                 &user_info,
             )?;
 
+            // Collect membership fee (just burn it).
             let _ = balances::Module::<T>::slash(&who, fee);
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
+            // Reward the referring member.
+            if let Some(referrer) = referrer{
+                let referral_cut: BalanceOf<T> = Self::get_referral_bonus();
+
+                if referral_cut > Zero::zero() {
+                    let _ = balances::Module::<T>::deposit_creating(
+                        &referrer.controller_account,
+                        referral_cut
+                    );
+                }
+            }
+
+            // Fire the event.
+            Self::deposit_event(RawEvent::MemberRegistered(member_id));
         }
 
         /// Update member's all or some of name, handle, avatar and about text.
@@ -418,11 +477,19 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, Error<T>> {
+    pub fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
+        Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)
+    }
+
+    /// Provided that the member_id exists return its membership. Returns provided error otherwise.
+    fn ensure_membership_with_error(
+        id: T::MemberId,
+        error: Error<T>,
+    ) -> Result<Membership<T>, Error<T>> {
         if <MembershipById<T>>::contains_key(&id) {
             Ok(Self::membership(&id))
         } else {
-            Err(Error::<T>::MemberProfileNotFound)
+            Err(error)
         }
     }
 
@@ -590,5 +657,13 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Calculate current referral bonus. It minimum between membership fee and referral cut.
+    fn get_referral_bonus() -> BalanceOf<T> {
+        let membership_fee = T::MembershipFee::get();
+        let referral_cut = Self::referral_cut();
+
+        membership_fee.min(referral_cut)
     }
 }
