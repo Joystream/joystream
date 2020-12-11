@@ -24,6 +24,7 @@ impl_outer_event! {
         balances<T>,
         crate DefaultInstance <T>,
         frame_system<T>,
+        membership<T>,
     }
 }
 
@@ -93,6 +94,12 @@ impl balances::Trait for Test {
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
+    type MembershipFee = MembershipFee;
+    type WorkingGroup = Module<Test>;
 }
 
 pub type Balances = balances::Module<Test>;

@@ -2,9 +2,7 @@
 
 pub use crate::{GenesisConfig, Trait};
 
-use crate::MembershipWorkingGroupInstance;
 pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 pub use frame_system;
@@ -16,7 +14,7 @@ use sp_runtime::{
     DispatchError, DispatchResult, Perbill,
 };
 
-type MembershipWorkingGroupInstance = working_group::Instance4;
+pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
 
 pub use common::currency::GovernanceCurrency;
 
@@ -108,8 +106,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [9; 8];
 }
 
-pub struct WorkingGroupWeightInfo;
-impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
+impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
