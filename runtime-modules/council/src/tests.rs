@@ -1288,3 +1288,48 @@ fn council_budget_auto_refill() {
         );
     });
 }
+
+/// Test that `staking_account_id` is required to be associated with `membership_id` while `reward_account_id` is not
+#[test]
+fn council_membership_checks() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // generate candidates
+        let candidate1 = MockUtils::generate_candidate(0, council_settings.min_candidate_stake);
+        let candidate2 = MockUtils::generate_candidate(1, council_settings.min_candidate_stake);
+
+        // sanity checks
+        assert_ne!(candidate1.membership_id, candidate2.membership_id,);
+        assert_ne!(
+            candidate1.candidate.reward_account_id,
+            candidate2.candidate.reward_account_id,
+        );
+        assert_ne!(
+            candidate1.candidate.staking_account_id,
+            candidate2.candidate.staking_account_id,
+        );
+
+        // test that staking_account_id has to be associated with membership_id
+        Mocks::announce_candidacy_raw(
+            candidate1.origin.clone(),
+            candidate1.account_id.clone(),
+            candidate2.candidate.staking_account_id.clone(), // second candidate's account id
+            candidate1.candidate.reward_account_id.clone(),
+            candidate1.candidate.stake.clone(),
+            Err(Error::MembershipIdNotMatchAccount),
+        );
+
+        // test that reward_account_id not associated with membership_id can be used
+        Mocks::announce_candidacy_raw(
+            candidate1.origin.clone(),
+            candidate1.account_id.clone(),
+            candidate1.candidate.staking_account_id.clone(),
+            candidate2.candidate.reward_account_id.clone(), // second candidate's account id
+            candidate1.candidate.stake.clone(),
+            Ok(()),
+        );
+    });
+}

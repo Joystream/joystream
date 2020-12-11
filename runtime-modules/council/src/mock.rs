@@ -695,13 +695,32 @@ where
         stake: Balance<T>,
         expected_result: Result<(), Error<T>>,
     ) {
+        // use member id as staking and reward accounts
+        Self::announce_candidacy_raw(
+            origin,
+            member_id,
+            member_id.into(),
+            member_id.into(),
+            stake,
+            expected_result,
+        );
+    }
+
+    pub fn announce_candidacy_raw(
+        origin: OriginType<T::AccountId>,
+        member_id: T::MembershipId,
+        staking_account_id: T::AccountId,
+        reward_account_id: T::AccountId,
+        stake: Balance<T>,
+        expected_result: Result<(), Error<T>>,
+    ) {
         // check method returns expected result
         assert_eq!(
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
-                member_id.into(), // use member id as staking account
-                member_id.into(), // use member id as reward account
+                staking_account_id,
+                reward_account_id,
                 stake
             ),
             expected_result,
