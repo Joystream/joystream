@@ -7,7 +7,6 @@ mod working_group_proposals;
 use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election_params::ElectionParameters;
-use membership;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,

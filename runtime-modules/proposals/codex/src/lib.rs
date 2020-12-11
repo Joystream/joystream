@@ -52,12 +52,11 @@
 // Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
 
-mod proposal_types;
+mod types;
 
 #[cfg(test)]
 mod tests;
 
-use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
@@ -67,15 +66,12 @@ use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
+pub use crate::types::{
+    AddOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
+    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
 use common::origin::ActorOriginValidator;
 use common::MemberId;
-pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
@@ -87,22 +83,6 @@ const WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
 // Max validator count for the 'set validator count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
-    pub member_id: MemberId,
-    pub title: Vec<u8>,
-    pub description: Vec<u8>,
-    pub staking_account_id: Option<AccountId>,
-    pub exact_execution_block: Option<BlockNumber>,
-}
-
-pub type GeneralProposalParameters<T> = GeneralProposalParams<
-    MemberId<T>,
-    <T as frame_system::Trait>::AccountId,
-    <T as frame_system::Trait>::BlockNumber,
->;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -179,6 +159,13 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 }
+
+/// Specialized alias of GeneralProposalParams
+pub type GeneralProposalParameters<T> = GeneralProposalParams<
+    MemberId<T>,
+    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Trait>::BlockNumber,
+>;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
@@ -429,10 +416,10 @@ impl<T: Trait> Module<T> {
                     Error::<T>::InvalidValidatorCount
                 );
             }
-            ProposalDetails::AddWorkingGroupLeaderOpening(_) => {
+            ProposalDetails::AddWorkingGroupLeaderOpening(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::FillWorkingGroupLeaderOpening(_) => {
+            ProposalDetails::FillWorkingGroupLeaderOpening(..) => {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::SetWorkingGroupBudgetCapacity(ref mint_balance, _) => {
@@ -454,13 +441,13 @@ impl<T: Trait> Module<T> {
                     Error::<T>::SlashingStakeIsZero
                 );
             }
-            ProposalDetails::SetWorkingGroupLeaderReward(_, _, _) => {
+            ProposalDetails::SetWorkingGroupLeaderReward(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::TerminateWorkingGroupLeaderRole(_) => {
+            ProposalDetails::TerminateWorkingGroupLeaderRole(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::AmendConstitution(_) => {
+            ProposalDetails::AmendConstitution(..) => {
                 // Note: No checks for this proposal for now
             }
         }
@@ -473,34 +460,36 @@ impl<T: Trait> Module<T> {
         details: &ProposalDetailsOf<T>,
     ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
         match details {
-            ProposalDetailsOf::<T>::Text(_) => T::TextProposalParameters::get(),
-            ProposalDetailsOf::<T>::RuntimeUpgrade(_) => T::RuntimeUpgradeProposalParameters::get(),
-            ProposalDetailsOf::<T>::Spending(_, _) => T::SpendingProposalParameters::get(),
-            ProposalDetailsOf::<T>::SetValidatorCount(_) => {
+            ProposalDetailsOf::<T>::Text(..) => T::TextProposalParameters::get(),
+            ProposalDetailsOf::<T>::RuntimeUpgrade(..) => {
+                T::RuntimeUpgradeProposalParameters::get()
+            }
+            ProposalDetailsOf::<T>::Spending(..) => T::SpendingProposalParameters::get(),
+            ProposalDetailsOf::<T>::SetValidatorCount(..) => {
                 T::SetValidatorCountProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::AddWorkingGroupLeaderOpening(_) => {
+            ProposalDetailsOf::<T>::AddWorkingGroupLeaderOpening(..) => {
                 T::AddWorkingGroupOpeningProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::FillWorkingGroupLeaderOpening(_) => {
+            ProposalDetailsOf::<T>::FillWorkingGroupLeaderOpening(..) => {
                 T::FillWorkingGroupOpeningProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SetWorkingGroupBudgetCapacity(_, _) => {
+            ProposalDetailsOf::<T>::SetWorkingGroupBudgetCapacity(..) => {
                 T::SetWorkingGroupBudgetCapacityProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::DecreaseWorkingGroupLeaderStake(_, _, _) => {
+            ProposalDetailsOf::<T>::DecreaseWorkingGroupLeaderStake(..) => {
                 T::DecreaseWorkingGroupLeaderStakeProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SlashWorkingGroupLeaderStake(_, _, _) => {
+            ProposalDetailsOf::<T>::SlashWorkingGroupLeaderStake(..) => {
                 T::SlashWorkingGroupLeaderStakeProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SetWorkingGroupLeaderReward(_, _, _) => {
+            ProposalDetailsOf::<T>::SetWorkingGroupLeaderReward(..) => {
                 T::SetWorkingGroupLeaderRewardProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::TerminateWorkingGroupLeaderRole(_) => {
+            ProposalDetailsOf::<T>::TerminateWorkingGroupLeaderRole(..) => {
                 T::TerminateWorkingGroupLeaderRoleProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::AmendConstitution(_) => {
+            ProposalDetailsOf::<T>::AmendConstitution(..) => {
                 T::AmendConstitutionProposalParameters::get()
             }
         }
