@@ -34,6 +34,7 @@
 //! - [update_accounts](./struct.Module.html#method.update_accounts) - updates member accounts.
 //! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
 //! updates member profile verification status.
+//! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) - updates the referral cut.
 //!
 //! [Joystream handbook description](https://joystream.gitbook.io/joystream-handbook/subsystems/membership)
 
@@ -46,6 +47,7 @@ mod tests;
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_root;
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{One, Zero};
 use sp_std::borrow::ToOwned;
@@ -260,11 +262,13 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as common::Trait>::MemberId,
+      Balance = BalanceOf<T>,
     {
         MemberRegistered(MemberId),
         MemberProfileUpdated(MemberId),
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
+        ReferralCutUpdated(Balance),
     }
 }
 
@@ -472,6 +476,23 @@ decl_module! {
                 RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
             );
         }
+
+        /// Updates membership referral cut. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_referral_cut(
+            origin,
+            value: BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <ReferralCut<T>>::put(value);
+
+            Self::deposit_event(RawEvent::ReferralCutUpdated(value));
+        }
     }
 }
 
@@ -660,7 +681,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Calculate current referral bonus. It minimum between membership fee and referral cut.
-    fn get_referral_bonus() -> BalanceOf<T> {
+    pub(crate) fn get_referral_bonus() -> BalanceOf<T> {
         let membership_fee = T::MembershipFee::get();
         let referral_cut = Self::referral_cut();
 
