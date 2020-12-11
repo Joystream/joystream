@@ -48,28 +48,36 @@ parameter_types! {
 lazy_static! {
     // pairs of allowed lock combinations
     pub static ref ALLOWED_LOCK_COMBINATIONS: BTreeSet<(LockIdentifier, LockIdentifier)> = [
-        (ForumGroupLockId::get(), ContentWorkingGroupLockId::get()),
-        (ForumGroupLockId::get(), StorageWorkingGroupLockId::get()),
-        (ForumGroupLockId::get(), ProposalsLockId::get()),
-        (ContentWorkingGroupLockId::get(), ForumGroupLockId::get()),
-        (
+        // format: `(lock_id, [all_compatible_lock_ids, ...])`
+        (ForumGroupLockId::get(), [
             ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get()
-        ),
-        (ContentWorkingGroupLockId::get(), ProposalsLockId::get()),
-        (StorageWorkingGroupLockId::get(), ForumGroupLockId::get()),
-        (
             StorageWorkingGroupLockId::get(),
-            ContentWorkingGroupLockId::get()
-        ),
-        (StorageWorkingGroupLockId::get(), ProposalsLockId::get()),
-        (ProposalsLockId::get(), ForumGroupLockId::get()),
-        (ProposalsLockId::get(), ContentWorkingGroupLockId::get()),
-        (ProposalsLockId::get(), StorageWorkingGroupLockId::get()),
+            ProposalsLockId::get()
+        ]),
+        (ContentWorkingGroupLockId::get(), [
+            ForumGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+        ]),
+        (StorageWorkingGroupLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+        ]),
+        (ProposalsLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+        ]),
     ]
     .iter()
-    .cloned()
-    .collect();
+    .fold(BTreeSet::new(), |mut acc, item| {
+        for lock_id in &item.1 {
+            acc.insert((item.0, *lock_id));
+        }
+
+        acc
+    });
 }
 
 /// Tests only
