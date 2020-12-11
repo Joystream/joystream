@@ -2,8 +2,8 @@
 
 use crate::{Balance, BlockNumber, ProposalParameters};
 
-// Proposal parameters for the 'Set validator count' proposal
-pub(crate) fn set_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Set Max Validator Count' proposal
+pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 43200,
         grace_period: 0,
@@ -16,7 +16,7 @@ pub(crate) fn set_validator_count_proposal() -> ProposalParameters<BlockNumber, 
     }
 }
 
-// Proposal parameters for the upgrade runtime proposal
+// Proposal parameters for the 'Runtime Upgrade' proposal
 pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
@@ -30,8 +30,8 @@ pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Bala
     }
 }
 
-// Proposal parameters for the text proposal
-pub(crate) fn text_proposal() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Signal' proposal
+pub(crate) fn signal_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
         grace_period: 0,
@@ -44,8 +44,8 @@ pub(crate) fn text_proposal() -> ProposalParameters<BlockNumber, Balance> {
     }
 }
 
-// Proposal parameters for the 'Spending' proposal
-pub(crate) fn spending_proposal() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Funding Request' proposal
+pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
         grace_period: 14400,
@@ -57,8 +57,9 @@ pub(crate) fn spending_proposal() -> ProposalParameters<BlockNumber, Balance> {
         constitutionality: 1,
     }
 }
-// Proposal parameters for the 'Add working group opening' proposal
-pub(crate) fn add_working_group_opening_proposal() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Create Working Group Lead Opening' proposal
+pub(crate) fn create_working_group_lead_opening_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
         grace_period: 0,
@@ -71,66 +72,8 @@ pub(crate) fn add_working_group_opening_proposal() -> ProposalParameters<BlockNu
     }
 }
 
-// Proposal parameters for the 'Fill working group opening' proposal
-pub(crate) fn fill_working_group_opening_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Set working group budget capacity' proposal
-pub(crate) fn set_working_group_budget_capacity_proposal(
-) -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Decrease working group leader stake' proposal
-pub(crate) fn decrease_working_group_leader_stake_proposal(
-) -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Slash working group leader stake' proposal
-pub fn slash_working_group_leader_stake_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Set working group leader reward' proposal
-pub(crate) fn set_working_group_leader_reward_proposal() -> ProposalParameters<BlockNumber, Balance>
+// Proposal parameters for the 'Fill Working Group Lead Opening' proposal
+pub(crate) fn fill_working_group_lead_opening_proposal() -> ProposalParameters<BlockNumber, Balance>
 {
     ProposalParameters {
         voting_period: 43200,
@@ -144,9 +87,65 @@ pub(crate) fn set_working_group_leader_reward_proposal() -> ProposalParameters<B
     }
 }
 
-// Proposal parameters for the 'Terminate working group leader role' proposal
-pub(crate) fn terminate_working_group_leader_role_proposal(
+// Proposal parameters for the 'Update Working Group Budget' proposal
+pub(crate) fn update_working_group_budget_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Decrease Working Group Lead Stake' proposal
+pub(crate) fn decrease_working_group_lead_stake_proposal(
 ) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Slash Working Group Lead' proposal
+pub fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Set Working Group Lead Reward' proposal
+pub(crate) fn set_working_group_lead_reward_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Terminate Working Group Lead' proposal
+pub(crate) fn terminate_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
         grace_period: 0,
@@ -159,7 +158,7 @@ pub(crate) fn terminate_working_group_leader_role_proposal(
     }
 }
 
-// Proposal parameters for the 'Amend constitution' proposal
+// Proposal parameters for the 'Amend Constitution' proposal
 pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
@@ -174,8 +173,24 @@ pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, B
 }
 
 // TODO: decide on parameters
-// Proposal parameters for the 'Amend constitution' proposal
-pub(crate) fn cancel_working_group_leader_opening() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Cancel Working Group Lead Opening' proposal
+pub(crate) fn cancel_working_group_lead_opening_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Membership Price' proposal
+pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
         grace_period: 72200,

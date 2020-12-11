@@ -58,7 +58,6 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
@@ -68,8 +67,8 @@ use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
 pub use crate::types::{
-    AddOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
-    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
+    BalanceKind, CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams,
+    ProposalDetails, ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
 use common::origin::MemberOriginValidator;
 use common::MemberId;
@@ -78,11 +77,11 @@ use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
 
-// 'Set working group budget capacity' proposal limit
-const WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE: u32 = 5_000_000;
-// Max allowed value for 'spending' proposal
+use common::working_group::WorkingGroup;
+
+// Max allowed value for 'Funding Request' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
-// Max validator count for the 'set validator count' proposal
+// Max validator count for the 'Set Max Validator Count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
 
 /// 'Proposals codex' substrate module Trait
@@ -91,7 +90,12 @@ pub trait Trait:
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + common::Trait
+    + council::Trait
     + staking::Trait
+    + working_group::Trait<ForumWorkingGroupInstance>
+    + working_group::Trait<StorageWorkingGroupInstance>
+    + working_group::Trait<ContentDirectoryWorkingGroupInstance>
+    + working_group::Trait<MembershipWorkingGroupInstance>
 {
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
@@ -103,63 +107,71 @@ pub trait Trait:
     /// Encodes the proposal usint its details.
     type ProposalEncoder: ProposalEncoder<Self>;
 
-    /// 'Set validator count' proposal parameters.
-    type SetValidatorCountProposalParameters: Get<
+    /// 'Set Max Validator Count' proposal parameters.
+    type SetMaxValidatorCountProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Runtime upgrade' proposal parameters.
+    /// 'Runtime Upgrade' proposal parameters.
     type RuntimeUpgradeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Text' proposal parameters.
-    type TextProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+    /// 'Signal' proposal parameters.
+    type SignalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
-    /// 'Spending' proposal parameters.
-    type SpendingProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// 'Add working group opening' proposal parameters.
-    type AddWorkingGroupOpeningProposalParameters: Get<
+    /// 'Funding Request' proposal parameters.
+    type FundingRequestProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Fill working group opening' proposal parameters.
-    type FillWorkingGroupOpeningProposalParameters: Get<
+    /// 'Create Working Group Lead Opening' proposal parameters.
+    type CreateWorkingGroupLeadOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Set working group budget capacity' proposal parameters.
-    type SetWorkingGroupBudgetCapacityProposalParameters: Get<
+    /// 'Fill Working Group Lead Opening' proposal parameters.
+    type FillWorkingGroupLeadOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Decrease working group leader stake' proposal parameters.
-    type DecreaseWorkingGroupLeaderStakeProposalParameters: Get<
+    /// 'Update Working Group Budget' proposal parameters.
+    type UpdateWorkingGroupBudgetProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Slash working group leader stake' proposal parameters.
-    type SlashWorkingGroupLeaderStakeProposalParameters: Get<
+    /// 'Decrease Working Group Lead Stake' proposal parameters.
+    type DecreaseWorkingGroupLeadStakeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Set working group leader reward' proposal parameters.
-    type SetWorkingGroupLeaderRewardProposalParameters: Get<
+    /// 'Slash Working Group Lead Stake' proposal parameters.
+    type SlashWorkingGroupLeadProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Terminate working group leader role' proposal parameters.
-    type TerminateWorkingGroupLeaderRoleProposalParameters: Get<
+    /// 'Set Working Group Lead Reward' proposal parameters.
+    type SetWorkingGroupLeadRewardProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Amend constitution' proposal parameters.
+    /// 'Terminate Working Group Lead' proposal parameters.
+    type TerminateWorkingGroupLeadProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Amend Constitution' proposal parameters.
     type AmendConstitutionProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    type CancelWorkingGroupLeaderOpeningParameters: Get<
+    /// `Cancel Working Group Lead Opening` proposal parameters.
+    type CancelWorkingGroupLeadOpeningProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Set Membership Price Parameters` proposal parameters.
+    type SetMembershipPriceProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 }
@@ -175,13 +187,13 @@ decl_error! {
     /// Codex module predefined errors
     pub enum Error for Module<T: Trait> {
         /// Provided text for text proposal is empty
-        TextProposalIsEmpty,
+        SignalProposalIsEmpty,
 
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
 
         /// Invalid balance value for the spending proposal
-        InvalidSpendingProposalBalance,
+        InvalidFundingRequestProposalBalance,
 
         /// Invalid validator count for the 'set validator count' proposal
         InvalidValidatorCount,
@@ -245,53 +257,61 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T>;
 
-        /// Exports 'Set validator count' proposal parameters.
-        const SetValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SetValidatorCountProposalParameters::get();
+        /// Exports 'Set Max Validator Count' proposal parameters.
+        const SetMaxValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetMaxValidatorCountProposalParameters::get();
 
-        /// Exports 'Runtime upgrade' proposal parameters.
+        /// Exports 'Runtime Upgrade' proposal parameters.
         const RuntimeUpgradeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::RuntimeUpgradeProposalParameters::get();
 
-        /// Exports 'Text' proposal parameters.
-        const TextProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::TextProposalParameters::get();
+        /// Exports 'Signal' proposal parameters.
+        const SignalProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SignalProposalParameters::get();
 
-        /// Exports 'Spending' proposal parameters.
-        const SpendingProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SpendingProposalParameters::get();
+        /// Exports 'Funding Request' proposal parameters.
+        const FundingRequestProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::FundingRequestProposalParameters::get();
 
-        /// Exports 'Add working group opening' proposal parameters.
-        const AddWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::AddWorkingGroupOpeningProposalParameters::get();
+        /// Exports 'Create Working Group Lead Opening' proposal parameters.
+        const CreateWorkingGroupLeadOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::CreateWorkingGroupLeadOpeningProposalParameters::get();
 
-        /// Exports 'Fill working group opening' proposal parameters.
+        /// Exports 'Fill Working Group Lead Opening' proposal parameters.
         const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::FillWorkingGroupOpeningProposalParameters::get();
+            = T::FillWorkingGroupLeadOpeningProposalParameters::get();
 
-        /// Exports 'Set working group budget capacity' proposal parameters.
-        const SetWorkingGroupBudgetCapacityProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SetWorkingGroupBudgetCapacityProposalParameters::get();
+        /// Exports 'Update Working Group Budget' proposal parameters.
+        const UpdateWorkingGroupBudgetProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::UpdateWorkingGroupBudgetProposalParameters::get();
 
-        /// Exports 'Decrease working group leader stake' proposal parameters.
-        const DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::DecreaseWorkingGroupLeaderStakeProposalParameters::get();
+        /// Exports 'Decrease Working Group Lead Stake' proposal parameters.
+        const DecreaseWorkingGroupLeadStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::DecreaseWorkingGroupLeadStakeProposalParameters::get();
 
-        /// Exports 'Slash working group leader stake' proposal parameters.
-        const SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SlashWorkingGroupLeaderStakeProposalParameters::get();
+        /// Exports 'Slash Working Group Lead' proposal parameters.
+        const SlashWorkingGroupLeadProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SlashWorkingGroupLeadProposalParameters::get();
 
-        /// Exports 'Set working group leader reward' proposal parameters.
-        const SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::SetWorkingGroupLeaderRewardProposalParameters::get();
+        /// Exports 'Set Working Group Lead Reward' proposal parameters.
+        const SetWorkingGroupLeadRewardProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupLeadRewardProposalParameters::get();
 
-        /// Exports 'Terminate working group leader role' proposal parameters.
-        const TerminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
-            = T::TerminateWorkingGroupLeaderRoleProposalParameters::get();
+        /// Exports 'Terminate Working Group Lead' proposal parameters.
+        const TerminateWorkingGroupLeadProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::TerminateWorkingGroupLeadProposalParameters::get();
 
-        /// Exports 'Amend constitution' proposal parameters.
+        /// Exports 'Amend Constitution' proposal parameters.
         const AmendConstitutionProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::AmendConstitutionProposalParameters::get();
+
+        /// Exports 'Cancel Working Group Lead Opening' proposal parameters.
+        const CancelWorkingGroupLeadOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::CancelWorkingGroupLeadOpeningProposalParameters::get();
+
+        // Exports 'Set Membership Price' proposal parameters.
+        const SetMembershipPriceProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetMembershipPriceProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         #[weight = 10_000_000] // TODO: adjust weight
@@ -350,13 +370,13 @@ decl_module! {
         /// Text proposal extrinsic.
         /// Should be used as callable object to pass to the `engine` module.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn execute_text_proposal(
+        pub fn execute_signal_proposal(
             origin,
-            text: Vec<u8>,
+            signal: Vec<u8>,
         ) {
             ensure_root(origin)?;
 
-            // Text proposal stub: no code implied.
+            // Signal proposal stub: no code implied.
         }
 
         /// Runtime upgrade proposal extrinsic.
@@ -374,31 +394,68 @@ decl_module! {
 
             print("Runtime upgrade proposal execution finished.");
         }
+
+        /// Update working group budget
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_working_group_budget(
+            origin,
+            working_group: WorkingGroup,
+            amount: BalanceOf<T>,
+            balance_kind: BalanceKind,
+        ) {
+            ensure_root(origin.clone())?;
+            // Another option would be to pass the dispatchable instead of this, this would require less changes
+            // but would need a heap allocation for the dispatchable
+            match working_group {
+                WorkingGroup::Forum =>  working_group::Module::<T, ForumWorkingGroupInstance>::set_budget(origin, amount)?,
+                WorkingGroup::Storage => working_group::Module::<T, StorageWorkingGroupInstance>::set_budget(origin, amount)?,
+                WorkingGroup::Content => working_group::Module::<T, ContentDirectoryWorkingGroupInstance>::set_budget(origin, amount)?,
+                WorkingGroup::Membership => working_group::Module::<T, MembershipWorkingGroupInstance>::set_budget(origin, amount)?,
+
+            };
+
+        }
+
     }
 }
+
+// TODO: This code is repeated from runtime, see if there's somewhere to extract this that makes
+// sense
+// The forum working group instance alias.
+type ForumWorkingGroupInstance = working_group::Instance1;
+
+// The storage working group instance alias.
+type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 impl<T: Trait> Module<T> {
     // Ensure that the proposal details respects all the checks
     fn ensure_details_checks(details: &ProposalDetailsOf<T>) -> DispatchResult {
         match details {
-            ProposalDetails::Text(ref text) => {
-                ensure!(!text.is_empty(), Error::<T>::TextProposalIsEmpty);
+            ProposalDetails::Signal(ref signal) => {
+                ensure!(!signal.is_empty(), Error::<T>::SignalProposalIsEmpty);
             }
-            ProposalDetails::RuntimeUpgrade(ref wasm) => {
-                ensure!(!wasm.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
+            ProposalDetails::RuntimeUpgrade(ref blob) => {
+                ensure!(!blob.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
             }
-            ProposalDetails::Spending(ref balance, _) => {
+            ProposalDetails::FundingRequest(ref amount, _) => {
                 ensure!(
-                    *balance != BalanceOf::<T>::zero(),
-                    Error::<T>::InvalidSpendingProposalBalance
+                    *amount != BalanceOf::<T>::zero(),
+                    Error::<T>::InvalidFundingRequestProposalBalance
                 );
                 ensure!(
-                    *balance <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
-                    Error::<T>::InvalidSpendingProposalBalance
+                    *amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
+                    Error::<T>::InvalidFundingRequestProposalBalance
                 );
             }
-            ProposalDetails::SetValidatorCount(ref new_validator_count) => {
+            ProposalDetails::SetMaxValidatorCount(ref new_validator_count) => {
                 ensure!(
+                    // TODO: Should this be replaced by a const MIN_VALIDATOR_COUNT?
                     *new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
                     Error::<T>::InvalidValidatorCount
                 );
@@ -408,40 +465,39 @@ impl<T: Trait> Module<T> {
                     Error::<T>::InvalidValidatorCount
                 );
             }
-            ProposalDetails::AddWorkingGroupLeaderOpening(..) => {
+            ProposalDetails::CreateWorkingGroupLeadOpening(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::FillWorkingGroupLeaderOpening(..) => {
+            ProposalDetails::FillWorkingGroupLeadOpening(..) => {
+                // Note: No checks for this proposal for now
+                // TODO: shouldn't we check that it exists?
+            }
+            ProposalDetails::UpdateWorkingGroupBudget(_, _, _) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::SetWorkingGroupBudgetCapacity(ref mint_balance, _) => {
+            ProposalDetails::DecreaseWorkingGroupLeadStake(_, ref stake_amount, _) => {
                 ensure!(
-                    *mint_balance <= <BalanceOf<T>>::from(WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE),
-                    Error::<T>::InvalidWorkingGroupBudgetCapacity
-                );
-            }
-            ProposalDetails::DecreaseWorkingGroupLeaderStake(_, ref decreasing_stake, _) => {
-                ensure!(
-                    *decreasing_stake != Zero::zero(),
+                    *stake_amount != Zero::zero(),
                     Error::<T>::DecreasingStakeIsZero
                 );
             }
-            ProposalDetails::SlashWorkingGroupLeaderStake(_, ref penalty, _) => {
-                ensure!(*penalty != Zero::zero(), Error::<T>::SlashingStakeIsZero);
-            }
-            ProposalDetails::SetWorkingGroupLeaderReward(..) => {
+            ProposalDetails::SlashWorkingGroupLead(_, _, _) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::TerminateWorkingGroupLeaderRole(..) => {
+            ProposalDetails::SetWorkingGroupLeadReward(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::TerminateWorkingGroupLead(..) => {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::AmendConstitution(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CancelWorkingGroupLeaderOpening(_, _) => {
+            ProposalDetails::CancelWorkingGroupLeadOpening(_, _) => {
                 // Note: No checks for this proposal for now
+                // TODO: Shouldn't we check that it exists?
             }
-            ProposalDetails::SetMembershipPrice(..) => {
+            ProposalDetails::SetMembershipPrice(_) => {
                 // Note: No checks for this proposal for now
             }
         }
@@ -454,40 +510,45 @@ impl<T: Trait> Module<T> {
         details: &ProposalDetailsOf<T>,
     ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
         match details {
-            ProposalDetailsOf::<T>::Text(..) => T::TextProposalParameters::get(),
+            ProposalDetailsOf::<T>::Signal(..) => T::SignalProposalParameters::get(),
             ProposalDetailsOf::<T>::RuntimeUpgrade(..) => {
                 T::RuntimeUpgradeProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::Spending(..) => T::SpendingProposalParameters::get(),
-            ProposalDetailsOf::<T>::SetValidatorCount(..) => {
-                T::SetValidatorCountProposalParameters::get()
+            ProposalDetailsOf::<T>::FundingRequest(..) => {
+                T::FundingRequestProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::AddWorkingGroupLeaderOpening(..) => {
-                T::AddWorkingGroupOpeningProposalParameters::get()
+            ProposalDetailsOf::<T>::SetMaxValidatorCount(..) => {
+                T::SetMaxValidatorCountProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::FillWorkingGroupLeaderOpening(..) => {
-                T::FillWorkingGroupOpeningProposalParameters::get()
+            ProposalDetailsOf::<T>::CreateWorkingGroupLeadOpening(..) => {
+                T::CreateWorkingGroupLeadOpeningProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SetWorkingGroupBudgetCapacity(..) => {
-                T::SetWorkingGroupBudgetCapacityProposalParameters::get()
+            ProposalDetailsOf::<T>::FillWorkingGroupLeadOpening(..) => {
+                T::FillWorkingGroupLeadOpeningProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::DecreaseWorkingGroupLeaderStake(..) => {
-                T::DecreaseWorkingGroupLeaderStakeProposalParameters::get()
+            ProposalDetailsOf::<T>::UpdateWorkingGroupBudget(..) => {
+                T::UpdateWorkingGroupBudgetProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SlashWorkingGroupLeaderStake(..) => {
-                T::SlashWorkingGroupLeaderStakeProposalParameters::get()
+            ProposalDetailsOf::<T>::DecreaseWorkingGroupLeadStake(..) => {
+                T::DecreaseWorkingGroupLeadStakeProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SetWorkingGroupLeaderReward(..) => {
-                T::SetWorkingGroupLeaderRewardProposalParameters::get()
+            ProposalDetailsOf::<T>::SlashWorkingGroupLead(..) => {
+                T::SlashWorkingGroupLeadProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::TerminateWorkingGroupLeaderRole(..) => {
-                T::TerminateWorkingGroupLeaderRoleProposalParameters::get()
+            ProposalDetailsOf::<T>::SetWorkingGroupLeadReward(..) => {
+                T::SetWorkingGroupLeadRewardProposalParameters::get()
+            }
+            ProposalDetailsOf::<T>::TerminateWorkingGroupLead(..) => {
+                T::TerminateWorkingGroupLeadProposalParameters::get()
             }
             ProposalDetailsOf::<T>::AmendConstitution(..) => {
                 T::AmendConstitutionProposalParameters::get()
             }
-            ProposalDetails::CancelWorkingGroupLeaderOpening(_, _) => {
-                T::CancelWorkingGroupLeaderOpeningParameters::get()
+            ProposalDetails::SetMembershipPrice(_) => {
+                T::SetMembershipPriceProposalParameters::get()
+            }
+            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
+                T::CancelWorkingGroupLeadOpeningProposalParameters::get()
             }
         }
     }

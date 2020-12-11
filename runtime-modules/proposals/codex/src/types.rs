@@ -24,58 +24,71 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
 >;
 
+/// Kind of Balance for `Update Working Group Budget`.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub enum BalanceKind {
+    /// Increasing Working Group budget decreasing Council budget
+    Positive,
+    /// Decreasing Working Group budget increasing Council budget
+    Negative,
+}
+
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
-    /// The text of the `text` proposal
-    Text(Vec<u8>),
+    /// The signal of the `Signal` proposal
+    Signal(Vec<u8>),
 
-    /// The wasm code for the `runtime upgrade` proposal
+    /// The wasm code for the `Runtime Upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
-    /// Balance and destination account for the `spending` proposal
-    Spending(Balance, AccountId),
+    /// Balance and destination account for the `FundingRequest` proposal
+    FundingRequest(Balance, AccountId),
 
-    /// Validator count for the `set validator count` proposal
-    SetValidatorCount(u32),
+    /// `Set Max Validator Count` proposal
+    SetMaxValidatorCount(u32),
 
+    /// `Create Working Group Lead Opening` Proposal:
     /// Add opening for the working group leader position.
-    AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, Balance>),
+    CreateWorkingGroupLeadOpening(CreateOpeningParameters<BlockNumber, Balance>),
 
+    /// `Fill Working Group Lead Opening` proposal:
     /// Fill opening for the working group leader position.
-    FillWorkingGroupLeaderOpening(FillOpeningParameters),
+    FillWorkingGroupLeadOpening(FillOpeningParameters),
 
-    /// Set working group budget capacity.
-    SetWorkingGroupBudgetCapacity(Balance, WorkingGroup),
+    /// `Update Working Group Budget` proposal: Set working group budget capacity.
+    UpdateWorkingGroupBudget(Balance, WorkingGroup, BalanceKind),
 
-    /// Decrease the working group leader stake.
-    DecreaseWorkingGroupLeaderStake(WorkerId, Balance, WorkingGroup),
+    /// `Decrease Working Group Lead Stake` proposal: Decrease the working group leader stake.
+    DecreaseWorkingGroupLeadStake(WorkerId, Balance, WorkingGroup),
 
-    /// Slash the working group leader stake.
-    SlashWorkingGroupLeaderStake(WorkerId, Balance, WorkingGroup),
+    /// `Slash Working Group Lead Stake` proposal:  Slash the working group leader stake.
+    SlashWorkingGroupLead(WorkerId, Balance, WorkingGroup),
 
-    /// Set working group leader reward balance.
-    SetWorkingGroupLeaderReward(WorkerId, Option<Balance>, WorkingGroup),
+    /// `Set Working Group Lead Reward` proposal: Set working group lead reward balance.
+    SetWorkingGroupLeadReward(WorkerId, Option<Balance>, WorkingGroup),
 
+    /// `Terminate Working Group Lead` proposal:
     /// Fire the working group leader with possible slashing.
-    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId, Balance>),
+    TerminateWorkingGroupLead(TerminateRoleParameters<WorkerId, Balance>),
 
     /// Amend constitution.
     AmendConstitution(Vec<u8>),
 
     /// Cancel working group leader opening.
-    CancelWorkingGroupLeaderOpening(OpeningId, WorkingGroup),
+    CancelWorkingGroupLeadOpening(OpeningId, WorkingGroup),
 
     /// Set the membership price.
     SetMembershipPrice(Balance),
 }
 
-impl<BlockNumber, AccountId, Balance, WorkerId, OpeningId> Default
+impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId> Default
     for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId>
 {
     fn default() -> Self {
-        ProposalDetails::Text(b"invalid proposal details".to_vec())
+        ProposalDetails::Signal(b"invalid proposal details".to_vec())
     }
 }
 
@@ -103,43 +116,43 @@ pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct TerminateRoleParameters<WorkerId, Balance> {
-    /// Leader worker id to fire.
+    /// Worker identifier.
     pub worker_id: WorkerId,
 
-    /// Terminate role slash penalty.
-    pub penalty: Option<Balance>,
+    /// Optional amount to be slashed.
+    pub slashing_amount: Option<Balance>,
 
-    /// Defines working group with the open position.
-    pub working_group: WorkingGroup,
+    /// Identifier for working group.
+    pub group: WorkingGroup,
 }
 
-/// Parameters for the 'fill opening for the leader position' proposal.
+/// Parameters for the 'Fill Working Group Lead' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct FillOpeningParameters {
-    /// Finalizing opening id.
+    /// Identifier for opening in group.
     pub opening_id: working_group::OpeningId,
 
-    /// Id of the selected application.
-    pub successful_application_id: working_group::ApplicationId,
+    /// Identifier for successful applicant.
+    pub application_id: working_group::ApplicationId,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,
 }
 
-/// Parameters for the 'add opening for the leader position' proposal.
+/// Parameters for the 'Create Working Group Lead Opening' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub struct AddOpeningParameters<BlockNumber, Balance> {
+pub struct CreateOpeningParameters<BlockNumber, Balance> {
     /// Opening description.
     pub description: Vec<u8>,
 
-    /// Stake policy for the opening.
+    /// Optional Staking policy.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 
     /// Reward per block for the opening.
     pub reward_per_block: Option<Balance>,
 
-    /// Defines working group with the open position.
-    pub working_group: WorkingGroup,
+    /// Identifier for working group.
+    pub group: WorkingGroup,
 }

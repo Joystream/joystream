@@ -795,24 +795,24 @@ parameter_types! {
 impl proposals_codex::Trait for Runtime {
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
-    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
-    type TextProposalParameters = TextProposalParameters;
-    type SpendingProposalParameters = SpendingProposalParameters;
-    type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
-    type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupBudgetCapacityProposalParameters =
-        SetWorkingGroupBudgetCapacityProposalParameters;
-    type DecreaseWorkingGroupLeaderStakeProposalParameters =
-        DecreaseWorkingGroupLeaderStakeProposalParameters;
-    type SlashWorkingGroupLeaderStakeProposalParameters =
-        SlashWorkingGroupLeaderStakeProposalParameters;
-    type SetWorkingGroupLeaderRewardProposalParameters =
-        SetWorkingGroupLeaderRewardProposalParameters;
-    type TerminateWorkingGroupLeaderRoleProposalParameters =
-        TerminateWorkingGroupLeaderRoleProposalParameters;
+    type SignalProposalParameters = SignalProposalParameters;
+    type FundingRequestProposalParameters = FundingRequestProposalParameters;
+    type CreateWorkingGroupLeadOpeningProposalParameters =
+        CreateWorkingGroupLeadOpeningProposalParameters;
+    type FillWorkingGroupLeadOpeningProposalParameters =
+        FillWorkingGroupLeadOpeningProposalParameters;
+    type UpdateWorkingGroupBudgetProposalParameters = UpdateWorkingGroupBudgetProposalParameters;
+    type DecreaseWorkingGroupLeadStakeProposalParameters =
+        DecreaseWorkingGroupLeadStakeProposalParameters;
+    type SlashWorkingGroupLeadProposalParameters = SlashWorkingGroupLeadProposalParameters;
+    type SetWorkingGroupLeadRewardProposalParameters = SetWorkingGroupLeadRewardProposalParameters;
+    type TerminateWorkingGroupLeadProposalParameters = TerminateWorkingGroupLeadProposalParameters;
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
-    type CancelWorkingGroupLeaderOpeningParameters = CancelWorkingGroupLeaderOpeningParameters;
+    type CancelWorkingGroupLeadOpeningProposalParameters =
+        CancelWorkingGroupLeadOpeningProposalParameters;
+    type SetMembershipPriceProposalParameters = SetMembershipPriceProposalParameters;
 }
 
 impl pallet_constitution::Trait for Runtime {
