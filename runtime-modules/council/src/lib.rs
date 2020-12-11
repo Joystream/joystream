@@ -436,7 +436,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn announce_candidacy(origin, membership_id: T::MembershipId, staking_account_id: T::AccountId, reward_account_id: T::AccountId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &membership_id, &staking_account_id, &reward_account_id, &stake)?;
+            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &membership_id, &staking_account_id, &stake)?;
 
             // prepare candidate
             let candidate = Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
@@ -1074,7 +1074,6 @@ impl<T: Trait> EnsureChecks<T> {
         origin: T::Origin,
         membership_id: &T::MembershipId,
         staking_account_id: &T::AccountId,
-        reward_account_id: &T::AccountId,
         stake: &Balance<T>,
     ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
         // ensure user's membership
@@ -1088,10 +1087,6 @@ impl<T: Trait> EnsureChecks<T> {
         // ensure there are no conflicting stake types for the account
         if !T::CandidacyLock::is_account_free_of_conflicting_stakes(&staking_account_id) {
             return Err(Error::ConflictingStake);
-        }
-
-        if !T::is_council_member_account(&membership_id, &reward_account_id) {
-            return Err(Error::MembershipIdNotMatchAccount);
         }
 
         let stage_data = match Stage::<T>::get().stage {
