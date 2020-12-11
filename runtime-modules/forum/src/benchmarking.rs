@@ -618,6 +618,42 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::PostModerated(post_id, rationale).into());
     }
+    set_stickied_threads {
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        // Generate categories tree
+        let mut parent_category_id: Option<T::CategoryId> = None;
+        let mut category_id = T::CategoryId::default();
+
+        for n in 0..T::MaxCategoryDepth::get() {
+            if n > 1 {
+                parent_category_id = Some((n as u64).into());
+            }
+
+            category_id = create_new_category::<T>(T::AccountId::default(), parent_category_id, vec![0u8], vec![0u8]);
+        }
+
+        // Create threads
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+
+        let stickied_ids: Vec<T::ThreadId> = (0..<<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get())
+            .into_iter()
+            .map(|_| create_new_thread::<T>(
+                T::AccountId::default(), T::ForumUserId::default(), category_id,
+                vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), poll.clone()
+            )).collect();
+
+        let mut category =  Module::<T>::category_by_id(category_id);
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), PrivilegedActor::Lead, category_id, stickied_ids.clone())
+    verify {
+        // Ensure category stickied_ids updated successfully.
+        category.sticky_thread_ids = stickied_ids;
+        assert_eq!(Module::<T>::category_by_id(category_id), category);
+
+        assert_last_event::<T>(RawEvent::CategoryStickyThreadUpdate(category_id, category.sticky_thread_ids).into());
+    }
 }
 
 #[cfg(test)]
@@ -729,6 +765,13 @@ mod tests {
     fn test_moderate_post() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_moderate_post::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_set_stickied_threads() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_set_stickied_threads::<Runtime>());
         });
     }
 }
