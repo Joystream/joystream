@@ -113,11 +113,12 @@ pub struct CouncilStageElection {
 /// Candidate representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct Candidate<AccountId, Balance, Hash> {
+pub struct Candidate<AccountId, Balance, Hash, VotePower> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
     cycle_id: u64,
     stake: Balance,
+    vote_power: VotePower,
     note_hash: Option<Hash>,
 }
 
@@ -134,9 +135,9 @@ pub struct CouncilMember<AccountId, MembershipId, Balance, BlockNumber> {
     unpaid_reward: Balance,
 }
 
-impl<AccountId, MembershipId, Balance, Hash, BlockNumber>
+impl<AccountId, MembershipId, Balance, Hash, VotePower, BlockNumber>
     From<(
-        Candidate<AccountId, Balance, Hash>,
+        Candidate<AccountId, Balance, Hash, VotePower>,
         MembershipId,
         BlockNumber,
         Balance,
@@ -144,7 +145,7 @@ impl<AccountId, MembershipId, Balance, Hash, BlockNumber>
 {
     fn from(
         from: (
-            Candidate<AccountId, Balance, Hash>,
+            Candidate<AccountId, Balance, Hash, VotePower>,
             MembershipId,
             BlockNumber,
             Balance,
@@ -182,8 +183,12 @@ pub type CouncilMemberOf<T> = CouncilMember<
     Balance<T>,
     <T as frame_system::Trait>::BlockNumber,
 >;
-pub type CandidateOf<T> =
-    Candidate<<T as frame_system::Trait>::AccountId, Balance<T>, <T as frame_system::Trait>::Hash>;
+pub type CandidateOf<T> = Candidate<
+    <T as frame_system::Trait>::AccountId,
+    Balance<T>,
+    <T as frame_system::Trait>::Hash,
+    VotePowerOf<T>,
+>;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
@@ -253,6 +258,12 @@ pub trait ReferendumConnection<T: Trait> {
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
+
+    /// Return current voting power for a selected candidate.
+    fn get_option_power(membership_id: &T::MembershipId) -> VotePowerOf<T>;
+
+    /// Recieve vote (power) for a selected candidate.
+    fn increase_option_power(membership_id: &T::MembershipId, amount: &VotePowerOf<T>);
 }
 
 decl_storage! {
@@ -264,7 +275,7 @@ decl_storage! {
         pub CouncilMembers get(fn council_members) config(): Vec<CouncilMemberOf<T>>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
-        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::MembershipId => Candidate<T::AccountId, Balance::<T>, T::Hash>;
+        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::MembershipId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period starts.
         pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
@@ -756,6 +767,7 @@ impl<T: Trait> Module<T> {
             reward_account_id,
             cycle_id: AnnouncementPeriodNr::get(),
             stake,
+            vote_power: 0.into(),
             note_hash: None,
         }
     }
@@ -822,6 +834,26 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         let candidate = Candidates::<T>::get(membership_id);
 
         candidate.cycle_id == AnnouncementPeriodNr::get()
+    }
+
+    /// Return current voting power for a selected candidate.
+    fn get_option_power(membership_id: &T::MembershipId) -> VotePowerOf<T> {
+        if !Candidates::<T>::contains_key(membership_id) {
+            return 0.into();
+        }
+
+        let candidate = Candidates::<T>::get(membership_id);
+
+        candidate.vote_power
+    }
+
+    /// Recieve vote (power) for a selected candidate.
+    fn increase_option_power(membership_id: &T::MembershipId, amount: &VotePowerOf<T>) {
+        if !Candidates::<T>::contains_key(membership_id) {
+            return;
+        }
+
+        Candidates::<T>::mutate(membership_id, |candidate| candidate.vote_power += *amount);
     }
 }
 
