@@ -509,6 +509,7 @@ impl common::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = MembershipWorkingGroup;
 }
 
 parameter_types! {
@@ -661,6 +662,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl service_discovery::Trait for Runtime {

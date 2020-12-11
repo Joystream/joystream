@@ -1,72 +1,17 @@
 #![cfg(test)]
 
+pub(crate) mod fixtures;
+pub(crate) mod mock;
+
 use super::genesis;
-use super::mock::*;
-use crate::Error;
+use crate::{Error, Event, MembershipWorkingGroupInstance};
+use fixtures::*;
+use mock::*;
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
-use frame_support::*;
-
-fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
-    if <crate::MembershipById<Test>>::contains_key(member_id) {
-        Members::membership(member_id)
-    } else {
-        panic!("member profile not created");
-    }
-}
-
-fn assert_dispatch_error_message(result: DispatchResult, expected_result: DispatchResult) {
-    assert!(result.is_err());
-    assert_eq!(result, expected_result);
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct TestUserInfo {
-    pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
-}
-
-fn get_alice_info() -> TestUserInfo {
-    TestUserInfo {
-        handle: Some(String::from("alice").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/alice")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is alice").as_bytes().to_vec()),
-    }
-}
-
-fn get_bob_info() -> TestUserInfo {
-    TestUserInfo {
-        handle: Some(String::from("bobby").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/bob")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is bob").as_bytes().to_vec()),
-    }
-}
-
-const ALICE_ACCOUNT_ID: u64 = 1;
-
-fn buy_default_membership_as_alice() -> DispatchResult {
-    let info = get_alice_info();
-    Members::buy_membership(
-        Origin::signed(ALICE_ACCOUNT_ID),
-        info.handle,
-        info.avatar_uri,
-        info.about,
-    )
-}
-
-fn set_alice_free_balance(balance: u64) {
-    let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
-}
+use frame_support::{assert_ok, StorageMap, StorageValue};
+use frame_system::RawOrigin;
+use sp_runtime::DispatchError;
 
 #[test]
 fn buy_membership() {
@@ -79,7 +24,7 @@ fn buy_membership() {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            let next_member_id = Members::members_created();
+            let next_member_id = Membership::members_created();
 
             assert_ok!(buy_default_membership_as_alice());
 
@@ -188,11 +133,11 @@ fn update_profile() {
             let initial_balance = MembershipFee::get() + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            let next_member_id = Members::members_created();
+            let next_member_id = Membership::members_created();
 
             assert_ok!(buy_default_membership_as_alice());
             let info = get_bob_info();
-            assert_ok!(Members::update_membership(
+            assert_ok!(Membership::update_membership(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 next_member_id,
                 info.handle,
@@ -223,7 +168,7 @@ fn set_controller_key() {
         .execute_with(|| {
             let member_id = 0;
 
-            assert_ok!(Members::set_controller_account(
+            assert_ok!(Membership::set_controller_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 member_id,
                 ALICE_CONTROLLER_ID
@@ -257,16 +202,84 @@ fn set_root_account() {
         .execute_with(|| {
             let member_id = 0;
 
-            assert_ok!(Members::set_root_account(
+            assert_ok!(Membership::set_root_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 member_id,
                 ALICE_NEW_ROOT_ACCOUNT
             ));
 
-            let membership = Members::membership(member_id);
+            let membership = Membership::membership(member_id);
 
             assert_eq!(ALICE_NEW_ROOT_ACCOUNT, membership.root_account);
 
             assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
         });
+}
+
+#[test]
+fn update_verification_status_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let next_member_id = Membership::members_created();
+        assert_ok!(buy_default_membership_as_alice());
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberVerificationStatusUpdated(
+            next_member_id,
+            true,
+        ));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let next_member_id = Membership::members_created();
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_invalid_member_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_member_id = 44;
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn update_verification_status_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        let next_member_id = Membership::members_created();
+        assert_ok!(buy_default_membership_as_alice());
+
+        let invalid_worker_id = 44;
+
+        UpdateMembershipVerificationFixture::default()
+            .with_member_id(next_member_id)
+            .with_worker_id(invalid_worker_id)
+            .call_and_assert(Err(working_group::Error::<
+                Test,
+                MembershipWorkingGroupInstance,
+            >::WorkerDoesNotExist
+                .into()));
+    });
 }

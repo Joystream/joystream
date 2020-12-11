@@ -16,6 +16,8 @@ use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use common::currency::GovernanceCurrency;
+use frame_support::sp_runtime::DispatchResult;
+
 use membership;
 
 mod working_group_mod {
@@ -281,6 +283,16 @@ impl common::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl minting::Trait for Test {

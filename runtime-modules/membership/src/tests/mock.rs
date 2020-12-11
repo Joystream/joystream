@@ -2,20 +2,33 @@
 
 pub use crate::{GenesisConfig, Trait};
 
+use crate::MembershipWorkingGroupInstance;
 pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use frame_system;
+use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchError, DispatchResult, Perbill,
 };
-
-pub use common::currency::GovernanceCurrency;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
+}
+
+mod membership_mod {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        membership_mod<T>,
+        frame_system<T>,
+        balances<T>,
+        working_group Instance4 <T>,
+    }
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -40,7 +53,7 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
@@ -72,7 +85,7 @@ parameter_types! {
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -81,7 +94,7 @@ impl balances::Trait for Test {
 
 impl common::Trait for Test {
     type MemberId = u64;
-    type ActorId = u32;
+    type ActorId = u64;
 }
 
 parameter_types! {
@@ -90,12 +103,109 @@ parameter_types! {
 }
 
 impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = Weights;
+}
+
+// Weights info stub
+pub struct Weights;
+impl working_group::WeightInfo for Weights {
+    fn on_initialize_leaving(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn apply_on_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_lead() -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_role_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn cancel_opening() -> u64 {
+        unimplemented!()
+    }
+
+    fn withdraw_application() -> u64 {
+        unimplemented!()
+    }
+
+    fn slash_stake(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_lead(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn increase_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn spend_from_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_amount() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_status_text(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn add_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_immediatly() -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_later() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
@@ -107,8 +217,29 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 }
 
 impl Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
+            origin.into();
+
+        if let RawOrigin::Signed(_) = raw_origin.unwrap() {
+            if *worker_id == 1 {
+                Ok(())
+            } else {
+                Err(working_group::Error::<Test, MembershipWorkingGroupInstance>::WorkerDoesNotExist.into())
+            }
+        } else {
+            Err(DispatchError::BadOrigin)
+        }
+    }
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
@@ -148,6 +279,10 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
     }
 }
 
+pub fn build_test_externalities() -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::<Test>::default().build()
+}
+
 pub type Balances = balances::Module<Test>;
-pub type Members = crate::Module<Test>;
+pub type Membership = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;

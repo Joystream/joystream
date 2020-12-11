@@ -2,7 +2,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod genesis;
-pub(crate) mod mock;
 mod tests;
 
 use codec::{Decode, Encode};
@@ -12,6 +11,8 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
+
+use common::working_group::WorkingGroupIntegration;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
@@ -26,6 +27,9 @@ pub trait Trait:
 
     /// Defines the default membership fee.
     type MembershipFee: Get<BalanceOf<Self>>;
+
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
 }
 
 // Default user info constraints
@@ -72,6 +76,10 @@ pub struct MembershipObject<BlockNumber, Moment, AccountId> {
     /// a member to act under their identity in other modules. It will usually be used more
     /// online and will have less funds in its balance.
     pub controller_account: AccountId,
+
+    /// An indicator that reflects whether the implied real world identity in the profile
+    /// corresponds to the true actor behind the membership.
+    pub verified: bool,
 }
 
 // Contains valid or default user details
@@ -205,6 +213,7 @@ decl_event! {
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
+        MemberVerificationStatusUpdated(MemberId, bool),
     }
 }
 
@@ -362,6 +371,30 @@ decl_module! {
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
         }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_profile_verification(
+            origin,
+            worker_id: T::ActorId,
+            target_member_id: T::MemberId,
+            is_verified: bool
+        ) {
+            T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
+
+            Self::ensure_membership(target_member_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&target_member_id, |membership| {
+                    membership.verified = is_verified;
+            });
+
+            Self::deposit_event(
+                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
+            );
+        }
     }
 }
 
@@ -476,6 +509,7 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
+            verified: false,
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {

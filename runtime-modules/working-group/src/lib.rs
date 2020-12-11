@@ -58,6 +58,7 @@ pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_wo
 
 use common::origin::ActorOriginValidator;
 use common::MemberId;
+use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
@@ -1329,5 +1330,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .map(|(worker_id, _)| worker_id)
             .collect()
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 }

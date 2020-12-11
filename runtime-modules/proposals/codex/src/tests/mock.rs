@@ -8,7 +8,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
 use sp_staking::SessionIndex;
 
@@ -52,6 +52,16 @@ impl common::Trait for Test {
 impl membership::Trait for Test {
     type Event = ();
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 parameter_types! {
