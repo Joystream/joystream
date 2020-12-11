@@ -106,19 +106,14 @@ benchmarks! {
 
         let text = vec![0u8].repeat(j as usize);
 
-        let mut category_id = None;
         let mut parent_category_id = None;
 
-        // Generate categories tree
-        for n in 1..i {
+        for n in 0..T::MaxCategoryDepth::get() {
             if n > 1 {
-                category_id = Some(((n - 1) as u64).into());
                 parent_category_id = Some((n as u64).into());
             }
 
-            assert_ok!(Module::<T>::create_category(
-                RawOrigin::Signed(T::AccountId::default()).into(), category_id, text.clone(), text.clone()
-            ));
+            create_new_category::<T>(T::AccountId::default(), parent_category_id, vec![0u8], vec![0u8]);
         }
 
         let parent_category = if let Some(parent_category_id) = parent_category_id {
@@ -542,6 +537,47 @@ benchmarks! {
     verify {
         assert_last_event::<T>(RawEvent::PostReacted(T::ForumUserId::default(), post_id, react).into());
     }
+    edit_post_text {
+
+        let i in 0 .. MAX_BYTES;
+
+
+        // Generate categories tree
+        let mut parent_category_id: Option<T::CategoryId> = None;
+        let mut category_id = T::CategoryId::default();
+
+        for n in 0..T::MaxCategoryDepth::get() {
+            if n > 1 {
+                parent_category_id = Some((n as u64).into());
+            }
+
+            category_id = create_new_category::<T>(T::AccountId::default(), parent_category_id, vec![0u8], vec![0u8]);
+        }
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+
+        let thread_id = create_new_thread::<T>(
+            T::AccountId::default(), T::ForumUserId::default(), category_id,
+            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), poll
+        );
+
+        let post_id = add_thread_post::<T>(T::AccountId::default(), T::ForumUserId::default(), category_id, thread_id, vec![1u8].repeat(MAX_BYTES as usize));
+
+        let mut post = Module::<T>::post_by_id(thread_id, post_id);
+
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+
+    }: _ (RawOrigin::Signed(T::AccountId::default()), T::ForumUserId::default(), category_id, thread_id, post_id, text.clone())
+    verify {
+        // Ensure post text updated successfully.
+        post.text_hash = T::calculate_hash(&text);
+        assert_eq!(Module::<T>::post_by_id(thread_id, post_id), post);
+
+        assert_last_event::<T>(RawEvent::PostTextUpdated(post_id).into());
+
+    }
 }
 
 #[cfg(test)]
@@ -639,6 +675,13 @@ mod tests {
     fn test_react_post() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_react_post::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_edit_post_text() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_edit_post_text::<Runtime>());
         });
     }
 }
