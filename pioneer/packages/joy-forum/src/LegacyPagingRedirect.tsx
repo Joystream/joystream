@@ -5,6 +5,7 @@ export const LegacyPagingRedirect: React.FC = () => {
   const { pathname } = useLocation();
   const parsingRegexp = /(.+)\/page\/(\d+)/;
   const groups = parsingRegexp.exec(pathname);
+
   if (!groups) {
     return <em>Failed to parse the URL</em>;
   }
@@ -12,6 +13,8 @@ export const LegacyPagingRedirect: React.FC = () => {
   const basePath = groups[1];
   const page = groups[2];
   const search = new URLSearchParams();
+
   search.set('page', page);
+
   return <Redirect to={{ pathname: basePath, search: search.toString() }} />;
 };

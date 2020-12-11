@@ -14,15 +14,18 @@ pub struct CouncilManager<T> {
 }
 
 impl<T: governance::council::Trait + membership::Trait>
-    ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
-    for CouncilManager<T>
+    ActorOriginValidator<
+        <T as frame_system::Trait>::Origin,
+        MemberId<T>,
+        <T as frame_system::Trait>::AccountId,
+    > for CouncilManager<T>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
     fn ensure_actor_origin(
-        origin: <T as system::Trait>::Origin,
+        origin: <T as frame_system::Trait>::Origin,
         actor_id: MemberId<T>,
-    ) -> Result<<T as system::Trait>::AccountId, &'static str> {
+    ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
         let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
 
         if <governance::council::Module<T>>::is_councilor(&account_id) {
@@ -45,21 +48,13 @@ mod tests {
     use super::CouncilManager;
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
+    use frame_system::RawOrigin;
     use proposals_engine::VotersParameters;
     use sp_runtime::AccountId32;
-    use system::RawOrigin;
+
+    use crate::tests::{initial_test_ext, insert_member};
 
     type Council = governance::council::Module<Runtime>;
-
-    fn initial_test_ext() -> sp_io::TestExternalities {
-        let t = system::GenesisConfig::default()
-            .build_storage::<Runtime>()
-            .unwrap();
-
-        t.into()
-    }
-
-    type Membership = membership::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {
@@ -83,28 +78,14 @@ mod tests {
             let councilor3: [u8; 32] = [3; 32];
 
             assert!(Council::set_council(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 vec![councilor1, councilor2.into(), councilor3.into()]
             )
             .is_ok());
 
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id.clone(),
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id.clone());
             let member_id = 0; // newly created member_id
 
             let validation_result =
@@ -120,21 +101,7 @@ mod tests {
             let account_id = AccountId32::default();
             let error =
                 "Membership validation failed: given account doesn't match with profile accounts";
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id.clone(),
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id);
             let member_id = 0; // newly created member_id
 
             let invalid_account_id: [u8; 32] = [2; 32];
@@ -153,21 +120,7 @@ mod tests {
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
             let error = "Council validation failed: account id doesn't belong to a council member";
-            let authority_account_id = AccountId32::default();
-            Membership::set_screening_authority(
-                RawOrigin::Root.into(),
-                authority_account_id.clone(),
-            )
-            .unwrap();
-
-            Membership::add_screened_member(
-                RawOrigin::Signed(authority_account_id).into(),
-                account_id,
-                Some(b"handle".to_vec()),
-                None,
-                None,
-            )
-            .unwrap();
+            insert_member(account_id);
             let member_id = 0; // newly created member_id
 
             let validation_result =
@@ -185,7 +138,7 @@ mod tests {
             let councilor3: [u8; 32] = [3; 32];
             let councilor4: [u8; 32] = [4; 32];
             assert!(Council::set_council(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 vec![
                     councilor1,
                     councilor2.into(),

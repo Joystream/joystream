@@ -2,980 +2,1910 @@
 
 use super::*;
 use crate::mock::*;
+use frame_support::assert_err;
 
-use frame_support::{assert_err, assert_ok};
+/// test cases are arranged as two layers.
+/// first layer is each method in defined in module.
+/// second layer is each parameter of the specific method.
 
 /*
-* NB!: No test checks for event emission!!!!
-*/
-
-/*
- * set_forum_sudo
- * ==============================================================================
- *
- * Missing cases
- *
- * set_forum_bad_origin
- *
+ * update_category_membership_of_moderator_origin
  */
-
 #[test]
-fn set_forum_sudo_unset() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        // Ensure that forum sudo is default
-        assert_eq!(TestForumModule::forum_sudo(), Some(33));
-
-        // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(
-            mock_origin(OriginType::Root),
-            None
-        ));
-
-        // Sudo no longer set
-        assert!(TestForumModule::forum_sudo().is_none());
-
-        // event emitted?!
-    });
-}
-
-#[test]
-fn set_forum_sudo_update() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        // Ensure that forum sudo is default
-        assert_eq!(
-            TestForumModule::forum_sudo(),
-            Some(default_genesis_config().forum_sudo)
+// test case for check if origin is forum lead
+fn update_category_membership_of_moderator_origin() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
         );
-
-        let new_forum_sudo_account_id = 780;
-
-        // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(
-            mock_origin(OriginType::Root),
-            Some(new_forum_sudo_account_id)
-        ));
-
-        // Sudo no longer set
-        assert_eq!(
-            TestForumModule::forum_sudo(),
-            Some(new_forum_sudo_account_id)
+        update_category_membership_of_moderator_mock(
+            origin,
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            NOT_FORUM_LEAD_ORIGIN,
+            moderator_id,
+            category_id,
+            true,
+            Err(Error::<Runtime>::OriginNotForumLead.into()),
         );
     });
 }
 
-/*
- * create_category
- * ==============================================================================
- *
- * Missing cases
- *
- * create_category_bad_origin
- * create_category_forum_sudo_not_set
- */
-
 #[test]
-fn create_root_category_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        assert_create_category(origin, None, Ok(()));
+// test case for check whether category is existed.
+fn update_category_membership_of_moderator_category() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            INVLAID_CATEGORY_ID,
+            true,
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
     });
 }
 
 #[test]
-fn create_subcategory_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let root_category_id = create_root_category(origin.clone());
-        assert_create_category(origin, Some(root_category_id), Ok(()));
+// test an attempt to slash category_membership_of_moderator when provided moderator is not given category moderator.
+fn update_category_membership_category_moderator_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            false,
+            Err(Error::<Runtime>::CategoryModeratorDoesNotExist.into()),
+        );
     });
 }
 
 #[test]
-fn create_category_title_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.category_title_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: generate_text(min_len - 1),
-            description: good_category_description(),
-            result: Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
-        }
-        .call_and_assert();
-    });
+// test case for check if origin is forum lead
+fn create_category_origin() {
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+    for index in 0..origins.len() {
+        with_test_externalities(|| {
+            create_category_mock(
+                origins[index].clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                results[index].clone(),
+            );
+        });
+    }
 }
 
 #[test]
-fn create_category_title_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.category_title_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: generate_text(max_len + 1),
-            description: good_category_description(),
-            result: Err(ERROR_CATEGORY_TITLE_TOO_LONG),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_category_description_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.category_description_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: generate_text(min_len - 1),
-            result: Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_category_description_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.category_description_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: generate_text(max_len + 1),
-            result: Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
-        }
-        .call_and_assert();
-    });
-}
-
-/*
- * update_category
- * ==============================================================================
- *
- * Missing cases
- *
- * create_category_bad_origin
- * create_category_forum_sudo_not_set
- * create_category_origin_not_forum_sudo
- * create_category_immutable_ancestor_category
- */
-
-#[test]
-fn update_category_undelete_and_unarchive() {
-    /*
-     * Create an initial state with two levels of categories, where
-     * leaf category is deleted, and then try to undelete.
-     */
-
-    let forum_sudo = 32;
-
-    let created_at = RuntimeBlockchainTimestamp { block: 0, time: 0 };
-
-    let category_by_id = vec![
-        // A root category
-        (
-            1,
-            Category {
-                id: 1,
-                title: "New root".as_bytes().to_vec(),
-                description: "This is a new root category".as_bytes().to_vec(),
-                created_at: created_at.clone(),
-                deleted: false,
-                archived: false,
-                num_direct_subcategories: 1,
-                num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 0,
-                position_in_parent_category: None,
-                moderator_id: forum_sudo,
-            },
-        ),
-        // A subcategory of the one above
-        (
-            2,
-            Category {
-                id: 2,
-                title: "New subcategory".as_bytes().to_vec(),
-                description: "This is a new subcategory to root category"
-                    .as_bytes()
-                    .to_vec(),
-                created_at: created_at.clone(),
-                deleted: true,
-                archived: false,
-                num_direct_subcategories: 0,
-                num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 0,
-                position_in_parent_category: Some(ChildPositionInParentCategory {
-                    parent_id: 1,
-                    child_nr_in_parent_category: 1,
-                }),
-                moderator_id: forum_sudo,
-            },
-        ),
+// test case for check if parent category is archived or not existing.
+fn create_category_parent() {
+    let parents = vec![Some(1), Some(2), Some(3)];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        Err(Error::<Runtime>::CategoryDoesNotExist.into()),
     ];
 
-    // Set constraints to be sloppy, we don't care about enforcing them.
-    let sloppy_constraint = InputValidationLengthConstraint {
-        min: 0,
-        max_min_diff: 1000,
-    };
+    for index in 0..parents.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            create_category_mock(
+                origin.clone(),
+                Some(1),
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_archival_status_mock(
+                origin.clone(),
+                PrivilegedActor::Lead,
+                2,
+                true,
+                Ok(()),
+            );
 
-    let config = genesis_config(
-        &category_by_id,             // category_by_id
-        category_by_id.len() as u64, // next_category_id
-        &vec![],                     // thread_by_id
-        1,                           // next_thread_id
-        &vec![],                     // post_by_id
-        1,                           // next_post_id
-        forum_sudo,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-    );
+            create_category_mock(
+                origin.clone(),
+                parents[index],
+                good_category_title(),
+                good_category_description(),
+                results[index],
+            );
+        });
+    }
+}
 
-    build_test_externalities(config).execute_with(|| {
-        UpdateCategoryFixture {
-            origin: OriginType::Signed(forum_sudo),
-            category_id: 2,
-            new_archival_status: None,        // same as before
-            new_deletion_status: Some(false), // undelete
-            result: Ok(()),
+#[test]
+// test case set category depth
+fn create_category_depth() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let max_depth = <Runtime as Trait>::MaxCategoryDepth::get();
+        for i in 0..(max_depth + 1) {
+            let parent_category_id = match i {
+                0 => None,
+                _ => Some(i),
+            };
+            let expected_result = match i {
+                _ if i >= max_depth => Err(Error::<Runtime>::MaxValidCategoryDepthExceeded.into()),
+                _ => Ok(()),
+            };
+
+            create_category_mock(
+                origin.clone(),
+                parent_category_id,
+                good_category_title(),
+                good_category_description(),
+                expected_result,
+            );
         }
-        .call_and_assert();
     });
 }
 
 /*
- * create_thread
- * ==============================================================================
- *
- * Missing cases
- *
- * create_thread_bad_origin
- * create_thread_forum_sudo_not_set
- * ...
+ ** update_category
+ */
+#[test]
+// test if category updator is forum lead
+fn update_category_archival_status_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_archival_status_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                true,
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update category status
+fn update_category_archival_status_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_archival_status_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            false,
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent category
+fn update_category_archival_status_category_exists() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            true,
+            Ok(()),
+        );
+        update_category_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            2,
+            true,
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive category
+fn update_category_archival_status_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            true,
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            true,
+            Ok(()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive category
+fn update_category_archival_status_lock_works() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        update_category_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            true,
+            Ok(()),
+        );
+
+        // can't add more threads
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        );
+
+        // can't add more posts to thread inside category
+        create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        );
+
+        // can't update post
+        edit_post_text_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            post_id,
+            good_post_new_text(),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        );
+
+        // can't update thread
+        edit_thread_title_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_thread_new_title(),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        );
+    });
+}
+
+#[test]
+// test category can be deleted
+fn delete_category() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        assert!(<CategoryById<Runtime>>::contains_key(category_id));
+        delete_category_mock(origin.clone(), PrivilegedActor::Lead, category_id, Ok(()));
+        assert!(!<CategoryById<Runtime>>::contains_key(category_id));
+    });
+}
+
+#[test]
+// test category can't be deleted when it has subcategories
+fn delete_category_non_empty_subcategories() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(category_id),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        delete_category_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            Err(Error::<Runtime>::CategoryNotEmptyCategories.into()),
+        );
+    });
+}
+
+#[test]
+// test category can't be deleted when it contains threads
+fn delete_category_non_empty_threads() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        delete_category_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            Err(Error::<Runtime>::CategoryNotEmptyThreads.into()),
+        );
+    });
+}
+
+#[test]
+// test category can't be deleted by moderator only if he is moderating one of parent categories
+fn delete_category_need_ancestor_moderation() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            Some(category_id_1),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // without any permissions, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Err(Error::<Runtime>::ModeratorCantDeleteCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // without permissions to moderate only category itself, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Err(Error::<Runtime>::ModeratorCantDeleteCategory.into()),
+        );
+
+        // give permision to moderate parent category
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_1,
+            true,
+            Ok(()),
+        );
+
+        // check number of subcategories is correct
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            1,
+        );
+
+        // with permissions to moderate parent category, delete will work
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Ok(()),
+        );
+
+        // check that subcategory count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            0,
+        );
+    });
+}
+
+#[test]
+// test if lead can delete root category
+fn delete_category_root_by_lead() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        delete_category_mock(origin.clone(), PrivilegedActor::Lead, category_id, Ok(()));
+    });
+}
+
+/*
+ ** create_thread
+ */
+#[test]
+// test if thread creator is valid forum user
+fn create_thread_origin() {
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+    let forum_user_id = NOT_FORUM_LEAD_ORIGIN_ID;
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            create_thread_mock(
+                origins[index].clone(),
+                forum_user_id,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test if timestamp of poll start time and end time are valid
+fn create_thread_poll_timestamp() {
+    let expiration_diff = 10;
+    let results = vec![Ok(()), Err(Error::<Runtime>::PollTimeSetting.into())];
+
+    for index in 0..results.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+
+        with_test_externalities(|| {
+            change_current_time(1);
+            let poll = generate_poll_timestamp_cases(index, expiration_diff);
+            change_current_time(index as u64 * expiration_diff + 1);
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                Some(poll),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test if author can edit thread's title
+fn edit_thread_title() {
+    let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        // create thread by author
+        let thread_id = create_thread_mock(
+            origins[0].clone(),
+            forum_users[0],
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // check author can edit text
+        edit_thread_title_mock(
+            origins[0].clone(),
+            forum_users[0],
+            category_id,
+            thread_id,
+            good_thread_new_title(),
+            Ok(()),
+        );
+
+        // check non-author is forbidden from editing text
+        edit_thread_title_mock(
+            origins[1].clone(),
+            forum_users[1],
+            category_id,
+            thread_id,
+            good_thread_new_title(),
+            Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
+        );
+    });
+}
+
+/*
+ ** update_category
+ */
+#[test]
+// test if category updator is forum lead
+fn update_thread_archival_status_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origins[0].clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                Ok(()),
+            );
+            update_thread_archival_status_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                thread_id,
+                true,
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update thread status
+fn update_thread_archival_status_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        update_thread_archival_status_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            thread_id,
+            false,
+            Err(Error::<Runtime>::ThreadNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent thread
+fn update_thread_archival_status_thread_exists() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        update_thread_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            thread_id,
+            true,
+            Ok(()),
+        );
+        update_thread_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            thread_id + 1,
+            true,
+            Err(Error::<Runtime>::ThreadDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive thread
+fn update_thread_archival_status_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_thread_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            thread_id,
+            true,
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_thread_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            thread_id,
+            true,
+            Ok(()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive thread
+fn update_thread_archival_status_lock_works() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        update_thread_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            thread_id,
+            true,
+            Ok(()),
+        );
+
+        // can't add more posts to thread inside category
+        create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
+        );
+
+        // can't update post
+        edit_post_text_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            post_id,
+            good_post_new_text(),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
+        );
+
+        // can't update thread
+        edit_thread_title_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_thread_new_title(),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can delete thread
+fn delete_thread() {
+    let moderators = [
+        FORUM_MODERATOR_ORIGIN_ID,
+        FORUM_MODERATOR_2_ORIGIN_ID,
+        NOT_FORUM_LEAD_ORIGIN_ID,
+    ];
+    let origins = [
+        FORUM_MODERATOR_ORIGIN,
+        FORUM_MODERATOR_2_ORIGIN,
+        NOT_FORUM_LEAD_ORIGIN,
+    ];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // check number of category's threads match before delete
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            1
+        );
+
+        // regular user will fail to delete the thread
+        delete_thread_mock(
+            origins[2].clone(),
+            moderators[2],
+            category_id,
+            thread_id,
+            Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
+        );
+
+        // moderator not associated with thread will fail to delete it
+        delete_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            category_id,
+            thread_id,
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // moderator will delete thread
+        delete_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id,
+            thread_id,
+            Ok(()),
+        );
+
+        // check thread's post was deleted
+        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
+
+        // check category's thread count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            0
+        );
+    });
+}
+
+#[test]
+// test if moderator can move thread between two categories he moderates
+fn move_thread_moderator_permissions() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID, FORUM_MODERATOR_2_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN, FORUM_MODERATOR_2_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // sanity check
+        assert_ne!(category_id_1, category_id_2);
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id_1,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // moderator not associated with any category will fail to move thread
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Err(Error::<Runtime>::ModeratorModerateOriginCategory.into()),
+        );
+
+        // set incomplete permissions for first user (only category 1)
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_1,
+            true,
+            Ok(()),
+        );
+        // set incomplete permissions for second user (only category 2)
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[1],
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated only with the first category will fail to move thread
+        move_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Err(Error::<Runtime>::ModeratorModerateOriginCategory.into()),
+        );
+
+        // moderator associated only with the second category will fail to move thread
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Err(Error::<Runtime>::ModeratorModerateDestinationCategory.into()),
+        );
+
+        // give the rest of necessary permissions to the first moderator
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
+        // moderator associated with both categories will succeed to move thread
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            0,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            1,
+        );
+    });
+}
+
+#[test]
+// test if error is thrown when origin and destination category is the same
+fn move_thread_invalid_move() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // set permissions
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id,
+            thread_id,
+            category_id,
+            Err(Error::<Runtime>::ThreadMoveInvalid.into()),
+        );
+    });
+}
+
+/*
+ ** vote_on_poll
+ */
+#[test]
+// test if poll submitter is a forum user
+fn vote_on_poll_origin() {
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
+    let expiration_diff = 10;
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                Some(generate_poll(expiration_diff)),
+                Ok(()),
+            );
+
+            vote_on_poll_mock(
+                origins[index].clone(),
+                forum_lead,
+                thread_id,
+                category_id,
+                1,
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test if poll metadata created
+fn vote_on_poll_exists() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        vote_on_poll_mock(
+            origin.clone(),
+            forum_lead,
+            thread_id,
+            category_id,
+            1,
+            Err(Error::<Runtime>::PollNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if forum reject poll submit after expiration
+fn vote_on_poll_expired() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    let expiration_diff = 10;
+
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            Some(generate_poll(expiration_diff)),
+            Ok(()),
+        );
+        change_current_time(expiration_diff + 1);
+        vote_on_poll_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            1,
+            Err(Error::<Runtime>::PollCommitExpired.into()),
+        );
+    });
+}
+
+/*
+ ** moderate_thread
  */
 
 #[test]
-fn create_thread_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin);
-        let member_origin = create_forum_member();
-
-        CreateThreadFixture {
-            origin: member_origin,
-            category_id,
-            title: good_thread_title(),
-            text: good_thread_text(),
-            result: Ok(()),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_thread_title_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.thread_title_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin);
-        let member_origin = create_forum_member();
-
-        CreateThreadFixture {
-            origin: member_origin,
-            category_id,
-            title: generate_text(min_len - 1),
-            text: good_thread_text(),
-            result: Err(ERROR_THREAD_TITLE_TOO_SHORT),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_thread_title_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.thread_title_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin);
-        let member_origin = create_forum_member();
-
-        CreateThreadFixture {
-            origin: member_origin,
-            category_id,
-            title: generate_text(max_len + 1),
-            text: good_thread_text(),
-            result: Err(ERROR_THREAD_TITLE_TOO_LONG),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_thread_text_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.post_text_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin);
-        let member_origin = create_forum_member();
-
-        CreateThreadFixture {
-            origin: member_origin,
-            category_id,
-            title: good_thread_title(),
-            text: generate_text(min_len - 1),
-            result: Err(ERROR_POST_TEXT_TOO_SHORT),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_thread_text_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.post_text_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin);
-        let member_origin = create_forum_member();
-
-        CreateThreadFixture {
-            origin: member_origin,
-            category_id,
-            title: good_thread_title(),
-            text: generate_text(max_len + 1),
-            result: Err(ERROR_POST_TEXT_TOO_LONG),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_post_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, _) = create_root_category_and_thread_and_post(origin);
-    });
-}
-
-#[test]
-fn create_post_text_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.post_text_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
-
-        CreatePostFixture {
-            origin: member_origin,
-            thread_id,
-            text: generate_text(min_len - 1),
-            result: Err(ERROR_POST_TEXT_TOO_SHORT),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn create_post_text_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.post_text_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
-
-        CreatePostFixture {
-            origin: member_origin,
-            thread_id,
-            text: generate_text(max_len + 1),
-            result: Err(ERROR_POST_TEXT_TOO_LONG),
-        }
-        .call_and_assert();
-    });
-}
-
-// Test moderation:
-// -----------------------------------------------------------------------------
-
-#[test]
-fn moderate_thread_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        assert_eq!(moderate_thread(origin, thread_id, good_rationale()), Ok(()));
-    });
-}
-
-#[test]
-fn cannot_moderate_already_moderated_thread() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        assert_eq!(
-            moderate_thread(origin.clone(), thread_id.clone(), good_rationale()),
-            Ok(())
-        );
-        assert_eq!(
-            moderate_thread(origin, thread_id, good_rationale()),
-            Err(ERROR_THREAD_ALREADY_MODERATED)
-        );
-    });
-}
-
-#[test]
-fn moderate_thread_rationale_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.thread_moderation_rationale_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        let bad_rationale = generate_text(min_len - 1);
-        assert_eq!(
-            moderate_thread(origin, thread_id, bad_rationale),
-            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT)
-        );
-    });
-}
-
-#[test]
-fn moderate_thread_rationale_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.thread_moderation_rationale_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        let bad_rationale = generate_text(max_len + 1);
-        assert_eq!(
-            moderate_thread(origin, thread_id, bad_rationale),
-            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG)
-        );
-    });
-}
-
-#[test]
-fn moderate_post_successfully() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        assert_eq!(moderate_post(origin, post_id, good_rationale()), Ok(()));
-    });
-}
-
-#[test]
-fn moderate_post_rationale_too_short() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let min_len = config.post_moderation_rationale_constraint.min as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        let bad_rationale = generate_text(min_len - 1);
-        assert_eq!(
-            moderate_post(origin, post_id, bad_rationale),
-            Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT)
-        );
-    });
-}
-
-#[test]
-fn moderate_post_rationale_too_long() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-    let max_len = config.post_moderation_rationale_constraint.max() as usize;
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        let bad_rationale = generate_text(max_len + 1);
-        assert_eq!(
-            moderate_post(origin, post_id, bad_rationale),
-            Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG)
-        );
-    });
-}
-
-#[test]
-fn cannot_moderate_already_moderated_post() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        assert_eq!(
-            moderate_post(origin.clone(), post_id.clone(), good_rationale()),
-            Ok(())
-        );
-        assert_eq!(
-            moderate_post(origin, post_id, good_rationale()),
-            Err(ERROR_POST_MODERATED)
-        );
-    });
-}
-
-// Not a forum sudo:
-// -----------------------------------------------------------------------------
-
-#[test]
-fn not_forum_sudo_cannot_create_root_category() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        assert_create_category(
-            NOT_FORUM_SUDO_ORIGIN,
+// test if thread moderator registered as valid moderator
+fn moderate_thread_origin_ok() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
             None,
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
         );
-    });
-}
-
-#[test]
-fn not_forum_sudo_cannot_create_subcategory() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let root_category_id = create_root_category(origin);
-        assert_create_category(
-            NOT_FORUM_SUDO_ORIGIN,
-            Some(root_category_id),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO),
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
         );
-    });
-}
-
-#[test]
-fn not_forum_sudo_cannot_archive_category() {
-    assert_not_forum_sudo_cannot_update_category(archive_category);
-}
-
-#[test]
-fn not_forum_sudo_cannot_unarchive_category() {
-    assert_not_forum_sudo_cannot_update_category(unarchive_category);
-}
-
-#[test]
-fn not_forum_sudo_cannot_delete_category() {
-    assert_not_forum_sudo_cannot_update_category(delete_category);
-}
-
-#[test]
-fn not_forum_sudo_cannot_undelete_category() {
-    assert_not_forum_sudo_cannot_update_category(undelete_category);
-}
-
-#[test]
-fn not_forum_sudo_cannot_moderate_thread() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        assert_eq!(
-            moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
         );
-    });
-}
-
-#[test]
-fn not_forum_sudo_cannot_moderate_post() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        assert_eq!(
-            moderate_post(NOT_FORUM_SUDO_ORIGIN, post_id, good_rationale()),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
-        );
-    });
-}
-
-// Not a member:
-// -----------------------------------------------------------------------------
-
-#[test]
-fn not_member_cannot_create_thread() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        CreateThreadFixture {
-            origin: NOT_MEMBER_ORIGIN,
-            category_id: create_root_category(origin),
-            title: good_thread_title(),
-            text: good_thread_text(),
-            result: Err(ERROR_NOT_FORUM_USER),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn not_member_cannot_create_post() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin);
-        CreatePostFixture {
-            origin: NOT_MEMBER_ORIGIN,
-            thread_id,
-            text: good_post_text(),
-            result: Err(ERROR_NOT_FORUM_USER),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn not_member_cannot_edit_post() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
-        assert_err!(
-            TestForumModule::edit_post_text(
-                mock_origin(NOT_MEMBER_ORIGIN),
-                post_id,
-                good_rationale()
-            ),
-            ERROR_NOT_FORUM_USER
-        );
-    });
-}
-
-// Invalid id passed:
-// -----------------------------------------------------------------------------
-
-#[test]
-fn cannot_create_subcategory_with_invalid_parent_category_id() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        assert_create_category(
+        moderate_thread_mock(
             origin,
-            Some(INVLAID_CATEGORY_ID),
-            Err(ERROR_CATEGORY_DOES_NOT_EXIST),
-        );
-    });
-}
-
-#[test]
-fn cannot_create_thread_with_invalid_category_id() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        CreateThreadFixture {
-            origin: create_forum_member(),
-            category_id: INVLAID_CATEGORY_ID,
-            title: good_thread_title(),
-            text: good_thread_text(),
-            result: Err(ERROR_CATEGORY_DOES_NOT_EXIST),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn cannot_create_post_with_invalid_thread_id() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        CreatePostFixture {
-            origin: create_forum_member(),
-            thread_id: INVLAID_THREAD_ID,
-            text: good_post_text(),
-            result: Err(ERROR_THREAD_DOES_NOT_EXIST),
-        }
-        .call_and_assert();
-    });
-}
-
-#[test]
-fn cannot_moderate_thread_with_invalid_id() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        assert_err!(
-            moderate_thread(origin, INVLAID_THREAD_ID, good_rationale()),
-            ERROR_THREAD_DOES_NOT_EXIST
-        );
-    });
-}
-
-#[test]
-fn cannot_moderate_post_with_invalid_id() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        assert_err!(
-            moderate_post(origin, INVLAID_POST_ID, good_rationale()),
-            ERROR_POST_DOES_NOT_EXIST
-        );
-    });
-}
-
-// Successfull extrinsics
-// -----------------------------------------------------------------------------
-
-#[test]
-fn archive_then_unarchive_category_successfully() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(archive_category(forum_sudo.clone(), category_id.clone(),));
-        // TODO get category by id and assert archived == true.
-
-        assert_ok!(unarchive_category(forum_sudo, category_id,));
-        // TODO get category by id and assert archived == false.
-    });
-}
-
-#[test]
-fn delete_then_undelete_category_successfully() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(delete_category(forum_sudo.clone(), category_id.clone(),));
-        // TODO get category by id and assert deleted == true.
-
-        assert_ok!(undelete_category(forum_sudo.clone(), category_id.clone(),));
-        // TODO get category by id and assert deleted == false.
-    });
-}
-
-// TODO Consider to fix the logic of the forum module
-// #[test]
-// fn cannot_unarchive_not_archived_category() {
-//     let config = default_genesis_config();
-//     let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-//     build_test_externalities(config).execute_with(|| {
-//         let category_id = create_root_category(forum_sudo.clone());
-
-//         // TODO bug in a logic! it should not be possible. !!!
-
-//         assert_err!(
-//             archive_category(
-//                 forum_sudo.clone(),
-//                 category_id.clone(),
-//             ),
-//             "... TODO expect error ..."
-//         );
-//     });
-// }
-
-// TODO Consider to fix the logic of the forum module
-// #[test]
-// fn cannot_undelete_not_deleted_category() {
-//     let config = default_genesis_config();
-//     let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-//     build_test_externalities(config).execute_with(|| {
-//         let category_id = create_root_category(forum_sudo.clone());
-//         assert_err!(
-//             delete_category(
-//                 forum_sudo.clone(),
-//                 category_id.clone(),
-//             ),
-//             "... TODO expect error ..."
-//         );
-//     });
-// }
-
-// With archived / deleted category, moderated thread
-// -----------------------------------------------------------------------------
-
-#[test]
-fn cannot_create_subcategory_in_archived_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(archive_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_category(
-            forum_sudo,
-            Some(category_id),
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
-        );
-    });
-}
-
-#[test]
-fn cannot_create_subcategory_in_deleted_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(delete_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_category(
-            forum_sudo,
-            Some(category_id),
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
-        );
-    });
-}
-
-#[test]
-fn cannot_create_thread_in_archived_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(archive_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_thread(
-            create_forum_member(),
+            moderator_id,
             category_id,
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+            thread_id,
+            good_moderation_rationale(),
+            Ok(()),
         );
     });
 }
 
-#[test]
-fn cannot_create_thread_in_deleted_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
+/*
+ ** add_post
+ */
 
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        assert_ok!(delete_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_thread(
-            create_forum_member(),
+#[test]
+// test if post origin registered as forum user
+fn add_post_origin() {
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                Ok(()),
+            );
+            create_post_mock(
+                origins[index].clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                good_post_text(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test if post text can be edited by author
+fn edit_post_text() {
+    let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+
+    with_test_externalities(|| {
+        // prepare category and thread
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
             category_id,
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
         );
-    });
-}
 
-#[test]
-fn cannot_create_post_in_thread_of_archived_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        let thread_id = TestForumModule::next_thread_id();
-        assert_create_thread(create_forum_member(), category_id, Ok(()));
-        assert_ok!(archive_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_post(
-            create_forum_member(),
+        // create post by author
+        let post_id = create_post_mock(
+            origins[0].clone(),
+            forum_users[0],
+            category_id,
             thread_id,
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+            good_post_text(),
+            Ok(()),
         );
-    });
-}
 
-#[test]
-fn cannot_create_post_in_thread_of_deleted_category() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(forum_sudo.clone());
-        let thread_id = TestForumModule::next_thread_id();
-        assert_create_thread(create_forum_member(), category_id, Ok(()));
-        assert_ok!(delete_category(forum_sudo.clone(), category_id.clone(),));
-        assert_create_post(
-            create_forum_member(),
+        // check author can edit text
+        edit_post_text_mock(
+            origins[0].clone(),
+            forum_users[0],
+            category_id,
             thread_id,
-            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+            post_id,
+            good_post_new_text(),
+            Ok(()),
         );
-    });
-}
 
-#[test]
-fn cannot_create_post_in_moderated_thread() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(forum_sudo.clone());
-        assert_ok!(moderate_thread(
-            forum_sudo,
-            thread_id.clone(),
-            good_rationale()
-        ));
-        assert_create_post(
-            create_forum_member(),
+        // check non-author is forbidden from editing text
+        edit_post_text_mock(
+            origins[1].clone(),
+            forum_users[1],
+            category_id,
             thread_id,
-            Err(ERROR_THREAD_MODERATED),
+            post_id,
+            good_post_new_text(),
+            Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
+        );
+    });
+}
+
+/*
+ ** react_post
+ */
+#[test]
+// test if post react take effect
+fn react_post() {
+    // three reations to post, test them one by one.
+    let reactions = vec![0, 1, 2];
+    for index in 0..reactions.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = FORUM_LEAD_ORIGIN;
+
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                good_post_text(),
+                Ok(()),
+            );
+            react_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                post_id,
+                reactions[index],
+                Ok(()),
+            );
+        });
+    }
+}
+
+/*
+ ** moderate_post
+ */
+
+#[test]
+// test if post moderator registered
+fn moderate_post_origin() {
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
+    ];
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let moderator_id = forum_lead;
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_membership_of_moderator_mock(
+                origin.clone(),
+                moderator_id,
+                category_id,
+                true,
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                good_post_text(),
+                Ok(()),
+            );
+            moderate_post_mock(
+                origins[index].clone(),
+                moderator_id,
+                category_id,
+                thread_id,
+                post_id,
+                good_moderation_rationale(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+fn set_stickied_threads_ok() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(origin, moderator_id, category_id, vec![thread_id], Ok(()));
+    });
+}
+
+#[test]
+fn set_stickied_threads_wrong_moderator() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![thread_id],
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
     });
 }
 
 #[test]
-fn cannot_edit_post_in_moderated_thread() {
-    let config = default_genesis_config();
-    let forum_sudo = OriginType::Signed(config.forum_sudo);
+fn set_stickied_threads_thread_not_exists() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        let wrong_thread_id = thread_id + 1;
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![wrong_thread_id],
+            Err(Error::<Runtime>::ThreadDoesNotExist.into()),
+        );
+    });
+}
 
+#[test]
+fn test_migration_not_done() {
+    let config = migration_not_done_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        let (member_origin, _, thread_id, post_id) =
-            create_root_category_and_thread_and_post(forum_sudo.clone());
-        assert_ok!(moderate_thread(forum_sudo, thread_id, good_rationale()));
+        let forum_user_id = 1;
+        let moderator_id = 1;
+        let category_id = 1;
+        let thread_id = 1;
+        let post_id = 1;
+
         assert_err!(
-            TestForumModule::edit_post_text(mock_origin(member_origin), post_id, good_rationale()),
-            ERROR_THREAD_MODERATED
+            TestForumModule::create_category(
+                mock_origin(origin.clone()),
+                None,
+                good_category_title(),
+                good_category_description()
+            ),
+            Error::<Runtime>::DataMigrationNotDone,
+        );
+
+        assert_err!(
+            TestForumModule::create_thread(
+                mock_origin(origin.clone()),
+                forum_user_id,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+            ),
+            Error::<Runtime>::DataMigrationNotDone,
+        );
+
+        assert_err!(
+            TestForumModule::add_post(
+                mock_origin(origin.clone()),
+                forum_user_id,
+                category_id,
+                thread_id,
+                good_post_text(),
+            ),
+            Error::<Runtime>::DataMigrationNotDone,
+        );
+
+        assert_err!(
+            TestForumModule::moderate_thread(
+                mock_origin(origin.clone()),
+                PrivilegedActor::Moderator(moderator_id),
+                category_id,
+                thread_id,
+                good_moderation_rationale(),
+            ),
+            Error::<Runtime>::DataMigrationNotDone,
+        );
+
+        assert_err!(
+            TestForumModule::moderate_post(
+                mock_origin(origin.clone()),
+                PrivilegedActor::Moderator(moderator_id),
+                category_id,
+                thread_id,
+                post_id,
+                good_moderation_rationale(),
+            ),
+            Error::<Runtime>::DataMigrationNotDone,
         );
     });
 }
 
-// TODO impl
-// #[test]
-// fn cannot_edit_moderated_post() {}
+#[test]
+// test storage limits are enforced
+fn storage_limit_checks() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+
+    // test MaxSubcategories and MaxThreadsInCategory
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // test max subcategories limit
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxSubcategories>::get();
+        for i in 0..max {
+            create_category_mock(
+                origin.clone(),
+                Some(category_id),
+                good_category_title(),
+                good_category_description(),
+                match i {
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
+                    _ => Ok(()),
+                },
+            );
+        }
+
+        // test max threads in category
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get();
+        for i in 0..max {
+            create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                match i {
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    // test MaxPostsInThread
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // test max posts in thread
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
+        // starting from 1 because create_thread_mock creates one post by itself
+        for i in 1..max {
+            create_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                good_post_text(),
+                match i {
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    // test MaxModeratorsForCategory
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let max: usize =
+            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxModeratorsForCategory>::get()
+                as usize;
+        for i in 0..max {
+            let moderator_id = EXTRA_MODERATORS[i];
+            update_category_membership_of_moderator_mock(
+                origin.clone(),
+                moderator_id,
+                category_id,
+                true,
+                match i {
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    // test MaxCategories
+    with_test_externalities(|| {
+        let max: usize =
+            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as usize;
+        for i in 0..max {
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                match i {
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+}

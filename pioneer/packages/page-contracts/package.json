@@ -1,0 +1,17 @@
+{
+  "name": "@polkadot/app-contracts",
+  "private": true,
+  "version": "0.51.1",
+  "description": "Deployment and management of substrate contracts",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Jaco Greeff <jacogr@gmail.com>",
+  "maintainers": [
+    "Jaco Greeff <jacogr@gmail.com>"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@babel/runtime": "^7.10.5",
+    "@polkadot/api-contract": "^1.26.1"
+  }
+}

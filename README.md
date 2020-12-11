@@ -18,7 +18,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) v12.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) - _optional_
+- [docker](https://www.docker.com/get-started) and docker-compose - _optional_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -93,8 +93,8 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-cargo build --release
-cargo run --release -- --pruning archive --chain testnets/rome.json
+WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
 Wait for the node to sync to the latest block, then change pioneer settings "remote node" option to "Local Node", or follow the link below:
@@ -104,6 +104,12 @@ http://localhost:3000/?rpc=ws://localhost:9944/
 Learn more about [joystream-node](node/README.md).
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
+
+### Integration tests
+
+```bash
+tests/network-tests/run-tests.sh
+```
 
 ### Contributing
 
@@ -122,6 +128,12 @@ During a rebase/merge you may want to skip all hooks, you can use `HUSKY_SKIP_HO
 ```
 HUSKY_SKIP_HOOKS=1 git rebase ...
 ```
+
+## RLS Extension in VScode or Atom Editors
+
+If you use RLS extension in your IDE, start your editor with the `BUILD_DUMMY_WASM_BINARY=1` environment set to workaround a build issue that occurs in the IDE only.
+
+`BUILD_DUMMY_WASM_BINARY=1 code ./joystream`
 
 ## Authors
 

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::{StorageMap, StorageValue};
-use system::{EventRecord, Phase, RawOrigin};
+use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::*;
 
@@ -12,11 +12,16 @@ const DEFAULT_LEADER_WORKER_ID: u32 = 1;
 struct SetLeadFixture;
 impl SetLeadFixture {
     fn set_default_lead() {
-        let worker = working_group::Worker {
+        let worker = working_group::Worker::<Test> {
             member_id: DEFAULT_LEADER_MEMBER_ID,
             role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
-            reward_relationship: None,
-            role_stake_profile: None,
+            staking_account_id: None,
+            reward_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            started_leaving_at: None,
+            job_unstaking_period: 0,
+            reward_per_block: None,
+            missed_reward: None,
+            created_at: 1,
         };
 
         // Create the worker.

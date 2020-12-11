@@ -62,13 +62,16 @@ pub type PostId = u64;
 /// Represent an actor in membership group, which is the same in the working groups.
 pub type ActorId = u64;
 
+/// Represent an member in membership group, which is the same in the working groups.
+pub type MemberId = u64;
+
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
 /// account.
 pub mod report {
     use super::{Signature, Verify};
+    use frame_system::offchain::AppCrypto;
     use sp_core::crypto::{key_types, KeyTypeId};
-    use system::offchain::AppCrypto;
 
     /// Key type for the reporting module. Used for reporting BABE and GRANDPA
     /// equivocations.

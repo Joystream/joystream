@@ -1,7 +1,7 @@
 // TODO: adjust all extrinsic weights
 
 //! # Referendum module
-//! General voting engine module for the the Joystream platform. Component of the council system.
+//! General voting engine module for the the Joystream platform. Component of the council frame_system.
 //!
 //! ## Overview
 //!
@@ -40,10 +40,10 @@ use frame_support::traits::{
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
 };
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
-use system::ensure_signed;
 
 // declared modules
 mod mock;
@@ -107,16 +107,17 @@ pub struct CastVote<Hash, Currency> {
 
 // types simplifying access to common structs and enums
 pub type Balance<T, I> =
-    <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-pub type CastVoteOf<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
-pub type ReferendumStageVotingOf<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
+    <<T as Trait<I>>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type CastVoteOf<T, I> = CastVote<<T as frame_system::Trait>::Hash, Balance<T, I>>;
+pub type ReferendumStageVotingOf<T> =
+    ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
 pub type ReferendumStageRevealingOf<T, I> =
-    ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
+    ReferendumStageRevealing<<T as frame_system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
     ReferendumStageRevealingOf<T, I>,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     CastVoteOf<T, I>,
 );
 
@@ -158,9 +159,9 @@ pub trait ReferendumManager<Origin, AccountId, Hash> {
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance>: system::Trait {
+pub trait Trait<I: Instance>: frame_system::Trait {
     /// The overarching event type.
-    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
@@ -194,7 +195,7 @@ pub trait Trait<I: Instance>: system::Trait {
 
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &Balance<Self, I>,
     ) -> <Self as Trait<I>>::VotePower;
 
@@ -232,8 +233,8 @@ decl_event! {
     pub enum Event<T, I>
     where
         Balance = Balance<T, I>,
-        <T as system::Trait>::Hash,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::Hash,
+        <T as frame_system::Trait>::AccountId,
         <T as Trait<I>>::VotePower,
     {
         /// Referendum started
@@ -494,7 +495,7 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Has
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
         vote_option_id: &u64,
@@ -525,7 +526,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number() + 1.into(),
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
         }));
@@ -538,7 +539,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T,
             I,
         > {
-            started: <system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number() + 1.into(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
             current_cycle_id: old_stage.current_cycle_id,
@@ -558,7 +559,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Cast a user's sealed vote for the current referendum cycle.
     fn vote(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         commitment: &T::Hash,
         stake: &Balance<T, I>,
         current_cycle_id: &u64,
@@ -588,7 +589,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as frame_system::Trait>::AccountId,
         option_id: &u64,
         cast_vote: CastVoteOf<T, I>,
     ) -> Result<(), Error<T, I>> {
@@ -622,7 +623,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Release stake associated to the user's last vote.
-    fn release_vote_stake(account_id: &<T as system::Trait>::AccountId) {
+    fn release_vote_stake(account_id: &<T as frame_system::Trait>::AccountId) {
         // lock stake amount
         T::Currency::remove_lock(T::LockId::get(), account_id);
 

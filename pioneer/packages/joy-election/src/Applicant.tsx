@@ -4,24 +4,25 @@ import { Table } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import CandidatePreview from './CandidatePreview';
 
 import translate from './translate';
-import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { Stake } from '@joystream/types/council';
+import { calcTotalStake } from '@polkadot/joy-utils/functions/misc';
+import { ElectionStake } from '@joystream/types/council';
 
 type Props = ApiProps & I18nProps & {
   index: number;
   accountId: AccountId;
-  stake?: Stake;
+  stake?: ElectionStake;
+  isVotingStage: boolean;
 };
 
 class Applicant extends React.PureComponent<Props> {
   render () {
-    const { index, accountId, stake } = this.props;
+    const { index, accountId, stake, isVotingStage } = this.props;
     const voteUrl = `/council/votes?applicantId=${accountId.toString()}`;
 
     return (
@@ -33,9 +34,11 @@ class Applicant extends React.PureComponent<Props> {
         <Table.Cell style={{ textAlign: 'right' }}>
           {formatBalance(calcTotalStake(stake))}
         </Table.Cell>
-        <Table.Cell>
-          <Link to={voteUrl} className='ui button primary inverted'>Vote</Link>
-        </Table.Cell>
+        { isVotingStage && (
+          <Table.Cell>
+            <Link to={voteUrl} className='ui button primary inverted'>Vote</Link>
+          </Table.Cell>
+        ) }
       </Table.Row>
     );
   }

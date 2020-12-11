@@ -1,13 +1,12 @@
 import moment from 'moment';
 
-import { Option, u128 } from '@polkadot/types';
+import { Option } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import {
-  Application,
+import { Application,
   AcceptingApplications, ReviewPeriod,
   WaitingToBeingOpeningStageVariant,
-  ActiveOpeningStageVariant, ActiveOpeningStageKeys,
+  ActiveOpeningStageVariant,
   Opening,
   OpeningStageKeys,
   Deactivated, OpeningDeactivationCauseKeys,
@@ -16,15 +15,13 @@ import {
   ApplicationStageKeys,
   ApplicationDeactivationCause, ApplicationDeactivationCauseKeys,
   UnstakingApplicationStage,
-  InactiveApplicationStage
-} from '@joystream/types/hiring';
+  InactiveApplicationStage } from '@joystream/types/hiring';
 
-import {
-  StakeRequirement,
+import { StakeRequirement,
   ApplicationStakeRequirement,
   RoleStakeRequirement,
-  StakeType
-} from './StakeRequirement';
+  StakeType } from './StakeRequirement';
+import { createType } from '@joystream/types';
 
 export enum CancelledReason {
   ApplicantCancelled = 0,
@@ -53,7 +50,7 @@ export interface OpeningStageClassification {
 export interface IBlockQueryer {
   blockHash(height: number): Promise<string>;
   blockTimestamp(height: number): Promise<Date>;
-  expectedBlockTime: () => Promise<number>;
+  expectedBlockTime: () => number;
 }
 
 async function classifyActiveOpeningStageAcceptingApplications (
@@ -61,6 +58,7 @@ async function classifyActiveOpeningStageAcceptingApplications (
   stage: AcceptingApplications
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_accepting_applicants_at_block.toNumber();
+
   return {
     state: OpeningState.AcceptingApplications,
     starting_block: blockNumber,
@@ -76,10 +74,8 @@ async function classifyActiveOpeningStageReviewPeriod (
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_review_period_at_block.toNumber();
   const maxReviewLengthInBlocks = opening.max_review_period_length.toNumber();
-  const [startDate, blockTime] = await Promise.all([
-    queryer.blockTimestamp(blockNumber),
-    queryer.expectedBlockTime()
-  ]);
+  const startDate = await queryer.blockTimestamp(blockNumber);
+  const blockTime = queryer.expectedBlockTime();
   const endDate = moment(startDate).add(maxReviewLengthInBlocks * blockTime, 's');
 
   return {
@@ -133,25 +129,26 @@ async function classifyActiveOpeningStage (
   queryer: IBlockQueryer,
   stage: ActiveOpeningStageVariant
 ): Promise<OpeningStageClassification> {
-  switch (stage.stage.type) {
-    case ActiveOpeningStageKeys.AcceptingApplications:
-      return classifyActiveOpeningStageAcceptingApplications(
-        queryer,
-        stage.stage.value as AcceptingApplications
-      );
+  if (stage.stage.isOfType('AcceptingApplications')) {
+    return classifyActiveOpeningStageAcceptingApplications(
+      queryer,
+      stage.stage.asType('AcceptingApplications')
+    );
+  }
 
-    case ActiveOpeningStageKeys.ReviewPeriod:
-      return classifyActiveOpeningStageReviewPeriod(
-        opening,
-        queryer,
-        stage.stage.value as ReviewPeriod
-      );
+  if (stage.stage.isOfType('ReviewPeriod')) {
+    return classifyActiveOpeningStageReviewPeriod(
+      opening,
+      queryer,
+      stage.stage.asType('ReviewPeriod')
+    );
+  }
 
-    case ActiveOpeningStageKeys.Deactivated:
-      return classifyActiveOpeningStageDeactivated(
-        queryer,
-        stage.stage.value as Deactivated
-      );
+  if (stage.stage.isOfType('Deactivated')) {
+    return classifyActiveOpeningStageDeactivated(
+      queryer,
+      stage.stage.value as Deactivated
+    );
   }
 
   throw new Error('Unknown active opening stage: ' + stage.stage.type);
@@ -163,6 +160,7 @@ async function classifyWaitingToBeginStage (
   stage: WaitingToBeingOpeningStageVariant
 ): Promise<OpeningStageClassification> {
   const blockNumber = opening.created.toNumber();
+
   return {
     state: OpeningState.WaitingToBegin,
     starting_block: blockNumber,
@@ -217,7 +215,7 @@ function classifyStakeRequirement<T extends StakeRequirement> (
   option: Option<StakingPolicy>
 ): T {
   if (option.isNone) {
-    return new constructor(new u128(0));
+    return new constructor(createType('Balance', 0));
   }
 
   const policy = option.unwrap();
@@ -243,6 +241,7 @@ export function classifyOpeningStakes (opening: Opening): StakeRequirementSetCla
 
 function classifyApplicationCancellationFromCause (cause: ApplicationDeactivationCause): CancelledReason | undefined {
   console.log(cause.type);
+
   switch (cause.type) {
     case ApplicationDeactivationCauseKeys.External:
       return CancelledReason.ApplicantCancelled;

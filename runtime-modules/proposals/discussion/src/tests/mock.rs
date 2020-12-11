@@ -1,9 +1,9 @@
 #![cfg(test)]
 
-pub use system;
+pub use frame_system;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -12,6 +12,7 @@ use sp_runtime::{
 };
 
 use crate::ActorOriginValidator;
+use crate::WeightInfo;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -26,12 +27,9 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 parameter_types! {
-    pub const MaxPostEditionNumber: u32 = 5;
-    pub const MaxThreadInARowNumber: u32 = 3;
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
 }
@@ -49,7 +47,7 @@ impl_outer_event! {
         discussion<T>,
         balances<T>,
         membership_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -57,6 +55,8 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
+    pub const MaxWhiteListSize: u32 = 4;
+    pub const MembershipFee: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -65,6 +65,8 @@ impl balances::Trait for Test {
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -74,25 +76,37 @@ impl common::currency::GovernanceCurrency for Test {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
     type ActorId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl crate::Trait for Test {
     type Event = TestEvent;
-    type PostAuthorOriginValidator = ();
+    type AuthorOriginValidator = ();
+    type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
-    type MaxPostEditionNumber = MaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
-    type PostLengthLimit = PostLengthLimit;
-    type MaxThreadInARowNumber = MaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
+    type WeightInfo = ();
+}
+
+impl WeightInfo for () {
+    fn add_post(_: u32) -> Weight {
+        0
+    }
+
+    fn update_post() -> Weight {
+        0
+    }
+
+    fn change_thread_mode(_: u32) -> Weight {
+        0
+    }
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
-        if system::ensure_none(origin).is_ok() {
+        if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
 
@@ -100,11 +114,34 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
             return Ok(1);
         }
 
+        if actor_id == 2 {
+            return Ok(2);
+        }
+
+        if actor_id == 11 {
+            return Ok(11);
+        }
+
+        if actor_id == 12 && frame_system::ensure_signed(origin).unwrap_or_default() == 12 {
+            return Ok(12);
+        }
+
         Err("Invalid author")
     }
 }
 
-impl system::Trait for Test {
+pub struct CouncilMock;
+impl ActorOriginValidator<Origin, u64, u64> for CouncilMock {
+    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
+        if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
+            return Ok(2);
+        }
+
+        Err("Not a council")
+    }
+}
+
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -125,20 +162,22 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -146,7 +185,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 }
 
 pub type Discussions = crate::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

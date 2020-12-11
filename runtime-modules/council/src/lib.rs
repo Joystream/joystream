@@ -54,12 +54,12 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
 };
 
+use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
 use std::marker::PhantomData;
-use system::{ensure_root, ensure_signed};
 
 use referendum::{CastVote, OptionResult, ReferendumManager};
 
@@ -165,33 +165,33 @@ impl<AccountId, MembershipId, Balance, Hash, BlockNumber>
 /////////////////// Type aliases ///////////////////////////////////////////////
 
 pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
-    <T as system::Trait>::Origin,
-    <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash,
->>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <T as frame_system::Trait>::Origin,
+    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Trait>::Hash,
+>>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
-    <T as system::Trait>::Origin,
-    <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash,
+    <T as frame_system::Trait>::Origin,
+    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Trait>::Hash,
 >>::VotePower;
-pub type CastVoteOf<T> = CastVote<<T as system::Trait>::Hash, Balance<T>>;
+pub type CastVoteOf<T> = CastVote<<T as frame_system::Trait>::Hash, Balance<T>>;
 
 pub type CouncilMemberOf<T> = CouncilMember<
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     <T as Trait>::MembershipId,
     Balance<T>,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
 >;
 pub type CandidateOf<T> =
-    Candidate<<T as system::Trait>::AccountId, Balance<T>, <T as system::Trait>::Hash>;
-pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::BlockNumber>;
+    Candidate<<T as frame_system::Trait>::AccountId, Balance<T>, <T as frame_system::Trait>::Hash>;
+pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 /// The main council trait.
-pub trait Trait: system::Trait {
+pub trait Trait: frame_system::Trait {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Representation for council membership.
     type MembershipId: Parameter
@@ -239,7 +239,7 @@ pub trait Trait: system::Trait {
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
         membership_id: &Self::MembershipId,
-        account_id: &<Self as system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool;
 }
 
@@ -284,9 +284,9 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance::<T>,
-        <T as system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::BlockNumber,
         <T as Trait>::MembershipId,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     {
         /// New council was elected
         AnnouncingPeriodStarted(),
@@ -627,7 +627,7 @@ impl<T: Trait> Module<T> {
             return;
         }
 
-        let now: T::BlockNumber = <system::Module<T>>::block_number();
+        let now: T::BlockNumber = <frame_system::Module<T>>::block_number();
 
         // prepare candidates that got elected
         let elected_members: Vec<CouncilMemberOf<T>> = winners
@@ -880,7 +880,7 @@ impl<T: Trait> Mutations<T> {
             candidates_count: 0,
         };
 
-        let block_number = <system::Module<T>>::block_number();
+        let block_number = <frame_system::Module<T>>::block_number();
 
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
@@ -899,7 +899,7 @@ impl<T: Trait> Mutations<T> {
         // start referendum
         T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
-        let block_number = <system::Module<T>>::block_number();
+        let block_number = <frame_system::Module<T>>::block_number();
 
         // change council state
         Stage::<T>::put(CouncilStageUpdate {
@@ -912,7 +912,7 @@ impl<T: Trait> Mutations<T> {
 
     /// Elect new council after successful election.
     fn elect_new_council(elected_members: &[CouncilMemberOf<T>], now: T::BlockNumber) {
-        let block_number = <system::Module<T>>::block_number();
+        let block_number = <frame_system::Module<T>>::block_number();
 
         // change council state
         Stage::<T>::mutate(|value| {
@@ -1019,10 +1019,10 @@ impl<T: Trait> Mutations<T> {
     ) {
         // mint tokens into reward account
         <<<T as Trait>::Referendum as ReferendumManager<
-            <T as system::Trait>::Origin,
-            <T as system::Trait>::AccountId,
-            <T as system::Trait>::Hash,
-        >>::Currency as Currency<<T as system::Trait>::AccountId>>::deposit_creating(
+            <T as frame_system::Trait>::Origin,
+            <T as frame_system::Trait>::AccountId,
+            <T as frame_system::Trait>::Hash,
+        >>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::deposit_creating(
             account_id, *amount,
         );
 

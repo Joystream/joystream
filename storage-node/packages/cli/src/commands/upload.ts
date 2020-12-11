@@ -5,7 +5,7 @@ import { ContentId, DataObject } from '@joystream/types/media'
 import BN from 'bn.js'
 import { Option } from '@polkadot/types/codec'
 import { BaseCommand } from './base'
-import { discover } from '@joystream/service-discovery/discover'
+import { DiscoveryClient } from '@joystream/service-discovery'
 import Debug from 'debug'
 import chalk from 'chalk'
 import { aliceKeyPair } from './dev'
@@ -32,6 +32,7 @@ export class UploadCommand extends BaseCommand {
   private readonly keyFile: string
   private readonly passPhrase: string
   private readonly memberId: string
+  private readonly discoveryClient: DiscoveryClient
 
   constructor(
     api: any,
@@ -44,6 +45,7 @@ export class UploadCommand extends BaseCommand {
     super()
 
     this.api = api
+    this.discoveryClient = new DiscoveryClient({ api })
     this.mediaSourceFilePath = mediaSourceFilePath
     this.dataObjectTypeId = dataObjectTypeId
     this.memberId = memberId
@@ -96,7 +98,7 @@ export class UploadCommand extends BaseCommand {
     return {
       accountId,
       ipfsCid: await this.computeIpfsHash(),
-      contentId: ContentId.generate(),
+      contentId: ContentId.generate(this.api.api.registry),
       fileSize: new BN(this.getFileSize()),
       dataObjectTypeId,
       memberId,
@@ -153,7 +155,7 @@ export class UploadCommand extends BaseCommand {
   // Requests the runtime and obtains the storage node endpoint URL.
   private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
     try {
-      const serviceInfo = await discover(storageProviderId, this.api)
+      const serviceInfo = await this.discoveryClient.discover(storageProviderId)
 
       if (serviceInfo === null) {
         this.fail('Storage node discovery failed.')

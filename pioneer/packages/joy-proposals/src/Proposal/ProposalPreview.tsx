@@ -5,8 +5,7 @@ import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
 import { getExtendedStatus } from './ProposalDetails';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import styled from 'styled-components';
-
-import './Proposal.css';
+import ReactMarkdown from 'react-markdown';
 
 const ProposalIdBox = styled.div`
   position: absolute;
@@ -17,23 +16,35 @@ const ProposalIdBox = styled.div`
   font-size: 1.1em;
 `;
 
+const ProposalDesc = styled.div`
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+`;
+
 export type ProposalPreviewProps = {
   proposal: ParsedProposal;
   bestNumber?: BlockNumber;
+  historical?: boolean;
 };
-export default function ProposalPreview ({ proposal, bestNumber }: ProposalPreviewProps) {
-  const extendedStatus = getExtendedStatus(proposal, bestNumber);
+
+export default function ProposalPreview ({ proposal, bestNumber, historical }: ProposalPreviewProps) {
+  const extendedStatus = getExtendedStatus(proposal, historical ? undefined : bestNumber);
+
   return (
     <Card
       fluid
-      className="Proposal"
-      href={`#/proposals/${proposal.id}`}>
+      href={`#/proposals/${historical ? 'historical/' : ''}${proposal.id.toString()}`}>
       <ProposalIdBox>{ `#${proposal.id.toString()}` }</ProposalIdBox>
       <Card.Content>
         <Card.Header>
-          <Header as="h1">{proposal.title}</Header>
+          <Header as='h1'>{proposal.title}</Header>
         </Card.Header>
-        <Card.Description>{proposal.description}</Card.Description>
+        <Card.Description>
+          <ProposalDesc>
+            <ReactMarkdown source={proposal.description} linkTarget='_blank' />
+          </ProposalDesc>
+        </Card.Description>
         <Details proposal={proposal} extendedStatus={extendedStatus} />
       </Card.Content>
     </Card>

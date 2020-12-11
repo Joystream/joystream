@@ -9,7 +9,13 @@
     "target": "es2017",
     "esModuleInterop": true,
     "types" : [ "node" ],
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "baseUrl": ".",
+    "paths": {
+      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"

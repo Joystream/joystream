@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use frame_support::storage::StorageMap;
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -38,7 +39,7 @@ impl_outer_event! {
         balances<T>,
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -96,7 +97,7 @@ parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -117,21 +118,22 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -140,6 +142,8 @@ impl balances::Trait for Test {
     type Event = MetaEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -148,11 +152,99 @@ impl GovernanceCurrency for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: LockIdentifier = [2; 8];
+    pub const MembershipFee: u64 = 100;
 }
 
+pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::WeightInfo for WorkingGroupWeightInfo {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_worker(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_lead(_: u32) -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role_immediatly() -> Weight {
+        0
+    }
+    fn leave_role_later() -> Weight {
+        0
+    }
+}
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
 }
 
 impl data_object_type_registry::Trait for Test {
@@ -175,14 +267,6 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
-
-        Ok(signed_account_id)
-    }
-}
-
 impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
@@ -192,17 +276,8 @@ impl data_object_storage_registry::Trait for Test {
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
-    type SubscriptionId = u32;
-    type PaidTermId = u32;
     type ActorId = u32;
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
+    type MembershipFee = MembershipFee;
 }
 
 impl minting::Trait for Test {
@@ -214,13 +289,6 @@ impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 pub struct ExtBuilder {
@@ -259,7 +327,7 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
@@ -276,8 +344,15 @@ impl ExtBuilder {
         .unwrap();
 
         membership::GenesisConfig::<Test> {
-            default_paid_membership_fee: 0,
-            members: vec![(1, "alice".into(), "".into(), "".into())],
+            members: vec![membership::genesis::Member {
+                member_id: 0,
+                root_account: 1,
+                controller_account: 1,
+                handle: "alice".into(),
+                avatar_uri: "".into(),
+                about: "".into(),
+                registered_at_time: 0,
+            }],
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -289,7 +364,7 @@ impl ExtBuilder {
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
@@ -308,11 +383,16 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
     let storage_provider_id = 1;
     let role_account_id = 1;
 
-    let storage_provider = working_group::Worker {
+    let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        reward_relationship: None,
-        role_stake_profile: None,
+        staking_account_id: None,
+        reward_account_id: role_account_id,
+        started_leaving_at: None,
+        job_unstaking_period: 0,
+        reward_per_block: None,
+        missed_reward: None,
+        created_at: 1,
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

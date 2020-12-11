@@ -2,24 +2,29 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, createType, Option, Tuple, Bytes } from '@polkadot/types'
-import { Codec, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
+import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
+
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
-import { SubmittableResultImpl } from '@polkadot/api/types'
-import ajv from 'ajv'
+import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { DistinctQuestion } from 'inquirer'
+import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
+import { DispatchError } from '@polkadot/types/interfaces/system'
 
-class ExtrinsicFailedError extends Error {}
+export class ExtrinsicFailedError extends Error {}
 
 /**
  * Abstract base class for commands that require access to the API.
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
   private api: Api | null = null
+  forceSkipApiUriPrompt = false
 
   getApi(): Api {
     if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
@@ -31,16 +36,85 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getApi().getOriginalApi()
   }
 
+  getTypesRegistry(): Registry {
+    return this.getOriginalApi().registry
+  }
+
+  createType<K extends keyof InterfaceTypes>(typeName: K, value?: unknown): InterfaceTypes[K] {
+    return this.getOriginalApi().createType(typeName, value)
+  }
+
   async init() {
     await super.init()
-    const apiUri: string = this.getPreservedState().apiUri
-    this.api = await Api.create(apiUri)
+    let apiUri: string = this.getPreservedState().apiUri
+    if (!apiUri) {
+      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
+      apiUri = await this.promptForApiUri()
+    }
+
+    const { metadataCache } = this.getPreservedState()
+    this.api = await Api.create(apiUri, metadataCache)
+
+    const { genesisHash, runtimeVersion } = this.getOriginalApi()
+    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+    if (!metadataCache[metadataKey]) {
+      // Add new entry to metadata cache
+      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+      await this.setPreservedState({ metadataCache })
+    }
+  }
+
+  async promptForApiUri(): Promise<string> {
+    let selectedNodeUri = await this.simplePrompt({
+      type: 'list',
+      message: 'Choose a node/endpoint:',
+      choices: [
+        {
+          name: 'Local node (ws://localhost:9944)',
+          value: 'ws://localhost:9944',
+        },
+        {
+          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
+          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+        },
+        {
+          name: 'Custom endpoint',
+          value: '',
+        },
+      ],
+    })
+
+    if (!selectedNodeUri) {
+      do {
+        selectedNodeUri = await this.simplePrompt({
+          type: 'input',
+          message: 'Provide a WS endpoint uri',
+        })
+        if (!this.isApiUriValid(selectedNodeUri)) {
+          this.warn('Provided uri seems incorrect! Please try again...')
+        }
+      } while (!this.isApiUriValid(selectedNodeUri))
+    }
+
+    await this.setPreservedState({ apiUri: selectedNodeUri })
+
+    return selectedNodeUri
+  }
+
+  isApiUriValid(uri: string) {
+    try {
+      // eslint-disable-next-line no-new
+      new WsProvider(uri)
+    } catch (e) {
+      return false
+    }
+    return true
   }
 
   // This is needed to correctly handle some structs, enums etc.
   // Where the main typeDef doesn't provide enough information
-  protected getRawTypeDef(type: string) {
-    const instance = createType(type as any)
+  protected getRawTypeDef(type: keyof InterfaceTypes) {
+    const instance = this.createType(type)
     return getTypeDef(instance.toRawType())
   }
 
@@ -67,14 +141,24 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // Prompt for simple/plain value (provided as string) of given type
   async promptForSimple(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Codec> {
+    // If no default provided - get default value resulting from providing empty string
+    const defaultValueString =
+      paramOptions?.value?.default?.toString() || this.createType(typeDef.type as any, '').toString()
+
+    let typeSpecificOptions: DistinctQuestion = { type: 'input' }
+    if (typeDef.type === 'bool') {
+      typeSpecificOptions = BOOL_PROMPT_OPTIONS
+    }
+
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
-      type: 'input',
-      // If not default provided - show default value resulting from providing empty string
-      default: paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString(),
+      ...typeSpecificOptions,
+      // We want to avoid showing default value like '0x', because it falsely suggests
+      // that user needs to provide the value as hex
+      default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
       validate: paramOptions?.validator,
     })
-    return createType(typeDef.type as any, providedValue)
+    return this.createType(typeDef.type as any, providedValue)
   }
 
   // Prompt for Option<Codec> value
@@ -94,10 +178,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         createParamOptions(subtype.name, defaultValue?.unwrapOr(undefined))
       )
       this.closeIndentGroup()
-      return new Option(subtype.type as any, value)
+      return this.createType(`Option<${subtype.type}>` as any, value)
     }
 
-    return new Option(subtype.type as any, null)
+    return this.createType(`Option<${subtype.type}>` as any, null)
   }
 
   // Prompt for Tuple
@@ -118,7 +202,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return new Tuple(subtypes.map((subtype) => subtype.type) as any, result)
+    return new Tuple(this.getTypesRegistry(), subtypes.map((subtype) => subtype.type) as any, result)
   }
 
   // Prompt for Struct
@@ -127,7 +211,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     this.openIndentGroup()
     const structType = typeDef.type
-    const rawTypeDef = this.getRawTypeDef(structType)
+    const rawTypeDef = this.getRawTypeDef(structType as keyof InterfaceTypes)
     // We assume struct typeDef always has array of typeDefs inside ".sub"
     const structSubtypes = rawTypeDef.sub as TypeDef[]
     const structDefault = paramOptions?.value?.default as Struct | undefined
@@ -137,15 +221,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const fieldOptions = paramOptions?.nestedOptions && paramOptions.nestedOptions[subtype.name!]
       const fieldDefaultValue = fieldOptions?.value?.default || (structDefault && structDefault.get(subtype.name!))
       const finalFieldOptions: ApiParamOptions = {
-        ...fieldOptions,
         forcedName: subtype.name,
+        ...fieldOptions, // "forcedName" above should be overriden with "fieldOptions.forcedName" if available
         value: fieldDefaultValue && { ...fieldOptions?.value, default: fieldDefaultValue },
       }
       structValues[subtype.name!] = await this.promptForParam(subtype.type, finalFieldOptions)
     }
     this.closeIndentGroup()
 
-    return createType(structType as any, structValues)
+    return this.createType(structType as any, structValues)
   }
 
   // Prompt for Vec
@@ -173,12 +257,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     } while (addAnother)
     this.closeIndentGroup()
 
-    return new Vec(subtype.type as any, entries)
+    return this.createType(`Vec<${subtype.type}>` as any, entries)
   }
 
   // Prompt for Enum
   async promptForEnum(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Enum> {
-    const enumType = typeDef.type
+    const enumType = typeDef.type as keyof InterfaceTypes
     const rawTypeDef = this.getRawTypeDef(enumType)
     // We assume enum always has array on TypeDefs inside ".sub"
     const enumSubtypes = rawTypeDef.sub as TypeDef[]
@@ -198,12 +282,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     if (enumSubtype.type !== 'Null') {
       const subtypeOptions = createParamOptions(enumSubtype.name, defaultValue?.value)
-      return createType(enumType as any, {
+      return this.createType(enumType as any, {
         [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, subtypeOptions),
       })
     }
 
-    return createType(enumType as any, enumSubtype.name)
+    return this.createType(enumType as any, enumSubtype.name)
   }
 
   // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
@@ -213,7 +297,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     paramOptions?: ApiParamOptions // TODO: This is not fully implemented for all types yet
   ): Promise<ApiMethodArg> {
     const typeDef = getTypeDef(paramType)
-    const rawTypeDef = this.getRawTypeDef(paramType)
+    const rawTypeDef = this.getRawTypeDef(paramType as keyof InterfaceTypes)
 
     if (paramOptions?.forcedName) {
       typeDef.name = paramOptions.forcedName
@@ -221,16 +305,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     if (paramOptions?.value?.locked) {
       return paramOptions.value.default
-    }
-
-    if (paramOptions?.jsonSchema) {
-      const { struct, schemaValidator } = paramOptions.jsonSchema
-      return await this.promptForJsonBytes(
-        struct,
-        typeDef.name,
-        paramOptions.value?.default as Bytes | undefined,
-        schemaValidator
-      )
     }
 
     if (rawTypeDef.info === TypeDefInfo.Option) {
@@ -248,42 +322,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
-  async promptForJsonBytes(
-    JsonStruct: Constructor<Struct>,
-    argName?: string,
-    defaultValue?: Bytes,
-    schemaValidator?: ajv.ValidateFunction
-  ) {
-    const rawType = new JsonStruct().toRawType()
-    const typeDef = getTypeDef(rawType)
-
-    const defaultStruct =
-      defaultValue && new JsonStruct(JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString()))
-
-    if (argName) {
-      typeDef.name = argName
-    }
-
-    let isValid = true,
-      jsonText: string
-    do {
-      const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct))
-      jsonText = JSON.stringify(structVal.toJSON())
-      if (schemaValidator) {
-        isValid = Boolean(schemaValidator(JSON.parse(jsonText)))
-        if (!isValid) {
-          this.log('\n')
-          this.warn(
-            'Schema validation failed with:\n' +
-              schemaValidator.errors?.map((e) => chalk.red(`${chalk.bold(e.dataPath)}: ${e.message}`)).join('\n') +
-              '\nTry again...'
-          )
-          this.log('\n')
-        }
-      }
-    } while (!isValid)
-
-    return new Bytes('0x' + Buffer.from(jsonText, 'ascii').toString('hex'))
+  // More typesafe version
+  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
+    return await this.promptForParam(type, options)
   }
 
   async promptForExtrinsicParams(
@@ -309,32 +350,45 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, module: string, method: string, params: Codec[]) {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>) {
     return new Promise((resolve, reject) => {
-      const extrinsicMethod = this.getOriginalApi().tx[module][method]
       let unsubscribe: () => void
-      extrinsicMethod(...params)
-        .signAndSend(account, {}, (result: SubmittableResultImpl) => {
-          // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
-          if (!result || !result.status) {
-            return
-          }
+      tx.signAndSend(account, {}, (result) => {
+        // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
+        if (!result || !result.status) {
+          return
+        }
 
-          if (result.status.isFinalized) {
-            unsubscribe()
-            result.events
-              .filter(({ event: { section } }): boolean => section === 'system')
-              .forEach(({ event: { method } }): void => {
-                if (method === 'ExtrinsicFailed') {
-                  reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-                } else if (method === 'ExtrinsicSuccess') {
-                  resolve()
+        if (result.status.isInBlock) {
+          unsubscribe()
+          result.events
+            .filter(({ event }) => event.section === 'system')
+            .forEach(({ event }) => {
+              if (event.method === 'ExtrinsicFailed') {
+                const dispatchError = event.data[0] as DispatchError
+                let errorMsg = dispatchError.toString()
+                if (dispatchError.isModule) {
+                  try {
+                    // Need to assert that registry is of TypeRegistry type, since Registry intefrace
+                    // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
+                    const { name, documentation } = (this.getOriginalApi().registry as TypeRegistry).findMetaError(
+                      dispatchError.asModule
+                    )
+                    errorMsg = `${name} (${documentation})`
+                  } catch (e) {
+                    // This probably means we don't have this error in the metadata
+                    // In this case - continue (we'll just display dispatchError.toString())
+                  }
                 }
-              })
-          } else if (result.isError) {
-            reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-          }
-        })
+                reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
+              } else if (event.method === 'ExtrinsicSuccess') {
+                resolve()
+              }
+            })
+        } else if (result.isError) {
+          reject(new ExtrinsicFailedError('Extrinsic execution error!'))
+        }
+      })
         .then((unsubFunc) => (unsubscribe = unsubFunc))
         .catch((e) =>
           reject(new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`))
@@ -342,37 +396,48 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     })
   }
 
-  async sendAndFollowExtrinsic(
+  async sendAndFollowTx(
     account: KeyringPair,
-    module: string,
-    method: string,
-    params: Codec[],
-    warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
-  ) {
+    tx: SubmittableExtrinsic<'promise'>,
+    warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
+  ): Promise<boolean> {
     try {
-      this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
-      await this.sendExtrinsic(account, module, method, params)
+      await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
+      return true
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
-        this.warn(`${module}.${method} extrinsic failed! ${e.message}`)
+        this.warn(`Extrinsic failed! ${e.message}`)
+        return false
       } else if (e instanceof ExtrinsicFailedError) {
-        throw new CLIError(`${module}.${method} extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
+        throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
       } else {
         throw e
       }
     }
   }
 
+  async sendAndFollowNamedTx(
+    account: KeyringPair,
+    module: string,
+    method: string,
+    params: CodecArg[],
+    warnOnly = false
+  ): Promise<boolean> {
+    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+    const tx = await this.getOriginalApi().tx[module][method](...params)
+    return await this.sendAndFollowTx(account, tx, warnOnly)
+  }
+
   async buildAndSendExtrinsic(
     account: KeyringPair,
     module: string,
     method: string,
-    paramsOptions: ApiParamsOptions,
+    paramsOptions?: ApiParamsOptions,
     warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
   ): Promise<ApiMethodArg[]> {
     const params = await this.promptForExtrinsicParams(module, method, paramsOptions)
-    await this.sendAndFollowExtrinsic(account, module, method, params, warnOnly)
+    await this.sendAndFollowNamedTx(account, module, method, params, warnOnly)
 
     return params
   }
@@ -394,7 +459,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const argName = arg.name.toString()
       const argType = arg.type.toString()
       try {
-        parsedArgs.push({ name: argName, value: createType(argType as any, draftJSONObj[parseInt(index)]) })
+        parsedArgs.push({ name: argName, value: this.createType(argType as any, draftJSONObj[parseInt(index)]) })
       } catch (e) {
         throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, {
           exit: ExitCodes.InvalidFile,

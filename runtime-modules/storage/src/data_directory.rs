@@ -25,28 +25,33 @@ use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_system::ensure_root;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-use system::ensure_root;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;
 
+use working_group::ensure_worker_signed;
+
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::{MemberId, StorageProviderId, StorageWorkingGroupInstance};
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
-    + system::Trait
+    + frame_system::Trait
     + data_object_type_registry::Trait
     + membership::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data directory_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Content id.
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
@@ -87,6 +92,7 @@ decl_error! {
 }
 
 /// The decision of the storage provider when it acts as liaison.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
     /// Content awaits for a judgment.
@@ -108,13 +114,14 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
     StorageProviderId<T>,
 >;
 
 /// Manages content ids, type and storage provider decision about it.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, StorageProviderId> {
     /// Content owner.
@@ -145,10 +152,10 @@ pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         /// List of ids known to the system.
-        pub KnownContentIds get(fn known_content_ids): Vec<T::ContentId> = Vec::new();
+        pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(fn data_object_by_content_id):
+        pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
     }
 }
@@ -203,7 +210,7 @@ decl_module! {
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            T::MemberOriginValidator::ensure_actor_origin(
+            <T as Trait>::MemberOriginValidator::ensure_actor_origin(
                 origin,
                 member_id,
             )?;
@@ -243,7 +250,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
@@ -262,7 +269,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 

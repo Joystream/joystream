@@ -9,7 +9,7 @@ use working_group::{Instance2, Worker};
 fn storage_provider_helper_succeeds() {
     initial_test_ext().execute_with(|| {
 		// Bug in random module requires move the initial block number.
-		<system::Module<Runtime>>::set_block_number(1);
+		<frame_system::Module<Runtime>>::set_block_number(1);
 
 		// Error - no workers.
 		let random_provider_result = <StorageProviderHelper
@@ -20,15 +20,15 @@ fn storage_provider_helper_succeeds() {
 		let worker_id2 = 7;
 		let worker_id3 = 19;
 
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::default());
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::default());
-		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::<Runtime>::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::<Runtime>::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::<Runtime>::default());
 
 		// Still error - not registered in the service discovery.
 		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();
 		assert!(random_provider_result.is_err());
 
-		let account_info = service_discovery::AccountInfo{
+		let account_info = service_discovery::ServiceProviderRecord{
 			identity: Vec::new(),
 			expires_at: 1000
 		};

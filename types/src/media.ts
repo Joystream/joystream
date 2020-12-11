@@ -1,30 +1,28 @@
-import { Enum, Struct, Option, Vec as Vector, H256, BTreeMap } from '@polkadot/types';
-import { getTypeRegistry, u64, bool, Text } from '@polkadot/types';
-import { BlockAndTime } from './common';
-import { MemberId } from './members';
-import { StorageProviderId } from './working-group'; // this should be in discovery really
+import { Option, Vec as Vector, BTreeMap, u64, bool, Text, Null } from '@polkadot/types'
+import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash } from './common'
+import { MemberId } from './members'
+import { StorageProviderId } from './working-group' // this should be in discovery really
+import { randomAsU8a } from '@polkadot/util-crypto'
+import { encodeAddress, decodeAddress } from '@polkadot/keyring'
+import { RegistryTypes, Registry } from '@polkadot/types/types'
 
-import { randomAsU8a } from '@polkadot/util-crypto';
-import { encodeAddress, decodeAddress } from '@polkadot/keyring';
-// import { u8aToString, stringToU8a } from '@polkadot/util';
-
-export class ContentId extends H256 {
-  static generate (): ContentId {
+export class ContentId extends Hash {
+  static generate(registry: Registry): ContentId {
     // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
-    return new ContentId(randomAsU8a());
+    return new ContentId(registry, randomAsU8a())
   }
 
-  static decode (contentId: string): ContentId {
-    return new ContentId(decodeAddress(contentId));
+  static decode(registry: Registry, contentId: string): ContentId {
+    return new ContentId(registry, decodeAddress(contentId))
   }
 
-  static encode (contentId: Uint8Array): string {
+  static encode(contentId: Uint8Array): string {
     // console.log('contentId:', Buffer.from(contentId).toString('hex'))
-    return encodeAddress(contentId);
+    return encodeAddress(contentId)
   }
 
-  encode (): string {
-    return ContentId.encode(this);
+  encode(): string {
+    return ContentId.encode(this)
   }
 }
 
@@ -33,115 +31,52 @@ export class DataObjectStorageRelationshipId extends u64 {}
 
 export class VecContentId extends Vector.with(ContentId) {}
 export class OptionVecContentId extends Option.with(VecContentId) {}
-export type LiaisonJudgementKey = 'Pending' | 'Accepted' | 'Rejected';
 
-export class LiaisonJudgement extends Enum {
-  constructor (value?: LiaisonJudgementKey) {
-    super([
-      'Pending',
-      'Accepted',
-      'Rejected'
-    ], value);
-  }
-}
+export const LiaisonJudgementDef = {
+  Pending: Null,
+  Accepted: Null,
+  Rejected: Null,
+} as const
+export type LiaisonJudgementKey = keyof typeof LiaisonJudgementDef
+export class LiaisonJudgement extends JoyEnum(LiaisonJudgementDef) {}
 
-export class DataObject extends Struct {
-  constructor (value?: any) {
-    super({
-      owner: MemberId,
-      added_at: BlockAndTime,
-      type_id: DataObjectTypeId,
-      size: u64,
-      liaison: StorageProviderId,
-      liaison_judgement: LiaisonJudgement,
-      ipfs_content_id: Text,
-    }, value);
-  }
-
-  get owner (): MemberId {
-    return this.get('owner') as MemberId;
-  }
-
-  get added_at (): BlockAndTime {
-    return this.get('added_at') as BlockAndTime;
-  }
-
-  get type_id (): DataObjectTypeId {
-    return this.get('type_id') as DataObjectTypeId;
-  }
-
+export class DataObject extends JoyStructDecorated({
+  owner: MemberId,
+  added_at: BlockAndTime,
+  type_id: DataObjectTypeId,
+  size: u64,
+  liaison: StorageProviderId,
+  liaison_judgement: LiaisonJudgement,
+  ipfs_content_id: Text,
+}) {
   /** Actually it's 'size', but 'size' is already reserved by a parent class. */
-  get size_in_bytes (): u64 {
-    return this.get('size') as u64;
-  }
-
-  get liaison (): StorageProviderId {
-    return this.get('liaison') as StorageProviderId;
-  }
-
-  get liaison_judgement (): LiaisonJudgement {
-    return this.get('liaison_judgement') as LiaisonJudgement;
-  }
-
-  get ipfs_content_id () : Text {
-    return this.get('ipfs_content_id') as Text
+  get size_in_bytes(): u64 {
+    return this.get('size') as u64
   }
 }
 
-export class DataObjectStorageRelationship extends Struct {
-  constructor (value?: any) {
-    super({
-      content_id: ContentId,
-      storage_provider: StorageProviderId,
-      ready: bool
-    }, value);
-  }
+export class DataObjectStorageRelationship extends JoyStructDecorated({
+  content_id: ContentId,
+  storage_provider: StorageProviderId,
+  ready: bool,
+}) {}
 
-  get content_id (): ContentId {
-    return this.get('content_id') as ContentId;
-  }
-
-  get storage_provider (): StorageProviderId {
-    return this.get('storage_provider') as StorageProviderId;
-  }
-
-  get ready (): bool {
-    return this.get('ready') as bool;
-  }
-}
-
-export class DataObjectType extends Struct {
-  constructor (value?: any) {
-    super({
-      description: Text,
-      active: bool
-    }, value);
-  }
-
-  get description (): Text {
-    return this.get('description') as Text;
-  }
-
-  get active (): bool {
-    return this.get('active') as bool;
-  }
-}
+export class DataObjectType extends JoyStructDecorated({
+  description: Text,
+  active: bool,
+}) {}
 
 export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
 
-export function registerMediaTypes () {
-  try {
-    getTypeRegistry().register({
-      ContentId,
-      LiaisonJudgement,
-      DataObject,
-      DataObjectStorageRelationshipId,
-      DataObjectStorageRelationship,
-      DataObjectTypeId,
-      DataObjectType,
-      DataObjectsMap
-    });
-  } catch (err) {
-    console.error('Failed to register custom types of media module', err);
-  }
+export const mediaTypes: RegistryTypes = {
+  ContentId,
+  LiaisonJudgement,
+  DataObject,
+  DataObjectStorageRelationshipId,
+  DataObjectStorageRelationship,
+  DataObjectTypeId,
+  DataObjectType,
+  DataObjectsMap,
 }
+
+export default mediaTypes

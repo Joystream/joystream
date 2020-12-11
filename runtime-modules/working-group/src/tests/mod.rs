@@ -2,200 +2,53 @@ mod fixtures;
 mod hiring_workflow;
 mod mock;
 
-use frame_support::dispatch::DispatchError;
-use frame_support::storage::{StorageMap, StorageValue};
-use std::collections::BTreeMap;
-use system::RawOrigin;
+pub use mock::{build_test_externalities, Test};
 
-use crate::tests::hiring_workflow::HiringWorkflow;
-use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use crate::{Error, RawEvent, Worker};
-use common::constraints::InputValidationLengthConstraint;
-use fixtures::*;
-use mock::{
-    build_test_externalities, run_to_block, Test, TestWorkingGroup, TestWorkingGroupInstance,
-    WORKING_GROUP_CONSTRAINT_DIFF, WORKING_GROUP_CONSTRAINT_MIN, WORKING_GROUP_MINT_CAPACITY,
+use frame_system::RawOrigin;
+
+use crate::tests::fixtures::{
+    CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
+    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
 };
+use crate::tests::hiring_workflow::HiringWorkflow;
+use crate::tests::mock::{
+    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+    STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
+};
+use crate::types::StakeParameters;
+use crate::{
+    DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, Worker,
+};
+use fixtures::{
+    increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
+    ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
+    HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
+    UpdateWorkerRoleAccountFixture,
+};
+use frame_support::dispatch::DispatchError;
+use frame_support::StorageMap;
+use mock::{run_to_block, Balances, RewardPeriod, TestWorkingGroup, ACTOR_ORIGIN_ERROR};
+use sp_runtime::traits::Hash;
+use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
-fn hire_lead_succeeds() {
-    build_test_externalities().execute_with(|| {
-        // Ensure that lead is default
-        assert_eq!(TestWorkingGroup::current_lead(), None);
-
-        HireLeadFixture::default().hire_lead();
-
-        assert!(TestWorkingGroup::current_lead().is_some());
-    });
-}
-
-#[test]
-fn hire_lead_fails_with_existing_lead() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let hiring_workflow = HiringWorkflow::default()
-            .disable_setup_environment()
-            .with_opening_type(OpeningType::Leader)
-            .add_application(b"leader_handle".to_vec())
-            .expect(Err(
-                Error::<Test, TestWorkingGroupInstance>::CannotHireLeaderWhenLeaderExists.into(),
-            ));
-
-        hiring_workflow.execute();
-    });
-}
-
-#[test]
-fn hire_lead_fails_multiple_applications() {
-    build_test_externalities().execute_with(|| {
-        let hiring_workflow = HiringWorkflow::default()
-            .with_opening_type(OpeningType::Leader)
-            .add_application_with_origin(b"leader_handle".to_vec(), RawOrigin::Signed(1), 1)
-            .add_application_with_origin(b"leader_handle2".to_vec(), RawOrigin::Signed(2), 2)
-            .expect(Err(
-                Error::<Test, TestWorkingGroupInstance>::CannotHireMultipleLeaders.into(),
-            ));
-
-        hiring_workflow.execute();
-    });
-}
-
-#[test]
-fn add_opening_fails_with_incorrect_unstaking_periods() {
+fn add_opening_succeeded() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                fill_opening_failed_applicant_role_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero.into(),
-        ));
+        let starting_block = 1;
+        run_to_block(starting_block);
 
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                fill_opening_failed_applicant_application_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero.into(),
-        ));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                fill_opening_successful_applicant_application_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero.into(),
-        ));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                exit_role_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::ExitRoleStakeUnstakingPeriodIsZero.into()));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                exit_role_application_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture
-            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::ExitRoleApplicationStakeUnstakingPeriodIsZero.into()));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                terminate_role_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::TerminateRoleStakeUnstakingPeriodIsZero.into()));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                terminate_application_stake_unstaking_period: Some(0),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture
-            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::TerminateApplicationStakeUnstakingPeriodIsZero.into()));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    crowded_out_unstaking_period_length: Some(0),
-                    ..Default::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture
-            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero.into()));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    review_period_expired_unstaking_period_length: Some(0),
-                    ..Default::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero.into(),
-        ));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                application_staking_policy: Some(hiring::StakingPolicy {
-                    crowded_out_unstaking_period_length: Some(0),
-                    ..Default::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero.into(),
-        ));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                application_staking_policy: Some(hiring::StakingPolicy {
-                    review_period_expired_unstaking_period_length: Some(0),
-                    ..Default::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero.into(),
-        ));
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                application_rationing_policy: Some(hiring::ApplicationRationingPolicy {
-                    max_active_applicants: 0,
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::ApplicationRationingPolicyMaxActiveApplicantsIsZero.into(),
-        ));
-    });
-}
-
-#[test]
-fn add_opening_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_stake_policy(Some(StakePolicy {
+                stake_amount: 10,
+                leaving_unstaking_period: 100,
+            }))
+            .with_reward_policy(Some(RewardPolicy {
+                reward_per_block: 10,
+            }));
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
@@ -204,185 +57,96 @@ fn add_opening_succeeds() {
 }
 
 #[test]
-fn add_leader_opening_succeeds_fails_with_incorrect_origin_for_opening_type() {
+fn add_opening_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_opening_type(OpeningType::Leader);
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_opening_type(OpeningType::Leader)
+            .with_origin(RawOrigin::None);
 
         add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
-fn add_leader_opening_succeeds() {
+fn add_opening_fails_with_zero_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_opening_type(OpeningType::Leader)
-            .with_origin(RawOrigin::Root);
-
-        add_opening_fixture.call_and_assert(Ok(()));
-    });
-}
-
-#[test]
-fn add_opening_fails_with_lead_is_not_set() {
-    build_test_externalities().execute_with(|| {
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
-        ));
-    });
-}
-
-#[test]
-fn add_opening_fails_with_invalid_human_readable_text() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        <crate::OpeningHumanReadableText<TestWorkingGroupInstance>>::put(
-            InputValidationLengthConstraint {
-                min: 1,
-                max_min_diff: 5,
-            },
-        );
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
-
-        add_opening_fixture.call_and_assert(Err(DispatchError::Other("OpeningTextTooShort")));
 
         let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_text(b"Long text".to_vec());
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: 0,
+                leaving_unstaking_period: 0,
+            }));
 
-        add_opening_fixture.call_and_assert(Err(DispatchError::Other("OpeningTextTooLong")));
+        add_opening_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotStakeZero.into()));
     });
 }
 
 #[test]
-fn add_opening_fails_with_hiring_error() {
+fn add_opening_fails_with_zero_reward() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_reward_policy(Some(RewardPolicy {
+                reward_per_block: 0,
+            }));
 
         add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningActivatesInThePast.into(),
+            Error::<Test, DefaultInstance>::CannotRewardWithZero.into(),
         ));
     });
 }
 
 #[test]
-fn accept_applications_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(5));
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let accept_applications_fixture =
-            AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::AcceptedApplications(opening_id));
-    });
-}
-
-#[test]
-fn accept_applications_fails_for_invalid_opening_type() {
+fn add_opening_fails_with_incorrect_unstaking_period() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_opening_type(OpeningType::Leader)
-            .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(5));
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
 
-        let accept_applications_fixture =
-            AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
-#[test]
-fn accept_applications_fails_with_hiring_error() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
+        let invalid_unstaking_period = 3;
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: invalid_unstaking_period,
+            }));
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let accept_applications_fixture =
-            AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin.into(),
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::UnstakingPeriodLessThanMinimum.into(),
         ));
     });
 }
 
 #[test]
-fn accept_applications_fails_with_not_lead() {
+fn add_leader_opening_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_opening_type(OpeningType::Leader);
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        SetLeadFixture::set_lead_with_ids(2, 2, 2);
-
-        let accept_applications_fixture =
-            AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
-        ));
+        add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
-fn accept_applications_fails_with_no_opening() {
+fn apply_on_opening_succeeded() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let opening_id = 55; // random opening id
+        let starting_block = 1;
+        run_to_block(starting_block);
 
-        let accept_applications_fixture =
-            AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
-        ));
-    });
-}
+        let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
 
-#[test]
-fn apply_on_opening_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
+        let opening_id = add_opening_fixture.call().unwrap();
 
-        HireLeadFixture::default().hire_lead();
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::AppliedOnOpening(
@@ -393,711 +157,264 @@ fn apply_on_opening_succeeds() {
 }
 
 #[test]
-fn apply_on_opening_fails_with_no_opening() {
+fn apply_on_opening_fails_with_invalid_opening_id() {
     build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
+        setup_members(2);
 
-        let opening_id = 123; // random opening id
+        let invalid_opening_id = 22;
 
         let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+            ApplyOnOpeningFixture::default_for_opening_id(invalid_opening_id);
+
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::OpeningDoesNotExist.into(),
         ));
     });
 }
 
 #[test]
-fn apply_on_opening_fails_with_not_set_members() {
+fn apply_on_opening_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+        let member_id = 11;
 
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_origin(RawOrigin::Signed(55), 55);
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::OriginIsNeitherMemberControllerOrRoot.into(),
-        ));
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::None, member_id);
+
+        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
     });
 }
 
 #[test]
-fn apply_on_opening_fails_with_hiring_error() {
-    build_test_externalities().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_application_stake(100);
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningStakeProvidedWhenRedundant
-                .into(),
-        ));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_with_invalid_application_stake() {
+fn apply_on_opening_fails_with_bad_member_id() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let stake = 100;
+        let member_id = 27;
 
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                application_staking_policy: Some(hiring::StakingPolicy {
-                    amount: stake,
-                    ..hiring::StakingPolicy::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddOpeningFixture::default();
 
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_origin(RawOrigin::Signed(2), 2)
-                .with_application_stake(stake);
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::InsufficientBalanceToApply.into(),
-        ));
-    });
-}
+        let opening_id = add_opening_fixture.call().unwrap();
 
-#[test]
-fn add_opening_fails_with_invalid_zero_application_stake() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::Signed(1), member_id);
 
-        let zero_stake = 0;
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                application_staking_policy: Some(hiring::StakingPolicy {
-                    amount: zero_stake,
-                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                    ..hiring::StakingPolicy::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningApplicationStakeCannotBeZero
-                .into(),
-        ));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_with_invalid_role_stake() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let stake = 100;
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    amount: stake,
-                    ..hiring::StakingPolicy::default()
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_role_stake(Some(stake))
-                .with_origin(RawOrigin::Signed(2), 2);
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::InsufficientBalanceToApply.into(),
-        ));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_with_invalid_text() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        <crate::WorkerApplicationHumanReadableText<TestWorkingGroupInstance>>::put(
-            InputValidationLengthConstraint {
-                min: 1,
-                max_min_diff: 5,
-            },
-        );
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
         apply_on_opening_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerApplicationTextTooShort")));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_text(b"Long text".to_vec());
-        apply_on_opening_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerApplicationTextTooLong")));
+            .call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR).into()));
     });
 }
 
 #[test]
-fn apply_on_opening_fails_with_already_active_application() {
+fn fill_opening_succeeded() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+        let starting_block = 1;
+        run_to_block(starting_block);
 
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        apply_on_opening_fixture.call_and_assert(Ok(()));
+        let reward_policy = Some(RewardPolicy {
+            reward_per_block: 10,
+        });
 
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::MemberHasActiveApplicationOnOpening.into(),
-        ));
-    });
-}
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_reward_policy(reward_policy.clone());
 
-#[test]
-fn withdraw_worker_application_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
+        let opening_id = add_opening_fixture.call().unwrap();
 
-        HireLeadFixture::default().hire_lead();
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let withdraw_application_fixture =
-            WithdrawApplicationFixture::default_for_application_id(application_id);
-        withdraw_application_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::ApplicationWithdrawn(application_id));
-    });
-}
-
-#[test]
-fn withdraw_worker_application_fails_invalid_application_id() {
-    build_test_externalities().execute_with(|| {
-        let invalid_application_id = 6;
-
-        let withdraw_application_fixture =
-            WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
-        withdraw_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerApplicationDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn withdraw_worker_application_fails_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let withdraw_application_fixture =
-            WithdrawApplicationFixture::default_for_application_id(application_id)
-                .with_origin(RawOrigin::None);
-        withdraw_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn withdraw_worker_application_fails_with_invalid_application_author() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let invalid_author_account_id = 55;
-        let withdraw_application_fixture =
-            WithdrawApplicationFixture::default_for_application_id(application_id)
-                .with_signer(invalid_author_account_id);
-        withdraw_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::OriginIsNotApplicant.into(),
-        ));
-    });
-}
-
-#[test]
-fn withdraw_worker_application_fails_with_hiring_error() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let withdraw_application_fixture =
-            WithdrawApplicationFixture::default_for_application_id(application_id);
-        withdraw_application_fixture.call_and_assert(Ok(()));
-        withdraw_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WithdrawWorkerApplicationApplicationNotActive
-                .into(),
-        ));
-    });
-}
-
-#[test]
-fn terminate_worker_application_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let terminate_application_fixture =
-            TerminateApplicationFixture::default_for_application_id(application_id);
-        terminate_application_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::ApplicationTerminated(application_id));
-    });
-}
-
-#[test]
-fn terminate_worker_application_fails_with_invalid_application_author() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let invalid_author_account_id = 55;
-        let terminate_application_fixture =
-            TerminateApplicationFixture::default_for_application_id(application_id)
-                .with_signer(invalid_author_account_id);
-        terminate_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
-        ));
-    });
-}
-
-#[test]
-fn terminate_worker_application_fails_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let terminate_application_fixture =
-            TerminateApplicationFixture::default_for_application_id(application_id)
-                .with_origin(RawOrigin::None);
-        terminate_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn terminate_worker_application_fails_invalid_application_id() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let invalid_application_id = 6;
-
-        let terminate_application_fixture =
-            TerminateApplicationFixture::default_for_application_id(invalid_application_id);
-        terminate_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerApplicationDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn terminate_worker_application_fails_with_hiring_error() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let terminate_application_fixture =
-            TerminateApplicationFixture::default_for_application_id(application_id);
-        terminate_application_fixture.call_and_assert(Ok(()));
-        terminate_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WithdrawWorkerApplicationApplicationNotActive
-                .into(),
-        ));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::BeganApplicationReview(opening_id));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_fails_with_invalid_origin_for_opening_type() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_opening_type(OpeningType::Leader);
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_fails_with_not_a_lead() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        SetLeadFixture::set_lead_with_ids(2, 2, 2);
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::<
-            Test,
-            TestWorkingGroupInstance,
-        >::IsNotLeadAccount
-            .into()));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_fails_with_invalid_opening() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let invalid_opening_id = 6;
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(invalid_opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::<
-            Test,
-            TestWorkingGroupInstance,
-        >::OpeningDoesNotExist
-            .into()));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_with_hiring_error() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-        begin_review_worker_applications_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin.into(),
-        ));
-    });
-}
-
-#[test]
-fn begin_review_worker_applications_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
-                .with_origin(RawOrigin::None);
-        begin_review_worker_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn fill_opening_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        HireLeadFixture::default().hire_lead();
-        increase_total_balance_issuance_using_account_id(1, 10000);
-
-        let add_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    amount: 10,
-                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                    crowded_out_unstaking_period_length: None,
-                    review_period_expired_unstaking_period_length: None,
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_role_stake(Some(10));
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-        let mint_id = create_mint();
-        set_mint_id(mint_id);
+        let application_id = apply_on_opening_fixture.call().unwrap();
 
         let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(RewardPolicy {
-                    amount_per_payout: 1000,
-                    next_payment_at_block: 20,
-                    payout_interval: None,
-                });
+            FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(reward_policy)
+                .with_created_at(starting_block);
+
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
 
-        let mut worker_application_dictionary = BTreeMap::new();
-        worker_application_dictionary.insert(application_id, worker_id);
+        let mut result_map = BTreeMap::new();
+        result_map.insert(application_id, worker_id);
 
-        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(
-            opening_id,
-            worker_application_dictionary,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(opening_id, result_map));
     });
 }
 
 #[test]
-fn fill_opening_fails_with_invalid_origin_for_opening_type() {
+fn fill_opening_succeeded_with_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
-        increase_total_balance_issuance_using_account_id(1, 10000);
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default()
-            .with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    amount: 10,
-                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                    crowded_out_unstaking_period_length: None,
-                    review_period_expired_unstaking_period_length: None,
-                }),
-                ..OpeningPolicyCommitment::default()
-            })
-            .with_opening_type(OpeningType::Leader)
-            .with_origin(RawOrigin::Root);
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: account_id,
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_stake_policy(stake_policy.clone());
+
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        let application_id = apply_on_opening_fixture.call().unwrap();
+
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_stake_policy(stake_policy)
+                .with_staking_account_id(Some(account_id))
+                .with_created_at(starting_block);
+
+        let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
+
+        let mut result_map = BTreeMap::new();
+        result_map.insert(application_id, worker_id);
+
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(opening_id, result_map));
+    });
+}
+
+#[test]
+fn fill_opening_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
-                .with_role_stake(Some(10));
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
-                .with_origin(RawOrigin::Root);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-        set_mint_id(create_mint());
-
         let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(RewardPolicy {
-                    amount_per_payout: 1000,
-                    next_payment_at_block: 20,
-                    payout_interval: None,
-                });
-        fill_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn fill_opening_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new())
+            FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_origin(RawOrigin::None);
+
         fill_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
-fn fill_opening_fails_with_not_a_lead() {
+fn fill_opening_fails_with_invalid_active_worker_number() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddOpeningFixture::default();
 
-        SetLeadFixture::set_lead_with_ids(2, 2, 2);
+        let opening_id = add_opening_fixture.call().unwrap();
 
-        let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
-        ));
-    });
-}
+        let application_id1 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .call()
+            .unwrap();
+        let application_id2 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::Signed(2), 2)
+            .call()
+            .unwrap();
+        let application_id3 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::Signed(3), 3)
+            .call()
+            .unwrap();
+        let application_id4 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::Signed(4), 4)
+            .call()
+            .unwrap();
 
-#[test]
-fn fill_opening_fails_with_invalid_opening() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let invalid_opening_id = 6;
-
-        let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(invalid_opening_id, Vec::new());
-        fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn fill_opening_fails_with_invalid_application_list() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
-
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-        let invalid_application_id = 66;
-        let fill_opening_fixture = FillWorkerOpeningFixture::default_for_ids(
+        let fill_opening_fixture = FillOpeningFixture::default_for_ids(
             opening_id,
-            vec![application_id, invalid_application_id],
+            vec![
+                application_id1,
+                application_id2,
+                application_id3,
+                application_id4,
+            ],
         );
+
         fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::MaxActiveWorkerNumberExceeded.into(),
         ));
     });
 }
 
 #[test]
-fn fill_opening_fails_with_invalid_application_with_hiring_error() {
+fn fill_opening_fails_with_invalid_application_id() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_opening_fixture = AddOpeningFixture::default();
+
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
+        let invalid_application_id = 1;
+
         let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
+            FillOpeningFixture::default_for_ids(opening_id, vec![invalid_application_id]);
+
         fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::FullWorkerOpeningOpeningNotInReviewPeriodStage
-                .into(),
+            Error::<Test, DefaultInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
         ));
     });
 }
 
 #[test]
-fn fill_opening_fails_with_invalid_reward_policy() {
+fn fill_opening_fails_with_zero_application_ids() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_opening_fixture = AddOpeningFixture::default();
+
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let apply_on_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+        let fill_opening_fixture = FillOpeningFixture::default_for_ids(opening_id, Vec::new());
 
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::NoApplicationsProvided.into(),
+        ));
+    });
+}
 
-        let fill_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(RewardPolicy {
-                    amount_per_payout: 10000,
-                    // Invalid next payment at block zero
-                    next_payment_at_block: 0,
-                    payout_interval: None,
-                });
-        fill_opening_fixture
+#[test]
+fn cannot_hire_a_lead_twice() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        HireLeadFixture::default()
+            .with_setup_environment(false)
+            .expect(Error::<Test, DefaultInstance>::CannotHireLeaderWhenLeaderExists.into());
+    });
+}
+
+#[test]
+fn cannot_hire_muptiple_leaders() {
+    build_test_externalities().execute_with(|| {
+        HiringWorkflow::default()
+            .with_setup_environment(true)
+            .with_opening_type(OpeningType::Leader)
+            .add_default_application()
+            .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(2), 2, Some(2))
+            .expect(Err(
+                Error::<Test, DefaultInstance>::CannotHireMultipleLeaders.into(),
+            ))
+            .execute();
     });
 }
 
@@ -1112,7 +429,7 @@ fn update_worker_role_account_succeeds() {
         run_to_block(1);
 
         let new_account_id = 10;
-        let worker_id = fill_default_worker_position();
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
@@ -1143,7 +460,7 @@ fn update_worker_role_account_by_leader_succeeds() {
 
         assert_eq!(
             new_lead,
-            Worker {
+            Worker::<Test> {
                 role_account_id: new_account_id,
                 ..old_lead
             }
@@ -1152,288 +469,51 @@ fn update_worker_role_account_by_leader_succeeds() {
 }
 
 #[test]
+fn update_worker_role_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let leaving_unstaking_period = 10;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let new_account_id = 10;
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
+
+        update_worker_account_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
+    });
+}
+
+#[test]
 fn update_worker_role_account_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
                 .with_origin(RawOrigin::None);
 
         update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::MembershipUnsignedOrigin.into(),
+            Error::<Test, DefaultInstance>::InvalidMemberOrigin.into(),
         ));
     });
-}
-
-#[test]
-fn update_worker_reward_account_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        let worker_id = fill_default_worker_position();
-
-        let new_role_account = 22;
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_role_account);
-
-        update_worker_account_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAccountUpdated(
-            worker_id,
-            new_role_account,
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_succeeds_for_leader() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = HireLeadFixture::default()
-            .with_reward_policy(RewardPolicy {
-                amount_per_payout: 1000,
-                next_payment_at_block: 20,
-                payout_interval: None,
-            })
-            .hire_lead();
-
-        let new_reward_account = 22;
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
-
-        update_worker_account_fixture.call_and_assert(Ok(()));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
-
-        update_worker_account_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-        let worker = get_worker_by_id(worker_id);
-
-        let invalid_role_account = 23333;
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, worker.role_account_id)
-                .with_origin(RawOrigin::Signed(invalid_role_account));
-
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_invalid_worker_id() {
-    build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 1;
-        fill_default_worker_position();
-
-        let new_reward_account = 2;
-        let update_worker_account_fixture = UpdateWorkerRewardAccountFixture::default_with_ids(
-            invalid_worker_id,
-            new_reward_account,
-        );
-
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_no_recurring_reward() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_no_reward();
-
-        let new_reward_account = 343;
-
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
-
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerHasNoReward.into(),
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        let worker_id = fill_default_worker_position();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id);
-
-        update_worker_amount_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAmountUpdated(worker_id));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_succeeds_for_leader() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = HireLeadFixture::default()
-            .with_reward_policy(RewardPolicy {
-                amount_per_payout: 1000,
-                next_payment_at_block: 20,
-                payout_interval: None,
-            })
-            .hire_lead();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
-                .with_origin(RawOrigin::Root);
-
-        update_worker_amount_fixture.call_and_assert(Ok(()));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let worker_id = 22; // random worker id
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
-                .with_origin(RawOrigin::None);
-
-        update_worker_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_fails_with_invalid_origin_for_leader() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = HireLeadFixture::default().hire_lead();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
-                .with_origin(RawOrigin::None);
-
-        update_worker_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_fails_with_invalid_origin_signed_account() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
-                .with_origin(RawOrigin::Signed(2));
-
-        update_worker_amount_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_fails_with_invalid_worker_id() {
-    build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 12;
-        fill_default_worker_position();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(invalid_worker_id);
-
-        update_worker_amount_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn update_worker_reward_amount_fails_with_no_recurring_reward() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_no_reward();
-
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id);
-
-        update_worker_amount_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerHasNoReward.into(),
-        ));
-    });
-}
-
-fn fill_default_worker_position() -> u64 {
-    fill_worker_position(
-        Some(RewardPolicy {
-            amount_per_payout: 1000,
-            next_payment_at_block: 20,
-            payout_interval: None,
-        }),
-        None,
-        true,
-        OpeningType::Worker,
-        None,
-    )
-}
-
-fn fill_worker_position_with_no_reward() -> u64 {
-    fill_worker_position(None, None, true, OpeningType::Worker, None)
-}
-
-fn fill_worker_position_with_stake(stake: u64) -> u64 {
-    fill_worker_position(
-        Some(RewardPolicy {
-            amount_per_payout: 1000,
-            next_payment_at_block: 20,
-            payout_interval: None,
-        }),
-        Some(stake),
-        true,
-        OpeningType::Worker,
-        None,
-    )
-}
-
-fn fill_worker_position(
-    reward_policy: Option<RewardPolicy<u64, u64>>,
-    role_stake: Option<u64>,
-    setup_environment: bool,
-    opening_type: OpeningType,
-    worker_handle: Option<Vec<u8>>,
-) -> u64 {
-    let mut hiring_workflow = HiringWorkflow::default()
-        .with_role_stake(role_stake)
-        .with_setup_environment(setup_environment)
-        .with_opening_type(opening_type)
-        .with_reward_policy(reward_policy);
-
-    hiring_workflow = if let Some(worker_handle) = worker_handle {
-        hiring_workflow.add_application(worker_handle)
-    } else {
-        hiring_workflow.add_default_application()
-    };
-
-    hiring_workflow.execute().unwrap()
 }
 
 #[test]
@@ -1446,16 +526,67 @@ fn leave_worker_role_succeeds() {
         */
         run_to_block(1);
 
-        let worker_id = fill_default_worker_position();
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(
-            worker_id,
-            b"rationale_text".to_vec(),
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds_with_paying_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 4;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 4;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let budget = 30;
+        SetBudgetFixture::default().with_budget(budget).execute();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), budget);
     });
 }
 
@@ -1489,191 +620,55 @@ fn leave_worker_role_fails_with_invalid_origin() {
 #[test]
 fn leave_worker_role_fails_with_invalid_origin_signed_account() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::Signed(2));
 
         leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
         ));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_already_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+        leave_worker_role_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
     });
 }
 
 #[test]
 fn leave_worker_role_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 1;
-        fill_default_worker_position();
+        let invalid_worker_id = 10;
+        HireRegularWorkerFixture::default().hire();
 
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
 
         leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let mut worker = TestWorkingGroup::worker_by_id(worker_id);
-        worker.reward_relationship = Some(2);
-
-        <crate::WorkerById<Test, TestWorkingGroupInstance>>::insert(worker_id, worker);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-
-        leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::RelationshipMustExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn leave_worker_role_succeeds_with_stakes() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        let worker_id = fill_worker_position_with_stake(100);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-
-        leave_worker_role_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(
-            worker_id,
-            b"rationale_text".to_vec(),
-        ));
-    });
-}
-
-#[test]
-fn terminate_worker_role_succeeds_with_stakes() {
-    build_test_externalities().execute_with(|| {
-        /*
-           Events are not emitted on block 0.
-           So any dispatchable calls made during genesis block formation will have no events emitted.
-           https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        let total_balance = 10000;
-        let stake_balance = 100;
-
-        let worker_account_id = 2;
-        let worker_member_id = 2;
-        increase_total_balance_issuance_using_account_id(worker_account_id, total_balance);
-
-        HireLeadFixture::default().hire_lead();
-
-        let worker_id = HiringWorkflow::default()
-            .disable_setup_environment()
-            .with_role_stake(Some(stake_balance))
-            .add_application_with_origin(
-                b"worker_handle".to_vec(),
-                RawOrigin::Signed(worker_account_id),
-                worker_member_id,
-            )
-            .execute()
-            .unwrap();
-
-        // Balance was staked.
-        assert_eq!(
-            get_balance(worker_account_id),
-            total_balance - stake_balance
-        );
-
-        let stake_id = 0;
-        let old_stake = <stake::Module<Test>>::stakes(stake_id);
-
-        assert_eq!(get_stake_balance(old_stake), stake_balance);
-
-        let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
-
-        terminate_worker_role_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
-            worker_id,
-            b"rationale_text".to_vec(),
-        ));
-
-        // Balance was restored.
-
-        assert_eq!(get_balance(worker_account_id), total_balance);
-
-        let new_stake = <stake::Module<Test>>::stakes(stake_id);
-        assert!(matches!(
-            new_stake.staking_status,
-            stake::StakingStatus::NotStaked
-        ));
-    });
-}
-
-#[test]
-fn terminate_worker_role_succeeds_with_slashing() {
-    build_test_externalities().execute_with(|| {
-        let total_balance = 10000;
-        let stake_balance = 100;
-
-        let worker_account_id = 2;
-        let worker_member_id = 2;
-        increase_total_balance_issuance_using_account_id(worker_account_id, total_balance);
-
-        assert_eq!(get_balance(worker_account_id), total_balance);
-
-        HireLeadFixture::default().hire_lead();
-
-        let worker_id = HiringWorkflow::default()
-            .disable_setup_environment()
-            .with_role_stake(Some(stake_balance))
-            .add_application_with_origin(
-                b"worker_handle".to_vec(),
-                RawOrigin::Signed(worker_account_id),
-                worker_member_id,
-            )
-            .execute()
-            .unwrap();
-
-        // Balance was staked.
-
-        assert_eq!(
-            get_balance(worker_account_id),
-            total_balance - stake_balance
-        );
-
-        let stake_id = 0;
-        let old_stake = <stake::Module<Test>>::stakes(stake_id);
-
-        assert_eq!(get_stake_balance(old_stake), stake_balance);
-
-        // Terminate with slashing.
-
-        let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_slashing();
-
-        terminate_worker_role_fixture.call_and_assert(Ok(()));
-
-        // Balance was slashed.
-
-        assert_eq!(
-            get_balance(worker_account_id),
-            total_balance - stake_balance
-        );
-
-        let new_stake = <stake::Module<Test>>::stakes(stake_id);
-        assert!(matches!(
-            new_stake.staking_status,
-            stake::StakingStatus::NotStaked
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -1688,28 +683,49 @@ fn terminate_worker_role_succeeds() {
         */
         run_to_block(1);
 
-        HireLeadFixture::default().hire_lead();
-
-        let worker_id = HiringWorkflow::default()
-            .disable_setup_environment()
-            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
-            .execute()
-            .unwrap();
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
-            worker_id,
-            b"rationale_text".to_vec(),
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
     });
 }
 
 #[test]
-fn fire_leader_succeeds() {
+fn terminate_worker_role_succeeds_with_paying_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 4;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn terminate_leader_succeeds() {
     build_test_externalities().execute_with(|| {
         /*
            Events are not emitted on block 0.
@@ -1726,52 +742,25 @@ fn fire_leader_succeeds() {
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(
-            worker_id,
-            b"rationale_text".to_vec(),
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(worker_id));
 
         assert_eq!(TestWorkingGroup::current_lead(), None);
     });
 }
 
 #[test]
-fn terminate_worker_role_fails_with_invalid_text() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let worker_id = HiringWorkflow::default()
-            .disable_setup_environment()
-            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
-            .execute()
-            .unwrap();
-
-        let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_text(Vec::new());
-        terminate_worker_role_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerExitRationaleTextTooShort")));
-
-        let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
-                .with_text(b"MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG".to_vec());
-        terminate_worker_role_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerExitRationaleTextTooLong")));
-    });
-}
-
-#[test]
 fn terminate_worker_role_fails_with_unset_lead() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
-        SetLeadFixture::unset_lead();
+        // Remove the leader from the storage.
+        TestWorkingGroup::unset_lead();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        terminate_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
-        ));
+        terminate_worker_role_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
@@ -1781,8 +770,8 @@ fn terminate_worker_role_fails_with_invalid_origin() {
         HireLeadFixture::default().hire_lead();
 
         let worker_id = HiringWorkflow::default()
-            .disable_setup_environment()
-            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .with_setup_environment(false)
+            .add_application_full(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2, Some(2))
             .execute()
             .unwrap();
 
@@ -1795,7 +784,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
 }
 
 #[test]
-fn fire_leader_fails_with_invalid_origin() {
+fn terminate_leader_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let worker_id = HireLeadFixture::default().hire_lead();
 
@@ -1808,7 +797,7 @@ fn fire_leader_fails_with_invalid_origin() {
 }
 
 #[test]
-fn increase_worker_stake_succeeds() {
+fn unset_lead_event_emitted() {
     build_test_externalities().execute_with(|| {
         /*
            Events are not emitted on block 0.
@@ -1817,91 +806,589 @@ fn increase_worker_stake_succeeds() {
         */
         run_to_block(1);
 
-        let worker_id = fill_worker_position_with_stake(100);
+        HireRegularWorkerFixture::default().hire();
 
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+        // Remove the leader from the storage.
+        TestWorkingGroup::unset_lead();
 
-        increase_stake_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::StakeIncreased(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::LeaderUnset());
     });
 }
 
 #[test]
-fn increase_worker_stake_succeeds_for_leader() {
+fn set_lead_event_emitted() {
     build_test_externalities().execute_with(|| {
-        let worker_id = HireLeadFixture::default().with_stake(100).hire_lead();
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
 
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+        let worker_id = 10;
 
-        increase_stake_fixture.call_and_assert(Ok(()));
+        // Add the leader to the storage.
+        TestWorkingGroup::set_lead(worker_id);
+
+        EventFixture::assert_last_crate_event(RawEvent::LeaderSet(worker_id));
     });
 }
 
 #[test]
-fn increase_worker_stake_fails_with_invalid_origin() {
+fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
     build_test_externalities().execute_with(|| {
-        let worker_id = 0;
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_origin(RawOrigin::None);
+        HireLeadFixture::default().hire_lead();
 
-        increase_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
+        let account_id = 1;
+        increase_total_balance_issuance_using_account_id(account_id, 300);
 
-#[test]
-fn increase_worker_stake_fails_with_zero_balance() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
+        let stake_parameters = StakeParameters {
+            stake: 100,
+            staking_account_id: account_id,
+        };
 
-        let increase_stake_fixture =
-            IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: 200,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
 
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::ApplicationStakeDoesntMatchOpening.into(),
         ));
     });
 }
 
 #[test]
-fn increase_worker_stake_fails_with_invalid_worker_id() {
+fn apply_on_opening_locks_the_stake() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: account_id,
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+
+        apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_stake_amount_check() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 100;
+        let stake = 200;
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: account_id,
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
+    });
+}
+
+#[ignore] // unlock after implementing members staking accounts
+#[test]
+fn apply_on_opening_fails_invalid_staking_check() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        increase_total_balance_issuance_using_account_id(
+            STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+            total_balance,
+        );
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+        };
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::InvalidStakingAccountForMember.into(),
+        ));
+    });
+}
+
+#[ignore] // unlock after implementing conflicting stake
+#[test]
+fn apply_on_opening_fails_with_conflicting_stakes() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        increase_total_balance_issuance_using_account_id(
+            STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
+            total_balance,
+        );
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::ConflictStakesOnAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn terminate_worker_unlocks_the_stake() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+    });
+}
+
+#[test]
+fn leave_worker_unlocks_the_stake() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let leaving_unstaking_period = 10;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        run_to_block(leaving_unstaking_period);
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+    });
+}
+
+#[test]
+fn leave_worker_unlocks_the_stake_with_unstaking_period() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let leaving_unstaking_period = 10;
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        run_to_block(leaving_unstaking_period);
+
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+    });
+}
+
+#[test]
+fn leave_worker_works_immediately_stake_is_zero() {
+    build_test_externalities().execute_with(|| {
+        let account_id = STAKING_ACCOUNT_ID_FOR_ZERO_STAKE;
+        let total_balance = 300;
+        let stake = 200;
+
+        let leaving_unstaking_period = 10;
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .with_setup_environment(true)
+            .with_opening_type(OpeningType::Regular)
+            //    .with_stake_policy(stake_policy.clone())
+            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
+            .execute()
+            .unwrap();
+
+        //        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+    });
+}
+
+#[test]
+fn terminate_worker_with_slashing_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let penalty = Penalty {
+            slashing_amount: stake,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_penalty(Some(penalty));
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+    });
+}
+
+#[test]
+fn terminate_worker_with_slashing_fails_with_no_staking_account() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let penalty = Penalty {
+            slashing_amount: stake,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
+            .execute()
+            .unwrap();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_penalty(Some(penalty));
+
+        terminate_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+          Events are not emitted on block 0.
+          So any dispatchable calls made during genesis block formation will have no events emitted.
+          https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let slash_stake = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let penalty = Penalty {
+            slashing_amount: slash_stake,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id, slash_stake));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_no_staking_account() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let slash_stake = 100;
+
+        let penalty = Penalty {
+            slashing_amount: slash_stake,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
+            .execute()
+            .unwrap();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_leader_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let penalty = Penalty {
+            slashing_amount: stake,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        let leader_worker_id = HireLeadFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire_lead();
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
+            .with_penalty(penalty)
+            .with_origin(RawOrigin::Root);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id, stake));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let invalid_worker_id = 22;
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
+            .with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn slash_leader_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        let penalty = Penalty {
+            slashing_amount: 0,
+            slashing_text: Vec::new(),
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let invalid_worker_id = 11;
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_not_set_lead() {
     build_test_externalities().execute_with(|| {
         let invalid_worker_id = 11;
 
-        let increase_stake_fixture =
-            IncreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn increase_worker_stake_fails_with_invalid_balance() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
-        let invalid_balance = 100000000;
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_balance(invalid_balance);
-
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::StakingErrorInsufficientBalanceInSourceAccount
-                .into(),
-        ));
-    });
-}
-
-#[test]
-fn increase_worker_stake_fails_with_no_stake_profile() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
-
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
-        ));
+        slash_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
@@ -1915,23 +1402,79 @@ fn decrease_worker_stake_succeeds() {
         */
         run_to_block(1);
 
-        let worker_id = fill_worker_position_with_stake(100);
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
 
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
 
         decrease_stake_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::StakeDecreased(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::StakeDecreased(
+            worker_id,
+            new_stake_balance,
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_no_staking_account() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let new_stake_balance = 100;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
+            .execute()
+            .unwrap();
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+        ));
     });
 }
 
 #[test]
 fn decrease_worker_stake_succeeds_for_leader() {
     build_test_externalities().execute_with(|| {
-        let worker_id = HireLeadFixture::default().with_stake(100).hire_lead();
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
 
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireLeadFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire_lead();
+
+        let new_stake = 100;
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_origin(RawOrigin::Root);
+            .with_origin(RawOrigin::Root)
+            .with_balance(new_stake);
 
         decrease_stake_fixture.call_and_assert(Ok(()));
     });
@@ -1964,13 +1507,26 @@ fn decrease_worker_stake_fails_with_invalid_origin_for_leader() {
 #[test]
 fn decrease_worker_stake_fails_with_zero_balance() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
 
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
         ));
     });
 }
@@ -1985,34 +1541,7 @@ fn decrease_worker_stake_fails_with_invalid_worker_id() {
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn decrease_worker_stake_fails_with_invalid_balance() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
-        let invalid_balance = 100000000;
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_balance(invalid_balance);
-
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::StakingErrorInsufficientStake.into(),
-        ));
-    });
-}
-
-#[test]
-fn decrease_worker_stake_fails_with_no_stake_profile() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
-
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -2025,34 +1554,13 @@ fn decrease_worker_stake_fails_with_not_set_lead() {
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
-        ));
+        decrease_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
 #[test]
-fn slash_worker_stake_succeeds() {
-    build_test_externalities().execute_with(|| {
-        /*
-          Events are not emitted on block 0.
-          So any dispatchable calls made during genesis block formation will have no events emitted.
-          https://substrate.dev/recipes/2-appetizers/4-events.html
-        */
-        run_to_block(1);
-
-        let worker_id = fill_worker_position_with_stake(100);
-
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
-
-        slash_stake_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id));
-    });
-}
-
-#[test]
-fn slash_leader_stake_succeeds() {
+fn increase_worker_stake_succeeds() {
     build_test_externalities().execute_with(|| {
         /*
            Events are not emitted on block 0.
@@ -2061,270 +1569,837 @@ fn slash_leader_stake_succeeds() {
         */
         run_to_block(1);
 
-        let leader_worker_id = HiringWorkflow::default()
-            .with_role_stake(Some(100))
-            .with_opening_type(OpeningType::Leader)
-            .add_default_application()
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let stake_balance_delta = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(stake_balance_delta);
+
+        increase_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeIncreased(
+            worker_id,
+            stake_balance_delta,
+        ));
+    });
+}
+
+#[test]
+fn increase_worker_stake_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 400;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireLeadFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire_lead();
+
+        let increase_stake_fixture =
+            IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(stake);
+
+        increase_stake_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = 0;
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        increase_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let increase_stake_fixture =
+            IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_no_staking_account() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
             .execute()
             .unwrap();
 
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
-            .with_origin(RawOrigin::Root);
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
 
-        slash_stake_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id));
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+        ));
     });
 }
 
 #[test]
-fn slash_worker_stake_fails_with_invalid_origin() {
+fn increase_worker_stake_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let invalid_worker_id = 22;
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
-            .with_origin(RawOrigin::None);
+        let invalid_worker_id = 11;
 
-        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+        let increase_stake_fixture =
+            IncreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
 #[test]
-fn slash_leader_stake_fails_with_invalid_origin() {
+fn increase_worker_stake_fails_external_check() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy)
+            .hire();
+
+        let invalid_new_stake = 2000;
+        let decrease_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(invalid_new_stake);
+
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
+    });
+}
+
+#[test]
+fn withdraw_application_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        let stake_parameters = StakeParameters {
+            stake,
+            staking_account_id: account_id,
+        };
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                leaving_unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id).with_stake();
+        withdraw_application_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::ApplicationWithdrawn(application_id));
+    });
+}
+
+#[test]
+fn withdraw_application_fails_invalid_application_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_application_id = 6;
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerApplicationDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn withdraw_application_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id)
+                .with_origin(RawOrigin::None);
+        withdraw_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn withdraw_worker_application_fails_with_invalid_application_author() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let invalid_author_account_id = 55;
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id)
+                .with_signer(invalid_author_account_id);
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::OriginIsNotApplicant.into(),
+        ));
+    });
+}
+
+#[test]
+fn cancel_opening_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let cancel_opening_fixture = CancelOpeningFixture::default_for_opening_id(opening_id);
+        cancel_opening_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::OpeningCanceled(opening_id));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let cancel_opening_fixture =
+            CancelOpeningFixture::default_for_opening_id(opening_id).with_origin(RawOrigin::None);
+        cancel_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_invalid_opening_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_opening_id = 11;
+
+        let cancel_opening_fixture =
+            CancelOpeningFixture::default_for_opening_id(invalid_opening_id);
+
+        cancel_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::OpeningDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        decrease_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        increase_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
+    });
+}
+
+#[test]
+fn rewards_payments_are_successful() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        let account_id = worker.role_account_id;
+
+        SetBudgetFixture::default().execute();
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_no_budget() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        let account_id = worker.role_account_id;
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        assert_eq!(
+            worker.missed_reward.unwrap(),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_insufficient_budget_and_restored_budget() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        let account_id = worker.reward_account_id;
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let paid_blocks = 3;
+
+        let first_budget = paid_blocks * reward_per_block;
+        SetBudgetFixture::default()
+            .with_budget(first_budget)
+            .execute();
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), first_budget);
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        let effective_missed_reward: u64 = block_number * reward_per_block - first_budget;
+
+        assert_eq!(worker.missed_reward.unwrap(), effective_missed_reward);
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        // Checkpoint with restored budget.
+        let block_number2 = 20;
+        run_to_block(block_number2);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number2 * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_starting_block() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 3;
+        run_to_block(starting_block);
+
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+        let reward_period: u64 = RewardPeriod::get().into();
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+
+        let account_id = worker.reward_account_id;
+
+        SetBudgetFixture::default().with_budget(100000).execute();
+
+        let block_number = 11;
+        run_to_block(block_number);
+
+        let effective_paid_blocks =
+            (block_number - starting_block) - (block_number % reward_period);
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            effective_paid_blocks * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn set_budget_succeeded() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let new_budget = 10000;
+        SetBudgetFixture::default()
+            .with_budget(new_budget)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSet(new_budget));
+    });
+}
+
+#[test]
+fn set_budget_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let leader_account_id = 1;
+
+        SetBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(leader_account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_reward_account_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAccountUpdated(
+            worker_id,
+            new_reward_account,
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire_lead();
+
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
+
+        update_account_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire_lead();
+
+        let invalid_role_account = 23333;
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account)
+                .with_origin(RawOrigin::Signed(invalid_role_account));
+
+        update_account_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let invalid_worker_id = 11;
+        let new_reward_account = 2;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(invalid_worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_no_recurring_reward() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let new_reward_account = 343;
+
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerHasNoReward.into()));
+    });
+}
+
+#[test]
+fn update_reward_amount_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let reward_per_block = Some(120);
+
+        let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
+            .with_reward_per_block(reward_per_block);
+
+        update_amount_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAmountUpdated(
+            worker_id,
+            reward_per_block,
+        ));
+    });
+}
+
+#[test]
+fn update_reward_amount_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(Some(RewardPolicy {
+                reward_per_block: 1000,
+            }))
+            .hire_lead();
+
+        let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Root);
+
+        update_amount_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn update_reward_amount_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = 22; // random worker id
+
+        let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        update_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_reward_amount_fails_with_invalid_origin_for_leader() {
     build_test_externalities().execute_with(|| {
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
+        let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
 
-        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+        update_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
-fn slash_worker_stake_fails_with_zero_balance() {
+fn update_reward_amount_fails_with_invalid_origin_signed_account() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
+        let worker_id = HireRegularWorkerFixture::default().hire();
 
-        let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+        let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Signed(2));
 
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+        update_amount_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::IsNotLeadAccount.into()));
+    });
+}
+
+#[test]
+fn update_reward_amount_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        HireRegularWorkerFixture::default().hire();
+
+        let invalid_worker_id = 12;
+        let update_amount_fixture =
+            UpdateRewardAmountFixture::default_for_worker_id(invalid_worker_id);
+
+        update_amount_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
 
 #[test]
-fn slash_worker_stake_fails_with_invalid_worker_id() {
+fn set_status_text_succeeded() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
-        let invalid_worker_id = 11;
 
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+        run_to_block(1);
 
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
-        ));
-    });
-}
-
-#[test]
-fn slash_worker_stake_fails_with_no_stake_profile() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
-
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
-        ));
-    });
-}
-
-#[test]
-fn slash_worker_stake_fails_with_not_set_lead() {
-    build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 11;
-
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
-
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
-        ));
-    });
-}
-
-#[test]
-fn get_all_worker_ids_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let worker_ids = TestWorkingGroup::get_regular_worker_ids();
-        assert_eq!(worker_ids, Vec::new());
-
-        let leader_worker_id = HireLeadFixture::default().hire_lead();
-
-        let worker_id1 = fill_worker_position(None, None, false, OpeningType::Worker, None);
-        let worker_id2 = fill_worker_position(None, None, false, OpeningType::Worker, None);
-
-        let mut expected_ids = vec![worker_id1, worker_id2];
-        expected_ids.sort();
-
-        let mut worker_ids = TestWorkingGroup::get_regular_worker_ids();
-        worker_ids.sort();
-        assert_eq!(worker_ids, expected_ids);
-
-        assert!(!expected_ids.contains(&leader_worker_id));
-
-        <crate::WorkerById<Test, TestWorkingGroupInstance>>::remove(worker_id1);
-        let worker_ids = TestWorkingGroup::get_regular_worker_ids();
-        assert_eq!(worker_ids, vec![worker_id2]);
-    });
-}
-
-#[test]
-fn set_working_group_mint_capacity_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let mint_id = <minting::Module<Test>>::add_mint(0, None).unwrap();
-        <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
-
-        let capacity = 15000;
-        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
-
-        assert_eq!(result, Ok(()));
-
-        let mint = <minting::Module<Test>>::mints(mint_id);
-        assert_eq!(mint.capacity(), capacity);
-    });
-}
-
-#[test]
-fn set_working_group_mint_capacity_fails_with_mint_not_found() {
-    build_test_externalities().execute_with(|| {
-        let capacity = 15000;
-
-        <crate::Mint<Test, TestWorkingGroupInstance>>::put(5); // random mint id
-        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
-
-        assert_eq!(
-            result,
-            Err(Error::<Test, TestWorkingGroupInstance>::CannotFindMint.into())
-        );
-    });
-}
-
-#[test]
-fn set_working_group_mint_capacity_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        let capacity = 15000;
-        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::None.into(), capacity);
-
-        assert_eq!(result, Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn ensure_setting_genesis_working_group_mint_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let mint_id = TestWorkingGroup::mint();
-
-        assert!(minting::Mints::<Test>::contains_key(mint_id));
-
-        let mint = <minting::Module<Test>>::mints(mint_id);
-        assert_eq!(mint.capacity(), WORKING_GROUP_MINT_CAPACITY);
-    });
-}
-
-#[test]
-fn ensure_setting_genesis_constraints_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let default_constraint = common::constraints::InputValidationLengthConstraint::new(
-            WORKING_GROUP_CONSTRAINT_MIN,
-            WORKING_GROUP_CONSTRAINT_DIFF,
-        );
-        let opening_text_constraint = TestWorkingGroup::opening_human_readable_text();
-        let worker_text_constraint = TestWorkingGroup::application_human_readable_text();
-        let worker_exit_text_constraint = TestWorkingGroup::worker_exit_rationale_text();
-
-        assert_eq!(opening_text_constraint, default_constraint);
-        assert_eq!(worker_text_constraint, default_constraint);
-        assert_eq!(worker_exit_text_constraint, default_constraint);
-    });
-}
-
-#[test]
-fn active_worker_counter_works_successfully() {
-    build_test_externalities().execute_with(|| {
-        assert_eq!(TestWorkingGroup::active_worker_count(), 0);
-
-        let leader_id = HireLeadFixture::default().hire_lead();
-        assert_eq!(TestWorkingGroup::active_worker_count(), 1);
-
-        let worker_id1 = fill_worker_position(
-            None,
-            None,
-            false,
-            OpeningType::Worker,
-            Some(b"worker1".to_vec()),
-        );
-        assert_eq!(TestWorkingGroup::active_worker_count(), 2);
-
-        let worker_id2 = fill_worker_position(
-            None,
-            None,
-            false,
-            OpeningType::Worker,
-            Some(b"worker1".to_vec()),
-        );
-        assert_eq!(TestWorkingGroup::active_worker_count(), 3);
-
-        TerminateWorkerRoleFixture::default_for_worker_id(worker_id1).call_and_assert(Ok(()));
-        assert_eq!(TestWorkingGroup::active_worker_count(), 2);
-
-        TerminateWorkerRoleFixture::default_for_worker_id(worker_id2).call_and_assert(Ok(()));
-        assert_eq!(TestWorkingGroup::active_worker_count(), 1);
-
-        TerminateWorkerRoleFixture::default_for_worker_id(leader_id)
-            .with_origin(RawOrigin::Root)
+        let status_text = b"some".to_vec();
+        SetStatusTextFixture::default()
+            .with_status_text(Some(status_text.clone()))
             .call_and_assert(Ok(()));
-        assert_eq!(TestWorkingGroup::active_worker_count(), 0);
+
+        let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&status_text);
+        EventFixture::assert_last_crate_event(RawEvent::StatusTextChanged(
+            expected_hash.as_ref().to_vec(),
+        ));
     });
 }
 
 #[test]
-fn adding_too_much_workers_fails_with_single_application_out_of_limit() {
+fn set_status_text_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
+        let leader_account_id = 10;
 
-        fill_worker_position(None, None, false, OpeningType::Worker, None);
-        fill_worker_position(None, None, false, OpeningType::Worker, None);
-
-        let hiring_workflow = HiringWorkflow::default()
-            .disable_setup_environment()
-            .add_default_application()
-            .expect(Err(
-                Error::<Test, TestWorkingGroupInstance>::MaxActiveWorkerNumberExceeded.into(),
-            ));
-
-        hiring_workflow.execute()
+        SetStatusTextFixture::default()
+            .with_origin(RawOrigin::Signed(leader_account_id))
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::IsNotLeadAccount.into()));
     });
 }
 
 #[test]
-fn fill_opening_cannot_hire_more_workers_using_several_applicationst_han_allows_worker_limit() {
+fn spend_from_budget_succeeded() {
     build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 100;
         HireLeadFixture::default().hire_lead();
 
-        fill_worker_position(None, None, false, OpeningType::Worker, None);
+        run_to_block(1);
 
-        let hiring_workflow = HiringWorkflow::default()
-            .disable_setup_environment()
-            .add_application_with_origin(b"Some1".to_vec(), RawOrigin::Signed(2), 2)
-            .add_application_with_origin(b"Some2".to_vec(), RawOrigin::Signed(3), 3)
-            .expect(Err(
-                Error::<Test, TestWorkingGroupInstance>::MaxActiveWorkerNumberExceeded.into(),
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(account_id, amount));
+    });
+}
+
+#[test]
+fn spend_from_budget_failed_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SpendFromBudgetFixture::default()
+            .with_origin(RawOrigin::None.into())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn spend_from_budget_fails_with_empty_budget() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 100;
+        HireLeadFixture::default().hire_lead();
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, DefaultInstance>::InsufficientBudgetForSpending.into(),
             ));
+    });
+}
 
-        hiring_workflow.execute()
+#[test]
+fn spend_from_budget_fails_with_zero_amount() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 0;
+        HireLeadFixture::default().hire_lead();
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotSpendZero.into()));
     });
 }

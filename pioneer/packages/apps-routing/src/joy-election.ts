@@ -1,19 +1,17 @@
-import { Routes } from './types';
+import { Route } from './types';
 
 import Election from '@polkadot/joy-election/index';
+import SidebarSubtitle from '@polkadot/joy-election/SidebarSubtitle';
 
-export const councilSidebarName = 'council';
-
-export default [
-  {
+export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Route {
+  return {
     Component: Election,
     display: {
       needsApi: ['query.council.activeCouncil', 'query.councilElection.stage']
     },
-    i18n: {
-      defaultValue: 'Council'
-    },
+    text: t<string>('nav.election', 'Council', { ns: 'apps-routing' }),
     icon: 'university',
-    name: councilSidebarName
-  }
-] as Routes;
+    name: 'council',
+    SubtitleComponent: SidebarSubtitle
+  };
+}

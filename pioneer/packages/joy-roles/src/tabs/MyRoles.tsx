@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Button,
+import { Button,
   Container,
   Icon,
   Form,
@@ -13,26 +12,20 @@ import {
   Segment,
   Statistic,
   Table,
-  SemanticICONS
-} from 'semantic-ui-react';
+  SemanticICONS,
+  TextAreaProps } from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
-import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Opening } from '@joystream/types/hiring';
 
-import {
-  OpeningBodyReviewInProgress
-} from './Opportunities';
-import {
-  openingIcon,
-  openingDescription
-} from '../openingStateMarkup';
+import { OpeningBodyReviewInProgress } from './Opportunities';
+import { openingIcon,
+  openingDescription } from '../openingStateMarkup';
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
-import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkerId } from '@joystream/types/working-group';
 import _ from 'lodash';
 import styled from 'styled-components';
@@ -50,11 +43,13 @@ function CTAButton (props: CTA) {
   const [rationale, setRationale] = useState<string>('');
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+
   const leaveRole = () => {
     props.callback(rationale);
     handleClose();
   };
-  const handleChange = (e: any, value: any) => setRationale(value.value);
+
+  const handleChange = (e: any, { value }: TextAreaProps) => setRationale(value?.toString() || '');
 
   return (
     <Modal trigger={
@@ -100,11 +95,12 @@ function RoleName (props: NameAndURL) {
   if (typeof props.url !== 'undefined') {
     return <Link to={props.url}>{props.name}</Link>;
   }
+
   return <span>{props.name}</span>;
 }
 
 export interface ActiveRole extends NameAndURL {
-  workerId: CuratorId | WorkerId;
+  workerId: WorkerId;
   reward: Balance;
   stake: Balance;
   group: WorkingGroups;
@@ -120,9 +116,9 @@ export type CurrentRolesProps = {
 
 export const CurrentRoles = Loadable<CurrentRolesProps>(
   ['currentRoles'],
-  props => {
+  (props) => {
     return (
-      <Container className="current-roles">
+      <Container className='current-roles'>
         <h2>Current roles</h2>
         {props.currentRoles.length > 0 &&
           <Table basic='very'>
@@ -173,15 +169,18 @@ type RankAndCapacityProps = {
 }
 
 function RankAndCapacity (props: RankAndCapacityProps) {
-  let capacity = null;
+  let capacity = '';
+
   if (props.capacity > 0) {
-    capacity = '/ ' + props.capacity;
+    capacity = `/${props.capacity}`;
   }
 
   let iconName: SemanticICONS = 'check circle';
+
   if (props.capacity > 0 && props.rank > props.capacity) {
     iconName = 'times circle';
   }
+
   return (
     <span>
       <Icon name={iconName} />
@@ -214,7 +213,8 @@ function ApplicationCancelledStatus (props: ApplicationStatusProps) {
     </Message>
   );
 }
-type statusRenderer = (p: ApplicationStatusProps) => any
+
+type statusRenderer = React.ComponentType<ApplicationStatusProps>
 
 function ApplicationStatusAcceptingApplications (props: ApplicationStatusProps): any {
   let positive = true;
@@ -228,6 +228,7 @@ function ApplicationStatusAcceptingApplications (props: ApplicationStatusProps):
       <p>You have been crowded out of this role, and will not be considered.</p>
     );
   }
+
   return (
     <Message positive={positive} negative={!positive}>
       <Message.Header>
@@ -250,6 +251,7 @@ function ApplicationStatusInReview (props: ApplicationStatusProps): any {
       <p>You have been crowded out of this role, and will not be considered.</p>
     );
   }
+
   return (
     <Message positive={positive} negative={!positive}>
       <Message.Header>
@@ -297,7 +299,9 @@ export function ApplicationStatus (props: ApplicationStatusProps) {
     return ApplicationCancelledStatus(props);
   }
 
-  return (applicationStatusRenderers.get(props.openingStatus) as statusRenderer)(props);
+  const StatusRenderer = (applicationStatusRenderers.get(props.openingStatus) as statusRenderer);
+
+  return <StatusRenderer {...props} />;
 }
 
 enum ApplicationState {
@@ -318,6 +322,7 @@ function applicationState (props: OpeningApplication): ApplicationState {
   } else if (props.capacity > 0 && props.rank > props.capacity) {
     return ApplicationState.Negative;
   }
+
   return ApplicationState.Positive;
 }
 
@@ -346,6 +351,7 @@ function CancelButton (props: ApplicationProps) {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+
   const cancelApplication = () => {
     props.cancelCallback(props);
     handleClose();
@@ -393,6 +399,7 @@ const ApplicationLabel = styled(Label)`
 
 export function Application (props: ApplicationProps) {
   let countdown = null;
+
   if (props.stage.state === OpeningState.InReview) {
     countdown = <OpeningBodyReviewInProgress {...props.stage} />;
   }
@@ -402,31 +409,34 @@ export function Application (props: ApplicationProps) {
   const isLeadApplication = props.meta.type?.isOfType('Leader');
 
   let CTA = null;
+
   if (appState === ApplicationState.Positive && props.stage.state !== OpeningState.Complete) {
     CTA = <CancelButton {...props} />;
   }
 
   return (
-    <Segment className={'application status-' + applicationClass.get(appState)}>
+    <Segment className={`application status-${applicationClass.get(appState) || ''}`}>
       <Label attached='top'>
         {application.job.title}
-        <Label.Detail className="right">
+        <Label.Detail className='right'>
           {openingIcon(props.stage.state)}
           {openingDescription(props.stage.state)}
+          <Icon name='hashtag' style={{ marginLeft: '0.75em' }}/>
+          { props.id }
           <ApplicationLabel>
             {_.startCase(props.meta.group) + (isLeadApplication ? ' Lead' : '')}
           </ApplicationLabel>
         </Label.Detail>
       </Label>
-      <Grid columns="equal">
+      <Grid columns='equal'>
         <Grid.Column width={10}>
-          <Label ribbon className="masthead">
+          <Label ribbon className='masthead'>
             <Statistic size='tiny'>
               <Statistic.Label>Reward</Statistic.Label>
               <Statistic.Value>{application.reward}</Statistic.Value>
             </Statistic>
           </Label>
-          <div className="summary">
+          <div className='summary'>
             <p>{application.headline}</p>
           </div>
 
@@ -449,28 +459,28 @@ export function Application (props: ApplicationProps) {
                   {formatBalance(props.roleStake)}
                 </Table.Cell>
               </Table.Row>
-              <Table.Row className="sum">
+              <Table.Row className='sum'>
                 <Table.Cell>
                   Total stake
                 </Table.Cell>
                 <Table.Cell>
-                  {formatBalance(new u128(props.roleStake.add(props.applicationStake)))}
+                  {formatBalance(props.roleStake.add(props.applicationStake))}
                 </Table.Cell>
               </Table.Row>
             </Table.Body>
           </Table>
           <h4>Hiring process details</h4>
           <List bulleted>
-            {application.process && application.process.details.map((detail: string, key: any) => (
+            {application.process && application.process.details.map((detail, key) => (
               <List.Item key={key}>
-                <List.Icon name="info circle" />
+                <List.Icon name='info circle' />
                 <List.Content>{detail}</List.Content>
               </List.Item>
             ))}
           </List>
 
         </Grid.Column>
-        <Grid.Column width={6} className="details">
+        <Grid.Column width={6} className='details'>
           <ApplicationStatus
             openingStatus={props.stage.state}
             rank={props.rank}
@@ -493,8 +503,8 @@ export type ApplicationsProps = CancelCallback & {
 
 export const Applications = Loadable<ApplicationsProps>(
   ['applications'],
-  props => (
-    <Container className="current-applications">
+  (props) => (
+    <Container className='current-applications'>
       <h2>Applications</h2>
       {props.applications.map((app, key) => (
         <Application key={key} cancelCallback={props.cancelCallback} {...app} />

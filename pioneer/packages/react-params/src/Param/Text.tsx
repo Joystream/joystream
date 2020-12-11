@@ -1,42 +1,43 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { Props } from '../types';
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Input } from '@polkadot/react-components';
 
 import Bare from './Bare';
 
-function onChange ({ onChange }: Props): (_: string) => void {
-  return function (value: string): void {
-    const isValid = value.length !== 0;
+function Text ({ className = '', defaultValue: { value }, isDisabled, isError, label, onChange, onEnter, onEscape, withLabel }: Props): React.ReactElement<Props> {
+  const [isValid, setIsValid] = useState(false);
 
-    onChange && onChange({
-      isValid,
-      value
-    });
-  };
-}
+  const _onChange = useCallback(
+    (value: string): void => {
+      const isValid = value.length !== 0;
 
-export default function Text (props: Props): React.ReactNode {
-  const { className, defaultValue: { value }, isDisabled, isError, label, onEnter, style, withLabel } = props;
-  const defaultValue = (value || '').toString();
+      onChange && onChange({
+        isValid,
+        value
+      });
+      setIsValid(isValid);
+    },
+    [onChange]
+  );
+
+  const defaultValue = (value as string || '').toString();
 
   return (
-    <Bare
-      className={className}
-      style={style}
-    >
+    <Bare className={className}>
       <Input
         className='full'
         defaultValue={defaultValue}
         isDisabled={isDisabled}
-        isError={isError}
+        isError={isError || !isValid}
         label={label}
-        onChange={onChange(props)}
+        onChange={_onChange}
         onEnter={onEnter}
+        onEscape={onEscape}
         placeholder='<any string>'
         type='text'
         withLabel={withLabel}
@@ -44,3 +45,5 @@ export default function Text (props: Props): React.ReactNode {
     </Bare>
   );
 }
+
+export default React.memo(Text);

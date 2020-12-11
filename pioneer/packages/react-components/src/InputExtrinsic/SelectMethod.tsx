@@ -1,33 +1,32 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { CallFunction } from '@polkadot/types/types';
-import { BareProps } from '../types';
+import { SubmittableExtrinsicFunction } from '@polkadot/api/types';
 import { DropdownOptions } from '../util/types';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import ApiPromise from '@polkadot/api/promise';
 
 import Dropdown from '../Dropdown';
 import { classes } from '../util';
 
-interface Props extends BareProps {
+interface Props {
   api: ApiPromise;
+  className?: string;
   isError?: boolean;
-  onChange: (value: CallFunction) => void;
+  onChange: (value: SubmittableExtrinsicFunction<'promise'>) => void;
   options: DropdownOptions;
-  value: CallFunction;
+  value: SubmittableExtrinsicFunction<'promise'>;
 }
 
-function transform ({ api, value }: Props): (method: string) => CallFunction {
-  return (method: string): CallFunction => {
-    return api.tx[value.section][method];
-  };
-}
+function SelectMethod ({ api, className = '', isError, onChange, options, value }: Props): React.ReactElement<Props> | null {
+  const transform = useCallback(
+    (method: string): SubmittableExtrinsicFunction<'promise'> =>
+      api.tx[value.section][method],
+    [api, value]
+  );
 
-export default function SelectMethod (props: Props): React.ReactElement<Props> | null {
-  const { className, isError, onChange, options, style, value } = props;
   if (!options.length) {
     return null;
   }
@@ -38,10 +37,11 @@ export default function SelectMethod (props: Props): React.ReactElement<Props> |
       isError={isError}
       onChange={onChange}
       options={options}
-      style={style}
-      transform={transform(props)}
+      transform={transform}
       value={value.method}
       withLabel={false}
     />
   );
 }
+
+export default React.memo(SelectMethod);

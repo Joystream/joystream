@@ -10,56 +10,52 @@ export type headerMarkup = {
   iconSpin?: boolean;
 }
 
-export const stateMarkup = new Map<OpeningState, headerMarkup>([
-  [OpeningState.WaitingToBegin, {
+export const stateMarkup: Record<OpeningState, headerMarkup> = {
+  [OpeningState.WaitingToBegin]: {
     class: 'waiting-to-begin',
     description: 'Waiting to begin',
     icon: 'spinner',
     iconSpin: true
-  }],
-  [OpeningState.AcceptingApplications, {
+  },
+  [OpeningState.AcceptingApplications]: {
     class: 'active',
     description: 'Accepting applications',
     icon: 'heart'
-  }],
-  [OpeningState.InReview, {
+  },
+  [OpeningState.InReview]: {
     class: 'in-review',
     description: 'Applications in review',
     icon: 'hourglass half'
-  }],
-  [OpeningState.Complete, {
+  },
+  [OpeningState.Complete]: {
     class: 'complete',
     description: 'Hiring complete',
     icon: 'thumbs up'
-  }],
-  [OpeningState.Cancelled, {
+  },
+  [OpeningState.Cancelled]: {
     class: 'cancelled',
     description: 'Cancelled',
     icon: 'ban'
-  }]
-]);
-
-export function openingStateMarkup<T> (state: OpeningState, key: string): T {
-  const markup = stateMarkup.get(state);
-
-  if (typeof markup === 'undefined') {
-    return null as unknown as T;
   }
+};
 
-  return (markup as any)[key];
+export function openingStateMarkup<K extends keyof headerMarkup> (state: OpeningState, key: K): headerMarkup[K] {
+  const markup = stateMarkup[state];
+
+  return markup[key];
 }
 
 export function openingClass (state: OpeningState): string {
-  return 'status-' + openingStateMarkup<string>(state, 'class');
+  return `status-${openingStateMarkup(state, 'class') || ''}`;
 }
 
 export function openingDescription (state: OpeningState): string {
-  return openingStateMarkup<string>(state, 'description');
+  return openingStateMarkup(state, 'description') || '';
 }
 
 export function openingIcon (state: OpeningState) {
-  const icon = openingStateMarkup<SemanticICONS>(state, 'icon');
-  const spin = openingStateMarkup<boolean>(state, 'iconSpin');
+  const icon = openingStateMarkup(state, 'icon');
+  const spin = openingStateMarkup(state, 'iconSpin');
 
   return <Icon name={icon} loading={spin} />;
 }

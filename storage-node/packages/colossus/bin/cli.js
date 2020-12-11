@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* es-lint disable*/
+/* es-lint disable  */
 
 'use strict'
 
@@ -11,6 +11,7 @@ const meow = require('meow')
 const chalk = require('chalk')
 const figlet = require('figlet')
 const _ = require('lodash')
+const { sleep } = require('@joystream/storage-utils/sleep')
 
 const debug = require('debug')('joystream:colossus')
 
@@ -18,7 +19,7 @@ const debug = require('debug')('joystream:colossus')
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
 // Number of milliseconds to wait between synchronization runs.
-const SYNC_PERIOD_MS = 300000 // 5min
+const SYNC_PERIOD_MS = 120000 // 2min
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
@@ -29,15 +30,19 @@ const FLAG_DEFINITIONS = {
   },
   keyFile: {
     type: 'string',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   passphrase: {
@@ -50,9 +55,15 @@ const FLAG_DEFINITIONS = {
   providerId: {
     type: 'number',
     alias: 'i',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
+  },
+  ipfsHost: {
+    type: 'string',
+    default: 'localhost',
   },
 }
 
@@ -76,6 +87,7 @@ const cli = meow(
     --passphrase            Optional passphrase to use to decrypt the key-file.
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
     --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
+    --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
   `,
   { flags: FLAG_DEFINITIONS }
 )
@@ -104,19 +116,19 @@ function startExpressApp(app, port) {
 }
 
 // Start app
-function startAllServices({ store, api, port }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
+function startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, discoveryClient, ipfsHttpGatewayUrl)
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
-function startDiscoveryService({ api, port }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
+function startDiscoveryService({ port, discoveryClient }) {
+  const app = require('../lib/discovery')(PROJECT_ROOT, discoveryClient)
   return startExpressApp(app, port)
 }
 
 // Get an initialized storage instance
-function getStorage(runtimeApi) {
+function getStorage(runtimeApi, { ipfsHost }) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
   const { Storage } = require('@joystream/storage-node-backend')
@@ -131,6 +143,7 @@ function getStorage(runtimeApi) {
       // if obj.liaison_judgement !== Accepted .. throw ?
       return obj.unwrap().ipfs_content_id.toString()
     },
+    ipfsHost,
   }
 
   return Storage.create(options)
@@ -139,14 +152,6 @@ function getStorage(runtimeApi) {
 async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
-
-  if (!keyFile) {
-    throw new Error('Must specify a --key-file argument for running a storage node.')
-  }
-
-  if (providerId === undefined) {
-    throw new Error('Must specify a --provider-id argument for running a storage node')
-  }
 
   const api = await RuntimeApi.create({
     account_file: keyFile,
@@ -159,18 +164,20 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
     throw new Error('Failed to unlock storage provider account')
   }
 
-  if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
-    throw new Error('storage provider role account and storageProviderId are not associated with a worker')
+  await api.untilChainIsSynced()
+
+  // We allow the node to startup without correct provider id and account, but syncing and
+  // publishing of identity will be skipped.
+  if (!(await api.providerIsActiveWorker())) {
+    debug('storage provider role account and storageProviderId are not associated with a worker')
   }
 
   return api
 }
 
-async function initApiDevelopment() {
+async function initApiDevelopment({ wsProvider }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
-
-  const wsProvider = 'ws://localhost:9944'
 
   const api = await RuntimeApi.create({
     provider_url: wsProvider,
@@ -180,7 +187,17 @@ async function initApiDevelopment() {
 
   api.identities.useKeyPair(dev.roleKeyPair(api))
 
-  api.storageProviderId = await dev.check(api)
+  // Wait until dev provider is added to role
+  while (true) {
+    try {
+      api.storageProviderId = await dev.check(api)
+      break
+    } catch (err) {
+      debug(err)
+    }
+
+    await sleep(10000)
+  }
 
   return api
 }
@@ -199,19 +216,38 @@ function getServiceInformation(publicUrl) {
   }
 }
 
-async function announcePublicUrl(api, publicUrl) {
+// TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
+// or cleaner code with generators?
+async function announcePublicUrl(api, publicUrl, publisherClient) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
+    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl, publisherClient)
+  }
+
+  const chainIsSyncing = await api.chainIsSyncing()
+  if (chainIsSyncing) {
+    debug('Chain is syncing. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
+  }
+
+  // postpone if provider not active
+  if (!(await api.providerIsActiveWorker())) {
+    debug('storage provider role account and storageProviderId are not associated with a worker')
+    return reannounce(10 * 60 * 1000)
+  }
+
+  const sufficientBalance = await api.providerHasMinimumBalance(1)
+  if (!sufficientBalance) {
+    debug('Provider role account does not have sufficient balance. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
   }
 
   debug('announcing public url')
-  const { publish } = require('@joystream/service-discovery')
 
   try {
     const serviceInformation = getServiceInformation(publicUrl)
 
-    const keyId = await publish.publish(serviceInformation)
+    const keyId = await publisherClient.publish(serviceInformation)
 
     await api.discovery.setAccountInfo(keyId)
 
@@ -238,23 +274,14 @@ if (!command) {
   command = 'server'
 }
 
-async function startColossus({ api, publicUrl, port, flags }) {
-  // TODO: check valid url, and valid port number
-  const store = getStorage(api)
-  banner()
-  const { startSyncing } = require('../lib/sync')
-  startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
-  announcePublicUrl(api, publicUrl)
-  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
-}
-
 const commands = {
   server: async () => {
+    banner()
     let publicUrl, port, api
 
     if (cli.flags.dev) {
       const dev = require('../../cli/dist/commands/dev')
-      api = await initApiDevelopment()
+      api = await initApiDevelopment(cli.flags)
       port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`
     } else {
@@ -263,15 +290,36 @@ const commands = {
       port = cli.flags.port
     }
 
-    return startColossus({ api, publicUrl, port })
+    // TODO: check valid url, and valid port number
+    const store = getStorage(api, cli.flags)
+
+    const ipfsHost = cli.flags.ipfsHost
+    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
+    const { PublisherClient, DiscoveryClient } = require('@joystream/service-discovery')
+    const publisherClient = new PublisherClient(ipfs)
+    const discoveryClient = new DiscoveryClient({ ipfs, api })
+    const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
+
+    const { startSyncing } = require('../lib/sync')
+    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+
+    announcePublicUrl(api, publicUrl, publisherClient)
+
+    return startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl })
   },
   discovery: async () => {
+    banner()
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/storage-runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
-    await startDiscoveryService({ api, port })
+    const ipfsHost = cli.flags.ipfsHost
+    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
+    const { DiscoveryClient } = require('@joystream/service-discovery')
+    const discoveryClient = new DiscoveryClient({ ipfs, api })
+    await api.untilChainIsSynced()
+    await startDiscoveryService({ api, port, discoveryClient })
   },
 }
 

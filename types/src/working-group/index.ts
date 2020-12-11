@@ -1,166 +1,92 @@
-import { getTypeRegistry, Bytes, BTreeMap, Option} from '@polkadot/types';
-import { u16, Null } from '@polkadot/types/primitive';
-import { AccountId, BlockNumber, Balance } from '@polkadot/types/interfaces';
-import { BTreeSet, JoyStruct } from '../common';
-import { MemberId, ActorId } from '../members';
-import { RewardRelationshipId } from '../recurring-rewards';
-import { StakeId } from '../stake';
-import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
-import { JoyEnum } from '../JoyEnum';
+import { Bytes, BTreeMap, BTreeSet, Option } from '@polkadot/types'
+import { Null, u32, u128 } from '@polkadot/types/primitive'
+import AccountId from '@polkadot/types/generic/AccountId'
+import { BlockNumber, Balance } from '@polkadot/types/interfaces'
+import { MemberId, ActorId } from '../members'
+import { RewardRelationshipId } from '../recurring-rewards'
+import { StakeId } from '../stake'
+import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring'
+import { JoyEnum, JoyStructDecorated, SlashingTerms, JoyBTreeSet } from '../common'
+import { RegistryTypes } from '@polkadot/types/types'
 
-export class RationaleText extends Bytes { };
+export class RationaleText extends Bytes {}
 
 export type IApplication = {
-  role_account_id: AccountId,
-  opening_id: OpeningId,
-  member_id: MemberId,
+  role_account_id: AccountId
+  opening_id: OpeningId
+  member_id: MemberId
   application_id: ApplicationId
-};
+}
 
 // This type is also defined in /hiring (and those are incosistent), but here
 // it is beeing registered as "ApplicationOf" (which is an alias used by the runtime working-group module),
 // so it shouldn't cause any conflicts
-export class Application extends JoyStruct<IApplication> {
-  constructor (value?: IApplication) {
-    super({
-      role_account_id: "AccountId",
-      opening_id: OpeningId,
-      member_id: MemberId,
-      application_id: ApplicationId
-    }, value);
-  }
+export class Application
+  extends JoyStructDecorated({
+    role_account_id: AccountId,
+    opening_id: OpeningId,
+    member_id: MemberId,
+    application_id: ApplicationId,
+  })
+  implements IApplication {}
 
-  get role_account_id(): AccountId {
-    return this.getField<AccountId>('role_account_id');
-  }
+export class WorkerId extends ActorId {}
 
-  get opening_id(): OpeningId {
-    return this.getField<OpeningId>('opening_id');
-  }
+export class StorageProviderId extends WorkerId {}
 
-  get member_id(): MemberId {
-    return this.getField<MemberId>('member_id');
-  }
+export class ApplicationIdSet extends JoyBTreeSet(ApplicationId) {}
 
-  get application_id(): ApplicationId {
-    return this.getField<ApplicationId>('application_id');
-  }
-}
-
-export class WorkerId extends ActorId { };
-
-export class StorageProviderId extends WorkerId { };
-
-export class ApplicationIdSet extends BTreeSet.with(ApplicationId) { };
-
-export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) { };
-
+export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
 export type IRoleStakeProfile = {
-  stake_id: StakeId,
-  termination_unstaking_period: Option<BlockNumber>,
-  exit_unstaking_period: Option<BlockNumber>,
-};
-
-export class RoleStakeProfile extends JoyStruct<IRoleStakeProfile> {
-  constructor (value?: IRoleStakeProfile) {
-    super({
-      stake_id: StakeId,
-      termination_unstaking_period: "Option<BlockNumber>",
-      exit_unstaking_period: "Option<BlockNumber>"
-    }, value);
-  }
-
-  get stake_id(): StakeId {
-    return this.getField<StakeId>('stake_id');
-  }
-
-  get termination_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('termination_unstaking_period');
-  }
-
-  get exit_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('exit_unstaking_period');
-  }
+  stake_id: StakeId
+  termination_unstaking_period: Option<BlockNumber>
+  exit_unstaking_period: Option<BlockNumber>
 }
+
+export class RoleStakeProfile
+  extends JoyStructDecorated({
+    stake_id: StakeId,
+    termination_unstaking_period: Option.with(u32), // Option<BlockNumber>
+    exit_unstaking_period: Option.with(u32), // Option<BlockNumber>
+  })
+  implements IRoleStakeProfile {}
 
 export type IWorker = {
-  member_id: MemberId,
-  role_account_id: AccountId,
-  reward_relationship: Option<RewardRelationshipId>,
-  role_stake_profile: Option<RoleStakeProfile>,
+  member_id: MemberId
+  role_account_id: AccountId
+  reward_relationship: Option<RewardRelationshipId>
+  role_stake_profile: Option<RoleStakeProfile>
 }
 
-export class Worker extends JoyStruct<IWorker> {
-  constructor (value?: IWorker) {
-    super({
-      member_id: MemberId,
-      role_account_id: "AccountId",
-      reward_relationship: Option.with(RewardRelationshipId),
-      role_stake_profile: Option.with(RoleStakeProfile),
-    }, value);
-  }
-
-  get member_id(): MemberId {
-    return this.getField<MemberId>('member_id');
-  }
-
-  get role_account_id(): AccountId {
-    return this.getField<AccountId>('role_account_id');
-  }
-
-  get reward_relationship(): Option<RewardRelationshipId> {
-    return this.getField<Option<RewardRelationshipId>>('reward_relationship');
-  }
-
-  get role_stake_profile(): Option<RoleStakeProfile> {
-    return this.getField<Option<RoleStakeProfile>>('role_stake_profile');
-  }
-
+export class Worker
+  extends JoyStructDecorated({
+    member_id: MemberId,
+    role_account_id: AccountId,
+    reward_relationship: Option.with(RewardRelationshipId),
+    role_stake_profile: Option.with(RoleStakeProfile),
+  })
+  implements IWorker {
+  // FIXME: Won't be needed soon?
   get is_active(): boolean {
-    return !Boolean(this.isEmpty);
+    return !this.isEmpty
   }
 }
-
-export type ISlashableTerms = {
-  max_count: u16,
-  max_percent_pts_per_time: u16,
-};
-
-// This type is also defined in /content-working-group, but currently both those definitions are identical
-// (I added this defininition here too, because techinicaly those are 2 different types in the runtime.
-// Later the definition in /content-working-group will be removed and we can just register this type here)
-export class SlashableTerms extends JoyStruct<ISlashableTerms> {
-  constructor (value?: ISlashableTerms) {
-    super({
-      max_count: u16,
-      max_percent_pts_per_time: u16,
-    }, value);
-  }
-};
-
-export class UnslashableTerms extends Null { };
-
-// This type is also defined in /content-working-group (as above)
-export class SlashingTerms extends JoyEnum({
-  Unslashable: UnslashableTerms,
-  Slashable: SlashableTerms
-} as const) { };
 
 export type IWorkingGroupOpeningPolicyCommitment = {
-  application_rationing_policy: Option<ApplicationRationingPolicy>,
-  max_review_period_length: BlockNumber,
-  application_staking_policy: Option<StakingPolicy>,
-  role_staking_policy: Option<StakingPolicy>,
-  role_slashing_terms: SlashingTerms,
-  fill_opening_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>,
-  fill_opening_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>,
-  fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>,
-  terminate_application_stake_unstaking_period: Option<BlockNumber>,
-  terminate_role_stake_unstaking_period: Option<BlockNumber>,
-  exit_role_application_stake_unstaking_period: Option<BlockNumber>,
-  exit_role_stake_unstaking_period: Option<BlockNumber>,
-};
+  application_rationing_policy: Option<ApplicationRationingPolicy>
+  max_review_period_length: BlockNumber
+  application_staking_policy: Option<StakingPolicy>
+  role_staking_policy: Option<StakingPolicy>
+  role_slashing_terms: SlashingTerms
+  fill_opening_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>
+  fill_opening_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>
+  fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>
+  terminate_application_stake_unstaking_period: Option<BlockNumber>
+  terminate_role_stake_unstaking_period: Option<BlockNumber>
+  exit_role_application_stake_unstaking_period: Option<BlockNumber>
+  exit_role_stake_unstaking_period: Option<BlockNumber>
+}
 
 // This type represents OpeningPolicyCommitment defined inside the runtime's working-grpup module.
 // The only difference between this and the one defined in /content-working-group is in the names of some fields.
@@ -173,154 +99,85 @@ export type IWorkingGroupOpeningPolicyCommitment = {
 // Since both those types are basically the same structs (only filed names are different) nothing seems to break, but it's
 // very fragile atm and any change to this type in working-group module could result in "unsolvable" inconsistencies
 // (this won't be an issue after CWG gets refactored to use the working-grpup module too)
-export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroupOpeningPolicyCommitment> {
-  constructor (value?: WorkingGroupOpeningPolicyCommitment) {
-    super({
-      application_rationing_policy: Option.with(ApplicationRationingPolicy),
-      max_review_period_length: "BlockNumber",
-      application_staking_policy: Option.with(StakingPolicy),
-      role_staking_policy: Option.with(StakingPolicy),
-      role_slashing_terms: SlashingTerms,
-      fill_opening_successful_applicant_application_stake_unstaking_period: "Option<BlockNumber>",
-      fill_opening_failed_applicant_application_stake_unstaking_period: "Option<BlockNumber>",
-      fill_opening_failed_applicant_role_stake_unstaking_period: "Option<BlockNumber>",
-      terminate_application_stake_unstaking_period: "Option<BlockNumber>",
-      terminate_role_stake_unstaking_period: "Option<BlockNumber>",
-      exit_role_application_stake_unstaking_period: "Option<BlockNumber>",
-      exit_role_stake_unstaking_period: "Option<BlockNumber>",
-    }, value);
-  }
+export class WorkingGroupOpeningPolicyCommitment
+  extends JoyStructDecorated({
+    application_rationing_policy: Option.with(ApplicationRationingPolicy),
+    max_review_period_length: u32, // BlockNumber
+    application_staking_policy: Option.with(StakingPolicy),
+    role_staking_policy: Option.with(StakingPolicy),
+    role_slashing_terms: SlashingTerms,
+    fill_opening_successful_applicant_application_stake_unstaking_period: Option.with(u32),
+    fill_opening_failed_applicant_application_stake_unstaking_period: Option.with(u32),
+    fill_opening_failed_applicant_role_stake_unstaking_period: Option.with(u32),
+    terminate_application_stake_unstaking_period: Option.with(u32),
+    terminate_role_stake_unstaking_period: Option.with(u32),
+    exit_role_application_stake_unstaking_period: Option.with(u32),
+    exit_role_stake_unstaking_period: Option.with(u32),
+  })
+  implements IWorkingGroupOpeningPolicyCommitment {}
 
-  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
-    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
-  }
-
-  get max_review_period_length(): BlockNumber {
-    return this.getField<BlockNumber>('max_review_period_length')
-  }
-
-  get application_staking_policy(): Option<StakingPolicy> {
-    return this.getField<Option<StakingPolicy>>('application_staking_policy')
-  }
-
-  get role_staking_policy(): Option<StakingPolicy> {
-    return this.getField<Option<StakingPolicy>>('role_staking_policy')
-  }
-
-  get role_slashing_terms(): SlashingTerms {
-    return this.getField<SlashingTerms>('role_slashing_terms')
-  }
-
-  get fill_opening_successful_applicant_application_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('fill_opening_successful_applicant_application_stake_unstaking_period')
-  }
-
-  get fill_opening_failed_applicant_application_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('fill_opening_failed_applicant_application_stake_unstaking_period')
-  }
-
-  get fill_opening_failed_applicant_role_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('fill_opening_failed_applicant_role_stake_unstaking_period')
-  }
-
-  get terminate_application_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('terminate_application_stake_unstaking_period')
-  }
-
-  get terminate_role_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('terminate_role_stake_unstaking_period')
-  }
-
-  get exit_role_application_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('exit_role_application_stake_unstaking_period')
-  }
-
-  get exit_role_stake_unstaking_period(): Option<BlockNumber> {
-    return this.getField<Option<BlockNumber>>('exit_role_stake_unstaking_period')
-  }
-};
-
-
-export class OpeningType_Leader extends Null { };
-export class OpeningType_Worker extends Null { };
-export class OpeningType extends JoyEnum({
+export class OpeningType_Leader extends Null {}
+export class OpeningType_Worker extends Null {}
+export const OpeningTypeDef = {
   Leader: OpeningType_Leader,
-  Worker: OpeningType_Worker
-} as const) { };
+  Worker: OpeningType_Worker,
+} as const
+export type OpeningTypeKey = keyof typeof OpeningTypeDef
+export class OpeningType extends JoyEnum(OpeningTypeDef) {}
 
 export type IOpening = {
-  hiring_opening_id: OpeningId,
-  applications: BTreeSet<ApplicationId>,
-  policy_commitment: WorkingGroupOpeningPolicyCommitment,
+  hiring_opening_id: OpeningId
+  applications: BTreeSet<ApplicationId>
+  policy_commitment: WorkingGroupOpeningPolicyCommitment
   opening_type: OpeningType
 }
 
 // This type is also defined in /hiring (and those are incosistent), but here
 // it is beeing registered as "OpeningOf" (which is an alias used by the runtime working-group module),
 // so it shouldn't cause any conflicts
-export class Opening extends JoyStruct<IOpening> {
-  constructor (value?: IWorker) {
-    super({
-      hiring_opening_id: OpeningId,
-      applications: BTreeSet.with(ApplicationId),
-      policy_commitment: WorkingGroupOpeningPolicyCommitment,
-      opening_type: OpeningType
-    }, value);
-  }
-
-  get hiring_opening_id(): OpeningId {
-    return this.getField<OpeningId>('hiring_opening_id');
-  }
-
-  get applications(): BTreeSet<ApplicationId> {
-    return this.getField<BTreeSet<ApplicationId>>('applications');
-  }
-
-  get policy_commitment(): WorkingGroupOpeningPolicyCommitment {
-    return this.getField<WorkingGroupOpeningPolicyCommitment>('policy_commitment');
-  }
-
-  get opening_type(): OpeningType {
-    return this.getField<OpeningType>('opening_type');
-  }
-}
+export class Opening
+  extends JoyStructDecorated({
+    hiring_opening_id: OpeningId,
+    applications: JoyBTreeSet(ApplicationId),
+    policy_commitment: WorkingGroupOpeningPolicyCommitment,
+    opening_type: OpeningType,
+  })
+  implements IOpening {}
 
 // Also defined in "content-working-group" runtime module, but those definitions are the consistent
 export type IRewardPolicy = {
-  amount_per_payout: Balance,
-  next_payment_at_block: BlockNumber,
-  payout_interval: Option<BlockNumber>,
-};
-
-export class RewardPolicy extends JoyStruct<IRewardPolicy> {
-  constructor (value?: IRewardPolicy) {
-    super({
-      amount_per_payout: 'Balance',
-      next_payment_at_block: 'BlockNumber',
-      payout_interval: 'Option<BlockNumber>',
-    }, value);
-  }
-};
-
-export function registerWorkingGroupTypes() {
-  try {
-    getTypeRegistry().register({
-      RationaleText,
-      ApplicationOf: Application,
-      ApplicationIdSet,
-      ApplicationIdToWorkerIdMap,
-      WorkerId,
-      WorkerOf: Worker,
-      OpeningOf: Opening,
-      StorageProviderId,
-      OpeningType,
-      /// Alias used by the runtime working-group module
-      HiringApplicationId: ApplicationId,
-      RewardPolicy,
-      'working_group::OpeningId': OpeningId,
-      'working_group::WorkerId': WorkerId
-    });
-  } catch (err) {
-    console.error('Failed to register custom types of working-group module', err);
-  }
+  amount_per_payout: Balance
+  next_payment_at_block: BlockNumber
+  payout_interval: Option<BlockNumber>
 }
+
+export class RewardPolicy
+  extends JoyStructDecorated({
+    amount_per_payout: u128, // Balance
+    next_payment_at_block: u32, // BlockNumber
+    payout_interval: Option.with(u32), // Option<BlockNumber>
+  })
+  implements IRewardPolicy {}
+
+// Needed for types augment tool
+export { OpeningId, ApplicationId }
+
+export const workingGroupTypes: RegistryTypes = {
+  RationaleText,
+  ApplicationOf: Application,
+  ApplicationIdSet,
+  ApplicationIdToWorkerIdMap,
+  WorkerId,
+  WorkerOf: Worker,
+  OpeningOf: Opening,
+  StorageProviderId,
+  OpeningType,
+  /// Alias used by the runtime working-group module
+  HiringApplicationId: ApplicationId,
+  RewardPolicy,
+  // Expose in registry for api.createType purposes:
+  WorkingGroupOpeningPolicyCommitment,
+  RoleStakeProfile,
+}
+
+export default workingGroupTypes

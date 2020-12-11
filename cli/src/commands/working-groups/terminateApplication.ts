@@ -1,6 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { ApplicationStageKeys, ApplicationId } from '@joystream/types/hiring'
+import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
 
 export default class WorkingGroupsTerminateApplication extends WorkingGroupsCommandBase {
@@ -12,6 +12,7 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
       description: 'Working Group Application ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -29,9 +30,7 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'terminateApplication', [
-      new ApplicationId(applicationId),
-    ])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateApplication', [applicationId])
 
     this.log(chalk.green(`Application ${chalk.white(applicationId)} has been succesfully terminated!`))
   }

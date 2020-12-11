@@ -8,7 +8,7 @@ import ApiCommandBase from './ApiCommandBase'
 import { Keyring } from '@polkadot/api'
 import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
-import { DerivedBalances } from '@polkadot/api-derive/types'
+import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
 
 const ACCOUNTS_DIRNAME = 'accounts'
@@ -54,7 +54,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const keyring = new Keyring({ type: 'sr25519' })
     keyring.addFromUri('//Alice', { name: 'Alice' })
     keyring.addFromUri('//Bob', { name: 'Bob' })
-    keyring.getPairs().forEach((pair) => this.saveAccount({ ...pair, meta: { name: pair.meta.name } }, '', true))
+    keyring
+      .getPairs()
+      .forEach((pair) => this.saveAccount({ ...pair, meta: { name: pair.meta.name as string } }, '', true))
   }
 
   fetchAccountFromJsonFile(jsonBackupFilePath: string): NamedKeyringPair {
@@ -140,14 +142,22 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   async getRequiredSelectedAccount(promptIfMissing = true): Promise<NamedKeyringPair> {
     let selectedAccount: NamedKeyringPair | null = this.getSelectedAccount()
     if (!selectedAccount) {
-      this.warn('No default account selected! Use account:choose to set the default account!')
-      if (!promptIfMissing) this.exit(ExitCodes.NoAccountSelected)
-      const accounts: NamedKeyringPair[] = this.fetchAccounts()
-      if (!accounts.length) {
-        this.error('There are no accounts available!', { exit: ExitCodes.NoAccountFound })
+      if (!promptIfMissing) {
+        this.error('No default account selected! Use account:choose to set the default account.', {
+          exit: ExitCodes.NoAccountSelected,
+        })
       }
 
+      const accounts: NamedKeyringPair[] = this.fetchAccounts()
+      if (!accounts.length) {
+        this.error('No accounts available! Use account:import in order to import accounts into the CLI.', {
+          exit: ExitCodes.NoAccountFound,
+        })
+      }
+
+      this.warn('No default account selected!')
       selectedAccount = await this.promptForAccount(accounts)
+      await this.setSelectedAccount(selectedAccount)
     }
 
     return selectedAccount
@@ -167,8 +177,11 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return password
   }
 
-  async requireConfirmation(message = 'Are you sure you want to execute this action?'): Promise<void> {
-    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: false }])
+  async requireConfirmation(
+    message = 'Are you sure you want to execute this action?',
+    defaultVal = false
+  ): Promise<void> {
+    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
     if (!confirmed) this.exit(ExitCodes.OK)
   }
 
@@ -178,7 +191,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     message = 'Select an account',
     showBalances = true
   ): Promise<NamedKeyringPair> {
-    let balances: DerivedBalances[]
+    let balances: DeriveBalancesAll[]
     if (showBalances) {
       balances = await this.getApi().getAccountsBalancesInfo(accounts.map((acc) => acc.address))
     }
@@ -206,12 +219,39 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {
-    const password: string = await this.promptForPassword()
-    try {
-      account.decodePkcs8(password)
-    } catch (e) {
-      this.error('Invalid password!', { exit: ExitCodes.InvalidInput })
+    // Skip if account already unlocked
+    if (!account.isLocked) {
+      return
     }
+
+    // First - try decoding using empty string
+    try {
+      account.decodePkcs8('')
+      return
+    } catch (e) {
+      // Continue...
+    }
+
+    let isPassValid = false
+    while (!isPassValid) {
+      try {
+        const password = await this.promptForPassword()
+        account.decodePkcs8(password)
+        isPassValid = true
+      } catch (e) {
+        this.warn('Invalid password... Try again.')
+      }
+    }
+  }
+
+  async getRequiredMemberId(): Promise<number> {
+    const account = await this.getRequiredSelectedAccount()
+    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
+    if (!memberIds.length) {
+      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+    }
+
+    return memberIds[0].toNumber() // FIXME: Temporary solution (just using the first one)
   }
 
   async init() {
