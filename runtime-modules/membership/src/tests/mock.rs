@@ -16,6 +16,10 @@ use sp_runtime::{
     DispatchError, DispatchResult, Perbill,
 };
 
+type MembershipWorkingGroupInstance = working_group::Instance4;
+
+pub use common::currency::GovernanceCurrency;
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }

@@ -109,7 +109,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
     application_id
 }
 
-fn add_opening_and_apply_with_multiple_ids<T: Trait<I>, I: Instance>(
+fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
     ids: &Vec<u32>,
     add_opening_origin: &T::Origin,
     staking_role: &StakingRole,
@@ -174,7 +174,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait<I>, I: Instance>(
+fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -204,7 +204,7 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     WorkingGroup::<T, _>::on_initialize(curr_block_number);
 }
 
-fn insert_a_worker<T: Trait<I>, I: Instance>(
+fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
     staking_role: StakingRole,
     job_opening_type: OpeningType,
     id: u32,
@@ -250,6 +250,10 @@ where
 }
 
 benchmarks_instance! {
+    where_clause {
+        where T: membership::Trait
+    }
+
     _ { }
 
     on_initialize_leaving {

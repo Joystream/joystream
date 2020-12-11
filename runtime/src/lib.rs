@@ -602,7 +602,7 @@ pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = membership::MembershipWorkingGroupInstance;
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
