@@ -262,6 +262,7 @@ impl_runtime_apis! {
             use crate::ProposalsDiscussion;
             use crate::ProposalsEngine;
             use crate::Constitution;
+            use crate::Forum;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
