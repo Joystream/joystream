@@ -7,11 +7,13 @@ import { ClassEntity } from '../../generated/graphql-server/src/modules/class-en
 import { decode } from './decode'
 import {
   ClassEntityMap,
+  IBatchOperation,
   ICategory,
   IChannel,
   ICreateEntityOperation,
   IDBBlockId,
   IEntity,
+  IFeaturedVideo,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
   IKnownLicense,
@@ -38,6 +40,7 @@ import {
   ContentDirectoryKnownClasses,
   licensePropertyNamesWithId,
   mediaLocationPropertyNamesWithId,
+  featuredVideoPropertyNamesWithId,
 } from './content-dir-consts'
 import {
   updateCategoryEntityPropertyValues,
@@ -52,6 +55,7 @@ import {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 } from './entity/update'
 
 import {
@@ -69,6 +73,7 @@ import {
   createLicense,
   createMediaLocation,
   createBlockOrGetFromDatabase,
+  createFeaturedVideo,
 } from './entity/create'
 import { getOrCreate } from './get-or-create'
 
@@ -82,32 +87,34 @@ async function getNextEntityId(db: DB): Promise<number> {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
+export async function contentDirectory_TransactionFailed(db: DB, event: SubstrateEvent): Promise<void> {
+  debug(`TransactionFailed event: ${JSON.stringify(event)}`)
+
+  const failedOperationIndex = event.params[1].value as number
+  const operations = decode.getOperations(event)
+
+  const successfulOperations = operations.toArray().slice(0, failedOperationIndex)
+  if (!successfulOperations.length) return // No succesfull operations
+
+  await applyOperations(decode.getOperationsByTypes(successfulOperations), db, event)
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
   debug(`TransactionCompleted event: ${JSON.stringify(event)}`)
 
-  const { extrinsic, blockNumber: block } = event
-  if (!extrinsic) {
-    throw Error(`No extrinsic found for the event: ${event.id}`)
-  }
+  const operations = decode.getOperations(event)
 
-  const { 1: operations } = extrinsic.args
-  if (operations.name.toString() !== 'operations') {
-    throw Error(`Could not found 'operations' in the extrinsic.args[1]`)
-  }
+  await applyOperations(decode.getOperationsByTypes(operations), db, event)
+}
 
-  const {
-    addSchemaSupportToEntityOperations,
-    createEntityOperations,
-    updatePropertyValuesOperations,
-  } = decode.getOperations(event)
-
+async function applyOperations(operations: IBatchOperation, db: DB, event: SubstrateEvent) {
+  const { addSchemaSupportToEntityOperations, createEntityOperations, updatePropertyValuesOperations } = operations
   // Create entities before adding schema support
   // We need this to know which entity belongs to which class(we will need to know to update/create
   // Channel, Video etc.). For example if there is a property update operation there is no class id
-  await batchCreateClassEntities(db, block, createEntityOperations)
-
-  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, block)
-
+  await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
+  await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
   await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
 }
 
@@ -256,6 +263,15 @@ async function batchAddSchemaSupportToEntity(
           )
           break
 
+        case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+          await createFeaturedVideo(
+            arg,
+            classEntityMap,
+            decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
+          )
+          break
+
         default:
           console.log(`Unknown class name: ${className}`)
           break
@@ -381,6 +397,14 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
           db,
           where,
           decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
+          entityIdBeforeTransaction
+        )
+        break
+      case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+        await updateFeaturedVideoEntityPropertyValues(
+          db,
+          where,
+          decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
           entityIdBeforeTransaction
         )
         break

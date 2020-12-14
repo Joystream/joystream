@@ -16,6 +16,7 @@ import {
   updateVideoMediaEncodingEntityPropertyValues,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
+  updateFeaturedVideoEntityPropertyValues,
 } from './update'
 import {
   removeCategory,
@@ -30,6 +31,7 @@ import {
   removeVideoMediaEncoding,
   removeLicense,
   removeMediaLocation,
+  removeFeaturedVideo,
 } from './remove'
 import {
   createCategory,
@@ -43,6 +45,7 @@ import {
   createLanguage,
   createVideoMediaEncoding,
   createBlockOrGetFromDatabase,
+  createFeaturedVideo,
 } from './create'
 import {
   categoryPropertyNamesWithId,
@@ -54,8 +57,8 @@ import {
   userDefinedLicensePropertyNamesWithId,
   videoMediaEncodingPropertyNamesWithId,
   videoPropertyNamesWithId,
-  contentDirectoryClassNamesWithId,
   ContentDirectoryKnownClasses,
+  featuredVideoPropertyNamesWithId,
 } from '../content-dir-consts'
 
 import {
@@ -74,8 +77,9 @@ import {
   IEntity,
   ILicense,
   IMediaLocation,
+  IFeaturedVideo,
 } from '../../types'
-import { getOrCreate } from '../get-or-create'
+import { getOrCreate, getKnownClass } from '../get-or-create'
 
 const debug = Debug('mappings:content-directory')
 
@@ -86,22 +90,13 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
 
   const { blockNumber: block } = event
   const entityId = decode.stringIfyEntityId(event)
-  const classEntity = await db.get(ClassEntity, { where: { id: entityId } })
 
-  if (classEntity === undefined) {
-    console.log(`Class not found for the EntityId: ${entityId}`)
-    return
-  }
-
-  const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
-  if (cls === undefined) {
-    console.log('Not recognized class')
-    return
-  }
+  const [knownClass] = await getKnownClass(db, { where: { id: entityId } })
+  if (!knownClass) return
 
   const arg: IDBBlockId = { db, block, id: entityId }
 
-  switch (cls.name) {
+  switch (knownClass.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
       await createChannel(
         arg,
@@ -168,9 +163,17 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
       )
       break
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await createFeaturedVideo(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
+        0
+      )
+      break
 
     default:
-      throw new Error(`Unknown class name: ${cls.name}`)
+      throw new Error(`Unknown class name: ${knownClass.name}`)
   }
 }
 
@@ -181,19 +184,10 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
   const entityId = decode.stringIfyEntityId(event)
   const where: IWhereCond = { where: { id: entityId } }
 
-  const classEntity = await db.get(ClassEntity, where)
-  if (classEntity === undefined) {
-    console.log(`Class not found for the EntityId: ${entityId}`)
-    return
-  }
+  const [knownClass, classEntity] = await getKnownClass(db, where)
+  if (!knownClass) return
 
-  const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
-  if (cls === undefined) {
-    console.log('Unknown class')
-    return
-  }
-
-  switch (cls.name) {
+  switch (knownClass.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
       await removeChannel(db, where)
       break
@@ -241,9 +235,14 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
       await removeMediaLocation(db, where)
       break
 
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await removeFeaturedVideo(db, where)
+      break
+
     default:
-      throw new Error(`Unknown class name: ${cls.name}`)
+      throw new Error(`Unknown class name: ${knownClass.name}`)
   }
+  await db.remove<ClassEntity>(classEntity)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -273,21 +272,17 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
 
   const { 2: newPropertyValues } = extrinsic.args
   const entityId = decode.stringIfyEntityId(event)
-
-  const ce = await db.get(ClassEntity, { where: { id: entityId } })
-  if (ce === undefined) throw Error(`Class not found for the entity id: ${entityId}`)
-
-  const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === ce.classId)
-  if (cls === undefined) throw Error(`Not known class id: ${ce.classId}`)
-
   const where: IWhereCond = { where: { id: entityId } }
+
+  const [knownClass] = await getKnownClass(db, where)
+  if (!knownClass) return
 
   // TODO: change setProperties method signature to accecpt SubstrateExtrinsic, then remove the following
   // line. The reason we push the same arg is beacuse of the setProperties method check the 3rd indices
   // to get properties values
   extrinsic.args.push(newPropertyValues)
 
-  switch (cls.name) {
+  switch (knownClass.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
       updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId), 0)
       break
@@ -379,8 +374,17 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       )
       break
 
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await updateFeaturedVideoEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
+        0
+      )
+      break
+
     default:
-      throw new Error(`Unknown class name: ${cls.name}`)
+      throw new Error(`Unknown class name: ${knownClass.name}`)
   }
 }
 

@@ -1,10 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types as joyTypes } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
-// Import input parser and channel entity from cd-schemas (we use it as library here)
-import { InputParser } from 'cd-schemas'
-import { ChannelEntity } from 'cd-schemas/types/entities'
-import { FlattenRelations } from 'cd-schemas/types/utility'
+// Import input parser and channel entity from @joystream/cd-schemas (we use it as library here)
+import { InputParser } from '@joystream/cd-schemas'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities'
+import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 
 // Alternative way of update a channel using updateEntityPropertyValues extrinsic
 async function main() {
@@ -19,7 +19,7 @@ async function main() {
 
   // Create partial channel entity, only containing the fields we wish to update
   const channelUpdateInput: Partial<FlattenRelations<ChannelEntity>> = {
-    title: 'Updated channel title 2',
+    handle: 'Updated channel handle 2',
   }
 
   // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
@@ -28,7 +28,7 @@ async function main() {
   // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
   // created in ./createChannelWithoutTransaction.ts example
   // (normally we would probably use some other way to do it, ie.: query node)
-  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel 2' }, 'Channel')
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ handle: 'Example channel 2' }, 'Channel')
 
   // We use parser to create input property values map
   const newPropertyValues = await parser.parseToInputEntityValuesMap(channelUpdateInput, 'Channel')

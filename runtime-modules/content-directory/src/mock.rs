@@ -433,13 +433,14 @@ type RawTestEvent = RawEvent<
     Nonce,
     Option<ReferenceCounterSideEffects<Runtime>>,
     Option<(EntityId, EntityReferenceCounterSideEffect)>,
+    u32,
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
     TestEvent::test_events(raw_event)
 }
 
-pub fn assert_event_success(tested_event: TestEvent, number_of_events_after_call: usize) {
+pub fn assert_event(tested_event: TestEvent, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 

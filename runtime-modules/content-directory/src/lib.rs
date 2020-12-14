@@ -142,7 +142,11 @@ use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 
 use frame_support::{
-    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+    decl_event, decl_module, decl_storage,
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+    traits::Get,
+    Parameter,
 };
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -1625,64 +1629,115 @@ decl_module! {
             Ok(())
         }
 
-        /// Batch transaction
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transaction(origin, actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>, operations: Vec<OperationType<T>>) -> DispatchResult {
+       /// Batch transaction
+       #[weight = 10_000_000] // TODO: adjust weight
+       pub fn transaction(origin, actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>, operations: Vec<OperationType<T>>) -> DispatchResult {
 
-            // Ensure maximum number of operations during atomic batching limit not reached
-            Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
+           // Ensure maximum number of operations during atomic batching limit not reached
+           Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+           //
+           // == MUTATION SAFE ==
+           //
 
-            // This BTreeMap holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
-            let mut entity_created_in_operation = BTreeMap::new();
+           // This BTreeMap holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
+           let mut entity_created_in_operation = BTreeMap::new();
 
-            // Create raw origin
-            let raw_origin = origin.into().map_err(|_| Error::<T>::OriginCanNotBeMadeIntoRawOrigin)?;
+           // Create raw origin
+           let raw_origin = origin.into().map_err(|_| Error::<T>::OriginCanNotBeMadeIntoRawOrigin)?;
 
-            for (index, operation_type) in operations.into_iter().enumerate() {
-                let origin = T::Origin::from(raw_origin.clone());
-                match operation_type {
-                    OperationType::CreateEntity(create_entity_operation) => {
-                        Self::create_entity(origin, create_entity_operation.class_id, actor)?;
+           for (index, operation_type) in operations.into_iter().enumerate() {
+               let origin = T::Origin::from(raw_origin.clone());
+               match operation_type {
+                   OperationType::CreateEntity(create_entity_operation) => {
+                        Self::ensure_transaction_failed_event(
+                            Self::create_entity(origin, create_entity_operation.class_id, actor),
+                            actor,
+                            index
+                        )?;
 
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
                         entity_created_in_operation.insert(index, entity_id);
-                    },
-                    OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(
-                            &entity_created_in_operation, add_schema_support_to_entity_operation.entity_id
-                        )?;
-                        let schema_id = add_schema_support_to_entity_operation.schema_id;
-                        let property_values = operations::parametrized_property_values_to_property_values(
-                            &entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values
-                        )?;
-                        Self::add_schema_support_to_entity(origin, actor, entity_id, schema_id, property_values)?;
-                    },
-                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(
-                            &entity_created_in_operation, update_property_values_operation.entity_id
-                        )?;
-                        let property_values = operations::parametrized_property_values_to_property_values(
-                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
-                        )?;
-                        Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
-                    },
-                }
-            }
+                   },
+                   OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
+                       let entity_id =
+                            Self::ensure_transaction_failed_event(
+                                operations::parametrized_entity_to_entity_id(
+                                    &entity_created_in_operation, add_schema_support_to_entity_operation.entity_id
+                                ),
+                                actor,
+                                index
+                            )?;
 
-            // Trigger event
-            Self::deposit_event(RawEvent::TransactionCompleted(actor));
+                       let schema_id = add_schema_support_to_entity_operation.schema_id;
 
-            Ok(())
-        }
+                       let property_values =
+                            Self::ensure_transaction_failed_event(
+                                operations::parametrized_property_values_to_property_values(
+                                    &entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values
+                                ),
+                                actor,
+                                index
+                            )?;
+                        Self::ensure_transaction_failed_event(
+                            Self::add_schema_support_to_entity(origin, actor, entity_id, schema_id, property_values),
+                            actor,
+                            index
+                        )?;
+                   },
+                   OperationType::UpdatePropertyValues(update_property_values_operation) => {
+                       let entity_id =
+                            Self::ensure_transaction_failed_event(
+                                operations::parametrized_entity_to_entity_id(
+                                    &entity_created_in_operation, update_property_values_operation.entity_id
+                                ),
+                                actor,
+                                index
+                            )?;
+
+                       let property_values =
+                            Self::ensure_transaction_failed_event(
+                                operations::parametrized_property_values_to_property_values(
+                                    &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
+                                ),
+                                actor,
+                                index
+                            )?;
+
+                       Self::ensure_transaction_failed_event(
+                            Self::update_entity_property_values(origin, actor, entity_id, property_values),
+                            actor,
+                            index
+                       )?;
+                   },
+               }
+           }
+
+           // Trigger event
+           Self::deposit_event(RawEvent::TransactionCompleted(actor));
+
+           Ok(())
+       }
     }
 }
 
 impl<T: Trait> Module<T> {
+    /// Deposits an `TransactionFailed` event if an error during `transaction` extrinsic execution occured
+    fn ensure_transaction_failed_event<R, E: Into<DispatchError>>(
+        result: Result<R, E>,
+        actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        index: usize,
+    ) -> Result<R, DispatchError> {
+        match result {
+            Err(e) => {
+                Self::deposit_event(RawEvent::TransactionFailed(actor, index as u32));
+                Err(e.into())
+            }
+            Ok(result) => Ok(result),
+        }
+    }
+
     /// Updates corresponding `Entity` `reference_counter` by `reference_counter_delta`.
     fn update_entity_rc(
         entity_id: T::EntityId,
@@ -2809,6 +2864,14 @@ impl<T: Trait> Module<T> {
     }
 }
 
+impl<T: Trait> Module<T> {
+    pub fn set_initial_ids_to_one() {
+        <NextEntityId<T>>::put(T::EntityId::one());
+        <NextClassId<T>>::put(T::ClassId::one());
+        <NextCuratorGroupId<T>>::put(T::CuratorGroupId::one());
+    }
+}
+
 decl_event!(
     pub enum Event<T>
     where
@@ -2827,6 +2890,7 @@ decl_event!(
         Nonce = <T as Trait>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
         SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,
+        FailedAt = u32,
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
@@ -2851,5 +2915,6 @@ decl_event!(
         InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         EntityOwnershipTransfered(EntityId, EntityController, SideEffects),
         TransactionCompleted(Actor),
+        TransactionFailed(Actor, FailedAt),
     }
 );

@@ -13,8 +13,8 @@ use sp_std::vec::Vec;
 use crate::constants::PRIMARY_PROBABILITY;
 use crate::integration::content_directory::ContentDirectoryWorkingGroup;
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    content_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
+    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
@@ -69,6 +69,11 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             default_text_constraint,
             default_content_working_group_mint_capacity,
         );
+
+        // Next Id's are configured at genesis. Applications and tools are harcoded to expect initial
+        // values of the ids to start at 1. With a runtime upgrade the initial values will not be
+        // configured and get an initial default value of zero. This corrects this problem.
+        content_directory::Module::<Runtime>::set_initial_ids_to_one();
 
         10_000_000 // TODO: adjust weight
     }

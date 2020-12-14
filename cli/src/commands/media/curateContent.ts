@@ -1,8 +1,8 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { InputParser } from 'cd-schemas'
+import { InputParser } from '@joystream/cd-schemas'
 import { flags } from '@oclif/command'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 
 const CLASSES = ['Channel', 'Video'] as const
 const STATUSES = ['Accepted', 'Censored'] as const

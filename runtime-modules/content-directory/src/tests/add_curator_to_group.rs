@@ -31,7 +31,7 @@ fn add_curator_to_group_success() {
         ));
 
         // Event checked
-        assert_event_success(
+        assert_event(
             curator_group_curator_added_event,
             number_of_events_before_call + 1,
         );

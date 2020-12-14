@@ -62,12 +62,11 @@ fn transaction_success() {
 
         // Runtime tested state after call
 
-        let entity_ownership_transfered_event =
-            get_test_event(RawEvent::TransactionCompleted(actor));
+        let transaction_completed_event = get_test_event(RawEvent::TransactionCompleted(actor));
 
         // Last event checked
-        assert_event_success(
-            entity_ownership_transfered_event,
+        assert_event(
+            transaction_completed_event,
             number_of_events_before_calls + operations_count + 1,
         );
     })
@@ -101,6 +100,56 @@ fn transaction_limit_reached() {
             transaction_result,
             Error::<Runtime>::NumberOfOperationsDuringAtomicBatchingLimitReached,
             number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn transaction_failed() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let operation = OperationType::CreateEntity(CreateEntityOperation {
+            class_id: FIRST_CLASS_ID,
+        });
+
+        let failed_operation = OperationType::CreateEntity(CreateEntityOperation {
+            class_id: UNKNOWN_CLASS_ID,
+        });
+
+        let operations = vec![
+            operation.clone(),
+            operation.clone(),
+            failed_operation,
+            operation,
+        ];
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let actor = Actor::Lead;
+
+        // Make an attempt to complete transaction with CreateEntity operation, when provided class_id does not exist on runtime level
+        let transaction_result = transaction(LEAD_ORIGIN, actor, operations.clone());
+
+        let failed_operation_index = 2;
+
+        // Failure checked
+
+        // Ensure  call result is equal to expected error
+        assert_err!(transaction_result, Error::<Runtime>::ClassNotFound);
+
+        let transaction_failed_event =
+            get_test_event(RawEvent::TransactionFailed(actor, failed_operation_index));
+
+        // Last event checked
+        assert_event(
+            transaction_failed_event,
+            // two operations succeded and one TransactionFailed event
+            number_of_events_before_call + operations[..failed_operation_index as usize].len() + 1,
         );
     })
 }

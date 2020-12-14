@@ -271,6 +271,8 @@ export class ReferenceConstraint extends Null {}
 
 export class InputEntityValuesMap extends BTreeMap.with(PropertyId, InputPropertyValue) {}
 
+export class FailedAt extends u32 {}
+
 export const contentDirectoryTypes = {
   Nonce,
   EntityId,
@@ -324,6 +326,7 @@ export const contentDirectoryTypes = {
   ClassPropertyValue,
   Operation,
   ReferenceConstraint,
+  FailedAt,
 }
 
 export default contentDirectoryTypes

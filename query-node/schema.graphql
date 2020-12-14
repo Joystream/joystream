@@ -18,7 +18,7 @@ type Member @entity {
   id: ID!
 
   "The unique handle chosen by member"
-  handle: String @unique @fulltext(query: "handles")
+  handle: String @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
   avatarUri: String
@@ -84,16 +84,16 @@ type Channel @entity {
   # owner: Member!
 
   "The title of the Channel"
-  title: String! @fulltext(query: "titles")
+  handle: String! @fulltext(query: "search")
 
   "The description of a Channel"
   description: String!
 
   "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhotoURL: String!
+  coverPhotoUrl: String
 
   "Channel's avatar photo."
-  avatarPhotoURL: String!
+  avatarPhotoUrl: String
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean!
@@ -102,7 +102,7 @@ type Channel @entity {
   isCurated: Boolean!
 
   "The primary langauge of the channel's content"
-  language: Language!
+  language: Language
 
   videos: [Video!] @derivedFrom(field: "channel")
 
@@ -114,7 +114,7 @@ type Category @entity {
   id: ID!
 
   "The name of the category"
-  name: String! @unique @fulltext(query: "names")
+  name: String! @unique @fulltext(query: "categoriesByName")
 
   "The description of the category"
   description: String
@@ -134,7 +134,7 @@ type VideoMediaEncoding @entity {
   happenedIn: Block!
 }
 
-type KnownLicense @entity {
+type KnownLicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -153,7 +153,7 @@ type KnownLicense @entity {
   happenedIn: Block!
 }
 
-type UserDefinedLicense @entity {
+type UserDefinedLicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -163,39 +163,24 @@ type UserDefinedLicense @entity {
   happenedIn: Block!
 }
 
-type License @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  # One of the following field will be non-null
-
-  "Reference to a known license"
-  knownLicense: KnownLicense
-
-  "Reference to user-defined license"
-  userdefinedLicense: UserDefinedLicense
-
-  happenedIn: Block!
-}
-
-type MediaLocation @entity {
+type MediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
   # One of the following field will be non-null
 
   "A reference to HttpMediaLocation"
-  httpMediaLocation: HttpMediaLocation
+  httpMediaLocation: HttpMediaLocationEntity
 
   "A reference to JoystreamMediaLocation"
-  joystreamMediaLocation: JoystreamMediaLocation
+  joystreamMediaLocation: JoystreamMediaLocationEntity
 
-  videoMedia: VideoMedia @derivedFrom(field: "location")
+  videoMedia: VideoMedia @derivedFrom(field: "locationEntity")
 
   happenedIn: Block!
 }
 
-type JoystreamMediaLocation @entity {
+type JoystreamMediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -205,7 +190,7 @@ type JoystreamMediaLocation @entity {
   happenedIn: Block!
 }
 
-type HttpMediaLocation @entity {
+type HttpMediaLocationEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -239,6 +224,8 @@ type VideoMedia @entity {
   "Location of the video media object"
   location: MediaLocation!
 
+  locationEntity: MediaLocationEntity
+
   happenedIn: Block!
 }
 
@@ -253,7 +240,7 @@ type Video @entity {
   category: Category!
 
   "The title of the video"
-  title: String! @fulltext(query: "titles")
+  title: String! @fulltext(query: "search")
 
   "The description of the Video"
   description: String!
@@ -265,7 +252,7 @@ type Video @entity {
   skippableIntroDuration: Int
 
   "Video thumbnail url (recommended ratio: 16:9)"
-  thumbnailURL: String!
+  thumbnailUrl: String!
 
   "Video's main langauge"
   language: Language
@@ -288,7 +275,68 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
-  license: License!
+  license: LicenseEntity!
 
   happenedIn: Block!
+
+  "Is video featured or not"
+  isFeatured: Boolean!
+
+  featured: FeaturedVideo @derivedFrom(field: "video")
+}
+
+type JoystreamMediaLocation @variant {
+  "Id of the data object in the Joystream runtime dataDirectory module"
+  dataObjectId: String!
+}
+
+type HttpMediaLocation @variant {
+  "The http url pointing to the media"
+  url: String!
+
+  "The port to use when connecting to the http url (defaults to 80)"
+  port: Int
+}
+
+union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
+
+type KnownLicense @variant {
+  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
+  code: String!
+
+  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
+  name: String
+
+  "Short description of the license conditions"
+  description: String
+
+  "An url pointing to full license content"
+  url: String
+}
+
+type UserDefinedLicense @variant {
+  "Custom license content"
+  content: String!
+}
+
+union License = KnownLicense | UserDefinedLicense
+
+type LicenseEntity @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  type: License!
+
+  "Attribution (if required by the license)"
+  attribution: String
+
+  happenedIn: Block!
+}
+
+type FeaturedVideo @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  "Reference to a video"
+  video: Video!
 }

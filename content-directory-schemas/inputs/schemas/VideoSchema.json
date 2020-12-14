@@ -38,7 +38,7 @@
       "property_type": { "Single": "Uint16" }
     },
     {
-      "name": "thumbnailURL",
+      "name": "thumbnailUrl",
       "description": "Video thumbnail url (recommended ratio: 16:9)",
       "required": true,
       "property_type": { "Single": { "Text": 256 } }
@@ -67,7 +67,7 @@
       "name": "publishedBeforeJoystream",
       "description": "If the Video was published on other platform before beeing published on Joystream - the original publication date",
       "required": false,
-      "property_type": { "Single": "Uint32" }
+      "property_type": { "Single": "Int32" }
     },
     {
       "name": "isPublic",
@@ -92,7 +92,6 @@
       "name": "isCensored",
       "description": "Video censorship status set by the Curator.",
       "required": false,
-      "unique": true,
       "property_type": { "Single": "Bool" },
       "locking_policy": { "is_locked_from_controller": true }
     }

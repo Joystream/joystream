@@ -136,7 +136,8 @@ USAGE
   $ joystream-cli account:choose
 
 OPTIONS
-  --showSpecial  Whether to show special (DEV chain) accounts
+  -S, --showSpecial      Whether to show special (DEV chain) accounts
+  -a, --address=address  Select account by address (if available)
 ```
 
 _See code: [src/commands/account/choose.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/choose.ts)_
@@ -628,6 +629,8 @@ OPTIONS
 
   -o, --output=output  Path to the directory where the output JSON file should be placed (the output file can be then
                        reused as input)
+
+  -y, --confirm        Confirm the provided input
 ```
 
 _See code: [src/commands/media/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/createChannel.ts)_
@@ -796,6 +799,10 @@ ARGUMENTS
 OPTIONS
   -c, --channel=channel  ID of the channel to assign the video to (if omitted - one of the owned channels can be
                          selected from the list)
+
+  -i, --input=input      Path to JSON file to use as input (if not specified - the input can be provided interactively)
+
+  -y, --confirm          Confirm the provided input
 ```
 
 _See code: [src/commands/media/uploadVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/uploadVideo.ts)_

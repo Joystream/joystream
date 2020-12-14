@@ -75,7 +75,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 7,
+    spec_version: 9,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -396,13 +396,13 @@ parameter_types! {
     pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
     pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
     pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 400;
+    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
     pub const VecMaxLengthConstraint: VecMaxLength = 200;
     pub const TextMaxLengthConstraint: TextMaxLength = 5000;
     pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 50;
+    pub const IndividualEntitiesCreationLimit: EntityId = 500;
 }
 
 impl content_directory::Trait for Runtime {
