@@ -4,7 +4,7 @@ use crate::ProposalParameters;
 #[ignore]
 #[test]
 fn proposal_parameters_are_initialized() {
-    let actual_params = super::SetValidatorCountProposalParameters::get();
+    let actual_params = super::SetMaxValidatorCountProposalParameters::get();
     let expected_params = ProposalParameters {
         voting_period: 1,
         grace_period: 2,

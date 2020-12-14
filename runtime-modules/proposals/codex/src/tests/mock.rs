@@ -241,11 +241,17 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -348,6 +354,28 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type WeightInfo = WorkingGroupWeightInfo;
 }
 
+impl working_group::Trait<ForumWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
 pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
@@ -432,19 +460,20 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
-    type SetValidatorCountProposalParameters = DefaultProposalParameters;
+    type SetMaxValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
-    type TextProposalParameters = DefaultProposalParameters;
-    type SpendingProposalParameters = DefaultProposalParameters;
-    type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type SetWorkingGroupBudgetCapacityProposalParameters = DefaultProposalParameters;
-    type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
-    type SlashWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
-    type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
-    type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
+    type SignalProposalParameters = DefaultProposalParameters;
+    type FundingRequestProposalParameters = DefaultProposalParameters;
+    type CreateWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type FillWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type UpdateWorkingGroupBudgetProposalParameters = DefaultProposalParameters;
+    type DecreaseWorkingGroupLeadStakeProposalParameters = DefaultProposalParameters;
+    type SlashWorkingGroupLeadProposalParameters = DefaultProposalParameters;
+    type SetWorkingGroupLeadRewardProposalParameters = DefaultProposalParameters;
+    type TerminateWorkingGroupLeadProposalParameters = DefaultProposalParameters;
     type AmendConstitutionProposalParameters = DefaultProposalParameters;
-    type CancelWorkingGroupLeaderOpeningParameters = DefaultProposalParameters;
+    type CancelWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type SetMembershipPriceProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -683,11 +712,9 @@ impl LockComparator<<Test as balances::Trait>::Balance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
-
-    council_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }

@@ -115,7 +115,7 @@ impl Default for DummyProposalFixture {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
         let dummy_proposal =
-            proposals_codex::Call::<Runtime>::execute_text_proposal(b"text".to_vec());
+            proposals_codex::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -474,7 +474,7 @@ fn text_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::Text(b"text".to_vec()),
+                ProposalDetails::Signal(b"signal".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
@@ -508,7 +508,7 @@ fn spending_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::Spending(new_balance, target_account_id.clone().into()),
+                ProposalDetails::FundingRequest(new_balance, target_account_id.clone().into()),
             )
         })
         .with_member_id(member_id as u64);
@@ -558,7 +558,7 @@ fn set_validator_count_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::SetValidatorCount(new_validator_count),
+                ProposalDetails::SetMaxValidatorCount(new_validator_count),
             )
         })
         .disable_setup_enviroment();
