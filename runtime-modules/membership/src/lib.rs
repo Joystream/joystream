@@ -35,6 +35,8 @@
 //! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
 //! updates member profile verification status.
 //! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) - updates the referral cut.
+//! - [transfer_invites](./struct.Module.html#method.transfer_invites) - transfers the invites
+//! from one member to another.
 //!
 //! [Joystream handbook description](https://joystream.gitbook.io/joystream-handbook/subsystems/membership)
 
@@ -192,6 +194,12 @@ decl_error! {
 
         /// Cannot find a membership for a provided referrer id.
         ReferrerIsNotMember,
+
+        /// Should be a member to receive invites.
+        CannotTransferInvitesForNotMember,
+
+        /// Not enough invites to perform an operation.
+        NotEnoughInvites,
     }
 }
 
@@ -272,6 +280,7 @@ decl_event! {
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
         ReferralCutUpdated(Balance),
+        InvitesTransferred(MemberId, MemberId, u32),
     }
 }
 
@@ -494,6 +503,41 @@ decl_module! {
             <ReferralCut<T>>::put(value);
 
             Self::deposit_event(RawEvent::ReferralCutUpdated(value));
+        }
+
+        /// Transfers invites from one member to another.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_invites(
+            origin,
+            source_member_id: T::MemberId,
+            target_member_id: T::MemberId,
+            number_of_invites: u32
+        ) {
+            Self::ensure_member_controller_account_signed(origin, &source_member_id)?;
+
+            let mut source_membership = Self::ensure_membership(source_member_id)?;
+            let mut target_membership = Self::ensure_membership_with_error(
+                target_member_id,
+                Error::<T>::CannotTransferInvitesForNotMember
+            )?;
+
+            ensure!(source_membership.invites >= number_of_invites, Error::<T>::NotEnoughInvites);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            source_membership.invites -= number_of_invites;
+            target_membership.invites += number_of_invites;
+
+            <MembershipById<T>>::insert(&source_member_id, source_membership);
+            <MembershipById<T>>::insert(&target_member_id, target_membership);
+
+            Self::deposit_event(RawEvent::InvitesTransferred(
+                source_member_id,
+                target_member_id,
+                number_of_invites
+            ));
         }
     }
 }
