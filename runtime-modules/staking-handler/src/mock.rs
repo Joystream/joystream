@@ -76,6 +76,7 @@ impl membership::Trait for Test {
     type Event = ();
     type MembershipFee = MembershipFee;
     type WorkingGroup = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -99,6 +100,7 @@ pub type System = frame_system::Module<Test>;
 pub type TestStakingManager = crate::StakingManager<Test, LockId>;
 
 parameter_types! {
+    pub const DefaultMemberInvitesCount: u32 = 5;
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;

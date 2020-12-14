@@ -102,6 +102,7 @@ impl common::Trait for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
+    pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -222,6 +223,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type MembershipFee = MembershipFee;
     type WorkingGroup = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

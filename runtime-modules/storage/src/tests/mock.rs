@@ -156,6 +156,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [2; 8];
     pub const MembershipFee: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -284,6 +285,7 @@ impl membership::Trait for Test {
     type Event = MetaEvent;
     type MembershipFee = MembershipFee;
     type WorkingGroup = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

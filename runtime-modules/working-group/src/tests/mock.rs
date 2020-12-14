@@ -100,12 +100,14 @@ impl membership::Trait for Test {
     type Event = TestEvent;
     type MembershipFee = MembershipFee;
     type WorkingGroup = Module<Test>;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 
 parameter_types! {
+    pub const DefaultMemberInvitesCount: u32 = 5;
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;

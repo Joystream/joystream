@@ -69,6 +69,9 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+
+    /// Defines the default invite count for members.
+    type DefaultMemberInvitesCount: Get<u32>;
 }
 
 // Default user info constraints
@@ -110,6 +113,9 @@ pub struct MembershipObject<AccountId> {
     /// An indicator that reflects whether the implied real world identity in the profile
     /// corresponds to the true actor behind the membership.
     pub verified: bool,
+
+    /// Defines how many invitations this member has
+    pub invites: u32,
 }
 
 // Contains valid or default user details
@@ -625,6 +631,7 @@ impl<T: Trait> Module<T> {
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
+            invites: T::DefaultMemberInvitesCount::get(),
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
