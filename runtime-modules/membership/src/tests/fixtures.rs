@@ -263,3 +263,56 @@ impl SetReferralCutFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct TransferInvitesFixture {
+    pub origin: RawOrigin<u64>,
+    pub source_member_id: u64,
+    pub target_member_id: u64,
+    pub invites: u32,
+}
+
+impl Default for TransferInvitesFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            source_member_id: 0,
+            target_member_id: 1,
+            invites: 3,
+        }
+    }
+}
+
+impl TransferInvitesFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::transfer_invites(
+            self.origin.clone().into(),
+            self.source_member_id,
+            self.target_member_id,
+            self.invites,
+        );
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_source_member_id(self, source_member_id: u64) -> Self {
+        Self {
+            source_member_id,
+            ..self
+        }
+    }
+
+    pub fn with_target_member_id(self, target_member_id: u64) -> Self {
+        Self {
+            target_member_id,
+            ..self
+        }
+    }
+
+    pub fn with_invites_number(self, invites: u32) -> Self {
+        Self { invites, ..self }
+    }
+}

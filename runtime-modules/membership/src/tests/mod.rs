@@ -404,3 +404,109 @@ fn set_referral_fails_with_invalid_origin() {
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
+
+#[test]
+fn transfer_invites_succeeds() {
+    let alice_member_id = 0u64;
+    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 10000;
+        increase_total_balance_issuance_using_account_id(BOB_ACCOUNT_ID, initial_balance);
+
+        BuyMembershipFixture::default()
+            .with_handle(b"bobs_handle".to_vec())
+            .with_accounts(BOB_ACCOUNT_ID)
+            .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        let bob_member_id = 1;
+
+        let tranfer_invites_fixture = TransferInvitesFixture::default()
+            .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
+            .with_source_member_id(bob_member_id)
+            .with_target_member_id(alice_member_id);
+
+        tranfer_invites_fixture.call_and_assert(Ok(()));
+
+        let alice = Membership::membership(alice_member_id);
+        let bob = Membership::membership(bob_member_id);
+
+        assert_eq!(
+            alice.invites,
+            DefaultMemberInvitesCount::get() + tranfer_invites_fixture.invites
+        );
+        assert_eq!(
+            bob.invites,
+            DefaultMemberInvitesCount::get() - tranfer_invites_fixture.invites
+        );
+
+        EventFixture::assert_last_crate_event(Event::<Test>::InvitesTransferred(
+            bob_member_id,
+            alice_member_id,
+            tranfer_invites_fixture.invites,
+        ));
+    });
+}
+
+#[test]
+fn transfer_invites_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        TransferInvitesFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
+    });
+}
+
+#[test]
+fn transfer_invites_fails_with_source_member_id() {
+    build_test_externalities().execute_with(|| {
+        TransferInvitesFixture::default()
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn transfer_invites_fails_with_target_member_id() {
+    let alice_member_id = 0u64;
+    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        TransferInvitesFixture::default()
+            .call_and_assert(Err(Error::<Test>::CannotTransferInvitesForNotMember.into()));
+    });
+}
+
+#[test]
+fn transfer_invites_fails_when_not_enough_invites() {
+    let alice_member_id = 0u64;
+    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 10000;
+        increase_total_balance_issuance_using_account_id(BOB_ACCOUNT_ID, initial_balance);
+
+        BuyMembershipFixture::default()
+            .with_handle(b"bobs_handle".to_vec())
+            .with_accounts(BOB_ACCOUNT_ID)
+            .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        let bob_member_id = 1;
+
+        let invalid_invites_number = 100;
+        let tranfer_invites_fixture = TransferInvitesFixture::default()
+            .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
+            .with_source_member_id(bob_member_id)
+            .with_target_member_id(alice_member_id)
+            .with_invites_number(invalid_invites_number);
+
+        tranfer_invites_fixture.call_and_assert(Err(Error::<Test>::NotEnoughInvites.into()));
+    });
+}
