@@ -2,7 +2,6 @@
 
 # Executes and replaces all benchmarks with the new weights
 
-
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
 benchmark() {
