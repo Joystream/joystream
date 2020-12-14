@@ -153,6 +153,31 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     pub referrer_id: Option<MemberId>,
 }
 
+/// Parameters for the invite_member extrinsic.
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+pub struct InviteMembershipParameters<AccountId, MemberId> {
+    /// Inviting member id.
+    pub inviting_member_id: MemberId,
+
+    /// New member root account.
+    pub root_account: AccountId,
+
+    /// New member controller account.
+    pub controller_account: AccountId,
+
+    /// New member user name.
+    pub name: Option<Vec<u8>>,
+
+    /// New member handle.
+    pub handle: Option<Vec<u8>>,
+
+    /// New member avatar URI.
+    pub avatar_uri: Option<Vec<u8>>,
+
+    /// New member 'about' text.
+    pub about: Option<Vec<u8>>,
+}
+
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Trait> {
@@ -261,6 +286,7 @@ decl_storage! {
                     &member.root_account,
                     &member.controller_account,
                     &checked_user_info,
+                    Zero::zero(),
                 ).expect("Importing Member Failed");
 
                 // ensure imported member id matches assigned id
@@ -333,6 +359,7 @@ decl_module! {
                 &params.root_account,
                 &params.controller_account,
                 &user_info,
+                T::DefaultMemberInvitesCount::get(),
             )?;
 
             // Collect membership fee (just burn it).
@@ -539,6 +566,47 @@ decl_module! {
                 number_of_invites
             ));
         }
+
+        /// Invite a new member.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn invite_member(
+            origin,
+            params: InviteMembershipParameters<T::AccountId, T::MemberId>
+        ) {
+            Self::ensure_member_controller_account_signed(origin, &params.inviting_member_id)?;
+
+            let mut inviting_membership = Self::ensure_membership(params.inviting_member_id)?;
+            ensure!(inviting_membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
+
+            // Make sure we are accepting new memberships.
+            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
+
+            // Verify user parameters.
+            let user_info = Self::check_user_registration_info(
+                params.name,
+                params.handle,
+                params.avatar_uri,
+                params.about)
+            ?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let member_id = Self::insert_member(
+                &params.root_account,
+                &params.controller_account,
+                &user_info,
+                Zero::zero(),
+            )?;
+
+            inviting_membership.invites -= 1;
+
+            <MembershipById<T>>::insert(&params.inviting_member_id, inviting_membership);
+
+            // Fire the event.
+            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+        }
     }
 }
 
@@ -657,11 +725,12 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    // Inserts a member using a validated information. Sets handle, accounts caches.
+    // Inserts a member using a validated information. Sets handle, accounts caches, etc..
     fn insert_member(
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
         user_info: &ValidatedUserInfo,
+        allowed_invites: u32,
     ) -> Result<T::MemberId, Error<T>> {
         Self::ensure_unique_handle(&user_info.handle)?;
 
@@ -675,7 +744,7 @@ impl<T: Trait> Module<T> {
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
-            invites: T::DefaultMemberInvitesCount::get(),
+            invites: allowed_invites,
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {

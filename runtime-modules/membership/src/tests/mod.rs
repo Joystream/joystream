@@ -435,10 +435,7 @@ fn transfer_invites_succeeds() {
         let alice = Membership::membership(alice_member_id);
         let bob = Membership::membership(bob_member_id);
 
-        assert_eq!(
-            alice.invites,
-            DefaultMemberInvitesCount::get() + tranfer_invites_fixture.invites
-        );
+        assert_eq!(alice.invites, tranfer_invites_fixture.invites);
         assert_eq!(
             bob.invites,
             DefaultMemberInvitesCount::get() - tranfer_invites_fixture.invites
