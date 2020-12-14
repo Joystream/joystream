@@ -88,6 +88,26 @@ impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, StakeBalance, Worke
     }
 }
 
+/// Proposal parameters common to all proposals
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
+    /// Member ID of proposer
+    pub member_id: MemberId,
+
+    /// Title of the proposal
+    pub title: Vec<u8>,
+
+    /// Proposal description
+    pub description: Vec<u8>,
+
+    /// Staking Account Id for proposer, must have one for proposal to work
+    pub staking_account_id: Option<AccountId>,
+
+    /// Intended execution block for the proposal
+    pub exact_execution_block: Option<BlockNumber>,
+}
+
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]

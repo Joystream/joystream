@@ -66,19 +66,23 @@ fn add_opening(
     };
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_add_working_group_leader_opening_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            AddOpeningParameters {
+            general_proposal_parameters,
+            ProposalDetails::AddWorkingGroupLeaderOpening(AddOpeningParameters {
                 description: Vec::new(),
                 stake_policy: stake_policy.clone(),
                 reward_policy: None,
                 working_group,
-            },
-            None,
+            }),
         )
     })
     .with_expected_proposal_id(expected_proposal_id)
@@ -101,18 +105,24 @@ fn fill_opening(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_fill_working_group_leader_opening_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            proposals_codex::FillOpeningParameters {
-                opening_id,
-                successful_application_id,
-                working_group,
-            },
-            None,
+            general_proposal_parameters,
+            ProposalDetails::FillWorkingGroupLeaderOpening(
+                proposals_codex::FillOpeningParameters {
+                    opening_id,
+                    successful_application_id,
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -134,16 +144,22 @@ fn decrease_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            stake_amount,
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                leader_worker_id,
+                stake_amount,
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -165,19 +181,25 @@ fn slash_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_slash_working_group_leader_stake_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            Penalty {
-                slashing_amount: stake_amount,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SlashWorkingGroupLeaderStake(
+                leader_worker_id,
+                Penalty {
+                    slashing_amount: stake_amount,
+                    slashing_text: Vec::new(),
+                },
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -199,16 +221,22 @@ fn set_reward(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_leader_reward_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            Some(reward_amount),
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SetWorkingGroupLeaderReward(
+                leader_worker_id,
+                Some(reward_amount),
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -233,15 +261,18 @@ fn set_mint_capacity<
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_budget_capacity_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            mint_capacity,
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SetWorkingGroupBudgetCapacity(mint_capacity, working_group),
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -263,18 +294,24 @@ fn terminate_role(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_terminate_working_group_leader_role_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            proposals_codex::TerminateRoleParameters {
-                worker_id: leader_worker_id,
-                penalty: penalty.clone(),
-                working_group,
-            },
-            None,
+            general_proposal_parameters,
+            ProposalDetails::TerminateWorkingGroupLeaderRole(
+                proposals_codex::TerminateRoleParameters {
+                    worker_id: leader_worker_id,
+                    penalty: penalty.clone(),
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()
