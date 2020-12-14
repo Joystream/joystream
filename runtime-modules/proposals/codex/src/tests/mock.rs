@@ -9,7 +9,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    BuildStorage, DispatchResult, Perbill,
 };
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
@@ -244,11 +244,11 @@ impl VotersParameters for MockVotersParameters {
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;

@@ -411,7 +411,6 @@ decl_module! {
                 WorkingGroup::Storage => working_group::Module::<T, StorageWorkingGroupInstance>::set_budget(origin, amount)?,
                 WorkingGroup::Content => working_group::Module::<T, ContentDirectoryWorkingGroupInstance>::set_budget(origin, amount)?,
                 WorkingGroup::Membership => working_group::Module::<T, MembershipWorkingGroupInstance>::set_budget(origin, amount)?,
-
             };
 
         }
@@ -472,7 +471,7 @@ impl<T: Trait> Module<T> {
                 // Note: No checks for this proposal for now
                 // TODO: shouldn't we check that it exists?
             }
-            ProposalDetails::UpdateWorkingGroupBudget(_, _, _) => {
+            ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::DecreaseWorkingGroupLeadStake(_, ref stake_amount, _) => {
@@ -481,7 +480,7 @@ impl<T: Trait> Module<T> {
                     Error::<T>::DecreasingStakeIsZero
                 );
             }
-            ProposalDetails::SlashWorkingGroupLead(_, _, _) => {
+            ProposalDetails::SlashWorkingGroupLead(..) => {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::SetWorkingGroupLeadReward(..) => {
@@ -493,7 +492,7 @@ impl<T: Trait> Module<T> {
             ProposalDetails::AmendConstitution(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CancelWorkingGroupLeadOpening(_, _) => {
+            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 // Note: No checks for this proposal for now
                 // TODO: Shouldn't we check that it exists?
             }
@@ -510,41 +509,35 @@ impl<T: Trait> Module<T> {
         details: &ProposalDetailsOf<T>,
     ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
         match details {
-            ProposalDetailsOf::<T>::Signal(..) => T::SignalProposalParameters::get(),
-            ProposalDetailsOf::<T>::RuntimeUpgrade(..) => {
-                T::RuntimeUpgradeProposalParameters::get()
-            }
-            ProposalDetailsOf::<T>::FundingRequest(..) => {
-                T::FundingRequestProposalParameters::get()
-            }
-            ProposalDetailsOf::<T>::SetMaxValidatorCount(..) => {
+            ProposalDetails::Signal(..) => T::SignalProposalParameters::get(),
+            ProposalDetails::RuntimeUpgrade(..) => T::RuntimeUpgradeProposalParameters::get(),
+            ProposalDetails::FundingRequest(..) => T::FundingRequestProposalParameters::get(),
+            ProposalDetails::SetMaxValidatorCount(..) => {
                 T::SetMaxValidatorCountProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::CreateWorkingGroupLeadOpening(..) => {
-                T::CreateWorkingGroupLeadOpeningProposalParameters::get()
-            }
-            ProposalDetailsOf::<T>::FillWorkingGroupLeadOpening(..) => {
+            ProposalDetails::FillWorkingGroupLeadOpening(..) => {
                 T::FillWorkingGroupLeadOpeningProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::UpdateWorkingGroupBudget(..) => {
+            ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 T::UpdateWorkingGroupBudgetProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::DecreaseWorkingGroupLeadStake(..) => {
+            ProposalDetails::DecreaseWorkingGroupLeadStake(..) => {
                 T::DecreaseWorkingGroupLeadStakeProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SlashWorkingGroupLead(..) => {
+            ProposalDetails::SlashWorkingGroupLead(..) => {
                 T::SlashWorkingGroupLeadProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::SetWorkingGroupLeadReward(..) => {
+            ProposalDetails::SetWorkingGroupLeadReward(..) => {
                 T::SetWorkingGroupLeadRewardProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::TerminateWorkingGroupLead(..) => {
+            ProposalDetails::TerminateWorkingGroupLead(..) => {
                 T::TerminateWorkingGroupLeadProposalParameters::get()
             }
-            ProposalDetailsOf::<T>::AmendConstitution(..) => {
-                T::AmendConstitutionProposalParameters::get()
+            ProposalDetails::CreateWorkingGroupLeadOpening(..) => {
+                T::CreateWorkingGroupLeadOpeningProposalParameters::get()
             }
-            ProposalDetails::SetMembershipPrice(_) => {
+            ProposalDetails::AmendConstitution(..) => T::AmendConstitutionProposalParameters::get(),
+            ProposalDetails::SetMembershipPrice(..) => {
                 T::SetMembershipPriceProposalParameters::get()
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
