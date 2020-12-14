@@ -1,6 +1,6 @@
 export { ExtrinsicsHelper, getAlicePair } from './helpers/extrinsics'
 export { InputParser } from './helpers/InputParser'
-export { getInputs, getInputsLocation } from './helpers/inputs'
+export { getInputs, getInitializationInputs, getInputsLocation } from './helpers/inputs'
 export { isReference, isSingle } from './helpers/propertyType'
 export { getSchemasLocation } from './helpers/schemas'
 export { default as initializeContentDir } from './helpers/initialize'

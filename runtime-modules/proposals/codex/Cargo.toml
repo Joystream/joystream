@@ -15,16 +15,14 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
 governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../../hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -48,10 +46,7 @@ std = [
     'staking/std',
     'pallet-timestamp/std',
     'balances/std',
-    'membership/std',
-    'stake/std',
     'governance/std',
-    'hiring/std',
     'minting/std',
     'working-group/std',
     'common/std',

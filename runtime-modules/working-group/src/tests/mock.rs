@@ -1,4 +1,5 @@
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
@@ -18,16 +19,12 @@ mod working_group {
     pub use crate::Event;
 }
 
-mod membership_mod {
-    pub use membership::Event;
-}
-
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         crate DefaultInstance <T>,
-        membership_mod<T>,
         frame_system<T>,
+        membership<T>,
     }
 }
 
@@ -37,7 +34,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
     pub const MembershipFee: u64 = 0;
 }
@@ -95,16 +91,19 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = Module<Test>;
 }
 
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
-pub type Membership = membership::Module<Test>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
@@ -120,6 +119,79 @@ impl Trait for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
+    type WeightInfo = ();
+}
+
+impl crate::WeightInfo for () {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_worker(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_lead(_: u32) -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role_immediatly() -> Weight {
+        0
+    }
+    fn leave_role_later() -> Weight {
+        0
+    }
 }
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";

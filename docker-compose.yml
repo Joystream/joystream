@@ -44,7 +44,7 @@ services:
       dockerfile: apps.Dockerfile
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
+    command: colossus --dev --ws-provider ws://joystream-node:9944 --ipfs-host ipfs
     environment:
       - DEBUG=*
 
@@ -55,10 +55,13 @@ services:
       - "127.0.0.1:${DB_PORT}:5432"
     volumes:
       - /var/lib/postgresql/data
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB: ${INDEXER_DB_NAME}
 
   graphql-server:
     image: joystream/apps
@@ -67,10 +70,11 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
+      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - DB_HOST=db
+      - DB_NAME=${PROCESSOR_DB_NAME}
     ports:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on: 
@@ -84,14 +88,14 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
+      # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:4000/graphql
-      - DB_HOST=db
+      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:${WARTHOG_APP_PORT}/graphql
       - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${PROCESSOR_DB_NAME}
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
     depends_on:
       - indexer-api-gateway
     command: ["workspace", "query-node-root", "processor:start"]
@@ -103,15 +107,16 @@ services:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
-      # relative to working directory where docker-compose was run from 
-      - .env 
+      # relative to working directory where docker-compose was run from
+      - .env
     environment:
       - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second 
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
     depends_on: 
       - db
     command: ["workspace", "query-node-root", "indexer:start"] 
@@ -119,16 +124,21 @@ services:
   indexer-api-gateway:
     image: joystream/hydra-indexer-gateway:latest
     restart: unless-stopped
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
     environment:
-      - WARTHOG_STARTER_DB_DATABASE=${DB_NAME}
-      - WARTHOG_STARTER_DB_HOST=db 
+      - WARTHOG_STARTER_DB_DATABASE=${INDEXER_DB_NAME}
+      - WARTHOG_STARTER_DB_HOST=db
       - WARTHOG_STARTER_DB_PASSWORD=${DB_PASS}
       - WARTHOG_STARTER_DB_PORT=${DB_PORT}
       - WARTHOG_STARTER_DB_USERNAME=${DB_USER}
-      - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0 
-      - PORT=4000
+      - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
+      - WARTHOG_APP_PORT=${WARTHOG_APP_PORT}
+      - PORT=${WARTHOG_APP_PORT}
+      - DEBUG=*
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:4000:4002"
     depends_on:
       - redis
       - db

@@ -38,6 +38,15 @@
         "Single": { "Text": 256 }
       },
       "locking_policy": { "is_locked_from_controller": true }
+    },
+    {
+      "name": "attributionRequired",
+      "description": "Whether this license requires an attribution",
+      "required": false,
+      "property_type": {
+        "Single": "Bool"
+      },
+      "locking_policy": { "is_locked_from_controller": true }
     }
   ]
 }

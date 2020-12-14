@@ -6,7 +6,7 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingGroup};
+use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, Penalty,
@@ -228,20 +228,6 @@ impl ApplyOnOpeningFixture {
         }
 
         saved_application_next_id
-    }
-}
-
-pub fn setup_members(count: u8) {
-    for i in 0..count {
-        let account_id: u64 = i as u64;
-        let handle: [u8; 20] = [i; 20];
-        Membership::buy_membership(
-            RawOrigin::Signed(account_id).into(),
-            Some(handle.to_vec()),
-            None,
-            None,
-        )
-        .unwrap();
     }
 }
 

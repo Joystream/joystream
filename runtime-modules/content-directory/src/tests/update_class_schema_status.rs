@@ -48,7 +48,7 @@ fn update_class_schema_status_success() {
         ));
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             class_schema_status_updated_event,
             number_of_events_before_call + 1,
         );

@@ -3,10 +3,8 @@
 use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use frame_system::ensure_signed;
-
-/// Member of the Joystream organization
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Default membership actor origin validator.
 pub struct MembershipOriginValidator<T> {

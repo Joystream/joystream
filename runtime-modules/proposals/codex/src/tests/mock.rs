@@ -8,7 +8,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
 use sp_staking::SessionIndex;
 
@@ -29,7 +29,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl_outer_dispatch! {
@@ -45,11 +44,24 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl membership::Trait for Test {
-    type Event = ();
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = ();
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 parameter_types! {
@@ -65,14 +77,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 parameter_types! {
@@ -200,11 +204,6 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
-parameter_types! {
-    pub const TextProposalMaxLength: u32 = 20_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
-}
-
 impl governance::election::Trait for Test {
     type Event = ();
     type CouncilElected = ();
@@ -222,6 +221,7 @@ parameter_types! {
     pub const LockId2: [u8; 8] = [2; 8];
 }
 
+pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -229,6 +229,79 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::WeightInfo for WorkingGroupWeightInfo {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_worker(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_lead(_: u32) -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role_immediatly() -> Weight {
+        0
+    }
+    fn leave_role_later() -> Weight {
+        0
+    }
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
@@ -238,19 +311,13 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
 }
 
 impl recurring_rewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 pallet_staking_reward_curve::build! {
@@ -335,8 +402,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 }
 
 impl crate::Trait for Test {
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type SetValidatorCountProposalParameters = DefaultProposalParameters;
@@ -344,7 +409,6 @@ impl crate::Trait for Test {
     type TextProposalParameters = DefaultProposalParameters;
     type SpendingProposalParameters = DefaultProposalParameters;
     type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type BeginReviewWorkingGroupApplicationsProposalParameters = DefaultProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
     type SetWorkingGroupBudgetCapacityProposalParameters = DefaultProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;

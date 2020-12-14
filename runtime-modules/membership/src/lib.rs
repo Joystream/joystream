@@ -2,50 +2,31 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod genesis;
-pub(crate) mod mock;
 mod tests;
 
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_signed;
-use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_arithmetic::traits::One;
 use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
+
+use common::working_group::WorkingGroupIntegration;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
-//TODO: Convert errors to the Substrate decl_error! macro.
-/// Result with string error message. This exists for backward compatibility purpose.
-pub type DispatchResult = Result<(), &'static str>;
-
-pub trait Trait: frame_system::Trait + balances::Trait + pallet_timestamp::Trait {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// Describes the common type for the working group members (workers).
-    type ActorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
 
     /// Defines the default membership fee.
     type MembershipFee: Get<BalanceOf<Self>>;
+
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
 }
 
 // Default user info constraints
@@ -92,6 +73,10 @@ pub struct MembershipObject<BlockNumber, Moment, AccountId> {
     /// a member to act under their identity in other modules. It will usually be used more
     /// online and will have less funds in its balance.
     pub controller_account: AccountId,
+
+    /// An indicator that reflects whether the implied real world identity in the profile
+    /// corresponds to the true actor behind the membership.
+    pub verified: bool,
 }
 
 // Contains valid or default user details
@@ -112,6 +97,44 @@ pub enum EntryMethod {
 impl Default for EntryMethod {
     fn default() -> Self {
         Self::Genesis
+    }
+}
+
+decl_error! {
+    /// Membership module predefined errors
+    pub enum Error for Module<T: Trait> {
+        /// New members not allowed
+        NewMembersNotAllowed,
+
+        /// Not enough balance to buy membership
+        NotEnoughBalanceToBuyMembership,
+
+        /// Controller account required
+        ControllerAccountRequired,
+
+        /// Root account required
+        RootAccountRequired,
+
+        /// Invalid origin
+        UnsignedOrigin,
+
+        /// Member profile not found (invalid member id).
+        MemberProfileNotFound,
+
+        /// Handle already registered
+        HandleAlreadyRegistered,
+
+        /// Handle too short
+        HandleTooShort,
+
+        /// Handle too long
+        HandleTooLong,
+
+        /// Avatar uri too long
+        AvatarUriTooLong,
+
+        /// Handle must be provided during registration
+        HandleMustBeProvidedDuringRegistration,
     }
 }
 
@@ -179,7 +202,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as frame_system::Trait>::AccountId,
-      <T as Trait>::MemberId,
+      <T as common::Trait>::MemberId,
     {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
@@ -187,6 +210,7 @@ decl_event! {
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
+        MemberVerificationStatusUpdated(MemberId, bool),
     }
 }
 
@@ -208,14 +232,14 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // make sure we are accepting new memberships
-            ensure!(Self::new_memberships_allowed(), "new members not allowed");
+            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
 
             let fee = T::MembershipFee::get();
 
             // ensure enough free balance to cover terms fees
             ensure!(
                 balances::Module::<T>::usable_balance(&who) >= fee,
-                "not enough balance to buy membership"
+                Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
@@ -241,7 +265,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member about text");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_about_text(member_id, &text)?;
         }
@@ -253,7 +277,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member avatar");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_avatar(member_id, &uri)?;
         }
@@ -266,7 +290,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member handle");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_handle(member_id, handle)?;
         }
@@ -284,7 +308,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member info");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             if let Some(uri) = avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -303,7 +327,7 @@ decl_module! {
 
             let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.root_account == sender, "only root account can set new controller account");
+            ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
             // only update if new_controller_account is different than current one
             if membership.controller_account != new_controller_account {
@@ -327,7 +351,7 @@ decl_module! {
 
             let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.root_account == sender, "only root account can set new root account");
+            ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
             // only update if new root account is different than current one
             if membership.root_account != new_root_account {
@@ -344,37 +368,40 @@ decl_module! {
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
         }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_profile_verification(
+            origin,
+            worker_id: T::ActorId,
+            target_member_id: T::MemberId,
+            is_verified: bool
+        ) {
+            T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
+
+            Self::ensure_membership(target_member_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&target_member_id, |membership| {
+                    membership.verified = is_verified;
+            });
+
+            Self::deposit_event(
+                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
+            );
+        }
     }
-}
-
-/// Reason why a given member id does not have a given account as the controller account.
-pub enum ControllerAccountForMemberCheckFailed {
-    NotMember,
-    NotControllerAccount,
-}
-
-pub enum MemberControllerAccountDidNotSign {
-    UnsignedOrigin,
-    MemberIdInvalid,
-    SignerControllerAccountMismatch,
-}
-
-pub enum MemberControllerAccountMismatch {
-    MemberIdInvalid,
-    SignerControllerAccountMismatch,
-}
-pub enum MemberRootAccountMismatch {
-    MemberIdInvalid,
-    SignerRootAccountMismatch,
 }
 
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
+    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         if <MembershipById<T>>::contains_key(&id) {
             Ok(Self::membership(&id))
         } else {
-            Err("member profile not found")
+            Err(Error::<T>::MemberProfileNotFound)
         }
     }
 
@@ -382,17 +409,17 @@ impl<T: Trait> Module<T> {
     pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
         account: &T::AccountId,
-    ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
+    ) -> Result<Membership<T>, Error<T>> {
         if MembershipById::<T>::contains_key(member_id) {
             let membership = MembershipById::<T>::get(member_id);
 
             if membership.controller_account == *account {
                 Ok(membership)
             } else {
-                Err(ControllerAccountForMemberCheckFailed::NotControllerAccount)
+                Err(Error::<T>::ControllerAccountRequired)
             }
         } else {
-            Err(ControllerAccountForMemberCheckFailed::NotMember)
+            Err(Error::<T>::MemberProfileNotFound)
         }
     }
 
@@ -403,22 +430,22 @@ impl<T: Trait> Module<T> {
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
-    fn ensure_unique_handle(handle: &Vec<u8>) -> DispatchResult {
+    fn ensure_unique_handle(handle: &Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
             !<MemberIdByHandle<T>>::contains_key(handle),
-            "handle already registered"
+            Error::<T>::HandleAlreadyRegistered
         );
         Ok(())
     }
 
-    fn validate_handle(handle: &[u8]) -> DispatchResult {
+    fn validate_handle(handle: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
-            "handle too short"
+            Error::<T>::HandleTooShort
         );
         ensure!(
             handle.len() <= Self::max_handle_length() as usize,
-            "handle too long"
+            Error::<T>::HandleTooLong
         );
         Ok(())
     }
@@ -429,10 +456,10 @@ impl<T: Trait> Module<T> {
         text
     }
 
-    fn validate_avatar(uri: &[u8]) -> DispatchResult {
+    fn validate_avatar(uri: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
-            "avatar uri too long"
+            Error::<T>::AvatarUriTooLong
         );
         Ok(())
     }
@@ -442,9 +469,9 @@ impl<T: Trait> Module<T> {
         handle: Option<Vec<u8>>,
         avatar_uri: Option<Vec<u8>>,
         about: Option<Vec<u8>>,
-    ) -> Result<ValidatedUserInfo, &'static str> {
+    ) -> Result<ValidatedUserInfo, Error<T>> {
         // Handle is required during registration
-        let handle = handle.ok_or("handle must be provided during registration")?;
+        let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&about.unwrap_or_default());
@@ -465,7 +492,7 @@ impl<T: Trait> Module<T> {
         entry_method: EntryMethod,
         registered_at_block: T::BlockNumber,
         registered_at_time: T::Moment,
-    ) -> Result<T::MemberId, &'static str> {
+    ) -> Result<T::MemberId, Error<T>> {
         Self::ensure_unique_handle(&user_info.handle)?;
 
         let new_member_id = Self::members_created();
@@ -479,6 +506,7 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
+            verified: false,
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
@@ -495,7 +523,7 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
+    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
         membership.about = text;
@@ -504,7 +532,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> DispatchResult {
+    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(uri)?;
         membership.avatar_uri = uri.to_owned();
@@ -513,7 +541,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> DispatchResult {
+    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> Result<(), Error<T>> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;
@@ -528,18 +556,16 @@ impl<T: Trait> Module<T> {
     pub fn ensure_member_controller_account_signed(
         origin: T::Origin,
         member_id: &T::MemberId,
-    ) -> Result<T::AccountId, MemberControllerAccountDidNotSign> {
+    ) -> Result<T::AccountId, Error<T>> {
         // Ensure transaction is signed.
-        let signer_account =
-            ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
+        let signer_account = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
 
         // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)
-            .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
+        let membership = Self::ensure_membership(*member_id)?;
 
         ensure!(
             membership.controller_account == signer_account,
-            MemberControllerAccountDidNotSign::SignerControllerAccountMismatch
+            Error::<T>::ControllerAccountRequired
         );
 
         Ok(signer_account)
@@ -548,14 +574,13 @@ impl<T: Trait> Module<T> {
     pub fn ensure_member_controller_account(
         signer_account: &T::AccountId,
         member_id: &T::MemberId,
-    ) -> Result<(), MemberControllerAccountMismatch> {
+    ) -> Result<(), Error<T>> {
         // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)
-            .map_err(|_| MemberControllerAccountMismatch::MemberIdInvalid)?;
+        let membership = Self::ensure_membership(*member_id)?;
 
         ensure!(
             membership.controller_account == *signer_account,
-            MemberControllerAccountMismatch::SignerControllerAccountMismatch
+            Error::<T>::ControllerAccountRequired
         );
 
         Ok(())
@@ -564,14 +589,13 @@ impl<T: Trait> Module<T> {
     pub fn ensure_member_root_account(
         signer_account: &T::AccountId,
         member_id: &T::MemberId,
-    ) -> Result<(), MemberRootAccountMismatch> {
+    ) -> Result<(), Error<T>> {
         // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)
-            .map_err(|_| MemberRootAccountMismatch::MemberIdInvalid)?;
+        let membership = Self::ensure_membership(*member_id)?;
 
         ensure!(
             membership.root_account == *signer_account,
-            MemberRootAccountMismatch::SignerRootAccountMismatch
+            Error::<T>::RootAccountRequired
         );
 
         Ok(())

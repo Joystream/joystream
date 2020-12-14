@@ -1,13 +1,14 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import ChannelEntitySchema from 'cd-schemas/schemas/entities/ChannelEntity.schema.json'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import { InputParser } from 'cd-schemas'
+import ChannelEntitySchema from '@joystream/cd-schemas/schemas/entities/ChannelEntity.schema.json'
+import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
+import { InputParser } from '@joystream/cd-schemas'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { Actor, Entity } from '@joystream/types/content-directory'
 import { flags } from '@oclif/command'
 import { createType } from '@joystream/types'
+import _ from 'lodash'
 
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update one of the owned channels on Joystream (requires a membership).'
@@ -51,7 +52,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       channelId = parseInt(id)
       channelEntity = await this.getEntity(channelId, 'Channel', memberId)
     } else {
-      const [id, channel] = await this.promptForEntityEntry('Select a channel to update', 'Channel', 'title', memberId)
+      const [id, channel] = await this.promptForEntityEntry('Select a channel to update', 'Channel', 'handle', memberId)
       channelId = id.toNumber()
       channelEntity = channel
     }
@@ -80,14 +81,14 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
       const prompter = new JsonSchemaPrompter<ChannelEntity>(channelJsonSchema, currentValues, customPrompts)
 
-      inputJson = await prompter.promptAll(true)
+      inputJson = await prompter.promptAll()
     }
 
     this.jsonPrettyPrint(JSON.stringify(inputJson))
     const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
     if (confirmed) {
-      saveOutputJson(output, `${inputJson.title}Channel.json`, inputJson)
+      saveOutputJson(output, `${_.startCase(inputJson.handle)}Channel.json`, inputJson)
       const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
       const updateOperations = await inputParser.getEntityUpdateOperations(inputJson, 'Channel', channelId)
       this.log('Sending the extrinsic...')

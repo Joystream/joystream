@@ -4,7 +4,7 @@ import _ from 'lodash'
 import RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import chalk from 'chalk'
 import { BOOL_PROMPT_OPTIONS } from './prompting'
-import { getSchemasLocation } from 'cd-schemas'
+import { getSchemasLocation } from '@joystream/cd-schemas'
 import path from 'path'
 
 type CustomPromptMethod = () => Promise<any>
@@ -106,7 +106,11 @@ export class JsonSchemaPrompter<JsonResult> {
     if (schema.oneOf) {
       const oneOf = schema.oneOf as JSONSchema[]
       const options = this.oneOfToOptions(oneOf, currentValue)
-      const { choosen } = await inquirer.prompt({ name: 'choosen', message: propDisplayName, type: 'list', ...options })
+      const choosen = await this.inquirerSinglePrompt({
+        message: propDisplayName,
+        type: 'list',
+        ...options,
+      })
       if (choosen !== options.default) {
         _.set(this.filledObject, propertyPath, undefined) // Clear any previous value if different variant selected
       }
@@ -128,18 +132,13 @@ export class JsonSchemaPrompter<JsonResult> {
         const required = allPropsRequired || (Array.isArray(schema.required) && schema.required.includes(pName))
 
         if (!required) {
-          confirmed = (
-            await inquirer.prompt([
-              {
-                message: `Do you want to provide optional ${chalk.greenBright(objectPropertyPath)}?`,
-                type: 'confirm',
-                name: 'confirmed',
-                default:
-                  _.get(this.filledObject, objectPropertyPath) !== undefined &&
-                  _.get(this.filledObject, objectPropertyPath) !== null,
-              },
-            ])
-          ).confirmed
+          confirmed = await this.inquirerSinglePrompt({
+            message: `Do you want to provide optional ${chalk.greenBright(objectPropertyPath)}?`,
+            type: 'confirm',
+            default:
+              _.get(this.filledObject, objectPropertyPath) !== undefined &&
+              _.get(this.filledObject, objectPropertyPath) !== null,
+          })
         }
         if (confirmed) {
           value[pName] = await this.prompt(pSchema, objectPropertyPath)
@@ -207,14 +206,11 @@ export class JsonSchemaPrompter<JsonResult> {
     let currItem = 0
     const result = []
     while (currItem < maxItems) {
-      const { next } = await inquirer.prompt([
-        {
-          ...BOOL_PROMPT_OPTIONS,
-          name: 'next',
-          message: `Do you want to add another item to ${this.propertyDisplayName(propertyPath)} array?`,
-          default: _.get(this.filledObject, `${propertyPath}[${currItem}]`) !== undefined,
-        },
-      ])
+      const next = await this.inquirerSinglePrompt({
+        ...BOOL_PROMPT_OPTIONS,
+        message: `Do you want to add another item to ${this.propertyDisplayName(propertyPath)} array?`,
+        default: _.get(this.filledObject, `${propertyPath}[${currItem}]`) !== undefined,
+      })
       if (!next) {
         break
       }
@@ -228,20 +224,17 @@ export class JsonSchemaPrompter<JsonResult> {
   }
 
   private async promptSimple(promptOptions: DistinctQuestion, propertyPath: string, normalize?: (v: any) => any) {
-    const { result } = await inquirer.prompt([
-      {
-        ...promptOptions,
-        name: 'result',
-        validate: (v) => {
-          v = normalize ? normalize(v) : v
-          return (
-            this.setValueAndGetError(propertyPath, v) ||
-            (promptOptions.validate ? promptOptions.validate(v) : true) ||
-            true
-          )
-        },
+    const result = await this.inquirerSinglePrompt({
+      ...promptOptions,
+      validate: (v) => {
+        v = normalize ? normalize(v) : v
+        return (
+          this.setValueAndGetError(propertyPath, v) ||
+          (promptOptions.validate ? promptOptions.validate(v) : true) ||
+          true
+        )
       },
-    ])
+    })
 
     return result
   }
@@ -290,5 +283,17 @@ export class JsonSchemaPrompter<JsonResult> {
     const mainSchema = await this.getMainSchema()
     await this.prompt(mainSchema.properties![p] as JSONSchema, p, customPrompt)
     return this.filledObject[p] as Exclude<JsonResult[P], undefined>
+  }
+
+  async inquirerSinglePrompt(question: DistinctQuestion) {
+    const { result } = await inquirer.prompt([
+      {
+        ...question,
+        name: 'result',
+        prefix: '',
+      },
+    ])
+
+    return result
   }
 }

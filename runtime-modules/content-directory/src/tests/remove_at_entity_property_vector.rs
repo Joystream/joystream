@@ -59,7 +59,7 @@ fn remove_at_entity_property_vector_success() {
         ));
 
         // Last event checked
-        assert_event_success(
+        assert_event(
             removed_at_vector_index_event,
             number_of_events_before_calls + 1,
         );

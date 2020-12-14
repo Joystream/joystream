@@ -36,8 +36,8 @@ export default class EntityCommand extends ContentDirectoryCommandBase {
       _.mapValues(
         propertyValues,
         (v) =>
-          (v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()) +
-          ` ${chalk.green(`${v.type}`)}`
+          (v.value === null ? chalk.grey('[not set]') : v.value.toString()) +
+          ` ${chalk.green(`${v.type}<${v.subtype}>`)}`
       )
     )
   }

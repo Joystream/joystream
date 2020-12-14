@@ -29,7 +29,8 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-mod benchmarking;
+pub mod benchmarking;
+
 mod checks;
 mod errors;
 #[cfg(test)]
@@ -48,19 +49,51 @@ use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::{
-    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, MemberId, Opening, OpeningId,
-    OpeningType, Penalty, RewardPolicy, StakePolicy, Worker, WorkerId,
+    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
+    OpeningType, Penalty, RewardPolicy, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
+use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
+
+type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
+
+/// Working group WeightInfo
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn on_initialize_leaving(i: u32) -> Weight;
+    fn on_initialize_rewarding_with_missing_reward(i: u32) -> Weight;
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32) -> Weight;
+    fn on_initialize_rewarding_without_missing_reward(i: u32) -> Weight;
+    fn apply_on_opening(i: u32) -> Weight;
+    fn fill_opening_lead() -> Weight;
+    fn fill_opening_worker(i: u32) -> Weight;
+    fn update_role_account() -> Weight;
+    fn cancel_opening() -> Weight;
+    fn withdraw_application() -> Weight;
+    fn slash_stake(i: u32) -> Weight;
+    fn terminate_role_worker(i: u32) -> Weight;
+    fn terminate_role_lead(i: u32) -> Weight;
+    fn increase_stake() -> Weight;
+    fn decrease_stake() -> Weight;
+    fn spend_from_budget() -> Weight;
+    fn update_reward_amount() -> Weight;
+    fn set_status_text(i: u32) -> Weight;
+    fn update_reward_account() -> Weight;
+    fn set_budget() -> Weight;
+    fn add_opening(i: u32) -> Weight;
+    fn leave_role_immediatly() -> Weight;
+    fn leave_role_later() -> Weight;
+}
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + balances::Trait + common::Trait
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -79,6 +112,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// Defines the period every worker gets paid in blocks.
     type RewardPeriod: Get<u32>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 decl_event!(
@@ -244,25 +280,49 @@ decl_module! {
         /// Exports const -  max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the number of workers currently present in the `working_group`
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
         fn on_initialize() -> Weight {
             let leaving_workers = Self::get_workers_with_finished_unstaking_period();
+            let mut biggest_number_of_processed_workers = leaving_workers.len();
 
             leaving_workers.iter().for_each(|wi| {
                 Self::remove_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
             });
 
             if Self::is_reward_block() {
+                // We count the number of workers that will be processed to not be so pessimistic
+                // when calculating the weight for this function
+                let mut count_number_of_workers = 0;
                 WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
                     Self::reward_worker(&worker_id, &worker);
+                    count_number_of_workers += 1;
                 });
+
+                biggest_number_of_processed_workers = biggest_number_of_processed_workers.max(count_number_of_workers);
             }
 
-            10_000_000 //TODO: adjust weight
+            Self::calculate_weight_on_initialize(biggest_number_of_processed_workers.saturated_into())
         }
 
         /// Add a job opening for a regular worker/lead role.
         /// Require signed leader origin or the root (to add opening for the leader position).
-        #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (D)` where:
+        /// - `D` is the length of `description`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::add_opening(description.len().saturated_into())]
         pub fn add_opening(
             origin,
             description: Vec<u8>,
@@ -302,7 +362,16 @@ decl_module! {
         }
 
         /// Apply on a worker opening.
-        #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (D)` where:
+        /// - `D` is the length of `p.description`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
             T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
@@ -365,7 +434,18 @@ decl_module! {
 
         /// Fill opening for the regular/lead position.
         /// Require signed leader origin or the root (to fill opening for the leader position).
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `successful_application_ids`
+        /// - DB:
+        ///    - O(A)
+        /// # </weight>
+        #[weight =
+            WeightInfoWorkingGroup::<T, I>::fill_opening_worker(successful_application_ids.len().saturated_into())
+            .max(WeightInfoWorkingGroup::<T, I>::fill_opening_lead())
+        ]
         pub fn fill_opening(
             origin,
             opening_id: OpeningId,
@@ -414,7 +494,15 @@ decl_module! {
         }
 
         /// Update the associated role account of the active regular worker/lead.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::update_role_account()]
         pub fn update_role_account(
             origin,
             worker_id: WorkerId<T>,
@@ -423,8 +511,8 @@ decl_module! {
             // Ensuring worker actually exists
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
-            // Ensure that origin is signed by member with given id.
-            checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
+            // Ensure the origin of a member with given id.
+            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
@@ -443,7 +531,15 @@ decl_module! {
         }
 
         /// Leave the role by the active worker.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::leave_role_immediatly()
+            .max(WeightInfoWorkingGroup::<T, I>::leave_role_later())]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
@@ -469,7 +565,15 @@ decl_module! {
 
         /// Terminate the active worker by the lead.
         /// Requires signed leader origin or the root (to terminate the leader role).
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (P)` where:
+        /// - `P` is the length of `penalty.slashing_text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T, I>::terminate_role_weight(&penalty)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -512,7 +616,15 @@ decl_module! {
         /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (P)` where:
+        /// - `P` is the length of `penality.slashing_text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake(penalty.slashing_text.len().saturated_into())]
         pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -544,7 +656,15 @@ decl_module! {
         /// worker staking_account_id. Can be decreased to zero, no actions on zero stake.
         /// Accepts the stake amount to decrease.
         /// Requires signed leader origin or the root (to decrease the leader stake).
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::decrease_stake()]
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Ensure lead is set or it is the council decreasing the leader's stake.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -595,7 +715,15 @@ decl_module! {
 
         /// Increases the regular worker/lead stake, demands a worker origin.
         /// Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::increase_stake()]
         pub fn increase_stake(origin, worker_id: WorkerId<T>, stake_balance_delta: BalanceOf<T>) {
             // Checks worker origin and worker existence.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -638,7 +766,15 @@ decl_module! {
         }
 
         /// Withdraw the worker application. Can be done by the worker only.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::withdraw_application()]
         pub fn withdraw_application(
             origin,
             application_id: ApplicationId
@@ -671,7 +807,15 @@ decl_module! {
 
         /// Cancel an opening for the regular worker/lead position.
         /// Require signed leader origin or the root (to cancel opening for the leader position).
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::cancel_opening()]
         pub fn cancel_opening(
             origin,
             opening_id: OpeningId,
@@ -694,7 +838,15 @@ decl_module! {
 
         /// Sets a new budget for the working group.
         /// Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::set_budget()]
         pub fn set_budget(
             origin,
             new_budget: BalanceOf<T>,
@@ -713,7 +865,15 @@ decl_module! {
         }
 
         /// Update the reward account associated with a set reward relationship for the active worker.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::update_reward_account()]
         pub fn update_reward_account(
             origin,
             worker_id: WorkerId<T>,
@@ -740,7 +900,15 @@ decl_module! {
 
         /// Update the reward per block for the active worker.
         /// Require signed leader origin or the root (to update leader's reward amount).
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::update_reward_amount()]
         pub fn update_reward_amount(
             origin,
             worker_id: WorkerId<T>,
@@ -767,7 +935,19 @@ decl_module! {
 
         /// Sets a new status text for the working group.
         /// Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (S)` where:
+        /// - `S` is the length of the contents of `status_text` when it is not none
+        ///
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::set_status_text(
+            status_text.as_ref().map(|status_text| status_text.len().saturated_into()).unwrap_or_default()
+        )]
         pub fn set_status_text(
             origin,
             status_text: Option<Vec<u8>>,
@@ -796,7 +976,15 @@ decl_module! {
 
         /// Transfers specified amount to any account.
         /// Requires leader origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
         pub fn spend_from_budget(
             origin,
             account_id: T::AccountId,
@@ -828,6 +1016,44 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    // Calculate weight for on_initialize
+    // We assume worst case scenario in a safe manner
+    // We take the most number of workers that will be processed and use it as input of the most costly function
+    fn calculate_weight_on_initialize(workers: u32) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::on_initialize_rewarding_without_missing_reward(
+            workers,
+        )
+        .max(
+            WeightInfoWorkingGroup::<T, I>::on_initialize_rewarding_with_missing_reward_cant_pay(
+                workers,
+            ),
+        )
+        .max(
+            WeightInfoWorkingGroup::<T, I>::on_initialize_rewarding_with_missing_reward(
+                workers,
+            ),
+        )
+        .max(WeightInfoWorkingGroup::<T, I>::on_initialize_leaving(
+            workers,
+        ))
+    }
+
+    // Calculate weights for terminate_role
+    fn terminate_role_weight(penalty: &Option<Penalty<BalanceOf<T>>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
+            penalty
+                .as_ref()
+                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .unwrap_or_default(),
+        )
+        .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
+            penalty
+                .as_ref()
+                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .unwrap_or_default(),
+        ))
+    }
+
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
@@ -1104,5 +1330,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .map(|(worker_id, _)| worker_id)
             .collect()
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 }

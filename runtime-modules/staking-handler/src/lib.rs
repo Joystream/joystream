@@ -6,6 +6,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use common::MemberId;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
@@ -16,16 +17,13 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-/// Type alias for member id.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
-
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as pallet_balances::Trait>::Balance;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: frame_system::Trait + membership::Trait + pallet_balances::Trait> {
+pub trait StakingHandler<T: frame_system::Trait + common::Trait + pallet_balances::Trait> {
     /// Locks the specified balance on the account using specific lock identifier.
     fn lock(account_id: &T::AccountId, amount: BalanceOf<T>);
 
@@ -58,7 +56,7 @@ pub trait StakingHandler<T: frame_system::Trait + membership::Trait + pallet_bal
 
 /// Implementation of the StakingHandler.
 pub struct StakingManager<
-    T: frame_system::Trait + membership::Trait + pallet_balances::Trait,
+    T: frame_system::Trait + common::Trait + pallet_balances::Trait,
     LockId: Get<LockIdentifier>,
 > {
     trait_marker: PhantomData<T>,
@@ -66,7 +64,7 @@ pub struct StakingManager<
 }
 
 impl<
-        T: frame_system::Trait + membership::Trait + pallet_balances::Trait,
+        T: frame_system::Trait + common::Trait + pallet_balances::Trait,
         LockId: Get<LockIdentifier>,
     > StakingHandler<T> for StakingManager<T, LockId>
 {

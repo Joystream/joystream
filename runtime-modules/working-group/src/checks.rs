@@ -1,6 +1,6 @@
 use crate::{
-    ApplicationId, BalanceOf, Instance, MemberId, Opening, OpeningId, OpeningType, RewardPolicy,
-    StakePolicy, Trait, Worker, WorkerId,
+    ApplicationId, BalanceOf, Instance, Opening, OpeningId, OpeningType, RewardPolicy, StakePolicy,
+    Trait, Worker, WorkerId,
 };
 
 use super::Error;
@@ -146,17 +146,6 @@ pub fn ensure_worker_exists<T: Trait<I>, I: Instance>(
     let worker = <crate::WorkerById<T, I>>::get(worker_id);
 
     Ok(worker)
-}
-
-// Check worker: verifies that origin is signed and corresponds with the membership.
-pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
-    origin: T::Origin,
-    member_id: &MemberId<T>,
-) -> Result<(), Error<T, I>> {
-    membership::Module::<T>::ensure_member_controller_account_signed(origin, member_id)
-        .map_err(|_| Error::<T, I>::InvalidMemberOrigin)?;
-
-    Ok(())
 }
 
 /// Check worker: ensures the origin contains signed account that belongs to existing worker.

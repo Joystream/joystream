@@ -6,9 +6,41 @@ pub mod currency;
 pub mod origin;
 pub mod working_group;
 
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
+use frame_support::Parameter;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
+
+/// Member id type alias
+pub type MemberId<T> = <T as Trait>::MemberId;
+
+/// Actor id type alias
+pub type ActorId<T> = <T as Trait>::ActorId;
+
+/// Generic trait for membership dependent pallets.
+pub trait Trait: frame_system::Trait {
+    /// Describes the common type for the members.
+    type MemberId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Describes the common type for the working group members (workers).
+    type ActorId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+}
 
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

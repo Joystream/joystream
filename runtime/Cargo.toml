@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '7.8.0'
+version = '8.0.0'
 
 [dependencies]
 # Third-party dependencies
@@ -66,9 +66,7 @@ common = { package = 'pallet-common', default-features = false, path = '../runti
 memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
 governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
@@ -142,9 +140,7 @@ std = [
     'memo/std',
     'forum/std',
     'membership/std',
-    'stake/std',
     'governance/std',
-    'hiring/std',
     'minting/std',
     'recurring-rewards/std',
     'working-group/std',
@@ -159,21 +155,22 @@ std = [
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "pallet-balances/runtime-benchmarks",
+    "pallet-im-online/runtime-benchmarks",
+    "pallet-staking/runtime-benchmarks",
+    "pallet-timestamp/runtime-benchmarks",
     "frame-benchmarking",
     "frame-system-benchmarking",
-    "pallet-offences-benchmarking",
-	"pallet-session-benchmarking",
+    "pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "pallet_constitution/runtime-benchmarks",
-    "hex-literal"
+    "working-group/runtime-benchmarks",
+    "forum/runtime-benchmarks",
+    "hex-literal",
 ]
 
 

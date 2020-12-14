@@ -147,8 +147,8 @@ pub struct Poll<Timestamp, Hash> {
 }
 
 /// Represents a thread post
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Post<ForumUserId, ThreadId, Hash> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -161,8 +161,8 @@ pub struct Post<ForumUserId, ThreadId, Hash> {
 }
 
 /// Represents a thread
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash> {
     /// Title hash
     pub title_hash: Hash,
@@ -184,8 +184,8 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash> {
 }
 
 /// Represents a category
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Category<CategoryId, ThreadId, Hash> {
     /// Title
     pub title_hash: Hash,

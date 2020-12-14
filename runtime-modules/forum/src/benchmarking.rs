@@ -1,7 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::benchmarks;
-use frame_support::assert_ok;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
 
@@ -21,12 +20,13 @@ fn create_new_category<T: Trait>(
     title: Vec<u8>,
     description: Vec<u8>,
 ) -> T::CategoryId {
-    assert_ok!(Module::<T>::create_category(
+    Module::<T>::create_category(
         RawOrigin::Signed(account_id).into(),
         parent_category_id,
         title,
-        description
-    ));
+        description,
+    )
+    .unwrap();
     Module::<T>::next_category_id() - T::CategoryId::one()
 }
 
@@ -38,14 +38,15 @@ fn create_new_thread<T: Trait>(
     text: Vec<u8>,
     poll: Option<Poll<T::Moment, T::Hash>>,
 ) -> T::ThreadId {
-    assert_ok!(Module::<T>::create_thread(
+    Module::<T>::create_thread(
         RawOrigin::Signed(account_id).into(),
         forum_user_id,
         category_id,
         title,
         text,
-        poll
-    ));
+        poll,
+    )
+    .unwrap();
     Module::<T>::next_thread_id() - T::ThreadId::one()
 }
 
@@ -56,13 +57,14 @@ fn add_thread_post<T: Trait>(
     thread_id: T::ThreadId,
     text: Vec<u8>,
 ) -> T::PostId {
-    assert_ok!(Module::<T>::add_post(
+    Module::<T>::add_post(
         RawOrigin::Signed(account_id).into(),
         forum_user_id,
         category_id,
         thread_id,
-        text
-    ));
+        text,
+    )
+    .unwrap();
     Module::<T>::next_post_id() - T::PostId::one()
 }
 
@@ -97,7 +99,7 @@ pub fn generate_poll<T: Trait>(
 }
 
 benchmarks! {
-    _{ }
+    _{  }
 
     create_category{
         let i in 1 .. T::MaxCategoryDepth::get() as u32;
@@ -161,9 +163,7 @@ benchmarks! {
         let new_value_flag = if i == 0 {
             true
         } else {
-            assert_ok!(
-                Module::<T>::update_category_membership_of_moderator(RawOrigin::Signed(T::AccountId::default()).into(), T::ModeratorId::one(), category_id, true)
-            );
+            Module::<T>::update_category_membership_of_moderator(RawOrigin::Signed(T::AccountId::default()).into(), T::ModeratorId::one(), category_id, true).unwrap();
             false
         };
 

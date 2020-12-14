@@ -7,7 +7,7 @@ mod working_group_proposals;
 use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election_params::ElectionParameters;
-use membership;
+use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
@@ -282,17 +282,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_proposer(member_id);
 
         let account_balance = 500000;
-        let _imbalance =
-            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+        let _imbalance = Balances::deposit_creating(&account_id, account_balance);
 
-        assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
-            account_balance
-        );
+        assert_eq!(Balances::usable_balance(&account_id), account_balance);
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
+            Balances::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -305,7 +301,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: Some(account_id.clone()),
         };
 
@@ -318,7 +314,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         let cancellation_fee = ProposalCancellationFee::get() as u128;
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::usable_balance(&account_id),
+            Balances::usable_balance(&account_id),
             account_balance - cancellation_fee
         );
     });
@@ -508,14 +504,18 @@ fn text_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_text_proposal(
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
-                b"text".to_vec(),
-                None,
+                general_proposal_parameters,
+                ProposalDetails::Text(b"text".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
@@ -536,15 +536,18 @@ fn spending_proposal_execution_succeeds() {
         assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_spending_proposal(
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
-                new_balance,
-                target_account_id.clone().into(),
-                None,
+                general_proposal_parameters,
+                ProposalDetails::Spending(new_balance, target_account_id.clone().into()),
             )
         })
         .with_member_id(member_id as u64);
@@ -570,14 +573,18 @@ fn set_validator_count_proposal_execution_succeeds() {
         assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_validator_count_proposal(
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
-                new_validator_count,
-                None,
+                general_proposal_parameters,
+                ProposalDetails::SetValidatorCount(new_validator_count),
             )
         });
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
@@ -595,14 +602,18 @@ fn amend_constitution_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_amend_constitution_proposal(
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(account_id.into()),
-                b"Constitution text".to_vec(),
-                None,
+                general_proposal_parameters,
+                ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
             )
         })
         .with_member_id(member_id as u64);

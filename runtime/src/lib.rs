@@ -87,8 +87,8 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 7,
-    spec_version: 8,
+    authoring_version: 8,
+    spec_version: 0,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -377,8 +377,10 @@ impl pallet_im_online::Trait for Runtime {
     type Event = Event;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
+    // Using the default weights until we check if we can run the benchmarks for this pallet in
+    // the reference machine in an acceptable time.
+    type WeightInfo = ();
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = weights::pallet_im_online::WeightInfo;
 }
 
 parameter_types! {
@@ -447,13 +449,6 @@ impl content_directory::Trait for Runtime {
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
-impl hiring::Trait for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
 impl minting::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type MintId = u64;
@@ -463,18 +458,6 @@ impl recurring_rewards::Trait for Runtime {
     type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
     type RecipientId = u64;
     type RewardRelationshipId = u64;
-}
-
-parameter_types! {
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-}
-
-impl stake::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
-    type StakeId = u64;
-    type SlashId = u64;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {
@@ -520,11 +503,15 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl membership::Trait for Runtime {
-    type Event = Event;
+impl common::Trait for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
+}
+
+impl membership::Trait for Runtime {
+    type Event = Event;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = MembershipWorkingGroup;
 }
 
 parameter_types! {
@@ -609,10 +596,13 @@ impl forum::Trait for Runtime {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
+pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
 
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -620,36 +610,61 @@ parameter_types! {
     pub const ForumWorkingGroupRewardPeriod: u32 = 14400 + 10;
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
+    pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
+    pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
 }
+
+// Staking managers type aliases.
+pub type ForumWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ForumGroupLockId>;
+pub type ContentDirectoryWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, ContentWorkingGroupLockId>;
+pub type StorageWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
+pub type MembershipWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type StakingHandler = ForumWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
+    type StakingHandler = StorageWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, ContentWorkingGroupLockId>;
+    type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
+}
+
+impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = MembershipWorkingGroupStakingManager;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = MembershipRewardPeriod;
+    type WeightInfo = weights::working_group::WeightInfo;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -703,13 +718,10 @@ impl proposals_discussion::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
@@ -717,8 +729,6 @@ impl proposals_codex::Trait for Runtime {
     type TextProposalParameters = TextProposalParameters;
     type SpendingProposalParameters = SpendingProposalParameters;
     type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
-    type BeginReviewWorkingGroupApplicationsProposalParameters =
-        BeginReviewWorkingGroupApplicationsProposalParameters;
     type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
     type SetWorkingGroupBudgetCapacityProposalParameters =
         SetWorkingGroupBudgetCapacityProposalParameters;
@@ -797,10 +807,8 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
-        Hiring: hiring::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage
@@ -816,5 +824,6 @@ construct_runtime!(
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
     }
 );

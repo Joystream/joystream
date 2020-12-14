@@ -64,18 +64,18 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     }));
 }
 
-fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId, T::MemberId) {
+fn member_funded_account<T: Trait + membership::Trait>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
-    let authority_account = account::<T::AccountId>(name, 0, SEED);
+    // Give balance for buying membership
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 
-    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
-        .unwrap();
-
-    Membership::<T>::add_screened_member(
-        RawOrigin::Signed(authority_account.clone()).into(),
-        account_id.clone(),
+    Membership::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
         Some(handle),
         None,
         None,
@@ -87,7 +87,7 @@ fn member_funded_account<T: Trait>(name: &'static str, id: u32) -> (T::AccountId
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn create_proposal<T: Trait>(
+fn create_proposal<T: Trait + membership::Trait>(
     id: u32,
     proposal_number: u32,
     constitutionality: u32,
@@ -157,7 +157,9 @@ fn create_proposal<T: Trait>(
     (account_id, member_id, proposal_id)
 }
 
-fn create_multiple_finalized_proposals<T: Trait + governance::council::Trait>(
+fn create_multiple_finalized_proposals<
+    T: Trait + governance::council::Trait + membership::Trait,
+>(
     number_of_proposals: u32,
     constitutionality: u32,
     vote_kind: VoteKind,
@@ -206,7 +208,7 @@ const MAX_BYTES: u32 = 16384;
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: governance::council::Trait
+        where T: governance::council::Trait, T: membership::Trait
     }
 
     _ { }
@@ -462,7 +464,7 @@ benchmarks! {
             );
 
             assert_eq!(proposal.status, status);
-            assert_eq!(proposal.current_constitutionality_level, 1);
+            assert_eq!(proposal.nr_of_council_confirmations, 1);
             assert_in_events::<T>(
                 RawEvent::ProposalStatusUpdated(proposal_id.clone(), status).into()
             );

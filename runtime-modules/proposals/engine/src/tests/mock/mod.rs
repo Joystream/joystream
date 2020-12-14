@@ -13,7 +13,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
 
 pub(crate) mod proposals;
@@ -81,11 +81,24 @@ parameter_types! {
     pub const MembershipFee: u64 = 100;
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl crate::Trait for Test {
@@ -171,7 +184,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl frame_system::Trait for Test {
