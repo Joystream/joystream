@@ -77,7 +77,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SlashWorkingGroupLead(worker_id, slashing_stake, working_group) => {
                 wrap_working_group_call!(
                     working_group,
-                    Wg::create_slash_stake_call(worker_id, slashing_stake,)
+                    Wg::create_slash_stake_call(worker_id, slashing_stake)
                 )
             }
             ProposalDetails::SetWorkingGroupLeadReward(worker_id, reward_amount, working_group) => {

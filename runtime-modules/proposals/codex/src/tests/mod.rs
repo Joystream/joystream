@@ -310,7 +310,8 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             exact_execution_block: None,
         };
 
-        let budget = council::Module::<Test>::budget();
+        let mint_capacity = 100;
+        council::Module::<Test>::set_budget(RawOrigin::Root.into(), mint_capacity).unwrap();
 
         assert_eq!(
             ProposalCodex::create_proposal(
@@ -325,16 +326,18 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::FundingRequest(budget + 1, 2),
+                ProposalDetails::FundingRequest(mint_capacity + 1, 2),
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
+
+        let exceeded_budget = MAX_SPENDING_PROPOSAL_VALUE + 1;
 
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::FundingRequest(5000001, 2),
+                ProposalDetails::FundingRequest(exceeded_budget.into(), 2),
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
@@ -412,6 +415,15 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::SetMaxValidatorCount(3),
+            ),
+            Err(Error::<Test>::InvalidValidatorCount.into())
+        );
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT + 1),
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
         );
@@ -590,8 +602,6 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
 
         let budget_capacity_details =
             ProposalDetails::UpdateWorkingGroupBudget(0, working_group, BalanceKind::Positive);
-        let budget_capacity_details_success =
-            ProposalDetails::UpdateWorkingGroupBudget(0, working_group, BalanceKind::Positive);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -612,12 +622,12 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_with_staking.clone(),
-                    budget_capacity_details_success.clone(),
+                    budget_capacity_details.clone(),
                 )
             },
             proposal_parameters:
                 <Test as crate::Trait>::UpdateWorkingGroupBudgetProposalParameters::get(),
-            proposal_details: budget_capacity_details_success.clone(),
+            proposal_details: budget_capacity_details.clone(),
         };
         proposal_fixture.check_all();
     });
