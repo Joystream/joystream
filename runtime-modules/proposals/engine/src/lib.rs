@@ -332,6 +332,9 @@ decl_error! {
 
         /// There is not enough balance for a stake.
         InsufficientBalanceForStake,
+
+        /// The conflicting stake discovered. Cannot stake.
+        ConflictingStakes,
     }
 }
 
@@ -446,7 +449,9 @@ decl_module! {
 
             proposal.voting_results.add_vote(vote.clone());
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
@@ -474,7 +479,9 @@ decl_module! {
             ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
             ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
@@ -500,7 +507,9 @@ decl_module! {
                 Error::<T>::ProposalFinalized
             );
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
@@ -526,8 +535,9 @@ impl<T: Trait> Module<T> {
             creation_params.exact_execution_block,
         )?;
 
-        // checks passed
-        // mutation
+        //
+        // == MUTATION SAFE ==
+        //
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
@@ -537,11 +547,8 @@ impl<T: Trait> Module<T> {
         if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
             if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
                 T::StakingHandler::lock(&staking_account_id, stake_balance);
-            } else {
-                // Return an error if no staking account provided.
-                return Err(Error::<T>::EmptyStake.into());
             }
-        };
+        }
 
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
@@ -619,6 +626,11 @@ impl<T: Trait> Module<T> {
 
         if let Some(stake_balance) = parameters.required_stake {
             if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    Error::<T>::ConflictingStakes
+                );
+
                 ensure!(
                     T::StakingHandler::is_enough_balance_for_stake(
                         &staking_account_id,

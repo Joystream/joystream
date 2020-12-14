@@ -74,13 +74,17 @@ fn member_funded_account<T: Trait + membership::Trait>(
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 

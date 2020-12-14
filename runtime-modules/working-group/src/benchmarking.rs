@@ -109,7 +109,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
     application_id
 }
 
-fn add_opening_and_apply_with_multiple_ids<T: Trait<I>, I: Instance>(
+fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
     ids: &Vec<u32>,
     add_opening_origin: &T::Origin,
     staking_role: &StakingRole,
@@ -174,7 +174,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait<I>, I: Instance>(
+fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -183,19 +183,19 @@ fn member_funded_account<T: Trait<I>, I: Instance>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    let authority_account = account::<T::AccountId>(name, 0, SEED);
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
 
-    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
-        .unwrap();
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    Membership::<T>::add_screened_member(
-        RawOrigin::Signed(authority_account.clone()).into(),
-        account_id.clone(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
@@ -208,7 +208,7 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     WorkingGroup::<T, _>::on_initialize(curr_block_number);
 }
 
-fn insert_a_worker<T: Trait<I>, I: Instance>(
+fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
     staking_role: StakingRole,
     job_opening_type: OpeningType,
     id: u32,
@@ -254,6 +254,10 @@ where
 }
 
 benchmarks_instance! {
+    where_clause {
+        where T: membership::Trait
+    }
+
     _ { }
 
     on_initialize_leaving {

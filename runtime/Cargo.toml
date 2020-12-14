@@ -163,7 +163,6 @@ runtime-benchmarks = [
     "pallet-timestamp/runtime-benchmarks",
     "frame-benchmarking",
     "frame-system-benchmarking",
-    "pallet-offences-benchmarking",
     "pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",

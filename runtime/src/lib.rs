@@ -377,8 +377,10 @@ impl pallet_im_online::Trait for Runtime {
     type Event = Event;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
+    // Using the default weights until we check if we can run the benchmarks for this pallet in
+    // the reference machine in an acceptable time.
+    type WeightInfo = ();
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = weights::pallet_im_online::WeightInfo;
 }
 
 parameter_types! {
@@ -600,7 +602,7 @@ pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = membership::MembershipWorkingGroupInstance;
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;

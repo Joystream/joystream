@@ -2,9 +2,9 @@
 
 pub use crate::{GenesisConfig, Trait};
 
-use crate::{genesis, MembershipWorkingGroupInstance};
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -13,6 +13,8 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     DispatchError, DispatchResult, Perbill,
 };
+
+pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -102,7 +104,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [9; 8];
 }
 
-impl working_group::Trait<crate::MembershipWorkingGroupInstance> for Test {
+impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -288,7 +290,7 @@ pub fn build_test_externalities_with_initial_members(
 ) -> sp_io::TestExternalities {
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
-            genesis::GenesisConfigBuilder::default()
+            crate::genesis::GenesisConfigBuilder::default()
                 .members(initial_members)
                 .build(),
         )

@@ -595,9 +595,6 @@ decl_module! {
 
             Self::ensure_can_create_thread(account_id, &forum_user_id, &category_id)?;
 
-            // Check that thread can be added to category
-            Self::ensure_category_is_mutable(&category_id)?;
-
             // Ensure poll is valid
             if let Some(ref data) = poll {
                 // Check all poll alternatives

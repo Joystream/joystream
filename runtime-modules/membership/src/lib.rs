@@ -55,9 +55,6 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupIntegration;
 
-/// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
-
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
