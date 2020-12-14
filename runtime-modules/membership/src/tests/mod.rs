@@ -4,7 +4,7 @@ pub(crate) mod fixtures;
 pub(crate) mod mock;
 
 use super::genesis;
-use crate::{Error, Event, MembershipWorkingGroupInstance};
+use crate::{Error, Event};
 use fixtures::*;
 use mock::*;
 
