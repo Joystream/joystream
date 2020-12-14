@@ -589,13 +589,9 @@ impl forum::Trait for Runtime {
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
-        for lock in existing_locks {
-            if !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)) {
-                return false;
-            }
-        }
-
-        true
+        existing_locks
+            .iter()
+            .any(|lock| !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)))
     }
 }
 

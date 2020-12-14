@@ -170,7 +170,7 @@ impl<
         let lock_ids: Vec<LockIdentifier> =
             locks.iter().map(|balance_lock| balance_lock.id).collect();
 
-        T::are_locks_conflicting(&LockId::get(), lock_ids.as_slice())
+        !T::are_locks_conflicting(&LockId::get(), lock_ids.as_slice())
     }
 
     fn is_enough_balance_for_stake(

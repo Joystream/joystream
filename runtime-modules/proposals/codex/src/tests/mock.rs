@@ -459,7 +459,7 @@ impl LockComparator<<Test as balances::Trait>::Balance> for Test {
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
     ) -> bool {
-        true
+        false
     }
 }
 

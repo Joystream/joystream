@@ -305,7 +305,7 @@ impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
     ) -> bool {
-        true
+        false
     }
 }
 

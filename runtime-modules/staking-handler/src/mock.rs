@@ -82,7 +82,7 @@ impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
         existing_locks
             .iter()
             .find(|lock| *lock == new_lock)
-            .is_none()
+            .is_some()
     }
 }
 
