@@ -174,6 +174,20 @@ pub trait Trait:
     type SetMembershipPriceProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// `Set Council Budget Increment` proposal parameters.
+    type SetCouncilBudgetIncrementProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Set Councilor Reward` proposal parameters
+    type SetCouncilorRewardProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    type SetInitialInvitationBalanceProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -309,9 +323,21 @@ decl_module! {
         const CancelWorkingGroupLeadOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::CancelWorkingGroupLeadOpeningProposalParameters::get();
 
-        // Exports 'Set Membership Price' proposal parameters.
+        /// Exports 'Set Membership Price' proposal parameters.
         const SetMembershipPriceProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
             = T::SetMembershipPriceProposalParameters::get();
+
+        /// Exports `Set Council Budget Increment` proposal parameters.
+        const SetCouncilBudgetIncrementProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetCouncilBudgetIncrementProposalParameters::get();
+
+        /// Exports `Set Councilor Reward Proposal Parameters` proposal parameters.
+        const SetCouncilorRewardProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetCouncilorRewardProposalParameters::get();
+
+        /// Exports `Set Initial Invitation Balance` proposal parameters.
+        const SetInitialInvitationBalanceProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetInitialInvitationBalanceProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         #[weight = 10_000_000] // TODO: adjust weight
@@ -404,8 +430,9 @@ decl_module! {
             balance_kind: BalanceKind,
         ) {
             ensure_root(origin.clone())?;
-            // Another option would be to pass the dispatchable instead of this, this would require less changes
-            // but would need a heap allocation for the dispatchable
+
+            // TODO: Discount from council
+
             match working_group {
                 WorkingGroup::Forum =>  working_group::Module::<T, ForumWorkingGroupInstance>::set_budget(origin, amount)?,
                 WorkingGroup::Storage => working_group::Module::<T, StorageWorkingGroupInstance>::set_budget(origin, amount)?,
@@ -496,7 +523,16 @@ impl<T: Trait> Module<T> {
                 // Note: No checks for this proposal for now
                 // TODO: Shouldn't we check that it exists?
             }
-            ProposalDetails::SetMembershipPrice(_) => {
+            ProposalDetails::SetMembershipPrice(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetCouncilBudgetIncrement(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetCouncilorReward(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetInitialInvitationBalance(..) => {
                 // Note: No checks for this proposal for now
             }
         }
@@ -542,6 +578,15 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 T::CancelWorkingGroupLeadOpeningProposalParameters::get()
+            }
+            ProposalDetails::SetCouncilBudgetIncrement(..) => {
+                T::SetCouncilBudgetIncrementProposalParameters::get()
+            }
+            ProposalDetails::SetCouncilorReward(..) => {
+                T::SetCouncilorRewardProposalParameters::get()
+            }
+            ProposalDetails::SetInitialInvitationBalance(..) => {
+                T::SetInitialInvitationBalanceProposalParameters::get()
             }
         }
     }

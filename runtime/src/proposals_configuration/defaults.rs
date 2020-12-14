@@ -202,3 +202,49 @@ pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber,
         constitutionality: 1,
     }
 }
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Council Budget Increment' proposal
+pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Councilor Reward' proposal
+pub(crate) fn set_councilor_reward_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Initial Invitation Balance' proposal
+pub(crate) fn set_initial_invitation_balance_proposal() -> ProposalParameters<BlockNumber, Balance>
+{
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

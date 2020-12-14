@@ -105,6 +105,21 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 // TODO: Update when membership is updated
                 Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
             }
+
+            ProposalDetails::SetCouncilBudgetIncrement(_budget_increment) => {
+                // TODO: Update when membership is updated
+                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            }
+
+            ProposalDetails::SetCouncilorReward(_councilor_reward) => {
+                // TODO: Update when membership is updated
+                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            }
+
+            ProposalDetails::SetInitialInvitationBalance(_initial_invitaiton_balance) => {
+                // TODO: Update when membership is updated
+                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            }
         };
 
         call.encode()

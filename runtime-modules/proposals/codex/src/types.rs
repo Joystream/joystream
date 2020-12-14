@@ -74,14 +74,25 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
     /// Fire the working group leader with possible slashing.
     TerminateWorkingGroupLead(TerminateRoleParameters<WorkerId, Balance>),
 
-    /// Amend constitution.
+    /// `Amend constitution` proposal.
     AmendConstitution(Vec<u8>),
 
-    /// Cancel working group leader opening.
+    /// `Cancel Working Group Lead Opening` proposal:
+    /// Cancels an opening for a working group leader
     CancelWorkingGroupLeadOpening(OpeningId, WorkingGroup),
 
-    /// Set the membership price.
+    /// `Set Membership Price` proposal:
+    /// Sets the membership price
     SetMembershipPrice(Balance),
+
+    /// `Set Council Budget Increment` proposal
+    SetCouncilBudgetIncrement(Balance),
+
+    /// `Set Councilor Reward` proposal
+    SetCouncilorReward(Balance),
+
+    /// `Set Initial Invitation Balance` proposal
+    SetInitialInvitationBalance(Balance),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId> Default

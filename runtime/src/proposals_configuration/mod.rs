@@ -41,6 +41,12 @@ parameter_types! {
     pub CancelWorkingGroupLeadOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.cancel_working_group_lead_opening_proposal;
     pub SetMembershipPriceProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.set_membership_price_proposal;
+    pub SetCouncilBudgetIncrementProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_council_budget_increment_proposal;
+    pub SetCouncilorRewardProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_councilor_reward_proposal;
+    pub SetInitialInvitationBalanceProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_initial_invitation_balance_proposal;
 }
 
 ///////////
@@ -60,6 +66,9 @@ struct AllProposalsParameters {
     pub amend_constitution_proposal: ProposalParameters<BlockNumber, Balance>,
     pub cancel_working_group_lead_opening_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_membership_price_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_council_budget_increment_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_councilor_reward_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_initial_invitation_balance_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -141,7 +150,10 @@ fn convert_json_object_to_proposal_parameters(
             jo.clone(),
             cancel_working_group_lead_opening_proposal
         );
-        init_proposal_parameter_object!(params, jo, set_membership_price_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_membership_price_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_council_budget_increment_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_councilor_reward_proposal);
+        init_proposal_parameter_object!(params, jo, set_initial_invitation_balance_proposal);
     }
 
     params
@@ -264,5 +276,9 @@ fn default_parameters() -> AllProposalsParameters {
         cancel_working_group_lead_opening_proposal:
             defaults::cancel_working_group_lead_opening_proposal(),
         set_membership_price_proposal: defaults::set_membership_price_proposal(),
+        set_council_budget_increment_proposal: defaults::set_council_budget_increment_proposal(),
+        set_councilor_reward_proposal: defaults::set_councilor_reward_proposal(),
+        set_initial_invitation_balance_proposal: defaults::set_initial_invitation_balance_proposal(
+        ),
     }
 }

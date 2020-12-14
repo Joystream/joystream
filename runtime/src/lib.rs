@@ -813,6 +813,10 @@ impl proposals_codex::Trait for Runtime {
     type CancelWorkingGroupLeadOpeningProposalParameters =
         CancelWorkingGroupLeadOpeningProposalParameters;
     type SetMembershipPriceProposalParameters = SetMembershipPriceProposalParameters;
+    type SetCouncilBudgetIncrementProposalParameters = SetCouncilBudgetIncrementProposalParameters;
+    type SetCouncilorRewardProposalParameters = SetCouncilorRewardProposalParameters;
+    type SetInitialInvitationBalanceProposalParameters =
+        SetInitialInvitationBalanceProposalParameters;
 }
 
 impl pallet_constitution::Trait for Runtime {
