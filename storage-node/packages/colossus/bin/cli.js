@@ -310,7 +310,7 @@ const commands = {
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
 
     const { startSyncing } = require('../lib/sync')
-    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store, cli.flags.anonymous)
+    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS, anonymous: cli.flags.anonymous }, store)
 
     if (!cli.flags.anonymous) {
       const { PublisherClient } = require('@joystream/service-discovery')

@@ -112,7 +112,7 @@ async function setRelationshipsReady({ api, relationshipIds }) {
   )
 }
 
-async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced, anonymous }) {
+async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {
   const retry = () => {
     setTimeout(syncPeriodic, flags.syncPeriod, {
       api,
@@ -120,7 +120,6 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       storage,
       contentBeingSynced,
       contentCompleteSynced,
-      anonymous,
     })
   }
 
@@ -133,7 +132,7 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       return retry()
     }
 
-    if (!anonymous) {
+    if (!flags.anonymous) {
       // Retry later if provider is not active
       if (!(await api.providerIsActiveWorker())) {
         debug(
@@ -157,7 +156,7 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
     await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
 
     // Only update on chain state if not in anonymous mode
-    if (!anonymous) {
+    if (!flags.anonymous) {
       const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
       await setRelationshipsReady({ api, relationshipIds })
       debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
@@ -170,13 +169,13 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
   retry()
 }
 
-function startSyncing(api, flags, storage, anonymous) {
+function startSyncing(api, flags, storage) {
   // ids of content currently being synced
   const contentBeingSynced = new Map()
   // ids of content that completed sync and may require creating a new relationship
   const contentCompleteSynced = new Map()
 
-  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced, anonymous })
+  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced })
 }
 
 module.exports = {
