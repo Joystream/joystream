@@ -24,7 +24,7 @@ async function main() {
 
   // Only buy membership if LEAD_URI is not provided
   if (memberId === undefined && process.env.LEAD_URI) {
-    throw new Error('Make sure Controller key LEAD_URI is is for a member')
+    throw new Error('Make sure Controller key LEAD_URI is for a member')
   }
 
   if (memberId === undefined) {

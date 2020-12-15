@@ -151,7 +151,6 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
   const leadAccount = memberController
   const workerAccount = process.env.WORKER_ACCOUNT
 
-  // make sure alice is sudo - indirectly checking this is a dev chain
   const sudo = await api.identities.getSudoAccount()
 
   if (!sudo.eq(sudoKey.address)) {
