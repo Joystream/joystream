@@ -1,5 +1,5 @@
 [package]
-name = 'staking-handler'
+name = 'pallet-staking-handler'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'

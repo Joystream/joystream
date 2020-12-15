@@ -23,7 +23,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
-staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 [features]
 default = ['std']
