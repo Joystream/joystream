@@ -112,7 +112,7 @@ async function setRelationshipsReady({ api, relationshipIds }) {
   )
 }
 
-async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {
+async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced, anonymous }) {
   const retry = () => {
     setTimeout(syncPeriodic, flags.syncPeriod, {
       api,
@@ -120,6 +120,7 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       storage,
       contentBeingSynced,
       contentCompleteSynced,
+      anonymous,
     })
   }
 
@@ -132,30 +133,35 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       return retry()
     }
 
-    // Retry later if provider is not active
-    if (!(await api.providerIsActiveWorker())) {
-      debug(
-        'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
-      )
-      return retry()
-    }
+    if (!anonymous) {
+      // Retry later if provider is not active
+      if (!(await api.providerIsActiveWorker())) {
+        debug(
+          'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
+        )
+        return retry()
+      }
 
-    const recommendedBalance = await api.providerHasMinimumBalance(300)
-    if (!recommendedBalance) {
-      debug('Warning: Provider role account is running low on balance.')
-    }
+      const recommendedBalance = await api.providerHasMinimumBalance(300)
+      if (!recommendedBalance) {
+        debug('Warning: Provider role account is running low on balance.')
+      }
 
-    const sufficientBalance = await api.providerHasMinimumBalance(100)
-    if (!sufficientBalance) {
-      debug('Provider role account does not have sufficient balance. Postponing sync run!')
-      return retry()
+      const sufficientBalance = await api.providerHasMinimumBalance(100)
+      if (!sufficientBalance) {
+        debug('Provider role account does not have sufficient balance. Postponing sync run!')
+        return retry()
+      }
     }
 
     await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
-    const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
-    await setRelationshipsReady({ api, relationshipIds })
 
-    debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    // Only update on chain state if not in anonymous mode
+    if (!anonymous) {
+      const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
+      await setRelationshipsReady({ api, relationshipIds })
+      debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    }
   } catch (err) {
     debug(`Error in sync run ${err.stack}`)
   }
@@ -164,13 +170,13 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
   retry()
 }
 
-function startSyncing(api, flags, storage) {
+function startSyncing(api, flags, storage, anonymous) {
   // ids of content currently being synced
   const contentBeingSynced = new Map()
   // ids of content that completed sync and may require creating a new relationship
   const contentCompleteSynced = new Map()
 
-  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced })
+  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced, anonymous })
 }
 
 module.exports = {
