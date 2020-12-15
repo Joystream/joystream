@@ -55,6 +55,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
+use staking_handler::LockComparator;
 use storage::data_object_storage_registry;
 
 // Node dependencies
@@ -586,6 +587,14 @@ impl forum::Trait for Runtime {
     }
 }
 
+impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        existing_locks
+            .iter()
+            .any(|lock| !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)))
+    }
+}
+
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
@@ -601,9 +610,6 @@ parameter_types! {
     pub const ForumWorkingGroupRewardPeriod: u32 = 14400 + 10;
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
-    pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
-    pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
-    pub const ForumGroupLockId: LockIdentifier = [8; 8];
 }
 
 // Staking managers type aliases.
@@ -654,7 +660,6 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
-    pub const ProposalsLockId: LockIdentifier = [5; 8];
 }
 
 impl proposals_engine::Trait for Runtime {

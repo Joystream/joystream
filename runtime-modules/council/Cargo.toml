@@ -14,18 +14,15 @@ frame-support = { package = 'frame-support', default-features = false, git = 'ht
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 referendum = { package = 'substrate-referendum-module', default-features = false, path = '../referendum'}
-
-# remove this after `staking_handler.rs` is removed in favor of external crate
-membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
-common = { package = 'pallet-common', default-features = false, path = '../common'}
-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
 
 [dev-dependencies]
-# uncomment balances after `staking_handler.rs` is removed in favor of external crate
-#balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 rand = "0.7.3"
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 
 [features]
 default = ['std']
@@ -39,9 +36,6 @@ std = [
     'frame-support/std',
     'referendum/std',
     'frame-system/std',
-
-    # remove this after `staking_handler.rs` is removed in favor of external crate
-    'membership/std',
-    'common/std',
+    'staking-handler/std',
 ]
 

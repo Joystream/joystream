@@ -100,7 +100,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxWorkerNumberLimit: Get<u32>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self>;
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
 
     /// Validates member id and origin combination
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;

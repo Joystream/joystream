@@ -442,7 +442,11 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
 fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     T: working_group::Trait<I> + frame_system::Trait + membership::Trait + pallet_balances::Trait,
     I: frame_support::traits::Instance,
-    SM: staking_handler::StakingHandler<T>,
+    SM: staking_handler::StakingHandler<
+        <T as frame_system::Trait>::AccountId,
+        <T as pallet_balances::Trait>::Balance,
+        <T as membership::Trait>::MemberId,
+    >,
 >(
     working_group: WorkingGroup,
 ) where
@@ -560,7 +564,11 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
 fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
-    SM: staking_handler::StakingHandler<T>,
+    SM: staking_handler::StakingHandler<
+        <T as frame_system::Trait>::AccountId,
+        <T as pallet_balances::Trait>::Balance,
+        <T as membership::Trait>::MemberId,
+    >,
 >(
     working_group: WorkingGroup,
 ) where
@@ -829,7 +837,11 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
 fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
     I: frame_support::traits::Instance,
-    SM: staking_handler::StakingHandler<T>,
+    SM: staking_handler::StakingHandler<
+        <T as frame_system::Trait>::AccountId,
+        <T as pallet_balances::Trait>::Balance,
+        <T as membership::Trait>::MemberId,
+    >,
 >(
     working_group: WorkingGroup,
 ) where
@@ -948,7 +960,11 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
 fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds<
     T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
     I: frame_support::traits::Instance,
-    SM: staking_handler::StakingHandler<T>,
+    SM: staking_handler::StakingHandler<
+        <T as frame_system::Trait>::AccountId,
+        <T as pallet_balances::Trait>::Balance,
+        <T as membership::Trait>::MemberId,
+    >,
 >(
     working_group: WorkingGroup,
 ) where

@@ -3776,7 +3776,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
- "pallet-common",
  "pallet-membership",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -3786,6 +3785,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "staking-handler",
  "substrate-referendum-module",
 ]
 

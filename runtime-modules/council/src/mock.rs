@@ -27,22 +27,23 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::{LockComparator, StakingManager};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
-
-use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
 // uncomment this when this is moved back here from staking_handler.rs temporary file
-//pub const VOTER_BASE_ID: u64 = 4000;
-//pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
-//pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
+pub const VOTER_BASE_ID: u64 = 4000;
+pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
+pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 pub const INVALID_USER_MEMBER: u64 = 9999;
+
+pub const TOPUP_MULTIPLIER: u64 = 10; // multiplies topup value so that candidate/voter can candidate/vote multiple times
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -68,15 +69,15 @@ impl Trait for Runtime {
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
-    type MembershipId = <Lock1 as membership::Trait>::MemberId;
+    type MembershipId = u64;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
 
-    type CandidacyLock = Lock1;
-    type ElectedMemberLock = Lock2;
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type ElectedMemberLock = StakingManager<Self, ElectedMemberLockId>;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
@@ -107,12 +108,17 @@ mod referendum_mod {
     pub use referendum::Instance0;
 }
 
+mod membership_mod {
+    pub use membership::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
         frame_system<T>,
         referendum_mod Instance0 <T>,
         balances_mod<T>,
+        membership_mod<T>,
     }
 }
 
@@ -166,6 +172,8 @@ parameter_types! {
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const ReferendumLockId: LockIdentifier = *b"referend";
+    pub const MembershipFee: u64 = 100;
+    pub const MinimumPeriod: u64 = 5;
 }
 
 mod balances_mod {
@@ -255,6 +263,20 @@ impl balances::Trait for Runtime {
     type MaxLocks = MaxLocks;
 }
 
+impl membership::Trait for Runtime {
+    type Event = TestEvent;
+    type MemberId = u64;
+    type ActorId = u64;
+    type MembershipFee = MembershipFee;
+}
+
+impl pallet_timestamp::Trait for Runtime {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
 impl Runtime {
     pub fn _feature_option_id_valid(is_valid: bool) -> () {
         IS_OPTION_ID_VALID.with(|value| {
@@ -266,6 +288,15 @@ impl Runtime {
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
     pub const MaxLocks: u32 = 50;
+}
+
+impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -465,7 +496,7 @@ where
             note_hash: None,
         };
 
-        Self::topup_account(account_id.into(), stake);
+        Self::topup_account(account_id.into(), stake * TOPUP_MULTIPLIER.into());
 
         CandidateInfo {
             origin,

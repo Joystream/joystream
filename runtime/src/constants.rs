@@ -1,4 +1,7 @@
 use crate::{BlockNumber, Moment};
+use frame_support::parameter_types;
+use frame_support::traits::LockIdentifier;
+use sp_std::collections::btree_set::BTreeSet;
 
 /// Constants for Babe.
 
@@ -34,6 +37,48 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
+
+parameter_types! {
+    pub const ProposalsLockId: LockIdentifier = [5; 8];
+    pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
+    pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
+    pub const ForumGroupLockId: LockIdentifier = [8; 8];
+}
+
+lazy_static! {
+    // pairs of allowed lock combinations
+    pub static ref ALLOWED_LOCK_COMBINATIONS: BTreeSet<(LockIdentifier, LockIdentifier)> = [
+        // format: `(lock_id, [all_compatible_lock_ids, ...])`
+        (ForumGroupLockId::get(), [
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get()
+        ]),
+        (ContentWorkingGroupLockId::get(), [
+            ForumGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+        ]),
+        (StorageWorkingGroupLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+        ]),
+        (ProposalsLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+        ]),
+    ]
+    .iter()
+    .fold(BTreeSet::new(), |mut acc, item| {
+        for lock_id in &item.1 {
+            acc.insert((item.0, *lock_id));
+        }
+
+        acc
+    });
+}
 
 /// Tests only
 #[cfg(any(feature = "std", test))]

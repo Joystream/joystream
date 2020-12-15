@@ -11,6 +11,7 @@ use sp_runtime::{
     Perbill,
 };
 use sp_staking::SessionIndex;
+use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
@@ -83,7 +84,7 @@ impl proposals_engine::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
-    type StakingHandler = staking_handler::StakingManager<Test, LockId>;
+    type StakingHandler = StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -217,7 +218,7 @@ pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type StakingHandler = StakingManager<Self, LockId1>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -299,7 +300,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = StakingManager<Self, LockId2>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -451,6 +452,15 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
