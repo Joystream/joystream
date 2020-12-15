@@ -1,10 +1,34 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use frame_benchmarking::benchmarks;
+use balances::Module as Balances;
+use frame_benchmarking::{account, benchmarks};
+use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
+use membership::Module as Membership;
+use sp_runtime::traits::Bounded;
+use sp_std::cmp::min;
+use sp_std::collections::btree_set::BTreeSet;
+use working_group::{
+    ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
+    RewardPolicy, StakeParameters, StakePolicy, StakingRole, WorkerById,
+};
 
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+// Alias for forum working group
+type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
+
+/// Balance alias for `balances` module.
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
+
+fn get_byte(num: u32, byte_number: u8) -> u8 {
+    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+}
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -12,6 +36,182 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
+}
+
+fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId)
+where
+    <T as membership::Trait>::MemberId: From<u32>,
+{
+    let account_id = account::<T::AccountId>(name, id, SEED);
+    let handle = handle_from_id::<T>(id);
+
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+
+    Membership::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
+        Some(handle),
+        None,
+        None,
+    )
+    .unwrap();
+
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+
+    (account_id, id.into())
+}
+
+// Method to generate a distintic valid handle
+// for a membership. For each index.
+fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+    let min_handle_length = Membership::<T>::min_handle_length();
+
+    let mut handle = vec![];
+
+    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+        handle.push(get_byte(id, i));
+    }
+
+    while handle.len() < (min_handle_length as usize) {
+        handle.push(0u8);
+    }
+
+    handle
+}
+
+fn insert_a_lead_member<
+    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance>,
+>(
+    staking_role: StakingRole,
+    job_opening_type: OpeningType,
+    id: u32,
+    lead_id: Option<T::AccountId>,
+) -> (T::AccountId, T::ForumUserId)
+// where
+//     WorkingGroup<T, I>: OnInitialize<T::BlockNumber>,
+{
+    let add_worker_origin = RawOrigin::Signed(lead_id.clone().unwrap());
+
+    let (caller_id, member_id) = member_funded_account::<T>("member", id);
+
+    let (opening_id, application_id) = add_and_apply_opening::<T>(
+        id,
+        &T::Origin::from(add_worker_origin.clone()),
+        &staking_role,
+        &caller_id,
+        &member_id,
+        &job_opening_type,
+    );
+
+    let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
+    successful_application_ids.insert(application_id);
+    ForumGroup::<T>::fill_opening(
+        add_worker_origin.clone().into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    // Every worst case either include or doesn't mind having a non-zero
+    // remaining reward
+    // force_missed_reward::<T, I>();
+
+    assert!(WorkerById::<ForumGroup<T>>::contains_key(id.into()));
+
+    (caller_id, id.into())
+}
+
+fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+    id: u32,
+    add_opening_origin: &T::Origin,
+    staking_role: &StakingRole,
+    applicant_id: &T::AccountId,
+    member_id: &T::MemberId,
+    job_opening_type: &OpeningType,
+) -> (OpeningId, ApplicationId) {
+    let opening_id =
+        add_opening_helper::<T>(id, add_opening_origin, staking_role, job_opening_type);
+
+    let application_id =
+        apply_on_opening_helper::<T>(id, staking_role, applicant_id, member_id, &opening_id);
+
+    (opening_id, application_id)
+}
+
+fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+    id: u32,
+    add_opening_origin: &T::Origin,
+    staking_role: &StakingRole,
+    job_opening_type: &OpeningType,
+) -> OpeningId {
+    let staking_policy = match staking_role {
+        StakingRole::WithStakes => Some(StakePolicy {
+            stake_amount: One::one(),
+            leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
+        }),
+        StakingRole::WithoutStakes => None,
+    };
+
+    ForumGroup::<T>::add_opening(
+        add_opening_origin.clone(),
+        vec![],
+        *job_opening_type,
+        staking_policy,
+        Some(RewardPolicy {
+            reward_per_block: One::one(),
+        }),
+    )
+    .unwrap();
+
+    let opening_id = id.into();
+
+    assert!(
+        OpeningById::<ForumGroup<T>>::contains_key(opening_id),
+        "Opening not added"
+    );
+
+    opening_id
+}
+
+fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+    id: u32,
+    staking_role: &StakingRole,
+    applicant_id: &T::AccountId,
+    member_id: &T::MemberId,
+    opening_id: &OpeningId,
+) -> ApplicationId {
+    let stake_parameters = match staking_role {
+        StakingRole::WithStakes => Some(StakeParameters {
+            // Due to mock implementation of StakingHandler we can't go over 1000
+            stake: min(BalanceOf::<T>::max_value(), BalanceOf::<T>::from(1000)),
+            staking_account_id: applicant_id.clone(),
+        }),
+        StakingRole::WithoutStakes => None,
+    };
+
+    ForumGroup::<T>::apply_on_opening(
+        RawOrigin::Signed(applicant_id.clone()).into(),
+        ApplyOnOpeningParameters::<T> {
+            member_id: *member_id,
+            opening_id: *opening_id,
+            role_account_id: applicant_id.clone(),
+            reward_account_id: applicant_id.clone(),
+            description: vec![],
+            stake_parameters,
+        },
+    )
+    .unwrap();
+
+    let application_id = id.into();
+
+    assert!(
+        ApplicationById::<ForumGroup<T>>::contains_key(application_id),
+        "Application not added"
+    );
+
+    application_id
 }
 
 fn create_new_category<T: Trait>(
@@ -99,12 +299,16 @@ pub fn generate_poll<T: Trait>(
 }
 
 benchmarks! {
+    where_clause { where T: balances::Trait, T: membership::Trait, T: working_group::Trait<ForumWorkingGroupInstance> }
     _{  }
 
     create_category{
         let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_BYTES;
+
+        let (caller_id, lead_worker_id) =
+            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
 
         let text = vec![0u8].repeat(j as usize);
 

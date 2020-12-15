@@ -30,7 +30,9 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u32>
+        + Into<u32>;
 
     type ModeratorId: Parameter
         + Member
