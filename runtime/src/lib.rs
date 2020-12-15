@@ -817,6 +817,7 @@ impl proposals_codex::Trait for Runtime {
     type SetCouncilorRewardProposalParameters = SetCouncilorRewardProposalParameters;
     type SetInitialInvitationBalanceProposalParameters =
         SetInitialInvitationBalanceProposalParameters;
+    type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 
 impl pallet_constitution::Trait for Runtime {

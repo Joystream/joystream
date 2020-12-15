@@ -23,6 +23,9 @@ constitution = { package = 'pallet-constitution', default-features = false, path
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 council = { package = 'pallet-council', default-features = false, path = '../../council'}
 
+# Benchmarking dependencies
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
+
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -34,6 +37,7 @@ referendum = { package = 'pallet-referendum', default-features = false, path = '
 
 [features]
 default = ['std']
+runtime-benchmarks = ['frame-benchmarking']
 std = [
     'serde',
     'codec/std',

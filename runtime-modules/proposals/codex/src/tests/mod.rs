@@ -310,23 +310,14 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             exact_execution_block: None,
         };
 
-        let mint_capacity = 100;
-        council::Module::<Test>::set_budget(RawOrigin::Root.into(), mint_capacity).unwrap();
+        let budget_capacity = 100;
+        council::Module::<Test>::set_budget(RawOrigin::Root.into(), budget_capacity).unwrap();
 
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::FundingRequest(0, 2),
-            ),
-            Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
-        );
-
-        assert_eq!(
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
-                ProposalDetails::FundingRequest(mint_capacity + 1, 2),
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
@@ -764,14 +755,6 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
     });
 }
 
-#[test]
-fn slash_stake_with_zero_staking_balance_fails() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_slash_stake_with_zero_staking_balance_fails(group);
-    }
-}
-
 pub fn run_to_block(n: u64) {
     while System::block_number() < n {
         System::on_finalize(System::block_number());
@@ -857,31 +840,6 @@ fn setup_council(start_id: u64) {
             .collect::<Vec<_>>(),
         council,
     );
-}
-
-fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let general_proposal_parameters = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(1),
-            exact_execution_block: None,
-        };
-
-        setup_council(2);
-
-        assert_eq!(
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
-                ProposalDetails::SlashWorkingGroupLead(10, 0, working_group)
-            ),
-            Err(Error::<Test>::SlashingStakeIsZero.into())
-        );
-    });
 }
 
 #[test]

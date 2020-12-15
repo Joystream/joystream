@@ -58,11 +58,15 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+mod benchmarking;
+
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
+use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
@@ -83,6 +87,31 @@ use common::working_group::WorkingGroup;
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
 // Max validator count for the 'Set Max Validator Count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
+
+/// Proposal codex WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn execute_signal_proposal(i: u32) -> Weight;
+    fn create_proposal_signal(i: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_funding_request() -> Weight; // Extra parameters not used
+    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
+    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
+    fn create_proposal_update_working_group_budget(d: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_decrease_working_group_lead_stake() -> Weight; // Extra parameters not used
+    fn create_proposal_slash_working_group_lead(d: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_set_working_group_lead_reward(d: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
+    fn create_proposal_amend_constitution(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_cancel_working_group_lead_opening(t: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_council_budget_increment(d: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_set_councilor_reward(t: u32) -> Weight; // Extra parameters not used
+    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
+}
+
+type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -106,6 +135,9 @@ pub trait Trait:
 
     /// Encodes the proposal usint its details.
     type ProposalEncoder: ProposalEncoder<Self>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// 'Set Max Validator Count' proposal parameters.
     type SetMaxValidatorCountProposalParameters: Get<
@@ -340,7 +372,7 @@ decl_module! {
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetInitialInvitationBalanceProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::get_create_proposal_weight(&general_proposal_parameters, &proposal_details)]
         pub fn create_proposal(
             origin,
             general_proposal_parameters: GeneralProposalParameters<T>,
@@ -393,9 +425,8 @@ decl_module! {
 
 // *************** Extrinsic to execute
 
-        /// Text proposal extrinsic.
-        /// Should be used as callable object to pass to the `engine` module.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Signal proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        #[weight = WeightInfoCodex::<T>::execute_signal_proposal(signal.len().saturated_into())]
         pub fn execute_signal_proposal(
             origin,
             signal: Vec<u8>,
@@ -587,6 +618,107 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 T::SetInitialInvitationBalanceProposalParameters::get()
+            }
+        }
+    }
+
+    // Returns weight for the proposal creatin according to parameters
+    fn get_create_proposal_weight(
+        general: &GeneralProposalParameters<T>,
+        details: &ProposalDetailsOf<T>,
+    ) -> Weight {
+        let title_length = general.title.len();
+        let description_length = general.description.len();
+        match details {
+            ProposalDetails::Signal(signal) => {
+                WeightInfoCodex::<T>::create_proposal_signal(signal.len().saturated_into())
+            }
+            ProposalDetails::RuntimeUpgrade(blob) => {
+                WeightInfoCodex::<T>::create_proposal_runtime_upgrade(
+                    blob.len().saturated_into(),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::FundingRequest(..) => {
+                WeightInfoCodex::<T>::create_proposal_funding_request()
+            }
+            ProposalDetails::SetMaxValidatorCount(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_max_validator_count(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::CreateWorkingGroupLeadOpening(opening_params) => {
+                WeightInfoCodex::<T>::create_proposal_create_working_group_lead_opening(
+                    opening_params.description.len().saturated_into(),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::FillWorkingGroupLeadOpening(..) => {
+                WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::UpdateWorkingGroupBudget(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_working_group_budget(
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::DecreaseWorkingGroupLeadStake(..) => {
+                WeightInfoCodex::<T>::create_proposal_decrease_working_group_lead_stake()
+            }
+            ProposalDetails::SlashWorkingGroupLead(..) => {
+                WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::SetWorkingGroupLeadReward(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_working_group_lead_reward(
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::TerminateWorkingGroupLead(..) => {
+                WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::AmendConstitution(new_constitution) => {
+                WeightInfoCodex::<T>::create_proposal_amend_constitution(
+                    new_constitution.len().saturated_into(),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::SetMembershipPrice(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_membership_price(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
+                WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    title_length.saturated_into(),
+                )
+            }
+            ProposalDetails::SetCouncilBudgetIncrement(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_council_budget_increment(
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::SetCouncilorReward(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_councilor_reward(
+                    title_length.saturated_into(),
+                )
+            }
+            ProposalDetails::SetInitialInvitationBalance(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_initial_invitation_balance(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
         }
     }
