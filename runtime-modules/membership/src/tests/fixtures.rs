@@ -407,3 +407,40 @@ impl InviteMembershipFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct SetMembershipPriceFixture {
+    pub origin: RawOrigin<u64>,
+    pub price: u64,
+}
+
+pub const DEFAULT_MEMBERSHIP_PRICE: u64 = 100;
+
+impl Default for SetMembershipPriceFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            price: DEFAULT_MEMBERSHIP_PRICE,
+        }
+    }
+}
+
+impl SetMembershipPriceFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Membership::set_membership_price(self.origin.clone().into(), self.price);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::membership_price(), self.price);
+        }
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        Self { price, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}

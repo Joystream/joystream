@@ -56,7 +56,7 @@ parameter_types! {
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
     pub const MaxWhiteListSize: u32 = 4;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
@@ -81,7 +81,7 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }

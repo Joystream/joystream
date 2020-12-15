@@ -25,7 +25,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
@@ -79,7 +79,7 @@ impl common::Trait for Test {
 }
 impl membership::Trait for Test {
     type Event = ();
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }

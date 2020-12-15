@@ -81,7 +81,7 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -221,7 +221,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }

@@ -49,7 +49,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -96,7 +96,7 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }

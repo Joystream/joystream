@@ -67,7 +67,7 @@ pub trait Trait:
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines the default membership fee.
-    type MembershipFee: Get<BalanceOf<Self>>;
+    type DefaultMembershipPrice: Get<BalanceOf<Self>>;
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
@@ -270,6 +270,10 @@ decl_storage! {
 
         /// Referral cut to receive during on buying the membership.
         pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
+
+        /// Current membership price.
+        pub MembershipPrice get(fn membership_price) : BalanceOf<T> =
+            T::DefaultMembershipPrice::get();
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -307,15 +311,13 @@ decl_event! {
         MemberVerificationStatusUpdated(MemberId, bool),
         ReferralCutUpdated(Balance),
         InvitesTransferred(MemberId, MemberId, u32),
+        MembershipPriceUpdated(Balance),
     }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
-
-        /// Exports const - membership fee.
-        const MembershipFee: BalanceOf<T> = T::MembershipFee::get();
 
         /// Non-members can buy membership.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -328,9 +330,9 @@ decl_module! {
             // Make sure we are accepting new memberships.
             ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
 
-            let fee = T::MembershipFee::get();
+            let fee = Self::membership_price();
 
-            // Ensure enough free balance to cover terms fees.
+            // Ensure enough free balance to cover membership fee.
             ensure!(
                 balances::Module::<T>::usable_balance(&who) >= fee,
                 Error::<T>::NotEnoughBalanceToBuyMembership
@@ -609,6 +611,23 @@ decl_module! {
             // Fire the event.
             Self::deposit_event(RawEvent::MemberRegistered(member_id));
         }
+
+        /// Updates membership price. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_membership_price(
+            origin,
+            new_price: BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipPrice<T>>::put(new_price);
+
+            Self::deposit_event(RawEvent::MembershipPriceUpdated(new_price));
+        }
     }
 }
 
@@ -777,7 +796,7 @@ impl<T: Trait> Module<T> {
 
     // Calculate current referral bonus. It minimum between membership fee and referral cut.
     pub(crate) fn get_referral_bonus() -> BalanceOf<T> {
-        let membership_fee = T::MembershipFee::get();
+        let membership_fee = Self::membership_price();
         let referral_cut = Self::referral_cut();
 
         membership_fee.min(referral_cut)
