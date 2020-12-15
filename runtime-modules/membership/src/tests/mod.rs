@@ -685,3 +685,36 @@ fn buy_membership_with_zero_membership_price_succeeds() {
         assert_eq!(Balances::usable_balance(&ALICE_ACCOUNT_ID), initial_balance);
     });
 }
+
+#[test]
+fn set_leader_invitation_quota_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        SetLeaderInvitationQuotaFixture::default().call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::LeaderInvitationQuotaUpdated(
+            DEFAULT_LEADER_INVITATION_QUOTA,
+        ));
+    });
+}
+
+#[test]
+fn set_leader_invitation_quota_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetLeaderInvitationQuotaFixture::default()
+            .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn set_leader_invitation_quota_fails_with_not_found_leader_membership() {
+    build_test_externalities().execute_with(|| {
+        SetLeaderInvitationQuotaFixture::default()
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}

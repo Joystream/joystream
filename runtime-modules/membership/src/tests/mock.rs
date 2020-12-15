@@ -5,6 +5,7 @@ pub use crate::{GenesisConfig, Trait};
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -243,6 +244,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         } else {
             Err(DispatchError::BadOrigin)
         }
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+        Some(ALICE_MEMBER_ID)
     }
 }
 

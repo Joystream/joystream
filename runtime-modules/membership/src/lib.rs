@@ -82,6 +82,7 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
+const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
@@ -225,6 +226,9 @@ decl_error! {
 
         /// Not enough invites to perform an operation.
         NotEnoughInvites,
+
+        /// Membership working group leader is not set.
+        WorkingGroupLeaderNotSet,
     }
 }
 
@@ -274,6 +278,10 @@ decl_storage! {
         /// Current membership price.
         pub MembershipPrice get(fn membership_price) : BalanceOf<T> =
             T::DefaultMembershipPrice::get();
+
+        /// Initial invitation count for the newly bought membership.
+        pub InitialInvitationCount get(fn initial_invitation_count) : u32  =
+            DEFAULT_MEMBER_INVITES_COUNT;
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -312,6 +320,7 @@ decl_event! {
         ReferralCutUpdated(Balance),
         InvitesTransferred(MemberId, MemberId, u32),
         MembershipPriceUpdated(Balance),
+        LeaderInvitationQuotaUpdated(u32),
     }
 }
 
@@ -361,7 +370,7 @@ decl_module! {
                 &params.root_account,
                 &params.controller_account,
                 &user_info,
-                T::DefaultMemberInvitesCount::get(),
+                Self::initial_invitation_count(),
             )?;
 
             // Collect membership fee (just burn it).
@@ -627,6 +636,35 @@ decl_module! {
             <MembershipPrice<T>>::put(new_price);
 
             Self::deposit_event(RawEvent::MembershipPriceUpdated(new_price));
+        }
+
+        /// Updates leader invitation quota. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_leader_invitation_quota(
+            origin,
+            invitation_quota: u32
+        ) {
+            ensure_root(origin)?;
+
+            let leader_member_id = T::WorkingGroup::get_leader_member_id();
+
+            if let Some(member_id) = leader_member_id{
+                Self::ensure_membership(member_id)?;
+            }
+
+            ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(member_id) = leader_member_id{
+                <MembershipById<T>>::mutate(&member_id, |membership| {
+                        membership.invites = invitation_quota;
+                });
+
+                Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
+            }
         }
     }
 }

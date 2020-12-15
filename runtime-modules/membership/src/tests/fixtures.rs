@@ -444,3 +444,36 @@ impl SetMembershipPriceFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct SetLeaderInvitationQuotaFixture {
+    pub origin: RawOrigin<u64>,
+    pub quota: u32,
+}
+
+pub const DEFAULT_LEADER_INVITATION_QUOTA: u32 = 100;
+
+impl Default for SetLeaderInvitationQuotaFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            quota: DEFAULT_LEADER_INVITATION_QUOTA,
+        }
+    }
+}
+
+impl SetLeaderInvitationQuotaFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Membership::set_leader_invitation_quota(self.origin.clone().into(), self.quota);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::membership(ALICE_MEMBER_ID).invites, self.quota);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}

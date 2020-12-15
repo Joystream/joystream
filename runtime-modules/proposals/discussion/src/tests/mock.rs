@@ -93,6 +93,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
     ) -> DispatchResult {
         unimplemented!();
     }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+        unimplemented!();
+    }
 }
 
 impl crate::Trait for Test {
