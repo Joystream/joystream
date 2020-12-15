@@ -586,8 +586,8 @@ decl_module! {
                 params.name,
                 params.handle,
                 params.avatar_uri,
-                params.about)
-            ?;
+                params.about
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -600,8 +600,10 @@ decl_module! {
                 Zero::zero(),
             )?;
 
-            inviting_membership.invites -= 1;
+            // Decrement the available invites counter.
+            inviting_membership.invites = inviting_membership.invites.saturating_sub(1);
 
+            // Save the updated profile.
             <MembershipById<T>>::insert(&params.inviting_member_id, inviting_membership);
 
             // Fire the event.
@@ -625,24 +627,6 @@ impl<T: Trait> Module<T> {
             Ok(Self::membership(&id))
         } else {
             Err(error)
-        }
-    }
-
-    /// Ensure that given member has given account as the controller account
-    pub fn ensure_is_controller_account_for_member(
-        member_id: &T::MemberId,
-        account: &T::AccountId,
-    ) -> Result<Membership<T>, Error<T>> {
-        if MembershipById::<T>::contains_key(member_id) {
-            let membership = MembershipById::<T>::get(member_id);
-
-            if membership.controller_account == *account {
-                Ok(membership)
-            } else {
-                Err(Error::<T>::ControllerAccountRequired)
-            }
-        } else {
-            Err(Error::<T>::MemberProfileNotFound)
         }
     }
 
@@ -709,6 +693,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<ValidatedUserInfo, Error<T>> {
         // Handle is required during registration
         let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
+        Self::ensure_unique_handle(&handle)?;
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&about.unwrap_or_default());
@@ -732,8 +717,6 @@ impl<T: Trait> Module<T> {
         user_info: &ValidatedUserInfo,
         allowed_invites: u32,
     ) -> Result<T::MemberId, Error<T>> {
-        Self::ensure_unique_handle(&user_info.handle)?;
-
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
@@ -761,39 +744,35 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    /// Ensure origin corresponds to the controller account of the member.
-    pub fn ensure_member_controller_account_signed(
+    // Ensure origin corresponds to the controller account of the member.
+    fn ensure_member_controller_account_signed(
         origin: T::Origin,
         member_id: &T::MemberId,
-    ) -> Result<T::AccountId, Error<T>> {
+    ) -> Result<Membership<T>, Error<T>> {
         // Ensure transaction is signed.
-        let signer_account = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
+        let signer_account_id = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
 
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
-
-        ensure!(
-            membership.controller_account == signer_account,
-            Error::<T>::ControllerAccountRequired
-        );
-
-        Ok(signer_account)
+        Self::ensure_is_controller_account_for_member(member_id, &signer_account_id)
     }
 
-    /// Validates that a member has the controller account.
-    pub fn ensure_member_controller_account(
-        signer_account: &T::AccountId,
+    /// Ensure that given member has given account as the controller account
+    pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
-    ) -> Result<(), Error<T>> {
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
+        account: &T::AccountId,
+    ) -> Result<Membership<T>, Error<T>> {
+        ensure!(
+            MembershipById::<T>::contains_key(member_id),
+            Error::<T>::MemberProfileNotFound
+        );
+
+        let membership = MembershipById::<T>::get(member_id);
 
         ensure!(
-            membership.controller_account == *signer_account,
+            membership.controller_account == *account,
             Error::<T>::ControllerAccountRequired
         );
 
-        Ok(())
+        Ok(membership)
     }
 
     // Calculate current referral bonus. It minimum between membership fee and referral cut.

@@ -34,6 +34,7 @@ fn buy_membership_succeeds() {
         assert_eq!(Some(profile.handle), get_alice_info().handle);
         assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
         assert_eq!(Some(profile.about), get_alice_info().about);
+        assert_eq!(profile.invites, DefaultMemberInvitesCount::get());
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
@@ -176,8 +177,7 @@ fn update_profile_has_no_effect_on_empty_parameters() {
 
 #[test]
 fn update_profile_accounts_succeeds() {
-    let member_id = 0u64;
-    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let starting_block = 1;
@@ -187,56 +187,57 @@ fn update_profile_accounts_succeeds() {
 
         assert_ok!(Membership::update_accounts(
             Origin::signed(ALICE_ACCOUNT_ID),
-            member_id,
+            ALICE_MEMBER_ID,
             Some(ALICE_NEW_ACCOUNT_ID),
             Some(ALICE_NEW_ACCOUNT_ID),
         ));
 
-        let profile = get_membership_by_id(member_id);
+        let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_NEW_ACCOUNT_ID);
         assert_eq!(
             <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![member_id]
+            vec![ALICE_MEMBER_ID]
         );
         assert!(<crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
 
         assert_eq!(profile.root_account, ALICE_NEW_ACCOUNT_ID);
         assert_eq!(
             <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![member_id]
+            vec![ALICE_MEMBER_ID]
         );
         assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(
+            ALICE_MEMBER_ID,
+        ));
     });
 }
 
 #[test]
 fn update_accounts_has_effect_on_empty_account_parameters() {
-    let member_id = 0u64;
-    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         assert_ok!(Membership::update_accounts(
             Origin::signed(ALICE_ACCOUNT_ID),
-            member_id,
+            ALICE_MEMBER_ID,
             None,
             None,
         ));
 
-        let profile = get_membership_by_id(member_id);
+        let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
         assert_eq!(
             <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![member_id]
+            vec![ALICE_MEMBER_ID]
         );
 
         assert_eq!(profile.root_account, ALICE_ACCOUNT_ID);
         assert_eq!(
             <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![member_id]
+            vec![ALICE_MEMBER_ID]
         );
     });
 }
@@ -340,8 +341,7 @@ fn buy_membership_fails_with_non_member_referrer_id() {
 
 #[test]
 fn buy_membership_with_referral_cut_succeeds() {
-    let member_id = 0u64;
-    let initial_members = [(member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let initial_balance = 10000;
@@ -351,7 +351,7 @@ fn buy_membership_with_referral_cut_succeeds() {
             .with_handle(b"bobs_handle".to_vec())
             .with_accounts(BOB_ACCOUNT_ID)
             .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
-            .with_referrer_id(member_id);
+            .with_referrer_id(ALICE_MEMBER_ID);
 
         buy_membership_fixture.call_and_assert(Ok(()));
 
@@ -407,8 +407,7 @@ fn set_referral_fails_with_invalid_origin() {
 
 #[test]
 fn transfer_invites_succeeds() {
-    let alice_member_id = 0u64;
-    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let starting_block = 1;
@@ -428,11 +427,11 @@ fn transfer_invites_succeeds() {
         let tranfer_invites_fixture = TransferInvitesFixture::default()
             .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
             .with_source_member_id(bob_member_id)
-            .with_target_member_id(alice_member_id);
+            .with_target_member_id(ALICE_MEMBER_ID);
 
         tranfer_invites_fixture.call_and_assert(Ok(()));
 
-        let alice = Membership::membership(alice_member_id);
+        let alice = Membership::membership(ALICE_MEMBER_ID);
         let bob = Membership::membership(bob_member_id);
 
         assert_eq!(alice.invites, tranfer_invites_fixture.invites);
@@ -443,7 +442,7 @@ fn transfer_invites_succeeds() {
 
         EventFixture::assert_last_crate_event(Event::<Test>::InvitesTransferred(
             bob_member_id,
-            alice_member_id,
+            ALICE_MEMBER_ID,
             tranfer_invites_fixture.invites,
         ));
     });
@@ -468,8 +467,7 @@ fn transfer_invites_fails_with_source_member_id() {
 
 #[test]
 fn transfer_invites_fails_with_target_member_id() {
-    let alice_member_id = 0u64;
-    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         TransferInvitesFixture::default()
@@ -479,8 +477,7 @@ fn transfer_invites_fails_with_target_member_id() {
 
 #[test]
 fn transfer_invites_fails_when_not_enough_invites() {
-    let alice_member_id = 0u64;
-    let initial_members = [(alice_member_id, ALICE_ACCOUNT_ID)];
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let starting_block = 1;
@@ -501,9 +498,149 @@ fn transfer_invites_fails_when_not_enough_invites() {
         let tranfer_invites_fixture = TransferInvitesFixture::default()
             .with_origin(RawOrigin::Signed(BOB_ACCOUNT_ID))
             .with_source_member_id(bob_member_id)
-            .with_target_member_id(alice_member_id)
+            .with_target_member_id(ALICE_MEMBER_ID)
             .with_invites_number(invalid_invites_number);
 
         tranfer_invites_fixture.call_and_assert(Err(Error::<Test>::NotEnoughInvites.into()));
+    });
+}
+
+#[test]
+fn invite_member_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+        let bob_member_id = Membership::members_created();
+
+        InviteMembershipFixture::default().call_and_assert(Ok(()));
+
+        let profile = get_membership_by_id(bob_member_id);
+
+        let bob = get_bob_info();
+        assert_eq!(Some(profile.name), bob.name);
+        assert_eq!(Some(profile.handle), bob.handle);
+        assert_eq!(Some(profile.avatar_uri), bob.avatar_uri);
+        assert_eq!(Some(profile.about), bob.about);
+        assert_eq!(profile.invites, 0);
+
+        // controller account initially set to primary account
+        assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
+        assert_eq!(
+            <crate::MemberIdsByControllerAccountId<Test>>::get(BOB_ACCOUNT_ID),
+            vec![bob_member_id]
+        );
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        InviteMembershipFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_invalid_member_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+        let invalid_member_id = 222;
+
+        InviteMembershipFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_not_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+        let invalid_account_id = 222;
+
+        InviteMembershipFixture::default()
+            .with_accounts(invalid_account_id)
+            .with_origin(RawOrigin::Signed(invalid_account_id))
+            .call_and_assert(Err(Error::<Test>::ControllerAccountRequired.into()));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_not_enough_invites() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        InviteMembershipFixture::default()
+            .call_and_assert(Err(Error::<Test>::NotEnoughInvites.into()));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_not_allowed_membership() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        crate::NewMembershipsAllowed::put(false);
+
+        InviteMembershipFixture::default()
+            .call_and_assert(Err(Error::<Test>::NewMembersNotAllowed.into()));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_bad_user_information() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = MembershipFee::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        InviteMembershipFixture::default()
+            .with_name([1u8; 5000].to_vec())
+            .call_and_assert(Err(Error::<Test>::NameTooLong.into()));
+
+        InviteMembershipFixture::default()
+            .with_avatar([1u8; 5000].to_vec())
+            .call_and_assert(Err(Error::<Test>::AvatarUriTooLong.into()));
+
+        InviteMembershipFixture::default()
+            .with_handle([1u8; 5000].to_vec())
+            .call_and_assert(Err(Error::<Test>::HandleTooLong.into()));
+
+        InviteMembershipFixture::default()
+            .with_handle(Vec::new())
+            .call_and_assert(Err(Error::<Test>::HandleTooShort.into()));
+
+        InviteMembershipFixture::default()
+            .with_empty_handle()
+            .call_and_assert(Err(
+                Error::<Test>::HandleMustBeProvidedDuringRegistration.into()
+            ));
+
+        let handle = b"Non-unique handle".to_vec();
+        InviteMembershipFixture::default()
+            .with_handle(handle.clone())
+            .call_and_assert(Ok(()));
+
+        InviteMembershipFixture::default()
+            .with_handle(handle)
+            .call_and_assert(Err(Error::<Test>::HandleAlreadyRegistered.into()));
     });
 }

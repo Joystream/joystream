@@ -1,5 +1,5 @@
 use super::mock::*;
-use crate::BuyMembershipParameters;
+use crate::{BuyMembershipParameters, InviteMembershipParameters};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::StorageMap;
@@ -77,6 +77,8 @@ pub fn get_bob_info() -> TestUserInfo {
 
 pub const ALICE_ACCOUNT_ID: u64 = 1;
 pub const BOB_ACCOUNT_ID: u64 = 2;
+pub const ALICE_MEMBER_ID: u64 = 0;
+pub const BOB_MEMBER_ID: u64 = 1;
 
 pub fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
@@ -275,8 +277,8 @@ impl Default for TransferInvitesFixture {
     fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
-            source_member_id: 0,
-            target_member_id: 1,
+            source_member_id: ALICE_MEMBER_ID,
+            target_member_id: BOB_MEMBER_ID,
             invites: 3,
         }
     }
@@ -314,5 +316,94 @@ impl TransferInvitesFixture {
 
     pub fn with_invites_number(self, invites: u32) -> Self {
         Self { invites, ..self }
+    }
+}
+
+pub struct InviteMembershipFixture {
+    pub member_id: u64,
+    pub origin: RawOrigin<u64>,
+    pub root_account: u64,
+    pub controller_account: u64,
+    pub name: Option<Vec<u8>>,
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+}
+
+impl Default for InviteMembershipFixture {
+    fn default() -> Self {
+        let bob = get_bob_info();
+        Self {
+            member_id: ALICE_MEMBER_ID,
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            root_account: BOB_ACCOUNT_ID,
+            controller_account: BOB_ACCOUNT_ID,
+            name: bob.name,
+            handle: bob.handle,
+            avatar_uri: bob.avatar_uri,
+            about: bob.about,
+        }
+    }
+}
+
+impl InviteMembershipFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = InviteMembershipParameters {
+            inviting_member_id: self.member_id.clone(),
+            root_account: self.root_account.clone(),
+            controller_account: self.controller_account.clone(),
+            name: self.name.clone(),
+            handle: self.handle.clone(),
+            avatar_uri: self.avatar_uri.clone(),
+            about: self.about.clone(),
+        };
+
+        let actual_result = Membership::invite_member(self.origin.clone().into(), params);
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_name(self, name: Vec<u8>) -> Self {
+        Self {
+            name: Some(name),
+            ..self
+        }
+    }
+
+    pub fn with_avatar(self, avatar_uri: Vec<u8>) -> Self {
+        Self {
+            avatar_uri: Some(avatar_uri),
+            ..self
+        }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            handle: Some(handle),
+            ..self
+        }
+    }
+
+    pub fn with_empty_handle(self) -> Self {
+        Self {
+            handle: None,
+            ..self
+        }
+    }
+
+    pub fn with_accounts(self, account_id: u64) -> Self {
+        Self {
+            root_account: account_id,
+            controller_account: account_id,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
     }
 }
