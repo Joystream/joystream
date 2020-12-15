@@ -2345,6 +2345,7 @@ dependencies = [
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
+ "pallet-council",
  "pallet-finality-tracker",
  "pallet-forum",
  "pallet-governance",
@@ -2359,6 +2360,7 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-recurring-reward",
+ "pallet-referendum",
  "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
@@ -3787,6 +3789,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4067,6 +4070,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
