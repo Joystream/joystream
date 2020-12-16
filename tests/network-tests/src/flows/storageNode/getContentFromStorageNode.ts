@@ -9,8 +9,8 @@ import { Utils } from '../../utils'
 export default async function getContentFromStorageNode(api: QueryNodeApi): Promise<void> {
   const videoTitle = 'Storage node test'
 
-  // Temporary solution (wait 1 minute)
-  await Utils.wait(60000)
+  // Temporary solution (wait 2 minutes)
+  await Utils.wait(120000)
 
   // Query video by title with where expression
   const videoWhereQueryResult = await api.performWhereQueryByVideoTitle(videoTitle)
