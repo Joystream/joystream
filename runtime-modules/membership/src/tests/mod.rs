@@ -741,3 +741,26 @@ fn set_initial_invitation_balance_fails_with_invalid_origin() {
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
+
+#[test]
+fn set_initial_invitation_count_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        SetInitialInvitationCountFixture::default().call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::InitialInvitationCountUpdated(
+            DEFAULT_INITIAL_INVITATION_COUNT,
+        ));
+    });
+}
+
+#[test]
+fn set_initial_invitation_count_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetInitialInvitationCountFixture::default()
+            .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}

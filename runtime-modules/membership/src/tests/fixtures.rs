@@ -515,3 +515,41 @@ impl SetInitialInvitationBalanceFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct SetInitialInvitationCountFixture {
+    pub origin: RawOrigin<u64>,
+    pub new_invitation_count: u32,
+}
+
+pub const DEFAULT_INITIAL_INVITATION_COUNT: u32 = 5;
+
+impl Default for SetInitialInvitationCountFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_invitation_count: DEFAULT_INITIAL_INVITATION_COUNT,
+        }
+    }
+}
+
+impl SetInitialInvitationCountFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_initial_invitation_count(
+            self.origin.clone().into(),
+            self.new_invitation_count,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Membership::initial_invitation_count(),
+                self.new_invitation_count
+            );
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}

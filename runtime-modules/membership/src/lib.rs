@@ -326,6 +326,7 @@ decl_event! {
         MembershipPriceUpdated(Balance),
         InitialInvitationBalanceUpdated(Balance),
         LeaderInvitationQuotaUpdated(u32),
+        InitialInvitationCountUpdated(u32),
     }
 }
 
@@ -533,10 +534,7 @@ decl_module! {
 
         /// Updates membership referral cut. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_referral_cut(
-            origin,
-            value: BalanceOf<T>
-        ) {
+        pub fn set_referral_cut(origin, value: BalanceOf<T>) {
             ensure_root(origin)?;
 
             //
@@ -628,10 +626,7 @@ decl_module! {
 
         /// Updates membership price. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_membership_price(
-            origin,
-            new_price: BalanceOf<T>
-        ) {
+        pub fn set_membership_price(origin, new_price: BalanceOf<T>) {
             ensure_root(origin)?;
 
             //
@@ -645,10 +640,7 @@ decl_module! {
 
         /// Updates leader invitation quota. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_leader_invitation_quota(
-            origin,
-            invitation_quota: u32
-        ) {
+        pub fn set_leader_invitation_quota(origin, invitation_quota: u32) {
             ensure_root(origin)?;
 
             let leader_member_id = T::WorkingGroup::get_leader_member_id();
@@ -672,13 +664,9 @@ decl_module! {
             }
         }
 
-
         /// Updates initial invitation balance for a invited member. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_initial_invitation_balance(
-            origin,
-            new_initial_balance: BalanceOf<T>
-        ) {
+        pub fn set_initial_invitation_balance(origin, new_initial_balance: BalanceOf<T>) {
             ensure_root(origin)?;
 
             //
@@ -688,6 +676,20 @@ decl_module! {
             <InitialInvitationBalance<T>>::put(new_initial_balance);
 
             Self::deposit_event(RawEvent::InitialInvitationBalanceUpdated(new_initial_balance));
+        }
+
+        /// Updates initial invitation count for a member. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_initial_invitation_count(origin, new_invitation_count: u32) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            InitialInvitationCount::put(new_invitation_count);
+
+            Self::deposit_event(RawEvent::InitialInvitationCountUpdated(new_invitation_count));
         }
     }
 }
