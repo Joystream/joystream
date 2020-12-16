@@ -303,13 +303,12 @@ decl_module! {
                 params.about)
             ?;
 
-            let mut referrer: Option<Membership<T>> = None;
-            if let Some(referrer_id) = params.referrer_id{
-                let referrer_membership =
-                    Self::ensure_membership_with_error(referrer_id, Error::<T>::ReferrerIsNotMember)?;
-
-                referrer = Some(referrer_membership);
-            }
+            let referrer = params
+                .referrer_id
+                .map(|referrer_id| {
+                    Self::ensure_membership_with_error(referrer_id, Error::<T>::ReferrerIsNotMember)
+                })
+                .transpose()?;
 
             //
             // == MUTATION SAFE ==
