@@ -37,7 +37,7 @@ docker-compose up -d processor
 yarn workspace @joystream/cd-schemas initialize:dev
 
 # Fixes Error: No active storage providers available
-sleep 1m 
+sleep 3m
 
 echo "Creating channel..."
 yarn joystream-cli media:createChannel \
