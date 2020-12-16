@@ -958,12 +958,12 @@ fn delete_thread() {
     let moderators = [
         FORUM_MODERATOR_ORIGIN_ID,
         FORUM_MODERATOR_2_ORIGIN_ID,
-        NOT_FORUM_LEAD_ORIGIN_ID,
+        NOT_FORUM_MODERATOR_ORIGIN_ID,
     ];
     let origins = [
         FORUM_MODERATOR_ORIGIN,
         FORUM_MODERATOR_2_ORIGIN,
-        NOT_FORUM_LEAD_ORIGIN,
+        NOT_FORUM_MODERATOR_ORIGIN,
     ];
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;

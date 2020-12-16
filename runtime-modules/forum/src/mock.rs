@@ -265,30 +265,18 @@ impl Trait for Runtime {
     type MapLimits = MapLimits;
 
     fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool {
-        *account_id == FORUM_LEAD_ORIGIN_ID
+        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
     }
 
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,
         forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        let allowed_accounts = [
-            FORUM_LEAD_ORIGIN_ID,
-            NOT_FORUM_LEAD_ORIGIN_ID,
-            NOT_FORUM_LEAD_2_ORIGIN_ID,
-        ];
-
-        allowed_accounts.contains(account_id) && account_id == forum_user_id
+        *account_id != NOT_FORUM_MEMBER_ORIGIN_ID && account_id == forum_user_id
     }
 
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
-        let allowed_accounts = [
-            FORUM_LEAD_ORIGIN_ID,
-            FORUM_MODERATOR_ORIGIN_ID,
-            FORUM_MODERATOR_2_ORIGIN_ID,
-        ];
-
-        allowed_accounts.contains(account_id) && account_id == moderator_id
+        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID && account_id == moderator_id
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
@@ -318,6 +306,13 @@ pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_
 pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 112;
 
 pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
+
+pub const NOT_FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 113;
+
+pub const NOT_FORUM_MODERATOR_ORIGIN: OriginType =
+    OriginType::Signed(NOT_FORUM_MODERATOR_ORIGIN_ID);
+
+pub const NOT_FORUM_MEMBER_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 114;
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 

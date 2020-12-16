@@ -91,12 +91,11 @@ fn insert_a_lead_member<
     staking_role: StakingRole,
     job_opening_type: OpeningType,
     id: u32,
-    lead_id: Option<T::AccountId>,
 ) -> (T::AccountId, T::ForumUserId)
 // where
 //     WorkingGroup<T, I>: OnInitialize<T::BlockNumber>,
 {
-    let add_worker_origin = RawOrigin::Signed(lead_id.clone().unwrap());
+    let add_worker_origin = RawOrigin::Root;
 
     let (caller_id, member_id) = member_funded_account::<T>("member", id);
 
@@ -315,7 +314,7 @@ benchmarks! {
         let j in 0 .. MAX_BYTES;
 
         let (caller_id, lead_worker_id) =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, 0, None);
+            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, 0);
 
         let text = vec![0u8].repeat(j as usize);
 
@@ -326,7 +325,7 @@ benchmarks! {
                 parent_category_id = Some((n as u64).into());
             }
 
-            create_new_category::<T>(T::AccountId::default(), parent_category_id, vec![0u8], vec![0u8]);
+            create_new_category::<T>(caller_id.clone(), parent_category_id, vec![0u8], vec![0u8]);
         }
 
         let parent_category = if let Some(parent_category_id) = parent_category_id {
@@ -337,7 +336,7 @@ benchmarks! {
 
         let category_counter = <Module<T>>::category_counter();
 
-    }: _ (RawOrigin::Signed(T::AccountId::default()), parent_category_id, text.clone(), text.clone())
+    }: _ (RawOrigin::Signed(caller_id), parent_category_id, text.clone(), text.clone())
     verify {
 
             let new_category = Category {
