@@ -12,7 +12,7 @@ type Mocks = InstanceMocks<Runtime>;
 type MockUtils = InstanceMockUtils<Runtime>;
 
 type CandidacyLock = <Runtime as Trait>::CandidacyLock;
-type ElectedMemberLock = <Runtime as Trait>::ElectedMemberLock;
+type CouncilorLock = <Runtime as Trait>::CouncilorLock;
 
 /////////////////// Election-related ///////////////////////////////////////////
 // Test one referendum cycle with succesfull council election
@@ -750,7 +750,7 @@ fn council_candidate_stake_automaticly_converted() {
                 );
 
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
+                    CouncilorLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
@@ -835,7 +835,7 @@ fn council_member_stake_is_locked() {
             .iter()
             .for_each(|council_member| {
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
+                    CouncilorLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
@@ -858,7 +858,7 @@ fn council_member_stake_automaticly_unlocked() {
 
         // 'not reelected member' should have it's stake locked now (he is currently elected member)
         assert_eq!(
-            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            CouncilorLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
             council_settings.min_candidate_stake,
         );
 
@@ -913,7 +913,7 @@ fn council_member_stake_automaticly_unlocked() {
 
         // not reelected member should have it's stake unlocked
         assert_eq!(
-            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            CouncilorLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
             0
         );
     });

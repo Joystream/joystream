@@ -497,7 +497,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Self>;
-    type LockId = ReferendumLockId;
+    type LockId = VotingLockId;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
@@ -561,7 +561,7 @@ impl pallet_council::Trait for Runtime {
     type MinCandidateStake = MinCandidateStake;
 
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
-    type ElectedMemberLock = StakingManager<Self, ElectedMemberLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;

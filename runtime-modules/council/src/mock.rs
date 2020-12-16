@@ -57,7 +57,7 @@ parameter_types! {
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
-    pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const CouncilorLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
@@ -77,7 +77,7 @@ impl Trait for Runtime {
     type MinCandidateStake = MinCandidateStake;
 
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
-    type ElectedMemberLock = StakingManager<Self, ElectedMemberLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
@@ -171,7 +171,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 23;
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const ReferendumLockId: LockIdentifier = *b"referend";
+    pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MembershipFee: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
 }
@@ -186,7 +186,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = balances::Module<Self>;
-    type LockId = ReferendumLockId;
+    type LockId = VotingLockId;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;

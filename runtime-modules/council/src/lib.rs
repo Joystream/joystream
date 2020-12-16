@@ -227,7 +227,7 @@ pub trait Trait: frame_system::Trait {
     /// Identifier for currency lock used for candidacy staking.
     type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
     /// Identifier for currency lock used for candidacy staking.
-    type ElectedMemberLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -962,7 +962,7 @@ impl<T: Trait> Mutations<T> {
 
         // release stakes for previous council members
         for council_member in CouncilMembers::<T>::get() {
-            T::ElectedMemberLock::unlock(&council_member.staking_account_id);
+            T::CouncilorLock::unlock(&council_member.staking_account_id);
         }
 
         // set new council
@@ -971,7 +971,7 @@ impl<T: Trait> Mutations<T> {
         // setup elected member lock for new council's members
         for council_member in CouncilMembers::<T>::get() {
             // lock council member stake
-            T::ElectedMemberLock::lock(&council_member.staking_account_id, council_member.stake);
+            T::CouncilorLock::lock(&council_member.staking_account_id, council_member.stake);
         }
     }
 
