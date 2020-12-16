@@ -3814,6 +3814,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "staking-handler",
 ]
 
 [[package]]

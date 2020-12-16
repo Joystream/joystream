@@ -1,7 +1,9 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use balances::Module as Balances;
+use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
+use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
@@ -11,7 +13,7 @@ use sp_std::cmp::min;
 use sp_std::collections::btree_set::BTreeSet;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    RewardPolicy, StakeParameters, StakePolicy, StakingRole, WorkerById,
+    RewardPolicy, StakeParameters, StakePolicy, WorkerById,
 };
 
 // The forum working group instance alias.
@@ -25,6 +27,11 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
+
+enum StakingRole {
+    WithStakes,
+    WithoutStakes,
+}
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
@@ -41,10 +48,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
     name: &'static str,
     id: u32,
-) -> (T::AccountId, T::MemberId)
-where
-    <T as membership::Trait>::MemberId: From<u32>,
-{
+) -> (T::AccountId, T::MemberId) {
     let account_id = account::<T::AccountId>(name, id, SEED);
     let handle = handle_from_id::<T>(id);
 
@@ -60,7 +64,7 @@ where
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    (account_id, id.into())
+    (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
 // Method to generate a distintic valid handle
@@ -82,7 +86,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
 }
 
 fn insert_a_lead_member<
-    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance>,
+    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
 >(
     staking_role: StakingRole,
     job_opening_type: OpeningType,
@@ -118,9 +122,12 @@ fn insert_a_lead_member<
     // remaining reward
     // force_missed_reward::<T, I>();
 
-    assert!(WorkerById::<ForumGroup<T>>::contains_key(id.into()));
+    let actor_id = <T as common::Trait>::ActorId::from(id.try_into().unwrap());
+    assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
+        actor_id
+    ));
 
-    (caller_id, id.into())
+    (caller_id, (id as u64).into())
 }
 
 fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
@@ -168,7 +175,7 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
     let opening_id = id.into();
 
     assert!(
-        OpeningById::<ForumGroup<T>>::contains_key(opening_id),
+        OpeningById::<T, ForumWorkingGroupInstance>::contains_key(opening_id),
         "Opening not added"
     );
 
@@ -207,7 +214,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
     let application_id = id.into();
 
     assert!(
-        ApplicationById::<ForumGroup<T>>::contains_key(application_id),
+        ApplicationById::<T, ForumWorkingGroupInstance>::contains_key(application_id),
         "Application not added"
     );
 
@@ -864,6 +871,7 @@ benchmarks! {
 mod tests {
     use super::*;
     use crate::mock::*;
+    use frame_support::assert_ok;
 
     #[test]
     fn test_create_category() {

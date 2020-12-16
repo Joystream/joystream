@@ -27,6 +27,23 @@ impl_outer_event! {
     pub enum TestEvent for Runtime {
         forum_mod<T>,
         frame_system<T>,
+        balances<T>,
+        membership<T>,
+        working_group Instance1 <T>,
+    }
+}
+
+pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        if member_id > 10 {
+            return Err(ACTOR_ORIGIN_ERROR);
+        }
+
+        Ok(signed_account_id)
     }
 }
 
@@ -39,6 +56,8 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const ExistentialDeposit: u32 = 0;
+    pub const MembershipFee: u64 = 0;
 }
 
 impl frame_system::Trait for Runtime {
@@ -62,11 +81,11 @@ impl frame_system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = ();
     type PalletInfo = ();
-    type SystemWeightInfo = ();
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
@@ -74,6 +93,141 @@ impl pallet_timestamp::Trait for Runtime {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl balances::Trait for Runtime {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: [u8; 8] = [9; 8];
+}
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = Weights;
+}
+
+// Weights info stub
+pub struct Weights;
+impl working_group::WeightInfo for Weights {
+    fn on_initialize_leaving(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn apply_on_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_lead() -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_role_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn cancel_opening() -> u64 {
+        unimplemented!()
+    }
+
+    fn withdraw_application() -> u64 {
+        unimplemented!()
+    }
+
+    fn slash_stake(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_lead(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn increase_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn spend_from_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_amount() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_status_text(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn add_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_immediatly() -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_later() -> u64 {
+        unimplemented!()
+    }
+}
+
+impl membership::Trait for Runtime {
+    type Event = TestEvent;
+    type MembershipFee = MembershipFee;
+    type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
 }
 
 parameter_types! {
