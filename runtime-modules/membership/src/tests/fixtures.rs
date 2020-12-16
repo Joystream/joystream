@@ -477,3 +477,41 @@ impl SetLeaderInvitationQuotaFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct SetInitialInvitationBalanceFixture {
+    pub origin: RawOrigin<u64>,
+    pub new_initial_balance: u64,
+}
+
+pub const DEFAULT_INITIAL_INVITATION_BALANCE: u64 = 200;
+
+impl Default for SetInitialInvitationBalanceFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_initial_balance: DEFAULT_INITIAL_INVITATION_BALANCE,
+        }
+    }
+}
+
+impl SetInitialInvitationBalanceFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_initial_invitation_balance(
+            self.origin.clone().into(),
+            self.new_initial_balance,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Membership::initial_invitation_balance(),
+                self.new_initial_balance
+            );
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}

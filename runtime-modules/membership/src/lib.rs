@@ -71,6 +71,9 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+
+    /// Defines the default balance for the invited member.
+    type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
 }
 
 // Default user info constraints
@@ -279,6 +282,10 @@ decl_storage! {
         /// Initial invitation count for the newly bought membership.
         pub InitialInvitationCount get(fn initial_invitation_count) : u32  =
             DEFAULT_MEMBER_INVITES_COUNT;
+
+        /// Initial invitation balance for the invited member.
+        pub InitialInvitationBalance get(fn initial_invitation_balance) : BalanceOf<T> =
+            T::DefaultInitialInvitationBalance::get();
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -317,6 +324,7 @@ decl_event! {
         ReferralCutUpdated(Balance),
         InvitesTransferred(MemberId, MemberId, u32),
         MembershipPriceUpdated(Balance),
+        InitialInvitationBalanceUpdated(Balance),
         LeaderInvitationQuotaUpdated(u32),
     }
 }
@@ -662,6 +670,24 @@ decl_module! {
 
                 Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
             }
+        }
+
+
+        /// Updates initial invitation balance for a invited member. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_initial_invitation_balance(
+            origin,
+            new_initial_balance: BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <InitialInvitationBalance<T>>::put(new_initial_balance);
+
+            Self::deposit_event(RawEvent::InitialInvitationBalanceUpdated(new_initial_balance));
         }
     }
 }

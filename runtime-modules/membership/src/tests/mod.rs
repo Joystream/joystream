@@ -718,3 +718,26 @@ fn set_leader_invitation_quota_fails_with_not_found_leader_membership() {
             .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
     });
 }
+
+#[test]
+fn set_initial_invitation_balance_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        SetInitialInvitationBalanceFixture::default().call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::InitialInvitationBalanceUpdated(
+            DEFAULT_INITIAL_INVITATION_BALANCE,
+        ));
+    });
+}
+
+#[test]
+fn set_initial_invitation_balance_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetInitialInvitationBalanceFixture::default()
+            .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}

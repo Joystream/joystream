@@ -53,6 +53,7 @@ impl membership::Trait for Test {
     type Event = ();
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -71,6 +72,7 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const ExistentialDeposit: u32 = 0;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl balances::Trait for Test {

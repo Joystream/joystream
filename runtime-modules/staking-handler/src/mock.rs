@@ -23,6 +23,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
     pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -76,6 +77,7 @@ impl membership::Trait for Test {
     type Event = ();
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
