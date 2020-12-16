@@ -429,7 +429,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
         let add_opening_parameters = AddOpeningParameters {
             description: b"some text".to_vec(),
             stake_policy: None,
-            reward_policy: None,
+            reward_per_block: None,
             working_group,
         };
 

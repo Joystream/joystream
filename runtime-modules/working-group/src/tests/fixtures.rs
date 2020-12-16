@@ -10,7 +10,7 @@ use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, Penalty,
-    RawEvent, RewardPolicy, StakePolicy, Worker,
+    RawEvent, StakePolicy, Worker,
 };
 
 pub struct EventFixture;
@@ -40,7 +40,7 @@ pub struct AddOpeningFixture {
     opening_type: OpeningType,
     starting_block: u64,
     stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_policy: Option<RewardPolicy<u64>>,
+    reward_per_block: Option<u64>,
 }
 
 impl Default for AddOpeningFixture {
@@ -51,7 +51,7 @@ impl Default for AddOpeningFixture {
             opening_type: OpeningType::Regular,
             starting_block: 0,
             stake_policy: None,
-            reward_policy: None,
+            reward_per_block: None,
         }
     }
 }
@@ -78,7 +78,7 @@ impl AddOpeningFixture {
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
-                reward_policy: self.reward_policy.clone(),
+                reward_per_block: self.reward_per_block.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -94,7 +94,7 @@ impl AddOpeningFixture {
             self.description.clone(),
             self.opening_type,
             self.stake_policy.clone(),
-            self.reward_policy.clone(),
+            self.reward_per_block.clone(),
         )?;
 
         Ok(saved_opening_next_id)
@@ -125,9 +125,9 @@ impl AddOpeningFixture {
         }
     }
 
-    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
         Self {
-            reward_policy,
+            reward_per_block,
             ..self
         }
     }
@@ -239,7 +239,7 @@ pub struct FillOpeningFixture {
     reward_account_id: u64,
     staking_account_id: Option<u64>,
     stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_policy: Option<RewardPolicy<u64>>,
+    reward_per_block: Option<u64>,
     created_at: u64,
 }
 
@@ -255,7 +255,7 @@ impl FillOpeningFixture {
             reward_account_id: 1,
             staking_account_id: None,
             stake_policy: None,
-            reward_policy: None,
+            reward_per_block: None,
             created_at: 0,
         }
     }
@@ -282,9 +282,9 @@ impl FillOpeningFixture {
         }
     }
 
-    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
         Self {
-            reward_policy,
+            reward_per_block,
             ..self
         }
     }
@@ -330,7 +330,7 @@ impl FillOpeningFixture {
                     .stake_policy
                     .as_ref()
                     .map_or(0, |sp| sp.leaving_unstaking_period),
-                reward_per_block: self.reward_policy.as_ref().map(|rp| rp.reward_per_block),
+                reward_per_block: self.reward_per_block,
                 missed_reward: None,
                 created_at: self.created_at,
             };
@@ -355,7 +355,7 @@ impl FillOpeningFixture {
 pub struct HireLeadFixture {
     setup_environment: bool,
     stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_policy: Option<RewardPolicy<u64>>,
+    reward_per_block: Option<u64>,
 }
 
 impl Default for HireLeadFixture {
@@ -363,7 +363,7 @@ impl Default for HireLeadFixture {
         Self {
             setup_environment: true,
             stake_policy: None,
-            reward_policy: None,
+            reward_per_block: None,
         }
     }
 }
@@ -382,9 +382,9 @@ impl HireLeadFixture {
         }
     }
 
-    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
         Self {
-            reward_policy,
+            reward_per_block,
             ..self
         }
     }
@@ -394,7 +394,7 @@ impl HireLeadFixture {
             .with_setup_environment(self.setup_environment)
             .with_opening_type(OpeningType::Leader)
             .with_stake_policy(self.stake_policy)
-            .with_reward_policy(self.reward_policy)
+            .with_reward_per_block(self.reward_per_block)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
@@ -405,7 +405,7 @@ impl HireLeadFixture {
             .with_setup_environment(self.setup_environment)
             .with_opening_type(OpeningType::Leader)
             .with_stake_policy(self.stake_policy)
-            .with_reward_policy(self.reward_policy)
+            .with_reward_per_block(self.reward_per_block)
             .add_application(b"leader".to_vec())
             .expect(Err(error))
             .execute();
@@ -415,7 +415,7 @@ impl HireLeadFixture {
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
     stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_policy: Option<RewardPolicy<u64>>,
+    reward_per_block: Option<u64>,
 }
 
 impl Default for HireRegularWorkerFixture {
@@ -423,7 +423,7 @@ impl Default for HireRegularWorkerFixture {
         Self {
             setup_environment: true,
             stake_policy: None,
-            reward_policy: None,
+            reward_per_block: None,
         }
     }
 }
@@ -435,9 +435,9 @@ impl HireRegularWorkerFixture {
         }
     }
 
-    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
         Self {
-            reward_policy,
+            reward_per_block,
             ..self
         }
     }
@@ -447,7 +447,7 @@ impl HireRegularWorkerFixture {
             .with_setup_environment(self.setup_environment)
             .with_opening_type(OpeningType::Regular)
             .with_stake_policy(self.stake_policy)
-            .with_reward_policy(self.reward_policy)
+            .with_reward_per_block(self.reward_per_block)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()

@@ -54,9 +54,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
         vec![],
         *job_opening_type,
         staking_policy,
-        Some(RewardPolicy {
-            reward_per_block: One::one(),
-        }),
+        Some(One::one()),
     )
     .unwrap();
 
@@ -870,10 +868,6 @@ benchmarks_instance! {
             leaving_unstaking_period: T::BlockNumber::max_value(),
         };
 
-        let reward_policy = RewardPolicy {
-            reward_per_block: BalanceOf::<T>::max_value(),
-        };
-
         let description = vec![0u8; i.try_into().unwrap()];
 
     }: _(
@@ -881,7 +875,7 @@ benchmarks_instance! {
             description,
             OpeningType::Regular,
             Some(stake_policy),
-            Some(reward_policy)
+            Some(BalanceOf::<T>::max_value())
         )
     verify {
         assert!(OpeningById::<T, I>::contains_key(1));
