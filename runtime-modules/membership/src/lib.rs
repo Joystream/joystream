@@ -182,9 +182,6 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// New members not allowed.
-        NewMembersNotAllowed,
-
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
@@ -253,9 +250,6 @@ decl_storage! {
         /// Registered unique handles and their mapping to their owner.
         pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
-
-        /// Is the platform is accepting new members or not.
-        pub NewMembershipsAllowed get(fn new_memberships_allowed) : bool = true;
 
         /// Minimum allowed handle length.
         pub MinHandleLength get(fn min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
@@ -341,9 +335,6 @@ decl_module! {
             params: BuyMembershipParameters<T::AccountId, T::MemberId>
         ) {
             let who = ensure_signed(origin)?;
-
-            // Make sure we are accepting new memberships.
-            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
 
             let fee = Self::membership_price();
 
@@ -591,9 +582,6 @@ decl_module! {
 
             let mut inviting_membership = Self::ensure_membership(params.inviting_member_id)?;
             ensure!(inviting_membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
-
-            // Make sure we are accepting new memberships.
-            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
 
             // Verify user parameters.
             let user_info = Self::check_user_registration_info(

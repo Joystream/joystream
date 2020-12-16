@@ -76,21 +76,6 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
 }
 
 #[test]
-fn new_memberships_allowed_flag_works() {
-    build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get() + 1;
-        set_alice_free_balance(initial_balance);
-
-        crate::NewMembershipsAllowed::put(false);
-
-        assert_dispatch_error_message(
-            buy_default_membership_as_alice(),
-            Err(Error::<Test>::NewMembersNotAllowed.into()),
-        );
-    });
-}
-
-#[test]
 fn buy_membership_fails_with_non_unique_handle() {
     build_test_externalities().execute_with(|| {
         let initial_balance = DefaultMembershipPrice::get();
@@ -586,21 +571,6 @@ fn invite_member_fails_with_not_enough_invites() {
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         InviteMembershipFixture::default()
             .call_and_assert(Err(Error::<Test>::NotEnoughInvites.into()));
-    });
-}
-
-#[test]
-fn invite_member_fails_with_not_allowed_membership() {
-    build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
-        set_alice_free_balance(initial_balance);
-
-        assert_ok!(buy_default_membership_as_alice());
-
-        crate::NewMembershipsAllowed::put(false);
-
-        InviteMembershipFixture::default()
-            .call_and_assert(Err(Error::<Test>::NewMembersNotAllowed.into()));
     });
 }
 
