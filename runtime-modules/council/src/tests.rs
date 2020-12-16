@@ -15,7 +15,7 @@ type CandidacyLock = <Runtime as Trait>::CandidacyLock;
 type ElectedMemberLock = <Runtime as Trait>::ElectedMemberLock;
 
 /////////////////// Election-related ///////////////////////////////////////////
-/// Test one referendum cycle with succesfull council election
+// Test one referendum cycle with succesfull council election
 #[test]
 fn council_lifecycle() {
     let config = default_genesis_config();
@@ -157,7 +157,7 @@ fn council_can_vote_for_yourself() {
     });
 }
 
-/// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle with succesfull council election
+// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle with succesfull council election
 #[test]
 fn council_vote_for_winner_stakes_longer() {
     let config = default_genesis_config();
@@ -1034,7 +1034,7 @@ fn council_candidacy_set_note() {
     });
 }
 
-/// Test that candidating in 2nd council cycle after failed candidacy in 1st cycle releases the 1st cycle's stake.
+// Test that candidating in 2nd council cycle after failed candidacy in 1st cycle releases the 1st cycle's stake.
 #[test]
 fn council_repeated_candidacy_unstakes() {
     let config = default_genesis_config();
@@ -1072,7 +1072,7 @@ fn council_repeated_candidacy_unstakes() {
 
 /////////////////// Budget-related /////////////////////////////////////////////
 
-/// Test that budget balance can be set from external source.
+// Test that budget balance can be set from external source.
 #[test]
 fn council_budget_can_be_set() {
     let config = default_genesis_config();
@@ -1087,7 +1087,7 @@ fn council_budget_can_be_set() {
     })
 }
 
-/// Test that budget balance can be set from external source.
+// Test that budget balance can be set from external source.
 #[test]
 fn council_budget_refill_can_be_planned() {
     let config = default_genesis_config();
@@ -1115,7 +1115,7 @@ fn council_budget_refill_can_be_planned() {
     })
 }
 
-/// Test that rewards for council members are paid.
+// Test that rewards for council members are paid.
 #[test]
 fn council_rewards_are_paid() {
     let config = default_genesis_config();
@@ -1155,7 +1155,7 @@ fn council_rewards_are_paid() {
     });
 }
 
-/// Test that any rewards missed due to insufficient budget balance will be paid off eventually.
+// Test that any rewards missed due to insufficient budget balance will be paid off eventually.
 #[test]
 fn council_missed_rewards_are_paid_later() {
     let config = default_genesis_config();
@@ -1210,7 +1210,7 @@ fn council_missed_rewards_are_paid_later() {
     });
 }
 
-/// Test that any unpaid rewards will be discarded on council depose if budget is still insufficient.
+// Test that any unpaid rewards will be discarded on council depose if budget is still insufficient.
 #[test]
 fn council_discard_remaining_rewards_on_depose() {
     let config = default_genesis_config();
@@ -1261,7 +1261,7 @@ fn council_discard_remaining_rewards_on_depose() {
     });
 }
 
-/// Test that budget is periodicly refilled.
+// Test that budget is periodicly refilled.
 #[test]
 fn council_budget_auto_refill() {
     let config = default_genesis_config();
@@ -1293,7 +1293,7 @@ fn council_budget_auto_refill() {
     });
 }
 
-/// Test that `staking_account_id` is required to be associated with `membership_id` while `reward_account_id` is not
+// Test that `staking_account_id` is required to be associated with `membership_id` while `reward_account_id` is not
 #[test]
 fn council_membership_checks() {
     let config = default_genesis_config();

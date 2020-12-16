@@ -920,7 +920,7 @@ where
         );
     }
 
-    /// simulate one council's election cycle
+    // simulate one council's election cycle
     pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
         let settings = params.council_settings;
 
@@ -1035,7 +1035,7 @@ where
         InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
     }
 
-    /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
+    // Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
     pub fn run_full_council_cycle(
         start_block_number: T::BlockNumber,
         expected_initial_council_members: &[CouncilMemberOf<T>],
