@@ -7,7 +7,7 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 
-use working_group::{Penalty, RewardPolicy, StakePolicy};
+use working_group::{Penalty, StakePolicy};
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -146,8 +146,8 @@ pub struct AddOpeningParameters<BlockNumber, Balance> {
     /// Stake policy for the opening.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 
-    /// Reward policy for the opening.
-    pub reward_policy: Option<RewardPolicy<Balance>>,
+    /// Reward per block for the opening.
+    pub reward_per_block: Option<Balance>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

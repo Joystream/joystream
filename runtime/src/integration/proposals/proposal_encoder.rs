@@ -121,7 +121,7 @@ where
             add_opening_params.description,
             OpeningType::Leader,
             add_opening_params.stake_policy,
-            add_opening_params.reward_policy,
+            add_opening_params.reward_per_block,
         )
     }
 

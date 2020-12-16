@@ -80,7 +80,7 @@ fn add_opening(
             ProposalDetails::AddWorkingGroupLeaderOpening(AddOpeningParameters {
                 description: Vec::new(),
                 stake_policy: stake_policy.clone(),
-                reward_policy: None,
+                reward_per_block: None,
                 working_group,
             }),
         )
