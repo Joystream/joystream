@@ -79,7 +79,6 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [1; 8];
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
 impl common::Trait for Test {
@@ -91,7 +90,6 @@ impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
-    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

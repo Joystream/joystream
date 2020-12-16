@@ -512,11 +512,9 @@ impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
-    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 parameter_types! {
-    pub const DefaultMemberInvitesCount: u32 = 5;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;

@@ -98,7 +98,6 @@ impl membership::Trait for Test {
     type Event = MetaEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
-    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -135,7 +134,6 @@ impl recurringrewards::Trait for Test {
 }
 
 parameter_types! {
-    pub const DefaultMemberInvitesCount: u32 = 5;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId1: [u8; 8] = [1; 8];
 }

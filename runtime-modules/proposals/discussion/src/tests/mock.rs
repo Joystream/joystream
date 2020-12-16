@@ -57,7 +57,6 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const MaxWhiteListSize: u32 = 4;
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const DefaultMemberInvitesCount: u32 = 5;
 }
 
 impl balances::Trait for Test {
@@ -83,7 +82,6 @@ impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
-    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

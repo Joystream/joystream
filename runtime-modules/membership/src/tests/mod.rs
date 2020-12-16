@@ -34,7 +34,7 @@ fn buy_membership_succeeds() {
         assert_eq!(Some(profile.handle), get_alice_info().handle);
         assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
         assert_eq!(Some(profile.about), get_alice_info().about);
-        assert_eq!(profile.invites, DefaultMemberInvitesCount::get());
+        assert_eq!(profile.invites, crate::DEFAULT_MEMBER_INVITES_COUNT);
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
@@ -437,7 +437,7 @@ fn transfer_invites_succeeds() {
         assert_eq!(alice.invites, tranfer_invites_fixture.invites);
         assert_eq!(
             bob.invites,
-            DefaultMemberInvitesCount::get() - tranfer_invites_fixture.invites
+            crate::DEFAULT_MEMBER_INVITES_COUNT - tranfer_invites_fixture.invites
         );
 
         EventFixture::assert_last_crate_event(Event::<Test>::InvitesTransferred(

@@ -71,9 +71,6 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
-
-    /// Defines the default invite count for members.
-    type DefaultMemberInvitesCount: Get<u32>;
 }
 
 // Default user info constraints
@@ -82,7 +79,7 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
-const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
+pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
