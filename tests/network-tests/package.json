@@ -4,8 +4,9 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --noEmit",
-    "run-tests": "./run-tests.sh",
-    "test-run": "node -r ts-node/register --unhandled-rejections=strict",
+    "test": "./run-tests.sh",
+    "run-test-scenario": "./run-test-scenario.sh",
+    "node-ts-strict": "node -r ts-node/register --unhandled-rejections=strict",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write "

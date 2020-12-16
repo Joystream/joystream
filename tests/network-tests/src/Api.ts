@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Hash, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
@@ -32,7 +32,7 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser, ExtrinsicsHelper } from '@joystream/cd-schemas'
+import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { ContentId, DataObject } from '@joystream/types/media'
@@ -86,7 +86,7 @@ export class Api {
     this.sender = new Sender(api, this.keyring)
   }
 
-  public close() {
+  public close(): void {
     this.api.disconnect()
   }
 
@@ -126,12 +126,7 @@ export class Api {
     expectFailure = false
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
-      (this.api.tx.members.buyMembership(
-        paidTermsId,
-        /* Handle: */ name,
-        /* Avatar uri: */ '',
-        /* About: */ ''
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ ''),
       account,
       expectFailure
     )
@@ -167,24 +162,15 @@ export class Api {
     return terms.fee
   }
 
-  private getBaseTxFee(): BN {
-    return this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionBaseFee)
-  }
-
+  // This method does not take into account weights and the runtime weight to fees computation!
   private estimateTxFee(tx: SubmittableExtrinsic<'promise'>): BN {
-    const baseFee: BN = this.getBaseTxFee()
     const byteFee: BN = this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionByteFee)
-    return Utils.calcTxLength(tx).mul(byteFee).add(baseFee)
+    return Utils.calcTxLength(tx).mul(byteFee)
   }
 
   public estimateBuyMembershipFee(account: string, paidTermsId: PaidTermId, name: string): BN {
     return this.estimateTxFee(
-      (this.api.tx.members.buyMembership(
-        paidTermsId,
-        /* Handle: */ name,
-        /* Avatar uri: */ '',
-        /* About: */ ''
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ '')
     )
   }
 
@@ -230,12 +216,6 @@ export class Api {
     )
   }
 
-  public estimateProposeLeadFee(title: string, description: string, stake: BN, address: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSetLeadProposal(stake, title, description, stake, { stake, address })
-    )
-  }
-
   public estimateProposeElectionParametersFee(
     title: string,
     description: string,
@@ -250,26 +230,26 @@ export class Api {
     minVotingStake: BN
   ): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSetElectionParametersProposal(stake, title, description, stake, [
-        announcingPeriod,
-        votingPeriod,
-        revealingPeriod,
-        councilSize,
-        candidacyLimit,
-        newTermDuration,
-        minCouncilStake,
-        minVotingStake,
-      ])
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(stake, title, description, stake, {
+        announcing_period: announcingPeriod,
+        voting_period: votingPeriod,
+        revealing_period: revealingPeriod,
+        council_size: councilSize,
+        candidacy_limit: candidacyLimit,
+        new_term_duration: newTermDuration,
+        min_council_stake: minCouncilStake,
+        min_voting_stake: minVotingStake,
+      })
     )
   }
 
   public estimateVoteForProposalFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsEngine.vote(
+      this.api.tx.proposalsEngine.vote(
         this.api.createType('MemberId', 0),
         this.api.createType('ProposalId', 0),
         'Approve'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
@@ -313,12 +293,7 @@ export class Api {
     })
 
     return this.estimateTxFee(
-      (this.api.tx[module].addOpening(
-        'CurrentBlock',
-        commitment,
-        'Human readable text',
-        'Worker'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      this.api.tx[module].addOpening('CurrentBlock', commitment, 'Human readable text', 'Worker')
     )
   }
 
@@ -332,32 +307,28 @@ export class Api {
 
   public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].applyOnOpening(
+      this.api.tx[module].applyOnOpening(
         this.api.createType('MemberId', 0),
         this.api.createType('OpeningId', 0),
         account,
-        0,
-        0,
+        null,
+        null,
         'Some testing text used for estimation purposes which is longer than text expected during the test'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].beginApplicantReview(
-        this.api.createType('OpeningId', 0)
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].beginApplicantReview(0))
   }
 
   public estimateFillOpeningFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].fillOpening(this.api.createType('OpeningId', 0), [this.api.createType('ApplicationId', 0)], {
+      this.api.tx[module].fillOpening(0, this.api.createType('ApplicationIdSet', [0]), {
         'amount_per_payout': 0,
         'next_payment_at_block': 0,
         'payout_interval': 0,
-      }) as unknown) as SubmittableExtrinsic<'promise'>
+      })
     )
   }
 
@@ -378,46 +349,25 @@ export class Api {
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].updateRoleAccount(
-        this.api.createType('WorkerId', 0),
-        address
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].updateRoleAccount(this.api.createType('WorkerId', 0), address))
   }
 
   public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].updateRewardAccount(
-        this.api.createType('WorkerId', 0),
-        address
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].updateRewardAccount(this.api.createType('WorkerId', 0), address))
   }
 
   public estimateLeaveRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].leaveRole(
-        this.api.createType('WorkerId', 0),
-        'Long justification text'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      this.api.tx[module].leaveRole(this.api.createType('WorkerId', 0), 'Long justification text')
     )
   }
 
   public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].withdrawApplication(
-        this.api.createType('ApplicationId', 0)
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].withdrawApplication(this.api.createType('ApplicationId', 0)))
   }
 
   public estimateTerminateApplicationFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].terminateApplication(
-        this.api.createType('ApplicationId', 0)
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].terminateApplication(this.api.createType('ApplicationId', 0)))
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
@@ -430,11 +380,11 @@ export class Api {
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].terminateRole(
+      this.api.tx[module].terminateRole(
         this.api.createType('WorkerId', 0),
         'Long justification text explaining why the worker role will be terminated',
         false
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
@@ -478,31 +428,31 @@ export class Api {
     })
 
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
-        this.api.createType('MemberId', 0),
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        0,
         'some long title for the purpose of testing',
         'some long description for the purpose of testing',
-        0,
+        null,
         {
-          'activate_at': 'CurrentBlock',
-          'commitment': commitment,
-          'human_readable_text': 'Opening readable text',
-          'working_group': 'Storage',
+          activate_at: 'CurrentBlock',
+          commitment: commitment,
+          human_readable_text: 'Opening readable text',
+          working_group: 'Storage',
         }
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         this.api.createType('OpeningId', 0),
         'Storage'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
@@ -519,85 +469,85 @@ export class Api {
     })
 
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         fillOpeningParameters
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeTerminateLeaderRoleFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         {
           'worker_id': this.api.createType('WorkerId', 0),
           'rationale': 'Exceptionaly long and extraordinary descriptive rationale',
           'slash': true,
           'working_group': 'Storage',
         }
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeLeaderRewardFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         this.api.createType('WorkerId', 0),
         0,
         'Storage'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeDecreaseLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         this.api.createType('WorkerId', 0),
         0,
         'Storage'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeSlashLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         this.api.createType('WorkerId', 0),
         0,
         'Storage'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
   public estimateProposeWorkingGroupMintCapacityFee(): BN {
     return this.estimateTxFee(
-      (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
-        0,
+        null,
         0,
         'Storage'
-      ) as unknown) as SubmittableExtrinsic<'promise'>
+      )
     )
   }
 
@@ -674,9 +624,11 @@ export class Api {
     return council.map((seat) => seat.member.toString())
   }
 
-  public getRuntime(): Promise<Bytes> {
-    return this.api.query.substrate.code<Bytes>()
-  }
+  // This method is deprecated. Is there a replacement in newer versions of substrate?
+  // Do we even use this method?
+  // public getRuntime(): Promise<Bytes> {
+  //   return this.api.query.substrate.code<Bytes>()
+  // }
 
   public async proposeRuntime(
     account: string,
@@ -687,13 +639,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(
-        memberId,
-        name,
-        description,
-        stake,
-        runtime
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
       account,
       false
     )
@@ -708,13 +654,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createTextProposal(
-        memberId,
-        name,
-        description,
-        stake,
-        text
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
       account,
       false
     )
@@ -730,14 +670,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSpendingProposal(
-        memberId,
-        title,
-        description,
-        stake,
-        balance,
-        destination
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
       account,
       false
     )
@@ -752,32 +685,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetValidatorCountProposal(
-        memberId,
-        title,
-        description,
-        stake,
-        validatorCount
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
-      account,
-      false
-    )
-  }
-
-  public async proposeLead(
-    account: string,
-    title: string,
-    description: string,
-    stake: BN,
-    leadAccount: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    const leadMemberId: MemberId = (await this.getMemberIds(leadAccount))[0]
-    return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetLeadProposal(memberId, title, description, stake, [
-        leadMemberId,
-        leadAccount,
-      ]) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
       account,
       false
     )
@@ -799,16 +707,16 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, [
-        announcingPeriod,
-        votingPeriod,
-        revealingPeriod,
-        councilSize,
-        candidacyLimit,
-        newTermDuration,
-        minCouncilStake,
-        minVotingStake,
-      ]) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, {
+        announcing_period: announcingPeriod,
+        voting_period: votingPeriod,
+        revealing_period: revealingPeriod,
+        council_size: councilSize,
+        candidacy_limit: candidacyLimit,
+        new_term_duration: newTermDuration,
+        min_council_stake: minCouncilStake,
+        min_voting_stake: minVotingStake,
+      }),
       account,
       false
     )
@@ -824,25 +732,21 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
         title,
         description,
         stake,
         openingId,
-        workingGroup
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
       account,
       false
     )
   }
 
   public approveProposal(account: string, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve') as unknown) as SubmittableExtrinsic<'promise'>,
-      account,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false)
   }
 
   public async batchApproveProposal(proposal: ProposalId): Promise<void[]> {
@@ -859,7 +763,7 @@ export class Api {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
   }
 
-  public durationInMsFromBlocks(durationInBlocks: number) {
+  public durationInMsFromBlocks(durationInBlocks: number): number {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
@@ -1290,7 +1194,7 @@ export class Api {
 
     const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
         leaderOpening.title,
         leaderOpening.description,
@@ -1301,7 +1205,7 @@ export class Api {
           human_readable_text: leaderOpening.text,
           working_group: leaderOpening.workingGroup,
         }
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      ),
       leaderOpening.account,
       false
     )
@@ -1333,13 +1237,13 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
         memberId,
         fillOpening.title,
         fillOpening.description,
         fillOpening.proposalStake,
         fillOpeningParameters
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      ),
       fillOpening.account,
       false
     )
@@ -1357,7 +1261,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
         title,
         description,
@@ -1368,7 +1272,7 @@ export class Api {
           slash,
           'working_group': workingGroup,
         }
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      ),
       account,
       false
     )
@@ -1385,15 +1289,15 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
         title,
         description,
         proposalStake,
         workerId,
         rewardAmount,
-        workingGroup
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
       account,
       false
     )
@@ -1410,15 +1314,15 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
         title,
         description,
         proposalStake,
         workerId,
         rewardAmount,
-        workingGroup
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
       account,
       false
     )
@@ -1435,15 +1339,15 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
         title,
         description,
         proposalStake,
         workerId,
         rewardAmount,
-        workingGroup
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
       account,
       false
     )
@@ -1459,14 +1363,14 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
         title,
         description,
         proposalStake,
         mintCapacity,
-        workingGroup
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+        this.api.createType('WorkingGroup', workingGroup)
+      ),
       account,
       false
     )
@@ -1479,9 +1383,7 @@ export class Api {
     type: string,
     module: WorkingGroups
   ): SubmittableExtrinsic<'promise'> {
-    return (this.api.tx[module].addOpening(actiavteAt, commitment, text, type) as unknown) as SubmittableExtrinsic<
-      'promise'
-    >
+    return this.api.tx[module].addOpening(actiavteAt, commitment, text, this.api.createType('OpeningType', type))
   }
 
   public async acceptApplications(
@@ -1489,11 +1391,7 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].acceptApplications(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false)
   }
 
   public async beginApplicantReview(
@@ -1501,18 +1399,11 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].beginApplicantReview(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false)
   }
 
   public async sudoBeginApplicantReview(openingId: OpeningId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.makeSudoCall(
-      (this.api.tx[module].beginApplicantReview(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
-      false
-    )
+    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId), false)
   }
 
   public async applyOnOpening(
@@ -1527,14 +1418,7 @@ export class Api {
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      (this.api.tx[module].applyOnOpening(
-        memberId,
-        openingId,
-        roleAccountAddress,
-        roleStake,
-        applicantStake,
-        text
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account,
       expectFailure
     )
@@ -1559,18 +1443,18 @@ export class Api {
   public async fillOpening(
     leader: string,
     openingId: OpeningId,
-    applicationId: ApplicationId[],
+    applicationIds: ApplicationId[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
     payoutInterval: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
-      (this.api.tx[module].fillOpening(openingId, applicationId, {
-        'amount_per_payout': amountPerPayout,
-        'next_payment_at_block': nextPaymentBlock,
-        'payout_interval': payoutInterval,
-      }) as unknown) as SubmittableExtrinsic<'promise'>,
+      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds), {
+        amount_per_payout: amountPerPayout,
+        next_payment_at_block: nextPaymentBlock,
+        payout_interval: payoutInterval,
+      }),
       leader,
       false
     )
@@ -1578,14 +1462,14 @@ export class Api {
 
   public async sudoFillOpening(
     openingId: OpeningId,
-    applicationId: ApplicationId[],
+    applicationIds: ApplicationId[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
     payoutInterval: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     return this.makeSudoCall(
-      this.api.tx[module].fillOpening(openingId, applicationId, {
+      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds), {
         'amount_per_payout': amountPerPayout,
         'next_payment_at_block': nextPaymentBlock,
         'payout_interval': payoutInterval,
@@ -1600,11 +1484,7 @@ export class Api {
     stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].increaseStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
-      worker,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false)
   }
 
   public async decreaseStake(
@@ -1614,11 +1494,7 @@ export class Api {
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].decreaseStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      expectFailure
-    )
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure)
   }
 
   public async slashStake(
@@ -1628,11 +1504,7 @@ export class Api {
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].slashStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      expectFailure
-    )
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure)
   }
 
   public async updateRoleAccount(
@@ -1641,11 +1513,7 @@ export class Api {
     newRoleAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].updateRoleAccount(workerId, newRoleAccount) as unknown) as SubmittableExtrinsic<'promise'>,
-      worker,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false)
   }
 
   public async updateRewardAccount(
@@ -1654,13 +1522,7 @@ export class Api {
     newRewardAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].updateRewardAccount(workerId, newRewardAccount) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >,
-      worker,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false)
   }
 
   public async withdrawApplication(
@@ -1668,11 +1530,7 @@ export class Api {
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].withdrawApplication(applicationId) as unknown) as SubmittableExtrinsic<'promise'>,
-      account,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account, false)
   }
 
   public async batchWithdrawActiveApplications(
@@ -1694,37 +1552,12 @@ export class Api {
     )
   }
 
-  /*
-    public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
-
-    const applications = entries
-      .filter(([idKey]) => {
-        return filterActiveIds.includes(idKey.args[0] as ApplicationId)
-      })
-      .map(([, application]) => application)
-
-    return (
-      await Promise.all(
-        applications.map(async (application) => {
-          const active = (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
-          return active ? application.role_account_id.toString() : ''
-        })
-      )
-    ).filter((addr) => addr !== '')
-  }
-  */
-
   public async terminateApplication(
     leader: string,
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].terminateApplication(applicationId) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      false
-    )
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false)
   }
 
   public async batchTerminateApplication(
@@ -1742,11 +1575,7 @@ export class Api {
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].terminateRole(workerId, text, false) as unknown) as SubmittableExtrinsic<'promise'>,
-      leader,
-      expectFailure
-    )
+    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader, expectFailure)
   }
 
   public async leaveRole(
@@ -1756,11 +1585,7 @@ export class Api {
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx[module].leaveRole(workerId, text) as unknown) as SubmittableExtrinsic<'promise'>,
-      account,
-      expectFailure
-    )
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure)
   }
 
   public async batchLeaveRole(
