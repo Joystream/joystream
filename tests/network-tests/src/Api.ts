@@ -110,25 +110,19 @@ export class Api {
     }
   }
 
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>, expectFailure = false): Promise<ISubmittableResult> {
+  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
-    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo, expectFailure)
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
   }
 
   public createPaidTermId(value: BN): PaidTermId {
     return this.api.createType('PaidTermId', value)
   }
 
-  public async buyMembership(
-    account: string,
-    paidTermsId: PaidTermId,
-    name: string,
-    expectFailure = false
-  ): Promise<ISubmittableResult> {
+  public async buyMembership(account: string, paidTermsId: PaidTermId, name: string): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
       this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ ''),
-      account,
-      expectFailure
+      account
     )
   }
 
@@ -552,7 +546,7 @@ export class Api {
   }
 
   private applyForCouncilElection(account: string, amount: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account)
   }
 
   public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<void[]> {
@@ -569,7 +563,7 @@ export class Api {
 
   private voteForCouncilMember(account: string, nominee: string, salt: string, stake: BN): Promise<ISubmittableResult> {
     const hashedVote: string = Utils.hashVote(nominee, salt)
-    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account)
   }
 
   public batchVoteForCouncilMember(accounts: string[], nominees: string[], salt: string[], stake: BN): Promise<void[]> {
@@ -581,7 +575,7 @@ export class Api {
   }
 
   private revealVote(account: string, commitment: string, nominee: string, salt: string): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account)
   }
 
   public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<void[]> {
@@ -594,19 +588,19 @@ export class Api {
   }
 
   public sudoStartAnnouncingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock))
   }
 
   public sudoStartVotingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock))
   }
 
   public sudoStartRevealingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock))
   }
 
   public sudoSetCouncilMintCapacity(capacity: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity), false)
+    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity))
   }
 
   public getBestBlock(): Promise<BN> {
@@ -640,8 +634,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
-      account,
-      false
+      account
     )
   }
 
@@ -655,8 +648,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
-      account,
-      false
+      account
     )
   }
 
@@ -671,8 +663,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
-      account,
-      false
+      account
     )
   }
 
@@ -686,8 +677,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
-      account,
-      false
+      account
     )
   }
 
@@ -717,8 +707,7 @@ export class Api {
         min_council_stake: minCouncilStake,
         min_voting_stake: minVotingStake,
       }),
-      account,
-      false
+      account
     )
   }
 
@@ -740,13 +729,12 @@ export class Api {
         openingId,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
   public approveProposal(account: string, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false)
+    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account)
   }
 
   public async batchApproveProposal(proposal: ProposalId): Promise<void[]> {
@@ -949,8 +937,7 @@ export class Api {
       text: string
       type: string
     },
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
     const activateAt: ActivateOpeningAt = this.api.createType(
       'ActivateOpeningAt',
@@ -1015,8 +1002,7 @@ export class Api {
 
     return this.sender.signAndSend(
       this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
-      lead,
-      expectFailure
+      lead
     )
   }
 
@@ -1107,8 +1093,7 @@ export class Api {
     })
 
     return this.makeSudoCall(
-      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
-      false
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module)
     )
   }
 
@@ -1206,8 +1191,7 @@ export class Api {
           working_group: leaderOpening.workingGroup,
         }
       ),
-      leaderOpening.account,
-      false
+      leaderOpening.account
     )
   }
 
@@ -1244,8 +1228,7 @@ export class Api {
         fillOpening.proposalStake,
         fillOpeningParameters
       ),
-      fillOpening.account,
-      false
+      fillOpening.account
     )
   }
 
@@ -1273,8 +1256,7 @@ export class Api {
           'working_group': workingGroup,
         }
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1298,8 +1280,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1323,8 +1304,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1348,8 +1328,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1371,8 +1350,7 @@ export class Api {
         mintCapacity,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1391,7 +1369,7 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader)
   }
 
   public async beginApplicantReview(
@@ -1399,11 +1377,11 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader)
   }
 
   public async sudoBeginApplicantReview(openingId: OpeningId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId), false)
+    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId))
   }
 
   public async applyOnOpening(
@@ -1413,14 +1391,12 @@ export class Api {
     roleStake: BN,
     applicantStake: BN,
     text: string,
-    expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
-      account,
-      expectFailure
+      account
     )
   }
 
@@ -1430,12 +1406,11 @@ export class Api {
     roleStake: BN,
     applicantStake: BN,
     text: string,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult[]> {
     return Promise.all(
       accounts.map(async (account) =>
-        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, expectFailure, module)
+        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, module)
       )
     )
   }
@@ -1455,8 +1430,7 @@ export class Api {
         next_payment_at_block: nextPaymentBlock,
         payout_interval: payoutInterval,
       }),
-      leader,
-      false
+      leader
     )
   }
 
@@ -1473,8 +1447,7 @@ export class Api {
         'amount_per_payout': amountPerPayout,
         'next_payment_at_block': nextPaymentBlock,
         'payout_interval': payoutInterval,
-      }),
-      false
+      })
     )
   }
 
@@ -1484,27 +1457,25 @@ export class Api {
     stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker)
   }
 
   public async decreaseStake(
     leader: string,
     workerId: WorkerId,
     stake: BN,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader)
   }
 
   public async slashStake(
     leader: string,
     workerId: WorkerId,
     stake: BN,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader)
   }
 
   public async updateRoleAccount(
@@ -1513,7 +1484,7 @@ export class Api {
     newRoleAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker)
   }
 
   public async updateRewardAccount(
@@ -1522,7 +1493,7 @@ export class Api {
     newRewardAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker)
   }
 
   public async withdrawApplication(
@@ -1530,7 +1501,7 @@ export class Api {
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account, false)
+    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account)
   }
 
   public async batchWithdrawActiveApplications(
@@ -1557,7 +1528,7 @@ export class Api {
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader)
   }
 
   public async batchTerminateApplication(
@@ -1572,33 +1543,26 @@ export class Api {
     leader: string,
     workerId: WorkerId,
     text: string,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader)
   }
 
   public async leaveRole(
     account: string,
     workerId: WorkerId,
     text: string,
-    expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account)
   }
 
-  public async batchLeaveRole(
-    workerIds: WorkerId[],
-    text: string,
-    expectFailure: boolean,
-    module: WorkingGroups
-  ): Promise<void[]> {
+  public async batchLeaveRole(workerIds: WorkerId[], text: string, module: WorkingGroups): Promise<void[]> {
     return Promise.all(
       workerIds.map(async (workerId) => {
         // get role_account of worker
         const worker = await this.getWorkerById(workerId, module)
-        await this.leaveRole(worker.role_account_id.toString(), workerId, text, expectFailure, module)
+        await this.leaveRole(worker.role_account_id.toString(), workerId, text, module)
       })
     )
   }
@@ -1758,7 +1722,7 @@ export class Api {
       operations // We provide parsed operations as second argument
     )
     const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    await this.sender.signAndSend(transaction, lead.role_account_id, false)
+    await this.sender.signAndSend(transaction, lead.role_account_id)
   }
 
   public async createChannelEntity(channel: ChannelEntity): Promise<void> {
