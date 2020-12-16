@@ -62,7 +62,7 @@ mod benchmarking;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
-use frame_support::weights::Weight;
+use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
@@ -372,6 +372,17 @@ decl_module! {
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetInitialInvitationBalanceProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T + D + I)` where:
+        /// - `T` is the length of the title
+        /// - `D` is the length of the description
+        /// - `I` is the length of any parameter in `proposal_details`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T>::get_create_proposal_weight(&general_proposal_parameters, &proposal_details)]
         pub fn create_proposal(
             origin,
@@ -426,6 +437,15 @@ decl_module! {
 // *************** Extrinsic to execute
 
         /// Signal proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (S)` where:
+        /// - `S` is the length of the signal
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoCodex::<T>::execute_signal_proposal(signal.len().saturated_into())]
         pub fn execute_signal_proposal(
             origin,
@@ -438,7 +458,14 @@ decl_module! {
 
         /// Runtime upgrade proposal extrinsic.
         /// Should be used as callable object to pass to the `engine` module.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (C)` where:
+        /// - `C` is the length of `wasm`
+        /// However, we treat this as a full block as `frame_system::Module::set_code` does
+        /// # </weight>
+        #[weight = (T::MaximumBlockWeight::get(), DispatchClass::Operational)]
         pub fn execute_runtime_upgrade_proposal(
             origin,
             wasm: Vec<u8>,
