@@ -9,7 +9,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    BuildStorage, Perbill,
+    BuildStorage, DispatchResult, Perbill,
 };
 
 impl_outer_origin! {
@@ -72,12 +72,25 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 }
+impl common::Trait for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
 impl membership::Trait for Test {
     type Event = ();
-    type MemberId = u64;
-    type ActorId = u32;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
 }
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
+}
+
 impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;

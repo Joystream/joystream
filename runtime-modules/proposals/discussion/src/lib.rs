@@ -1,21 +1,23 @@
 //! # Proposals discussion module
-//! Proposals `discussion` module for the Joystream platform. Version 3.
+//! Proposals `discussion` module for the Joystream platform.
 //! It contains discussion subsystem of the proposals.
 //!
 //! ## Overview
 //!
-//! The proposals discussion module is used by the codex module to provide a platform for discussions
-//! about different proposals. It allows to create discussion threads and then add and update related
-//! posts.
+//! The proposals discussion module is used by the codex module to provide a platform for
+//! discussions about different proposals. It allows to create discussion threads and then add and
+//! update related posts.
 //!
 //! ## Supported extrinsics
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
-//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread permission mode
+//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread
+//! permission mode
 //!
 //! ## Public API methods
 //! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
-//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures safe thread creation
+//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures
+//! safe thread creation
 //!
 //! ## Usage
 //!
@@ -24,7 +26,7 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + membership::Trait {}
+//! pub trait Trait: discussions::Trait + common::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -61,11 +63,10 @@ use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
 pub use types::ThreadMode;
-
-type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals discussion WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -106,7 +107,7 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + membership::Trait {
+pub trait Trait: frame_system::Trait + common::Trait {
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

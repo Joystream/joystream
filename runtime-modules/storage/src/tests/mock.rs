@@ -17,6 +17,8 @@ use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use common::currency::GovernanceCurrency;
+use frame_support::sp_runtime::DispatchResult;
+
 use membership;
 
 mod working_group_mod {
@@ -274,11 +276,24 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl membership::Trait for Test {
-    type Event = MetaEvent;
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u32;
+}
+
+impl membership::Trait for Test {
+    type Event = MetaEvent;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl minting::Trait for Test {
@@ -361,7 +376,7 @@ impl ExtBuilder {
                 handle: "alice".into(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                registered_at_time: 0,
+                name: "".into(),
             }],
         }
         .assimilate_storage(&mut t)

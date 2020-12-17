@@ -1,22 +1,25 @@
 //! # Proposals engine module
-//! Proposals `engine` module for the Joystream platform. Version 3.
+//! Proposals `engine` module for the Joystream platform.
 //! The main component of the proposals system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
 //! ## Overview
-//! Proposals `engine` module provides an abstract mechanism to work with proposals: creation, voting,
-//! execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal code.
-//! It could be any _Dispatchable_ + _Parameter_ type, but most likely, it would be serialized (via
-//! Parity _codec_ crate) extrisic call. A proposal stage can be described by its [status](./enum.ProposalStatus.html).
+//! Proposals `engine` module provides an abstract mechanism to work with proposals: creation,
+//! voting, execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal
+//! code. It could be any _Dispatchable_ + _Parameter_ type, but most likely, it would be serialized
+//! (via Parity _codec_ crate) extrisic call. A proposal stage can be described by
+//! its [status](./enum.ProposalStatus.html).
 //!
 //! ## Proposal lifecycle
 //! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
-//! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
-//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or canceled during its
-//! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
-//! to be approved - the proposal becomes _PendingExecution_ or _PendingConstitutionality_. The proposal
-//! could also be slashed or rejected. If the _voting period_ ends with no decision it becomes expired.
-//! If the proposal got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
+//! for its [parameters](./struct.ProposalParameters.html) -
+//! it can be [created](./struct.Module.html#method.create_proposal).
+//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or
+//! canceled during its _voting period_. Votes can be [different](./enum.VoteKind.html). When the
+//! proposal gets enough votes to be approved - the proposal becomes _PendingExecution_ or
+//! _PendingConstitutionality_. The proposal could also be slashed or rejected. If the _voting
+//! period_ ends with no decision it becomes expired. If the proposal got approved
+//! and _grace period_ passed - the  `engine` module tries to execute the proposal.
 //!
 //! ### Notes
 //!
@@ -24,7 +27,8 @@
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
 //! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
-//! all active proposals got rejected and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! all active proposals got rejected and it also calls
+//! [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
 //! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
 //!
@@ -42,14 +46,19 @@
 //!
 //! ### Supported extrinsics
 //! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
-//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal (can be canceled only by owner)
+//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal
+//! (can be canceled only by owner)
 //! - [veto_proposal](./struct.Module.html#method.veto_proposal) - vetoes the proposal
 //!
 //! ### Public API
-//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
-//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all active proposals.
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals) - reactivate proposals with pending constitutionality.
+//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using
+//! provided parameters
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! - ensures that we can create the proposal
+//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all
+//! active proposals.
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -59,7 +68,7 @@
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Trait: engine::Trait + membership::Trait {}
+//! pub trait Trait: engine::Trait + common::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -109,7 +118,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use types::{MemberId, ProposalOf};
+use types::ProposalOf;
 
 pub use types::{
     ApprovedProposalDecision, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
@@ -137,6 +146,7 @@ use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
 use staking_handler::StakingHandler;
 
 /// Proposals engine WeightInfo.
@@ -156,7 +166,7 @@ type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + common::Trait + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -322,6 +332,9 @@ decl_error! {
 
         /// There is not enough balance for a stake.
         InsufficientBalanceForStake,
+
+        /// The conflicting stake discovered. Cannot stake.
+        ConflictingStakes,
     }
 }
 
@@ -436,7 +449,9 @@ decl_module! {
 
             proposal.voting_results.add_vote(vote.clone());
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
@@ -464,7 +479,9 @@ decl_module! {
             ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
             ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
@@ -490,7 +507,9 @@ decl_module! {
                 Error::<T>::ProposalFinalized
             );
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
@@ -516,8 +535,9 @@ impl<T: Trait> Module<T> {
             creation_params.exact_execution_block,
         )?;
 
-        // checks passed
-        // mutation
+        //
+        // == MUTATION SAFE ==
+        //
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
@@ -527,11 +547,8 @@ impl<T: Trait> Module<T> {
         if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
             if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
                 T::StakingHandler::lock(&staking_account_id, stake_balance);
-            } else {
-                // Return an error if no staking account provided.
-                return Err(Error::<T>::EmptyStake.into());
             }
-        };
+        }
 
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
@@ -540,7 +557,7 @@ impl<T: Trait> Module<T> {
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: creation_params.exact_execution_block,
-            current_constitutionality_level: 0,
+            nr_of_council_confirmations: 0,
             staking_account_id: creation_params.staking_account_id,
         };
 
@@ -609,6 +626,11 @@ impl<T: Trait> Module<T> {
 
         if let Some(stake_balance) = parameters.required_stake {
             if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    Error::<T>::ConflictingStakes
+                );
+
                 ensure!(
                     T::StakingHandler::is_enough_balance_for_stake(
                         &staking_account_id,

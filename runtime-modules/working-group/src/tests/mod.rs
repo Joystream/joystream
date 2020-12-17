@@ -17,14 +17,11 @@ use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
 };
 use crate::types::StakeParameters;
-use crate::{
-    DefaultInstance, Error, OpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, Worker,
-};
+use crate::{DefaultInstance, Error, OpeningType, Penalty, RawEvent, StakePolicy, Worker};
 use fixtures::{
-    increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
-    ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
-    HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
-    UpdateWorkerRoleAccountFixture,
+    increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
+    EventFixture, FillOpeningFixture, HireLeadFixture, HireRegularWorkerFixture,
+    LeaveWorkerRoleFixture, TerminateWorkerRoleFixture, UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::StorageMap;
@@ -46,9 +43,7 @@ fn add_opening_succeeded() {
                 stake_amount: 10,
                 leaving_unstaking_period: 100,
             }))
-            .with_reward_policy(Some(RewardPolicy {
-                reward_per_block: 10,
-            }));
+            .with_reward_per_block(Some(10));
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
@@ -88,10 +83,7 @@ fn add_opening_fails_with_zero_reward() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_reward_policy(Some(RewardPolicy {
-                reward_per_block: 0,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_reward_per_block(Some(0));
 
         add_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::CannotRewardWithZero.into(),
@@ -159,8 +151,6 @@ fn apply_on_opening_succeeded() {
 #[test]
 fn apply_on_opening_fails_with_invalid_opening_id() {
     build_test_externalities().execute_with(|| {
-        setup_members(2);
-
         let invalid_opening_id = 22;
 
         let apply_on_opening_fixture =
@@ -217,13 +207,11 @@ fn fill_opening_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let reward_policy = Some(RewardPolicy {
-            reward_per_block: 10,
-        });
+        let reward_per_block = 10;
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_reward_policy(reward_policy.clone());
+            .with_reward_per_block(Some(reward_per_block.clone()));
 
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -233,7 +221,7 @@ fn fill_opening_succeeded() {
 
         let fill_opening_fixture =
             FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(reward_policy)
+                .with_reward_per_block(Some(reward_per_block))
                 .with_created_at(starting_block);
 
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
@@ -510,9 +498,7 @@ fn update_worker_role_account_fails_with_invalid_origin() {
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
                 .with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::InvalidMemberOrigin.into(),
-        ));
+        update_worker_account_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
     });
 }
 
@@ -541,10 +527,9 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
         let block_number = 4;
 
@@ -569,10 +554,9 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
         let block_number = 4;
 
@@ -699,10 +683,9 @@ fn terminate_worker_role_succeeds_with_paying_missed_reward() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
         let block_number = 4;
 
@@ -1942,10 +1925,9 @@ fn increase_worker_stake_fails_with_leaving_worker() {
 fn rewards_payments_are_successful() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
@@ -1970,10 +1952,9 @@ fn rewards_payments_are_successful() {
 fn rewards_payments_with_no_budget() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
@@ -2000,10 +1981,9 @@ fn rewards_payments_with_no_budget() {
 fn rewards_payments_with_insufficient_budget_and_restored_budget() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
@@ -2050,11 +2030,10 @@ fn rewards_payments_with_starting_block() {
         run_to_block(starting_block);
 
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
         let reward_period: u64 = RewardPeriod::get().into();
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
@@ -2112,10 +2091,9 @@ fn update_reward_account_succeeds() {
         run_to_block(1);
 
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let new_reward_account = 22;
@@ -2135,10 +2113,9 @@ fn update_reward_account_succeeds() {
 fn update_reward_account_succeeds_for_leader() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireLeadFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire_lead();
 
         let new_reward_account = 22;
@@ -2163,10 +2140,9 @@ fn update_reward_account_fails_with_invalid_origin() {
 fn update_reward_account_fails_with_invalid_origin_signed_account() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         let worker_id = HireLeadFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire_lead();
 
         let invalid_role_account = 23333;
@@ -2185,10 +2161,9 @@ fn update_reward_account_fails_with_invalid_origin_signed_account() {
 fn update_reward_account_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
-        let reward_policy = Some(RewardPolicy { reward_per_block });
 
         HireRegularWorkerFixture::default()
-            .with_reward_policy(reward_policy)
+            .with_reward_per_block(Some(reward_per_block))
             .hire();
 
         let invalid_worker_id = 11;
@@ -2229,16 +2204,16 @@ fn update_reward_amount_succeeds() {
 
         let worker_id = HireRegularWorkerFixture::default().hire();
 
-        let reward_per_block = Some(120);
+        let reward_per_block = 120;
 
         let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
-            .with_reward_per_block(reward_per_block);
+            .with_reward_per_block(Some(reward_per_block));
 
         update_amount_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAmountUpdated(
             worker_id,
-            reward_per_block,
+            Some(reward_per_block),
         ));
     });
 }
@@ -2247,9 +2222,7 @@ fn update_reward_amount_succeeds() {
 fn update_reward_amount_succeeds_for_leader() {
     build_test_externalities().execute_with(|| {
         let worker_id = HireLeadFixture::default()
-            .with_reward_policy(Some(RewardPolicy {
-                reward_per_block: 1000,
-            }))
+            .with_reward_per_block(Some(1000))
             .hire_lead();
 
         let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)

@@ -13,6 +13,8 @@ use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
 use sp_std::vec::Vec;
 
+use common::MemberId;
+
 mod proposal_statuses;
 
 pub use proposal_statuses::{
@@ -138,7 +140,7 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
 
     /// The number of councils in that must approve the proposal in a row before it has its
     /// intended effect.
-    pub current_constitutionality_level: u32,
+    pub nr_of_council_confirmations: u32,
 
     /// Optional account id for staking.
     pub staking_account_id: Option<AccountId>,
@@ -152,7 +154,7 @@ where
 {
     /// Increases proposal constitutionality level.
     pub fn increase_constitutionality_level(&mut self) {
-        self.current_constitutionality_level += 1;
+        self.nr_of_council_confirmations += 1;
     }
 
     /// Returns whether voting period expired by now
@@ -359,8 +361,7 @@ where
 
     // Council approved the proposal enough times.
     pub fn is_constitutionality_reached_on_approval(&self) -> bool {
-        self.proposal.current_constitutionality_level + 1
-            >= self.proposal.parameters.constitutionality
+        self.proposal.nr_of_council_confirmations + 1 >= self.proposal.parameters.constitutionality
     }
 }
 
@@ -406,9 +407,6 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
     /// Should be greater than starting block + grace_period if set.
     pub exact_execution_block: Option<BlockNumber>,
 }
-
-// Type alias for member id.
-pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
