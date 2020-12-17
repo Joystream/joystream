@@ -23,6 +23,7 @@ import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
 import chalk from 'chalk'
 import { flags } from '@oclif/command'
+import { DistinctQuestion } from 'inquirer'
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
 type Context = typeof CONTEXTS[number]
@@ -375,5 +376,94 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     )) as Record<string, string>[]
 
     return parsedEntities.filter((entity) => filters.every(([pName, pValue]) => entity[pName] === pValue))
+  }
+
+  async getActor(context: typeof CONTEXTS[number], pickedClass: Class) {
+    let actor: Actor
+    if (context === 'Member') {
+      if (pickedClass.class_permissions.any_member.isFalse) {
+        this.error(`You're not allowed to createEntity of className: ${pickedClass.name.toString()}!`)
+      }
+
+      const memberId = await this.getRequiredMemberId()
+
+      actor = this.createType('Actor', { Member: memberId })
+    } else if (context === 'Curator') {
+      actor = await this.getCuratorContext([pickedClass.name.toString()])
+    } else {
+      await this.getRequiredLead()
+
+      actor = this.createType('Actor', { Lead: null })
+    }
+
+    return actor
+  }
+
+  getQuestionsFromClass = (
+    classData: Class,
+    defaults?: { [key: string]: { 'value': unknown; locked: boolean } }
+  ): DistinctQuestion[] => {
+    return classData.properties.reduce((previousValue, { name, property_type: propertyType, required }, index) => {
+      const propertySubtype = propertyType.subtype
+      const questionType = propertySubtype === 'Bool' ? 'list' : 'input'
+      const isSubtypeNumber = propertySubtype.toLowerCase().includes('int')
+      const isSubtypeReference = propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')
+      const isQuestionLocked = defaults?.[Object.keys(defaults)[index]].locked
+
+      if (isQuestionLocked) {
+        return previousValue
+      }
+
+      const optionalQuestionProperties = {
+        ...{
+          filter: (answer: string) => {
+            if (required.isFalse && !answer) {
+              return null
+            }
+
+            if ((isSubtypeNumber || isSubtypeReference) && isFinite(+answer)) {
+              return +answer
+            }
+
+            return answer
+          },
+          validate: async (answer: string | null) => {
+            if (answer && isSubtypeReference && isFinite(+answer)) {
+              const { class_id: classId } = await this.getEntity(+answer)
+
+              if (classId.toString() !== propertyType.asType('Single').asType('Reference')[0].toString()) {
+                return 'This entity is not of the right class id!'
+              }
+            }
+
+            return true
+          },
+        },
+        ...(propertySubtype === 'Bool' && {
+          choices: ['true', 'false'],
+          filter: (answer: string) => {
+            return answer === 'true' || false
+          },
+        }),
+      }
+
+      const isQuestionOptional = propertySubtype === 'Bool' ? '' : required.isTrue ? '(required)' : '(optional)'
+      const classId = isSubtypeReference
+        ? ` [Class Id: ${propertyType.asType('Single').asType('Reference')[0].toString()}]`
+        : ''
+
+      return [
+        ...previousValue,
+        {
+          name: name.toString(),
+          message: `${name} - ${propertySubtype}${classId} ${isQuestionOptional}`,
+          type: questionType,
+          ...optionalQuestionProperties,
+          ...(defaults && {
+            default: defaults[Object.keys(defaults)[index]].value,
+          }),
+        },
+      ]
+    }, [] as DistinctQuestion[])
   }
 }

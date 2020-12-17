@@ -1,27 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { flags } from '@oclif/command'
-import { Class as ContentDirectoryClass } from '@joystream/types/content-directory'
+import { Actor, Class as ContentDirectoryClass } from '@joystream/types/content-directory'
 import inquirer from 'inquirer'
-import { CLIError } from '@oclif/errors'
 import { InputParser } from '@joystream/cd-schemas'
-
-const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
-
-type CreateEntityArgs = {
-  id: string
-}
-
-type CreateEntityFlags = {
-  context: typeof CONTEXTS[number]
-}
-
-type Question = {
-  name: string
-  message: string
-  type: 'list' | 'input'
-  choices?: string[]
-  filter?: (answer: string) => string | null | number | boolean
-}
 
 export default class UpdateEntityPropertyValues extends ContentDirectoryCommandBase {
   static description =
@@ -36,116 +16,45 @@ export default class UpdateEntityPropertyValues extends ContentDirectoryCommandB
   ]
 
   static flags = {
-    context: flags.string({
-      char: 'c',
-      description: 'Actor context to execute the command in (Member/Curator/Lead)',
-      required: true,
-      options: [...CONTEXTS],
-    }),
+    context: ContentDirectoryCommandBase.contextFlag,
   }
 
-  getQuestionsFromClass = (
-    classData: ContentDirectoryClass,
-    defaults: { [key: string]: { 'value': unknown } }
-  ): Question[] => {
-    const defaultKeys = Object.keys(defaults)
+  async parseDefaults(
+    defaults: { [key: string]: { 'value': unknown } },
+    actor: Actor,
+    pickedClass: ContentDirectoryClass
+  ) {
+    let parsedDefaults: { [key: string]: { 'value': unknown; locked: boolean } } = {}
 
-    return classData.properties.map(({ name, property_type: propertyType, required }, index) => {
-      const propertySubtype = propertyType.subtype
-      const questionType = propertySubtype === 'Bool' ? 'list' : 'input'
-      const isSubtypeNumber = propertySubtype.toLowerCase().includes('int')
-      const isSubtypeReference = propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')
+    const context = actor.type === 'Curator' ? 'Maintainer' : 'Controller'
+    let propertyLockedFromUser: boolean[] = []
 
-      const optionalQuestionProperties = {
-        ...{
-          filter: (answer: string) => {
-            if (required.isFalse && !answer) {
-              return null
-            }
-
-            if ((isSubtypeNumber || isSubtypeReference) && isFinite(+answer)) {
-              return +answer
-            }
-
-            return answer
-          },
-        },
-        ...(propertySubtype === 'Bool' && {
-          choices: ['true', 'false'],
-          filter: (answer: string) => {
-            return answer === 'true' || false
-          },
-        }),
-      }
-
-      const isQuestionOptional = propertySubtype === 'Bool' ? '' : required.isTrue ? '(required)' : '(optional)'
-      const classId = isSubtypeReference
-        ? ` [Class Id: ${propertyType.asType('Single').asType('Reference')[0].toString()}]`
-        : ''
-
-      return {
-        name: name.toString(),
-        message: `${name} - ${propertySubtype}${classId} ${isQuestionOptional}`,
-        type: questionType,
-        ...optionalQuestionProperties,
-        default: defaults[defaultKeys[index]].value,
-      }
-    })
-  }
-
-  checkReferencesValidity = async (
-    answers: {
-      [key: string]: string | number | null
-    },
-    { properties }: ContentDirectoryClass
-  ) => {
-    const propertyReferenceClassIds: (string | null)[] = []
-
-    const references = await Promise.all(
-      Object.keys(answers).map((key: string, index) => {
-        const propertyType = properties[index].property_type
-
-        if (propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')) {
-          if (answers[key] !== null) {
-            propertyReferenceClassIds.push(propertyType.asType('Single').asType('Reference')[0].toString())
-            return this.getEntity(answers[key] as number | string)
-          }
-        }
-
-        propertyReferenceClassIds.push(null)
-      })
-    )
-
-    references.forEach((reference, index) => {
-      if (reference) {
-        if (reference.class_id.toString() !== propertyReferenceClassIds[index]) {
-          throw new CLIError(`The #${propertyReferenceClassIds[index]} entity is not of the right class id!`)
-        }
-      }
-    })
-  }
-
-  async getActor(context: typeof CONTEXTS[number], pickedClass: ContentDirectoryClass) {
-    if (context === 'Member') {
-      if (pickedClass.class_permissions.any_member.isFalse) {
-        this.error(`You're not allowed to createEntity of className: ${pickedClass.name.toString()}!`)
-      }
-
-      const memberId = await this.getRequiredMemberId()
-
-      return this.createType('Actor', { Member: memberId })
-    } else if (context === 'Curator') {
-      return await this.getCuratorContext([pickedClass.name.toString()])
+    if (context === 'Maintainer') {
+      propertyLockedFromUser = pickedClass.properties.map(
+        (property) => property.locking_policy.is_locked_from_maintainer.isTrue
+      )
     } else {
-      await this.getRequiredLead()
-
-      return this.createType('Actor', { Lead: null })
+      propertyLockedFromUser = pickedClass.properties.map(
+        (property) => property.locking_policy.is_locked_from_controller.isTrue
+      )
     }
+
+    Object.keys(defaults).forEach((key, index) => {
+      parsedDefaults = {
+        ...parsedDefaults,
+        [key]: {
+          ...defaults[key],
+          locked: propertyLockedFromUser[index],
+        },
+      }
+    })
+
+    return parsedDefaults
   }
 
   async run() {
-    const { id } = this.parse(UpdateEntityPropertyValues).args as CreateEntityArgs
-    const { context } = this.parse(UpdateEntityPropertyValues).flags as CreateEntityFlags
+    const { id } = this.parse(UpdateEntityPropertyValues).args
+    const { context } = this.parse(UpdateEntityPropertyValues).flags
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
@@ -156,11 +65,11 @@ export default class UpdateEntityPropertyValues extends ContentDirectoryCommandB
 
     const actor = await this.getActor(context, entityClass)
 
+    const parsedDefaults = await this.parseDefaults(defaults, actor, entityClass)
+
     const answers: {
       [key: string]: string | number | null
-    } = await inquirer.prompt(this.getQuestionsFromClass(entityClass, defaults))
-
-    await this.checkReferencesValidity(answers, entityClass)
+    } = await inquirer.prompt(this.getQuestionsFromClass(entityClass, parsedDefaults))
 
     this.jsonPrettyPrint(JSON.stringify(answers))
     await this.requireConfirmation('Do you confirm the provided input?')
