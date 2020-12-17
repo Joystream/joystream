@@ -553,3 +553,56 @@ impl SetInitialInvitationCountFixture {
         Self { origin, ..self }
     }
 }
+
+pub struct AddStakingAccountFixture {
+    pub origin: RawOrigin<u64>,
+    pub member_id: u64,
+    pub staking_account_id: u64,
+}
+
+impl Default for AddStakingAccountFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            member_id: ALICE_MEMBER_ID,
+            staking_account_id: BOB_ACCOUNT_ID,
+        }
+    }
+}
+
+impl AddStakingAccountFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_membership = Membership::membership(self.member_id);
+
+        let actual_result = Membership::add_staking_account_candidate(
+            self.origin.clone().into(),
+            self.member_id,
+            self.staking_account_id,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            let new_membership = Membership::membership(self.member_id);
+            assert_eq!(
+                new_membership.staking_account_count(),
+                old_membership.staking_account_count() + 1
+            );
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_staking_account_id(self, staking_account_id: u64) -> Self {
+        Self {
+            staking_account_id,
+            ..self
+        }
+    }
+}

@@ -734,3 +734,71 @@ fn set_initial_invitation_count_fails_with_invalid_origin() {
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
+
+#[test]
+fn add_staking_account_candidate_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountAdded(
+            ALICE_MEMBER_ID,
+            BOB_ACCOUNT_ID,
+        ));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        AddStakingAccountFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_invalid_member_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+        let invalid_member_id = 222;
+
+        AddStakingAccountFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_duplicated_staking_account_id() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        AddStakingAccountFixture::default()
+            .call_and_assert(Err(Error::<Test>::StakingAccountExists.into()));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_exceeding_account_limit() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        AddStakingAccountFixture::default()
+            .with_staking_account_id(ALICE_ACCOUNT_ID)
+            .call_and_assert(Err(
+                Error::<Test>::MaximumStakingAccountNumberExceeded.into()
+            ));
+    });
+}

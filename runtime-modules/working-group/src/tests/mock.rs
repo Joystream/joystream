@@ -102,6 +102,7 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
     type DefaultInitialInvitationBalance = ();
+    type StakingAccountNumberLimit = ();
 }
 
 pub type Balances = balances::Module<Test>;

@@ -744,7 +744,7 @@ decl_module! {
             let membership = Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
             ensure!(
-                membership.staking_account_exists(&staking_account_id),
+                !membership.staking_account_exists(&staking_account_id),
                 Error::<T>::StakingAccountExists
             );
 
