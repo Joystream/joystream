@@ -56,6 +56,7 @@ use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupIntegration;
+use sp_std::collections::btree_map::BTreeMap;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -89,7 +90,7 @@ pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user.
-pub struct MembershipObject<AccountId> {
+pub struct MembershipObject<AccountId: Ord> {
     /// User name.
     pub name: Vec<u8>,
 
@@ -119,6 +120,10 @@ pub struct MembershipObject<AccountId> {
 
     /// Defines how many invitations this member has
     pub invites: u32,
+
+    /// Staking account IDs bound to the membership. Each account must be confirmed.
+    /// A map consists from staking account IDs and their confirmation flags.
+    pub staking_account_ids: BTreeMap<AccountId, bool>,
 }
 
 // Contains valid or default user details
@@ -803,6 +808,7 @@ impl<T: Trait> Module<T> {
             controller_account: controller_account.clone(),
             verified: false,
             invites: allowed_invites,
+            staking_account_ids: BTreeMap::new(),
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
