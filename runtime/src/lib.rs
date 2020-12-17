@@ -576,6 +576,10 @@ impl pallet_council::Trait for Runtime {
         // TODO: implement when membership module is ready
         true
     }
+
+    fn new_council_elected(_elected_members: &[pallet_council::CouncilMemberOf<Self>]) {
+        // TODO: call whatever is needed when council is elected
+    }
 }
 
 impl governance::election::Trait for Runtime {

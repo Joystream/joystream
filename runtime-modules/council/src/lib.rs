@@ -249,6 +249,9 @@ pub trait Trait: frame_system::Trait {
         membership_id: &Self::MembershipId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool;
+
+    /// Hook called right after the new council is elected.
+    fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]);
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the
@@ -691,6 +694,9 @@ impl<T: Trait> Module<T> {
 
         // emit event
         Self::deposit_event(RawEvent::NewCouncilElected(elected_council_users));
+
+        // trigger new-council-elected hook
+        T::new_council_elected(elected_members.as_slice());
     }
 
     // Finish idle period and start new council election cycle (announcing period).

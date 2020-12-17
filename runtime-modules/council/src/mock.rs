@@ -28,6 +28,7 @@ use sp_runtime::{
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
+use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -50,6 +51,11 @@ pub const TOPUP_MULTIPLIER: u64 = 10;
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
+
+thread_local! {
+    // new council elected recieved by `new_council_elected hook`
+    pub static LAST_COUNCIL_ELECTED_OK: RefCell<(bool, )> = RefCell::new((false, ));
+}
 
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
@@ -92,6 +98,14 @@ impl Trait for Runtime {
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
+    }
+
+    fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
+        let is_ok = elected_members == CouncilMembers::<Runtime>::get();
+
+        LAST_COUNCIL_ELECTED_OK.with(|value| {
+            *value.borrow_mut() = (is_ok,);
+        });
     }
 }
 
@@ -691,6 +705,10 @@ where
     pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
         assert_eq!(Budget::<T>::get(), expected_balance,);
         assert_eq!(NextBudgetRefill::<T>::get(), expected_next_refill,);
+    }
+
+    pub fn check_new_council_elected_hook() {
+        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0))
     }
 
     pub fn set_candidacy_note(

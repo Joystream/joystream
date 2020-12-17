@@ -1353,3 +1353,14 @@ fn council_membership_checks() {
         );
     });
 }
+
+#[test]
+fn council_new_council_elected_hook() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::run_full_council_cycle(0, &[], 0);
+
+        Mocks::check_new_council_elected_hook();
+    });
+}
