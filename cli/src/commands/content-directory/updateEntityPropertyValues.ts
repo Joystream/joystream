@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { Actor, Class as ContentDirectoryClass } from '@joystream/types/content-directory'
 import inquirer from 'inquirer'
 import { InputParser } from '@joystream/cd-schemas'
+import ExitCodes from '../../ExitCodes'
 
 export default class UpdateEntityPropertyValues extends ContentDirectoryCommandBase {
   static description =
@@ -19,57 +19,35 @@ export default class UpdateEntityPropertyValues extends ContentDirectoryCommandB
     context: ContentDirectoryCommandBase.contextFlag,
   }
 
-  async parseDefaults(
-    defaults: { [key: string]: { 'value': unknown } },
-    actor: Actor,
-    pickedClass: ContentDirectoryClass
-  ) {
-    let parsedDefaults: { [key: string]: { 'value': unknown; locked: boolean } } = {}
-
-    const context = actor.type === 'Curator' ? 'Maintainer' : 'Controller'
-    let propertyLockedFromUser: boolean[] = []
-
-    if (context === 'Maintainer') {
-      propertyLockedFromUser = pickedClass.properties.map(
-        (property) => property.locking_policy.is_locked_from_maintainer.isTrue
-      )
-    } else {
-      propertyLockedFromUser = pickedClass.properties.map(
-        (property) => property.locking_policy.is_locked_from_controller.isTrue
-      )
-    }
-
-    Object.keys(defaults).forEach((key, index) => {
-      parsedDefaults = {
-        ...parsedDefaults,
-        [key]: {
-          ...defaults[key],
-          locked: propertyLockedFromUser[index],
-        },
-      }
-    })
-
-    return parsedDefaults
-  }
-
   async run() {
     const { id } = this.parse(UpdateEntityPropertyValues).args
-    const { context } = this.parse(UpdateEntityPropertyValues).flags
+    let { context } = this.parse(UpdateEntityPropertyValues).flags
+
+    if (!context) {
+      context = await this.promptForContext()
+    }
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
 
     const entity = await this.getEntity(id)
     const [, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
-    const defaults = this.parseEntityPropertyValues(entity, entityClass)
+    const defaults = await this.parseToEntityJson(entity)
 
     const actor = await this.getActor(context, entityClass)
 
-    const parsedDefaults = await this.parseDefaults(defaults, actor, entityClass)
+    const isPropertEditableByIndex = await Promise.all(
+      entityClass.properties.map((p, i) => this.isEntityPropertyEditableByActor(entity, i, actor))
+    )
+    const filteredProperties = entityClass.properties.filter((p, i) => isPropertEditableByIndex[i])
+
+    if (!filteredProperties.length) {
+      this.error('No entity properties are editable by choosen actor', { exit: ExitCodes.AccessDenied })
+    }
 
     const answers: {
       [key: string]: string | number | null
-    } = await inquirer.prompt(this.getQuestionsFromClass(entityClass, parsedDefaults))
+    } = await inquirer.prompt(this.getQuestionsFromProperties(filteredProperties, defaults))
 
     this.jsonPrettyPrint(JSON.stringify(answers))
     await this.requireConfirmation('Do you confirm the provided input?')

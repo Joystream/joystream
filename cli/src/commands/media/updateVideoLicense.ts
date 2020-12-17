@@ -37,7 +37,7 @@ export default class UpdateVideoLicenseCommand extends MediaCommandBase {
       videoEntity = video
     }
 
-    const video = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
+    const video = await this.parseToEntityJson<VideoEntity>(videoEntity)
     const currentLicense = await this.getAndParseKnownEntity<LicenseEntity>(video.license)
 
     this.log('Current license:', currentLicense)
