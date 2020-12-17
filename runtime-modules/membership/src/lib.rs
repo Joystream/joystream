@@ -75,6 +75,9 @@ pub trait Trait:
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
+
+    /// Defines the maximum staking account number.
+    type StakingAccountNumberLimit: Get<u32>;
 }
 
 // Default user info constraints
@@ -124,6 +127,35 @@ pub struct MembershipObject<AccountId: Ord> {
     /// Staking account IDs bound to the membership. Each account must be confirmed.
     /// A map consists from staking account IDs and their confirmation flags.
     pub staking_account_ids: BTreeMap<AccountId, bool>,
+}
+
+impl<AccountId: Ord> MembershipObject<AccountId> {
+    /// Add staking account id to the membership. Set its confirmation flag to false by default.
+    pub fn add_staking_account_candidate(&mut self, staking_account_id: AccountId) {
+        self.staking_account_ids.insert(staking_account_id, false);
+    }
+
+    /// Remove staking account id to the membership.
+    pub fn remove_staking_account(&mut self, staking_account_id: AccountId) {
+        self.staking_account_ids.remove(&staking_account_id);
+    }
+
+    /// Sets staking account confirmation flag as True. No effect on non-existing account.
+    pub fn confirm_staking_account(&mut self, staking_account_id: AccountId) {
+        if self.staking_account_exists(&staking_account_id) {
+            self.staking_account_ids.insert(staking_account_id, true);
+        }
+    }
+
+    /// Verifies existence of the staking account.
+    pub fn staking_account_exists(&self, staking_account_id: &AccountId) -> bool {
+        self.staking_account_ids.contains_key(&staking_account_id)
+    }
+
+    /// Returns current staking account number.
+    pub fn staking_account_count(&self) -> u32 {
+        self.staking_account_ids.len() as u32
+    }
 }
 
 // Contains valid or default user details
@@ -231,6 +263,15 @@ decl_error! {
 
         /// Membership working group leader is not set.
         WorkingGroupLeaderNotSet,
+
+        /// Staking account for membership exists.
+        StakingAccountExists,
+
+        /// Staking account for membership doesn't exist.
+        StakingAccountDoesntExist,
+
+        /// Cannot add more staking account id.
+        MaximumStakingAccountNumberExceeded,
     }
 }
 
@@ -315,6 +356,7 @@ decl_event! {
     pub enum Event<T> where
       <T as common::Trait>::MemberId,
       Balance = BalanceOf<T>,
+      <T as frame_system::Trait>::AccountId,
     {
         MemberRegistered(MemberId),
         MemberProfileUpdated(MemberId),
@@ -326,6 +368,7 @@ decl_event! {
         InitialInvitationBalanceUpdated(Balance),
         LeaderInvitationQuotaUpdated(u32),
         InitialInvitationCountUpdated(u32),
+        StakingAccountAdded(MemberId, AccountId),
     }
 }
 
@@ -688,6 +731,37 @@ decl_module! {
             InitialInvitationCount::put(new_invitation_count);
 
             Self::deposit_event(RawEvent::InitialInvitationCountUpdated(new_invitation_count));
+        }
+
+        /// Add staking account candidate for a member.
+        /// The staking account candidate must be confirmed by its owner before usage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn add_staking_account_candidate(
+            origin,
+            member_id: T::MemberId,
+            staking_account_id: T::AccountId
+        ) {
+            let membership = Self::ensure_member_controller_account_signed(origin, &member_id)?;
+
+            ensure!(
+                membership.staking_account_exists(&staking_account_id),
+                Error::<T>::StakingAccountExists
+            );
+
+            ensure!(
+                membership.staking_account_count() < T::StakingAccountNumberLimit::get(),
+                Error::<T>::MaximumStakingAccountNumberExceeded
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&member_id, |membership| {
+                membership.add_staking_account_candidate(staking_account_id.clone());
+            });
+
+            Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
         }
     }
 }
