@@ -39,13 +39,13 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 parameter_types! {
+    pub const VotingLockId: LockIdentifier = [0; 8];
+    pub const CandidacyLockId: LockIdentifier = [1; 8];
+    pub const CouncilorLockId: LockIdentifier = [2; 8];
     pub const ProposalsLockId: LockIdentifier = [5; 8];
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
-    pub const CandidacyLockId: LockIdentifier = [9; 8];
-    pub const CouncilorLockId: LockIdentifier = [10; 8];
-    pub const VotingLockId: LockIdentifier = [11; 8];
 }
 
 lazy_static! {
