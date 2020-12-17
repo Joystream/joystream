@@ -41,7 +41,9 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     type CategoryId: Parameter
         + Member

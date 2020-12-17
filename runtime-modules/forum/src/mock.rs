@@ -270,13 +270,13 @@ impl Trait for Runtime {
 
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        forum_user_id: &Self::ForumUserId,
+        _forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        *account_id != NOT_FORUM_MEMBER_ORIGIN_ID && account_id == forum_user_id
+        *account_id != NOT_FORUM_MEMBER_ORIGIN_ID
     }
 
-    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
-        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID && account_id == moderator_id
+    fn is_moderator(account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
+        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
@@ -313,6 +313,8 @@ pub const NOT_FORUM_MODERATOR_ORIGIN: OriginType =
     OriginType::Signed(NOT_FORUM_MODERATOR_ORIGIN_ID);
 
 pub const NOT_FORUM_MEMBER_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 114;
+
+pub const NOT_FORUM_MEMBER_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_MEMBER_ORIGIN_ID);
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 

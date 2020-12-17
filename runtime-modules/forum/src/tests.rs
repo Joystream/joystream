@@ -589,8 +589,8 @@ fn delete_category_root_by_lead() {
 #[test]
 // test if thread creator is valid forum user
 fn create_thread_origin() {
-    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
-    let forum_user_id = NOT_FORUM_LEAD_ORIGIN_ID;
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_MEMBER_ORIGIN];
+    let forum_user_ids = [FORUM_LEAD_ORIGIN_ID, NOT_FORUM_MEMBER_ORIGIN_ID];
     let results = vec![
         Ok(()),
         Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
@@ -608,7 +608,7 @@ fn create_thread_origin() {
             );
             create_thread_mock(
                 origins[index].clone(),
-                forum_user_id,
+                forum_user_ids[index],
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -1226,7 +1226,7 @@ fn move_thread_invalid_move() {
 #[test]
 // test if poll submitter is a forum user
 fn vote_on_poll_origin() {
-    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MEMBER_ORIGIN];
     let results = vec![
         Ok(()),
         Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
@@ -1387,7 +1387,7 @@ fn moderate_thread_origin_ok() {
 #[test]
 // test if post origin registered as forum user
 fn add_post_origin() {
-    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MEMBER_ORIGIN];
     let results = vec![
         Ok(()),
         Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
@@ -1545,7 +1545,7 @@ fn react_post() {
 #[test]
 // test if post moderator registered
 fn moderate_post_origin() {
-    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MODERATOR_ORIGIN];
     let results = vec![
         Ok(()),
         Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
