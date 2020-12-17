@@ -32,7 +32,7 @@ use frame_support::weights::{
     Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
-use frame_system::EnsureRoot;
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -55,7 +55,9 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use staking_handler::LockComparator;
+use pallet_council::ReferendumConnection;
+use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
+use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
 // Node dependencies
@@ -69,8 +71,10 @@ pub use governance::election_params::ElectionParameters;
 pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
+pub use pallet_council;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
+pub use referendum;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
@@ -463,6 +467,121 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
 
+// The referendum instance alias.
+pub type ReferendumInstance = referendum::Instance1;
+pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
+pub type CouncilModule = pallet_council::Module<Runtime>;
+
+parameter_types! {
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = 5;
+    pub const RevealStageDuration: BlockNumber = 7;
+    pub const MinimumVotingStake: u64 = 10000;
+
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: BlockNumber = 15;
+    pub const IdlePeriodDuration: BlockNumber = 27;
+    pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    pub const BudgetRefillPeriod: BlockNumber = 1000;
+}
+
+impl referendum::Trait<ReferendumInstance> for Runtime {
+    type Event = Event;
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = pallet_balances::Module<Self>;
+    type LockId = VotingLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = BalanceReferendum<Self, ReferendumInstance>;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumVotingStake;
+
+    fn calculate_vote_power(
+        _account_id: &<Self as frame_system::Trait>::AccountId,
+        stake: &BalanceReferendum<Self, ReferendumInstance>,
+    ) -> Self::VotePower {
+        *stake
+    }
+
+    fn can_unlock_vote_stake(
+        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
+    ) -> bool {
+        <CouncilModule as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
+    }
+
+    fn process_results(winners: &[OptionResult<Self::VotePower>]) {
+        let tmp_winners: Vec<OptionResult<Self::VotePower>> = winners
+            .iter()
+            .map(|item| OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power,
+            })
+            .collect();
+        <CouncilModule as ReferendumConnection<Runtime>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        );
+    }
+
+    fn is_valid_option_id(option_index: &u64) -> bool {
+        <CouncilModule as ReferendumConnection<Runtime>>::is_valid_candidate_id(option_index)
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        <CouncilModule as ReferendumConnection<Runtime>>::get_option_power(option_id)
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        <CouncilModule as ReferendumConnection<Runtime>>::increase_option_power(option_id, amount);
+    }
+}
+
+impl pallet_council::Trait for Runtime {
+    type Event = Event;
+
+    type Referendum = ReferendumModule;
+
+    type MembershipId = u64;
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    fn is_council_member_account(
+        _membership_id: &Self::MembershipId,
+        _account_id: &<Self as frame_system::Trait>::AccountId,
+    ) -> bool {
+        // TODO: implement when membership module is ready
+        true
+    }
+
+    fn new_council_elected(_elected_members: &[pallet_council::CouncilMemberOf<Self>]) {
+        // TODO: call whatever is needed when council is elected
+    }
+}
+
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
@@ -789,6 +908,8 @@ construct_runtime!(
         // Joystream
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        NewCouncil: pallet_council::{Module, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},

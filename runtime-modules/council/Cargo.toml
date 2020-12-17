@@ -12,9 +12,10 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
-referendum = { package = 'substrate-referendum-module', default-features = false, path = '../referendum'}
-staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../referendum'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 [dev-dependencies]
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -29,7 +30,6 @@ default = ['std']
 std = [
     'codec/std',
     'sp-core/std',
-    'sp-io/std',
     'serde',
     'sp-runtime/std',
     'sp-arithmetic/std',

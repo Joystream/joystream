@@ -34,6 +34,7 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
+use core::marker::PhantomData;
 use frame_support::traits::{
     Currency, EnsureOrigin, Get, LockIdentifier, LockableCurrency, WithdrawReason,
 };
@@ -41,9 +42,12 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
 };
 use frame_system::ensure_signed;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
-use std::marker::PhantomData;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 // declared modules
 mod mock;
@@ -52,6 +56,7 @@ mod tests;
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Possible referendum states.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumStage<BlockNumber, VotePower> {
     /// The referendum is dormant and waiting to be started by external source.
@@ -69,6 +74,7 @@ impl<BlockNumber, VotePower: Encode + Decode> Default for ReferendumStage<BlockN
 }
 
 /// Representation for voting stage state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
     pub started: BlockNumber,      // block in which referendum started
@@ -77,6 +83,7 @@ pub struct ReferendumStageVoting<BlockNumber> {
 }
 
 /// Representation for revealing stage state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     pub started: BlockNumber,      // block in which referendum started
@@ -85,6 +92,7 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     pub current_cycle_id: u64,     // index of current election
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct OptionResult<VotePower> {
     pub option_id: u64,
@@ -92,6 +100,7 @@ pub struct OptionResult<VotePower> {
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CastVote<Hash, Currency> {
     pub commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for

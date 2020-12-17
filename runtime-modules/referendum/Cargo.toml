@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-referendum-module'
+name = 'pallet-referendum'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
@@ -12,6 +12,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 [dev-dependencies]
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -23,6 +24,7 @@ default = ['std']
 std = [
     'codec/std',
     'sp-core/std',
+    'sp-std/std',
     'serde',
     'sp-runtime/std',
     'sp-arithmetic/std',

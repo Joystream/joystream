@@ -7,24 +7,24 @@
 //!
 //! The Council module let's privileged network users elect their voted representation.
 //!
-//! Each council cycle is composed of three phases. The default phase is the candidacy announcement phase,
-//! during which users can announce their candidacy to the next council. After a fixed amount of time
-//! (network blocks) candidacy announcement phase concludes, and the next phase starts if a minimum
-//! number of candidates is announced; restarts the announcement phase otherwise. The next phase
-//! is the Election phase, during which users can vote for their selected candidate. The election
-//! itself is handled by the Referendum module. After elections end and a minimum amount of candidates
-//! received votes, a new council is appointed, and the Council module enters an Idle phase for the fixed
-//! amount of time before another round's candidacy announcements begin.
+//! Each council cycle is composed of three phases. The default phase is the candidacy announcement
+//! phase, during which users can announce their candidacy to the next council. After a fixed amount
+//! of time (network blocks) candidacy announcement phase concludes, and the next phase starts if a
+//! minimum number of candidates is announced; restarts the announcement phase otherwise. The next
+//! phase is the Election phase, during which users can vote for their selected candidate.
+//! The election itself is handled by the Referendum module. After elections end and a minimum
+//! amount of candidates received votes, a new council is appointed, and the Council module enters
+//! an Idle phase for the fixed amount of time before another round's candidacy announcements begin.
 //!
 //! The module supports requiring staking currency for the both candidacy and voting.
 //!
 //! ## Implementation
 //! Module expects that association of a particular account id to a membership id is never broken.
-//! Reassociation of an account id to a different membership id behind the scenes that the Council module
-//! can't be aware of will result in unexpected behavior.
+//! Reassociation of an account id to a different membership id behind the scenes that the Council
+//! module can't be aware of will result in unexpected behavior.
 //!
-//! When implementing runtime for this module, don't forget to call all ReferendumConnection trait functions
-//! at proper places. See the trait details for more information.
+//! When implementing runtime for this module, don't forget to call all ReferendumConnection trait
+//! functions at proper places. See the trait details for more information.
 //!
 //! ## Supported extrinsics
 //! - [announce_candidacy](./struct.Module.html#method.announce_candidacy)
@@ -54,12 +54,13 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
 };
 
+use core::marker::PhantomData;
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
-use std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -71,6 +72,7 @@ mod tests;
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Information about council's current state and when it changed the last time.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageUpdate<BlockNumber> {
     stage: CouncilStage,
@@ -78,6 +80,7 @@ pub struct CouncilStageUpdate<BlockNumber> {
 }
 
 /// Possible council states.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum CouncilStage {
     /// Candidacy announcement period.
@@ -97,12 +100,14 @@ impl Default for CouncilStage {
 }
 
 /// Representation for announcing candidacy stage state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageAnnouncing {
     candidates_count: u64,
 }
 
 /// Representation for new council members election stage state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageElection {
     candidates_count: u64,
@@ -222,7 +227,7 @@ pub trait Trait: frame_system::Trait {
     /// Identifier for currency lock used for candidacy staking.
     type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
     /// Identifier for currency lock used for candidacy staking.
-    type ElectedMemberLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -244,17 +249,24 @@ pub trait Trait: frame_system::Trait {
         membership_id: &Self::MembershipId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool;
+
+    /// Hook called right after the new council is elected.
+    fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]);
 }
 
-/// Trait with functions that MUST be called by the runtime with values received from the referendum module.
+/// Trait with functions that MUST be called by the runtime with values received from the
+/// referendum module.
 pub trait ReferendumConnection<T: Trait> {
-    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
+    /// Process referendum results. This function MUST be called in runtime's implementation of
+    /// referendum's `process_results()`.
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
 
-    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
+    /// Process referendum results. This function MUST be called in runtime's implementation of
+    /// referendum's `can_release_voting_stake()`.
     fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>>;
 
-    /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
+    /// Checks that user is indeed candidating. This function MUST be called in runtime's
+    /// implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
 
     /// Return current voting power for a selected candidate.
@@ -273,9 +285,11 @@ decl_storage! {
         pub CouncilMembers get(fn council_members) config(): Vec<CouncilMemberOf<T>>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
-        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::MembershipId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
+        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
+            T::MembershipId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
 
-        /// Index of the current candidacy period. It is incremented everytime announcement period starts.
+        /// Index of the current candidacy period. It is incremented everytime announcement period
+        /// starts.
         pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
 
         /// Budget for the council's elected members rewards.
@@ -375,7 +389,8 @@ decl_error! {
         /// Invalid membership.
         MembershipIdNotMatchAccount,
 
-        /// The combination of membership id and account id is invalid for unstaking an existing candidacy stake.
+        /// The combination of membership id and account id is invalid for unstaking an existing
+        /// candidacy stake.
         InvalidAccountToStakeReuse,
 
         /// User tried to withdraw candidacy when not candidating.
@@ -443,12 +458,25 @@ decl_module! {
 
         /// Subscribe candidate
         #[weight = 10_000_000]
-        pub fn announce_candidacy(origin, membership_id: T::MembershipId, staking_account_id: T::AccountId, reward_account_id: T::AccountId, stake: Balance<T>) -> Result<(), Error<T>> {
+        pub fn announce_candidacy(
+                origin,
+                membership_id: T::MembershipId,
+                staking_account_id: T::AccountId,
+                reward_account_id: T::AccountId,
+                stake: Balance<T>
+            ) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &membership_id, &staking_account_id, &stake)?;
+            let (stage_data, previous_staking_account_id) =
+                EnsureChecks::<T>::can_announce_candidacy(
+                    origin,
+                    &membership_id,
+                    &staking_account_id,
+                    &stake
+                )?;
 
             // prepare candidate
-            let candidate = Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
+            let candidate =
+                Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
 
             //
             // == MUTATION SAFE ==
@@ -468,8 +496,10 @@ decl_module! {
 
         /// Release candidacy stake that is no longer needed.
         #[weight = 10_000_000]
-        pub fn release_candidacy_stake(origin, membership_id: T::MembershipId) -> Result<(), Error<T>> {
-            let staking_account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin, &membership_id)?;
+        pub fn release_candidacy_stake(origin, membership_id: T::MembershipId)
+            -> Result<(), Error<T>> {
+            let staking_account_id =
+                EnsureChecks::<T>::can_release_candidacy_stake(origin, &membership_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -487,7 +517,8 @@ decl_module! {
         /// Withdraw candidacy and release candidacy stake.
         #[weight = 10_000_000]
         pub fn withdraw_candidacy(origin, membership_id: T::MembershipId) -> Result<(), Error<T>> {
-            let staking_account_id = EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
+            let staking_account_id =
+                EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -504,7 +535,8 @@ decl_module! {
 
         /// Set short description for the user's candidacy. Can be called anytime during user's candidacy.
         #[weight = 10_000_000]
-        pub fn set_candidacy_note(origin, membership_id: T::MembershipId, note: Vec<u8>) -> Result<(), Error<T>> {
+        pub fn set_candidacy_note(origin, membership_id: T::MembershipId, note: Vec<u8>)
+            -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_candidacy_note(origin, &membership_id)?;
 
@@ -569,7 +601,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /////////////////// Lifetime ///////////////////////////////////////////
 
-    /// Checkout expire of referendum stage.
+    // Checkout expire of referendum stage.
     fn try_progress_stage(now: T::BlockNumber) {
         // election progress
         match Stage::<T>::get().stage {
@@ -589,7 +621,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Checkout elected council members reward payments.
+    // Checkout elected council members reward payments.
     fn try_process_budget(now: T::BlockNumber) {
         // budget autorefill
         if now == NextBudgetRefill::<T>::get() {
@@ -602,7 +634,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Finish voting and start ravealing.
+    // Finish voting and start ravealing.
     fn end_announcement_period(stage_data: CouncilStageAnnouncing) {
         let candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
 
@@ -623,7 +655,7 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::VotingPeriodStarted(stage_data.candidates_count));
     }
 
-    /// Conclude election period and elect new council if possible.
+    // Conclude election period and elect new council if possible.
     fn end_election_period(winners: &[OptionResult<VotePowerOf<T>>]) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -662,9 +694,12 @@ impl<T: Trait> Module<T> {
 
         // emit event
         Self::deposit_event(RawEvent::NewCouncilElected(elected_council_users));
+
+        // trigger new-council-elected hook
+        T::new_council_elected(elected_members.as_slice());
     }
 
-    /// Finish idle period and start new council election cycle (announcing period).
+    // Finish idle period and start new council election cycle (announcing period).
     fn end_idle_period() {
         // update state
         Mutations::<T>::start_announcing_period();
@@ -675,7 +710,7 @@ impl<T: Trait> Module<T> {
 
     /////////////////// Budget-related /////////////////////////////////////
 
-    /// Refill (increase) the budget's balance.
+    // Refill (increase) the budget's balance.
     fn refill_budget(now: T::BlockNumber) {
         // get refill amount
         let refill_amount = T::BudgetRefillAmount::get();
@@ -695,7 +730,7 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
     }
 
-    /// Pay rewards to elected council members.
+    // Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
         let reward_per_block = T::ElectedMemberRewardPerBlock::get();
         let starting_balance = Budget::<T>::get();
@@ -710,7 +745,8 @@ impl<T: Trait> Module<T> {
 
                 // depleted budget or no accumulated reward to be paid?
                 if balance == 0.into() || unpaid_reward == 0.into() {
-                    // no need to update council member record here; their unpaid reward will be recalculated next time rewards are paid
+                    // no need to update council member record here; their unpaid reward will be
+                    // recalculated next time rewards are paid
 
                     // emit event
                     Self::deposit_event(RawEvent::RewardPayment(
@@ -754,7 +790,7 @@ impl<T: Trait> Module<T> {
 
     /////////////////// Utils //////////////////////////////////////////////////
 
-    /// Construct a new candidate for council election.
+    // Construct a new candidate for council election.
     fn prepare_new_candidate(
         staking_account_id: T::AccountId,
         reward_account_id: T::AccountId,
@@ -772,7 +808,7 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
-    /// Process candidates' results recieved from the referendum.
+    // Process candidates' results recieved from the referendum.
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]) {
         //
         // == MUTATION SAFE ==
@@ -782,7 +818,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         Self::end_election_period(winners);
     }
 
-    /// Check that it is a proper time to release stake.
+    // Check that it is a proper time to release stake.
     fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
         let current_voting_cycle_id = AnnouncementPeriodNr::get();
 
@@ -823,7 +859,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         Ok(())
     }
 
-    /// Checks that user is indeed candidating.
+    // Checks that user is indeed candidating.
     fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool {
         if !Candidates::<T>::contains_key(membership_id) {
             return false;
@@ -834,7 +870,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         candidate.cycle_id == AnnouncementPeriodNr::get()
     }
 
-    /// Return current voting power for a selected candidate.
+    // Return current voting power for a selected candidate.
     fn get_option_power(membership_id: &T::MembershipId) -> VotePowerOf<T> {
         if !Candidates::<T>::contains_key(membership_id) {
             return 0.into();
@@ -845,7 +881,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         candidate.vote_power
     }
 
-    /// Recieve vote (power) for a selected candidate.
+    // Recieve vote (power) for a selected candidate.
     fn increase_option_power(membership_id: &T::MembershipId, amount: &VotePowerOf<T>) {
         if !Candidates::<T>::contains_key(membership_id) {
             return;
@@ -862,14 +898,16 @@ struct Calculations<T: Trait> {
 }
 
 impl<T: Trait> Calculations<T> {
-    /// Calculate current reward for the recipient.
+    // Calculate current reward for the recipient.
     fn get_current_reward(
         council_member: &CouncilMemberOf<T>,
         reward_per_block: Balance<T>,
         now: T::BlockNumber,
     ) -> Balance<T> {
         // calculate currently unpaid reward for elected council member
-        // previously_unpaid_reward + (current_block_number - last_payment_block_number) * reward_per_block
+        // previously_unpaid_reward +
+        // (current_block_number - last_payment_block_number) *
+        // reward_per_block
         council_member.unpaid_reward.saturating_add(
             now.saturating_sub(council_member.last_payment_block)
                 .saturated_into()
@@ -878,7 +916,7 @@ impl<T: Trait> Calculations<T> {
         )
     }
 
-    /// Retrieve current budget's balance and calculate missing balance for reward payment.
+    // Retrieve current budget's balance and calculate missing balance for reward payment.
     fn payable_reward(
         budget_balance: &Balance<T>,
         reward_amount: &Balance<T>,
@@ -904,7 +942,7 @@ struct Mutations<T: Trait> {
 impl<T: Trait> Mutations<T> {
     /////////////////// Election-related ///////////////////////////////////
 
-    /// Change the council stage to candidacy announcing stage.
+    // Change the council stage to candidacy announcing stage.
     fn start_announcing_period() {
         let stage_data = CouncilStageAnnouncing {
             candidates_count: 0,
@@ -915,14 +953,16 @@ impl<T: Trait> Mutations<T> {
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
             stage: CouncilStage::Announcing(stage_data),
-            changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
+            // set next block as the start of next phase (this function is invoke on block
+            // finalization)
+            changed_at: block_number + 1.into(),
         });
 
         // increase anouncement cycle id
         AnnouncementPeriodNr::mutate(|value| *value += 1);
     }
 
-    /// Change the council stage from the announcing to the election stage.
+    // Change the council stage from the announcing to the election stage.
     fn finalize_announcing_period(stage_data: &CouncilStageAnnouncing) {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
@@ -936,11 +976,12 @@ impl<T: Trait> Mutations<T> {
             stage: CouncilStage::Election(CouncilStageElection {
                 candidates_count: stage_data.candidates_count,
             }),
-            changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
+            // set next block as the start of next phase (this function is invoke on block finalization)
+            changed_at: block_number + 1.into(),
         });
     }
 
-    /// Elect new council after successful election.
+    // Elect new council after successful election.
     fn elect_new_council(elected_members: &[CouncilMemberOf<T>], now: T::BlockNumber) {
         let block_number = <frame_system::Module<T>>::block_number();
 
@@ -957,7 +998,7 @@ impl<T: Trait> Mutations<T> {
 
         // release stakes for previous council members
         for council_member in CouncilMembers::<T>::get() {
-            T::ElectedMemberLock::unlock(&council_member.staking_account_id);
+            T::CouncilorLock::unlock(&council_member.staking_account_id);
         }
 
         // set new council
@@ -966,11 +1007,11 @@ impl<T: Trait> Mutations<T> {
         // setup elected member lock for new council's members
         for council_member in CouncilMembers::<T>::get() {
             // lock council member stake
-            T::ElectedMemberLock::lock(&council_member.staking_account_id, council_member.stake);
+            T::CouncilorLock::lock(&council_member.staking_account_id, council_member.stake);
         }
     }
 
-    /// Announce user's candidacy.
+    // Announce user's candidacy.
     fn announce_candidacy(
         stage_data: &CouncilStageAnnouncing,
         membership_id: &T::MembershipId,
@@ -999,7 +1040,7 @@ impl<T: Trait> Mutations<T> {
         T::CandidacyLock::lock(&candidate.staking_account_id, *stake);
     }
 
-    /// Release user's stake that was used for candidacy.
+    // Release user's stake that was used for candidacy.
     fn release_candidacy_stake(membership_id: &T::MembershipId, account_id: &T::AccountId) {
         // release stake amount
         T::CandidacyLock::unlock(&account_id);
@@ -1008,12 +1049,12 @@ impl<T: Trait> Mutations<T> {
         Candidates::<T>::remove(membership_id);
     }
 
-    /// Set a new candidacy note for a candidate in the current election.
+    // Set a new candidacy note for a candidate in the current election.
     fn set_candidacy_note(membership_id: &T::MembershipId, note_hash: &T::Hash) {
         Candidates::<T>::mutate(membership_id, |value| value.note_hash = Some(*note_hash));
     }
 
-    /// Removes member's candidacy record.
+    // Removes member's candidacy record.
     fn clear_candidate(membership_id: &T::MembershipId, candidate: &CandidateOf<T>) {
         // unlock candidacy stake
         T::CandidacyLock::unlock(&candidate.staking_account_id);
@@ -1024,12 +1065,12 @@ impl<T: Trait> Mutations<T> {
 
     /////////////////// Budget-related /////////////////////////////////////////
 
-    /// Set budget balance
+    // Set budget balance
     fn set_budget(balance: &Balance<T>) {
         Budget::<T>::put(balance);
     }
 
-    /// Refill budget's balance.
+    // Refill budget's balance.
     fn refill_budget(refill_amount: &Balance<T>) {
         Budget::<T>::mutate(|balance| *balance += *refill_amount);
     }
@@ -1039,7 +1080,7 @@ impl<T: Trait> Mutations<T> {
         NextBudgetRefill::<T>::put(refill_at);
     }
 
-    /// Pay reward to a single elected council member.
+    // Pay reward to a single elected council member.
     fn pay_reward(
         member_index: usize,
         account_id: &T::AccountId,
@@ -1063,7 +1104,7 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
-    /// Save reward-payments-related changes and plan the next reward payout.
+    // Save reward-payments-related changes and plan the next reward payout.
     fn finish_reward_payments(new_balance: Balance<T>, now: T::BlockNumber) {
         // update budget's balance
         Budget::<T>::put(new_balance);
@@ -1099,7 +1140,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    /// Ensures there is no problem in announcing candidacy.
+    // Ensures there is no problem in announcing candidacy.
     fn can_announce_candidacy(
         origin: T::Origin,
         membership_id: &T::MembershipId,
@@ -1124,7 +1165,8 @@ impl<T: Trait> EnsureChecks<T> {
             _ => return Err(Error::CantCandidateNow),
         };
 
-        // when previous candidacy record is present, ensure user is not candidating twice & prepare old stake for unlocking
+        // when previous candidacy record is present, ensure user is not candidating twice &
+        // prepare old stake for unlocking
         let mut existing_staking_account_id = None;
         if Candidates::<T>::contains_key(membership_id) {
             let candidate = Candidates::<T>::get(membership_id);
@@ -1143,7 +1185,8 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::CandidacyStakeTooLow);
         }
 
-        // ensure user has enough balance - includes any already locked candidacy stake as it will be reused
+        // ensure user has enough balance - includes any already locked candidacy stake as it will
+        // be reused
         if !T::CandidacyLock::is_enough_balance_for_stake(&staking_account_id, *stake) {
             return Err(Error::InsufficientBalanceForStaking);
         }
@@ -1151,7 +1194,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok((stage_data, existing_staking_account_id))
     }
 
-    /// Ensures there is no problem in releasing old candidacy stake.
+    // Ensures there is no problem in releasing old candidacy stake.
     fn can_release_candidacy_stake(
         origin: T::Origin,
         membership_id: &T::MembershipId,
@@ -1176,7 +1219,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(candidate.staking_account_id)
     }
 
-    /// Ensures there is no problem in withdrawing already announced candidacy.
+    // Ensures there is no problem in withdrawing already announced candidacy.
     fn can_withdraw_candidacy(
         origin: T::Origin,
         membership_id: &T::MembershipId,
@@ -1205,7 +1248,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(candidate.staking_account_id)
     }
 
-    /// Ensures there is no problem in setting new note for the candidacy.
+    // Ensures there is no problem in setting new note for the candidacy.
     fn can_set_candidacy_note(
         origin: T::Origin,
         membership_id: &T::MembershipId,

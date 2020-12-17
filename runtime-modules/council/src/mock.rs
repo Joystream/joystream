@@ -28,6 +28,7 @@ use sp_runtime::{
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
+use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -43,12 +44,18 @@ pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 pub const INVALID_USER_MEMBER: u64 = 9999;
 
-pub const TOPUP_MULTIPLIER: u64 = 10; // multiplies topup value so that candidate/voter can candidate/vote multiple times
+// multiplies topup value so that candidate/voter can candidate/vote multiple times
+pub const TOPUP_MULTIPLIER: u64 = 10;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
+
+thread_local! {
+    // new council elected recieved by `new_council_elected hook`
+    pub static LAST_COUNCIL_ELECTED_OK: RefCell<(bool, )> = RefCell::new((false, ));
+}
 
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
@@ -57,11 +64,12 @@ parameter_types! {
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
-    pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const CouncilorLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
-    pub const BudgetRefillPeriod: u64 = 1000; // intentionally high number that prevents side-effecting tests other than  budget refill tests
+    // intentionally high number that prevents side-effecting tests other than  budget refill tests
+    pub const BudgetRefillPeriod: u64 = 1000;
 }
 
 impl Trait for Runtime {
@@ -77,7 +85,7 @@ impl Trait for Runtime {
     type MinCandidateStake = MinCandidateStake;
 
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
-    type ElectedMemberLock = StakingManager<Self, ElectedMemberLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
@@ -90,6 +98,14 @@ impl Trait for Runtime {
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
+    }
+
+    fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
+        let is_ok = elected_members == CouncilMembers::<Runtime>::get();
+
+        LAST_COUNCIL_ELECTED_OK.with(|value| {
+            *value.borrow_mut() = (is_ok,);
+        });
     }
 }
 
@@ -162,8 +178,11 @@ impl frame_system::Trait for Runtime {
 pub type ReferendumInstance = referendum::Instance0;
 
 thread_local! {
-    pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
-    pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
+    // global switch for stake locking features; use it to simulate lock fails
+    pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, ));
+
+    // global switch used to test is_valid_option_id()
+    pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, ));
 }
 
 parameter_types! {
@@ -171,7 +190,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 23;
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const ReferendumLockId: LockIdentifier = *b"referend";
+    pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MembershipFee: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
 }
@@ -186,7 +205,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = balances::Module<Self>;
-    type LockId = ReferendumLockId;
+    type LockId = VotingLockId;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
@@ -393,13 +412,24 @@ pub enum CouncilCycleInterrupt {
 pub struct CouncilCycleParams<T: Trait> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
-    pub expected_initial_council_members: Vec<CouncilMemberOf<T>>, // council members
-    pub expected_final_council_members: Vec<CouncilMemberOf<T>>, // council members after cycle finishes
-    pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
-    pub expected_candidates: Vec<CandidateOf<T>>, // expected list of candidates after announcement period is over
-    pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
 
-    pub interrupt_point: Option<CouncilCycleInterrupt>, // info about when should be cycle interrupted (used to customize the test)
+    // council members
+    pub expected_initial_council_members: Vec<CouncilMemberOf<T>>,
+
+    // council members after cycle finishes
+    pub expected_final_council_members: Vec<CouncilMemberOf<T>>,
+
+    // candidates announcing their candidacy
+    pub candidates_announcing: Vec<CandidateInfo<T>>,
+
+    // expected list of candidates after announcement period is over
+    pub expected_candidates: Vec<CandidateOf<T>>,
+
+    // voters that will participate in council voting
+    pub voters: Vec<VoterInfo<T>>,
+
+    // info about when should be cycle interrupted (used to customize the test)
+    pub interrupt_point: Option<CouncilCycleInterrupt>,
 }
 
 /////////////////// Util macros ////////////////////////////////////////////////
@@ -439,7 +469,8 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
 
     let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
 
-    // Make sure we are not in block 1 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
+    // Make sure we are not in block 1 where no events are emitted
+    // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| InstanceMockUtils::<Runtime>::increase_block_number(1));
 
     result
@@ -674,6 +705,10 @@ where
     pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
         assert_eq!(Budget::<T>::get(), expected_balance,);
         assert_eq!(NextBudgetRefill::<T>::get(), expected_next_refill,);
+    }
+
+    pub fn check_new_council_elected_hook() {
+        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0))
     }
 
     pub fn set_candidacy_note(
@@ -920,7 +955,7 @@ where
         );
     }
 
-    /// simulate one council's election cycle
+    // simulate one council's election cycle
     pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
         let settings = params.council_settings;
 
@@ -1035,7 +1070,8 @@ where
         InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
     }
 
-    /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
+    // Simulate one full round of council lifecycle (announcing, election, idle). Use it to
+    // quickly test behavior in 2nd, 3rd, etc. cycle.
     pub fn run_full_council_cycle(
         start_block_number: T::BlockNumber,
         expected_initial_council_members: &[CouncilMemberOf<T>],
@@ -1085,7 +1121,8 @@ where
                 .into(),
         ];
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {

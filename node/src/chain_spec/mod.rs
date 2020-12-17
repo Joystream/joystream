@@ -39,6 +39,7 @@ use node_runtime::{
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
+pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
@@ -281,6 +282,8 @@ pub fn testnet_genesis(
                 min_voting_stake: 100,
             },
         }),
+        referendum_Instance1: Some(council_config::create_referendum_config()),
+        pallet_council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {

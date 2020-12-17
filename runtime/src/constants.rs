@@ -39,6 +39,9 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 parameter_types! {
+    pub const VotingLockId: LockIdentifier = [0; 8];
+    pub const CandidacyLockId: LockIdentifier = [1; 8];
+    pub const CouncilorLockId: LockIdentifier = [2; 8];
     pub const ProposalsLockId: LockIdentifier = [5; 8];
     pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
@@ -52,22 +55,58 @@ lazy_static! {
         (ForumGroupLockId::get(), [
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get()
+            ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            VotingLockId::get(),
         ]),
         (ContentWorkingGroupLockId::get(), [
             ForumGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            VotingLockId::get(),
         ]),
         (StorageWorkingGroupLockId::get(), [
             ForumGroupLockId::get(),
             ContentWorkingGroupLockId::get(),
             ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            VotingLockId::get(),
         ]),
         (ProposalsLockId::get(), [
             ForumGroupLockId::get(),
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            VotingLockId::get(),
+        ]),
+        (CandidacyLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+            CouncilorLockId::get(),
+            VotingLockId::get(),
+        ]),
+        (CouncilorLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            VotingLockId::get(),
+        ]),
+        (VotingLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
         ]),
     ]
     .iter()

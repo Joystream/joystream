@@ -12,10 +12,10 @@ type Mocks = InstanceMocks<Runtime>;
 type MockUtils = InstanceMockUtils<Runtime>;
 
 type CandidacyLock = <Runtime as Trait>::CandidacyLock;
-type ElectedMemberLock = <Runtime as Trait>::ElectedMemberLock;
+type CouncilorLock = <Runtime as Trait>::CouncilorLock;
 
 /////////////////// Election-related ///////////////////////////////////////////
-/// Test one referendum cycle with succesfull council election
+// Test one referendum cycle with succesfull council election
 #[test]
 fn council_lifecycle() {
     let config = default_genesis_config();
@@ -157,7 +157,8 @@ fn council_can_vote_for_yourself() {
     });
 }
 
-/// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle with succesfull council election
+// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle
+// with succesfull council election
 #[test]
 fn council_vote_for_winner_stakes_longer() {
     let config = default_genesis_config();
@@ -418,7 +419,8 @@ fn council_two_consecutive_rounds() {
                 .into(),
         ];
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {
@@ -608,7 +610,8 @@ fn council_candidate_stake_can_be_unlocked() {
                 .into(),
         ];
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {
@@ -667,7 +670,8 @@ fn council_candidate_stake_can_be_unlocked() {
     });
 }
 
-// Test that elected candidate's stake lock is automaticly converted from candidate lock to elected member lock.
+// Test that elected candidate's stake lock is automaticly converted from candidate lock to
+// elected member lock.
 #[test]
 fn council_candidate_stake_automaticly_converted() {
     let config = default_genesis_config();
@@ -714,7 +718,8 @@ fn council_candidate_stake_automaticly_converted() {
                 .into(),
         ];
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {
@@ -750,7 +755,7 @@ fn council_candidate_stake_automaticly_converted() {
                 );
 
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
+                    CouncilorLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
@@ -804,7 +809,8 @@ fn council_member_stake_is_locked() {
                 .into(),
         ];
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {
@@ -835,7 +841,7 @@ fn council_member_stake_is_locked() {
             .iter()
             .for_each(|council_member| {
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
+                    CouncilorLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
@@ -858,7 +864,7 @@ fn council_member_stake_automaticly_unlocked() {
 
         // 'not reelected member' should have it's stake locked now (he is currently elected member)
         assert_eq!(
-            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            CouncilorLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
             council_settings.min_candidate_stake,
         );
 
@@ -913,7 +919,7 @@ fn council_member_stake_automaticly_unlocked() {
 
         // not reelected member should have it's stake unlocked
         assert_eq!(
-            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            CouncilorLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
             0
         );
     });
@@ -942,7 +948,8 @@ fn council_candidacy_set_note() {
             .map(|item| item.candidate.clone())
             .collect();
 
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A,
+        // and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
             .map(|index| {
@@ -1034,7 +1041,8 @@ fn council_candidacy_set_note() {
     });
 }
 
-/// Test that candidating in 2nd council cycle after failed candidacy in 1st cycle releases the 1st cycle's stake.
+// Test that candidating in 2nd council cycle after failed candidacy in 1st cycle releases the 1st
+// cycle's stake.
 #[test]
 fn council_repeated_candidacy_unstakes() {
     let config = default_genesis_config();
@@ -1050,7 +1058,9 @@ fn council_repeated_candidacy_unstakes() {
         MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);
 
         let candidate = params.candidates_announcing[not_elected_candidate_index].clone();
-        let new_stake = council_settings.min_candidate_stake * 5; // some different value from the previous stake
+
+        // some different value from the previous stake
+        let new_stake = council_settings.min_candidate_stake * 5;
 
         // check candidacy stake from 1st cycle is locked
         Mocks::check_announcing_stake(
@@ -1072,7 +1082,7 @@ fn council_repeated_candidacy_unstakes() {
 
 /////////////////// Budget-related /////////////////////////////////////////////
 
-/// Test that budget balance can be set from external source.
+// Test that budget balance can be set from external source.
 #[test]
 fn council_budget_can_be_set() {
     let config = default_genesis_config();
@@ -1087,7 +1097,7 @@ fn council_budget_can_be_set() {
     })
 }
 
-/// Test that budget balance can be set from external source.
+// Test that budget balance can be set from external source.
 #[test]
 fn council_budget_refill_can_be_planned() {
     let config = default_genesis_config();
@@ -1115,7 +1125,7 @@ fn council_budget_refill_can_be_planned() {
     })
 }
 
-/// Test that rewards for council members are paid.
+// Test that rewards for council members are paid.
 #[test]
 fn council_rewards_are_paid() {
     let config = default_genesis_config();
@@ -1155,7 +1165,7 @@ fn council_rewards_are_paid() {
     });
 }
 
-/// Test that any rewards missed due to insufficient budget balance will be paid off eventually.
+// Test that any rewards missed due to insufficient budget balance will be paid off eventually.
 #[test]
 fn council_missed_rewards_are_paid_later() {
     let config = default_genesis_config();
@@ -1189,7 +1199,8 @@ fn council_missed_rewards_are_paid_later() {
             assert_eq!(
                 council_member.last_payment_block,
                 //last_payment_block + reward_period,
-                council_settings.election_duration - 1, // -1 because council was elected (last_payment_block set) in on_finalize
+                // -1 because council was elected (last_payment_block set) in on_finalize
+                council_settings.election_duration - 1,
             );
         }
 
@@ -1210,7 +1221,7 @@ fn council_missed_rewards_are_paid_later() {
     });
 }
 
-/// Test that any unpaid rewards will be discarded on council depose if budget is still insufficient.
+// Test that any unpaid rewards will be discarded on council depose if budget is still insufficient.
 #[test]
 fn council_discard_remaining_rewards_on_depose() {
     let config = default_genesis_config();
@@ -1261,7 +1272,7 @@ fn council_discard_remaining_rewards_on_depose() {
     });
 }
 
-/// Test that budget is periodicly refilled.
+// Test that budget is periodicly refilled.
 #[test]
 fn council_budget_auto_refill() {
     let config = default_genesis_config();
@@ -1293,7 +1304,8 @@ fn council_budget_auto_refill() {
     });
 }
 
-/// Test that `staking_account_id` is required to be associated with `membership_id` while `reward_account_id` is not
+// Test that `staking_account_id` is required to be associated with `membership_id` while
+// `reward_account_id` is not
 #[test]
 fn council_membership_checks() {
     let config = default_genesis_config();
@@ -1316,6 +1328,9 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id,
         );
 
+        // TODO: uncomment this once StakingHandler's `is_member_staking_account` is properly
+        // implemented
+        /*
         // test that staking_account_id has to be associated with membership_id
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
@@ -1325,6 +1340,7 @@ fn council_membership_checks() {
             candidate1.candidate.stake.clone(),
             Err(Error::MembershipIdNotMatchAccount),
         );
+        */
 
         // test that reward_account_id not associated with membership_id can be used
         Mocks::announce_candidacy_raw(
@@ -1335,5 +1351,16 @@ fn council_membership_checks() {
             candidate1.candidate.stake.clone(),
             Ok(()),
         );
+    });
+}
+
+#[test]
+fn council_new_council_elected_hook() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::run_full_council_cycle(0, &[], 0);
+
+        Mocks::check_new_council_elected_hook();
     });
 }
