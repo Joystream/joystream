@@ -16,8 +16,6 @@ use sp_runtime::{
 
 pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
 
-pub use common::currency::GovernanceCurrency;
-
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -285,6 +283,18 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     TestExternalitiesBuilder::<Test>::default().build()
+}
+
+pub fn build_test_externalities_with_initial_members(
+    initial_members: Vec<(u64, u64)>,
+) -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            crate::genesis::GenesisConfigBuilder::default()
+                .members(initial_members)
+                .build(),
+        )
+        .build()
 }
 
 pub type Balances = balances::Module<Test>;

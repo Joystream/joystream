@@ -32,8 +32,8 @@ use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, DAYS,
+    MembersConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig,
+    SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -206,7 +206,7 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
+    members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {

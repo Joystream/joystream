@@ -1,21 +1,23 @@
 //! # Proposals discussion module
-//! Proposals `discussion` module for the Joystream platform. Version 3.
+//! Proposals `discussion` module for the Joystream platform.
 //! It contains discussion subsystem of the proposals.
 //!
 //! ## Overview
 //!
-//! The proposals discussion module is used by the codex module to provide a platform for discussions
-//! about different proposals. It allows to create discussion threads and then add and update related
-//! posts.
+//! The proposals discussion module is used by the codex module to provide a platform for
+//! discussions about different proposals. It allows to create discussion threads and then add and
+//! update related posts.
 //!
 //! ## Supported extrinsics
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
-//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread permission mode
+//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread
+//! permission mode
 //!
 //! ## Public API methods
 //! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
-//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures safe thread creation
+//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures
+//! safe thread creation
 //!
 //! ## Usage
 //!

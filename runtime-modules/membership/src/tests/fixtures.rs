@@ -1,4 +1,5 @@
 use super::mock::*;
+use crate::BuyMembershipParameters;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::StorageMap;
@@ -50,6 +51,7 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestUserInfo {
+    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
     pub avatar_uri: Option<Vec<u8>>,
     pub about: Option<Vec<u8>>,
@@ -57,38 +59,39 @@ pub struct TestUserInfo {
 
 pub fn get_alice_info() -> TestUserInfo {
     TestUserInfo {
-        handle: Some(String::from("alice").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/alice")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is alice").as_bytes().to_vec()),
+        name: Some(b"Alice".to_vec()),
+        handle: Some(b"alice".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
+        about: Some(b"my name is alice".to_vec()),
     }
 }
 
 pub fn get_bob_info() -> TestUserInfo {
     TestUserInfo {
-        handle: Some(String::from("bobby").as_bytes().to_vec()),
-        avatar_uri: Some(
-            String::from("http://avatar-url.com/bob")
-                .as_bytes()
-                .to_vec(),
-        ),
-        about: Some(String::from("my name is bob").as_bytes().to_vec()),
+        name: Some(b"Bob".to_vec()),
+        handle: Some(b"bobby".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
+        about: Some(b"my name is bob".to_vec()),
     }
 }
 
 pub const ALICE_ACCOUNT_ID: u64 = 1;
+pub const BOB_ACCOUNT_ID: u64 = 2;
 
 pub fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
-    Membership::buy_membership(
-        Origin::signed(ALICE_ACCOUNT_ID),
-        info.handle,
-        info.avatar_uri,
-        info.about,
-    )
+
+    let params = BuyMembershipParameters {
+        root_account: ALICE_ACCOUNT_ID,
+        controller_account: ALICE_ACCOUNT_ID,
+        name: info.name,
+        handle: info.handle,
+        avatar_uri: info.avatar_uri,
+        about: info.about,
+        referrer_id: None,
+    };
+
+    Membership::buy_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
 }
 
 pub fn set_alice_free_balance(balance: u64) {
@@ -140,5 +143,123 @@ impl UpdateMembershipVerificationFixture {
 
     pub fn with_worker_id(self, worker_id: u64) -> Self {
         Self { worker_id, ..self }
+    }
+}
+
+pub struct BuyMembershipFixture {
+    pub origin: RawOrigin<u64>,
+    pub root_account: u64,
+    pub controller_account: u64,
+    pub name: Option<Vec<u8>>,
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+    pub referrer_id: Option<u64>,
+}
+
+impl Default for BuyMembershipFixture {
+    fn default() -> Self {
+        let alice = get_alice_info();
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            root_account: ALICE_ACCOUNT_ID,
+            controller_account: ALICE_ACCOUNT_ID,
+            name: alice.name,
+            handle: alice.handle,
+            avatar_uri: alice.avatar_uri,
+            about: alice.about,
+            referrer_id: None,
+        }
+    }
+}
+
+impl BuyMembershipFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = BuyMembershipParameters {
+            root_account: self.root_account.clone(),
+            controller_account: self.controller_account.clone(),
+            name: self.name.clone(),
+            handle: self.handle.clone(),
+            avatar_uri: self.avatar_uri.clone(),
+            about: self.about.clone(),
+            referrer_id: self.referrer_id.clone(),
+        };
+
+        let actual_result = Membership::buy_membership(self.origin.clone().into(), params);
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_referrer_id(self, referrer_id: u64) -> Self {
+        Self {
+            referrer_id: Some(referrer_id),
+            ..self
+        }
+    }
+
+    pub fn with_name(self, name: Vec<u8>) -> Self {
+        Self {
+            name: Some(name),
+            ..self
+        }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            handle: Some(handle),
+            ..self
+        }
+    }
+
+    pub fn with_accounts(self, account_id: u64) -> Self {
+        Self {
+            root_account: account_id,
+            controller_account: account_id,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = Balances::deposit_creating(&account_id, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
+
+pub struct SetReferralCutFixture {
+    pub origin: RawOrigin<u64>,
+    pub value: u64,
+}
+
+pub const DEFAULT_REFERRAL_CUT_VALUE: u64 = 100;
+
+impl Default for SetReferralCutFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            value: DEFAULT_REFERRAL_CUT_VALUE,
+        }
+    }
+}
+
+impl SetReferralCutFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_referral_cut(self.origin.clone().into(), self.value);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::referral_cut(), self.value);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
     }
 }

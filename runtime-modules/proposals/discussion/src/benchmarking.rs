@@ -60,13 +60,17 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
         "Balance not added",
     );
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
