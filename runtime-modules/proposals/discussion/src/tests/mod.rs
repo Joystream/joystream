@@ -146,7 +146,6 @@ impl PostFixture {
     fn update_post_with_text_and_assert(&mut self, new_text: Vec<u8>, result: DispatchResult) {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
-            self.author_id,
             self.thread_id,
             self.post_id.unwrap(),
             new_text,
@@ -263,17 +262,15 @@ fn update_post_call_fails_because_of_the_wrong_author() {
             .create_discussion_and_assert(Ok(1))
             .unwrap();
 
-        let mut post_fixture = PostFixture::default_for_thread(thread_id);
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_origin(RawOrigin::Signed(12))
+            .with_author(12);
 
         post_fixture.add_post_and_assert(Ok(()));
 
-        post_fixture = post_fixture.with_author(5);
+        post_fixture = post_fixture.with_origin(RawOrigin::Signed(5));
 
         post_fixture.update_post_and_assert(Err(DispatchError::Other("Invalid author")));
-
-        post_fixture = post_fixture.with_origin(RawOrigin::None).with_author(2);
-
-        post_fixture.update_post_and_assert(Err(Error::<Test>::NotAuthor.into()));
     });
 }
 
