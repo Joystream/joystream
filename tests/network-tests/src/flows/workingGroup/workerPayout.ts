@@ -13,6 +13,7 @@ import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 // Worker payout scenario
 export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
@@ -31,7 +32,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
-  await memberSetFixture.runner()
+  await new FixtureRunner(memberSetFixture).run()
 
   const workingGroupMintCapacityProposalFixture = new WorkingGroupMintCapacityProposalFixture(
     api,
@@ -40,14 +41,14 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     group
   )
   // Propose mint capacity
-  await workingGroupMintCapacityProposalFixture.runner()
+  await new FixtureRunner(workingGroupMintCapacityProposalFixture).run()
 
   // Approve mint capacity
   const voteForProposalFixture = new VoteForProposalFixture(
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForProposalFixture.runner()
+  await new FixtureRunner(voteForProposalFixture).run()
 
   const addWorkerOpeningFixture = new AddWorkerOpeningFixture(
     api,
@@ -58,7 +59,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner()
+  await new FixtureRunner(addWorkerOpeningFixture).run()
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -69,7 +70,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner()
+  await new FixtureRunner(applyForWorkerOpeningFixture).run()
   const applicationId = applyForWorkerOpeningFixture.getApplicationIds()[0]
 
   // Begin application review
@@ -78,7 +79,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner()
+  await new FixtureRunner(beginApplicationReviewFixture).run()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -90,9 +91,9 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner()
+  await new FixtureRunner(fillOpeningFixture).run()
   const workerId = fillOpeningFixture.getWorkerIds()[0]
   const awaitPayoutFixture: AwaitPayoutFixture = new AwaitPayoutFixture(api, workerId, group)
   // Await worker payout
-  await awaitPayoutFixture.runner()
+  await new FixtureRunner(awaitPayoutFixture).run()
 }

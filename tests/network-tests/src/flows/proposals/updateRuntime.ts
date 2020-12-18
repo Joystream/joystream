@@ -4,6 +4,7 @@ import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { UpdateRuntimeFixture } from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
@@ -16,7 +17,7 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
   const proposer = council[0].member.toString()
 
   const updateRuntimeFixture: UpdateRuntimeFixture = new UpdateRuntimeFixture(api, proposer, runtimePath)
-  await updateRuntimeFixture.runner()
+  await new FixtureRunner(updateRuntimeFixture).run()
 
   // Some tests after runtime update
   const createMembershipsFixture = new BuyMembershipHappyCaseFixture(
@@ -24,5 +25,5 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
     api.createKeyPairs(1).map((key) => key.address),
     paidTerms
   )
-  await createMembershipsFixture.runner()
+  await new FixtureRunner(createMembershipsFixture).run()
 }

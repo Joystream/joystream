@@ -11,6 +11,7 @@ import BN from 'bn.js'
 import { OpeningId } from '@joystream/types/hiring'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 // Manage worker as worker
 export default async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
@@ -30,7 +31,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
-  await memberSetFixture.runner()
+  await new FixtureRunner(memberSetFixture).run()
   const applicant = newMembers[0]
 
   const addWorkerOpeningFixture = new AddWorkerOpeningFixture(
@@ -42,7 +43,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner()
+  await new FixtureRunner(addWorkerOpeningFixture).run()
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -53,7 +54,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner()
+  await new FixtureRunner(applyForWorkerOpeningFixture).run()
   const applicationIdToHire = applyForWorkerOpeningFixture.getApplicationIds()[0]
 
   // Begin application review
@@ -62,7 +63,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner()
+  await new FixtureRunner(beginApplicationReviewFixture).run()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -74,17 +75,17 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner()
+  await new FixtureRunner(fillOpeningFixture).run()
   const workerId = fillOpeningFixture.getWorkerIds()[0]
   const increaseStakeFixture: IncreaseStakeFixture = new IncreaseStakeFixture(api, workerId, group)
   // Increase worker stake
-  await increaseStakeFixture.runner()
+  await new FixtureRunner(increaseStakeFixture).run()
 
   const updateRewardAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(api, workerId, group)
   // Update reward account
-  await updateRewardAccountFixture.runner()
+  await new FixtureRunner(updateRewardAccountFixture).run()
 
   const updateRoleAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(api, workerId, group)
   // Update role account
-  await updateRoleAccountFixture.runner()
+  await new FixtureRunner(updateRoleAccountFixture).run()
 }

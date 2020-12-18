@@ -4,6 +4,7 @@ import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { FixtureRunner } from '../../Fixture'
 
 // Worker application happy case scenario
 export default async function leaderSetup(
@@ -36,7 +37,7 @@ export default async function leaderSetup(
     payoutAmount,
     group
   )
-  await leaderHiringHappyCaseFixture.runner()
+  await new FixtureRunner(leaderHiringHappyCaseFixture).run()
 
   const hiredLead = await api.getGroupLead(group)
   assert(hiredLead, `${group} group Lead was not hired!`)

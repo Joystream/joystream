@@ -2,6 +2,7 @@ import BN from 'bn.js'
 import { Api } from '../../Api'
 import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv) {
   const spendingBalance: BN = new BN(+env.SPENDING_BALANCE!)
@@ -16,5 +17,5 @@ export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv)
   const spendingProposalFixture = new SpendingProposalFixture(api, proposer, spendingBalance, mintCapacity)
 
   // Spending proposal test
-  await spendingProposalFixture.runner()
+  await new FixtureRunner(spendingProposalFixture).run()
 }

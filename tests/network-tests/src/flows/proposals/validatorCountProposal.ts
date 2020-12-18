@@ -2,6 +2,7 @@ import BN from 'bn.js'
 import { Api } from '../../Api'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
   // Pre-conditions: members and council
@@ -17,5 +18,5 @@ export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
     proposer,
     validatorCountIncrement
   )
-  await validatorCountProposalFixture.runner()
+  await new FixtureRunner(validatorCountProposalFixture).run()
 }
