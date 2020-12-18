@@ -7,7 +7,7 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 
-use working_group::{Penalty, RewardPolicy, StakePolicy};
+use working_group::{Penalty, StakePolicy};
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -88,6 +88,26 @@ impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, StakeBalance, Worke
     }
 }
 
+/// Proposal parameters common to all proposals
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
+    /// Member ID of proposer
+    pub member_id: MemberId,
+
+    /// Title of the proposal
+    pub title: Vec<u8>,
+
+    /// Proposal description
+    pub description: Vec<u8>,
+
+    /// Staking Account Id for proposer, must have one for proposal to work
+    pub staking_account_id: Option<AccountId>,
+
+    /// Intended execution block for the proposal
+    pub exact_execution_block: Option<BlockNumber>,
+}
+
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
@@ -126,8 +146,8 @@ pub struct AddOpeningParameters<BlockNumber, Balance> {
     /// Stake policy for the opening.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 
-    /// Reward policy for the opening.
-    pub reward_policy: Option<RewardPolicy<Balance>>,
+    /// Reward per block for the opening.
+    pub reward_per_block: Option<Balance>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

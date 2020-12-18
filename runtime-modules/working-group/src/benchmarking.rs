@@ -54,9 +54,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
         vec![],
         *job_opening_type,
         staking_policy,
-        Some(RewardPolicy {
-            reward_per_block: One::one(),
-        }),
+        Some(One::one()),
     )
     .unwrap();
 
@@ -183,13 +181,17 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
@@ -870,10 +872,6 @@ benchmarks_instance! {
             leaving_unstaking_period: T::BlockNumber::max_value(),
         };
 
-        let reward_policy = RewardPolicy {
-            reward_per_block: BalanceOf::<T>::max_value(),
-        };
-
         let description = vec![0u8; i.try_into().unwrap()];
 
     }: _(
@@ -881,7 +879,7 @@ benchmarks_instance! {
             description,
             OpeningType::Regular,
             Some(stake_policy),
-            Some(reward_policy)
+            Some(BalanceOf::<T>::max_value())
         )
     verify {
         assert!(OpeningById::<T, I>::contains_key(1));

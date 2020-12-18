@@ -9,6 +9,7 @@ use crate::{
 };
 
 use balances;
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
@@ -70,6 +71,11 @@ parameter_types! {
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
 }
 
 impl Trait for Runtime {
@@ -284,9 +290,17 @@ impl balances::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = TestEvent;
-    type MemberId = u64;
-    type ActorId = u64;
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl pallet_timestamp::Trait for Runtime {

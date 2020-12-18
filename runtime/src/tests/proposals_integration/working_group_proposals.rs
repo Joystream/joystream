@@ -13,7 +13,8 @@ use crate::primitives::{ActorId, MemberId};
 use crate::{
     Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
     ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
-    ForumWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
+    ForumWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
+    MembershipWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
     StorageWorkingGroupStakingManager,
 };
 
@@ -54,22 +55,34 @@ fn add_opening(
             >>::contains_key(opening_id));
             opening_id
         }
+        WorkingGroup::Membership => {
+            let opening_id = MembershipWorkingGroup::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                MembershipWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
     };
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_add_working_group_leader_opening_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            AddOpeningParameters {
+            general_proposal_parameters,
+            ProposalDetails::AddWorkingGroupLeaderOpening(AddOpeningParameters {
                 description: Vec::new(),
                 stake_policy: stake_policy.clone(),
-                reward_policy: None,
+                reward_per_block: None,
                 working_group,
-            },
-            None,
+            }),
         )
     })
     .with_expected_proposal_id(expected_proposal_id)
@@ -92,18 +105,24 @@ fn fill_opening(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_fill_working_group_leader_opening_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            proposals_codex::FillOpeningParameters {
-                opening_id,
-                successful_application_id,
-                working_group,
-            },
-            None,
+            general_proposal_parameters,
+            ProposalDetails::FillWorkingGroupLeaderOpening(
+                proposals_codex::FillOpeningParameters {
+                    opening_id,
+                    successful_application_id,
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -125,16 +144,22 @@ fn decrease_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            stake_amount,
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                leader_worker_id,
+                stake_amount,
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -156,19 +181,25 @@ fn slash_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_slash_working_group_leader_stake_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            Penalty {
-                slashing_amount: stake_amount,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SlashWorkingGroupLeaderStake(
+                leader_worker_id,
+                Penalty {
+                    slashing_amount: stake_amount,
+                    slashing_text: Vec::new(),
+                },
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -190,16 +221,22 @@ fn set_reward(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_leader_reward_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id as u64,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            leader_worker_id,
-            Some(reward_amount),
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SetWorkingGroupLeaderReward(
+                leader_worker_id,
+                Some(reward_amount),
+                working_group,
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -224,15 +261,18 @@ fn set_mint_capacity<
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_budget_capacity_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            mint_capacity,
-            working_group,
-            None,
+            general_proposal_parameters,
+            ProposalDetails::SetWorkingGroupBudgetCapacity(mint_capacity, working_group),
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -254,18 +294,24 @@ fn terminate_role(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_terminate_working_group_leader_role_proposal(
+        let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+            member_id: member_id.into(),
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id.into()),
+            exact_execution_block: None,
+        };
+
+        ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
-            member_id,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(account_id.into()),
-            proposals_codex::TerminateRoleParameters {
-                worker_id: leader_worker_id,
-                penalty: penalty.clone(),
-                working_group,
-            },
-            None,
+            general_proposal_parameters,
+            ProposalDetails::TerminateWorkingGroupLeaderRole(
+                proposals_codex::TerminateRoleParameters {
+                    worker_id: leader_worker_id,
+                    penalty: penalty.clone(),
+                    working_group,
+                },
+            ),
         )
     })
     .disable_setup_enviroment()
@@ -298,6 +344,12 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -308,7 +360,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
 >(
     working_group: WorkingGroup,
 ) where
-    <T as membership::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
@@ -354,6 +406,12 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -365,8 +423,8 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    working_group::MemberId<T>: From<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    common::MemberId<T>: From<u64>,
 {
     initial_test_ext().execute_with(|| {
         let member_id: u64 = 1;
@@ -435,24 +493,31 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
                     ForumWorkingGroupStakingManager,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
+                >(group);
+            }
         }
     }
 }
 
 fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + membership::Trait + pallet_balances::Trait,
+    T: working_group::Trait<I> + frame_system::Trait + common::Trait + pallet_balances::Trait,
     I: frame_support::traits::Instance,
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as membership::Trait>::MemberId,
+        <T as common::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -557,6 +622,13 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
                     ForumWorkingGroupStakingManager,
                 >(group)
             }
+            WorkingGroup::Membership => {
+                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
+                >(group)
+            }
         }
     }
 }
@@ -567,14 +639,14 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as membership::Trait>::MemberId,
+        <T as common::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -677,6 +749,12 @@ fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -688,7 +766,7 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
     <T as minting::Trait>::MintId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
@@ -729,6 +807,12 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
                     ForumWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -740,8 +824,8 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::ActorId: Into<u64>,
     <T as minting::Trait>::MintId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
@@ -830,6 +914,13 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
                     ForumWorkingGroupStakingManager,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
+                >(group);
+            }
         }
     }
 }
@@ -840,15 +931,15 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as membership::Trait>::MemberId,
+        <T as common::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    working_group::MemberId<T>: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    common::MemberId<T>: From<u64>,
+    <T as common::Trait>::ActorId: Into<u64>,
     <T as minting::Trait>::MintId: From<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
@@ -953,6 +1044,13 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
                     ForumWorkingGroupStakingManager,
                 >(group);
             }
+            WorkingGroup::Membership => {
+                run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                    MembershipWorkingGroupStakingManager,
+                >(group);
+            }
         }
     }
 }
@@ -963,14 +1061,14 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as membership::Trait>::MemberId,
+        <T as common::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as membership::Trait>::MemberId: From<u64>,
-    <T as membership::Trait>::ActorId: Into<u64>,
+    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {

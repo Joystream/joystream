@@ -1,0 +1,265 @@
+use super::mock::*;
+use crate::BuyMembershipParameters;
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::StorageMap;
+use frame_system::{EventRecord, Phase, RawOrigin};
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <Membership as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Membership as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}
+
+pub struct EventFixture;
+impl EventFixture {
+    pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
+        let converted_event = TestEvent::membership_mod(expected_raw_event);
+
+        Self::assert_last_global_event(converted_event)
+    }
+
+    pub fn assert_last_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+}
+
+pub fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
+    if <crate::MembershipById<Test>>::contains_key(member_id) {
+        Membership::membership(member_id)
+    } else {
+        panic!("member profile not created");
+    }
+}
+
+pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: DispatchResult) {
+    assert!(result.is_err());
+    assert_eq!(result, expected_result);
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TestUserInfo {
+    pub name: Option<Vec<u8>>,
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+}
+
+pub fn get_alice_info() -> TestUserInfo {
+    TestUserInfo {
+        name: Some(b"Alice".to_vec()),
+        handle: Some(b"alice".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
+        about: Some(b"my name is alice".to_vec()),
+    }
+}
+
+pub fn get_bob_info() -> TestUserInfo {
+    TestUserInfo {
+        name: Some(b"Bob".to_vec()),
+        handle: Some(b"bobby".to_vec()),
+        avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
+        about: Some(b"my name is bob".to_vec()),
+    }
+}
+
+pub const ALICE_ACCOUNT_ID: u64 = 1;
+pub const BOB_ACCOUNT_ID: u64 = 2;
+
+pub fn buy_default_membership_as_alice() -> DispatchResult {
+    let info = get_alice_info();
+
+    let params = BuyMembershipParameters {
+        root_account: ALICE_ACCOUNT_ID,
+        controller_account: ALICE_ACCOUNT_ID,
+        name: info.name,
+        handle: info.handle,
+        avatar_uri: info.avatar_uri,
+        about: info.about,
+        referrer_id: None,
+    };
+
+    Membership::buy_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
+}
+
+pub fn set_alice_free_balance(balance: u64) {
+    let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
+}
+
+pub struct UpdateMembershipVerificationFixture {
+    pub origin: RawOrigin<u64>,
+    pub worker_id: u64,
+    pub member_id: u64,
+    pub verified: bool,
+}
+
+impl Default for UpdateMembershipVerificationFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            worker_id: 1,
+            member_id: 1,
+            verified: true,
+        }
+    }
+}
+
+impl UpdateMembershipVerificationFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::update_profile_verification(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.member_id,
+            self.verified,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            let membership = get_membership_by_id(self.member_id);
+            assert_eq!(membership.verified, self.verified);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+}
+
+pub struct BuyMembershipFixture {
+    pub origin: RawOrigin<u64>,
+    pub root_account: u64,
+    pub controller_account: u64,
+    pub name: Option<Vec<u8>>,
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+    pub referrer_id: Option<u64>,
+}
+
+impl Default for BuyMembershipFixture {
+    fn default() -> Self {
+        let alice = get_alice_info();
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            root_account: ALICE_ACCOUNT_ID,
+            controller_account: ALICE_ACCOUNT_ID,
+            name: alice.name,
+            handle: alice.handle,
+            avatar_uri: alice.avatar_uri,
+            about: alice.about,
+            referrer_id: None,
+        }
+    }
+}
+
+impl BuyMembershipFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = BuyMembershipParameters {
+            root_account: self.root_account.clone(),
+            controller_account: self.controller_account.clone(),
+            name: self.name.clone(),
+            handle: self.handle.clone(),
+            avatar_uri: self.avatar_uri.clone(),
+            about: self.about.clone(),
+            referrer_id: self.referrer_id.clone(),
+        };
+
+        let actual_result = Membership::buy_membership(self.origin.clone().into(), params);
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_referrer_id(self, referrer_id: u64) -> Self {
+        Self {
+            referrer_id: Some(referrer_id),
+            ..self
+        }
+    }
+
+    pub fn with_name(self, name: Vec<u8>) -> Self {
+        Self {
+            name: Some(name),
+            ..self
+        }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            handle: Some(handle),
+            ..self
+        }
+    }
+
+    pub fn with_accounts(self, account_id: u64) -> Self {
+        Self {
+            root_account: account_id,
+            controller_account: account_id,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = Balances::deposit_creating(&account_id, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
+
+pub struct SetReferralCutFixture {
+    pub origin: RawOrigin<u64>,
+    pub value: u64,
+}
+
+pub const DEFAULT_REFERRAL_CUT_VALUE: u64 = 100;
+
+impl Default for SetReferralCutFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            value: DEFAULT_REFERRAL_CUT_VALUE,
+        }
+    }
+}
+
+impl SetReferralCutFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_referral_cut(self.origin.clone().into(), self.value);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::referral_cut(), self.value);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}

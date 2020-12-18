@@ -49,14 +49,16 @@ use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::{
-    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, MemberId, Opening, OpeningId,
-    OpeningType, Penalty, RewardPolicy, StakeParameters, StakePolicy, Worker, WorkerId,
+    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
+    OpeningType, Penalty, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
+use common::MemberId;
+use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
@@ -91,7 +93,7 @@ pub trait WeightInfo {
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + membership::Trait + balances::Trait
+    frame_system::Trait + balances::Trait + common::Trait
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -326,13 +328,13 @@ decl_module! {
             description: Vec<u8>,
             opening_type: OpeningType,
             stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
-            reward_policy: Option<RewardPolicy<BalanceOf<T>>>
+            reward_per_block: Option<BalanceOf<T>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
 
             checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
 
-            checks::ensure_valid_reward_policy::<T, I>(&reward_policy)?;
+            checks::ensure_valid_reward_per_block::<T, I>(&reward_per_block)?;
 
             //
             // == MUTATION SAFE ==
@@ -346,7 +348,7 @@ decl_module! {
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
                 stake_policy,
-                reward_policy,
+                reward_per_block,
             };
 
             let new_opening_id = NextOpeningId::<I>::get();
@@ -509,8 +511,8 @@ decl_module! {
             // Ensuring worker actually exists
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
-            // Ensure that origin is signed by member with given id.
-            checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
+            // Ensure the origin of a member with given id.
+            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
@@ -1110,7 +1112,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 .stake_policy
                 .as_ref()
                 .map_or(Zero::zero(), |sp| sp.leaving_unstaking_period),
-            opening.reward_policy.as_ref().map(|rp| rp.reward_per_block),
+            opening.reward_per_block,
             Self::current_block(),
         );
 
@@ -1328,5 +1330,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .map(|(worker_id, _)| worker_id)
             .collect()
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 }

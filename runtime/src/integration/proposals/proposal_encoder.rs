@@ -22,6 +22,7 @@ macro_rules! wrap_working_group_call {
             }
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
             WorkingGroup::Forum => Call::ForumWorkingGroup($working_group_instance_call),
+            WorkingGroup::Membership => Call::MembershipWorkingGroup($working_group_instance_call),
         }
     }};
 }
@@ -120,7 +121,7 @@ where
             add_opening_params.description,
             OpeningType::Leader,
             add_opening_params.stake_policy,
-            add_opening_params.reward_policy,
+            add_opening_params.reward_per_block,
         )
     }
 

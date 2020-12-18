@@ -60,8 +60,8 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
 /// Implementation of the StakingHandler.
 pub struct StakingManager<
     T: frame_system::Trait
-        + membership::Trait
         + pallet_balances::Trait
+        + common::Trait
         + LockComparator<<T as pallet_balances::Trait>::Balance>,
     LockId: Get<LockIdentifier>,
 > {
@@ -71,15 +71,15 @@ pub struct StakingManager<
 
 impl<
         T: frame_system::Trait
-            + membership::Trait
             + pallet_balances::Trait
+            + common::Trait
             + LockComparator<<T as pallet_balances::Trait>::Balance>,
         LockId: Get<LockIdentifier>,
     >
     StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as membership::Trait>::MemberId,
+        <T as common::Trait>::MemberId,
     > for StakingManager<T, LockId>
 {
     fn lock(
@@ -157,7 +157,7 @@ impl<
 
     // Membership support for staking accounts required.
     fn is_member_staking_account(
-        _member_id: &<T as membership::Trait>::MemberId,
+        _member_id: &<T as common::Trait>::MemberId,
         _account_id: &<T as frame_system::Trait>::AccountId,
     ) -> bool {
         true

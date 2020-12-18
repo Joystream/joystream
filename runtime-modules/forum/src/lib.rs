@@ -595,9 +595,6 @@ decl_module! {
 
             Self::ensure_can_create_thread(account_id, &forum_user_id, &category_id)?;
 
-            // Check that thread can be added to category
-            Self::ensure_category_is_mutable(&category_id)?;
-
             // Ensure poll is valid
             if let Some(ref data) = poll {
                 // Check all poll alternatives
@@ -615,7 +612,7 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
             // Add inital post to thread
-            let _ = Self::add_new_post(category_id, new_thread_id, &text, forum_user_id);
+            let _ = Self::add_new_post(new_thread_id, &text, forum_user_id);
 
             // Build a new thread
             let new_thread = Thread {
@@ -844,7 +841,10 @@ decl_module! {
             //
 
             // Add new post
-            let (post_id, _) = Self::add_new_post(thread.category_id, thread_id, text.as_slice(), forum_user_id);
+            let (post_id, _) = Self::add_new_post(thread_id, text.as_slice(), forum_user_id);
+
+            // Update thread's post counter
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.num_direct_posts += 1);
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(post_id));
@@ -956,7 +956,6 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     pub fn add_new_post(
-        category_id: T::CategoryId,
         thread_id: T::ThreadId,
         text: &[u8],
         author_id: T::ForumUserId,
@@ -976,9 +975,6 @@ impl<T: Trait> Module<T> {
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
-
-        // Update thread's post counter
-        <ThreadById<T>>::mutate(category_id, thread_id, |c| c.num_direct_posts += 1);
 
         (new_post_id, new_post)
     }

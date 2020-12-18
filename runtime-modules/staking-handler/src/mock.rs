@@ -6,7 +6,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
 
 impl_outer_origin! {
@@ -69,11 +69,15 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl membership::Trait for Test {
-    type Event = ();
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = ();
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
 }
 
 impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
@@ -88,6 +92,15 @@ impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
 
 impl common::currency::GovernanceCurrency for Test {
     type Currency = Balances;
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 impl pallet_timestamp::Trait for Test {

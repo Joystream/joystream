@@ -22,8 +22,8 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 rand = "0.7.3"
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [features]
 default = ['std']

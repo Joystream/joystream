@@ -7,14 +7,13 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 use sp_std::marker::PhantomData;
 
+use common::{ActorId, MemberId};
+
 /// Working group job application type alias.
 pub type Application<T> = JobApplication<<T as frame_system::Trait>::AccountId, MemberId<T>>;
 
-/// Member identifier in membership::member module.
-pub type MemberId<T> = <T as membership::Trait>::MemberId;
-
 /// Type identifier for a worker role, which must be same as membership actor identifier.
-pub type WorkerId<T> = <T as membership::Trait>::ActorId;
+pub type WorkerId<T> = ActorId<T>;
 
 /// Type for an application id.
 pub type ApplicationId = u64;
@@ -30,12 +29,12 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 }
 
 // WorkerId - Worker - helper struct.
-pub(crate) struct WorkerInfo<T: membership::Trait + frame_system::Trait + balances::Trait> {
+pub(crate) struct WorkerInfo<T: common::Trait + frame_system::Trait + balances::Trait> {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }
 
-impl<T: membership::Trait + frame_system::Trait + balances::Trait> From<(WorkerId<T>, Worker<T>)>
+impl<T: common::Trait + frame_system::Trait + balances::Trait> From<(WorkerId<T>, Worker<T>)>
     for WorkerInfo<T>
 {
     fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {
@@ -71,8 +70,8 @@ pub struct Opening<BlockNumber: Ord, Balance> {
     /// Stake policy for the job opening.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 
-    /// Reward policy for the job opening.
-    pub reward_policy: Option<RewardPolicy<Balance>>,
+    /// Reward per block for the job opening.
+    pub reward_per_block: Option<Balance>,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -196,14 +195,6 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
     pub fn is_leaving(&self) -> bool {
         self.started_leaving_at.is_some()
     }
-}
-
-/// Reward policy for the job opening.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
-pub struct RewardPolicy<Balance> {
-    /// Reward per block for the worker.
-    pub reward_per_block: Balance,
 }
 
 /// Stake policy for the job opening.

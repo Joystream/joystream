@@ -8,7 +8,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
@@ -45,11 +45,24 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl membership::Trait for Test {
-    type Event = ();
+impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl membership::Trait for Test {
+    type Event = ();
     type MembershipFee = MembershipFee;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 parameter_types! {
@@ -190,11 +203,6 @@ impl VotersParameters for MockVotersParameters {
     fn total_voters_count() -> u32 {
         4
     }
-}
-
-parameter_types! {
-    pub const TextProposalMaxLength: u32 = 20_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
 }
 
 impl governance::election::Trait for Test {
@@ -395,8 +403,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 }
 
 impl crate::Trait for Test {
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type SetValidatorCountProposalParameters = DefaultProposalParameters;

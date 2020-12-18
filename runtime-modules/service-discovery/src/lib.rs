@@ -51,8 +51,8 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
-// The storage working group instance alias.
-pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
+/// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 /// Storage provider is a worker from the  working_group module.
 pub type StorageProviderId<T> = working_group::WorkerId<T>;
