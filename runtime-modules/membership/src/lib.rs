@@ -547,8 +547,8 @@ decl_module! {
         ) {
             Self::ensure_member_controller_account_signed(origin, &source_member_id)?;
 
-            let mut source_membership = Self::ensure_membership(source_member_id)?;
-            let mut target_membership = Self::ensure_membership_with_error(
+            let source_membership = Self::ensure_membership(source_member_id)?;
+            Self::ensure_membership_with_error(
                 target_member_id,
                 Error::<T>::CannotTransferInvitesForNotMember
             )?;
@@ -559,11 +559,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            source_membership.invites -= number_of_invites;
-            target_membership.invites += number_of_invites;
+            // Decrease source member invite number.
+            <MembershipById<T>>::mutate(&source_member_id, |membership| {
+                membership.invites = membership.invites.saturating_sub(number_of_invites);
+            });
 
-            <MembershipById<T>>::insert(&source_member_id, source_membership);
-            <MembershipById<T>>::insert(&target_member_id, target_membership);
+            // Increase target member invite number.
+            <MembershipById<T>>::mutate(&target_member_id, |membership| {
+                membership.invites = membership.invites.saturating_add(number_of_invites);
+            });
 
             Self::deposit_event(RawEvent::InvitesTransferred(
                 source_member_id,
@@ -578,10 +582,12 @@ decl_module! {
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
         ) {
-            Self::ensure_member_controller_account_signed(origin, &params.inviting_member_id)?;
+            let membership = Self::ensure_member_controller_account_signed(
+                origin,
+                &params.inviting_member_id
+            )?;
 
-            let mut inviting_membership = Self::ensure_membership(params.inviting_member_id)?;
-            ensure!(inviting_membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
+            ensure!(membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
 
             // Verify user parameters.
             let user_info = Self::check_user_registration_info(
@@ -602,11 +608,10 @@ decl_module! {
                 Zero::zero(),
             )?;
 
-            // Decrement the available invites counter.
-            inviting_membership.invites = inviting_membership.invites.saturating_sub(1);
-
             // Save the updated profile.
-            <MembershipById<T>>::insert(&params.inviting_member_id, inviting_membership);
+            <MembershipById<T>>::mutate(&member_id, |membership| {
+                membership.invites = membership.invites.saturating_sub(1);
+            });
 
             // Fire the event.
             Self::deposit_event(RawEvent::MemberRegistered(member_id));
