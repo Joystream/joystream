@@ -3,17 +3,18 @@ import { assert } from 'chai'
 import { ContentId } from '@joystream/types/media'
 import { registry } from '@joystream/types'
 
-import { QueryNodeApi } from '../../Api'
+import { Api } from '../../Api'
+import { QueryNodeApi } from '../../QueryNodeApi'
 import { Utils } from '../../utils'
 
-export default async function getContentFromStorageNode(api: QueryNodeApi): Promise<void> {
+export default async function getContentFromStorageNode(api: Api, query: QueryNodeApi): Promise<void> {
   const videoTitle = 'Storage node test'
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)
 
   // Query video by title with where expression
-  const videoWhereQueryResult = await api.performWhereQueryByVideoTitle(videoTitle)
+  const videoWhereQueryResult = await query.performWhereQueryByVideoTitle(videoTitle)
 
   assert.equal(1, videoWhereQueryResult.data.videos.length, 'Should fetch only one video')
 

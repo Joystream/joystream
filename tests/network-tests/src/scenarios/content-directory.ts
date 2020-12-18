@@ -1,5 +1,6 @@
 import { WsProvider } from '@polkadot/api'
-import { Api, QueryNodeApi, WorkingGroups } from '../Api'
+import { Api, WorkingGroups } from '../Api'
+import { QueryNodeApi } from '../QueryNodeApi'
 import { config } from 'dotenv'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import initializeContentDirectory from '../flows/contentDirectory/contentDirectoryInitialization'
@@ -17,6 +18,8 @@ const scenario = async () => {
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
 
+  const api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
+
   const queryNodeUrl: string = env.QUERY_NODE_URL || 'http://127.0.0.1:8081/graphql'
 
   const queryNodeProvider = new ApolloClient({
@@ -25,12 +28,7 @@ const scenario = async () => {
     defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
   })
 
-  const api: QueryNodeApi = await QueryNodeApi.new(
-    provider,
-    queryNodeProvider,
-    env.TREASURY_ACCOUNT_URI || '//Alice',
-    env.SUDO_ACCOUNT_URI || '//Alice'
-  )
+  const query = new QueryNodeApi(queryNodeProvider)
 
   const leadKeyPair = await leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
 
@@ -39,11 +37,11 @@ const scenario = async () => {
 
   await initializeContentDirectory(api, leadKeyPair)
 
-  await createChannel(api)
+  await createChannel(api, query)
 
-  await createVideo(api)
+  await createVideo(api, query)
 
-  await updateChannel(api)
+  await updateChannel(api, query)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

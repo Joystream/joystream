@@ -8,7 +8,7 @@ export interface Fixture {
   // executionError(): Error | undefined
 }
 
-export class BaseFixture implements Fixture {
+export class BaseFixture {
   protected api: Api
   private executed = false
   // The reason of the "Unexpected" failure of running the fixture

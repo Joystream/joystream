@@ -1,10 +1,11 @@
-import { QueryNodeApi } from '../../Api'
+import { Api } from '../../Api'
+import { QueryNodeApi } from '../../QueryNodeApi'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 
-export function createVideoReferencingChannelFixture(api: QueryNodeApi, handle: string): CreateVideoFixture {
+export function createVideoReferencingChannelFixture(api: Api, handle: string): CreateVideoFixture {
   const videoEntity: VideoEntity = {
     title: 'Example video',
     description: 'This is an example video',
@@ -52,7 +53,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
   assert.equal(queriedVideo.isPublic, video.isPublic, 'Should be equal')
 }
 
-export default async function createVideo(api: QueryNodeApi) {
+export default async function createVideo(api: Api, query: QueryNodeApi) {
   const channelTitle = 'New channel example'
   const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api, channelTitle)
 
@@ -62,46 +63,46 @@ export default async function createVideo(api: QueryNodeApi) {
   await Utils.wait(120000)
 
   // Perform number of full text searches on Channel title, that is a slight variation on title that one expects would return the video.
-  let channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('video')
+  let channelFullTextSearchResult = await query.performFullTextSearchOnChannelTitle('video')
 
   assert(channelFullTextSearchResult.data.search.length === 1, 'Should contain exactly one entry')
 
   // Both channel and video title starts with `Example`
-  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('Example')
+  channelFullTextSearchResult = await query.performFullTextSearchOnChannelTitle('Example')
 
   assert(channelFullTextSearchResult.data.search.length === 2, 'Should contain two entries')
 
   // Perform number full text searches on Channel title, that absolutely should NOT return the video.
-  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('First')
+  channelFullTextSearchResult = await query.performFullTextSearchOnChannelTitle('First')
 
   assert(channelFullTextSearchResult.data.search.length === 0, 'Should be empty')
 
-  channelFullTextSearchResult = await api.performFullTextSearchOnChannelTitle('vid')
+  channelFullTextSearchResult = await query.performFullTextSearchOnChannelTitle('vid')
 
   assert(channelFullTextSearchResult.data.search.length === 0, 'Should be empty')
 
   // Ensure channel contains only one video with right data
-  const channelResult = await api.getChannelbyHandle(channelTitle)
+  const channelResult = await query.getChannelbyHandle(channelTitle)
 
   assert(channelResult.data.channels[0].videos.length === 1, 'Given channel should contain exactly one video')
 
   assertVideoMatchQueriedResult(channelResult.data.channels[0].videos[0], createVideoHappyCaseFixture.videoEntity)
 
   // Perform number of full text searches on Video title, that is a slight variation on title that one expects would return the video.
-  let videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('Example')
+  let videoFullTextSearchResult = await query.performFullTextSearchOnVideoTitle('Example')
 
   assert(videoFullTextSearchResult.data.search.length === 2, 'Should contain two entries')
 
-  videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('Example video')
+  videoFullTextSearchResult = await query.performFullTextSearchOnVideoTitle('Example video')
 
   assert(videoFullTextSearchResult.data.search.length === 1, 'Should contain exactly one video')
 
   // Perform number full text searches on Video title, that absolutely should NOT return the video.
-  videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('unknown')
+  videoFullTextSearchResult = await query.performFullTextSearchOnVideoTitle('unknown')
 
   assert(videoFullTextSearchResult.data.search.length === 0, 'Should be empty')
 
-  videoFullTextSearchResult = await api.performFullTextSearchOnVideoTitle('MediaVideo')
+  videoFullTextSearchResult = await query.performFullTextSearchOnVideoTitle('MediaVideo')
 
   assert(videoFullTextSearchResult.data.search.length === 0, 'Should be empty')
 }

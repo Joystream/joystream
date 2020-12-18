@@ -34,7 +34,6 @@ import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntit
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
-import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { ContentId, DataObject } from '@joystream/types/media'
 
 import Debugger from 'debug'
@@ -1700,16 +1699,16 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<void> {
+  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
     const transaction = this.api.tx.contentDirectory.transaction(
       { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
       operations // We provide parsed operations as second argument
     )
     const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    await this.sender.signAndSend(transaction, lead.role_account_id)
+    return this.sender.signAndSend(transaction, lead.role_account_id)
   }
 
-  public async createChannelEntity(channel: ChannelEntity): Promise<void> {
+  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(
       this.api,
@@ -1723,10 +1722,10 @@ export class Api {
     )
     // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
     const operations = await parser.getEntityBatchOperations()
-    return await this.sendContentDirectoryTransaction(operations)
+    return this.sendContentDirectoryTransaction(operations)
   }
 
-  public async createVideoEntity(video: VideoEntity): Promise<void> {
+  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(
       this.api,
@@ -1740,13 +1739,13 @@ export class Api {
     )
     // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
     const operations = await parser.getEntityBatchOperations()
-    return await this.sendContentDirectoryTransaction(operations)
+    return this.sendContentDirectoryTransaction(operations)
   }
 
   public async updateChannelEntity(
     channelUpdateInput: Record<string, any>,
     uniquePropValue: Record<string, any>
-  ): Promise<void> {
+  ): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(this.api)
 
@@ -1758,7 +1757,7 @@ export class Api {
       'Channel', // Class name
       CHANNEL_ID // Id of the entity we want to update
     )
-    return await this.sendContentDirectoryTransaction(updateOperations)
+    return this.sendContentDirectoryTransaction(updateOperations)
   }
 
   async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
@@ -1767,126 +1766,6 @@ export class Api {
   }
 
   public async initializeContentDirectory(leadKeyPair: KeyringPair): Promise<void> {
-    await initializeContentDir(this.api, leadKeyPair)
-  }
-}
-
-export class QueryNodeApi extends Api {
-  private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
-
-  public static async new(
-    provider: WsProvider,
-    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
-    treasuryAccountUri: string,
-    sudoAccountUri: string
-  ): Promise<QueryNodeApi> {
-    let connectAttempts = 0
-    while (true) {
-      connectAttempts++
-      debug(`Connecting to chain, attempt ${connectAttempts}..`)
-      try {
-        const api = await ApiPromise.create({ provider, types })
-
-        // Wait for api to be connected and ready
-        await api.isReady
-
-        // If a node was just started up it might take a few seconds to start producing blocks
-        // Give it a few seconds to be ready.
-        await Utils.wait(5000)
-
-        return new QueryNodeApi(api, queryNodeProvider, treasuryAccountUri, sudoAccountUri)
-      } catch (err) {
-        if (connectAttempts === 3) {
-          throw new Error('Unable to connect to chain')
-        }
-      }
-      await Utils.wait(5000)
-    }
-  }
-
-  constructor(
-    api: ApiPromise,
-    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
-    treasuryAccountUri: string,
-    sudoAccountUri: string
-  ) {
-    super(api, treasuryAccountUri, sudoAccountUri)
-    this.queryNodeProvider = queryNodeProvider
-  }
-
-  public async getChannelbyHandle(handle: string): Promise<ApolloQueryResult<any>> {
-    const GET_CHANNEL_BY_TITLE = gql`
-      query($handle: String!) {
-        channels(where: { handle_eq: $handle }) {
-          handle
-          description
-          coverPhotoUrl
-          avatarPhotoUrl
-          isPublic
-          isCurated
-          videos {
-            title
-            description
-            duration
-            thumbnailUrl
-            isExplicit
-            isPublic
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { handle } })
-  }
-
-  public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Channel {
-              handle
-              description
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
-  }
-
-  public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Video {
-              title
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
-  }
-
-  public async performWhereQueryByVideoTitle(title: string): Promise<ApolloQueryResult<any>> {
-    const WHERE_QUERY_ON_VIDEO_TITLE = gql`
-      query($title: String!) {
-        videos(where: { title_eq: $title }) {
-          media {
-            location {
-              __typename
-              ... on JoystreamMediaLocation {
-                dataObjectId
-              }
-            }
-          }
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query: WHERE_QUERY_ON_VIDEO_TITLE, variables: { title } })
+    return initializeContentDir(this.api, leadKeyPair)
   }
 }
