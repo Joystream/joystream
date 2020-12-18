@@ -19,10 +19,6 @@
 //! The module supports requiring staking currency for the both candidacy and voting.
 //!
 //! ## Implementation
-//! Module expects that association of a particular account id to a membership id is never broken.
-//! Reassociation of an account id to a different membership id behind the scenes that the Council
-//! module can't be aware of will result in unexpected behavior.
-//!
 //! When implementing runtime for this module, don't forget to call all ReferendumConnection trait
 //! functions at proper places. See the trait details for more information.
 //!
@@ -40,9 +36,6 @@
 //!
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
-//!
-//! NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection
-//!       trait functions at proper places.
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
