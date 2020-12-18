@@ -68,7 +68,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
       workingGroup: this.workingGroup,
     })
 
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -111,7 +111,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
       this.workingGroup
     )
 
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -178,7 +178,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
       workingGroup: workingGroupString,
     })
 
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -226,7 +226,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
       this.slash,
       workingGroupString
     )
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -273,7 +273,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
       workingGroupString
     )
 
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -320,7 +320,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
       workingGroupString
     )
 
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -365,7 +365,7 @@ export class SlashLeaderProposalFixture implements Fixture {
       this.slashAmount,
       workingGroupString
     )
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -408,7 +408,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
       this.mintCapacity,
       workingGroupString
     )
-    this.result = this.api.expectProposalCreatedEvent(result.events)
+    this.result = this.api.findProposalCreatedEvent(result.events)
   }
 }
 
@@ -483,7 +483,8 @@ export class ElectionParametersProposalFixture implements Fixture {
       proposedMinCouncilStake,
       proposedMinVotingStake
     )
-    const proposalNumber = this.api.expectProposalCreatedEvent(proposalCreationResult.events)
+    const proposalNumber = this.api.findProposalCreatedEvent(proposalCreationResult.events) as ProposalId
+    assert.notEqual(proposalNumber, undefined)
 
     // Approving the proposal
     this.api.batchApproveProposal(proposalNumber)
@@ -576,7 +577,8 @@ export class SpendingProposalFixture implements Fixture {
       this.spendingBalance,
       fundingRecipient
     )
-    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
+    const proposalNumber: ProposalId = this.api.findProposalCreatedEvent(result.events) as ProposalId
+    assert.notEqual(proposalNumber, undefined)
 
     // Approving spending proposal
     const balanceBeforeMinting: BN = await this.api.getBalance(fundingRecipient)
@@ -624,7 +626,8 @@ export class TextProposalFixture implements Fixture {
     // Proposal creation
 
     const result = await this.api.proposeText(this.proposer, proposalStake, proposalTitle, description, proposalText)
-    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
+    const proposalNumber = this.api.findProposalCreatedEvent(result.events) as ProposalId
+    assert.notEqual(proposalNumber, undefined)
 
     // Approving text proposal
     this.api.batchApproveProposal(proposalNumber)
@@ -666,7 +669,8 @@ export class ValidatorCountProposalFixture implements Fixture {
       proposalStake,
       proposedValidatorCount
     )
-    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
+    const proposalNumber: ProposalId = this.api.findProposalCreatedEvent(result.events) as ProposalId
+    assert.notEqual(proposalNumber, undefined)
 
     // Approving the proposal
     this.api.batchApproveProposal(proposalNumber)
@@ -717,7 +721,8 @@ export class UpdateRuntimeFixture implements Fixture {
       'runtime to test proposal functionality' + uuid().substring(0, 8),
       runtime
     )
-    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
+    const proposalNumber: ProposalId = this.api.findProposalCreatedEvent(result.events) as ProposalId
+    assert.notEqual(proposalNumber, undefined)
 
     // Approving runtime update proposal
     this.api.batchApproveProposal(proposalNumber)

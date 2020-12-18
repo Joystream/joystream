@@ -28,12 +28,12 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
   )
 
   // Add worker opening with 0 stake, expect failure!
-  try {
-    await addWorkerOpeningWithoutStakeFixture.runner()
-    assert(false, 'Adding Worker Opening Should have failed')
-  } catch (err) {
-    // Expected to fail
-  }
+  await addWorkerOpeningWithoutStakeFixture.runner()
+  assert.equal(
+    addWorkerOpeningWithoutStakeFixture.getCreatedOpeningId(),
+    undefined,
+    'Adding Worker Opening Should have failed'
+  )
 
   const addWorkerOpeningWithoutUnstakingPeriodFixture = new AddWorkerOpeningFixture(
     api,
@@ -45,12 +45,12 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
   )
 
   // Add worker opening with 0 unstaking period, expect failure!
-  try {
-    await addWorkerOpeningWithoutUnstakingPeriodFixture.runner()
-    assert(false, 'Adding Worker Opening Should have failed')
-  } catch (err) {
-    // Expected to fail
-  }
+  await addWorkerOpeningWithoutUnstakingPeriodFixture.runner()
+  assert.equal(
+    addWorkerOpeningWithoutUnstakingPeriodFixture.getCreatedOpeningId(),
+    undefined,
+    'Adding Worker Opening Should have failed'
+  )
 
   // TODO: close openings
   debug('Passed')

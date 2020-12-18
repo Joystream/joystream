@@ -622,12 +622,6 @@ export class Api {
     return council.map((seat) => seat.member.toString())
   }
 
-  // This method is deprecated. Is there a replacement in newer versions of substrate?
-  // Do we even use this method?
-  // public getRuntime(): Promise<Bytes> {
-  //   return this.api.query.substrate.code<Bytes>()
-  // }
-
   public async proposeRuntime(
     account: string,
     stake: BN,
@@ -759,95 +753,79 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
-  public expectMemberRegisteredEvent(events: EventRecord[]): MemberId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'MemberRegistered')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[0] as MemberId
+  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
+    return events.find((record) => record.event.section === section && record.event.method === method)
   }
 
-  public expectProposalCreatedEvent(events: EventRecord[]): ProposalId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'ProposalCreated')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[1] as ProposalId
-  }
-
-  public expectOpeningAddedEvent(events: EventRecord[]): OpeningId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'OpeningAdded')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[0] as OpeningId
-  }
-
-  public expectLeaderSetEvent(events: EventRecord[]): WorkerId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'LeaderSet')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data as unknown) as WorkerId
-  }
-
-  public expectBeganApplicationReviewEvent(events: EventRecord[]): ApplicationId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'BeganApplicationReview'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data as unknown) as ApplicationId
-  }
-
-  public expectTerminatedLeaderEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'TerminatedLeader')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
+    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
+    if (record) {
+      return record.event.data[0] as MemberId
     }
   }
 
-  public expectWorkerRewardAmountUpdatedEvent(events: EventRecord[]): WorkerId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data[0] as unknown) as WorkerId
-  }
-
-  public expectStakeDecreasedEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeDecreased')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
+    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
+    if (record) {
+      return record.event.data[1] as ProposalId
     }
   }
 
-  public expectStakeSlashedEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeSlashed')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
+    if (record) {
+      return record.event.data[0] as OpeningId
     }
   }
 
-  public expectMintCapacityChangedEvent(events: EventRecord[]): BN {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'MintCapacityChanged'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
+    if (record) {
+      return (record.event.data as unknown) as WorkerId
     }
-    return (record.event.data[1] as unknown) as BN
   }
 
-  public async expectRuntimeUpgraded(): Promise<void> {
-    await this.expectSystemEvent('RuntimeUpdated')
+  public findBeganApplicationReviewEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
+    }
   }
 
-  // Resolves with events that were emitted at the same time that the proposal
-  // was finalized (I think!)
+  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
+  }
+
+  public findWorkerRewardAmountUpdatedEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
+    if (record) {
+      return (record.event.data[0] as unknown) as WorkerId
+    }
+  }
+
+  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
+  }
+
+  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
+  }
+
+  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
+    if (record) {
+      return (record.event.data[1] as unknown) as BN
+    }
+  }
+
+  public async expectRuntimeUpgraded(): Promise<Event> {
+    return this.waitForSystemEvent('RuntimeUpdated')
+  }
+
+  // Resolves with events that were emitted at the same time that the proposal was finalized
   public waitForProposalToFinalize(id: ProposalId): Promise<EventRecord[]> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
@@ -874,17 +852,19 @@ export class Api {
     })
   }
 
-  public expectOpeningFilledEvent(events: EventRecord[]): ApplicationIdToWorkerIdMap {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'OpeningFilled')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findOpeningFilledEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationIdToWorkerIdMap | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
+    if (record) {
+      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
     }
-    return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
   }
 
   // Looks for the first occurance of an expected event, and resolves.
   // Use this when the event we are expecting is not particular to a specific extrinsic
-  public expectSystemEvent(eventName: string): Promise<Event> {
+  public waitForSystemEvent(eventName: string): Promise<Event> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
@@ -897,14 +877,14 @@ export class Api {
     })
   }
 
-  public expectApplicationReviewBeganEvent(events: EventRecord[]): ApplicationId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'BeganApplicationReview'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findApplicationReviewBeganEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
     }
-    return (record.event.data as unknown) as ApplicationId
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {

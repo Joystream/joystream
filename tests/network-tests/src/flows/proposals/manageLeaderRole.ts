@@ -15,6 +15,7 @@ import { ApplyForOpeningFixture } from '../../fixtures/workingGroupModule'
 import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
+import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 
@@ -61,11 +62,12 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   // Approve add opening proposal
   const voteForCreateOpeningProposalFixture = new VoteForProposalFixture(
     api,
-    createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as OpeningId
+    createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as ProposalId
   )
 
   await voteForCreateOpeningProposalFixture.runner()
-  const openingId = api.expectOpeningAddedEvent(voteForCreateOpeningProposalFixture.getEvents())
+  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.getEvents(), group) as OpeningId
+  assert(openingId)
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
     api,
@@ -130,7 +132,8 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
 
   const leadId = await api.getLeadWorkerId(group)
   // This check is prone to failure if more than one worker's reward amount was updated
-  const workerId = api.expectWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.getEvents())
+  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.getEvents(), group) as WorkerId
+  assert(workerId)
   assert(leadId!.eq(workerId))
   const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
   assert(rewardRelationship.amount_per_payout.eq(alteredPayoutAmount))

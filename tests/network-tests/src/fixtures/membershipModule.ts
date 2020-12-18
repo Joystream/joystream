@@ -23,7 +23,6 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
-    this.debug(`Registering ${this.accounts.length} new members`)
     // Fee estimation and transfer
     const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
     const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
@@ -40,11 +39,13 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
           this.api.buyMembership(account, this.paidTerms, `member${account.substring(0, 14)}`)
         )
       )
-    ).map(({ events }) => this.api.expectMemberRegisteredEvent(events))
+    )
+      .map(({ events }) => this.api.findMemberRegisteredEvent(events))
+      .filter((id) => id !== undefined) as MemberId[]
+
+    this.debug(`Registered ${this.memberIds.length} new members`)
 
     assert.equal(this.accounts.length, this.memberIds.length)
-
-    this.debug(`New member id(s): ${this.memberIds}`)
   }
 }
 

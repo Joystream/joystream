@@ -78,10 +78,11 @@ export class Sender {
             event: { data },
           } = record
           const err = data[0] as DispatchError
-          this.debug('ExtrinsicFailed:', sentTx, 'DispatchError:', err.toHuman())
           if (err.isModule) {
-            const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-            this.debug(`Error Details: ${name}\n${documentation}`)
+            const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+            this.debug('Dispatch Error:', name, sentTx)
+          } else {
+            this.debug('Dispatch Error:', sentTx)
           }
         } else {
           assert(success)
@@ -91,10 +92,11 @@ export class Sender {
             assert(dispatchResult)
             if (dispatchResult.isError) {
               const err = dispatchResult.asError
-              this.debug('Sudo Dispatch Failed', sentTx, 'DispatchError:', err.toHuman())
               if (err.isModule) {
-                const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-                this.debug(`Error Details: ${name}\n${documentation}`)
+                const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+                this.debug('Sudo Dispatch Failed', name, sentTx)
+              } else {
+                this.debug('Sudo Dispatch Failed', sentTx)
               }
             }
           }
@@ -103,7 +105,7 @@ export class Sender {
 
       // Always resolve irrespective of success or failure. Error handling should
       // be dealt with by caller.
-      finalized(result)
+      if (success || failed) finalized(result)
     }
 
     await this.asyncLock.acquire(`${senderKeyPair.address}`, async () => {

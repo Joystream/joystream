@@ -76,7 +76,8 @@ export class AddWorkerOpeningFixture implements Fixture {
       this.module
     )
 
-    this.result = this.api.expectOpeningAddedEvent(result.events)
+    // We don't assert, we allow potential failure
+    this.result = this.api.findOpeningAddedEvent(result.events, this.module)
   }
 }
 
@@ -128,7 +129,8 @@ export class SudoAddLeaderOpeningFixture implements Fixture {
       this.module
     )
 
-    this.result = this.api.expectOpeningAddedEvent(result.events)
+    // We don't assert, we allow potential failure
+    this.result = this.api.findOpeningAddedEvent(result.events, this.module)
   }
 }
 
@@ -271,7 +273,7 @@ export class BeginApplicationReviewFixture implements Fixture {
     // const beginApplicantReviewPromise: Promise<ApplicationId> = this.api.expectApplicationReviewBegan()
     const result = await this.api.beginApplicantReview(leadAccount, this.openingId, this.module)
 
-    this.api.expectApplicationReviewBeganEvent(result.events)
+    assert.notEqual(this.api.findApplicationReviewBeganEvent(result.events, this.module), undefined)
   }
 }
 
@@ -355,7 +357,12 @@ export class FillOpeningFixture implements Fixture {
       this.payoutInterval,
       this.module
     )
-    const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = this.api.expectOpeningFilledEvent(result.events)
+    const applicationIdToWorkerIdMap = this.api.findOpeningFilledEvent(
+      result.events,
+      this.module
+    ) as ApplicationIdToWorkerIdMap
+    assert.notEqual(applicationIdToWorkerIdMap, undefined)
+
     this.workerIds = []
     applicationIdToWorkerIdMap.forEach((workerId) => this.workerIds.push(workerId))
 
@@ -411,12 +418,18 @@ export class SudoFillLeaderOpeningFixture implements Fixture {
     )
 
     // Assertions
-    const applicationIdToWorkerIdMap = this.api.expectOpeningFilledEvent(result.events)
-    assert(applicationIdToWorkerIdMap.size === 1)
+    const applicationIdToWorkerIdMap = this.api.findOpeningFilledEvent(
+      result.events,
+      this.module
+    ) as ApplicationIdToWorkerIdMap
+    assert.notEqual(applicationIdToWorkerIdMap, undefined)
+    assert.equal(applicationIdToWorkerIdMap.size, 1)
+
     applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
       const worker: Worker = await this.api.getWorkerById(workerId, this.module)
       const application: Application = await this.api.getApplicationById(applicationId, this.module)
-      const leadWorkerId: WorkerId = (await this.api.getLeadWorkerId(this.module))!
+      const leadWorkerId = (await this.api.getLeadWorkerId(this.module)) as WorkerId
+      assert.notEqual(leadWorkerId, undefined)
       assert(
         worker.role_account_id.toString() === application.role_account_id.toString(),
         `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
