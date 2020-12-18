@@ -44,7 +44,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.2.0 linux-x64 node-v13.12.0
+@joystream/cli/0.2.0 linux-x64 node-v12.18.2
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -83,6 +83,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content-directory:classes`](#joystream-cli-content-directoryclasses)
 * [`joystream-cli content-directory:createClass`](#joystream-cli-content-directorycreateclass)
 * [`joystream-cli content-directory:createCuratorGroup`](#joystream-cli-content-directorycreatecuratorgroup)
+* [`joystream-cli content-directory:createEntity CLASSNAME`](#joystream-cli-content-directorycreateentity-classname)
 * [`joystream-cli content-directory:curatorGroup ID`](#joystream-cli-content-directorycuratorgroup-id)
 * [`joystream-cli content-directory:curatorGroups`](#joystream-cli-content-directorycuratorgroups)
 * [`joystream-cli content-directory:entities CLASSNAME [PROPERTIES]`](#joystream-cli-content-directoryentities-classname-properties)
@@ -94,6 +95,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content-directory:removeMaintainerFromClass [CLASSNAME] [GROUPID]`](#joystream-cli-content-directoryremovemaintainerfromclass-classname-groupid)
 * [`joystream-cli content-directory:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-content-directorysetcuratorgroupstatus-id-status)
 * [`joystream-cli content-directory:updateClassPermissions [CLASSNAME]`](#joystream-cli-content-directoryupdateclasspermissions-classname)
+* [`joystream-cli content-directory:updateEntityPropertyValues ID`](#joystream-cli-content-directoryupdateentitypropertyvalues-id)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli media:createChannel`](#joystream-cli-mediacreatechannel)
@@ -423,6 +425,23 @@ ALIASES
 
 _See code: [src/commands/content-directory/createCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/createCuratorGroup.ts)_
 
+## `joystream-cli content-directory:createEntity CLASSNAME`
+
+Creates a new entity in the specified class (can be executed in Member, Curator or Lead context)
+
+```
+USAGE
+  $ joystream-cli content-directory:createEntity CLASSNAME
+
+ARGUMENTS
+  CLASSNAME  Name or ID of the Class
+
+OPTIONS
+  --context=(Member|Curator|Lead)  Actor context to execute the command in (Member/Curator/Lead)
+```
+
+_See code: [src/commands/content-directory/createEntity.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/createEntity.ts)_
+
 ## `joystream-cli content-directory:curatorGroup ID`
 
 Show Curator Group details by ID.
@@ -587,6 +606,23 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/content-directory/updateClassPermissions.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/updateClassPermissions.ts)_
+
+## `joystream-cli content-directory:updateEntityPropertyValues ID`
+
+Updates the property values of the specified entity (can be executed in Member, Curator or Lead context)
+
+```
+USAGE
+  $ joystream-cli content-directory:updateEntityPropertyValues ID
+
+ARGUMENTS
+  ID  ID of the Entity
+
+OPTIONS
+  --context=(Member|Curator|Lead)  Actor context to execute the command in (Member/Curator/Lead)
+```
+
+_See code: [src/commands/content-directory/updateEntityPropertyValues.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/updateEntityPropertyValues.ts)_
 
 ## `joystream-cli council:info`
 
