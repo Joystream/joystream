@@ -38,7 +38,7 @@ yarn workspace @joystream/cd-schemas initialize:dev
 
 # Fixes Error: No active storage providers available
 echo "Waiting for ipfs name registration"
-sleep 3m
+sleep 120
 
 echo "Creating channel..."
 yarn joystream-cli media:createChannel \
