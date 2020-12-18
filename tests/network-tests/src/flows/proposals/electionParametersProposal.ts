@@ -2,9 +2,13 @@ import { Api } from '../../Api'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 // Election parameters proposal scenario
 export default async function electionParametersProposal(api: Api, env: NodeJS.ProcessEnv) {
+  const debug = Debugger('electionParametersProposal')
+  debug('Started')
+
   // Pre-Conditions: some members and an elected council
   const council = await api.getCouncil()
   assert.notEqual(council.length, 0)
@@ -13,4 +17,6 @@ export default async function electionParametersProposal(api: Api, env: NodeJS.P
 
   const electionParametersProposalFixture = new ElectionParametersProposalFixture(api, proposer)
   await new FixtureRunner(electionParametersProposalFixture).run()
+
+  debug('Done')
 }

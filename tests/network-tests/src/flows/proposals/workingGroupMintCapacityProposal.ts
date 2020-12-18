@@ -4,8 +4,12 @@ import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from 
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+  const debug = Debugger(`flow:workingGroupMintCapacityProposal:${group}`)
+  debug('Started')
+
   const mintCapacityIncrement: BN = new BN(env.MINT_CAPACITY_INCREMENT!)
 
   // Pre-conditions: members and council
@@ -30,4 +34,6 @@ export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.Pro
 
   // Approve mint capacity
   await new FixtureRunner(voteForProposalFixture).run()
+
+  debug('Done')
 }

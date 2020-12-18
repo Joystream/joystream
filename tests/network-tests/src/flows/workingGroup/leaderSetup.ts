@@ -5,6 +5,7 @@ import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 // Worker application happy case scenario
 export default async function leaderSetup(
@@ -12,9 +13,11 @@ export default async function leaderSetup(
   env: NodeJS.ProcessEnv,
   group: WorkingGroups
 ): Promise<KeyringPair> {
-  const lead = await api.getGroupLead(group)
+  const debug = Debugger(`flow:leaderSetup:${group}`)
+  debug('Started')
 
-  assert(!lead, `Lead is already set`)
+  const existingLead = await api.getGroupLead(group)
+  assert.equal(existingLead, undefined, 'Lead is already set')
 
   const leadKeyPair = api.createKeyPairs(1)[0]
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
@@ -40,8 +43,10 @@ export default async function leaderSetup(
   await new FixtureRunner(leaderHiringHappyCaseFixture).run()
 
   const hiredLead = await api.getGroupLead(group)
-  assert(hiredLead, `${group} group Lead was not hired!`)
+  assert.notEqual(hiredLead, undefined, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
+
+  debug('Done')
 
   return leadKeyPair
 }

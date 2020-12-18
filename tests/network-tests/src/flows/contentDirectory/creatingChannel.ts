@@ -5,6 +5,7 @@ import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export function createSimpleChannelFixture(api: Api): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
@@ -30,6 +31,9 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
 }
 
 export default async function channelCreation(api: Api, query: QueryNodeApi): Promise<void> {
+  const debug = Debugger('flow:creatingChannel')
+  debug('Started')
+
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
   await new FixtureRunner(createChannelHappyCaseFixture).run()
@@ -41,4 +45,6 @@ export default async function channelCreation(api: Api, query: QueryNodeApi): Pr
   const result = await query.getChannelbyHandle(createChannelHappyCaseFixture.channelEntity.handle)
 
   assertChannelMatchQueriedResult(result.data.channels[0], createChannelHappyCaseFixture.channelEntity)
+
+  debug('Done')
 }

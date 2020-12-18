@@ -3,8 +3,12 @@ import { Api } from '../../Api'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
+  const debug = Debugger('flow:validatorCountProposal')
+  debug('Started')
+
   // Pre-conditions: members and council
   const council = await api.getCouncil()
   assert(council.length)
@@ -19,4 +23,6 @@ export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
     validatorCountIncrement
   )
   await new FixtureRunner(validatorCountProposalFixture).run()
+
+  debug('Done')
 }

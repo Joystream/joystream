@@ -12,9 +12,13 @@ import { OpeningId } from '@joystream/types/hiring'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 // Manage worker as worker
 export default async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+  const debug = Debugger(`manageWorkerAsWorker:${group}`)
+  debug('Started')
+
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -88,4 +92,6 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
   const updateRoleAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(api, workerId, group)
   // Update role account
   await new FixtureRunner(updateRoleAccountFixture).run()
+
+  debug('Done')
 }

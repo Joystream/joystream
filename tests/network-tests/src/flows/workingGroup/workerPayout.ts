@@ -14,9 +14,13 @@ import { ProposalId } from '@joystream/types/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 // Worker payout scenario
 export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+  const debug = Debugger(`flow:workerPayout:${group}`)
+  debug('Started')
+
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
@@ -28,6 +32,8 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
   const openingActivationDelay: BN = new BN(0)
 
   const lead = await api.getGroupLead(group)
+  assert(lead)
+
   const newMembers = api.createKeyPairs(5).map((key) => key.address)
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
@@ -96,4 +102,6 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
   const awaitPayoutFixture: AwaitPayoutFixture = new AwaitPayoutFixture(api, workerId, group)
   // Await worker payout
   await new FixtureRunner(awaitPayoutFixture).run()
+
+  debug('Done')
 }

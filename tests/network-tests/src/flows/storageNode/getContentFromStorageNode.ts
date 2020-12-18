@@ -6,8 +6,12 @@ import { registry } from '@joystream/types'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Utils } from '../../utils'
+import Debugger from 'debug'
 
 export default async function getContentFromStorageNode(api: Api, query: QueryNodeApi): Promise<void> {
+  const debug = Debugger('flow:getContentFromStorageNode')
+  debug('Started')
+
   const videoTitle = 'Storage node test'
 
   // Temporary solution (wait 2 minutes)
@@ -37,4 +41,6 @@ export default async function getContentFromStorageNode(api: Api, query: QueryNo
   const contentLenght = Number.parseInt(response.headers['content-length'])
 
   assert.equal(contentLenght, dataObject!.size_in_bytes.toJSON(), 'Content should be same size')
+
+  debug('Done')
 }

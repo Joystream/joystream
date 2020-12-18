@@ -5,8 +5,12 @@ import { UpdateRuntimeFixture } from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
+  const debug = Debugger('flow:updateRuntime')
+  debug('Started')
+
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const runtimePath: string = env.RUNTIME_WASM_PATH!
 
@@ -26,4 +30,6 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
     paidTerms
   )
   await new FixtureRunner(createMembershipsFixture).run()
+
+  debug('Done')
 }

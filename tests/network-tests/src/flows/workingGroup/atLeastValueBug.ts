@@ -5,10 +5,9 @@ import { assert } from 'chai'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-const debug = Debugger('flow:atLeastValueBug')
-
 // Zero at least value bug scenario
 export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessEnv) {
+  const debug = Debugger('flow:atLeastValueBug')
   debug('Started')
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
@@ -18,7 +17,7 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
   // Pre-conditions
   // A hired lead
   const lead = await api.getGroupLead(WorkingGroups.StorageWorkingGroup)
-  assert(lead)
+  assert.notEqual(lead, undefined)
 
   const addWorkerOpeningWithoutStakeFixture = new AddWorkerOpeningFixture(
     api,
@@ -31,6 +30,7 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
 
   // Add worker opening with 0 stake, expect failure!
   await new FixtureRunner(addWorkerOpeningWithoutStakeFixture).run()
+
   assert.equal(
     addWorkerOpeningWithoutStakeFixture.getCreatedOpeningId(),
     undefined,
@@ -48,6 +48,7 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
 
   // Add worker opening with 0 unstaking period, expect failure!
   await new FixtureRunner(addWorkerOpeningWithoutUnstakingPeriodFixture).run()
+
   assert.equal(
     addWorkerOpeningWithoutUnstakingPeriodFixture.getCreatedOpeningId(),
     undefined,

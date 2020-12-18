@@ -5,6 +5,7 @@ import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export function createVideoReferencingChannelFixture(api: Api, handle: string): CreateVideoFixture {
   const videoEntity: VideoEntity = {
@@ -55,6 +56,9 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
 }
 
 export default async function createVideo(api: Api, query: QueryNodeApi): Promise<void> {
+  const debug = Debugger('flow:creatingVideo')
+  debug('Started')
+
   const channelTitle = 'New channel example'
   const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api, channelTitle)
 
@@ -106,4 +110,6 @@ export default async function createVideo(api: Api, query: QueryNodeApi): Promis
   videoFullTextSearchResult = await query.performFullTextSearchOnVideoTitle('MediaVideo')
 
   assert(videoFullTextSearchResult.data.search.length === 0, 'Should be empty')
+
+  debug('Done')
 }

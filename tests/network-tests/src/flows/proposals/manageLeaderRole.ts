@@ -18,8 +18,12 @@ import { ProposalId } from '@joystream/types/proposals'
 import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
 export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+  const debug = Debugger(`flow:managerLeaderRole:${group}`)
+  debug('Started')
+
   const leaderAccount = api.createKeyPairs(1)[0].address
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
@@ -180,4 +184,6 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
 
   const maybeLead = await api.getGroupLead(group)
   assert(!maybeLead)
+
+  debug('Done')
 }

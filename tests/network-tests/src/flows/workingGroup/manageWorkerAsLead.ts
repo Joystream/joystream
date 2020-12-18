@@ -16,8 +16,14 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
 // Manage worker as lead scenario
-export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
-  const debug = Debugger(`manageWorker:${group}`)
+export default async function manageWorkerAsLead(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  group: WorkingGroups
+): Promise<void> {
+  const debug = Debugger(`manageWorkerAsLead:${group}`)
+  debug('Started')
+
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -44,6 +50,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
   )
   // Add worker opening
   await new FixtureRunner(addWorkerOpeningFixture).run()
+  assert(addWorkerOpeningFixture.getCreatedOpeningId())
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -55,8 +62,10 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     group
   )
   await new FixtureRunner(applyForWorkerOpeningFixture).run()
+  const applicationIds = applyForWorkerOpeningFixture.getApplicationIds()
+  assert.equal(applicants.length, applicationIds.length)
 
-  const applicationIdsToHire = applyForWorkerOpeningFixture.getApplicationIds().slice(0, 2)
+  const applicationIdsToHire = applicationIds.slice(0, 2)
 
   // Begin application review
   const beginApplicationReviewFixture = new BeginApplicationReviewFixture(
@@ -92,4 +101,6 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
 
   // Terminate workers
   await new FixtureRunner(terminateRoleFixture).run()
+
+  debug('Done')
 }
