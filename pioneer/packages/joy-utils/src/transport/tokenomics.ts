@@ -4,14 +4,23 @@ import CouncilTransport from './council';
 import WorkingGroupsTransport from './workingGroups';
 import { APIQueryCache } from './APIQueryCache';
 import { Seats } from '@joystream/types/council';
-import { Option, u32, Vec } from '@polkadot/types';
+import { Option, u32 } from '@polkadot/types';
 import { BlockNumber, BalanceOf, Exposure } from '@polkadot/types/interfaces';
 import { WorkerId } from '@joystream/types/working-group';
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
 import { StakeId, Stake } from '@joystream/types/stake';
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
 import { calculateValidatorsRewardsPerEra } from '../functions/staking';
-import { WorkingGroupKey } from '@joystream/types/common';
+import { WorkingGroupKey, PostId } from '@joystream/types/common';
+import { MemberId } from '@joystream/types/members';
+import { CategoryId } from '@joystream/types/forum';
+import { MintId, Mint } from '@joystream/types/mint';
+import { genericTypes } from '../consts/tokenomics';
+
+import { ProposalId, ProposalDetails, Proposal } from '@joystream/types/proposals';
+
+import HISTORICAL_PROPOSALS from '../transport/static/historical-proposals.json';
+import { Entity, EntityId } from '@joystream/types/augment-codec/all';
 
 export default class TokenomicsTransport extends BaseTransport {
   private councilT: CouncilTransport;
@@ -296,16 +305,17 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async networkStatistics () {
+    const entityEntries = await this.entriesByIds<EntityId, Entity>(this.api.query.contentDirectory.entityById);
     const blockHeight = (await this.api.derive.chain.bestNumber()).toNumber();
     const numberOfMembers = (await this.api.query.members.nextMemberId() as MemberId).toNumber();
-    const content = await this.api.query.dataDirectory.knownContentIds() as Vec<ContentId>;
-    const numberOfChannels = (await this.api.query.contentWorkingGroup.nextChannelId() as ChannelId).toNumber() - 1;
+    const content = entityEntries.filter(([, entity]) => entity.class_id.toNumber() === 10).length;
+    const numberOfChannels = entityEntries.filter(([, entity]) => entity.class_id.toNumber() === 1).length;
     const proposalCount = (await this.api.query.proposalsEngine.proposalCount() as u32).toNumber();
     const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber() - 1;
     const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber() - 1;
     const [councilMintId, contentCuratorMintId, storageMintId] = await Promise.all([
       (await this.api.query.council.councilMint()) as MintId,
-      (await this.api.query.contentWorkingGroup.mint()) as MintId,
+      (await this.api.query.contentDirectoryWorkingGroup.mint()) as MintId,
       (await this.api.query.storageWorkingGroup.mint()) as MintId
     ]);
     const [councilMint, contentMint, storageMint] = await this.api.query.minting.mints.multi<Mint>([
@@ -317,7 +327,7 @@ export default class TokenomicsTransport extends BaseTransport {
     return {
       blockHeight,
       numberOfMembers,
-      content: content.length,
+      content,
       numberOfChannels,
       proposalCount,
       historicalProposals: HISTORICAL_PROPOSALS.length,
