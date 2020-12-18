@@ -35,6 +35,8 @@
 //! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
 //! updates member profile verification status.
 //! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) - updates the referral cut.
+//! - [transfer_invites](./struct.Module.html#method.transfer_invites) - transfers the invites
+//! from one member to another.
 //!
 //! [Joystream handbook description](https://joystream.gitbook.io/joystream-handbook/subsystems/membership)
 
@@ -65,10 +67,13 @@ pub trait Trait:
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines the default membership fee.
-    type MembershipFee: Get<BalanceOf<Self>>;
+    type DefaultMembershipPrice: Get<BalanceOf<Self>>;
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+
+    /// Defines the default balance for the invited member.
+    type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
 }
 
 // Default user info constraints
@@ -77,6 +82,7 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
+pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
@@ -110,6 +116,9 @@ pub struct MembershipObject<AccountId> {
     /// An indicator that reflects whether the implied real world identity in the profile
     /// corresponds to the true actor behind the membership.
     pub verified: bool,
+
+    /// Defines how many invitations this member has
+    pub invites: u32,
 }
 
 // Contains valid or default user details
@@ -145,12 +154,34 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     pub referrer_id: Option<MemberId>,
 }
 
+/// Parameters for the invite_member extrinsic.
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+pub struct InviteMembershipParameters<AccountId, MemberId> {
+    /// Inviting member id.
+    pub inviting_member_id: MemberId,
+
+    /// New member root account.
+    pub root_account: AccountId,
+
+    /// New member controller account.
+    pub controller_account: AccountId,
+
+    /// New member user name.
+    pub name: Option<Vec<u8>>,
+
+    /// New member handle.
+    pub handle: Option<Vec<u8>>,
+
+    /// New member avatar URI.
+    pub avatar_uri: Option<Vec<u8>>,
+
+    /// New member 'about' text.
+    pub about: Option<Vec<u8>>,
+}
+
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// New members not allowed.
-        NewMembersNotAllowed,
-
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
@@ -186,6 +217,15 @@ decl_error! {
 
         /// Cannot find a membership for a provided referrer id.
         ReferrerIsNotMember,
+
+        /// Should be a member to receive invites.
+        CannotTransferInvitesForNotMember,
+
+        /// Not enough invites to perform an operation.
+        NotEnoughInvites,
+
+        /// Membership working group leader is not set.
+        WorkingGroupLeaderNotSet,
     }
 }
 
@@ -211,9 +251,6 @@ decl_storage! {
         pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
 
-        /// Is the platform is accepting new members or not.
-        pub NewMembershipsAllowed get(fn new_memberships_allowed) : bool = true;
-
         /// Minimum allowed handle length.
         pub MinHandleLength get(fn min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
 
@@ -231,6 +268,18 @@ decl_storage! {
 
         /// Referral cut to receive during on buying the membership.
         pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
+
+        /// Current membership price.
+        pub MembershipPrice get(fn membership_price) : BalanceOf<T> =
+            T::DefaultMembershipPrice::get();
+
+        /// Initial invitation count for the newly bought membership.
+        pub InitialInvitationCount get(fn initial_invitation_count) : u32  =
+            DEFAULT_MEMBER_INVITES_COUNT;
+
+        /// Initial invitation balance for the invited member.
+        pub InitialInvitationBalance get(fn initial_invitation_balance) : BalanceOf<T> =
+            T::DefaultInitialInvitationBalance::get();
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -247,6 +296,7 @@ decl_storage! {
                     &member.root_account,
                     &member.controller_account,
                     &checked_user_info,
+                    Zero::zero(),
                 ).expect("Importing Member Failed");
 
                 // ensure imported member id matches assigned id
@@ -266,15 +316,17 @@ decl_event! {
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
         ReferralCutUpdated(Balance),
+        InvitesTransferred(MemberId, MemberId, u32),
+        MembershipPriceUpdated(Balance),
+        InitialInvitationBalanceUpdated(Balance),
+        LeaderInvitationQuotaUpdated(u32),
+        InitialInvitationCountUpdated(u32),
     }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
-
-        /// Exports const - membership fee.
-        const MembershipFee: BalanceOf<T> = T::MembershipFee::get();
 
         /// Non-members can buy membership.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -284,12 +336,9 @@ decl_module! {
         ) {
             let who = ensure_signed(origin)?;
 
-            // Make sure we are accepting new memberships.
-            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembersNotAllowed);
+            let fee = Self::membership_price();
 
-            let fee = T::MembershipFee::get();
-
-            // Ensure enough free balance to cover terms fees.
+            // Ensure enough free balance to cover membership fee.
             ensure!(
                 balances::Module::<T>::usable_balance(&who) >= fee,
                 Error::<T>::NotEnoughBalanceToBuyMembership
@@ -318,6 +367,7 @@ decl_module! {
                 &params.root_account,
                 &params.controller_account,
                 &user_info,
+                Self::initial_invitation_count(),
             )?;
 
             // Collect membership fee (just burn it).
@@ -475,10 +525,7 @@ decl_module! {
 
         /// Updates membership referral cut. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_referral_cut(
-            origin,
-            value: BalanceOf<T>
-        ) {
+        pub fn set_referral_cut(origin, value: BalanceOf<T>) {
             ensure_root(origin)?;
 
             //
@@ -488,6 +535,154 @@ decl_module! {
             <ReferralCut<T>>::put(value);
 
             Self::deposit_event(RawEvent::ReferralCutUpdated(value));
+        }
+
+        /// Transfers invites from one member to another.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_invites(
+            origin,
+            source_member_id: T::MemberId,
+            target_member_id: T::MemberId,
+            number_of_invites: u32
+        ) {
+            Self::ensure_member_controller_account_signed(origin, &source_member_id)?;
+
+            let source_membership = Self::ensure_membership(source_member_id)?;
+            Self::ensure_membership_with_error(
+                target_member_id,
+                Error::<T>::CannotTransferInvitesForNotMember
+            )?;
+
+            ensure!(source_membership.invites >= number_of_invites, Error::<T>::NotEnoughInvites);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Decrease source member invite number.
+            <MembershipById<T>>::mutate(&source_member_id, |membership| {
+                membership.invites = membership.invites.saturating_sub(number_of_invites);
+            });
+
+            // Increase target member invite number.
+            <MembershipById<T>>::mutate(&target_member_id, |membership| {
+                membership.invites = membership.invites.saturating_add(number_of_invites);
+            });
+
+            Self::deposit_event(RawEvent::InvitesTransferred(
+                source_member_id,
+                target_member_id,
+                number_of_invites
+            ));
+        }
+
+        /// Invite a new member.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn invite_member(
+            origin,
+            params: InviteMembershipParameters<T::AccountId, T::MemberId>
+        ) {
+            let membership = Self::ensure_member_controller_account_signed(
+                origin,
+                &params.inviting_member_id
+            )?;
+
+            ensure!(membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
+
+            // Verify user parameters.
+            let user_info = Self::check_user_registration_info(
+                params.name,
+                params.handle,
+                params.avatar_uri,
+                params.about
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let member_id = Self::insert_member(
+                &params.root_account,
+                &params.controller_account,
+                &user_info,
+                Zero::zero(),
+            )?;
+
+            // Save the updated profile.
+            <MembershipById<T>>::mutate(&member_id, |membership| {
+                membership.invites = membership.invites.saturating_sub(1);
+            });
+
+            // Fire the event.
+            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+        }
+
+        /// Updates membership price. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_membership_price(origin, new_price: BalanceOf<T>) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipPrice<T>>::put(new_price);
+
+            Self::deposit_event(RawEvent::MembershipPriceUpdated(new_price));
+        }
+
+        /// Updates leader invitation quota. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_leader_invitation_quota(origin, invitation_quota: u32) {
+            ensure_root(origin)?;
+
+            let leader_member_id = T::WorkingGroup::get_leader_member_id();
+
+            if let Some(member_id) = leader_member_id{
+                Self::ensure_membership(member_id)?;
+            }
+
+            ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(member_id) = leader_member_id{
+                <MembershipById<T>>::mutate(&member_id, |membership| {
+                        membership.invites = invitation_quota;
+                });
+
+                Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
+            }
+        }
+
+        /// Updates initial invitation balance for a invited member. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_initial_invitation_balance(origin, new_initial_balance: BalanceOf<T>) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <InitialInvitationBalance<T>>::put(new_initial_balance);
+
+            Self::deposit_event(RawEvent::InitialInvitationBalanceUpdated(new_initial_balance));
+        }
+
+        /// Updates initial invitation count for a member. Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_initial_invitation_count(origin, new_invitation_count: u32) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            InitialInvitationCount::put(new_invitation_count);
+
+            Self::deposit_event(RawEvent::InitialInvitationCountUpdated(new_invitation_count));
         }
     }
 }
@@ -507,24 +702,6 @@ impl<T: Trait> Module<T> {
             Ok(Self::membership(&id))
         } else {
             Err(error)
-        }
-    }
-
-    /// Ensure that given member has given account as the controller account
-    pub fn ensure_is_controller_account_for_member(
-        member_id: &T::MemberId,
-        account: &T::AccountId,
-    ) -> Result<Membership<T>, Error<T>> {
-        if MembershipById::<T>::contains_key(member_id) {
-            let membership = MembershipById::<T>::get(member_id);
-
-            if membership.controller_account == *account {
-                Ok(membership)
-            } else {
-                Err(Error::<T>::ControllerAccountRequired)
-            }
-        } else {
-            Err(Error::<T>::MemberProfileNotFound)
         }
     }
 
@@ -591,6 +768,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<ValidatedUserInfo, Error<T>> {
         // Handle is required during registration
         let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
+        Self::ensure_unique_handle(&handle)?;
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&about.unwrap_or_default());
@@ -607,14 +785,13 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    // Inserts a member using a validated information. Sets handle, accounts caches.
+    // Inserts a member using a validated information. Sets handle, accounts caches, etc..
     fn insert_member(
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
         user_info: &ValidatedUserInfo,
+        allowed_invites: u32,
     ) -> Result<T::MemberId, Error<T>> {
-        Self::ensure_unique_handle(&user_info.handle)?;
-
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
@@ -625,6 +802,7 @@ impl<T: Trait> Module<T> {
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
+            invites: allowed_invites,
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
@@ -641,44 +819,40 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    /// Ensure origin corresponds to the controller account of the member.
-    pub fn ensure_member_controller_account_signed(
+    // Ensure origin corresponds to the controller account of the member.
+    fn ensure_member_controller_account_signed(
         origin: T::Origin,
         member_id: &T::MemberId,
-    ) -> Result<T::AccountId, Error<T>> {
+    ) -> Result<Membership<T>, Error<T>> {
         // Ensure transaction is signed.
-        let signer_account = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
+        let signer_account_id = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
 
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
-
-        ensure!(
-            membership.controller_account == signer_account,
-            Error::<T>::ControllerAccountRequired
-        );
-
-        Ok(signer_account)
+        Self::ensure_is_controller_account_for_member(member_id, &signer_account_id)
     }
 
-    /// Validates that a member has the controller account.
-    pub fn ensure_member_controller_account(
-        signer_account: &T::AccountId,
+    /// Ensure that given member has given account as the controller account
+    pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
-    ) -> Result<(), Error<T>> {
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
+        account: &T::AccountId,
+    ) -> Result<Membership<T>, Error<T>> {
+        ensure!(
+            MembershipById::<T>::contains_key(member_id),
+            Error::<T>::MemberProfileNotFound
+        );
+
+        let membership = MembershipById::<T>::get(member_id);
 
         ensure!(
-            membership.controller_account == *signer_account,
+            membership.controller_account == *account,
             Error::<T>::ControllerAccountRequired
         );
 
-        Ok(())
+        Ok(membership)
     }
 
     // Calculate current referral bonus. It minimum between membership fee and referral cut.
     pub(crate) fn get_referral_bonus() -> BalanceOf<T> {
-        let membership_fee = T::MembershipFee::get();
+        let membership_fee = Self::membership_price();
         let referral_cut = Self::referral_cut();
 
         membership_fee.min(referral_cut)

@@ -5,6 +5,7 @@ pub use crate::{GenesisConfig, Trait};
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -81,7 +82,7 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -102,6 +103,7 @@ impl common::Trait for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -220,8 +222,9 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -241,6 +244,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         } else {
             Err(DispatchError::BadOrigin)
         }
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+        Some(ALICE_MEMBER_ID)
     }
 }
 
