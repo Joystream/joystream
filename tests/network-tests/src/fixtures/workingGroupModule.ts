@@ -239,7 +239,10 @@ export class WithdrawApplicationFixture extends BaseFixture {
     this.api.treasuryTransferBalanceToAccounts(roleAccounts, withdrawApplicaitonFee)
 
     // Application withdrawal
-    await this.api.batchWithdrawActiveApplications(this.applicationIds, this.module)
+    const withdrawls = await this.api.batchWithdrawActiveApplications(this.applicationIds, this.module)
+    withdrawls.forEach((withdrawl) =>
+      this.expectDispatchSuccess(withdrawl, 'Application withdrawl should have succeedeed')
+    )
   }
 }
 
@@ -543,7 +546,10 @@ export class TerminateApplicationsFixture extends BaseFixture {
     this.api.treasuryTransferBalance(leadAccount, terminateApplicationFee.muln(this.applicationIds.length))
 
     // Terminate worker applications
-    await this.api.batchTerminateApplication(leadAccount, this.applicationIds, this.module)
+    const terminations = await this.api.batchTerminateApplication(leadAccount, this.applicationIds, this.module)
+    terminations.forEach((termination) =>
+      this.expectDispatchSuccess(termination, 'Application should have been terminated')
+    )
   }
 }
 

@@ -826,10 +826,6 @@ export class Api {
     }
   }
 
-  public async expectRuntimeUpgraded(): Promise<Event> {
-    return this.waitForSystemEvent('RuntimeUpdated')
-  }
-
   // Resolves to true when proposal finalized and executed successfully
   // Resolved to false when proposal finalized and execution fails
   public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {

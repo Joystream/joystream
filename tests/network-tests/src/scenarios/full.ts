@@ -29,12 +29,13 @@ const scenario = async () => {
   const provider = new WsProvider(nodeUrl)
   const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
 
+  api.enableTxLogs()
+
   await Promise.all([creatingMemberships(api, env), councilSetup(api, env)])
 
   // Runtime is configured for MaxActiveProposalLimit = 5
   // So we should ensure we don't exceed that number of active proposals
   // which limits the number of concurrent tests that create proposals
-  api.enableTxLogs()
   await Promise.all([
     electionParametersProposal(api, env),
     spendingProposal(api, env),
