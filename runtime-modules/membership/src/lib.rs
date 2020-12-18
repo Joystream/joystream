@@ -152,6 +152,13 @@ impl<AccountId: Ord> MembershipObject<AccountId> {
         self.staking_account_ids.contains_key(&staking_account_id)
     }
 
+    /// Verifies confirmation of the staking account.
+    pub fn staking_account_confirmed(&self, staking_account_id: &AccountId) -> bool {
+        let staking_account_confirmation = self.staking_account_ids.get(staking_account_id);
+
+        staking_account_confirmation.copied().unwrap_or(false)
+    }
+
     /// Returns current staking account number.
     pub fn staking_account_count(&self) -> u32 {
         self.staking_account_ids.len() as u32
@@ -370,6 +377,7 @@ decl_event! {
         InitialInvitationCountUpdated(u32),
         StakingAccountAdded(MemberId, AccountId),
         StakingAccountRemoved(MemberId, AccountId),
+        StakingAccountConfirmed(MemberId, AccountId),
     }
 }
 
@@ -765,7 +773,7 @@ decl_module! {
             Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
         }
 
-        /// Remove staking account candidate for a member.
+        /// Remove staking account for a member.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_staking_account(
             origin,
@@ -788,6 +796,32 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::StakingAccountRemoved(member_id, staking_account_id));
+        }
+
+        /// Confirm staking account candidate for a member.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn confirm_staking_account(
+            origin,
+            member_id: T::MemberId,
+        ) {
+            let staking_account_id = ensure_signed(origin)?;
+
+            let membership = Self::ensure_membership(member_id)?;
+
+            ensure!(
+                membership.staking_account_exists(&staking_account_id),
+                Error::<T>::StakingAccountDoesntExist
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&member_id, |membership| {
+                membership.confirm_staking_account(staking_account_id.clone());
+            });
+
+            Self::deposit_event(RawEvent::StakingAccountConfirmed(member_id, staking_account_id));
         }
     }
 }

@@ -855,3 +855,59 @@ fn remove_staking_account_candidate_fails_with_missing_staking_account_id() {
             .call_and_assert(Err(Error::<Test>::StakingAccountDoesntExist.into()));
     });
 }
+
+#[test]
+fn confirm_staking_account_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        let membership = Membership::membership(ALICE_MEMBER_ID);
+        assert!(membership.staking_account_ids.get(&BOB_ACCOUNT_ID).unwrap());
+
+        EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountConfirmed(
+            ALICE_MEMBER_ID,
+            BOB_ACCOUNT_ID,
+        ));
+    });
+}
+
+#[test]
+fn confirm_staking_account_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        ConfirmStakingAccountFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn confirm_staking_account_fails_with_invalid_member_id() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+        let invalid_member_id = 222;
+
+        ConfirmStakingAccountFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+    });
+}
+
+#[test]
+fn confirm_staking_account_candidate_fails_with_missing_staking_account_id() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        ConfirmStakingAccountFixture::default()
+            .call_and_assert(Err(Error::<Test>::StakingAccountDoesntExist.into()));
+    });
+}
