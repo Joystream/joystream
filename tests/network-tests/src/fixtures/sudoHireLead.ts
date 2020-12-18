@@ -1,4 +1,4 @@
-import { Fixture } from '../Fixture'
+import { BaseFixture } from '../Fixture'
 import {
   SudoAddLeaderOpeningFixture,
   ApplyForOpeningFixture,
@@ -12,8 +12,7 @@ import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 import { assert } from 'chai'
 
-export class SudoHireLeadFixture implements Fixture {
-  private api: Api
+export class SudoHireLeadFixture extends BaseFixture {
   private leadAccount: string
   private paidTerms: PaidTermId
   private applicationStake: BN
@@ -36,7 +35,7 @@ export class SudoHireLeadFixture implements Fixture {
     payoutAmount: BN,
     workingGroup: WorkingGroups
   ) {
-    this.api = api
+    super(api)
     this.leadAccount = leadAccount
     this.paidTerms = paidTerms
     this.applicationStake = applicationStake
@@ -48,7 +47,7 @@ export class SudoHireLeadFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.api,
       [this.leadAccount],

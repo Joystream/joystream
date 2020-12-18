@@ -4,6 +4,7 @@ import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
+import { FixtureRunner } from '../../Fixture'
 
 export function createVideoReferencingChannelFixture(api: Api, handle: string): CreateVideoFixture {
   const videoEntity: VideoEntity = {
@@ -53,11 +54,11 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
   assert.equal(queriedVideo.isPublic, video.isPublic, 'Should be equal')
 }
 
-export default async function createVideo(api: Api, query: QueryNodeApi) {
+export default async function createVideo(api: Api, query: QueryNodeApi): Promise<void> {
   const channelTitle = 'New channel example'
   const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api, channelTitle)
 
-  await createVideoHappyCaseFixture.runner()
+  await new FixtureRunner(createVideoHappyCaseFixture).run()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)

@@ -3,11 +3,6 @@ import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
 
-export interface Fixture {
-  runner(): Promise<void>
-  // executionError(): Error | undefined
-}
-
 export class BaseFixture {
   protected api: Api
   private executed = false

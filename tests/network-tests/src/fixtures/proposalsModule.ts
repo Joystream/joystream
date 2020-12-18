@@ -2,15 +2,14 @@ import { Api, WorkingGroups } from '../Api'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { ProposalId } from '@joystream/types/proposals'
-import { Fixture } from '../Fixture'
+import { BaseFixture } from '../Fixture'
 import { assert } from 'chai'
 import { ApplicationId, OpeningId } from '@joystream/types/hiring'
 import { WorkerId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
 import { EventRecord } from '@polkadot/types/interfaces'
 
-export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
-  private api: Api
+export class CreateWorkingGroupLeaderOpeningFixture extends BaseFixture {
   private proposer: string
   private applicationStake: BN
   private roleStake: BN
@@ -19,7 +18,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, applicationStake: BN, roleStake: BN, workingGroup: string) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.applicationStake = applicationStake
     this.roleStake = roleStake
@@ -30,7 +29,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing working group lead opening proposal ' + uuid().substring(0, 8)
@@ -72,8 +71,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   }
 }
 
-export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture {
-  private api: Api
+export class BeginWorkingGroupLeaderApplicationReviewFixture extends BaseFixture {
   private proposer: string
   private openingId: OpeningId
   private workingGroup: string
@@ -81,7 +79,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, openingId: OpeningId, workingGroup: string) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.openingId = openingId
     this.workingGroup = workingGroup
@@ -91,7 +89,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
@@ -115,8 +113,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
   }
 }
 
-export class FillLeaderOpeningProposalFixture implements Fixture {
-  private api: Api
+export class FillLeaderOpeningProposalFixture extends BaseFixture {
   private proposer: string
   private applicationId: ApplicationId
   private firstRewardInterval: BN
@@ -137,7 +134,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     openingId: OpeningId,
     workingGroup: WorkingGroups
   ) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.applicationId = applicationId
     this.firstRewardInterval = firstRewardInterval
@@ -151,7 +148,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8)
@@ -182,8 +179,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
   }
 }
 
-export class TerminateLeaderRoleProposalFixture implements Fixture {
-  private api: Api
+export class TerminateLeaderRoleProposalFixture extends BaseFixture {
   private proposer: string
   private slash: boolean
   private workingGroup: WorkingGroups
@@ -191,7 +187,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, slash: boolean, workingGroup: WorkingGroups) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.slash = slash
     this.workingGroup = workingGroup
@@ -201,7 +197,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
@@ -230,8 +226,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
   }
 }
 
-export class SetLeaderRewardProposalFixture implements Fixture {
-  private api: Api
+export class SetLeaderRewardProposalFixture extends BaseFixture {
   private proposer: string
   private payoutAmount: BN
   private workingGroup: WorkingGroups
@@ -239,7 +234,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, payoutAmount: BN, workingGroup: WorkingGroups) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.payoutAmount = payoutAmount
     this.workingGroup = workingGroup
@@ -249,7 +244,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8)
@@ -277,8 +272,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
   }
 }
 
-export class DecreaseLeaderStakeProposalFixture implements Fixture {
-  private api: Api
+export class DecreaseLeaderStakeProposalFixture extends BaseFixture {
   private proposer: string
   private stakeDecrement: BN
   private workingGroup: WorkingGroups
@@ -286,7 +280,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, stakeDecrement: BN, workingGroup: WorkingGroups) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.stakeDecrement = stakeDecrement
     this.workingGroup = workingGroup
@@ -296,7 +290,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8)
@@ -324,8 +318,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
   }
 }
 
-export class SlashLeaderProposalFixture implements Fixture {
-  private api: Api
+export class SlashLeaderProposalFixture extends BaseFixture {
   private proposer: string
   private slashAmount: BN
   private workingGroup: WorkingGroups
@@ -333,7 +326,7 @@ export class SlashLeaderProposalFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, slashAmount: BN, workingGroup: WorkingGroups) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.slashAmount = slashAmount
     this.workingGroup = workingGroup
@@ -343,7 +336,7 @@ export class SlashLeaderProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing slash leader stake proposal ' + uuid().substring(0, 8)
@@ -369,8 +362,7 @@ export class SlashLeaderProposalFixture implements Fixture {
   }
 }
 
-export class WorkingGroupMintCapacityProposalFixture implements Fixture {
-  private api: Api
+export class WorkingGroupMintCapacityProposalFixture extends BaseFixture {
   private proposer: string
   private mintCapacity: BN
   private workingGroup: WorkingGroups
@@ -378,7 +370,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
   private result: ProposalId | undefined
 
   constructor(api: Api, proposer: string, mintCapacity: BN, workingGroup: WorkingGroups) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.mintCapacity = mintCapacity
     this.workingGroup = workingGroup
@@ -388,7 +380,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing working group mint capacity proposal ' + uuid().substring(0, 8)
@@ -412,16 +404,15 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
   }
 }
 
-export class ElectionParametersProposalFixture implements Fixture {
-  private api: Api
+export class ElectionParametersProposalFixture extends BaseFixture {
   private proposerAccount: string
 
   constructor(api: Api, proposerAccount: string) {
-    this.api = api
+    super(api)
     this.proposerAccount = proposerAccount
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
@@ -534,20 +525,19 @@ export class ElectionParametersProposalFixture implements Fixture {
   }
 }
 
-export class SpendingProposalFixture implements Fixture {
-  private api: Api
+export class SpendingProposalFixture extends BaseFixture {
   private proposer: string
   private spendingBalance: BN
   private mintCapacity: BN
 
   constructor(api: Api, proposer: string, spendingBalance: BN, mintCapacity: BN) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.spendingBalance = spendingBalance
     this.mintCapacity = mintCapacity
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const description = 'spending proposal which is used for API network testing with some mock data'
     const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
@@ -595,16 +585,15 @@ export class SpendingProposalFixture implements Fixture {
   }
 }
 
-export class TextProposalFixture implements Fixture {
-  private api: Api
+export class TextProposalFixture extends BaseFixture {
   private proposer: string
 
   constructor(api: Api, proposer: string) {
-    this.api = api
+    super(api)
     this.proposer = proposer
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing text proposal ' + uuid().substring(0, 8)
@@ -635,18 +624,17 @@ export class TextProposalFixture implements Fixture {
   }
 }
 
-export class ValidatorCountProposalFixture implements Fixture {
-  private api: Api
+export class ValidatorCountProposalFixture extends BaseFixture {
   private proposer: string
   private validatorCountIncrement: BN
 
   constructor(api: Api, proposer: string, validatorCountIncrement: BN) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.validatorCountIncrement = validatorCountIncrement
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
@@ -684,18 +672,17 @@ export class ValidatorCountProposalFixture implements Fixture {
   }
 }
 
-export class UpdateRuntimeFixture implements Fixture {
-  private api: Api
+export class UpdateRuntimeFixture extends BaseFixture {
   private proposer: string
   private runtimePath: string
 
   constructor(api: Api, proposer: string, runtimePath: string) {
-    this.api = api
+    super(api)
     this.proposer = proposer
     this.runtimePath = runtimePath
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     // Setup
     const runtime: string = Utils.readRuntimeFromFile(this.runtimePath)
     const description = 'runtime upgrade proposal which is used for API network testing'
@@ -730,13 +717,12 @@ export class UpdateRuntimeFixture implements Fixture {
   }
 }
 
-export class VoteForProposalFixture implements Fixture {
-  private api: Api
+export class VoteForProposalFixture extends BaseFixture {
   private proposalNumber: ProposalId
   private events: EventRecord[] = []
 
   constructor(api: Api, proposalNumber: ProposalId) {
-    this.api = api
+    super(api)
     this.proposalNumber = proposalNumber
   }
 
@@ -744,7 +730,7 @@ export class VoteForProposalFixture implements Fixture {
     return this.events
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     const proposalVoteFee: BN = this.api.estimateVoteForProposalFee()
     const councilAccounts = await this.api.getCouncilAccounts()
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)

@@ -4,6 +4,7 @@ import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 export function createSimpleChannelFixture(api: Api): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
@@ -28,10 +29,10 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
   assert.equal(queriedChannel.isPublic, channel.isPublic, 'Should be equal')
 }
 
-export default async function channelCreation(api: Api, query: QueryNodeApi) {
+export default async function channelCreation(api: Api, query: QueryNodeApi): Promise<void> {
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
-  await createChannelHappyCaseFixture.runner()
+  await new FixtureRunner(createChannelHappyCaseFixture).run()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)

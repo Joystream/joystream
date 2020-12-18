@@ -11,7 +11,7 @@ export class CreateChannelFixture extends BaseFixture {
     this.channelEntity = channelEntity
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     await this.expectDispatchSuccess(
       this.api.createChannelEntity(this.channelEntity),
       'Create Channel should have succeeded'
@@ -27,7 +27,7 @@ export class CreateVideoFixture extends BaseFixture {
     this.videoEntity = videoEntity
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     await this.expectDispatchSuccess(this.api.createVideoEntity(this.videoEntity), 'Create Video should have succeeded')
   }
 }
@@ -42,7 +42,7 @@ export class UpdateChannelFixture extends BaseFixture {
     this.uniquePropValue = uniquePropValue
   }
 
-  public async runner(): Promise<void> {
+  public async execute(): Promise<void> {
     await this.expectDispatchSuccess(
       this.api.updateChannelEntity(this.channelUpdateInput, this.uniquePropValue),
       'Update Channel should have succeeded'
