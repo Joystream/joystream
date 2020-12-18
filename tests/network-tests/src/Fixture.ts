@@ -3,46 +3,45 @@ import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
 
-export class BaseFixture {
-  protected api: Api
-  private executed = false
+export abstract class BaseFixture {
+  protected readonly api: Api
+  private _executed = false
   // The reason of the "Unexpected" failure of running the fixture
-  private err: Error | undefined = undefined
+  private _err: Error | undefined = undefined
 
   constructor(api: Api) {
     this.api = api
   }
 
+  // Derviced classes must not override this
   public async runner(): Promise<void> {
-    this.executed = true
+    this._executed = true
     return this.execute()
   }
 
-  protected async execute(): Promise<void> {
-    return
-  }
+  abstract execute(): Promise<void>
 
   // Used by execution implementation to signal failure
   protected error(err: Error): void {
-    this.err = err
+    this._err = err
   }
 
-  public didExecute(): boolean {
-    return this.executed
+  get executed(): boolean {
+    return this._executed
   }
 
   public didFail(): boolean {
-    if (!this.didExecute()) {
+    if (!this.execute) {
       throw new Error('Trying to check execution result before running fixture')
     }
-    return this.err !== undefined
+    return this._err !== undefined
   }
 
   public executionError(): Error | undefined {
-    if (!this.didExecute()) {
+    if (!this.executed) {
       throw new Error('Trying to check execution result before running fixture')
     }
-    return this.err
+    return this._err
   }
 
   protected async expectDispatchError(
