@@ -1,6 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import inquirer from 'inquirer'
 import { InputParser } from '@joystream/cd-schemas'
+import ExitCodes from '../../ExitCodes'
 
 export default class CreateEntityCommand extends ContentDirectoryCommandBase {
   static description =
@@ -20,7 +21,11 @@ export default class CreateEntityCommand extends ContentDirectoryCommandBase {
 
   async run() {
     const { className } = this.parse(CreateEntityCommand).args
-    const { context } = this.parse(CreateEntityCommand).flags
+    let { context } = this.parse(CreateEntityCommand).flags
+
+    if (!context) {
+      context = await this.promptForContext()
+    }
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
@@ -28,9 +33,13 @@ export default class CreateEntityCommand extends ContentDirectoryCommandBase {
 
     const actor = await this.getActor(context, entityClass)
 
+    if (actor.isOfType('Member') && entityClass.class_permissions.any_member.isFalse) {
+      this.error('Choosen actor has no access to create an entity of this type', { exit: ExitCodes.AccessDenied })
+    }
+
     const answers: {
       [key: string]: string | number | null
-    } = await inquirer.prompt(this.getQuestionsFromClass(entityClass))
+    } = await inquirer.prompt(this.getQuestionsFromProperties(entityClass.properties.toArray()))
 
     this.jsonPrettyPrint(JSON.stringify(answers))
     await this.requireConfirmation('Do you confirm the provided input?')

@@ -12,6 +12,7 @@ import {
   EntityId,
   Actor,
   PropertyType,
+  Property,
 } from '@joystream/types/content-directory'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
@@ -248,7 +249,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async getAndParseKnownEntity<T>(id: string | number, className?: string): Promise<FlattenRelations<T>> {
     const entity = await this.getEntity(id, className)
-    return this.parseToKnownEntityJson<T>(entity)
+    return this.parseToEntityJson<T>(entity)
   }
 
   async entitiesByClassAndOwner(classNameOrId: number | string, ownerMemberId?: number): Promise<[EntityId, Entity][]> {
@@ -340,7 +341,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }, {} as Record<string, ParsedPropertyValue>)
   }
 
-  async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
+  async parseToEntityJson<T = unknown>(entity: Entity): Promise<FlattenRelations<T>> {
     const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
       this.parseStoredPropertyInnerValue(v.value)
@@ -381,12 +382,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   async getActor(context: typeof CONTEXTS[number], pickedClass: Class) {
     let actor: Actor
     if (context === 'Member') {
-      if (pickedClass.class_permissions.any_member.isFalse) {
-        this.error(`You're not allowed to createEntity of className: ${pickedClass.name.toString()}!`)
-      }
-
       const memberId = await this.getRequiredMemberId()
-
       actor = this.createType('Actor', { Member: memberId })
     } else if (context === 'Curator') {
       actor = await this.getCuratorContext([pickedClass.name.toString()])
@@ -399,45 +395,81 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return actor
   }
 
-  getQuestionsFromClass = (
-    classData: Class,
-    defaults?: { [key: string]: { 'value': unknown; locked: boolean } }
-  ): DistinctQuestion[] => {
-    return classData.properties.reduce((previousValue, { name, property_type: propertyType, required }, index) => {
+  isActorEntityController(actor: Actor, entity: Entity, isMaintainer: boolean): boolean {
+    const entityController = entity.entity_permissions.controller
+    return (
+      (isMaintainer && entityController.isOfType('Maintainers')) ||
+      (entityController.isOfType('Member') &&
+        actor.isOfType('Member') &&
+        entityController.asType('Member').eq(actor.asType('Member'))) ||
+      (entityController.isOfType('Lead') && actor.isOfType('Lead'))
+    )
+  }
+
+  async isEntityPropertyEditableByActor(entity: Entity, classPropertyId: number, actor: Actor): Promise<boolean> {
+    const [, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
+
+    const isActorMaintainer =
+      actor.isOfType('Curator') &&
+      entityClass.class_permissions.maintainers.toArray().some((groupId) => groupId.eq(actor.asType('Curator')[0]))
+
+    const isActorController = this.isActorEntityController(actor, entity, isActorMaintainer)
+
+    const {
+      is_locked_from_controller: isLockedFromController,
+      is_locked_from_maintainer: isLockedFromMaintainer,
+    } = entityClass.properties[classPropertyId].locking_policy
+
+    return (
+      (isActorController && !isLockedFromController.valueOf()) ||
+      (isActorMaintainer && !isLockedFromMaintainer.valueOf())
+    )
+  }
+
+  getQuestionsFromProperties(properties: Property[], defaults?: { [key: string]: unknown }): DistinctQuestion[] {
+    return properties.reduce((previousValue, { name, property_type: propertyType, required }) => {
       const propertySubtype = propertyType.subtype
       const questionType = propertySubtype === 'Bool' ? 'list' : 'input'
       const isSubtypeNumber = propertySubtype.toLowerCase().includes('int')
       const isSubtypeReference = propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')
-      const isQuestionLocked = defaults?.[Object.keys(defaults)[index]].locked
 
-      if (isQuestionLocked) {
-        return previousValue
+      const validate = async (answer: string | number | null) => {
+        if (answer === null) {
+          return true // Can only happen through "filter" if property is not required
+        }
+
+        if ((isSubtypeNumber || isSubtypeReference) && parseInt(answer.toString()).toString() !== answer.toString()) {
+          return `Expected integer value!`
+        }
+
+        if (isSubtypeReference) {
+          try {
+            await this.getEntity(+answer, propertyType.asType('Single').asType('Reference')[0].toString())
+          } catch (e) {
+            return e.message || JSON.stringify(e)
+          }
+        }
+
+        return true
       }
 
       const optionalQuestionProperties = {
         ...{
-          filter: (answer: string) => {
+          filter: async (answer: string) => {
             if (required.isFalse && !answer) {
               return null
             }
 
-            if ((isSubtypeNumber || isSubtypeReference) && isFinite(+answer)) {
-              return +answer
+            // Only cast to number if valid
+            // Prevents inquirer bug not allowing to edit invalid values when casted to number
+            // See: https://github.com/SBoudrias/Inquirer.js/issues/866
+            if ((isSubtypeNumber || isSubtypeReference) && (await validate(answer)) === true) {
+              return parseInt(answer)
             }
 
             return answer
           },
-          validate: async (answer: string | null) => {
-            if (answer && isSubtypeReference && isFinite(+answer)) {
-              const { class_id: classId } = await this.getEntity(+answer)
-
-              if (classId.toString() !== propertyType.asType('Single').asType('Reference')[0].toString()) {
-                return 'This entity is not of the right class id!'
-              }
-            }
-
-            return true
-          },
+          validate,
         },
         ...(propertySubtype === 'Bool' && {
           choices: ['true', 'false'],
@@ -460,7 +492,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
           type: questionType,
           ...optionalQuestionProperties,
           ...(defaults && {
-            default: defaults[Object.keys(defaults)[index]].value,
+            default: propertySubtype === 'Bool' ? JSON.stringify(defaults[name.toString()]) : defaults[name.toString()],
           }),
         },
       ]
