@@ -369,6 +369,7 @@ decl_event! {
         LeaderInvitationQuotaUpdated(u32),
         InitialInvitationCountUpdated(u32),
         StakingAccountAdded(MemberId, AccountId),
+        StakingAccountRemoved(MemberId, AccountId),
     }
 }
 
@@ -762,6 +763,31 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
+        }
+
+        /// Remove staking account candidate for a member.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_staking_account(
+            origin,
+            member_id: T::MemberId,
+            staking_account_id: T::AccountId
+        ) {
+            let membership = Self::ensure_member_controller_account_signed(origin, &member_id)?;
+
+            ensure!(
+                membership.staking_account_exists(&staking_account_id),
+                Error::<T>::StakingAccountDoesntExist
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <MembershipById<T>>::mutate(&member_id, |membership| {
+                membership.remove_staking_account(staking_account_id.clone());
+            });
+
+            Self::deposit_event(RawEvent::StakingAccountRemoved(member_id, staking_account_id));
         }
     }
 }
