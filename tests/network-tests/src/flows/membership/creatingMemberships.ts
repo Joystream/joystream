@@ -11,7 +11,7 @@ import { assert } from 'chai'
 
 export default async function membershipCreation(api: Api, env: NodeJS.ProcessEnv): Promise<void> {
   const debug = Debugger('flow:memberships')
-  debug('started')
+  debug('Started')
 
   const N: number = +env.MEMBERSHIP_CREATION_N!
   assert(N > 0)
@@ -21,17 +21,15 @@ export default async function membershipCreation(api: Api, env: NodeJS.ProcessEn
 
   // Assert membership can be bought if sufficient funds are available
   const happyCaseFixture = new BuyMembershipHappyCaseFixture(api, nAccounts, paidTerms)
-  assert.equal(await new FixtureRunner(happyCaseFixture).run(), undefined)
+  await new FixtureRunner(happyCaseFixture).run()
 
   // Assert account can not buy the membership with insufficient funds
-  const insufficientFundsFixture: BuyMembershipWithInsufficienFundsFixture = new BuyMembershipWithInsufficienFundsFixture(
-    api,
-    aAccount,
-    paidTerms
-  )
-  assert.equal(await new FixtureRunner(insufficientFundsFixture).run(), undefined)
+  const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, aAccount, paidTerms)
+  await new FixtureRunner(insufficientFundsFixture).run()
 
   // Assert account was able to buy the membership with sufficient funds
   const buyMembershipAfterAccountTopUp = new BuyMembershipHappyCaseFixture(api, [aAccount], paidTerms)
-  assert.equal(await new FixtureRunner(buyMembershipAfterAccountTopUp).run(), undefined)
+  await new FixtureRunner(buyMembershipAfterAccountTopUp).run()
+
+  debug('Done')
 }

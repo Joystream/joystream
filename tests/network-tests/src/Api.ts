@@ -90,6 +90,10 @@ export class Api {
     this.api.disconnect()
   }
 
+  public enableTxLogs(): void {
+    this.sender.enableLogs()
+  }
+
   public createKeyPairs(n: number): KeyringPair[] {
     const nKeyPairs: KeyringPair[] = []
     for (let i = 0; i < n; i++) {
@@ -143,8 +147,8 @@ export class Api {
     return this.transferBalance(this.treasuryAccount, to, amount)
   }
 
-  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): void {
-    to.map((account) => this.transferBalance(this.treasuryAccount, account, amount))
+  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(to.map((account) => this.transferBalance(this.treasuryAccount, account, amount)))
   }
 
   public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<PaidMembershipTerms> {

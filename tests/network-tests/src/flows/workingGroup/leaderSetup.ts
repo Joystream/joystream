@@ -36,7 +36,7 @@ export default async function leaderSetup(
     payoutAmount,
     group
   )
-  await leaderHiringHappyCaseFixture.runner(false)
+  await leaderHiringHappyCaseFixture.runner()
 
   const hiredLead = await api.getGroupLead(group)
   assert(hiredLead, `${group} group Lead was not hired!`)

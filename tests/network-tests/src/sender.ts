@@ -9,27 +9,34 @@ import Debugger from 'debug'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
 
-const debug = Debugger('sender')
-
 export class Sender {
   private readonly api: ApiPromise
   private readonly asyncLock: AsyncLock
   private readonly keyring: Keyring
+  private readonly debug: Debugger.Debugger
+  private logFailedTransactions = false
 
   constructor(api: ApiPromise, keyring: Keyring) {
     this.api = api
     this.asyncLock = new AsyncLock()
     this.keyring = keyring
+    this.debug = Debugger('sender')
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
   // the next account nonce taking mempool into account. This is safe as long as all sending of transactions
-  // from same account occurs in the same process. Returns a promise.
-  // The promise resolves on successful dispatch (normal and sudo dispatches).
-  // The promise is rejected undef following conditions:
-  // - transaction fails to submit to node. (Encoding issues, bad signature or nonce etc.)
-  // - dispatch error after the extrinsic is finalized into a block.
-  // - successful sudo call (correct sudo key used) but dispatched call fails.
+  // from same account occurs in the same process. Returns a promise of the Extrinsic Dispatch Result ISubmittableResult.
+  // The promise resolves on tx finalization (For both Dispatch success and failure)
+  // The promise is rejected if transaction is rejected by node.
+
+  public enableLogs() {
+    this.logFailedTransactions = true
+  }
+
+  public disableLogs() {
+    this.logFailedTransactions = false
+  }
+
   public async signAndSend(
     tx: SubmittableExtrinsic<'promise'>,
     account: AccountId | string
@@ -37,11 +44,9 @@ export class Sender {
     const addr = this.keyring.encodeAddress(account)
     const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
 
-    let finalizedResolve: { (result: ISubmittableResult): void }
-    let finalizedReject: { (err: DispatchError): void }
-    const finalized: Promise<ISubmittableResult> = new Promise(async (resolve, reject) => {
-      finalizedResolve = resolve
-      finalizedReject = reject
+    let finalized: { (result: ISubmittableResult): void }
+    const whenFinalized: Promise<ISubmittableResult> = new Promise(async (resolve, reject) => {
+      finalized = resolve
     })
 
     // saved human representation of the signed tx, will be set before it is submitted.
@@ -50,9 +55,10 @@ export class Sender {
 
     const handleEvents = (result: ISubmittableResult) => {
       if (result.status.isFuture) {
-        // Its virtually impossible for use to continue with tests
+        // Its virtually impossible for us to continue with tests
         // when this occurs and we don't expect the tests to handle this correctly
         // so just abort!
+        console.error('Future Tx, aborting!')
         process.exit(-1)
       }
 
@@ -63,52 +69,50 @@ export class Sender {
       const success = result.findRecord('system', 'ExtrinsicSuccess')
       const failed = result.findRecord('system', 'ExtrinsicFailed')
 
-      if (success) {
-        const sudid = result.findRecord('sudo', 'Sudid')
-        if (sudid) {
-          const dispatchResult = sudid.event.data[0] as DispatchResult
-          if (dispatchResult.isOk) {
-            debug(`Successful Sudo Tx: ${sentTx}`)
-            finalizedResolve(result)
-          } else if (dispatchResult.isError) {
-            const err = dispatchResult.asError
-            debug(`Sudo Error: FailedTx: ${sentTx} dispatch error: ${err.toHuman()}`)
-            if (err.isModule) {
-              const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-              debug(`${name}\n${documentation}`)
-            }
-            finalizedReject(err)
-          } else {
-            // What other result type can it be??
-            assert(false)
+      // Log failed transactions
+      if (this.logFailedTransactions) {
+        if (failed) {
+          const record = failed as EventRecord
+          assert(record)
+          const {
+            event: { data },
+          } = record
+          const err = data[0] as DispatchError
+          this.debug('ExtrinsicFailed:', sentTx, 'DispatchError:', err.toHuman())
+          if (err.isModule) {
+            const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+            this.debug(`Error Details: ${name}\n${documentation}`)
           }
         } else {
-          debug(`Successful Tx: ${sentTx}`)
-          finalizedResolve(result)
+          assert(success)
+          const sudid = result.findRecord('sudo', 'Sudid')
+          if (sudid) {
+            const dispatchResult = sudid.event.data[0] as DispatchResult
+            assert(dispatchResult)
+            if (dispatchResult.isError) {
+              const err = dispatchResult.asError
+              this.debug('Sudo Dispatch Failed', sentTx, 'DispatchError:', err.toHuman())
+              if (err.isModule) {
+                const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+                this.debug(`Error Details: ${name}\n${documentation}`)
+              }
+            }
+          }
         }
-      } else {
-        assert(failed)
-        const record = failed as EventRecord
-        const {
-          event: { data },
-        } = record
-        const err = (data[0] as DispatchResult).asError // data[0] as DispatchError
-        debug(`FailedTx: ${sentTx} dispatch error: ${err.toHuman()}`)
-        if (err.isModule) {
-          const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-          debug(`${name}\n${documentation}`)
-        }
-        finalizedReject(err)
       }
+
+      // Always resolve irrespective of success or failure. Error handling should
+      // be dealt with by caller.
+      finalized(result)
     }
 
     await this.asyncLock.acquire(`${senderKeyPair.address}`, async () => {
       const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()
-      return signedTx.send(handleEvents)
+      await signedTx.send(handleEvents)
     })
 
-    return finalized
+    return whenFinalized
   }
 }

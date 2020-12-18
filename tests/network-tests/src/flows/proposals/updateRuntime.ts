@@ -16,7 +16,7 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
   const proposer = council[0].member.toString()
 
   const updateRuntimeFixture: UpdateRuntimeFixture = new UpdateRuntimeFixture(api, proposer, runtimePath)
-  await updateRuntimeFixture.runner(false)
+  await updateRuntimeFixture.runner()
 
   // Some tests after runtime update
   const createMembershipsFixture = new BuyMembershipHappyCaseFixture(
@@ -24,5 +24,5 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
     api.createKeyPairs(1).map((key) => key.address),
     paidTerms
   )
-  await createMembershipsFixture.runner(false)
+  await createMembershipsFixture.runner()
 }

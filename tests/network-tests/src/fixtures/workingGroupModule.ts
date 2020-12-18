@@ -39,7 +39,7 @@ export class AddWorkerOpeningFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -73,13 +73,10 @@ export class AddWorkerOpeningFixture implements Fixture {
         text: uuid().substring(0, 8),
         type: 'Worker',
       },
-      this.module,
-      expectFailure
+      this.module
     )
 
-    if (!expectFailure) {
-      this.result = this.api.expectOpeningAddedEvent(result.events)
-    }
+    this.result = this.api.expectOpeningAddedEvent(result.events)
   }
 }
 
@@ -104,7 +101,7 @@ export class SudoAddLeaderOpeningFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const result = await this.api.sudoAddOpening(
       {
         activationDelay: this.activationDelay,
@@ -131,11 +128,7 @@ export class SudoAddLeaderOpeningFixture implements Fixture {
       this.module
     )
 
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    } else {
-      this.result = this.api.expectOpeningAddedEvent(result.events)
-    }
+    this.result = this.api.expectOpeningAddedEvent(result.events)
   }
 }
 
@@ -150,7 +143,7 @@ export class AcceptApplicationsFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -165,9 +158,6 @@ export class AcceptApplicationsFixture implements Fixture {
     const wgOpening = await this.api.getWorkingGroupOpening(this.openingId, this.module)
     const opening: HiringOpening = await this.api.getHiringOpening(wgOpening.hiring_opening_id)
     assert(opening.is_active, `${this.module} Opening ${this.openingId} is not active`)
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -200,7 +190,7 @@ export class ApplyForOpeningFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Fee estimation and transfer
     const applyOnOpeningFee: BN = this.api
       .estimateApplyOnOpeningFee(this.applicants[0], this.module)
@@ -215,8 +205,7 @@ export class ApplyForOpeningFixture implements Fixture {
       this.roleStake,
       this.applicationStake,
       uuid().substring(0, 8),
-      this.module,
-      expectFailure
+      this.module
     )
 
     const applicationIds = results.map(({ events }) => {
@@ -244,7 +233,7 @@ export class WithdrawApplicationFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Fee estimation and transfer
     const withdrawApplicaitonFee: BN = this.api.estimateWithdrawApplicationFee(this.module)
 
@@ -254,10 +243,6 @@ export class WithdrawApplicationFixture implements Fixture {
 
     // Application withdrawal
     await this.api.batchWithdrawActiveApplications(this.applicationIds, this.module)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -272,7 +257,7 @@ export class BeginApplicationReviewFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -287,10 +272,6 @@ export class BeginApplicationReviewFixture implements Fixture {
     const result = await this.api.beginApplicantReview(leadAccount, this.openingId, this.module)
 
     this.api.expectApplicationReviewBeganEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -305,12 +286,9 @@ export class SudoBeginLeaderApplicationReviewFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Begin application review
     await this.api.sudoBeginApplicantReview(this.openingId, this.module)
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -346,7 +324,7 @@ export class FillOpeningFixture implements Fixture {
     return this.workerIds
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -390,10 +368,6 @@ export class FillOpeningFixture implements Fixture {
         `Role account ids does not match, worker account: ${worker.role_account_id}, application account ${application.role_account_id}`
       )
     })
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -424,7 +398,7 @@ export class SudoFillLeaderOpeningFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Fill leader opening
     const now: BN = await this.api.getBestBlock()
     const result = await this.api.sudoFillOpening(
@@ -452,10 +426,6 @@ export class SudoFillLeaderOpeningFixture implements Fixture {
         `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
       )
     })
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -470,7 +440,7 @@ export class IncreaseStakeFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Fee estimation and transfer
     const increaseStakeFee: BN = this.api.estimateIncreaseStakeFee(this.module)
     const stakeIncrement: BN = new BN(1)
@@ -488,9 +458,6 @@ export class IncreaseStakeFixture implements Fixture {
       increasedWorkerStake.eq(newWorkerStake),
       `Unexpected worker stake ${newWorkerStake}, expected ${increasedWorkerStake}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -505,7 +472,7 @@ export class UpdateRewardAccountFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const worker = await this.api.getWorkerById(this.workerId, this.module)
     const workerRoleAccount = worker.role_account_id.toString()
     // Fee estimation and transfer
@@ -520,9 +487,6 @@ export class UpdateRewardAccountFixture implements Fixture {
       newRewardAccount === createdAccount.address,
       `Unexpected role account ${newRewardAccount}, expected ${createdAccount.address}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -537,7 +501,7 @@ export class UpdateRoleAccountFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const worker = await this.api.getWorkerById(this.workerId, this.module)
     const workerRoleAccount = worker.role_account_id.toString()
     // Fee estimation and transfer
@@ -553,10 +517,6 @@ export class UpdateRoleAccountFixture implements Fixture {
       newRoleAccount === createdAccount.address,
       `Unexpected role account ${newRoleAccount}, expected ${createdAccount.address}`
     )
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -571,7 +531,7 @@ export class TerminateApplicationsFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -584,10 +544,6 @@ export class TerminateApplicationsFixture implements Fixture {
 
     // Terminate worker applications
     await this.api.batchTerminateApplication(leadAccount, this.applicationIds, this.module)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -602,7 +558,7 @@ export class DecreaseStakeFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -618,16 +574,14 @@ export class DecreaseStakeFixture implements Fixture {
     const decreasedWorkerStake: BN = (await this.api.getWorkerStakeAmount(this.workerId, this.module)).sub(
       workerStakeDecrement
     )
-    await this.api.decreaseStake(leadAccount, this.workerId, workerStakeDecrement, this.module, expectFailure)
+    await this.api.decreaseStake(leadAccount, this.workerId, workerStakeDecrement, this.module)
     const newWorkerStake: BN = await this.api.getWorkerStakeAmount(this.workerId, this.module)
 
     // Assertions
-    if (!expectFailure) {
-      assert(
-        decreasedWorkerStake.eq(newWorkerStake),
-        `Unexpected worker stake ${newWorkerStake}, expected ${decreasedWorkerStake}`
-      )
-    }
+    assert(
+      decreasedWorkerStake.eq(newWorkerStake),
+      `Unexpected worker stake ${newWorkerStake}, expected ${decreasedWorkerStake}`
+    )
   }
 }
 
@@ -642,7 +596,7 @@ export class SlashFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -656,7 +610,7 @@ export class SlashFixture implements Fixture {
 
     // Slash worker
     const slashedStake: BN = (await this.api.getWorkerStakeAmount(this.workerId, this.module)).sub(slashAmount)
-    await this.api.slashStake(leadAccount, this.workerId, slashAmount, this.module, expectFailure)
+    await this.api.slashStake(leadAccount, this.workerId, slashAmount, this.module)
     const newStake: BN = await this.api.getWorkerStakeAmount(this.workerId, this.module)
 
     // Assertions
@@ -675,7 +629,7 @@ export class TerminateRoleFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const lead = await this.api.getGroupLead(this.module)
     if (!lead) {
       throw new Error('No Lead')
@@ -687,7 +641,7 @@ export class TerminateRoleFixture implements Fixture {
     this.api.treasuryTransferBalance(leadAccount, terminateRoleFee)
 
     // Terminate worker role
-    await this.api.terminateRole(leadAccount, this.workerId, uuid().substring(0, 8), this.module, expectFailure)
+    await this.api.terminateRole(leadAccount, this.workerId, uuid().substring(0, 8), this.module)
 
     // Assertions
     const isWorker: boolean = await this.api.isWorker(this.workerId, this.module)
@@ -706,13 +660,13 @@ export class LeaveRoleFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const roleAccounts = await this.api.getWorkerRoleAccounts(this.workerIds, this.module)
     // Fee estimation and transfer
     const leaveRoleFee: BN = this.api.estimateLeaveRoleFee(this.module)
     this.api.treasuryTransferBalanceToAccounts(roleAccounts, leaveRoleFee)
 
-    await this.api.batchLeaveRole(this.workerIds, uuid().substring(0, 8), expectFailure, this.module)
+    await this.api.batchLeaveRole(this.workerIds, uuid().substring(0, 8), this.module)
 
     // Assertions
     this.workerIds.forEach(async (workerId) => {
@@ -733,7 +687,7 @@ export class AwaitPayoutFixture implements Fixture {
     this.module = module
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const worker: Worker = await this.api.getWorkerById(this.workerId, this.module)
     const reward: RewardRelationship = await this.api.getRewardRelationship(worker.reward_relationship.unwrap())
     const now: BN = await this.api.getBestBlock()
@@ -763,8 +717,5 @@ export class AwaitPayoutFixture implements Fixture {
       balanceAfterSecondPayout.eq(expectedBalanceSecond),
       `Unexpected balance, expected ${expectedBalanceSecond} got ${balanceAfterSecondPayout}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }

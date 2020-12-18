@@ -56,7 +56,7 @@ export default async function createVideo(api: QueryNodeApi) {
   const channelTitle = 'New channel example'
   const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api, channelTitle)
 
-  await createVideoHappyCaseFixture.runner(false)
+  await createVideoHappyCaseFixture.runner()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)

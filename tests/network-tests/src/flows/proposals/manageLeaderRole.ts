@@ -16,6 +16,7 @@ import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
 
 export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
   const leaderAccount = api.createKeyPairs(1)[0].address
@@ -45,7 +46,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     paidTerms
   )
   // Buy membership for lead
-  await leaderMembershipFixture.runner(false)
+  await new FixtureRunner(leaderMembershipFixture).run()
 
   const createWorkingGroupLeaderOpeningFixture: CreateWorkingGroupLeaderOpeningFixture = new CreateWorkingGroupLeaderOpeningFixture(
     api,
@@ -55,7 +56,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     api.getWorkingGroupString(group)
   )
   // Propose create leader opening
-  await createWorkingGroupLeaderOpeningFixture.runner(false)
+  await createWorkingGroupLeaderOpeningFixture.runner()
 
   // Approve add opening proposal
   const voteForCreateOpeningProposalFixture = new VoteForProposalFixture(
@@ -63,7 +64,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as OpeningId
   )
 
-  await voteForCreateOpeningProposalFixture.runner(false)
+  await voteForCreateOpeningProposalFixture.runner()
   const openingId = api.expectOpeningAddedEvent(voteForCreateOpeningProposalFixture.getEvents())
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
@@ -74,7 +75,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     openingId,
     group
   )
-  await applyForLeaderOpeningFixture.runner(false)
+  await applyForLeaderOpeningFixture.runner()
   const applicationId = applyForLeaderOpeningFixture.getApplicationIds()[0]
 
   const beginWorkingGroupLeaderApplicationReviewFixture = new BeginWorkingGroupLeaderApplicationReviewFixture(
@@ -84,13 +85,13 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     api.getWorkingGroupString(group)
   )
   // Propose begin leader application review
-  await beginWorkingGroupLeaderApplicationReviewFixture.runner(false)
+  await beginWorkingGroupLeaderApplicationReviewFixture.runner()
 
   const voteForBeginReviewProposal = new VoteForProposalFixture(
     api,
     beginWorkingGroupLeaderApplicationReviewFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForBeginReviewProposal.runner(false)
+  await voteForBeginReviewProposal.runner()
 
   const fillLeaderOpeningProposalFixture = new FillLeaderOpeningProposalFixture(
     api,
@@ -103,21 +104,21 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     group
   )
   // Propose fill leader opening
-  await fillLeaderOpeningProposalFixture.runner(false)
+  await fillLeaderOpeningProposalFixture.runner()
 
   const voteForFillLeaderProposalFixture = new VoteForProposalFixture(
     api,
     fillLeaderOpeningProposalFixture.getCreatedProposalId() as ProposalId
   )
   // Approve fill leader opening
-  await voteForFillLeaderProposalFixture.runner(false)
+  await voteForFillLeaderProposalFixture.runner()
 
   const hiredLead = await api.getGroupLead(group)
   assert(hiredLead)
 
   const setLeaderRewardProposalFixture = new SetLeaderRewardProposalFixture(api, proposer, alteredPayoutAmount, group)
   // Propose leader reward
-  await setLeaderRewardProposalFixture.runner(false)
+  await setLeaderRewardProposalFixture.runner()
 
   const voteForeLeaderRewardFixture = new VoteForProposalFixture(
     api,
@@ -125,7 +126,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   )
 
   // Approve new leader reward
-  await voteForeLeaderRewardFixture.runner(false)
+  await voteForeLeaderRewardFixture.runner()
 
   const leadId = await api.getLeadWorkerId(group)
   // This check is prone to failure if more than one worker's reward amount was updated
@@ -142,7 +143,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   )
 
   // Propose decrease stake
-  await decreaseLeaderStakeProposalFixture.runner(false)
+  await decreaseLeaderStakeProposalFixture.runner()
 
   let newStake: BN = applicationStake.sub(stakeDecrement)
   // Approve decreased leader stake
@@ -150,11 +151,11 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     api,
     decreaseLeaderStakeProposalFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForDecreaseStakeProposal.runner(false)
+  await voteForDecreaseStakeProposal.runner()
 
   const slashLeaderProposalFixture = new SlashLeaderProposalFixture(api, proposer, slashAmount, group)
   // Propose leader slash
-  await slashLeaderProposalFixture.runner(false)
+  await slashLeaderProposalFixture.runner()
 
   // Approve leader slash
   newStake = newStake.sub(slashAmount)
@@ -162,17 +163,17 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     api,
     slashLeaderProposalFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForSlashProposalFixture.runner(false)
+  await voteForSlashProposalFixture.runner()
 
   const terminateLeaderRoleProposalFixture = new TerminateLeaderRoleProposalFixture(api, proposer, false, group)
   // Propose terminate leader role
-  await terminateLeaderRoleProposalFixture.runner(false)
+  await terminateLeaderRoleProposalFixture.runner()
 
   const voteForLeaderRoleTerminationFixture = new VoteForProposalFixture(
     api,
     terminateLeaderRoleProposalFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForLeaderRoleTerminationFixture.runner(false)
+  await voteForLeaderRoleTerminationFixture.runner()
 
   const maybeLead = await api.getGroupLead(group)
   assert(!maybeLead)

@@ -11,5 +11,5 @@ export default async function electionParametersProposal(api: Api, env: NodeJS.P
   const proposer = council[0].member.toString()
 
   const electionParametersProposalFixture = new ElectionParametersProposalFixture(api, proposer)
-  await electionParametersProposalFixture.runner(false)
+  await electionParametersProposalFixture.runner()
 }

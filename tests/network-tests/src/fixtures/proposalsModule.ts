@@ -30,7 +30,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing working group lead opening proposal ' + uuid().substring(0, 8)
@@ -69,10 +69,6 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     })
 
     this.result = this.api.expectProposalCreatedEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -95,7 +91,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
@@ -114,11 +110,8 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
       this.openingId,
       this.workingGroup
     )
-    this.result = this.api.expectProposalCreatedEvent(result.events)
 
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
+    this.result = this.api.expectProposalCreatedEvent(result.events)
   }
 }
 
@@ -158,7 +151,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8)
@@ -186,10 +179,6 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     })
 
     this.result = this.api.expectProposalCreatedEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -212,7 +201,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
@@ -238,10 +227,6 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
       workingGroupString
     )
     this.result = this.api.expectProposalCreatedEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -264,7 +249,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8)
@@ -289,10 +274,6 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     )
 
     this.result = this.api.expectProposalCreatedEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -315,7 +296,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8)
@@ -340,10 +321,6 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     )
 
     this.result = this.api.expectProposalCreatedEvent(result.events)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -366,7 +343,7 @@ export class SlashLeaderProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing slash leader stake proposal ' + uuid().substring(0, 8)
@@ -389,9 +366,6 @@ export class SlashLeaderProposalFixture implements Fixture {
       workingGroupString
     )
     this.result = this.api.expectProposalCreatedEvent(result.events)
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -414,7 +388,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     return this.result
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing working group mint capacity proposal ' + uuid().substring(0, 8)
@@ -435,9 +409,6 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
       workingGroupString
     )
     this.result = this.api.expectProposalCreatedEvent(result.events)
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -450,7 +421,7 @@ export class ElectionParametersProposalFixture implements Fixture {
     this.proposerAccount = proposerAccount
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
@@ -559,9 +530,6 @@ export class ElectionParametersProposalFixture implements Fixture {
       proposedMinVotingStake.eq(newMinVotingStake),
       `Min voting stake has unexpected value ${newMinVotingStake}, expected ${proposedMinVotingStake}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -578,7 +546,7 @@ export class SpendingProposalFixture implements Fixture {
     this.mintCapacity = mintCapacity
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const description = 'spending proposal which is used for API network testing with some mock data'
     const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
@@ -622,9 +590,6 @@ export class SpendingProposalFixture implements Fixture {
         this.spendingBalance
       )}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -637,7 +602,7 @@ export class TextProposalFixture implements Fixture {
     this.proposer = proposer
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing text proposal ' + uuid().substring(0, 8)
@@ -664,10 +629,6 @@ export class TextProposalFixture implements Fixture {
     // Approving text proposal
     this.api.batchApproveProposal(proposalNumber)
     await this.api.waitForProposalToFinalize(proposalNumber)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -682,7 +643,7 @@ export class ValidatorCountProposalFixture implements Fixture {
     this.validatorCountIncrement = validatorCountIncrement
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
@@ -716,9 +677,6 @@ export class ValidatorCountProposalFixture implements Fixture {
       proposedValidatorCount.eq(newValidatorCount),
       `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
     )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -733,7 +691,7 @@ export class UpdateRuntimeFixture implements Fixture {
     this.runtimePath = runtimePath
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     // Setup
     const runtime: string = Utils.readRuntimeFromFile(this.runtimePath)
     const description = 'runtime upgrade proposal which is used for API network testing'
@@ -764,10 +722,6 @@ export class UpdateRuntimeFixture implements Fixture {
     // Approving runtime update proposal
     this.api.batchApproveProposal(proposalNumber)
     await this.api.waitForProposalToFinalize(proposalNumber)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }
 
@@ -785,7 +739,7 @@ export class VoteForProposalFixture implements Fixture {
     return this.events
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const proposalVoteFee: BN = this.api.estimateVoteForProposalFee()
     const councilAccounts = await this.api.getCouncilAccounts()
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
@@ -793,9 +747,5 @@ export class VoteForProposalFixture implements Fixture {
     // Approving the proposal
     this.api.batchApproveProposal(this.proposalNumber)
     this.events = await this.api.waitForProposalToFinalize(this.proposalNumber)
-
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
   }
 }

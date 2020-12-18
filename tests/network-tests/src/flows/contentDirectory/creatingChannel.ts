@@ -30,7 +30,7 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
 export default async function channelCreation(api: QueryNodeApi) {
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
-  await createChannelHappyCaseFixture.runner(false)
+  await createChannelHappyCaseFixture.runner()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)

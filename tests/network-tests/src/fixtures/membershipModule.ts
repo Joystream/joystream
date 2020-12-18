@@ -4,7 +4,6 @@ import { assert } from 'chai'
 import { BaseFixture } from '../Fixture'
 import { PaidTermId, MemberId } from '@joystream/types/members'
 import Debugger from 'debug'
-// import { DispatchError } from '@polkadot/types/interfaces/system'
 
 export class BuyMembershipHappyCaseFixture extends BaseFixture {
   private accounts: string[]
@@ -32,6 +31,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
+
     this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
 
     this.memberIds = (
@@ -42,7 +42,9 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
       )
     ).map(({ events }) => this.api.expectMemberRegisteredEvent(events))
 
-    this.debug(`New member ids: ${this.memberIds}`)
+    assert.equal(this.accounts.length, this.memberIds.length)
+
+    this.debug(`New member id(s): ${this.memberIds}`)
   }
 }
 
@@ -80,14 +82,9 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
       'Account already has sufficient balance to purchase membership'
     )
 
-    try {
-      await this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`)
-      this.error(new Error('Buying membership with insufficient funds should have failed'))
-    } catch (dispatchError) {
-      // We expect buying membership with insuffiencet funds to fail
-      // const err = dispatchError as DispatchError
-      // Assert its the exact error we expect?
-      // assert.eq(err, ... )
-    }
+    await this.expectDispatchError(
+      this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`),
+      'Buying membership with insufficient funds should fail.'
+    )
   }
 }

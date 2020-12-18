@@ -27,7 +27,7 @@ export default async function updateChannel(api: QueryNodeApi) {
   const description = 'Updated description'
   const createUpdateChannelDescriptionHappyCaseFixture = createUpdateChannelHandleFixture(api, handle, description)
 
-  await createUpdateChannelDescriptionHappyCaseFixture.runner(false)
+  await createUpdateChannelDescriptionHappyCaseFixture.runner()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)

@@ -48,14 +48,14 @@ export class SudoHireLeadFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
+  public async runner(): Promise<void> {
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.api,
       [this.leadAccount],
       this.paidTerms
     )
     // Buying membership for leader account
-    await leaderHappyCaseFixture.runner(false)
+    await leaderHappyCaseFixture.runner()
 
     const addLeaderOpeningFixture: SudoAddLeaderOpeningFixture = new SudoAddLeaderOpeningFixture(
       this.api,
@@ -65,7 +65,7 @@ export class SudoHireLeadFixture implements Fixture {
       this.workingGroup
     )
     // Add lead opening
-    await addLeaderOpeningFixture.runner(false)
+    await addLeaderOpeningFixture.runner()
 
     const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
       this.api,
@@ -75,7 +75,7 @@ export class SudoHireLeadFixture implements Fixture {
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.workingGroup
     )
-    await applyForLeaderOpeningFixture.runner(false)
+    await applyForLeaderOpeningFixture.runner()
 
     assert(applyForLeaderOpeningFixture.getApplicationIds().length === 1)
 
@@ -84,7 +84,7 @@ export class SudoHireLeadFixture implements Fixture {
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.workingGroup
     )
-    await beginLeaderApplicationReviewFixture.runner(false)
+    await beginLeaderApplicationReviewFixture.runner()
 
     const fillLeaderOpeningFixture = new SudoFillLeaderOpeningFixture(
       this.api,
@@ -95,6 +95,6 @@ export class SudoHireLeadFixture implements Fixture {
       this.payoutAmount,
       this.workingGroup
     )
-    await fillLeaderOpeningFixture.runner(false)
+    await fillLeaderOpeningFixture.runner()
   }
 }

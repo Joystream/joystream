@@ -17,5 +17,5 @@ export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
     proposer,
     validatorCountIncrement
   )
-  await validatorCountProposalFixture.runner(false)
+  await validatorCountProposalFixture.runner()
 }

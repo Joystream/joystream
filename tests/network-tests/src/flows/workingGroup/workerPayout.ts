@@ -31,7 +31,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
-  await memberSetFixture.runner(false)
+  await memberSetFixture.runner()
 
   const workingGroupMintCapacityProposalFixture = new WorkingGroupMintCapacityProposalFixture(
     api,
@@ -40,14 +40,14 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     group
   )
   // Propose mint capacity
-  await workingGroupMintCapacityProposalFixture.runner(false)
+  await workingGroupMintCapacityProposalFixture.runner()
 
   // Approve mint capacity
   const voteForProposalFixture = new VoteForProposalFixture(
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )
-  await voteForProposalFixture.runner(false)
+  await voteForProposalFixture.runner()
 
   const addWorkerOpeningFixture = new AddWorkerOpeningFixture(
     api,
@@ -58,7 +58,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner(false)
+  await addWorkerOpeningFixture.runner()
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -69,7 +69,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner(false)
+  await applyForWorkerOpeningFixture.runner()
   const applicationId = applyForWorkerOpeningFixture.getApplicationIds()[0]
 
   // Begin application review
@@ -78,7 +78,7 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner(false)
+  await beginApplicationReviewFixture.runner()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -90,9 +90,9 @@ export default async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, gr
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner(false)
+  await fillOpeningFixture.runner()
   const workerId = fillOpeningFixture.getWorkerIds()[0]
   const awaitPayoutFixture: AwaitPayoutFixture = new AwaitPayoutFixture(api, workerId, group)
   // Await worker payout
-  await awaitPayoutFixture.runner(false)
+  await awaitPayoutFixture.runner()
 }

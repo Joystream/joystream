@@ -31,7 +31,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
 
   const applicants = api.createKeyPairs(5).map((key) => key.address)
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, applicants, paidTerms)
-  await memberSetFixture.runner(false)
+  await memberSetFixture.runner()
 
   const addWorkerOpeningFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
     api,
@@ -42,7 +42,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner(false)
+  await addWorkerOpeningFixture.runner()
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -53,7 +53,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner(false)
+  await applyForWorkerOpeningFixture.runner()
 
   const applicationIdsToHire = applyForWorkerOpeningFixture.getApplicationIds().slice(0, 2)
 
@@ -63,7 +63,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner(false)
+  await beginApplicationReviewFixture.runner()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -75,20 +75,20 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner(false)
+  await fillOpeningFixture.runner()
 
   const firstWorkerId = fillOpeningFixture.getWorkerIds()[0]
 
   const decreaseStakeFixture = new DecreaseStakeFixture(api, firstWorkerId, group)
   // Decrease worker stake
-  await decreaseStakeFixture.runner(false)
+  await decreaseStakeFixture.runner()
 
   const slashFixture: SlashFixture = new SlashFixture(api, firstWorkerId, group)
   // Slash worker
-  await slashFixture.runner(false)
+  await slashFixture.runner()
 
   const terminateRoleFixture = new TerminateRoleFixture(api, firstWorkerId, group)
 
   // Terminate workers
-  await terminateRoleFixture.runner(false)
+  await terminateRoleFixture.runner()
 }

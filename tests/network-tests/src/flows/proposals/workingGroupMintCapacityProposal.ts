@@ -20,7 +20,7 @@ export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.Pro
     group
   )
   // Propose mint capacity
-  await workingGroupMintCapacityProposalFixture.runner(false)
+  await workingGroupMintCapacityProposalFixture.runner()
 
   const voteForProposalFixture: VoteForProposalFixture = new VoteForProposalFixture(
     api,
@@ -28,5 +28,5 @@ export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.Pro
   )
 
   // Approve mint capacity
-  await voteForProposalFixture.runner(false)
+  await voteForProposalFixture.runner()
 }

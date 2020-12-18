@@ -30,7 +30,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
 
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, newMembers, paidTerms)
   // Recreating set of members
-  await memberSetFixture.runner(false)
+  await memberSetFixture.runner()
   const applicant = newMembers[0]
 
   const addWorkerOpeningFixture = new AddWorkerOpeningFixture(
@@ -42,7 +42,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner(false)
+  await addWorkerOpeningFixture.runner()
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -53,7 +53,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner(false)
+  await applyForWorkerOpeningFixture.runner()
   const applicationIdToHire = applyForWorkerOpeningFixture.getApplicationIds()[0]
 
   // Begin application review
@@ -62,7 +62,7 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner(false)
+  await beginApplicationReviewFixture.runner()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -74,17 +74,17 @@ export default async function manageWorkerAsWorker(api: Api, env: NodeJS.Process
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner(false)
+  await fillOpeningFixture.runner()
   const workerId = fillOpeningFixture.getWorkerIds()[0]
   const increaseStakeFixture: IncreaseStakeFixture = new IncreaseStakeFixture(api, workerId, group)
   // Increase worker stake
-  await increaseStakeFixture.runner(false)
+  await increaseStakeFixture.runner()
 
   const updateRewardAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(api, workerId, group)
   // Update reward account
-  await updateRewardAccountFixture.runner(false)
+  await updateRewardAccountFixture.runner()
 
   const updateRoleAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(api, workerId, group)
   // Update role account
-  await updateRoleAccountFixture.runner(false)
+  await updateRoleAccountFixture.runner()
 }

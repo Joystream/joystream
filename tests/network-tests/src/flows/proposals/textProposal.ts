@@ -10,5 +10,5 @@ export default async function textProposal(api: Api, env: NodeJS.ProcessEnv) {
   const proposer = council[0].member.toString()
 
   const textProposalFixture: TextProposalFixture = new TextProposalFixture(api, proposer)
-  await textProposalFixture.runner(false)
+  await textProposalFixture.runner()
 }

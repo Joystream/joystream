@@ -16,5 +16,5 @@ export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv)
   const spendingProposalFixture = new SpendingProposalFixture(api, proposer, spendingBalance, mintCapacity)
 
   // Spending proposal test
-  await spendingProposalFixture.runner(false)
+  await spendingProposalFixture.runner()
 }
