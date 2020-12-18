@@ -44,11 +44,7 @@ export abstract class BaseFixture {
     return this._err
   }
 
-  protected async expectDispatchError(
-    operation: Promise<ISubmittableResult>,
-    errMessage: string
-  ): Promise<ISubmittableResult> {
-    const result = await operation
+  protected expectDispatchError(result: ISubmittableResult, errMessage: string): ISubmittableResult {
     const success = result.findRecord('system', 'ExtrinsicSuccess')
 
     if (success) {
@@ -66,11 +62,7 @@ export abstract class BaseFixture {
     return result
   }
 
-  protected async expectDispatchSuccess(
-    operation: Promise<ISubmittableResult>,
-    errMessage: string
-  ): Promise<ISubmittableResult> {
-    const result = await operation
+  protected expectDispatchSuccess(result: ISubmittableResult, errMessage: string): ISubmittableResult {
     const success = result.findRecord('system', 'ExtrinsicSuccess')
 
     if (success) {

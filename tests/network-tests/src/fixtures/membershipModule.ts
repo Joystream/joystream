@@ -83,8 +83,8 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
       'Account already has sufficient balance to purchase membership'
     )
 
-    await this.expectDispatchError(
-      this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`),
+    this.expectDispatchError(
+      await this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`),
       'Buying membership with insufficient funds should fail.'
     )
   }

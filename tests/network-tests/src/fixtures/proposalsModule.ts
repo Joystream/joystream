@@ -417,11 +417,6 @@ export class ElectionParametersProposalFixture extends BaseFixture {
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
 
-    // Council accounts enough balance to ensure they can vote
-    const councilAccounts = await this.api.getCouncilAccounts()
-    const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
-    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
-
     const announcingPeriod: BN = new BN(28800)
     const votingPeriod: BN = new BN(14400)
     const revealingPeriod: BN = new BN(14400)
@@ -477,9 +472,9 @@ export class ElectionParametersProposalFixture extends BaseFixture {
     const proposalNumber = this.api.findProposalCreatedEvent(proposalCreationResult.events) as ProposalId
     assert.notEqual(proposalNumber, undefined)
 
-    // Approving the proposal
-    this.api.batchApproveProposal(proposalNumber)
-    await this.api.waitForProposalToFinalize(proposalNumber)
+    const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
+    await approveProposalFixture.execute()
+    assert(approveProposalFixture.proposalExecuted)
 
     // Assertions
     const newAnnouncingPeriod: BN = await this.api.getAnnouncingPeriod()
@@ -540,7 +535,6 @@ export class SpendingProposalFixture extends BaseFixture {
   public async execute(): Promise<void> {
     // Setup
     const description = 'spending proposal which is used for API network testing with some mock data'
-    const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
 
     // Topping the balances
     const proposalStake: BN = new BN(25000)
@@ -552,8 +546,7 @@ export class SpendingProposalFixture extends BaseFixture {
       this.proposer
     )
     this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
-    const councilAccounts = await this.api.getCouncilAccounts()
-    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
+
     await this.api.sudoSetCouncilMintCapacity(this.mintCapacity)
 
     const fundingRecipient = this.api.createKeyPairs(1)[0].address
@@ -572,8 +565,10 @@ export class SpendingProposalFixture extends BaseFixture {
 
     // Approving spending proposal
     const balanceBeforeMinting: BN = await this.api.getBalance(fundingRecipient)
-    this.api.batchApproveProposal(proposalNumber)
-    await this.api.waitForProposalToFinalize(proposalNumber)
+
+    const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
+    await approveProposalFixture.execute()
+    assert(approveProposalFixture.proposalExecuted)
 
     const balanceAfterMinting: BN = await this.api.getBalance(fundingRecipient)
     assert(
@@ -598,9 +593,6 @@ export class TextProposalFixture extends BaseFixture {
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing text proposal ' + uuid().substring(0, 8)
     const proposalText: string = 'Text of the testing proposal ' + uuid().substring(0, 8)
-    const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
-    const councilAccounts = await this.api.getCouncilAccounts()
-    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
 
     // Proposal stake calculation
     const proposalStake: BN = new BN(25000)
@@ -613,14 +605,14 @@ export class TextProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
 
     // Proposal creation
-
     const result = await this.api.proposeText(this.proposer, proposalStake, proposalTitle, description, proposalText)
     const proposalNumber = this.api.findProposalCreatedEvent(result.events) as ProposalId
     assert.notEqual(proposalNumber, undefined)
 
     // Approving text proposal
-    this.api.batchApproveProposal(proposalNumber)
-    await this.api.waitForProposalToFinalize(proposalNumber)
+    const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
+    await approveProposalFixture.execute()
+    assert(approveProposalFixture.proposalExecuted)
   }
 }
 
@@ -638,9 +630,6 @@ export class ValidatorCountProposalFixture extends BaseFixture {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
-    const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
-    const councilAccounts = await this.api.getCouncilAccounts()
-    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
 
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
@@ -661,8 +650,9 @@ export class ValidatorCountProposalFixture extends BaseFixture {
     assert.notEqual(proposalNumber, undefined)
 
     // Approving the proposal
-    this.api.batchApproveProposal(proposalNumber)
-    await this.api.waitForProposalToFinalize(proposalNumber)
+    const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
+    await approveProposalFixture.execute()
+    assert(approveProposalFixture.proposalExecuted)
 
     const newValidatorCount: BN = await this.api.getValidatorCount()
     assert(
@@ -686,7 +676,6 @@ export class UpdateRuntimeFixture extends BaseFixture {
     // Setup
     const runtime: string = Utils.readRuntimeFromFile(this.runtimePath)
     const description = 'runtime upgrade proposal which is used for API network testing'
-    const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
 
     // Topping the balances
     const proposalStake: BN = new BN(1000000)
@@ -697,8 +686,6 @@ export class UpdateRuntimeFixture extends BaseFixture {
       runtime
     )
     this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
-    const councilAccounts = await this.api.getCouncilAccounts()
-    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
 
     // Proposal creation
     const result = await this.api.proposeRuntime(
@@ -712,22 +699,28 @@ export class UpdateRuntimeFixture extends BaseFixture {
     assert.notEqual(proposalNumber, undefined)
 
     // Approving runtime update proposal
-    this.api.batchApproveProposal(proposalNumber)
-    await this.api.waitForProposalToFinalize(proposalNumber)
+    const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
+    await approveProposalFixture.execute()
+    assert(approveProposalFixture.proposalExecuted)
   }
 }
 
 export class VoteForProposalFixture extends BaseFixture {
   private proposalNumber: ProposalId
-  private events: EventRecord[] = []
+  private _proposalExecuted = false
+  private _events: EventRecord[] = []
 
   constructor(api: Api, proposalNumber: ProposalId) {
     super(api)
     this.proposalNumber = proposalNumber
   }
 
-  public getEvents(): EventRecord[] {
-    return this.events
+  get proposalExecuted(): boolean {
+    return this._proposalExecuted
+  }
+
+  get events(): EventRecord[] {
+    return this._events
   }
 
   public async execute(): Promise<void> {
@@ -736,7 +729,11 @@ export class VoteForProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
 
     // Approving the proposal
-    this.api.batchApproveProposal(this.proposalNumber)
-    this.events = await this.api.waitForProposalToFinalize(this.proposalNumber)
+    const onProposalFinalized = this.api.waitForProposalToFinalize(this.proposalNumber)
+    const approvals = await this.api.batchApproveProposal(this.proposalNumber)
+    approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
+    const proposalOutcome = await onProposalFinalized
+    this._proposalExecuted = proposalOutcome[0]
+    this._events = proposalOutcome[1]
   }
 }

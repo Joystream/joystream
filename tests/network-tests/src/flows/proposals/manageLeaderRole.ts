@@ -70,7 +70,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   )
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
-  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.getEvents(), group) as OpeningId
+  const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
   assert(openingId)
 
   const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
@@ -134,9 +134,9 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   // Approve new leader reward
   await new FixtureRunner(voteForeLeaderRewardFixture).run()
 
-  const leadId = await api.getLeadWorkerId(group)
-  // This check is prone to failure if more than one worker's reward amount was updated
-  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.getEvents(), group) as WorkerId
+  const leadId = (await api.getLeadWorkerId(group)) as WorkerId
+  assert(leadId)
+  const workerId = api.findWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.events, group, leadId) as WorkerId
   assert(workerId)
   assert(leadId!.eq(workerId))
   const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
@@ -152,7 +152,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   // Propose decrease stake
   await new FixtureRunner(decreaseLeaderStakeProposalFixture).run()
 
-  let newStake: BN = applicationStake.sub(stakeDecrement)
+  // let newStake: BN = applicationStake.sub(stakeDecrement)
   // Approve decreased leader stake
   const voteForDecreaseStakeProposal = new VoteForProposalFixture(
     api,
@@ -165,7 +165,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   await new FixtureRunner(slashLeaderProposalFixture).run()
 
   // Approve leader slash
-  newStake = newStake.sub(slashAmount)
+  // newStake = newStake.sub(slashAmount)
   const voteForSlashProposalFixture = new VoteForProposalFixture(
     api,
     slashLeaderProposalFixture.getCreatedProposalId() as ProposalId

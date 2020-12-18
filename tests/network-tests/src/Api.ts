@@ -552,12 +552,8 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account)
   }
 
-  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<void[]> {
-    return Promise.all(
-      accounts.map(async (account) => {
-        await this.applyForCouncilElection(account, amount)
-      })
-    )
+  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(accounts.map(async (account) => this.applyForCouncilElection(account, amount)))
   }
 
   public async getCouncilElectionStake(address: string): Promise<BN> {
@@ -569,11 +565,14 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account)
   }
 
-  public batchVoteForCouncilMember(accounts: string[], nominees: string[], salt: string[], stake: BN): Promise<void[]> {
+  public batchVoteForCouncilMember(
+    accounts: string[],
+    nominees: string[],
+    salt: string[],
+    stake: BN
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
-      accounts.map(async (account, index) => {
-        await this.voteForCouncilMember(account, nominees[index], salt[index], stake)
-      })
+      accounts.map(async (account, index) => this.voteForCouncilMember(account, nominees[index], salt[index], stake))
     )
   }
 
@@ -581,11 +580,11 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account)
   }
 
-  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<void[]> {
+  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<ISubmittableResult[]> {
     return Promise.all(
       accounts.map(async (account, index) => {
         const commitment = Utils.hashVote(nominees[index], salt[index])
-        await this.revealVote(account, commitment, nominees[index], salt[index])
+        return this.revealVote(account, commitment, nominees[index], salt[index])
       })
     )
   }
@@ -734,12 +733,12 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account)
   }
 
-  public async batchApproveProposal(proposal: ProposalId): Promise<void[]> {
+  public async batchApproveProposal(proposal: ProposalId): Promise<ISubmittableResult[]> {
     const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
       councilAccounts.map(async (account) => {
         const memberId: MemberId = (await this.getMemberIds(account))[0]
-        await this.approveProposal(account, memberId, proposal)
+        return this.approveProposal(account, memberId, proposal)
       })
     )
   }
@@ -798,10 +797,17 @@ export class Api {
     return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
   }
 
-  public findWorkerRewardAmountUpdatedEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
+  public findWorkerRewardAmountUpdatedEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups,
+    workerId: WorkerId
+  ): WorkerId | undefined {
     const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
     if (record) {
-      return (record.event.data[0] as unknown) as WorkerId
+      const id = (record.event.data[0] as unknown) as WorkerId
+      if (id.eq(workerId)) {
+        return workerId
+      }
     }
   }
 
@@ -824,8 +830,9 @@ export class Api {
     return this.waitForSystemEvent('RuntimeUpdated')
   }
 
-  // Resolves with events that were emitted at the same time that the proposal was finalized
-  public waitForProposalToFinalize(id: ProposalId): Promise<EventRecord[]> {
+  // Resolves to true when proposal finalized and executed successfully
+  // Resolved to false when proposal finalized and execution fails
+  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
@@ -836,7 +843,7 @@ export class Api {
             record.event.data[1].toString().includes('Executed')
           ) {
             unsubscribe()
-            resolve(events)
+            resolve([true, events])
           } else if (
             record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
@@ -844,7 +851,7 @@ export class Api {
             record.event.data[1].toString().includes('ExecutionFailed')
           ) {
             unsubscribe()
-            resolve(events)
+            resolve([false, events])
           }
         })
       })
@@ -1540,12 +1547,16 @@ export class Api {
     return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account)
   }
 
-  public async batchLeaveRole(workerIds: WorkerId[], text: string, module: WorkingGroups): Promise<void[]> {
+  public async batchLeaveRole(
+    workerIds: WorkerId[],
+    text: string,
+    module: WorkingGroups
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
       workerIds.map(async (workerId) => {
         // get role_account of worker
         const worker = await this.getWorkerById(workerId, module)
-        await this.leaveRole(worker.role_account_id.toString(), workerId, text, module)
+        return this.leaveRole(worker.role_account_id.toString(), workerId, text, module)
       })
     )
   }
