@@ -1,8 +1,3 @@
-import { WsProvider } from '@polkadot/api'
-import { Api, WorkingGroups } from '../Api'
-import { config } from 'dotenv'
-import Debugger from 'debug'
-
 import creatingMemberships from '../flows/membership/creatingMemberships'
 import councilSetup from '../flows/proposals/councilSetup'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
@@ -16,19 +11,10 @@ import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
 import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
 import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
 import workerPayout from '../flows/workingGroup/workerPayout'
+import { scenario } from '../Scenario'
 
-const scenario = async () => {
-  const debug = Debugger('scenario:full')
-
-  // Load env variables
-  config()
-  const env = process.env
-
-  // Connect api to the chain
-  const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
-  const provider = new WsProvider(nodeUrl)
-  const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
-
+scenario(async ({ api, env, debug }) => {
+  debug('Enabling failed tx logs')
   api.enableTxLogs()
 
   await Promise.all([creatingMemberships(api, env), councilSetup(api, env)])
@@ -64,10 +50,4 @@ const scenario = async () => {
     manageWorkerAsWorker.content(api, env),
     workerPayout.content(api, env),
   ])
-
-  // Note: disconnecting and then reconnecting to the chain in the same process
-  // doesn't seem to work!
-  api.close()
-}
-
-scenario()
+})
