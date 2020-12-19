@@ -11,7 +11,7 @@ import manageLeaderRole from '../flows/proposals/manageLeaderRole'
 import spendingProposal from '../flows/proposals/spendingProposal'
 import textProposal from '../flows/proposals/textProposal'
 import validatorCountProposal from '../flows/proposals/validatorCountProposal'
-import workingGroupMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
+import wgMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
 import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
 import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
 import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
@@ -44,28 +44,25 @@ const scenario = async () => {
   ])
 
   await Promise.all([
-    workingGroupMintCapacityProposal(api, env, WorkingGroups.StorageWorkingGroup),
-    workingGroupMintCapacityProposal(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
-    manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup),
-    manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
+    wgMintCapacityProposal.storage(api, env),
+    wgMintCapacityProposal.content(api, env),
+    manageLeaderRole.storage(api, env),
+    manageLeaderRole.content(api, env),
   ])
 
-  await Promise.all([
-    leaderSetup(api, env, WorkingGroups.StorageWorkingGroup),
-    leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
-  ])
+  await Promise.all([leaderSetup.storage(api, env), leaderSetup.content(api, env)])
 
   // All tests below require an active Lead for each group
   // Test bug only on one instance of working group is sufficient
   await atLeastValueBug(api, env)
 
   await Promise.all([
-    manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup),
-    manageWorkerAsWorker(api, env, WorkingGroups.StorageWorkingGroup),
-    workerPayout(api, env, WorkingGroups.StorageWorkingGroup),
-    manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
-    manageWorkerAsWorker(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
-    workerPayout(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
+    manageWorkerAsLead.storage(api, env),
+    manageWorkerAsWorker.storage(api, env),
+    workerPayout.storage(api, env),
+    manageWorkerAsLead.content(api, env),
+    manageWorkerAsWorker.content(api, env),
+    workerPayout.content(api, env),
   ])
 
   // Note: disconnecting and then reconnecting to the chain in the same process

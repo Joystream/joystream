@@ -15,12 +15,16 @@ import { assert } from 'chai'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-// Manage worker as lead scenario
-export default async function manageWorkerAsLead(
-  api: Api,
-  env: NodeJS.ProcessEnv,
-  group: WorkingGroups
-): Promise<void> {
+export default {
+  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
+
+async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
   const debug = Debugger(`manageWorkerAsLead:${group}`)
   debug('Started')
 

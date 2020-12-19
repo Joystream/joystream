@@ -20,7 +20,16 @@ import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+export default {
+  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
+
+async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
   const debug = Debugger(`flow:managerLeaderRole:${group}`)
   debug('Started')
 

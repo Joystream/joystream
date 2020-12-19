@@ -7,12 +7,17 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
+export default {
+  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
+
 // Worker application happy case scenario
-export default async function leaderSetup(
-  api: Api,
-  env: NodeJS.ProcessEnv,
-  group: WorkingGroups
-): Promise<KeyringPair> {
+async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<KeyringPair> {
   const debug = Debugger(`flow:leaderSetup:${group}`)
   debug('Started')
 

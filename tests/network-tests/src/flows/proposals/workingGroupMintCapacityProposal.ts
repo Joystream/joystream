@@ -6,7 +6,17 @@ import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+export default {
+  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return workingGroupMintCapactiy(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+
+  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
+
+async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
   const debug = Debugger(`flow:workingGroupMintCapacityProposal:${group}`)
   debug('Started')
 

@@ -30,10 +30,7 @@ const scenario = async () => {
 
   const query = new QueryNodeApi(queryNodeProvider)
 
-  const leadKeyPair = await leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
-
-  // Some flows that use the curator lead to perform some tests...
-  //
+  const leadKeyPair = await leaderSetup.content(api, env)
 
   await initializeContentDirectory(api, leadKeyPair)
 
