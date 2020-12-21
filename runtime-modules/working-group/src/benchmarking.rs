@@ -195,7 +195,20 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+
+    (account_id, member_id)
 }
 
 fn force_missed_reward<T: Trait<I>, I: Instance>() {
