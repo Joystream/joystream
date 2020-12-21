@@ -16,7 +16,10 @@ rustup component add rustfmt clippy
 rustup install nightly-2020-05-23 --force
 rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
 
-# Sticking with older version of compiler to ensure working build
+# Latest clippy linter which comes with 1.47.0 fails on some subtrate modules
+# Also note combination of newer versions of toolchain with the above nightly
+# toolchain to build wasm seems to fail.
+# So we need to stick with an older version until we update substrate
 rustup install 1.46.0
 rustup default 1.46.0
 
