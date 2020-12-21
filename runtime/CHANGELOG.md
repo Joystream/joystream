@@ -1,3 +1,6 @@
+### Version 7.9.0 - Babylon - runtime upgrade - December 21 2020
+- Introduction of new and improved content directory
+
 ### Version 7.4.0 - Alexandria - new chain - September 21 2020
 - Update to substrate v2.0.0-rc4
 
