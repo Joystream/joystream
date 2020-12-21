@@ -7,12 +7,19 @@ import { TypeRegistry } from '@polkadot/types'
 
 // TODO: Move to @joystream/js soon
 
-export function getAlicePair() {
+export function getAlicePair(): KeyringPair {
   const keyring = new Keyring({ type: 'sr25519' })
   keyring.addFromUri('//Alice', { name: 'Alice' })
   const ALICE = keyring.getPairs()[0]
 
   return ALICE
+}
+
+export function getKeyFromSuri(suri: string): KeyringPair {
+  const keyring = new Keyring({ type: 'sr25519' })
+
+  // Assume a SURI, add to keyring and return keypair
+  return keyring.addFromUri(suri)
 }
 
 export class ExtrinsicsHelper {
