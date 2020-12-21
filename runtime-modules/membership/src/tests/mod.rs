@@ -7,6 +7,7 @@ use crate::{Error, Event};
 use fixtures::*;
 use mock::*;
 
+use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
@@ -909,5 +910,39 @@ fn confirm_staking_account_candidate_fails_with_missing_staking_account_id() {
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         ConfirmStakingAccountFixture::default()
             .call_and_assert(Err(Error::<Test>::StakingAccountDoesntExist.into()));
+    });
+}
+
+#[test]
+fn is_member_staking_account_works() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        // Before adding candidate should be false.
+        assert_eq!(
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            false
+        );
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        // After adding but before confirmation of the candidate should be false.
+        assert_eq!(
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            false
+        );
+        ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        // After confirmation of the candidate should be true.
+        assert_eq!(
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            true
+        );
+
+        // After removing of the staking account should be false.
+        RemoveStakingAccountFixture::default().call_and_assert(Ok(()));
+        assert_eq!(
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            false
+        );
     });
 }
