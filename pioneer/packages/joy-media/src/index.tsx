@@ -99,7 +99,7 @@ const App: React.FC<Props> = () => {
               <Button
                 size='big'
                 primary
-                href='https://github.com/Joystream/helpdesk/tree/master/roles/channel-owner'
+                href='https://github.com/Joystream/helpdesk/tree/master/roles/content-creators'
                 icon
                 labelPosition='right'
                 target='_blank'
