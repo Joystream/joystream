@@ -49,7 +49,7 @@ const usage = `
   Dev Commands:       Commands to run on a development chain.
     dev-init          Setup chain with Alice as lead and storage provider.
     dev-check         Check the chain is setup with Alice as lead and storage provider.
-    vstore-init      Initialize versioned store, Requires SURI of ContentWorking Lead.
+    sudo-create-sp    Initialize the chain with a lead storage provider.
     
   Type 'storage-cli command' for the exact command usage examples.
   `
@@ -71,6 +71,9 @@ const commands = {
   // Checks that the setup done by dev-init command was successful
   'dev-check': async (api) => {
     return dev.check(api)
+  },
+  'sudo-create-sp': async (api) => {
+    return dev.makeMemberInitialLeadAndStorageProvider(api)
   },
   // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
   upload: async (
