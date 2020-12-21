@@ -55,7 +55,7 @@ export default class UpdateVideoCommand extends MediaCommandBase {
       videoEntity = video
     }
 
-    const currentValues = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
+    const currentValues = await this.parseToEntityJson<VideoEntity>(videoEntity)
     const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
 
     const {
