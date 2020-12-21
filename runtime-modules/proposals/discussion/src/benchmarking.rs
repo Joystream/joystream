@@ -9,7 +9,6 @@ use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
-use sp_std::cmp::min;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 
@@ -22,11 +21,11 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 
