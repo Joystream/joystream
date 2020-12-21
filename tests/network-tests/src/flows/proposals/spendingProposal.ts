@@ -1,11 +1,11 @@
 import BN from 'bn.js'
-import { Api } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv) {
+export default async function spendingProposal({ api, env }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:spendingProposals')
   debug('Started')
 

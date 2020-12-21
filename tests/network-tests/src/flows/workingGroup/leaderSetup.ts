@@ -1,23 +1,24 @@
 import { Api, WorkingGroups } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
-import { KeyringPair } from '@polkadot/keyring/types'
+// import { KeyringPair } from '@polkadot/keyring/types'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
 export default {
-  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+  storage: async function ({ api, env }: FlowArgs): Promise<void> {
     return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
   },
-  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+  content: async function ({ api, env }: FlowArgs): Promise<void> {
     return leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }
 
 // Worker application happy case scenario
-async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<KeyringPair> {
+async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
   const debug = Debugger(`flow:leaderSetup:${group}`)
   debug('Started')
 
@@ -53,5 +54,6 @@ async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroup
 
   debug('Done')
 
-  return leadKeyPair
+  // Who ever needs it will need to get it from the Api layer
+  // return leadKeyPair
 }

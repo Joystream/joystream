@@ -1,11 +1,11 @@
-import { Api } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
 // Election parameters proposal scenario
-export default async function electionParametersProposal(api: Api, env: NodeJS.ProcessEnv) {
+export default async function electionParametersProposal({ api }: FlowArgs): Promise<void> {
   const debug = Debugger('electionParametersProposal')
   debug('Started')
 

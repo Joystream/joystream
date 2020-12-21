@@ -1,4 +1,5 @@
-import { Api, WorkingGroups } from '../../Api'
+import { WorkingGroups } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
 import { assert } from 'chai'
@@ -6,7 +7,7 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
 // Zero at least value bug scenario
-export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessEnv) {
+export default async function zeroAtLeastValueBug({ api, env }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:atLeastValueBug')
   debug('Started')
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

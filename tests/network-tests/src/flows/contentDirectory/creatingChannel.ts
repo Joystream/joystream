@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { QueryNodeApi } from '../../QueryNodeApi'
+import { FlowArgs } from '../../Scenario'
 import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
@@ -30,7 +30,7 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
   assert.equal(queriedChannel.isPublic, channel.isPublic, 'Should be equal')
 }
 
-export default async function channelCreation(api: Api, query: QueryNodeApi): Promise<void> {
+export default async function channelCreation({ api, query }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:creatingChannel')
   debug('Started')
 

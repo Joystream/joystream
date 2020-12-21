@@ -1,11 +1,11 @@
 import BN from 'bn.js'
-import { Api } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
+export default async function validatorCount({ api, env }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:validatorCountProposal')
   debug('Started')
 

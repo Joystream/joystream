@@ -1,5 +1,6 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
@@ -7,11 +8,11 @@ import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
 export default {
-  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+  storage: async function ({ api, env }: FlowArgs): Promise<void> {
     return workingGroupMintCapactiy(api, env, WorkingGroups.StorageWorkingGroup)
   },
 
-  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+  content: async function ({ api, env }: FlowArgs): Promise<void> {
     return workingGroupMintCapactiy(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }

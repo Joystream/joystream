@@ -3,12 +3,11 @@ import { assert } from 'chai'
 import { ContentId } from '@joystream/types/media'
 import { registry } from '@joystream/types'
 
-import { Api } from '../../Api'
-import { QueryNodeApi } from '../../QueryNodeApi'
+import { FlowArgs } from '../../Scenario'
 import { Utils } from '../../utils'
 import Debugger from 'debug'
 
-export default async function getContentFromStorageNode(api: Api, query: QueryNodeApi): Promise<void> {
+export default async function getContentFromStorageNode({ api, query }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:getContentFromStorageNode')
   debug('Started')
 

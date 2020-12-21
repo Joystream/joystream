@@ -1,4 +1,4 @@
-import { Api } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import {
   BuyMembershipHappyCaseFixture,
   BuyMembershipWithInsufficienFundsFixture,
@@ -9,7 +9,7 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
-export default async function membershipCreation(api: Api, env: NodeJS.ProcessEnv): Promise<void> {
+export default async function membershipCreation({ api, env }: FlowArgs): Promise<void> {
   const debug = Debugger('flow:memberships')
   debug('Started')
 

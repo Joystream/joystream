@@ -1,4 +1,5 @@
 import { Api, WorkingGroups } from '../../Api'
+import { FlowArgs } from '../../Scenario'
 import {
   ApplyForOpeningFixture,
   AddWorkerOpeningFixture,
@@ -16,10 +17,10 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
 export default {
-  storage: async function (api: Api, env: NodeJS.ProcessEnv) {
+  storage: async function ({ api, env }: FlowArgs): Promise<void> {
     return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
   },
-  content: async function (api: Api, env: NodeJS.ProcessEnv) {
+  content: async function ({ api, env }: FlowArgs): Promise<void> {
     return manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }

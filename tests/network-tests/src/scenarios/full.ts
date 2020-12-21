@@ -13,41 +13,45 @@ import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
 import workerPayout from '../flows/workingGroup/workerPayout'
 import { scenario } from '../Scenario'
 
-scenario(async ({ api, env, debug }) => {
+scenario(async ({ api, debug, job }) => {
   debug('Enabling failed tx logs')
   api.enableTxLogs()
 
-  await Promise.all([creatingMemberships(api, env), councilSetup(api, env)])
+  job([creatingMemberships])
+
+  const councilJob = job([councilSetup])
 
   // Runtime is configured for MaxActiveProposalLimit = 5
   // So we should ensure we don't exceed that number of active proposals
   // which limits the number of concurrent tests that create proposals
-  await Promise.all([
-    electionParametersProposal(api, env),
-    spendingProposal(api, env),
-    textProposal(api, env),
-    validatorCountProposal(api, env),
-  ])
+  const proposalsJob1 = job([
+    electionParametersProposal,
+    spendingProposal,
+    textProposal,
+    validatorCountProposal,
+  ]).afterSuccessOf(councilJob)
 
-  await Promise.all([
-    wgMintCapacityProposal.storage(api, env),
-    wgMintCapacityProposal.content(api, env),
-    manageLeaderRole.storage(api, env),
-    manageLeaderRole.content(api, env),
-  ])
+  job([wgMintCapacityProposal.storage, wgMintCapacityProposal.content])
+    .afterSuccessOf(councilJob)
+    .afterSuccessOf(proposalsJob1)
 
-  await Promise.all([leaderSetup.storage(api, env), leaderSetup.content(api, env)])
+  const leadRolesJob = job([manageLeaderRole.storage, manageLeaderRole.content])
+    .afterSuccessOf(councilJob)
+    .afterSuccessOf(proposalsJob1)
 
-  // All tests below require an active Lead for each group
+  const leadSetupJob = job([leaderSetup.storage, leaderSetup.content]).afterSuccessOf(leadRolesJob)
+
+  /* All tests below require an active Lead for each group */
+
   // Test bug only on one instance of working group is sufficient
-  await atLeastValueBug(api, env)
+  job([atLeastValueBug]).afterSuccessOf(leadSetupJob)
 
-  await Promise.all([
-    manageWorkerAsLead.storage(api, env),
-    manageWorkerAsWorker.storage(api, env),
-    workerPayout.storage(api, env),
-    manageWorkerAsLead.content(api, env),
-    manageWorkerAsWorker.content(api, env),
-    workerPayout.content(api, env),
-  ])
+  job([
+    manageWorkerAsLead.storage,
+    manageWorkerAsWorker.storage,
+    workerPayout.storage,
+    manageWorkerAsLead.content,
+    manageWorkerAsWorker.content,
+    workerPayout.content,
+  ]).afterSuccessOf(leadSetupJob)
 })
