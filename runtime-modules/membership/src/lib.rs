@@ -998,3 +998,15 @@ impl<T: Trait> Module<T> {
         membership_fee.min(referral_cut)
     }
 }
+
+impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
+    fn is_member_staking_account(
+        member_id: &common::MemberId<T>,
+        account_id: &T::AccountId,
+    ) -> bool {
+        Self::ensure_membership(*member_id)
+            .ok()
+            .map(|membership| membership.staking_account_confirmed(account_id))
+            .unwrap_or(false)
+    }
+}

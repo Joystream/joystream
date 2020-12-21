@@ -535,6 +535,8 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
+        add_confirmed_staking_account(member_id, account_id.into());
+
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
             working_group::ApplyOnOpeningParameters::<T> {
@@ -659,6 +661,8 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         );
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
+
+        add_confirmed_staking_account(member_id, account_id.into());
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -950,6 +954,8 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
+        add_confirmed_staking_account(member_id, account_id.into());
+
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
             working_group::ApplyOnOpeningParameters::<T> {
@@ -1073,6 +1079,8 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         );
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
+
+        add_confirmed_staking_account(member_id, account_id.into());
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),

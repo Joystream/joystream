@@ -4,7 +4,7 @@
 
 mod working_group_proposals;
 
-use crate::{BlockNumber, ProposalCancellationFee, Runtime};
+use crate::{BlockNumber, MemberId, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election_params::ElectionParameters;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
@@ -495,6 +495,21 @@ where
 
         run_to_block(self.run_to_block);
     }
+}
+
+pub fn add_confirmed_staking_account(member_id: MemberId, account_id: AccountId32) {
+    assert!(crate::Members::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .is_ok());
+
+    assert!(crate::Members::confirm_staking_account(
+        RawOrigin::Signed(account_id).into(),
+        member_id,
+    )
+    .is_ok());
 }
 
 #[test]
