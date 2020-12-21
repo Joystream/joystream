@@ -34,7 +34,7 @@ export default class RemoveVideoCommand extends ContentDirectoryCommandBase {
       videoEntity = video
     }
 
-    const video = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
+    const video = await this.parseToEntityJson<VideoEntity>(videoEntity)
 
     await this.requireConfirmation(`Are you sure you want to remove the "${video.title}" video?`)
 
