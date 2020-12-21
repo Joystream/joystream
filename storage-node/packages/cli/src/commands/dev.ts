@@ -3,6 +3,8 @@
 import dbug from 'debug'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { RuntimeApi } from '@joystream/storage-runtime-api'
+import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
+
 const debug = dbug('joystream:storage-cli:dev')
 
 // Derivation path appended to well known development seed used on
@@ -142,24 +144,52 @@ const init = async (api: RuntimeApi): Promise<any> => {
   return check(api)
 }
 
-// Using sudo create initial storage lead and worker with given keys taken from env variables.
+// Using sudo to create initial storage lead and worker with given keys taken from env variables.
 // Used to quickly setup a storage provider on a new chain before a council is ready.
 const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise<any> => {
+  if (!process.env.SUDO_URI) {
+    throw new Error('required SUDO_URI env variable was not set')
+  }
+
+  if (!process.env.MEMBER_ID) {
+    throw new Error('required MEMBER_ID env variable was not set')
+  }
+
+  if (!process.env.MEMBER_CONTROLLER_URI) {
+    throw new Error('required MEMBER_CONTROLLER_URI env variable was not set')
+  }
+
+  if (!process.env.STORAGE_WORKER_ADDRESS) {
+    throw new Error('required STORAGE_WORKER_ADDRESS env variable was not set')
+  }
+
   const sudoKey = getKeyFromAddressOrSuri(api, process.env.SUDO_URI)
   const memberId = parseInt(process.env.MEMBER_ID)
-  const memberController = getKeyFromAddressOrSuri(api, process.env.MEMBER_URI).address
+  const memberController = getKeyFromAddressOrSuri(api, process.env.MEMBER_CONTROLLER_URI).address
   const leadAccount = memberController
-  const workerAccount = process.env.WORKER_ACCOUNT
+  const workerAccount = process.env.STORAGE_WORKER_ADDRESS
 
   const sudo = await api.identities.getSudoAccount()
 
+  // Ensure correct sudo key was provided
   if (!sudo.eq(sudoKey.address)) {
     throw new Error('Provided SUDO_URI is not the chain sudo')
   }
 
+  // Ensure MEMBER_ID and MEMBER_CONTROLLER_URI are valid
+  const memberIds = await api.identities.memberIdsOfController(memberController)
+  if (memberIds.find((id) => id.eq(memberId)) === undefined) {
+    throw new Error(
+      'MEMBER_ID and MEMBER_CONTROLLER_URI do not correspond to a registered member and their controller account'
+    )
+  }
+
+  // Ensure STORAGE_WORKER_ADDRESS is a valid Address
+  api.identities.keyring.decodeAddress(workerAccount)
+
   debug(`Creating Leader with role key: ${leadAccount}`)
   debug('Creating Lead Opening')
-  const leadOpeningId = await api.workers.devAddStorageLeadOpening(getLeadOpeningInfo())
+  const leadOpeningId = await api.workers.devAddStorageLeadOpening(JSON.stringify(getLeadOpeningInfo()))
   debug('Applying')
   const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, memberId, memberController, leadAccount)
   debug('Starting Review')
@@ -175,7 +205,7 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
   // Create a storage openinging, apply, start review, and fill opening
   debug(`Making ${workerAccount} account a storage provider.`)
 
-  const openingId = await api.workers.devAddStorageOpening(getWorkerOpeningInfo())
+  const openingId = await api.workers.devAddStorageOpening(JSON.stringify(getWorkerOpeningInfo()))
   debug(`Created new storage opening: ${openingId}`)
 
   const applicationId = await api.workers.devApplyOnOpening(openingId, memberId, memberController, workerAccount)
@@ -189,54 +219,50 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
   debug(`Assigned storage provider id: ${providerId}`)
 }
 
-function getLeadOpeningInfo() {
-  return `{
-    "version": 1,
-    "headline": "Initial Storage Lead",
-    "job": {
-      "title": "Bootstrap Lead",
-      "description": "Starting opportunity to bootstrap the network"
+function getLeadOpeningInfo(): HRTJson {
+  return {
+    'version': 1,
+    'headline': 'Initial Storage Lead',
+    'job': {
+      'title': 'Bootstrap Lead',
+      'description': 'Starting opportunity to bootstrap the network',
     },
-    "application": {
-      "sections": []
+    'application': {
+      'sections': [],
     },
-    "reward": "None",
-    "creator": {
-      "membership": {
-        "handle": "mokhtar"
-      }
+    'reward': 'None',
+    'creator': {
+      'membership': {
+        'handle': 'mokhtar',
+      },
     },
-    "process": {
-      "details": [
-        "automated"
-      ]
-    }
-  }`
+    'process': {
+      'details': ['automated'],
+    },
+  }
 }
 
-function getWorkerOpeningInfo() {
-  return `{
-    "version": 1,
-    "headline": "Initial Storage Worker",
-    "job": {
-      "title": "Bootstrap Worker",
-      "description": "Starting opportunity to bootstrap the network"
+function getWorkerOpeningInfo(): HRTJson {
+  return {
+    'version': 1,
+    'headline': 'Initial Storage Worker',
+    'job': {
+      'title': 'Bootstrap Worker',
+      'description': 'Starting opportunity to bootstrap the network',
     },
-    "application": {
-      "sections": []
+    'application': {
+      'sections': [],
     },
-    "reward": "None",
-    "creator": {
-      "membership": {
-        "handle": "mokhtar"
-      }
+    'reward': 'None',
+    'creator': {
+      'membership': {
+        'handle': 'mokhtar',
+      },
     },
-    "process": {
-      "details": [
-        "automated"
-      ]
-    }
-  }`
+    'process': {
+      'details': ['automated'],
+    },
+  }
 }
 
 export { init, check, aliceKeyPair, roleKeyPair, developmentPort, makeMemberInitialLeadAndStorageProvider }
