@@ -25,9 +25,9 @@ import { terms, privacyPolicy } from './joy-pages';
 import election from './joy-election';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
-import media from './joy-media';
 import forum from './joy-forum';
 import tokenomics from './joy-tokenomics';
+import media from './joy-media';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'

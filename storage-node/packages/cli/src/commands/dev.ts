@@ -3,6 +3,8 @@
 import dbug from 'debug'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { RuntimeApi } from '@joystream/storage-runtime-api'
+import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
+
 const debug = dbug('joystream:storage-cli:dev')
 
 // Derivation path appended to well known development seed used on
@@ -32,73 +34,6 @@ function getKeyFromAddressOrSuri(api: RuntimeApi, addressOrSuri: string) {
 
 function developmentPort(): number {
   return 3001
-}
-
-// Sign and broadcast multiple transactions concurrently (so they may all be finalized in a single block)
-// Resolves when last transaction is finalized.
-const batchDispatchCalls = async (
-  runtimeApi: RuntimeApi,
-  senderAddress: string | Uint8Array,
-  rawCalls: any[]
-): Promise<any> => {
-  const api = runtimeApi.api
-
-  debug(`dispatching ${rawCalls.length} transactions.`)
-
-  // promise.all to avoid unhandled promise rejection
-  return Promise.all(
-    rawCalls.map((call) => {
-      const { methodName, sectionName, args } = call
-      const tx = api.tx[sectionName][methodName](...args)
-      return runtimeApi.signAndSend(senderAddress, tx)
-    })
-  )
-}
-
-// Dispatch pre-prepared calls to runtime to initialize the versioned store
-const vstoreInit = async (api: RuntimeApi, contentLead: string): Promise<any> => {
-  // If any existing classes are found we will skip initializing
-  // because the pre-prepared transactions make the assumption
-  // that the versioned store is not initialized.
-  const firstClassStorageKey = api.api.query.versionedStore.classById.key(1)
-  const firstClass = await api.api.rpc.state.getStorage(firstClassStorageKey)
-  if (firstClass.isSome) {
-    debug('Skipping Initializing Content Directory, classes already exist.')
-    return
-  } else {
-    debug('Initializing Content Directory.')
-  }
-
-  if (!contentLead) {
-    throw new Error('SURI of content lead not provided')
-  }
-
-  // Get address and load key into keyring if a SURI was supplied
-  const contentLeadAddress = getKeyFromAddressOrSuri(api, contentLead).address
-
-  // Load pre-pared calls
-  const classes = require('../../../../../devops/vstore/classes.json')
-  const entities = require('../../../../../devops/vstore/entities.json')
-
-  // To create all classes in a single block,
-  // select all createClass calls first
-  debug('Creating Classes in versioned store.')
-  const createClasses = classes.filter((call) => {
-    return call.methodName === 'createClass'
-  })
-  await batchDispatchCalls(api, contentLeadAddress, createClasses)
-
-  // To add schemas to all classes in a single block
-  // select all addClassSchema calls
-  debug('Adding Schemas to classes in versioned store.')
-  const addClassSchema = classes.filter((call) => {
-    return call.methodName === 'addClassSchema'
-  })
-  await batchDispatchCalls(api, contentLeadAddress, addClassSchema)
-
-  // Combine all calls to create entities into a single block
-  debug('Creating entities in versioned store.')
-  await batchDispatchCalls(api, contentLeadAddress, entities)
 }
 
 // Checks the chain state for the storage provider setup we expect
@@ -167,12 +102,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
     debug('Alice is already a member.')
   }
 
-  debug('Setting Alice as content working group lead.')
-  await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
-
-  // Initialize classes and entities in the versioned store
-  await vstoreInit(api, alice)
-
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
   // the storage dev server on a different port than the default for colossus which is also
@@ -215,4 +144,129 @@ const init = async (api: RuntimeApi): Promise<any> => {
   return check(api)
 }
 
-export { init, check, aliceKeyPair, roleKeyPair, developmentPort, vstoreInit }
+// Using sudo to create initial storage lead and worker with given keys taken from env variables.
+// Used to quickly setup a storage provider on a new chain before a council is ready.
+const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise<any> => {
+  if (api.workers.getLeadRoleAccount()) {
+    throw new Error('The Storage Lead is already set!')
+  }
+
+  if (!process.env.SUDO_URI) {
+    throw new Error('required SUDO_URI env variable was not set')
+  }
+
+  if (!process.env.MEMBER_ID) {
+    throw new Error('required MEMBER_ID env variable was not set')
+  }
+
+  if (!process.env.MEMBER_CONTROLLER_URI) {
+    throw new Error('required MEMBER_CONTROLLER_URI env variable was not set')
+  }
+
+  if (!process.env.STORAGE_WORKER_ADDRESS) {
+    throw new Error('required STORAGE_WORKER_ADDRESS env variable was not set')
+  }
+
+  const sudoKey = getKeyFromAddressOrSuri(api, process.env.SUDO_URI)
+  const memberId = parseInt(process.env.MEMBER_ID)
+  const memberController = getKeyFromAddressOrSuri(api, process.env.MEMBER_CONTROLLER_URI).address
+  const leadAccount = memberController
+  const workerAccount = process.env.STORAGE_WORKER_ADDRESS
+
+  const sudo = await api.identities.getSudoAccount()
+
+  // Ensure correct sudo key was provided
+  if (!sudo.eq(sudoKey.address)) {
+    throw new Error('Provided SUDO_URI is not the chain sudo')
+  }
+
+  // Ensure MEMBER_ID and MEMBER_CONTROLLER_URI are valid
+  const memberIds = await api.identities.memberIdsOfController(memberController)
+  if (memberIds.find((id) => id.eq(memberId)) === undefined) {
+    throw new Error(
+      'MEMBER_ID and MEMBER_CONTROLLER_URI do not correspond to a registered member and their controller account'
+    )
+  }
+
+  // Ensure STORAGE_WORKER_ADDRESS is a valid Address
+  api.identities.keyring.decodeAddress(workerAccount)
+
+  debug(`Creating Leader with role key: ${leadAccount}`)
+  debug('Creating Lead Opening')
+  const leadOpeningId = await api.workers.devAddStorageLeadOpening(JSON.stringify(getLeadOpeningInfo()))
+  debug('Applying')
+  const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, memberId, memberController, leadAccount)
+  debug('Starting Review')
+  api.workers.devBeginLeadOpeningReview(leadOpeningId)
+  debug('Filling Opening')
+  await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
+
+  const setLeadAccount = await api.workers.getLeadRoleAccount()
+  if (!setLeadAccount.eq(leadAccount)) {
+    throw new Error('Setting Lead failed!')
+  }
+
+  // Create a storage openinging, apply, start review, and fill opening
+  debug(`Making ${workerAccount} account a storage provider.`)
+
+  const openingId = await api.workers.devAddStorageOpening(JSON.stringify(getWorkerOpeningInfo()))
+  debug(`Created new storage opening: ${openingId}`)
+
+  const applicationId = await api.workers.devApplyOnOpening(openingId, memberId, memberController, workerAccount)
+  debug(`Applied with application id: ${applicationId}`)
+
+  api.workers.devBeginStorageOpeningReview(openingId)
+
+  debug(`Filling storage opening.`)
+  const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
+
+  debug(`Assigned storage provider id: ${providerId}`)
+}
+
+function getLeadOpeningInfo(): HRTJson {
+  return {
+    'version': 1,
+    'headline': 'Initial Storage Lead',
+    'job': {
+      'title': 'Bootstrap Lead',
+      'description': 'Starting opportunity to bootstrap the network',
+    },
+    'application': {
+      'sections': [],
+    },
+    'reward': 'None',
+    'creator': {
+      'membership': {
+        'handle': 'mokhtar',
+      },
+    },
+    'process': {
+      'details': ['automated'],
+    },
+  }
+}
+
+function getWorkerOpeningInfo(): HRTJson {
+  return {
+    'version': 1,
+    'headline': 'Initial Storage Worker',
+    'job': {
+      'title': 'Bootstrap Worker',
+      'description': 'Starting opportunity to bootstrap the network',
+    },
+    'application': {
+      'sections': [],
+    },
+    'reward': 'None',
+    'creator': {
+      'membership': {
+        'handle': 'mokhtar',
+      },
+    },
+    'process': {
+      'details': ['automated'],
+    },
+  }
+}
+
+export { init, check, aliceKeyPair, roleKeyPair, developmentPort, makeMemberInitialLeadAndStorageProvider }

@@ -177,8 +177,11 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return password
   }
 
-  async requireConfirmation(message = 'Are you sure you want to execute this action?'): Promise<void> {
-    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: false }])
+  async requireConfirmation(
+    message = 'Are you sure you want to execute this action?',
+    defaultVal = false
+  ): Promise<void> {
+    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
     if (!confirmed) this.exit(ExitCodes.OK)
   }
 
@@ -216,12 +219,39 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {
-    const password: string = await this.promptForPassword()
-    try {
-      account.decodePkcs8(password)
-    } catch (e) {
-      this.error('Invalid password!', { exit: ExitCodes.InvalidInput })
+    // Skip if account already unlocked
+    if (!account.isLocked) {
+      return
     }
+
+    // First - try decoding using empty string
+    try {
+      account.decodePkcs8('')
+      return
+    } catch (e) {
+      // Continue...
+    }
+
+    let isPassValid = false
+    while (!isPassValid) {
+      try {
+        const password = await this.promptForPassword()
+        account.decodePkcs8(password)
+        isPassValid = true
+      } catch (e) {
+        this.warn('Invalid password... Try again.')
+      }
+    }
+  }
+
+  async getRequiredMemberId(): Promise<number> {
+    const account = await this.getRequiredSelectedAccount()
+    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
+    if (!memberIds.length) {
+      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+    }
+
+    return memberIds[0].toNumber() // FIXME: Temporary solution (just using the first one)
   }
 
   async init() {

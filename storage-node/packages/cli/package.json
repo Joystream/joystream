@@ -26,6 +26,9 @@
   "engines": {
     "node": ">=12.18.0"
   },
+  "volta": {
+    "extends": "../package.json"
+  },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
     "lint": "eslint --ext .js,.ts . && tsc --noEmit --pretty",
@@ -44,7 +47,7 @@
     "@joystream/storage-runtime-api": "^0.1.0",
     "@joystream/service-discovery": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.13.0",
+    "@joystream/types": "^0.14.0",
     "axios": "^0.19.2",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",

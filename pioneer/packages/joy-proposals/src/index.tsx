@@ -13,8 +13,6 @@ import translate from './translate';
 import NotDone from './NotDone';
 import { SignalForm,
   SpendingProposalForm,
-  SetContentWorkingGroupLeadForm,
-  SetContentWorkingGroupMintCapForm,
   SetCouncilParamsForm,
   SetMaxValidatorCountForm,
   RuntimeUpgradeForm,
@@ -107,12 +105,6 @@ function App (props: Props): React.ReactElement<Props> {
         <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
         <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
         <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
-        <Route exact path={`${basePath}/new/set-lead`} component={SetContentWorkingGroupLeadForm} />
-        <Route
-          exact
-          path={`${basePath}/new/set-content-working-group-mint-capacity`}
-          component={SetContentWorkingGroupMintCapForm}
-        />
         <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
         <Route exact path={`${basePath}/new/add-working-group-leader-opening`} component={AddWorkingGroupOpeningForm} />
         <Route exact path={`${basePath}/new/set-working-group-mint-capacity`} component={SetWorkingGroupMintCapacityForm} />

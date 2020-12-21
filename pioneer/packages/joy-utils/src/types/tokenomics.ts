@@ -1,3 +1,18 @@
+export type WorkingGroupTokenomicsData = {
+  number: number;
+  totalStake: number;
+  stakeShare: number;
+  rewardsPerWeek: number;
+  rewardsShare: number;
+  lead: {
+    number: number;
+    totalStake: number;
+    stakeShare: number;
+    rewardsPerWeek: number;
+    rewardsShare: number;
+  };
+}
+
 export type TokenomicsData = {
   totalIssuance: number;
   currentlyStakedTokens: number;
@@ -20,28 +35,8 @@ export type TokenomicsData = {
     totalStake: number;
     stakeShare: number;
   };
-  storageProviders: {
-    number: number;
-    totalStake: number;
-    stakeShare: number;
-    rewardsPerWeek: number;
-    rewardsShare: number;
-    lead: {
-      number: number;
-      totalStake: number;
-      stakeShare: number;
-      rewardsPerWeek: number;
-      rewardsShare: number;
-    };
-  };
-  contentCurators: {
-    number: number;
-    contentCuratorLead: number;
-    rewardsPerWeek: number;
-    rewardsShare: number;
-    totalStake: number;
-    stakeShare: number;
-  };
+  storageProviders: WorkingGroupTokenomicsData;
+  contentCurators: WorkingGroupTokenomicsData;
 }
 
 export type StatusServerData = {

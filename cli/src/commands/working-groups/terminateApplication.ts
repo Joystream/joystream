@@ -30,7 +30,7 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'terminateApplication', [applicationId])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateApplication', [applicationId])
 
     this.log(chalk.green(`Application ${chalk.white(applicationId)} has been succesfully terminated!`))
   }

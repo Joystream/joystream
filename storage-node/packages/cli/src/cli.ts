@@ -49,7 +49,7 @@ const usage = `
   Dev Commands:       Commands to run on a development chain.
     dev-init          Setup chain with Alice as lead and storage provider.
     dev-check         Check the chain is setup with Alice as lead and storage provider.
-    vstore-init      Initialize versioned store, Requires SURI of ContentWorking Lead.
+    sudo-create-sp    Initialize the chain with a lead storage provider.
     
   Type 'storage-cli command' for the exact command usage examples.
   `
@@ -66,28 +66,25 @@ function showUsageAndExit(message: string) {
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful
   'dev-check': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.check(api)
   },
-  // Runs the versioned store initialization with given SURI of content working group lead
-  'vstore-init': async (api, suri: string) => {
-    return dev.vstoreInit(api, suri)
+  'sudo-create-sp': async (api) => {
+    return dev.makeMemberInitialLeadAndStorageProvider(api)
   },
   // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
   upload: async (
     api: any,
     filePath: string,
     dataObjectTypeId: string,
+    memberId: string,
     keyFile: string,
-    passPhrase: string,
-    memberId: string
+    passPhrase: string
   ) => {
-    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
+    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, memberId, keyFile, passPhrase)
 
     await uploadCmd.run()
   },
@@ -110,7 +107,7 @@ const commands = {
 
 // Entry point.
 export async function main() {
-  const api = await RuntimeApi.create()
+  const api = await RuntimeApi.create({ retries: 3 })
 
   // Simple CLI commands
   const command = cli.input[0]

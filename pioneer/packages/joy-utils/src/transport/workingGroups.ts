@@ -26,7 +26,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return this.api.query[module];
   }
 
-  protected queryByGroup (group: WorkingGroupKey) {
+  queryByGroup (group: WorkingGroupKey) {
     const module = apiModuleByGroup[group];
 
     return this.cacheApi.query[module];

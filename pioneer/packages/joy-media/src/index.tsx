@@ -1,82 +1,118 @@
-
 import React from 'react';
-import { Route, Switch } from 'react-router';
+import styled from 'styled-components';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import Tabs from '@polkadot/react-components/Tabs';
-import { TabItem } from '@polkadot/react-components/Tabs/types';
-import { ApiProps } from '@polkadot/react-api/types';
-import { withMulti } from '@polkadot/react-api/hoc';
+import { I18nProps } from '@polkadot/react-components/types';
+import _ from 'lodash';
 
-import './index.scss';
-import './common/index.scss';
-
+import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
 import translate from './translate';
-import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
-import { UploadWithRouter } from './Upload';
-import { DiscoveryProviderProps, DiscoveryProviderProvider } from './DiscoveryProvider';
-import { SubstrateTransportProvider } from './TransportContext';
-import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
-import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
-import { ExploreContentView } from './explore/ExploreContent.view';
-import { ViewChannelWithRouter } from './channels/ViewChannel.view';
-import { EditVideoWithRouter } from './upload/EditVideo.view';
-import { PlayVideoWithRouter } from './video/PlayVideo.view';
-import { AllVideosView } from './explore/AllVideos';
-import { AllChannelsView } from './explore/AllChannels';
-// import { VideosByOwner } from './video/VideosByOwner';
+import { Button, Grid, Message, Icon, Image } from 'semantic-ui-react';
 
-type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps;
+import AtlasScreenShot from './assets/atlas-screenshot.jpg';
 
-function App (props: Props) {
-  const { t, basePath } = props;
-  const { state: { address: myAddress } } = useMyAccount();
+const MediaMain = styled.main`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2em;
+  font-size: 1.2em;
+  p {
+    margin: 0.25em;
+    padding: 0;
+  }
+`;
 
-  const tabs: TabItem[] = [
-    {
-      isRoot: true,
-      name: 'explore',
-      text: t('Explore')
-    },
-    !myAddress ? undefined : {
-      name: `account/${myAddress}/channels`,
-      text: t('My channels')
-    }
-    // !myAddress ? undefined : {
-    //   name: `account/${myAddress}/videos`,
-    //   text: t('My videos')
-    // }
-  ].filter((x) => x !== undefined) as TabItem[];
+const Header = styled.header`
+  margin-bottom: 1em;
+  h1 {
+    color: #222 !important;
+  }
+`;
 
+const StyledMessage = styled(Message)`
+  font-size: 1.2em;
+  display: flex;
+  flex-direction: column;
+  background: #fff !important;
+  .header, .content {
+    margin-bottom: 0.5em !important;
+  }
+  .button {
+    margin-top: auto;
+    margin-right: auto !important;
+  }
+`;
+
+const Screenshot = styled(Image)`
+  margin: 0.5em 0;
+  transition: opacity 0.5s;
+  :hover { opacity: 0.7; }
+`;
+
+interface Props extends AppMainRouteProps, I18nProps {}
+
+const App: React.FC<Props> = () => {
   return (
-    <SubstrateTransportProvider>
-      <DiscoveryProviderProvider>
-        <main className='media--App'>
-          <header>
-            <Tabs basePath={basePath} items={tabs} />
-          </header>
-          <Switch>
-            <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
-            <Route path={`${basePath}/channels/new`} component={EditChannelView} />
-            <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
-            <Route path={`${basePath}/channels/:channelId/upload`} component={UploadWithRouter} />
-            <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
-            <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
-            <Route path={`${basePath}/channels`} component={AllChannelsView} />
-            {/* <Route path={`${basePath}/videos/my`} component={VideosByOwnerView} /> */}
-            <Route path={`${basePath}/videos/:id/edit`} component={EditVideoWithRouter} />
-            <Route path={`${basePath}/videos/:id`} component={PlayVideoWithRouter} />
-            <Route path={`${basePath}/videos`} component={AllVideosView} />
-            <Route path={`${basePath}/explore`} component={ExploreContentView} />
-            <Route component={ExploreContentView} />
-          </Switch>
-        </main>
-      </DiscoveryProviderProvider>
-    </SubstrateTransportProvider>
+    <MediaMain>
+      <Header>
+        <h1>Hello there!</h1>
+        <p>
+          We have now upgraded to the Babylon chain.
+        </p>
+        <p>
+          Pioneer consequently <b>no longer supports</b> media uploads and consumption.
+        </p>
+      </Header>
+      <Grid stackable>
+        <Grid.Row columns={2}>
+          <Grid.Column>
+            <StyledMessage>
+              <Message.Header>Media consumption</Message.Header>
+              <Message.Content>
+                Media consumption has been migrated over to our new consumer interface.
+                <Screenshot
+                  src={AtlasScreenShot as string}
+                  href='https://play.joystream.org'
+                  target='_blank'
+                  rel='noopener noreferrer'/>
+              </Message.Content>
+              <Button
+                size='big'
+                primary
+                icon
+                labelPosition='right'
+                href='https://play.joystream.org'
+                target='_blank'
+                rel='noopener noreferrer'>
+                Launch Atlas
+                <Icon name='arrow right' />
+              </Button>
+            </StyledMessage>
+          </Grid.Column>
+          <Grid.Column>
+            <StyledMessage>
+              <Message.Header>Uploading content</Message.Header>
+              <Message.Content>
+                Uploading has been migrated over to the Joystream CLI.
+                Instructions on how to use the CLI can be found in our helpdesk.
+              </Message.Content>
+              <Button
+                size='big'
+                primary
+                href='https://github.com/Joystream/helpdesk/tree/master/roles/content-creators'
+                icon
+                labelPosition='right'
+                target='_blank'
+                rel='noopener noreferrer'>
+                Explore Joystream CLI
+                <Icon name='arrow right' />
+              </Button>
+            </StyledMessage>
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
+    </MediaMain>
   );
-}
+};
 
-export default withMulti(
-  App,
-  translate
-);
+export default translate(App);

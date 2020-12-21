@@ -55,9 +55,25 @@ class RuntimeApi {
     options = options || {}
 
     const provider = new WsProvider(options.provider_url || 'ws://localhost:9944')
-
+    let attempts = 0
     // Create the API instrance
-    this.api = await ApiPromise.create({ provider, types: types })
+    while (true) {
+      attempts++
+
+      if (options.retries && attempts > options.retries) {
+        throw new Error('Timeout trying to connect to node')
+      }
+
+      try {
+        this.api = await ApiPromise.create({ provider, types: types })
+        break
+      } catch (err) {
+        debug('Connecting to node failed, will retry..')
+      }
+      await sleep(5000)
+    }
+
+    await this.api.isReady
 
     this.asyncLock = new AsyncLock()
 
@@ -102,6 +118,10 @@ class RuntimeApi {
   async providerHasMinimumBalance(minimumBalance) {
     const providerAccountId = this.identities.key.address
     return this.balances.hasMinimumBalanceOf(providerAccountId, minimumBalance)
+  }
+
+  async providerIsActiveWorker() {
+    return this.workers.isRoleAccountOfStorageProvider(this.storageProviderId, this.identities.key.address)
   }
 
   executeWithAccountLock(accountId, func) {

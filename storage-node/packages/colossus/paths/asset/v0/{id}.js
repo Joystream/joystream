@@ -27,9 +27,9 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-module.exports = function (storage, runtime) {
+module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
-  const proxy = ipfsProxy.createProxy(storage)
+  const proxy = ipfsProxy.createProxy(storage, ipfsHttpGatewayUrl)
 
   const doc = {
     // parameters for all operations in this path
@@ -47,6 +47,11 @@ module.exports = function (storage, runtime) {
 
     // Put for uploads
     async put(req, res) {
+      if (anonymous) {
+        errorHandler(res, 'Uploads Not Permitted in Anonymous Mode', 400)
+        return
+      }
+
       const id = req.params.id // content id
 
       // First check if we're the liaison for the name, otherwise we can bail
