@@ -1,10 +1,9 @@
-import { Api } from '../../Api'
-import { KeyringPair } from '@polkadot/keyring/types'
+import { FlowArgs } from '../../Scenario'
 import Debugger from 'debug'
 const debug = Debugger('initializeContentDirectory')
 
-export default async function initializeContentDirectory(api: Api, leadKeyPair: KeyringPair): Promise<void> {
+export default async function initializeContentDirectory({ api }: FlowArgs): Promise<void> {
   debug('Started')
-  await api.initializeContentDirectory(leadKeyPair)
+  await api.initializeContentDirectory()
   debug('Done')
 }

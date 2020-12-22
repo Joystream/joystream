@@ -1,6 +1,6 @@
 import getContentFromStorageNode from '../flows/storageNode/getContentFromStorageNode'
 import { scenario } from '../Scenario'
 
-scenario(async ({ api, query }) => {
-  await getContentFromStorageNode(api, query)
+scenario(async ({ job }) => {
+  job('content-from-storage-node', getContentFromStorageNode)
 })

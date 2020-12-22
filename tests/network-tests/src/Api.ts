@@ -1772,7 +1772,12 @@ export class Api {
     return dataObject.unwrapOr(null)
   }
 
-  public async initializeContentDirectory(leadKeyPair: KeyringPair): Promise<void> {
+  public async initializeContentDirectory(): Promise<void> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
+    if (!lead) {
+      throw new Error('No Lead is set for storage wokring group')
+    }
+    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
     return initializeContentDir(this.api, leadKeyPair)
   }
 }
