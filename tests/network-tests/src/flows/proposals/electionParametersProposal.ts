@@ -1,4 +1,4 @@
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'

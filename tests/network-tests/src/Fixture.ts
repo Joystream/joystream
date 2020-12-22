@@ -102,15 +102,9 @@ export class FixtureRunner {
 
     // TODO: record starting block
 
-    try {
-      await this.fixture.runner()
-      // TODO: record ending block
-      const err = this.fixture.executionError()
-      assert.equal(err, undefined)
-    } catch (err) {
-      // This should make tracking which fixture caused the exception easier
-      console.log(err)
-      throw err
-    }
+    await this.fixture.runner()
+    // TODO: record ending block
+    const err = this.fixture.executionError()
+    assert.equal(err, undefined)
   }
 }

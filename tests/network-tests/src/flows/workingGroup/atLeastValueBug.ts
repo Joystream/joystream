@@ -1,5 +1,5 @@
 import { WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
 import { assert } from 'chai'

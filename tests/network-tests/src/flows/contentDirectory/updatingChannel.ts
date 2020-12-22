@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { UpdateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'

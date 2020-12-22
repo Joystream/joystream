@@ -1,4 +1,4 @@
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import {
   BuyMembershipHappyCaseFixture,
   BuyMembershipWithInsufficienFundsFixture,

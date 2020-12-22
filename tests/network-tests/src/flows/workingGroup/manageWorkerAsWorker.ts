@@ -1,5 +1,5 @@
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import {
   AddWorkerOpeningFixture,
   ApplyForOpeningFixture,

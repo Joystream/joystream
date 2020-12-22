@@ -112,7 +112,12 @@ export class Sender {
       const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()
-      await signedTx.send(handleEvents)
+      try {
+        await signedTx.send(handleEvents)
+      } catch (err) {
+        this.debug('Submitting Tx failed:', sentTx)
+        throw err
+      }
     })
 
     return whenFinalized

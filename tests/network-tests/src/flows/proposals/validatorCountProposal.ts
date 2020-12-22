@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'

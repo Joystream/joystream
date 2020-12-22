@@ -45,11 +45,11 @@ export enum WorkingGroups {
 }
 
 export class Api {
-  protected readonly api: ApiPromise
-  protected readonly sender: Sender
-  protected readonly keyring: Keyring
+  private readonly api: ApiPromise
+  private readonly sender: Sender
+  private readonly keyring: Keyring
   // source of funds for all new accounts
-  protected readonly treasuryAccount: string
+  private readonly treasuryAccount: string
 
   public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
     let connectAttempts = 0
@@ -79,8 +79,7 @@ export class Api {
   constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
-    const treasuryKey = this.keyring.addFromUri(treasuryAccountUri)
-    this.treasuryAccount = treasuryKey.address
+    this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
     this.sender = new Sender(api, this.keyring)
   }

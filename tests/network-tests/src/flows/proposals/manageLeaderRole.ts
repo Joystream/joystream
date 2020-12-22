@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
   BeginWorkingGroupLeaderApplicationReviewFixture,

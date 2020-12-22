@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'

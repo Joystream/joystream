@@ -1,5 +1,5 @@
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'

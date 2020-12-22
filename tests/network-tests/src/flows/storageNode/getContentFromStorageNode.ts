@@ -3,7 +3,7 @@ import { assert } from 'chai'
 import { ContentId } from '@joystream/types/media'
 import { registry } from '@joystream/types'
 
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { Utils } from '../../utils'
 import Debugger from 'debug'
 

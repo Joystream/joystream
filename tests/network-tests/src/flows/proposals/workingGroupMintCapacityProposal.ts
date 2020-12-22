@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'

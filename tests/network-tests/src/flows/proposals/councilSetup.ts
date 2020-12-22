@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
-import { FlowArgs } from '../../Scenario'
+import { FlowArgs } from '../../Flow'
 import { ElectCouncilFixture } from '../../fixtures/councilElectionModule'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import Debugger from 'debug'
