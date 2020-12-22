@@ -277,6 +277,9 @@ decl_error! {
         /// Staking account for membership doesn't exist.
         StakingAccountDoesntExist,
 
+        /// Staking account has already been confirmed.
+        StakingAccountAlreadyConfirmed,
+
         /// Cannot add more staking account id.
         MaximumStakingAccountNumberExceeded,
     }
@@ -811,6 +814,11 @@ decl_module! {
             ensure!(
                 membership.staking_account_exists(&staking_account_id),
                 Error::<T>::StakingAccountDoesntExist
+            );
+
+            ensure!(
+                !membership.staking_account_confirmed(&staking_account_id),
+                Error::<T>::StakingAccountAlreadyConfirmed
             );
 
             //

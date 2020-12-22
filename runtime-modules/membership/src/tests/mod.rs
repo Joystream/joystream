@@ -880,6 +880,19 @@ fn confirm_staking_account_succeeds() {
 }
 
 #[test]
+fn confirm_staking_account_fails_on_double_confirmation() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default().call_and_assert(Ok(()));
+
+        ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
+        ConfirmStakingAccountFixture::default()
+            .call_and_assert(Err(Error::<Test>::StakingAccountAlreadyConfirmed.into()));
+    });
+}
+
+#[test]
 fn confirm_staking_account_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         ConfirmStakingAccountFixture::default()
