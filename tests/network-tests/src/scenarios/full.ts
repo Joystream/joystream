@@ -10,7 +10,7 @@ import wgMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityP
 import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
 import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
 import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
-// import workerPayout from '../flows/workingGroup/workerPayout'
+import workerPayout from '../flows/workingGroup/workerPayout'
 import { scenario } from '../Scenario'
 
 scenario(async ({ api, debug, job }) => {
@@ -42,16 +42,15 @@ scenario(async ({ api, debug, job }) => {
   const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(leadRolesJob)
 
   // Test bug only on one instance of working group is sufficient
-  const bugJob = job('at least value bug', atLeastValueBug).requires(leadSetupJob)
+  job('at least value bug', atLeastValueBug).requires(leadSetupJob)
+
+  // tests minting payouts (required council to set mint capacity)
+  job('worker payouts', [workerPayout.storage, workerPayout.content]).requires(leadSetupJob).requires(councilJob)
 
   job('working group tests', [
     manageWorkerAsLead.storage,
     manageWorkerAsWorker.storage,
-    // workerPayout.storage, // this is stalling waiting for payout if council isn't created!?
     manageWorkerAsLead.content,
     manageWorkerAsWorker.content,
-    // workerPayout.content, // this is stalling waiting for payout if council isn't created!?
-  ])
-    .requires(leadSetupJob)
-    .after(bugJob)
+  ]).requires(leadSetupJob)
 })
