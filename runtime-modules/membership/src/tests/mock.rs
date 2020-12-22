@@ -104,7 +104,6 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
-    pub const StakingAccountNumberLimit: u32 = 1;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -227,7 +226,6 @@ impl Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type StakingAccountNumberLimit = StakingAccountNumberLimit;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

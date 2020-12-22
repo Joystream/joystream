@@ -2,7 +2,7 @@ use super::mock::*;
 use crate::{BuyMembershipParameters, InviteMembershipParameters};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::StorageMap;
+use frame_support::{StorageDoubleMap, StorageMap};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 // Recommendation from Parity on testing on_finalize
@@ -572,8 +572,6 @@ impl Default for AddStakingAccountFixture {
 
 impl AddStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_membership = Membership::membership(self.member_id);
-
         let actual_result = Membership::add_staking_account_candidate(
             self.origin.clone().into(),
             self.member_id,
@@ -583,13 +581,10 @@ impl AddStakingAccountFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            let new_membership = Membership::membership(self.member_id);
-
-            assert!(!new_membership.staking_account_confirmed(&self.staking_account_id));
-            assert_eq!(
-                new_membership.staking_account_count(),
-                old_membership.staking_account_count() + 1
-            );
+            assert!(<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
+                &self.staking_account_id,
+                &self.member_id
+            ));
         }
     }
 
@@ -627,8 +622,6 @@ impl Default for RemoveStakingAccountFixture {
 
 impl RemoveStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_membership = Membership::membership(self.member_id);
-
         let actual_result = Membership::remove_staking_account(
             self.origin.clone().into(),
             self.member_id,
@@ -638,11 +631,10 @@ impl RemoveStakingAccountFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            let new_membership = Membership::membership(self.member_id);
-            assert_eq!(
-                new_membership.staking_account_count(),
-                old_membership.staking_account_count() - 1
-            );
+            assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
+                &self.staking_account_id,
+                &self.member_id
+            ));
         }
     }
 
@@ -677,8 +669,10 @@ impl ConfirmStakingAccountFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            let new_membership = Membership::membership(self.member_id);
-            assert!(new_membership.staking_account_confirmed(&BOB_ACCOUNT_ID));
+            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(
+                &BOB_ACCOUNT_ID,
+                &self.member_id
+            ));
         }
     }
 

@@ -9,7 +9,7 @@ use mock::*;
 
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
-use frame_support::{assert_ok, StorageMap, StorageValue};
+use frame_support::{assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
@@ -785,22 +785,7 @@ fn add_staking_account_candidate_fails_with_duplicated_staking_account_id() {
         AddStakingAccountFixture::default().call_and_assert(Ok(()));
 
         AddStakingAccountFixture::default()
-            .call_and_assert(Err(Error::<Test>::StakingAccountExists.into()));
-    });
-}
-
-#[test]
-fn add_staking_account_candidate_fails_with_exceeding_account_limit() {
-    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
-
-    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
-        AddStakingAccountFixture::default().call_and_assert(Ok(()));
-
-        AddStakingAccountFixture::default()
-            .with_staking_account_id(ALICE_ACCOUNT_ID)
-            .call_and_assert(Err(
-                Error::<Test>::MaximumStakingAccountNumberExceeded.into()
-            ));
+            .call_and_assert(Err(Error::<Test>::StakingAccountIsAlreadyRegistered.into()));
     });
 }
 
@@ -869,8 +854,10 @@ fn confirm_staking_account_succeeds() {
 
         ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
 
-        let membership = Membership::membership(ALICE_MEMBER_ID);
-        assert!(membership.staking_account_ids.get(&BOB_ACCOUNT_ID).unwrap());
+        assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(
+            &BOB_ACCOUNT_ID,
+            &ALICE_MEMBER_ID
+        ));
 
         EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountConfirmed(
             ALICE_MEMBER_ID,

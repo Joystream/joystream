@@ -513,11 +513,9 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type StakingAccountNumberLimit = StakingAccountNumberLimit;
 }
 
 parameter_types! {
-    pub const StakingAccountNumberLimit: u32 = 50;
     pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;

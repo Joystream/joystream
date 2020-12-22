@@ -56,7 +56,6 @@ use sp_std::borrow::ToOwned;
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupIntegration;
-use sp_std::collections::btree_map::BTreeMap;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -75,9 +74,6 @@ pub trait Trait:
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
-
-    /// Defines the maximum staking account number.
-    type StakingAccountNumberLimit: Get<u32>;
 }
 
 // Default user info constraints
@@ -123,46 +119,6 @@ pub struct MembershipObject<AccountId: Ord> {
 
     /// Defines how many invitations this member has
     pub invites: u32,
-
-    /// Staking account IDs bound to the membership. Each account must be confirmed.
-    /// A map consists from staking account IDs and their confirmation flags.
-    pub staking_account_ids: BTreeMap<AccountId, bool>,
-}
-
-impl<AccountId: Ord> MembershipObject<AccountId> {
-    /// Add staking account id to the membership. Set its confirmation flag to false by default.
-    pub fn add_staking_account_candidate(&mut self, staking_account_id: AccountId) {
-        self.staking_account_ids.insert(staking_account_id, false);
-    }
-
-    /// Remove staking account id to the membership.
-    pub fn remove_staking_account(&mut self, staking_account_id: AccountId) {
-        self.staking_account_ids.remove(&staking_account_id);
-    }
-
-    /// Sets staking account confirmation flag as True. No effect on non-existing account.
-    pub fn confirm_staking_account(&mut self, staking_account_id: AccountId) {
-        if self.staking_account_exists(&staking_account_id) {
-            self.staking_account_ids.insert(staking_account_id, true);
-        }
-    }
-
-    /// Verifies existence of the staking account.
-    pub fn staking_account_exists(&self, staking_account_id: &AccountId) -> bool {
-        self.staking_account_ids.contains_key(&staking_account_id)
-    }
-
-    /// Verifies confirmation of the staking account.
-    pub fn staking_account_confirmed(&self, staking_account_id: &AccountId) -> bool {
-        let staking_account_confirmation = self.staking_account_ids.get(staking_account_id);
-
-        staking_account_confirmation.copied().unwrap_or(false)
-    }
-
-    /// Returns current staking account number.
-    pub fn staking_account_count(&self) -> u32 {
-        self.staking_account_ids.len() as u32
-    }
 }
 
 // Contains valid or default user details
@@ -271,17 +227,14 @@ decl_error! {
         /// Membership working group leader is not set.
         WorkingGroupLeaderNotSet,
 
-        /// Staking account for membership exists.
-        StakingAccountExists,
+        /// Staking account is registered for some member.
+        StakingAccountIsAlreadyRegistered,
 
         /// Staking account for membership doesn't exist.
         StakingAccountDoesntExist,
 
         /// Staking account has already been confirmed.
         StakingAccountAlreadyConfirmed,
-
-        /// Cannot add more staking account id.
-        MaximumStakingAccountNumberExceeded,
     }
 }
 
@@ -336,6 +289,10 @@ decl_storage! {
         /// Initial invitation balance for the invited member.
         pub InitialInvitationBalance get(fn initial_invitation_balance) : BalanceOf<T> =
             T::DefaultInitialInvitationBalance::get();
+
+        /// Double of a staking account id and member id to the confirmation status.
+        pub(crate) StakingAccountIdMemberStatus get(fn vote_by_proposal_by_voter): double_map
+            hasher(blake2_128_concat) T::AccountId, hasher(blake2_128_concat) T::MemberId => bool;
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -753,25 +710,18 @@ decl_module! {
             member_id: T::MemberId,
             staking_account_id: T::AccountId
         ) {
-            let membership = Self::ensure_member_controller_account_signed(origin, &member_id)?;
+            Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
             ensure!(
-                !membership.staking_account_exists(&staking_account_id),
-                Error::<T>::StakingAccountExists
-            );
-
-            ensure!(
-                membership.staking_account_count() < T::StakingAccountNumberLimit::get(),
-                Error::<T>::MaximumStakingAccountNumberExceeded
+                !Self::staking_account_registered(&staking_account_id),
+                Error::<T>::StakingAccountIsAlreadyRegistered
             );
 
             //
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::mutate(&member_id, |membership| {
-                membership.add_staking_account_candidate(staking_account_id.clone());
-            });
+            <StakingAccountIdMemberStatus<T>>::insert(staking_account_id.clone(), member_id, false);
 
             Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
         }
@@ -783,10 +733,10 @@ decl_module! {
             member_id: T::MemberId,
             staking_account_id: T::AccountId
         ) {
-            let membership = Self::ensure_member_controller_account_signed(origin, &member_id)?;
+            Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
             ensure!(
-                membership.staking_account_exists(&staking_account_id),
+                Self::staking_account_registered_for_member(&staking_account_id, &member_id),
                 Error::<T>::StakingAccountDoesntExist
             );
 
@@ -794,9 +744,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::mutate(&member_id, |membership| {
-                membership.remove_staking_account(staking_account_id.clone());
-            });
+            <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone(), member_id);
 
             Self::deposit_event(RawEvent::StakingAccountRemoved(member_id, staking_account_id));
         }
@@ -809,15 +757,15 @@ decl_module! {
         ) {
             let staking_account_id = ensure_signed(origin)?;
 
-            let membership = Self::ensure_membership(member_id)?;
+            Self::ensure_membership(member_id)?;
 
             ensure!(
-                membership.staking_account_exists(&staking_account_id),
+                Self::staking_account_registered_for_member(&staking_account_id, &member_id),
                 Error::<T>::StakingAccountDoesntExist
             );
 
             ensure!(
-                !membership.staking_account_confirmed(&staking_account_id),
+                !Self::staking_account_confirmed(&staking_account_id, &member_id),
                 Error::<T>::StakingAccountAlreadyConfirmed
             );
 
@@ -825,9 +773,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::mutate(&member_id, |membership| {
-                membership.confirm_staking_account(staking_account_id.clone());
-            });
+            <StakingAccountIdMemberStatus<T>>::insert(staking_account_id.clone(), member_id, true);
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(member_id, staking_account_id));
         }
@@ -950,7 +896,6 @@ impl<T: Trait> Module<T> {
             controller_account: controller_account.clone(),
             verified: false,
             invites: allowed_invites,
-            staking_account_ids: BTreeMap::new(),
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
@@ -1005,6 +950,31 @@ impl<T: Trait> Module<T> {
 
         membership_fee.min(referral_cut)
     }
+
+    // Verifies registration of the staking account for ANY member.
+    fn staking_account_registered(staking_account_id: &T::AccountId) -> bool {
+        <StakingAccountIdMemberStatus<T>>::iter_prefix_values(staking_account_id).count() > 0
+    }
+
+    // Verifies registration of the staking account for SOME member.
+    fn staking_account_registered_for_member(
+        staking_account_id: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> bool {
+        <StakingAccountIdMemberStatus<T>>::contains_key(staking_account_id, member_id)
+    }
+
+    // Verifies confirmation of the staking account.
+    fn staking_account_confirmed(
+        staking_account_id: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> bool {
+        if !Self::staking_account_registered_for_member(staking_account_id, member_id) {
+            return false;
+        }
+
+        <StakingAccountIdMemberStatus<T>>::get(staking_account_id, member_id)
+    }
 }
 
 impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
@@ -1012,9 +982,6 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
         member_id: &common::MemberId<T>,
         account_id: &T::AccountId,
     ) -> bool {
-        Self::ensure_membership(*member_id)
-            .ok()
-            .map(|membership| membership.staking_account_confirmed(account_id))
-            .unwrap_or(false)
+        Self::staking_account_confirmed(account_id, member_id)
     }
 }

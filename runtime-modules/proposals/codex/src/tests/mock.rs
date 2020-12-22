@@ -54,7 +54,6 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
-    type StakingAccountNumberLimit = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
