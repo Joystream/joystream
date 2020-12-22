@@ -30,10 +30,9 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig,
-    SystemConfig, DAYS,
+    ContentDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys,
+    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
@@ -264,23 +263,6 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        council: Some(CouncilConfig {
-            active_council: vec![],
-            term_ends_at: 1,
-        }),
-        election: Some(CouncilElectionConfig {
-            auto_start: true,
-            election_parameters: ElectionParameters {
-                announcing_period: 2 * DAYS,
-                voting_period: 1 * DAYS,
-                revealing_period: 1 * DAYS,
-                council_size: 6,
-                candidacy_limit: 25,
-                min_council_stake: 1_000,
-                new_term_duration: 10 * DAYS,
-                min_voting_stake: 100,
-            },
         }),
         referendum_Instance1: Some(council_config::create_referendum_config()),
         pallet_council: Some(council_config::create_council_config()),

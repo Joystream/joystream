@@ -10,6 +10,7 @@ use strum::IntoEnumIterator;
 use working_group::{Penalty, StakeParameters};
 
 use crate::primitives::{ActorId, MemberId};
+use crate::tests::run_to_block;
 use crate::{
     Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
     ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
@@ -28,7 +29,6 @@ fn add_opening(
     working_group: WorkingGroup,
 ) -> u64 {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let opening_id = match working_group {
         WorkingGroup::Content => {
@@ -85,11 +85,28 @@ fn add_opening(
             }),
         )
     })
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+    match working_group {
+        WorkingGroup::Content => assert!(working_group::OpeningById::<
+            Runtime,
+            ContentDirectoryWorkingGroupInstance,
+        >::contains_key(opening_id)),
+        WorkingGroup::Storage => assert!(working_group::OpeningById::<
+            Runtime,
+            StorageWorkingGroupInstance,
+        >::contains_key(opening_id)),
+        WorkingGroup::Forum => assert!(working_group::OpeningById::<
+            Runtime,
+            ForumWorkingGroupInstance,
+        >::contains_key(opening_id)),
+        WorkingGroup::Membership => assert!(working_group::OpeningById::<
+            Runtime,
+            MembershipWorkingGroupInstance,
+        >::contains_key(opening_id)),
+    }
     opening_id
 }
 
@@ -102,7 +119,6 @@ fn fill_opening(
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -126,8 +142,7 @@ fn fill_opening(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -141,7 +156,6 @@ fn decrease_stake(
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -163,8 +177,7 @@ fn decrease_stake(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -178,7 +191,6 @@ fn slash_stake(
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -203,8 +215,7 @@ fn slash_stake(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -218,7 +229,6 @@ fn set_reward(
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -240,8 +250,7 @@ fn set_reward(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -258,7 +267,6 @@ fn set_mint_capacity<
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -276,8 +284,7 @@ fn set_mint_capacity<
         )
     })
     .with_setup_enviroment(setup_environment)
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -291,7 +298,6 @@ fn terminate_role(
     working_group: WorkingGroup,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -315,8 +321,7 @@ fn terminate_role(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(expected_proposal_id)
-    .with_run_to_block(run_to_block);
+    .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -521,9 +526,13 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        // Don't use the same member id as a councilor, can lead to conflicting stakes
+        let member_id: MemberId = 14;
+
         let account_id: [u8; 32] = [member_id as u8; 32];
         let stake_amount: Balance = 100;
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         let stake_policy = Some(working_group::StakePolicy {
             stake_amount,
@@ -539,6 +548,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
+        let old_balance = Balances::usable_balance(&account_id.into());
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
             working_group::ApplyOnOpeningParameters::<T> {
@@ -567,12 +577,22 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
             working_group,
         );
 
+        let new_balance = Balances::usable_balance(&account_id.into());
+        let stake: working_group::BalanceOf<T> = SM::current_stake(&account_id.into()).into();
+
         let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
 
-        let old_balance = Balances::usable_balance(&account_id.into());
-        let old_stake = SM::current_stake(&account_id.into());
+        assert_eq!(
+            WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id)
+                .staking_account_id
+                .unwrap(),
+            account_id.into()
+        );
 
-        assert_eq!(old_stake, stake_amount.into());
+        assert_eq!(stake, working_group::BalanceOf::<T>::from(stake_amount));
+        assert_eq!(new_balance, old_balance - stake_amount);
+
+        let old_balance = new_balance;
 
         let decreasing_stake_amount = 30;
         decrease_stake(
@@ -650,7 +670,9 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        // Don't use the same member id as a councilor, can lead to conflicting stakes
+        let member_id: MemberId = 14;
+
         let account_id: [u8; 32] = [member_id as u8; 32];
         let stake_amount: Balance = 100;
 
@@ -658,6 +680,8 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
         });
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         let stake_parameters = Some(
             StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
@@ -944,7 +968,9 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        // Don't use the same member id as a councilor, can lead to conflicting stakes
+        let member_id: MemberId = 14;
+
         let account_id: [u8; 32] = [member_id as u8; 32];
         let stake_amount = 100_u128;
 
@@ -952,6 +978,8 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
         });
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         let stake_parameters = Some(
             StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
@@ -1072,7 +1100,9 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        // Don't use the same member id as a councilor, can lead to conflicting stakes
+        let member_id: MemberId = 14;
+
         let account_id: [u8; 32] = [member_id as u8; 32];
         let stake_amount = 100_u128;
 
@@ -1080,6 +1110,8 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
         });
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         let stake_parameters = Some(
             StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {

@@ -1,5 +1,6 @@
 #![warn(missing_docs)]
 
+/*
 use crate::Runtime;
 use governance::election::CouncilElected;
 
@@ -13,3 +14,4 @@ impl<Elected, Term> CouncilElected<Elected, Term> for CouncilElectedHandler {
         <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
 }
+*/

@@ -3,12 +3,12 @@ use super::*;
 use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
+use council::Module as Council;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
-use governance::council::Module as Council;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::cmp::{max, min};
@@ -161,9 +161,7 @@ fn create_proposal<T: Trait + membership::Trait>(
     (account_id, member_id, proposal_id)
 }
 
-fn create_multiple_finalized_proposals<
-    T: Trait + governance::council::Trait + membership::Trait,
->(
+fn create_multiple_finalized_proposals<T: Trait + membership::Trait + council::Trait>(
     number_of_proposals: u32,
     constitutionality: u32,
     vote_kind: VoteKind,
@@ -175,8 +173,7 @@ fn create_multiple_finalized_proposals<
         voters.push(member_funded_account::<T>("voter", i));
     }
 
-    Council::<T>::set_council(
-        RawOrigin::Root.into(),
+    <Council<T> as council::ReferendumConnection<T>>::recieve_referendum_results(
         voters
             .iter()
             .map(|(account_id, _)| account_id.clone())
@@ -212,7 +209,7 @@ const MAX_BYTES: u32 = 16384;
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: governance::council::Trait, T: membership::Trait
+        where T: membership::Trait, T: council::Trait
     }
 
     _ { }
@@ -224,7 +221,10 @@ benchmarks! {
 
         let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
 
-        Council::<T>::set_council(RawOrigin::Root.into(), vec![account_voter_id.clone()]).unwrap();
+
+    <Council<T> as council::ReferendumConnection<T>>::recieve_referendum_results(
+        vec![account_voter_id.clone()]
+    );
     }: _ (
             RawOrigin::Signed(account_voter_id),
             member_voter_id,

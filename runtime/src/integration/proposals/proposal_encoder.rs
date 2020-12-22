@@ -36,8 +36,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Text(text) => {
                 Call::ProposalsCodex(proposals_codex::Call::execute_text_proposal(text))
             }
-            ProposalDetails::Spending(balance, destination) => Call::Council(
-                governance::council::Call::spend_from_council_mint(balance, destination),
+            ProposalDetails::Spending(_balance, _destination) => Call::NewCouncil(
+                // TODO: This is an stub since this has been modified in
+                // the proposal branch
+                pallet_council::Call::set_budget(0),
             ),
             ProposalDetails::SetValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),

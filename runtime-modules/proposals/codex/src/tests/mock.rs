@@ -3,6 +3,7 @@
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
@@ -15,6 +16,7 @@ use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
+use referendum::Balance as BalanceReferendum;
 use sp_runtime::testing::TestXt;
 
 impl_outer_origin! {
@@ -39,10 +41,6 @@ impl_outer_dispatch! {
         staking::Staking,
         frame_system::System,
     }
-}
-
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 impl common::Trait for Test {
@@ -153,11 +151,6 @@ impl minting::Trait for Test {
     type MintId = u64;
 }
 
-impl governance::council::Trait for Test {
-    type Event = ();
-    type CouncilTermEnded = ();
-}
-
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -203,11 +196,6 @@ impl VotersParameters for MockVotersParameters {
     fn total_voters_count() -> u32 {
         4
     }
-}
-
-impl governance::election::Trait for Test {
-    type Event = ();
-    type CouncilElected = ();
 }
 
 // The content directory working group instance alias.
@@ -402,6 +390,10 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
     }
 }
 
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
+}
+
 impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
@@ -417,6 +409,126 @@ impl crate::Trait for Test {
     type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
     type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
     type AmendConstitutionProposalParameters = DefaultProposalParameters;
+}
+
+parameter_types! {
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: u64 = 15;
+    pub const IdlePeriodDuration: u64 = 27;
+    pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const CandidacyLockId: LockIdentifier = *b"council1";
+    pub const CouncilorLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u64 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    // intentionally high number that prevents side-effecting tests other than  budget refill tests
+    pub const BudgetRefillPeriod: u64 = 1000;
+}
+
+pub type ReferendumInstance = referendum::Instance0;
+
+impl council::Trait for Test {
+    type Event = ();
+
+    type Referendum = referendum::Module<Test, ReferendumInstance>;
+
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    fn is_council_member_account(
+        membership_id: &Self::MemberId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
+    ) -> bool {
+        membership_id == account_id
+    }
+
+    fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+}
+
+parameter_types! {
+    pub const VoteStageDuration: u64 = 19;
+    pub const RevealStageDuration: u64 = 23;
+    pub const MinimumVotingStake: u64 = 10000;
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
+    pub const VotingLockId: LockIdentifier = *b"referend";
+}
+
+impl referendum::Trait<ReferendumInstance> for Test {
+    type Event = ();
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = balances::Module<Self>;
+    type LockId = VotingLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = u64;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumVotingStake;
+
+    fn calculate_vote_power(
+        _: &<Self as frame_system::Trait>::AccountId,
+        _: &BalanceReferendum<Self, ReferendumInstance>,
+    ) -> Self::VotePower {
+        1
+    }
+
+    fn can_unlock_vote_stake(
+        _: &referendum::CastVote<
+            Self::Hash,
+            BalanceReferendum<Self, ReferendumInstance>,
+            Self::MemberId,
+        >,
+    ) -> bool {
+        true
+    }
+
+    fn process_results(winners: &[referendum::OptionResult<Self::MemberId, Self::VotePower>]) {
+        let tmp_winners: Vec<referendum::OptionResult<Self::MemberId, Self::VotePower>> = winners
+            .iter()
+            .map(|item| referendum::OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power.into(),
+            })
+            .collect();
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        );
+    }
+
+    fn is_valid_option_id(option_index: &u64) -> bool {
+        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+            option_index,
+        )
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+            option_id, amount,
+        );
+    }
 }
 
 impl ProposalEncoder<Test> for () {

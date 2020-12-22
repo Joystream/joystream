@@ -1,5 +1,6 @@
 #![warn(missing_docs)]
 
+use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
@@ -14,7 +15,7 @@ pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: governance::council::Trait + membership::Trait>
+impl<T: pallet_council::Trait + membership::Trait>
     ActorOriginValidator<
         <T as frame_system::Trait>::Origin,
         MemberId<T>,
@@ -29,18 +30,23 @@ impl<T: governance::council::Trait + membership::Trait>
     ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
         let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
 
-        if <governance::council::Module<T>>::is_councilor(&account_id) {
-            return Ok(account_id);
+        if pallet_council::Module::<T>::council_members()
+            .iter()
+            .any(|council_member| council_member.member_id() == &actor_id)
+        {
+            Ok(account_id)
+        } else {
+            Err("Council validation failed: account id doesn't belong to a council member")
         }
-
-        Err("Council validation failed: account id doesn't belong to a council member")
     }
 }
 
-impl<T: governance::council::Trait> VotersParameters for CouncilManager<T> {
+impl<T: pallet_council::Trait> VotersParameters for CouncilManager<T> {
     /// Implement total_voters_count() as council size
     fn total_voters_count() -> u32 {
-        <governance::council::Module<T>>::active_council().len() as u32
+        pallet_council::Module::<T>::council_members()
+            .len()
+            .saturated_into()
     }
 }
 
@@ -53,9 +59,8 @@ mod tests {
     use proposals_engine::VotersParameters;
     use sp_runtime::AccountId32;
 
+    use crate::tests::elect_council;
     use crate::tests::{initial_test_ext, insert_member};
-
-    type Council = governance::council::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {
@@ -75,14 +80,10 @@ mod tests {
     fn council_origin_validator_succeeds() {
         initial_test_ext().execute_with(|| {
             let councilor1 = AccountId32::default();
-            let councilor2: [u8; 32] = [2; 32];
-            let councilor3: [u8; 32] = [3; 32];
+            let councilor2: [u8; 32] = [1; 32];
+            let councilor3: [u8; 32] = [2; 32];
 
-            assert!(Council::set_council(
-                frame_system::RawOrigin::Root.into(),
-                vec![councilor1, councilor2.into(), councilor3.into()]
-            )
-            .is_ok());
+            elect_council(vec![councilor1, councilor2.into(), councilor3.into()], 0);
 
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
@@ -134,22 +135,13 @@ mod tests {
     #[test]
     fn council_size_calculation_aka_total_voters_count_succeeds() {
         initial_test_ext().execute_with(|| {
+            // Max council size is 3
             let councilor1 = AccountId32::default();
-            let councilor2: [u8; 32] = [2; 32];
-            let councilor3: [u8; 32] = [3; 32];
-            let councilor4: [u8; 32] = [4; 32];
-            assert!(Council::set_council(
-                frame_system::RawOrigin::Root.into(),
-                vec![
-                    councilor1,
-                    councilor2.into(),
-                    councilor3.into(),
-                    councilor4.into()
-                ]
-            )
-            .is_ok());
+            let councilor2: [u8; 32] = [1; 32];
+            let councilor3: [u8; 32] = [2; 32];
+            elect_council(vec![councilor1, councilor2.into(), councilor3.into()], 0);
 
-            assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 4)
+            assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3)
         });
     }
 }

@@ -2348,7 +2348,6 @@ dependencies = [
  "pallet-council",
  "pallet-finality-tracker",
  "pallet-forum",
- "pallet-governance",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
@@ -3828,27 +3827,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-governance"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-timestamp",
- "pallet-token-mint",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-grandpa"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -3967,11 +3945,12 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-constitution",
- "pallet-governance",
+ "pallet-council",
  "pallet-membership",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-recurring-reward",
+ "pallet-referendum",
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
@@ -4017,9 +3996,10 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-governance",
+ "pallet-council",
  "pallet-membership",
  "pallet-recurring-reward",
+ "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-token-mint",
@@ -4067,6 +4047,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-common",
  "parity-scale-codec",
  "rand 0.7.3",
  "serde",

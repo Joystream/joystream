@@ -9,6 +9,7 @@
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -20,6 +21,7 @@ pub(crate) mod proposals;
 
 use crate::ProposalObserver;
 pub use proposals::*;
+use referendum::Balance as BalanceReferendum;
 use staking_handler::{LockComparator, StakingManager};
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -38,8 +40,13 @@ mod membership_mod {
     pub use membership::Event;
 }
 
-mod council {
-    pub use governance::council::Event;
+mod council_mod {
+    pub use council::Event;
+}
+
+mod referendum_mod {
+    pub use referendum::Event;
+    pub use referendum::Instance0;
 }
 
 impl_outer_event! {
@@ -48,8 +55,77 @@ impl_outer_event! {
         engine<T>,
         membership_mod<T>,
         frame_system<T>,
-        council<T>,
+        council_mod<T>,
+        referendum_mod Instance0 <T>,
     }
+}
+
+parameter_types! {
+    pub const VoteStageDuration: u64 = 19;
+    pub const RevealStageDuration: u64 = 23;
+    pub const MinimumVotingStake: u64 = 10000;
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
+    pub const VotingLockId: LockIdentifier = *b"referend";
+    pub const MinimumPeriod: u64 = 5;
+}
+
+impl referendum::Trait<ReferendumInstance> for Test {
+    type Event = TestEvent;
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = balances::Module<Self>;
+    type LockId = VotingLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = u64;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumVotingStake;
+
+    fn calculate_vote_power(
+        _: &<Self as frame_system::Trait>::AccountId,
+        _: &BalanceReferendum<Self, ReferendumInstance>,
+    ) -> Self::VotePower {
+        1
+    }
+
+    fn can_unlock_vote_stake(
+        _: &referendum::CastVote<
+            Self::Hash,
+            BalanceReferendum<Self, ReferendumInstance>,
+            Self::MemberId,
+        >,
+    ) -> bool {
+        true
+    }
+
+    fn process_results(winners: &[referendum::OptionResult<Self::MemberId, Self::VotePower>]) {
+        let tmp_winners: Vec<referendum::OptionResult<Self::MemberId, Self::VotePower>> = winners
+            .iter()
+            .map(|item| referendum::OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power.into(),
+            })
+            .collect();
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        );
+    }
+
+    fn is_valid_option_id(_: &u64) -> bool {
+        true
+    }
+
+    fn get_option_power(_: &u64) -> Self::VotePower {
+        1
+    }
+
+    fn increase_option_power(_: &u64, _: &Self::VotePower) {}
 }
 
 parameter_types! {
@@ -184,7 +260,6 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
 }
 
 impl frame_system::Trait for Test {
@@ -222,9 +297,51 @@ impl pallet_timestamp::Trait for Test {
     type WeightInfo = ();
 }
 
-impl governance::council::Trait for Test {
+parameter_types! {
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: u64 = 15;
+    pub const IdlePeriodDuration: u64 = 27;
+    pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const CandidacyLockId: LockIdentifier = *b"council1";
+    pub const CouncilorLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u64 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    // intentionally high number that prevents side-effecting tests other than  budget refill tests
+    pub const BudgetRefillPeriod: u64 = 1000;
+}
+
+pub type ReferendumInstance = referendum::Instance0;
+
+impl council::Trait for Test {
     type Event = TestEvent;
-    type CouncilTermEnded = ();
+
+    type Referendum = referendum::Module<Test, ReferendumInstance>;
+
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    fn is_council_member_account(
+        membership_id: &Self::MemberId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
+    ) -> bool {
+        membership_id == account_id
+    }
+
+    fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 }
 
 impl recurringrewards::Trait for Test {

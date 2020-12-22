@@ -208,7 +208,7 @@ fn council_candidacy_invalid_member() {
             candidate.origin.clone(),
             candidate.account_id.clone(),
             candidate.candidate.stake.clone(),
-            Err(Error::MembershipIdNotMatchAccount),
+            Err(Error::MemberIdNotMatchAccount),
         );
     });
 }

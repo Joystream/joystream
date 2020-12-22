@@ -3,10 +3,12 @@ mod mock;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
+use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
 use proposals_engine::ProposalParameters;
+use referendum::ReferendumManager;
 use working_group::Penalty;
 
 use crate::*;
@@ -24,7 +26,10 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
     {
         let _ = Balances::deposit_creating(&account_id, balance);
     }
-    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+    assert_eq!(
+        Balances::total_issuance(),
+        initial_balance.saturating_add(balance)
+    );
 }
 
 struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -792,6 +797,88 @@ fn slash_stake_with_zero_staking_balance_fails() {
     }
 }
 
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        System::on_finalize(System::block_number());
+        Module::<Test>::on_finalize(System::block_number());
+        council::Module::<Test>::on_finalize(System::block_number());
+        referendum::Module::<Test, ReferendumInstance>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        System::on_initialize(System::block_number());
+        council::Module::<Test>::on_initialize(System::block_number());
+        referendum::Module::<Test, ReferendumInstance>::on_initialize(System::block_number());
+    }
+}
+
+fn setup_council() {
+    let council_size = <Test as council::Trait>::CouncilSize::get();
+    let candidates_number =
+        council_size + <Test as council::Trait>::MinNumberOfExtraCandidates::get();
+    let candidates: Vec<_> = (20..20 + candidates_number).collect();
+    let council: Vec<_> = (20..20 + council_size).collect();
+    let voters: Vec<_> =
+        (20 + candidates_number + 1..20 + candidates_number + 1 + council_size).collect();
+    for id in candidates {
+        increase_total_balance_issuance_using_account_id(id, BalanceOf::<Test>::max_value());
+        council::Module::<Test>::announce_candidacy(
+            RawOrigin::Signed(id).into(),
+            id,
+            id,
+            id,
+            BalanceOf::<Test>::max_value(),
+        )
+        .unwrap();
+    }
+
+    let current_block = System::block_number();
+    run_to_block(current_block + <Test as council::Trait>::AnnouncingPeriodDuration::get());
+
+    for (i, voter_id) in voters.iter().enumerate() {
+        increase_total_balance_issuance_using_account_id(*voter_id, BalanceOf::<Test>::max_value());
+        let commitment = referendum::Module::<Test, ReferendumInstance>::calculate_commitment(
+            voter_id,
+            &[0u8],
+            &0,
+            &council[i],
+        );
+
+        referendum::Module::<Test, ReferendumInstance>::vote(
+            RawOrigin::Signed(*voter_id).into(),
+            commitment,
+            BalanceOf::<Test>::max_value(),
+        )
+        .unwrap();
+    }
+
+    let current_block = System::block_number();
+    run_to_block(
+        current_block + <Test as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+    );
+
+    for (i, voter_id) in voters.iter().enumerate() {
+        referendum::Module::<Test, ReferendumInstance>::reveal_vote(
+            RawOrigin::Signed(*voter_id).into(),
+            vec![0u8],
+            council[i],
+        )
+        .unwrap();
+    }
+
+    let current_block = System::block_number();
+    run_to_block(
+        current_block + <Test as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+    );
+
+    let council_members = council::Module::<Test>::council_members();
+    assert_eq!(
+        council_members
+            .iter()
+            .map(|councilor| *councilor.member_id())
+            .collect::<Vec<_>>(),
+        council,
+    );
+}
+
 fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -804,12 +891,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
             exact_execution_block: None,
         };
 
-        let lead_account_id = 20;
-        <governance::council::Module<Test>>::set_council(
-            RawOrigin::Root.into(),
-            vec![lead_account_id],
-        )
-        .unwrap();
+        setup_council();
 
         assert_eq!(
             ProposalCodex::create_proposal(
@@ -849,12 +931,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
             exact_execution_block: None,
         };
 
-        let lead_account_id = 20;
-        <governance::council::Module<Test>>::set_council(
-            RawOrigin::Root.into(),
-            vec![lead_account_id],
-        )
-        .unwrap();
+        setup_council();
 
         assert_eq!(
             ProposalCodex::create_proposal(
