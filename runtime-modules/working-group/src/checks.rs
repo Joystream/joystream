@@ -110,7 +110,7 @@ pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<
 }
 
 // Check leader: verifies that provided lead account id belongs to the current working group leader.
-fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
     lead_account_id: T::AccountId,
 ) -> DispatchResult {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
@@ -124,7 +124,7 @@ fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
     Ok(())
 }
 
-/// Check leader: ensures origin is signed by the leader.
+// Check leader: ensures origin is signed by the leader.
 pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
     origin: T::Origin,
 ) -> DispatchResult {

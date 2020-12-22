@@ -30,10 +30,9 @@ pub trait WorkingGroupIntegration<T: crate::Trait> {
     /// Get member ID of the current leader.
     fn get_leader_member_id() -> Option<T::MemberId>;
 
-    // TODO: Implement or remove during the Forum refactoring to this interface
-    // /// Defines whether the member is the leader of the working group.
-    // fn is_working_group_leader(member_id: &T::MemberId) -> bool;
-    //
-    // /// Defines whether the member is the worker of the working group.
-    // fn is_working_group_member(member_id: &T::MemberId) -> bool;
+    /// Verifies that given account ID belongs to the leader.
+    fn is_leader_account_id(account_id: &T::AccountId) -> bool;
+
+    /// Verifies that given account ID and worker ID belong to the working group member.
+    fn is_worker_account_id(account_id: &T::AccountId, worker_id: &T::ActorId) -> bool;
 }
