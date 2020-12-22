@@ -14,12 +14,11 @@
 //! ### Private extrinsics
 //! - accept_content - Storage provider accepts a content.
 //! - reject_content - Storage provider rejects a content.
-//! - remove_known_content_id - Removes the content id from the list of known content ids. Requires root privileges.
-//! - set_known_content_id - Sets the content id from the list of known content ids. Requires root privileges.
+//! - remove_known_content_id - Removes the content id from the list of known content ids. Requires
+//! root privileges.
+//! - set_known_content_id - Sets the content id from the list of known content ids. Requires
+//! root privileges.
 //!
-
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
@@ -34,21 +33,16 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use common::origin::ActorOriginValidator;
+use common::working_group::WorkingGroupIntegration;
 pub(crate) use common::BlockAndTime;
-
-use working_group::ensure_worker_signed;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageProviderId, StorageWorkingGroupInstance};
+use crate::{MemberId, StorageProviderId};
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
-    pallet_timestamp::Trait
-    + frame_system::Trait
-    + data_object_type_registry::Trait
-    + common::Trait
-    + working_group::Trait<StorageWorkingGroupInstance>
+    pallet_timestamp::Trait + frame_system::Trait + data_object_type_registry::Trait
 {
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -250,11 +244,15 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
+            T::WorkingGroup::ensure_worker_origin(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
-            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Accepted)?;
+            Self::update_content_judgement(
+                &storage_provider_id,
+                content_id,
+                LiaisonJudgement::Accepted
+            )?;
 
             <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
 
@@ -269,11 +267,15 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            ensure_worker_signed::<T, StorageWorkingGroupInstance>(origin, &storage_provider_id)?;
+            T::WorkingGroup::ensure_worker_origin(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
-            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Rejected)?;
+            Self::update_content_judgement(
+                &storage_provider_id,
+                content_id,
+                LiaisonJudgement::Rejected
+            )?;
             Self::deposit_event(RawEvent::ContentRejected(content_id, storage_provider_id));
         }
 
@@ -303,7 +305,10 @@ decl_module! {
             ensure_root(origin)?;
 
             // Must provide something to inject
-            ensure!(objects.len() <= T::MaxObjectsPerInjection::get() as usize, Error::<T>::DataObjectsInjectionExceededLimit);
+            ensure!(
+                objects.len() <= T::MaxObjectsPerInjection::get() as usize,
+                Error::<T>::DataObjectsInjectionExceededLimit
+            );
 
             for (id, object) in objects.into_iter() {
                 // append to known content ids
