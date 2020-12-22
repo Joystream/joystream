@@ -651,39 +651,16 @@ impl forum::StorageLimits for MapLimits {
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
-// Alias for forum working group
-type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
-
 impl forum::Trait for Runtime {
     type Event = Event;
-    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type ForumUserId = ForumUserId;
-    type ModeratorId = ModeratorId;
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
-
-    fn is_lead(_account_id: &AccountId) -> bool {
-        // get current lead id
-        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
-        if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) = working_group::ensure_worker_exists::<
-                Runtime,
-                ForumWorkingGroupInstance,
-            >(current_lead_id)
-            {
-                *_account_id == worker.role_account_id
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
 
     fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
         membership::Module::<Runtime>::ensure_is_controller_account_for_member(
@@ -693,19 +670,11 @@ impl forum::Trait for Runtime {
         .is_ok()
     }
 
-    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
-        if let Ok(worker) =
-            working_group::ensure_worker_exists::<Runtime, ForumWorkingGroupInstance>(_moderator_id)
-        {
-            *_account_id == worker.role_account_id
-        } else {
-            false
-        }
-    }
-
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hash::from_slice(text)
     }
+
+    type WorkingGroup = ForumWorkingGroup;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -880,7 +849,6 @@ parameter_types! {
 
 /// Forum identifiers for user, moderator and category
 pub type ForumUserId = u64;
-pub type ModeratorId = u64;
 pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
