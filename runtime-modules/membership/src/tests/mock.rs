@@ -258,6 +258,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         }
     }
 
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         Some(ALICE_MEMBER_ID)
     }

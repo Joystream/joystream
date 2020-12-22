@@ -599,6 +599,7 @@ parameter_types! {
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
+    type WorkingGroup = StorageWorkingGroup;
 }
 
 impl storage::data_directory::Trait for Runtime {
@@ -719,7 +720,7 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
-pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;

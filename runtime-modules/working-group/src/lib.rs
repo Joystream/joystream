@@ -54,7 +54,7 @@ pub use types::{
 };
 use types::{ApplicationInfo, WorkerInfo};
 
-pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
+pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
 use common::{MemberId, StakingAccountValidator};
@@ -1342,6 +1342,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
+    }
+
+    fn ensure_leader_origin(origin: T::Origin) -> DispatchResult {
+        checks::ensure_origin_is_active_leader::<T, I>(origin)
     }
 
     fn get_leader_member_id() -> Option<T::MemberId> {
