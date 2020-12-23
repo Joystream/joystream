@@ -374,24 +374,19 @@ async function mediaLocation(
   location: IReference,
   nextEntityIdBeforeTransaction: number
 ): Promise<MediaLocationEntity> {
-  let loc: MediaLocationEntity | undefined
   const { entityId, existing } = location
+  // Relationships to be loaded
+  const relations = ['httpMediaLocation', 'joystreamMediaLocation']
   if (existing) {
-    loc = await db.get(MediaLocationEntity, { where: { id: entityId.toString() } })
+    const loc = await db.get(MediaLocationEntity, { where: { id: entityId.toString() }, relations })
     if (!loc) throw Error(`MediaLocation entity not found`)
     return loc
   }
+  // Could be created in the same transaction so try to query
   const id = generateEntityIdFromIndex(nextEntityIdBeforeTransaction + entityId)
-
-  // could be created in the transaction
-  loc = await db.get(MediaLocationEntity, {
-    where: { id },
-    relations: ['httpMediaLocation', 'joystreamMediaLocation'],
-  })
-  if (loc) {
-    return loc
-  }
-
+  const loc = await db.get(MediaLocationEntity, { where: { id }, relations })
+  if (loc) return loc
+  // Create entity
   const { properties } = findEntity(entityId, 'MediaLocation', classEntityMap)
   return await createMediaLocation(
     { db, block, id },
