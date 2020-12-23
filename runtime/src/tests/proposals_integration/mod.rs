@@ -374,7 +374,7 @@ fn proposal_reset_succeeds() {
 // Preconditions: currently in idle period, idle period started in currnet block
 fn end_idle_period() {
     let current_block = System::block_number();
-    let idle_period_duration = <Runtime as pallet_council::Trait>::IdlePeriodDuration::get();
+    let idle_period_duration = <Runtime as council::Trait>::IdlePeriodDuration::get();
     run_to_block(current_block + idle_period_duration);
 }
 

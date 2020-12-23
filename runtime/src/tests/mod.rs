@@ -16,7 +16,7 @@ use sp_std::convert::TryInto;
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Module<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
-type Council = pallet_council::Module<Runtime>;
+type Council = council::Module<Runtime>;
 type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
 pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
@@ -25,7 +25,7 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     // build the council config to initialize the mint
-    let council_config = pallet_council::GenesisConfig::<crate::Runtime>::default()
+    let council_config = council::GenesisConfig::<crate::Runtime>::default()
         .build_storage()
         .unwrap();
 
@@ -37,7 +37,7 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
 pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     let mut voters = Vec::<AccountId32>::new();
 
-    let councilor_stake: u128 = <Runtime as pallet_council::Trait>::MinCandidateStake::get().into();
+    let councilor_stake: u128 = <Runtime as council::Trait>::MinCandidateStake::get().into();
 
     for (i, councilor) in council.iter().enumerate() {
         increase_total_balance_issuance_using_account_id(
@@ -55,8 +55,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
         voters.push([10u8.saturating_add(i.try_into().unwrap()); 32].into()); // TODO: change me
     }
 
-    let extra_candidates =
-        <Runtime as pallet_council::Trait>::MinNumberOfExtraCandidates::get() + 1;
+    let extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
     for i in council.len()..(council.len() + extra_candidates as usize) {
         let extra_councilor: AccountId32 = [i as u8; 32].into();
 
@@ -64,7 +63,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             RawOrigin::Signed(extra_councilor.clone()).into(),
             i.try_into().unwrap(),
         )
-        .unwrap_or_else(|err| assert_eq!(err, pallet_council::Error::NoStake));
+        .unwrap_or_else(|err| assert_eq!(err, council::Error::NoStake));
         increase_total_balance_issuance_using_account_id(
             extra_councilor.clone().into(),
             councilor_stake + 1,
@@ -81,9 +80,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     }
 
     let current_block = System::block_number();
-    run_to_block(
-        current_block + <Runtime as pallet_council::Trait>::AnnouncingPeriodDuration::get(),
-    );
+    run_to_block(current_block + <Runtime as council::Trait>::AnnouncingPeriodDuration::get());
 
     let voter_stake: u128 =
         <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get().into();
@@ -124,7 +121,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             + <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
-    let council_members = pallet_council::Module::<Runtime>::council_members();
+    let council_members = council::Module::<Runtime>::council_members();
     assert_eq!(
         council_members
             .iter()

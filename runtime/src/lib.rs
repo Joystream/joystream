@@ -54,7 +54,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
-use pallet_council::ReferendumConnection;
+use council::ReferendumConnection;
 use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
@@ -65,11 +65,11 @@ pub use content_directory;
 pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
+pub use council;
 pub use forum;
 pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
-pub use pallet_council;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
 pub use referendum;
@@ -470,7 +470,7 @@ impl common::currency::GovernanceCurrency for Runtime {
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
-pub type CouncilModule = pallet_council::Module<Runtime>;
+pub type CouncilModule = council::Module<Runtime>;
 
 parameter_types! {
     // referendum parameters
@@ -548,7 +548,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 }
 
-impl pallet_council::Trait for Runtime {
+impl council::Trait for Runtime {
     type Event = Event;
 
     type Referendum = ReferendumModule;
@@ -576,23 +576,11 @@ impl pallet_council::Trait for Runtime {
         true
     }
 
-    fn new_council_elected(_elected_members: &[pallet_council::CouncilMemberOf<Self>]) {
+    fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
         <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
 }
-
-/*
-impl governance::election::Trait for Runtime {
-    type Event = Event;
-    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
-}
-
-impl governance::council::Trait for Runtime {
-    type Event = Event;
-    type CouncilTermEnded = (CouncilElection,);
-}
-*/
 
 impl memo::Trait for Runtime {
     type Event = Event;
@@ -925,9 +913,7 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
-        //CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
-        //Council: council::{Module, Call, Storage, Event<T>, Config<T>},
-        NewCouncil: pallet_council::{Module, Call, Storage, Event<T>, Config<T>},
+        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},

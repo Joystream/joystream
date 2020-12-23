@@ -15,7 +15,7 @@ pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: pallet_council::Trait + membership::Trait>
+impl<T: council::Trait + membership::Trait>
     ActorOriginValidator<
         <T as frame_system::Trait>::Origin,
         MemberId<T>,
@@ -30,7 +30,7 @@ impl<T: pallet_council::Trait + membership::Trait>
     ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
         let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
 
-        if pallet_council::Module::<T>::council_members()
+        if council::Module::<T>::council_members()
             .iter()
             .any(|council_member| council_member.member_id() == &actor_id)
         {
@@ -41,10 +41,10 @@ impl<T: pallet_council::Trait + membership::Trait>
     }
 }
 
-impl<T: pallet_council::Trait> VotersParameters for CouncilManager<T> {
+impl<T: council::Trait> VotersParameters for CouncilManager<T> {
     /// Implement total_voters_count() as council size
     fn total_voters_count() -> u32 {
-        pallet_council::Module::<T>::council_members()
+        council::Module::<T>::council_members()
             .len()
             .saturated_into()
     }
