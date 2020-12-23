@@ -46,7 +46,7 @@ mod council_mod {
 
 mod referendum_mod {
     pub use referendum::Event;
-    pub use referendum::Instance0;
+    pub use referendum::Instance1;
 }
 
 impl_outer_event! {
@@ -56,7 +56,7 @@ impl_outer_event! {
         membership_mod<T>,
         frame_system<T>,
         council_mod<T>,
-        referendum_mod Instance0 <T>,
+        referendum_mod Instance1 <T>,
     }
 }
 
@@ -301,7 +301,7 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u64 = 4;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
@@ -312,7 +312,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-pub type ReferendumInstance = referendum::Instance0;
+type ReferendumInstance = referendum::Instance1;
 
 impl council::Trait for Test {
     type Event = TestEvent;
@@ -338,7 +338,7 @@ impl council::Trait for Test {
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
-        membership_id == account_id
+        membership::Module::<Self>::membership(membership_id).controller_account == *account_id
     }
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}

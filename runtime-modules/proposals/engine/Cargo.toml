@@ -23,6 +23,7 @@ recurringrewards = { package = 'pallet-recurring-reward', default-features = fal
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting', optional = true}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
 council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -41,6 +42,7 @@ runtime-benchmarks = [
     'minting',
     'membership',
     'council',
+    'referendum',
 ]
 std = [
 	'serde',
