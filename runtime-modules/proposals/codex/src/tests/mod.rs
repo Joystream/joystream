@@ -810,14 +810,14 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-fn setup_council() {
+fn setup_council(start_id: u64) {
     let council_size = <Test as council::Trait>::CouncilSize::get();
     let candidates_number =
         council_size + <Test as council::Trait>::MinNumberOfExtraCandidates::get();
-    let candidates: Vec<_> = (20..20 + candidates_number).collect();
-    let council: Vec<_> = (20..20 + council_size).collect();
+    let candidates: Vec<_> = (start_id..start_id + candidates_number).collect();
+    let council: Vec<_> = (start_id..start_id + council_size).collect();
     let voters: Vec<_> =
-        (20 + candidates_number + 1..20 + candidates_number + 1 + council_size).collect();
+        (council.last().unwrap() + 1..council.last().unwrap() + 1 + council_size).collect();
     for id in candidates {
         increase_total_balance_issuance_using_account_id(id, BalanceOf::<Test>::max_value());
         council::Module::<Test>::announce_candidacy(
@@ -891,7 +891,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
             exact_execution_block: None,
         };
 
-        setup_council();
+        setup_council(2);
 
         assert_eq!(
             ProposalCodex::create_proposal(
@@ -931,7 +931,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
             exact_execution_block: None,
         };
 
-        setup_council();
+        setup_council(2);
 
         assert_eq!(
             ProposalCodex::create_proposal(
