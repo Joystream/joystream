@@ -1,6 +1,5 @@
 #![warn(missing_docs)]
 
-mod council_elected_handler;
 mod council_origin_validator;
 mod membership_origin_validator;
 mod proposal_encoder;
