@@ -354,18 +354,16 @@ decl_module! {
 
 // *************** Extrinsic to execute
 
-        /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        /// Text proposal extrinsic.
+        /// Should be used as callable object to pass to the `engine` module.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn execute_text_proposal(
             origin,
             text: Vec<u8>,
         ) {
             ensure_root(origin)?;
-            print("Text proposal: ");
-            let text_string_result = from_utf8(text.as_slice());
-            if let Ok(text_string) = text_string_result{
-                print(text_string);
-            }
+
+            // Text proposal stub: no code implied.
         }
 
         /// Runtime upgrade proposal extrinsic.
