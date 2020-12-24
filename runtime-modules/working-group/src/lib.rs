@@ -1362,6 +1362,6 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
     fn is_worker_account_id(account_id: &T::AccountId, worker_id: &WorkerId<T>) -> bool {
         checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.role_account_id == account_id.clone())
-            .is_ok()
+            .unwrap_or(false)
     }
 }
