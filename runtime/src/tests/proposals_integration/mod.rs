@@ -501,13 +501,13 @@ pub fn add_confirmed_staking_account(member_id: MemberId, account_id: AccountId3
     assert!(crate::Members::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id,
-        account_id.clone(),
     )
     .is_ok());
 
     assert!(crate::Members::confirm_staking_account(
-        RawOrigin::Signed(account_id).into(),
+        RawOrigin::Signed(account_id.clone()).into(),
         member_id,
+        account_id,
     )
     .is_ok());
 }

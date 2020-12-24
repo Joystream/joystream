@@ -747,8 +747,8 @@ fn add_staking_account_candidate_succeeds() {
         AddStakingAccountFixture::default().call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountAdded(
+            ALICE_ACCOUNT_ID,
             ALICE_MEMBER_ID,
-            BOB_ACCOUNT_ID,
         ));
     });
 }
@@ -758,7 +758,7 @@ fn add_staking_account_candidate_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         AddStakingAccountFixture::default()
             .with_origin(RawOrigin::None)
-            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -802,8 +802,8 @@ fn remove_staking_account_succeeds() {
         RemoveStakingAccountFixture::default().call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountRemoved(
+            ALICE_ACCOUNT_ID,
             ALICE_MEMBER_ID,
-            BOB_ACCOUNT_ID,
         ));
     });
 }
@@ -813,7 +813,7 @@ fn remove_staking_account_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         RemoveStakingAccountFixture::default()
             .with_origin(RawOrigin::None)
-            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -854,11 +854,9 @@ fn confirm_staking_account_succeeds() {
 
         ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
 
-        assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&BOB_ACCOUNT_ID,).confirmed);
-
         EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountConfirmed(
+            ALICE_ACCOUNT_ID,
             ALICE_MEMBER_ID,
-            BOB_ACCOUNT_ID,
         ));
     });
 }
@@ -881,7 +879,7 @@ fn confirm_staking_account_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         ConfirmStakingAccountFixture::default()
             .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
+            .call_and_assert(Err(Error::<Test>::UnsignedOrigin.into()));
     });
 }
 
@@ -917,28 +915,28 @@ fn is_member_staking_account_works() {
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         // Before adding candidate should be false.
         assert_eq!(
-            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             false
         );
         AddStakingAccountFixture::default().call_and_assert(Ok(()));
 
         // After adding but before confirmation of the candidate should be false.
         assert_eq!(
-            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             false
         );
         ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
 
         // After confirmation of the candidate should be true.
         assert_eq!(
-            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             true
         );
 
         // After removing of the staking account should be false.
         RemoveStakingAccountFixture::default().call_and_assert(Ok(()));
         assert_eq!(
-            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &BOB_ACCOUNT_ID),
+            Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             false
         );
     });

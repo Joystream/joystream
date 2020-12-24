@@ -346,9 +346,9 @@ decl_event! {
         InitialInvitationBalanceUpdated(Balance),
         LeaderInvitationQuotaUpdated(u32),
         InitialInvitationCountUpdated(u32),
-        StakingAccountAdded(MemberId, AccountId),
-        StakingAccountRemoved(MemberId, AccountId),
-        StakingAccountConfirmed(MemberId, AccountId),
+        StakingAccountAdded(AccountId, MemberId),
+        StakingAccountRemoved(AccountId, MemberId),
+        StakingAccountConfirmed(AccountId, MemberId),
     }
 }
 
@@ -714,19 +714,17 @@ decl_module! {
         }
 
         /// Add staking account candidate for a member.
-        /// The staking account candidate must be confirmed by its owner before usage.
+        /// The membership must be confirmed before usage.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_staking_account_candidate(
-            origin,
-            member_id: T::MemberId,
-            staking_account_id: T::AccountId
-        ) {
-            Self::ensure_member_controller_account_signed(origin, &member_id)?;
+        pub fn add_staking_account_candidate(origin, member_id: T::MemberId) {
+            let staking_account_id = ensure_signed(origin)?;
 
             ensure!(
                 !Self::staking_account_registered(&staking_account_id),
                 Error::<T>::StakingAccountIsAlreadyRegistered
             );
+
+            Self::ensure_membership(member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -740,17 +738,15 @@ decl_module! {
                 }
             );
 
-            Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
+            Self::deposit_event(RawEvent::StakingAccountAdded(staking_account_id, member_id));
         }
 
         /// Remove staking account for a member.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_staking_account(
-            origin,
-            member_id: T::MemberId,
-            staking_account_id: T::AccountId
-        ) {
-            Self::ensure_member_controller_account_signed(origin, &member_id)?;
+        pub fn remove_staking_account(origin, member_id: T::MemberId) {
+            let staking_account_id = ensure_signed(origin)?;
+
+            Self::ensure_membership(member_id)?;
 
             ensure!(
                 Self::staking_account_registered_for_member(&staking_account_id, &member_id),
@@ -763,7 +759,7 @@ decl_module! {
 
             <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone());
 
-            Self::deposit_event(RawEvent::StakingAccountRemoved(member_id, staking_account_id));
+            Self::deposit_event(RawEvent::StakingAccountRemoved(staking_account_id, member_id));
         }
 
         /// Confirm staking account candidate for a member.
@@ -771,10 +767,9 @@ decl_module! {
         pub fn confirm_staking_account(
             origin,
             member_id: T::MemberId,
+            staking_account_id: T::AccountId,
         ) {
-            let staking_account_id = ensure_signed(origin)?;
-
-            Self::ensure_membership(member_id)?;
+            Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
             ensure!(
                 Self::staking_account_registered_for_member(&staking_account_id, &member_id),
@@ -798,7 +793,7 @@ decl_module! {
                 }
             );
 
-            Self::deposit_event(RawEvent::StakingAccountConfirmed(member_id, staking_account_id));
+            Self::deposit_event(RawEvent::StakingAccountConfirmed(staking_account_id, member_id));
         }
     }
 }

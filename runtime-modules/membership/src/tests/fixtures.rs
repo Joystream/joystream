@@ -565,18 +565,15 @@ impl Default for AddStakingAccountFixture {
         Self {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
-            staking_account_id: BOB_ACCOUNT_ID,
+            staking_account_id: ALICE_ACCOUNT_ID,
         }
     }
 }
 
 impl AddStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Membership::add_staking_account_candidate(
-            self.origin.clone().into(),
-            self.member_id,
-            self.staking_account_id,
-        );
+        let actual_result =
+            Membership::add_staking_account_candidate(self.origin.clone().into(), self.member_id);
 
         assert_eq!(expected_result, actual_result);
 
@@ -607,18 +604,15 @@ impl Default for RemoveStakingAccountFixture {
         Self {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
-            staking_account_id: BOB_ACCOUNT_ID,
+            staking_account_id: ALICE_ACCOUNT_ID,
         }
     }
 }
 
 impl RemoveStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Membership::remove_staking_account(
-            self.origin.clone().into(),
-            self.member_id,
-            self.staking_account_id,
-        );
+        let actual_result =
+            Membership::remove_staking_account(self.origin.clone().into(), self.member_id);
 
         assert_eq!(expected_result, actual_result);
 
@@ -641,26 +635,31 @@ impl RemoveStakingAccountFixture {
 pub struct ConfirmStakingAccountFixture {
     pub origin: RawOrigin<u64>,
     pub member_id: u64,
+    pub staking_account_id: u64,
 }
 
 impl Default for ConfirmStakingAccountFixture {
     fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(BOB_ACCOUNT_ID),
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
+            staking_account_id: ALICE_ACCOUNT_ID,
         }
     }
 }
 
 impl ConfirmStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Membership::confirm_staking_account(self.origin.clone().into(), self.member_id);
+        let actual_result = Membership::confirm_staking_account(
+            self.origin.clone().into(),
+            self.member_id,
+            self.staking_account_id,
+        );
 
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&BOB_ACCOUNT_ID,).confirmed);
+            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&ALICE_ACCOUNT_ID,).confirmed);
         }
     }
 
