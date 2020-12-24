@@ -450,6 +450,7 @@ impl content_directory::Trait for Runtime {
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type WorkingGroup = ContentDirectoryWorkingGroup;
 }
 
 impl minting::Trait for Runtime {

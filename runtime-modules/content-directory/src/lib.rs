@@ -168,7 +168,7 @@ pub type MaxNumber = u32;
 /// Type simplification
 pub type EntityOf<T> = Entity<
     <T as Trait>::ClassId,
-    <T as ActorAuthenticator>::MemberId,
+    <T as common::Trait>::MemberId,
     <T as frame_system::Trait>::Hash,
     <T as Trait>::EntityId,
     <T as Trait>::Nonce,
@@ -186,7 +186,7 @@ pub type StoredPropertyValueOf<T> = StoredPropertyValue<
 >;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: frame_system::Trait + ActorAuthenticator + Clone {
+pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -278,6 +278,9 @@ pub trait Trait: frame_system::Trait + ActorAuthenticator + Clone {
 
     /// Entities creation constraint per individual
     type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
+
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
 }
 
 decl_storage! {
@@ -2874,13 +2877,13 @@ decl_event!(
         CuratorId = <T as ActorAuthenticator>::CuratorId,
         ClassId = <T as Trait>::ClassId,
         EntityId = <T as Trait>::EntityId,
-        EntityController = EntityController<<T as ActorAuthenticator>::MemberId>,
+        EntityController = EntityController<<T as common::Trait>::MemberId>,
         EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
         Actor = Actor<
             <T as ActorAuthenticator>::CuratorGroupId,
             <T as ActorAuthenticator>::CuratorId,
-            <T as ActorAuthenticator>::MemberId,
+            <T as common::Trait>::MemberId,
         >,
         Nonce = <T as Trait>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
