@@ -18,6 +18,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{DefaultInstance, Error, OpeningType, Penalty, RawEvent, StakePolicy, Worker};
+use common::working_group::WorkingGroupIntegration;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
     EventFixture, FillOpeningFixture, HireLeadFixture, HireRegularWorkerFixture,
@@ -2374,5 +2375,142 @@ fn spend_from_budget_fails_with_zero_amount() {
             .with_account_id(account_id)
             .with_amount(amount)
             .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotSpendZero.into()));
+    });
+}
+
+#[test]
+fn ensure_worker_origin_works_correctly() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 2;
+        assert_eq!(
+            TestWorkingGroup::ensure_worker_origin(RawOrigin::None.into(), &invalid_worker_id),
+            Err(DispatchError::BadOrigin)
+        );
+
+        let account_id = 1;
+        assert_eq!(
+            TestWorkingGroup::ensure_worker_origin(
+                RawOrigin::Signed(account_id).into(),
+                &invalid_worker_id
+            ),
+            Err(Error::<Test, DefaultInstance>::WorkerDoesNotExist.into())
+        );
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let invalid_account = 2;
+        assert_eq!(
+            TestWorkingGroup::ensure_worker_origin(
+                RawOrigin::Signed(invalid_account).into(),
+                &worker_id
+            ),
+            Err(Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into())
+        );
+
+        assert_eq!(
+            TestWorkingGroup::ensure_worker_origin(
+                RawOrigin::Signed(account_id).into(),
+                &worker_id
+            ),
+            Ok(())
+        );
+    });
+}
+
+#[test]
+fn ensure_leader_origin_works_correctly() {
+    build_test_externalities().execute_with(|| {
+        assert_eq!(
+            TestWorkingGroup::ensure_leader_origin(RawOrigin::None.into()),
+            Err(DispatchError::BadOrigin)
+        );
+
+        let account_id = 1;
+        assert_eq!(
+            TestWorkingGroup::ensure_leader_origin(RawOrigin::Signed(account_id).into()),
+            Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into())
+        );
+
+        HireLeadFixture::default().hire_lead();
+
+        let invalid_account = 2;
+        assert_eq!(
+            TestWorkingGroup::ensure_leader_origin(RawOrigin::Signed(invalid_account).into()),
+            Err(Error::<Test, DefaultInstance>::IsNotLeadAccount.into())
+        );
+
+        assert_eq!(
+            TestWorkingGroup::ensure_leader_origin(RawOrigin::Signed(account_id).into()),
+            Ok(())
+        );
+    });
+}
+
+#[test]
+fn get_leader_member_id_works_correctly() {
+    build_test_externalities().execute_with(|| {
+        assert_eq!(TestWorkingGroup::get_leader_member_id(), None);
+
+        HireLeadFixture::default().hire_lead();
+
+        let leader_member_id = 1;
+        assert_eq!(
+            TestWorkingGroup::get_leader_member_id(),
+            Some(leader_member_id)
+        );
+    });
+}
+
+#[test]
+fn is_leader_account_id_works_correctly() {
+    build_test_externalities().execute_with(|| {
+        let invalid_account_id = 2u64;
+        // No leader set
+        assert_eq!(
+            TestWorkingGroup::is_leader_account_id(&invalid_account_id),
+            false
+        );
+
+        HireLeadFixture::default().hire_lead();
+
+        assert_eq!(
+            TestWorkingGroup::is_leader_account_id(&invalid_account_id),
+            false
+        );
+
+        let account_id = 1u64;
+        assert_eq!(TestWorkingGroup::is_leader_account_id(&account_id), true);
+    });
+}
+
+#[test]
+fn is_worker_account_id_works_correctly() {
+    build_test_externalities().execute_with(|| {
+        let invalid_account_id = 2u64;
+        let invalid_worker_id = 2u64;
+
+        // Not hired
+        assert_eq!(
+            TestWorkingGroup::is_worker_account_id(&invalid_account_id, &invalid_worker_id),
+            false
+        );
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        assert_eq!(
+            TestWorkingGroup::is_worker_account_id(&invalid_account_id, &worker_id),
+            false
+        );
+
+        let account_id = 1u64;
+        assert_eq!(
+            TestWorkingGroup::is_worker_account_id(&account_id, &invalid_worker_id),
+            false
+        );
+
+        assert_eq!(
+            TestWorkingGroup::is_worker_account_id(&account_id, &worker_id),
+            true
+        );
     });
 }
