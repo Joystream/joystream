@@ -11,7 +11,6 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{AccountId32, BuildStorage};
-use sp_std::convert::TryInto;
 
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Module<Runtime>;
@@ -34,34 +33,46 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
+fn get_account_membership(account: AccountId32, i: usize) -> u64 {
+    if !Membership::is_member_account(&account) {
+        insert_member(account);
+    }
+
+    i as u64
+}
+
 pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     let mut voters = Vec::<AccountId32>::new();
 
     let councilor_stake: u128 = <Runtime as council::Trait>::MinCandidateStake::get().into();
+    let extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
+    let mut council_member_ids = Vec::new();
 
     for (i, councilor) in council.iter().enumerate() {
         increase_total_balance_issuance_using_account_id(
             councilor.clone().into(),
             councilor_stake + 1,
         );
+        let member_id = get_account_membership(councilor.clone(), i);
         Council::announce_candidacy(
             RawOrigin::Signed(councilor.clone()).into(),
-            i.try_into().unwrap(),
+            member_id,
             councilor.clone(),
             councilor.clone(),
             councilor_stake,
         )
         .unwrap();
-        voters.push([10u8.saturating_add(i.try_into().unwrap()); 32].into()); // TODO: change me
+        voters.push([council.len() as u8 + extra_candidates as u8 + i as u8; 32].into());
+        council_member_ids.push(member_id);
     }
 
-    let extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
     for i in council.len()..(council.len() + extra_candidates as usize) {
         let extra_councilor: AccountId32 = [i as u8; 32].into();
 
+        let member_id = get_account_membership(extra_councilor.clone(), i);
         Council::release_candidacy_stake(
             RawOrigin::Signed(extra_councilor.clone()).into(),
-            i.try_into().unwrap(),
+            member_id,
         )
         .unwrap_or_else(|err| assert_eq!(err, council::Error::NoStake));
         increase_total_balance_issuance_using_account_id(
@@ -71,7 +82,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
 
         Council::announce_candidacy(
             RawOrigin::Signed(extra_councilor.clone()).into(),
-            i.try_into().unwrap(),
+            member_id,
             extra_councilor.clone(),
             extra_councilor.clone(),
             councilor_stake,
@@ -90,7 +101,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             voter.into(),
             &[0u8],
             &cycle_id,
-            &i.try_into().unwrap(),
+            &council_member_ids[i],
         ); //TODO: fixme
         Referendum::vote(
             RawOrigin::Signed(voter.clone()).into(),
@@ -110,7 +121,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
         Referendum::reveal_vote(
             RawOrigin::Signed(voter.clone()).into(),
             vec![0u8],
-            i.try_into().unwrap(),
+            council_member_ids[i].clone(),
         )
         .unwrap();
     }
@@ -127,7 +138,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             .iter()
             .map(|m| *m.member_id())
             .collect::<Vec<_>>(),
-        (0u64..council.len().try_into().unwrap()).collect::<Vec<u64>>()
+        council_member_ids
     );
 }
 

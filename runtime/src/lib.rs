@@ -569,11 +569,11 @@ impl council::Trait for Runtime {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     fn is_council_member_account(
-        _membership_id: &Self::MemberId,
-        _account_id: &<Self as frame_system::Trait>::AccountId,
+        membership_id: &Self::MemberId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
-        // TODO: implement when membership module is ready
-        true
+        membership::Module::<Runtime>::ensure_member_controller_account(account_id, membership_id)
+            .is_ok()
     }
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {

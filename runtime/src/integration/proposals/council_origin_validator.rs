@@ -83,17 +83,17 @@ mod tests {
             let councilor2: [u8; 32] = [1; 32];
             let councilor3: [u8; 32] = [2; 32];
 
-            elect_council(vec![councilor1, councilor2.into(), councilor3.into()], 0);
+            elect_council(
+                vec![councilor1.clone(), councilor2.into(), councilor3.into()],
+                0,
+            );
 
-            let account_id = AccountId32::default();
-            let origin = RawOrigin::Signed(account_id.clone());
-            insert_member(account_id.clone());
-            let member_id = 0; // newly created member_id
+            let origin = RawOrigin::Signed(councilor1.clone());
 
             let validation_result =
-                CouncilManager::<Runtime>::ensure_actor_origin(origin.into(), member_id);
+                CouncilManager::<Runtime>::ensure_actor_origin(origin.into(), 0);
 
-            assert_eq!(validation_result, Ok(account_id));
+            assert_eq!(validation_result, Ok(councilor1));
         });
     }
 
