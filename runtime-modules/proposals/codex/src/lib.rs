@@ -64,7 +64,6 @@ use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
-use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 
 pub use crate::types::{
