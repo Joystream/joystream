@@ -22,19 +22,6 @@ use common::working_group::WorkingGroupIntegration;
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
-    /// Curator identifier
-    type CuratorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
     /// Curator group identifier
     type CuratorGroupId: Parameter
         + Member
@@ -49,7 +36,7 @@ pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
         + Ord;
 
     /// Authorize actor as curator
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
+    fn is_curator(curator_id: &CuratorId<Self>, account_id: &Self::AccountId) -> bool;
 
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
@@ -57,7 +44,7 @@ pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
 
 /// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(
-    curator_id: &T::CuratorId,
+    curator_id: &CuratorId<T>,
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
     ensure!(

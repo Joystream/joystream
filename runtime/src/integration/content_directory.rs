@@ -1,10 +1,12 @@
 use crate::{AccountId, ContentDirectoryWorkingGroupInstance, Runtime};
 
 impl content_directory::ActorAuthenticator for Runtime {
-    type CuratorId = u64;
     type CuratorGroupId = u64;
 
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
+    fn is_curator(
+        curator_id: &content_directory::CuratorId<Runtime>,
+        account_id: &AccountId,
+    ) -> bool {
         if let Ok(worker) = working_group::ensure_worker_exists::<
             Runtime,
             ContentDirectoryWorkingGroupInstance,

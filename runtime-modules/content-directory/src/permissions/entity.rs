@@ -11,7 +11,7 @@ pub enum EntityController<MemberId: Default + PartialEq + Clone + Copy> {
 
 impl<MemberId: Default + PartialEq + Clone + Copy> EntityController<MemberId> {
     /// Create `EntityController` enum representation, using provided `Actor`
-    pub fn from_actor<T: Trait>(actor: &Actor<T::CuratorGroupId, T::CuratorId, MemberId>) -> Self {
+    pub fn from_actor<T: Trait>(actor: &Actor<T::CuratorGroupId, CuratorId<T>, MemberId>) -> Self {
         match &actor {
             Actor::Lead => Self::Lead,
             Actor::Member(member_id) => Self::Member(*member_id),
@@ -139,7 +139,7 @@ impl EntityAccessLevel {
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T::MemberId>,
         class_permissions: &ClassPermissions<T::CuratorGroupId>,
-        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        actor: &Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     ) -> Result<Self, Error<T>> {
         let controller = EntityController::<T::MemberId>::from_actor::<T>(actor);
         match actor {
@@ -154,11 +154,7 @@ impl EntityAccessLevel {
             }
             Actor::Curator(curator_group_id, curator_id) => {
                 // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    account_id,
-                )?;
+                perform_curator_in_group_auth(curator_id, curator_group_id, account_id)?;
                 match (
                     entity_permissions.controller_is_equal_to(&controller),
                     class_permissions.is_maintainer(curator_group_id),

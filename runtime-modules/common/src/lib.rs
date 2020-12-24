@@ -29,6 +29,7 @@ pub trait Trait: frame_system::Trait {
         + Default
         + Copy
         + MaybeSerialize
+        + Ord
         + PartialEq;
 
     /// Describes the common type for the working group members (workers).
@@ -39,6 +40,7 @@ pub trait Trait: frame_system::Trait {
         + Default
         + Copy
         + MaybeSerialize
+        + Ord
         + PartialEq;
 }
 
