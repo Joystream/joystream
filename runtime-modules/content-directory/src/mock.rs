@@ -24,7 +24,7 @@ pub type Hashed = <Runtime as frame_system::Trait>::Hash;
 
 pub type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
-pub type MemberId = <Runtime as ActorAuthenticator>::MemberId;
+pub type MemberId = <Runtime as common::Trait>::MemberId;
 
 /// Origins
 
@@ -267,19 +267,49 @@ impl Trait for Runtime {
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type WorkingGroup = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
+
+        *account_id == lead_account_id
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Runtime as frame_system::Trait>::AccountId,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
 }
 
 impl ActorAuthenticator for Runtime {
     type CuratorId = u64;
-    type MemberId = u64;
     type CuratorGroupId = u64;
 
     // Consider lazy_static crate?
-
-    fn is_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
-    }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
         let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();

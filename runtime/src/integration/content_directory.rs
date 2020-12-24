@@ -1,31 +1,8 @@
-use crate::{AccountId, ContentDirectoryWorkingGroupInstance, MemberId, Runtime};
-
-// Alias for content directory working group
-pub(crate) type ContentDirectoryWorkingGroup<T> =
-    working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
+use crate::{AccountId, ContentDirectoryWorkingGroupInstance, Runtime};
 
 impl content_directory::ActorAuthenticator for Runtime {
     type CuratorId = u64;
-    type MemberId = MemberId;
     type CuratorGroupId = u64;
-
-    fn is_lead(account_id: &AccountId) -> bool {
-        // get current lead id
-        let maybe_current_lead_id = ContentDirectoryWorkingGroup::<Runtime>::current_lead();
-        if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) = working_group::ensure_worker_exists::<
-                Runtime,
-                ContentDirectoryWorkingGroupInstance,
-            >(current_lead_id)
-            {
-                *account_id == worker.role_account_id
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
         if let Ok(worker) = working_group::ensure_worker_exists::<
