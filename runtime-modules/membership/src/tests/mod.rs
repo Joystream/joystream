@@ -9,7 +9,7 @@ use mock::*;
 
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
-use frame_support::{assert_ok, StorageDoubleMap, StorageMap, StorageValue};
+use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
@@ -854,10 +854,7 @@ fn confirm_staking_account_succeeds() {
 
         ConfirmStakingAccountFixture::default().call_and_assert(Ok(()));
 
-        assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(
-            &BOB_ACCOUNT_ID,
-            &ALICE_MEMBER_ID
-        ));
+        assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&BOB_ACCOUNT_ID,).confirmed);
 
         EventFixture::assert_last_crate_event(Event::<Test>::StakingAccountConfirmed(
             ALICE_MEMBER_ID,

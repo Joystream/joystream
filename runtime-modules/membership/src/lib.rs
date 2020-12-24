@@ -121,6 +121,16 @@ pub struct MembershipObject<AccountId: Ord> {
     pub invites: u32,
 }
 
+// Contain staking account to member binding and its confirmation.
+#[derive(Encode, Decode, Default)]
+pub struct StakingAccountMemberBinding<MemberId> {
+    /// Member id that we bind account to.
+    pub member_id: MemberId,
+
+    /// Confirmation that an account id is bound to a member.
+    pub confirmed: bool,
+}
+
 // Contains valid or default user details
 struct ValidatedUserInfo {
     name: Vec<u8>,
@@ -291,8 +301,9 @@ decl_storage! {
             T::DefaultInitialInvitationBalance::get();
 
         /// Double of a staking account id and member id to the confirmation status.
-        pub(crate) StakingAccountIdMemberStatus get(fn vote_by_proposal_by_voter): double_map
-            hasher(blake2_128_concat) T::AccountId, hasher(blake2_128_concat) T::MemberId => bool;
+        pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
+            map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
+
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -721,7 +732,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <StakingAccountIdMemberStatus<T>>::insert(staking_account_id.clone(), member_id, false);
+            <StakingAccountIdMemberStatus<T>>::insert(
+                staking_account_id.clone(),
+                StakingAccountMemberBinding {
+                    member_id,
+                    confirmed: false,
+                }
+            );
 
             Self::deposit_event(RawEvent::StakingAccountAdded(member_id, staking_account_id));
         }
@@ -744,7 +761,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone(), member_id);
+            <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone());
 
             Self::deposit_event(RawEvent::StakingAccountRemoved(member_id, staking_account_id));
         }
@@ -773,7 +790,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <StakingAccountIdMemberStatus<T>>::insert(staking_account_id.clone(), member_id, true);
+            <StakingAccountIdMemberStatus<T>>::insert(
+                staking_account_id.clone(),
+                StakingAccountMemberBinding {
+                    member_id,
+                    confirmed: true,
+                }
+            );
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(member_id, staking_account_id));
         }
@@ -953,7 +976,7 @@ impl<T: Trait> Module<T> {
 
     // Verifies registration of the staking account for ANY member.
     fn staking_account_registered(staking_account_id: &T::AccountId) -> bool {
-        <StakingAccountIdMemberStatus<T>>::iter_prefix_values(staking_account_id).count() > 0
+        <StakingAccountIdMemberStatus<T>>::contains_key(staking_account_id)
     }
 
     // Verifies registration of the staking account for SOME member.
@@ -961,7 +984,13 @@ impl<T: Trait> Module<T> {
         staking_account_id: &T::AccountId,
         member_id: &T::MemberId,
     ) -> bool {
-        <StakingAccountIdMemberStatus<T>>::contains_key(staking_account_id, member_id)
+        if !Self::staking_account_registered(staking_account_id) {
+            return false;
+        }
+
+        let member_status = Self::staking_account_id_member_status(staking_account_id);
+
+        member_status.member_id == *member_id
     }
 
     // Verifies confirmation of the staking account.
@@ -973,7 +1002,9 @@ impl<T: Trait> Module<T> {
             return false;
         }
 
-        <StakingAccountIdMemberStatus<T>>::get(staking_account_id, member_id)
+        let member_status = Self::staking_account_id_member_status(staking_account_id);
+
+        member_status.confirmed
     }
 }
 

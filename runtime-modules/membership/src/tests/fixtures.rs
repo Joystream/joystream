@@ -2,7 +2,7 @@ use super::mock::*;
 use crate::{BuyMembershipParameters, InviteMembershipParameters};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::{StorageDoubleMap, StorageMap};
+use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 // Recommendation from Parity on testing on_finalize
@@ -583,7 +583,6 @@ impl AddStakingAccountFixture {
         if actual_result.is_ok() {
             assert!(<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
                 &self.staking_account_id,
-                &self.member_id
             ));
         }
     }
@@ -594,13 +593,6 @@ impl AddStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
-    }
-
-    pub fn with_staking_account_id(self, staking_account_id: u64) -> Self {
-        Self {
-            staking_account_id,
-            ..self
-        }
     }
 }
 
@@ -633,7 +625,6 @@ impl RemoveStakingAccountFixture {
         if actual_result.is_ok() {
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
                 &self.staking_account_id,
-                &self.member_id
             ));
         }
     }
@@ -669,10 +660,7 @@ impl ConfirmStakingAccountFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(
-                &BOB_ACCOUNT_ID,
-                &self.member_id
-            ));
+            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&BOB_ACCOUNT_ID,).confirmed);
         }
     }
 
