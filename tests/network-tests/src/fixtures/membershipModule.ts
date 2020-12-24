@@ -45,7 +45,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
 
     this.debug(`Registered ${this.memberIds.length} new members`)
 
-    assert.equal(this.accounts.length, this.memberIds.length)
+    assert.equal(this.memberIds.length, this.accounts.length)
   }
 }
 

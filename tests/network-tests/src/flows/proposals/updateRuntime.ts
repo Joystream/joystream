@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { UpdateRuntimeFixture } from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
@@ -7,7 +7,7 @@ import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function updateRuntime({ api, env }: FlowArgs): Promise<void> {
+export default async function updateRuntime({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:updateRuntime')
   debug('Started')
 

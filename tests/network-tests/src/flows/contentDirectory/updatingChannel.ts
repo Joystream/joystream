@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { UpdateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
@@ -18,7 +18,7 @@ export function createUpdateChannelHandleFixture(api: Api, handle: string, descr
   return new UpdateChannelFixture(api, channelUpdateInput, uniquePropVal)
 }
 
-export default async function updateChannel({ api, query }: FlowArgs): Promise<void> {
+export default async function updateChannel({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger('flow:updateChannel')
   debug('Started')
 

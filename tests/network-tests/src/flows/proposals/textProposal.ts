@@ -1,10 +1,10 @@
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { TextProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
-export default async function textProposal({ api }: FlowArgs): Promise<void> {
+export default async function textProposal({ api }: FlowProps): Promise<void> {
   const debug = Debugger('flow:textProposal')
   debug('Started')
 

@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
@@ -55,7 +55,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
   assert.equal(queriedVideo.isPublic, video.isPublic, 'Should be equal')
 }
 
-export default async function createVideo({ api, query }: FlowArgs): Promise<void> {
+export default async function createVideo({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger('flow:creatingVideo')
   debug('Started')
 

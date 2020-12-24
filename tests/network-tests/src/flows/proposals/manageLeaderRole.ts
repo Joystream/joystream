@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import {
   BeginWorkingGroupLeaderApplicationReviewFixture,
@@ -22,10 +22,10 @@ import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
 export default {
-  storage: async function ({ api, env }: FlowArgs): Promise<void> {
+  storage: async function ({ api, env }: FlowProps): Promise<void> {
     return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup)
   },
-  content: async function ({ api, env }: FlowArgs): Promise<void> {
+  content: async function ({ api, env }: FlowProps): Promise<void> {
     return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }

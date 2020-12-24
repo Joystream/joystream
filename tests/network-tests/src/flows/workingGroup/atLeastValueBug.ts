@@ -1,5 +1,5 @@
 import { WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
 import { assert } from 'chai'
@@ -7,9 +7,11 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
 // Zero at least value bug scenario
-export default async function zeroAtLeastValueBug({ api, env }: FlowArgs): Promise<void> {
+export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:atLeastValueBug')
   debug('Started')
+  api.enableTxLogs()
+
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const unstakingPeriod: BN = new BN(env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!)

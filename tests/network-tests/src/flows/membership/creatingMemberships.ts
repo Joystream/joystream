@@ -1,4 +1,4 @@
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import {
   BuyMembershipHappyCaseFixture,
   BuyMembershipWithInsufficienFundsFixture,
@@ -9,9 +9,10 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
-export default async function membershipCreation({ api, env }: FlowArgs): Promise<void> {
+export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:memberships')
   debug('Started')
+  api.enableTxLogs()
 
   const N: number = +env.MEMBERSHIP_CREATION_N!
   assert(N > 0)

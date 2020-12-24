@@ -1,12 +1,12 @@
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { ElectCouncilFixture } from '../../fixtures/councilElectionModule'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-export default async function councilSetup({ api, env }: FlowArgs): Promise<void> {
+export default async function councilSetup({ api, env }: FlowProps): Promise<void> {
   const label = 'councilSetup'
   const debug = Debugger(`flow:${label}`)
 

@@ -1,5 +1,5 @@
 import { Api, WorkingGroups } from '../../Api'
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import {
   ApplyForOpeningFixture,
   AddWorkerOpeningFixture,
@@ -17,16 +17,16 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
 export default {
-  storage: async function ({ api, env }: FlowArgs): Promise<void> {
+  storage: async function ({ api, env }: FlowProps): Promise<void> {
     return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
   },
-  content: async function ({ api, env }: FlowArgs): Promise<void> {
+  content: async function ({ api, env }: FlowProps): Promise<void> {
     return manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
   },
 }
 
 async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = Debugger(`manageWorkerAsLead:${group}`)
+  const debug = Debugger(`flow:manageWorkerAsLead:${group}`)
   debug('Started')
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

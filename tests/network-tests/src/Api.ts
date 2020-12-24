@@ -44,14 +44,17 @@ export enum WorkingGroups {
   ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
 }
 
-export class Api {
+export class ApiFactory {
   private readonly api: ApiPromise
-  private readonly sender: Sender
   private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
+  public static async create(
+    provider: WsProvider,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ): Promise<ApiFactory> {
     let connectAttempts = 0
     while (true) {
       connectAttempts++
@@ -66,7 +69,7 @@ export class Api {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new Api(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -81,11 +84,29 @@ export class Api {
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
-    this.sender = new Sender(api, this.keyring)
+  }
+
+  public getApi(label: string): Api {
+    return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
   public close(): void {
     this.api.disconnect()
+  }
+}
+
+export class Api {
+  private readonly api: ApiPromise
+  private readonly sender: Sender
+  private readonly keyring: Keyring
+  // source of funds for all new accounts
+  private readonly treasuryAccount: string
+
+  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.api = api
+    this.keyring = keyring
+    this.treasuryAccount = treasuryAccount
+    this.sender = new Sender(api, keyring, label)
   }
 
   public enableTxLogs(): void {

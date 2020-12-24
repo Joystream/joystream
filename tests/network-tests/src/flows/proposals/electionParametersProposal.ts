@@ -1,12 +1,12 @@
-import { FlowArgs } from '../../Flow'
+import { FlowProps } from '../../Flow'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 
 // Election parameters proposal scenario
-export default async function electionParametersProposal({ api }: FlowArgs): Promise<void> {
-  const debug = Debugger('electionParametersProposal')
+export default async function electionParametersProposal({ api }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:electionParametersProposal')
   debug('Started')
 
   // Pre-Conditions: some members and an elected council

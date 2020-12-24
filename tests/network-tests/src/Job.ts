@@ -1,7 +1,10 @@
 import Debugger from 'debug'
 import { EventEmitter } from 'events'
+import { ApiFactory } from './Api'
+import { QueryNodeApi } from './QueryNodeApi'
+import { Flow } from './Flow'
 
-import { Flow, FlowArgs } from './Flow'
+export type JobProps = { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }
 
 function noop() {
   // No-Op
@@ -89,7 +92,7 @@ export class Job {
     return this._label
   }
 
-  private async run(flowArgs: FlowArgs): Promise<void> {
+  private async run(jobProps: JobProps): Promise<void> {
     // prevent any additional changes to configuration
     this._locked = true
 
@@ -104,7 +107,15 @@ export class Job {
     await Promise.all(this._after.map((job) => job.outcome))
 
     this.debug('Running')
-    const flowRunResults = await Promise.allSettled(this._flows.map((flow) => flow(flowArgs)))
+    const flowRunResults = await Promise.allSettled(
+      this._flows.map((flow) =>
+        flow({
+          api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}`),
+          env: jobProps.env,
+          query: jobProps.query,
+        })
+      )
+    )
 
     flowRunResults.forEach((result, ix) => {
       if (result.status === 'rejected') {

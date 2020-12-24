@@ -11,16 +11,16 @@ import { assert } from 'chai'
 
 export class Sender {
   private readonly api: ApiPromise
-  private readonly asyncLock: AsyncLock
+  private static readonly asyncLock: AsyncLock = new AsyncLock()
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
   private logFailedTransactions = false
+  private static _count = 0
 
-  constructor(api: ApiPromise, keyring: Keyring) {
+  constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
-    this.asyncLock = new AsyncLock()
     this.keyring = keyring
-    this.debug = Debugger('sender')
+    this.debug = Debugger(`Sender:${Sender._count++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
@@ -29,11 +29,11 @@ export class Sender {
   // The promise resolves on tx finalization (For both Dispatch success and failure)
   // The promise is rejected if transaction is rejected by node.
 
-  public enableLogs() {
+  public enableLogs(): void {
     this.logFailedTransactions = true
   }
 
-  public disableLogs() {
+  public disableLogs(): void {
     this.logFailedTransactions = false
   }
 
@@ -108,14 +108,16 @@ export class Sender {
       if (success || failed) finalized(result)
     }
 
-    await this.asyncLock.acquire(`${senderKeyPair.address}`, async () => {
+    await Sender.asyncLock.acquire(`${senderKeyPair.address}`, async () => {
       const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()
+      const { method, section } = signedTx.method
       try {
         await signedTx.send(handleEvents)
+        this.debug('Submitted tx:', `${section}.${method}`)
       } catch (err) {
-        this.debug('Submitting Tx failed:', sentTx)
+        this.debug('Submitting tx failed:', sentTx)
         throw err
       }
     })

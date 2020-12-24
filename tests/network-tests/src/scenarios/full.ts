@@ -13,10 +13,7 @@ import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
 import workerPayout from '../flows/workingGroup/workerPayout'
 import { scenario } from '../Scenario'
 
-scenario(async ({ api, debug, job }) => {
-  debug('Enabling failed tx logs')
-  api.enableTxLogs()
-
+scenario(async ({ job }) => {
   job('creating members', creatingMemberships)
 
   const councilJob = job('council setup', councilSetup)

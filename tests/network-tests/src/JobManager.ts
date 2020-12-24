@@ -1,14 +1,20 @@
 import { EventEmitter } from 'events'
-import { Flow, FlowArgs } from './Flow'
+import { Flow } from './Flow'
 import { Job, JobOutcome } from './Job'
+import { ApiFactory } from './Api'
+import { QueryNodeApi } from './QueryNodeApi'
 
-export class FlowManager extends EventEmitter {
-  private readonly flowArgs: FlowArgs
+export class JobManager extends EventEmitter {
   private _jobs: Job[] = []
+  private readonly _apiFactory: ApiFactory
+  private readonly _env: NodeJS.ProcessEnv
+  private readonly _query: QueryNodeApi
 
-  constructor(flowArgs: FlowArgs) {
+  constructor({ apiFactory, env, query }: { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }) {
     super()
-    this.flowArgs = flowArgs
+    this._apiFactory = apiFactory
+    this._env = env
+    this._query = query
   }
 
   public createJob(label: string, flows: Flow[] | Flow): Job {
@@ -20,8 +26,16 @@ export class FlowManager extends EventEmitter {
     return job
   }
 
+  private getJobProps() {
+    return {
+      env: this._env,
+      query: this._query,
+      apiFactory: this._apiFactory,
+    }
+  }
+
   public async run(): Promise<void> {
-    this.emit('run', this.flowArgs)
+    this.emit('run', this.getJobProps())
 
     const outcomes = await Promise.all(this._jobs.map((job) => job.outcome))
 
