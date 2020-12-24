@@ -124,8 +124,8 @@ class RuntimeApi {
     return this.workers.isRoleAccountOfStorageProvider(this.storageProviderId, this.identities.key.address)
   }
 
-  executeWithAccountLock(accountId, func) {
-    return this.asyncLock.acquire(`${accountId}`, func)
+  executeWithAccountLock(func) {
+    return this.asyncLock.acquire('tx-queue', func)
   }
 
   static matchingEvents(subscribed = [], events = []) {
@@ -207,7 +207,7 @@ class RuntimeApi {
     }
 
     // synchronize access to nonce
-    await this.executeWithAccountLock(accountId, async () => {
+    await this.executeWithAccountLock(async () => {
       const nonce = await this.api.rpc.system.accountNextIndex(accountId)
       const signed = tx.sign(fromKey, { nonce })
       const txhash = signed.hash

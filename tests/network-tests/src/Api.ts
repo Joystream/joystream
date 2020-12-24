@@ -16,7 +16,7 @@ import { ElectionStake, Seat } from '@joystream/types/council'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { Sender } from './sender'
+import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@joystream/types/stake'
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
@@ -35,9 +35,7 @@ import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/media'
-
 import Debugger from 'debug'
-const debug = Debugger('api')
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -55,6 +53,7 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
+    const debug = Debugger('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
@@ -109,8 +108,12 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
-  public enableTxLogs(): void {
-    this.sender.enableLogs()
+  public enableDebugTxLogs(): void {
+    this.sender.setLogLevel(LogLevel.Debug)
+  }
+
+  public enableVerboseTxLogs(): void {
+    this.sender.setLogLevel(LogLevel.Debug)
   }
 
   public createKeyPairs(n: number): KeyringPair[] {

@@ -9,18 +9,24 @@ import Debugger from 'debug'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
 
+export enum LogLevel {
+  None,
+  Debug,
+  Verbose,
+}
+
 export class Sender {
   private readonly api: ApiPromise
   private static readonly asyncLock: AsyncLock = new AsyncLock()
   private readonly keyring: Keyring
   private readonly debug: Debugger.Debugger
-  private logFailedTransactions = false
-  private static _count = 0
+  private logs: LogLevel = LogLevel.None
+  private static instance = 0
 
   constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
     this.keyring = keyring
-    this.debug = Debugger(`Sender:${Sender._count++}:${label}`)
+    this.debug = Debugger(`Sender:${Sender.instance++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
@@ -29,12 +35,8 @@ export class Sender {
   // The promise resolves on tx finalization (For both Dispatch success and failure)
   // The promise is rejected if transaction is rejected by node.
 
-  public enableLogs(): void {
-    this.logFailedTransactions = true
-  }
-
-  public disableLogs(): void {
-    this.logFailedTransactions = false
+  public setLogLevel(level: LogLevel): void {
+    this.logs = level
   }
 
   public async signAndSend(
@@ -70,7 +72,7 @@ export class Sender {
       const failed = result.findRecord('system', 'ExtrinsicFailed')
 
       // Log failed transactions
-      if (this.logFailedTransactions) {
+      if (this.logs === LogLevel.Debug || this.logs === LogLevel.Verbose) {
         if (failed) {
           const record = failed as EventRecord
           assert(record)
@@ -108,16 +110,24 @@ export class Sender {
       if (success || failed) finalized(result)
     }
 
-    await Sender.asyncLock.acquire(`${senderKeyPair.address}`, async () => {
+    // We used to do this: Sender.asyncLock.acquire(`${senderKeyPair.address}` ...
+    // Instead use a single lock for all calls, to force all transactions to be submitted in same order
+    // of call to signAndSend. Otherwise it raises chance of race conditions.
+    // It happens in rare cases and has lead some tests to fail occasionally in the past
+    await Sender.asyncLock.acquire('tx-queue', async () => {
       const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const signedTx = tx.sign(senderKeyPair, { nonce })
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
         await signedTx.send(handleEvents)
-        this.debug('Submitted tx:', `${section}.${method}`)
+        if (this.logs === LogLevel.Verbose) {
+          this.debug('Submitted tx:', `${section}.${method}`)
+        }
       } catch (err) {
-        this.debug('Submitting tx failed:', sentTx)
+        if (this.logs === LogLevel.Debug) {
+          this.debug('Submitting tx failed:', sentTx, err)
+        }
         throw err
       }
     })

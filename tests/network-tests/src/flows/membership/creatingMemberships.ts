@@ -12,7 +12,7 @@ import { assert } from 'chai'
 export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:memberships')
   debug('Started')
-  api.enableTxLogs()
+  api.enableDebugTxLogs()
 
   const N: number = +env.MEMBERSHIP_CREATION_N!
   assert(N > 0)

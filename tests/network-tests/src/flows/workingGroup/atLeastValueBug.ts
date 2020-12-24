@@ -10,7 +10,7 @@ import { FixtureRunner } from '../../Fixture'
 export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:atLeastValueBug')
   debug('Started')
-  api.enableTxLogs()
+  api.enableDebugTxLogs()
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
