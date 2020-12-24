@@ -185,6 +185,9 @@ pub type StoredPropertyValueOf<T> = StoredPropertyValue<
     <T as Trait>::Nonce,
 >;
 
+/// Curator ID alias for the actor of the system.
+pub type CuratorId<T> = common::ActorId<T>;
+
 /// Module configuration trait for this Substrate module.
 pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
     /// The overarching event type.
@@ -293,7 +296,7 @@ decl_storage! {
         pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) T::EntityId => EntityOf<T>;
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
-        pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+        pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<CuratorId<T>>;
 
         /// Mapping of class id and its property id to the respective entity id and property value hash.
         pub UniquePropertyValueHashes get(fn unique_property_value_hashes): double_map hasher(blake2_128_concat) (T::ClassId, PropertyId), hasher(blake2_128_concat) T::Hash => ();
@@ -342,7 +345,7 @@ decl_module! {
             let curator_group_id = Self::next_curator_group_id();
 
             // Insert empty curator group with `active` parameter set to false
-            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<T>::default());
+            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<CuratorId<T>>::default());
 
             // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
@@ -366,7 +369,7 @@ decl_module! {
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // We should previously ensure that curator_group  maintains no classes to be able to remove it
-            curator_group.ensure_curator_group_maintains_no_classes()?;
+            ensure_curator_group_maintains_no_classes::<T>(&curator_group)?;
 
             //
             // == MUTATION SAFE ==
@@ -414,7 +417,7 @@ decl_module! {
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-            curator_id: T::CuratorId,
+            curator_id: CuratorId<T>,
         ) -> DispatchResult {
 
             // Ensure given origin is lead
@@ -424,10 +427,10 @@ decl_module! {
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure max number of curators per group limit not reached yet
-            curator_group.ensure_max_number_of_curators_limit_not_reached()?;
+            ensure_max_number_of_curators_limit_not_reached::<T>(&curator_group)?;
 
             // Ensure curator under provided curator_id isn`t a CuratorGroup member yet
-            curator_group.ensure_curator_in_group_does_not_exist(&curator_id)?;
+            ensure_curator_in_group_does_not_exist::<T>(&curator_group, &curator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -448,7 +451,7 @@ decl_module! {
         pub fn remove_curator_from_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-            curator_id: T::CuratorId,
+            curator_id: CuratorId<T>,
         ) -> DispatchResult {
 
             // Ensure given origin is lead
@@ -458,7 +461,7 @@ decl_module! {
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure curator under provided curator_id is CuratorGroup member
-            curator_group.ensure_curator_in_group_exists(&curator_id)?;
+            ensure_curator_in_group_exists::<T>(&curator_group, &curator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -987,7 +990,7 @@ decl_module! {
         }
 
         // ======
-        // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>`.
+        // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>`.
         // ======
 
         /// Create entity.
@@ -997,7 +1000,7 @@ decl_module! {
         pub fn create_entity(
             origin,
             class_id: T::ClassId,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
         ) -> DispatchResult {
 
             let account_id = ensure_signed(origin)?;
@@ -1081,7 +1084,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_entity(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
         ) -> DispatchResult {
 
@@ -1147,7 +1150,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_schema_support_to_entity(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
             schema_id: SchemaId,
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
@@ -1247,7 +1250,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_entity_property_values(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> DispatchResult {
@@ -1346,7 +1349,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn clear_entity_property_vector(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId
         ) -> DispatchResult {
@@ -1426,7 +1429,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_at_entity_property_vector(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
@@ -1530,7 +1533,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn insert_at_entity_property_vector(
             origin,
-            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
@@ -1637,7 +1640,7 @@ decl_module! {
 
        /// Batch transaction
        #[weight = 10_000_000] // TODO: adjust weight
-       pub fn transaction(origin, actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>, operations: Vec<OperationType<T>>) -> DispatchResult {
+       pub fn transaction(origin, actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>, operations: Vec<OperationType<T>>) -> DispatchResult {
 
            // Ensure maximum number of operations during atomic batching limit not reached
            Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
@@ -1732,7 +1735,7 @@ impl<T: Trait> Module<T> {
     /// Deposits an `TransactionFailed` event if an error during `transaction` extrinsic execution occured
     fn ensure_transaction_failed_event<R, E: Into<DispatchError>>(
         result: Result<R, E>,
-        actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        actor: Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
         index: usize,
     ) -> Result<R, DispatchError> {
         match result {
@@ -2231,7 +2234,7 @@ impl<T: Trait> Module<T> {
     fn ensure_class_entity_and_access_level(
         account_id: T::AccountId,
         entity_id: T::EntityId,
-        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        actor: &Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     ) -> Result<(ClassOf<T>, EntityOf<T>, EntityAccessLevel), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
@@ -2313,7 +2316,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_can_create_entities(
         class_permissions: &ClassPermissions<T::CuratorGroupId>,
         account_id: &T::AccountId,
-        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        actor: &Actor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     ) -> Result<(), Error<T>> {
         let can_create = match &actor {
             Actor::Lead => {
@@ -2330,11 +2333,7 @@ impl<T: Trait> Module<T> {
                 if class_permissions.is_maintainer(curator_group_id) =>
             {
                 // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    account_id,
-                )?;
+                perform_curator_in_group_auth::<T>(curator_id, curator_group_id, account_id)?;
                 true
             }
             _ => false,
@@ -2628,7 +2627,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `CuratorGroup` under given id exists, return corresponding one
     pub fn ensure_curator_group_exists(
         curator_group_id: &T::CuratorGroupId,
-    ) -> Result<CuratorGroup<T>, Error<T>> {
+    ) -> Result<CuratorGroup<CuratorId<T>>, Error<T>> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
     }
@@ -2874,7 +2873,7 @@ decl_event!(
     pub enum Event<T>
     where
         CuratorGroupId = <T as ActorAuthenticator>::CuratorGroupId,
-        CuratorId = <T as ActorAuthenticator>::CuratorId,
+        CuratorId = CuratorId<T>,
         ClassId = <T as Trait>::ClassId,
         EntityId = <T as Trait>::EntityId,
         EntityController = EntityController<<T as common::Trait>::MemberId>,
@@ -2882,7 +2881,7 @@ decl_event!(
         Status = bool,
         Actor = Actor<
             <T as ActorAuthenticator>::CuratorGroupId,
-            <T as ActorAuthenticator>::CuratorId,
+            CuratorId<T>,
             <T as common::Trait>::MemberId,
         >,
         Nonce = <T as Trait>::Nonce,
