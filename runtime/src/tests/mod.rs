@@ -145,7 +145,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
 pub(crate) fn insert_member(account_id: AccountId32) {
     increase_total_balance_issuance_using_account_id(
         account_id.clone(),
-        crate::MembershipFee::get(),
+        crate::DefaultMembershipPrice::get(),
     );
     let handle: &[u8] = account_id.as_ref();
 

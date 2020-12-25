@@ -155,7 +155,8 @@ parameter_types! {
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [1; 8];
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl common::Trait for Test {
@@ -165,8 +166,9 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -174,6 +176,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
     ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
     }
 }

@@ -1337,4 +1337,11 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
+
+    fn get_leader_member_id() -> Option<T::MemberId> {
+        checks::ensure_lead_is_set::<T, I>()
+            .map(Self::worker_by_id)
+            .map(|worker| worker.member_id)
+            .ok()
+    }
 }

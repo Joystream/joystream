@@ -572,8 +572,11 @@ impl council::Trait for Runtime {
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
-        membership::Module::<Runtime>::ensure_member_controller_account(account_id, membership_id)
-            .is_ok()
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            membership_id,
+            account_id,
+        )
+        .is_ok()
     }
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
@@ -588,7 +591,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
-    pub const MembershipFee: Balance = 100;
+    pub const DefaultMembershipPrice: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -618,11 +621,13 @@ impl common::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 parameter_types! {
+    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
