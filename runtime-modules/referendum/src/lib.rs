@@ -58,17 +58,19 @@ mod tests;
 /// Possible referendum states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
-pub enum ReferendumStage<BlockNumber, VotePower> {
+pub enum ReferendumStage<BlockNumber, MemberId, VotePower> {
     /// The referendum is dormant and waiting to be started by external source.
     Inactive,
     /// In the voting stage, users can cast their sealed votes.
     Voting(ReferendumStageVoting<BlockNumber>),
     /// In the revealing stage, users can reveal votes they cast in the voting stage.
-    Revealing(ReferendumStageRevealing<BlockNumber, VotePower>),
+    Revealing(ReferendumStageRevealing<BlockNumber, MemberId, VotePower>),
 }
 
-impl<BlockNumber, VotePower: Encode + Decode> Default for ReferendumStage<BlockNumber, VotePower> {
-    fn default() -> ReferendumStage<BlockNumber, VotePower> {
+impl<BlockNumber, MemberId, VotePower: Encode + Decode> Default
+    for ReferendumStage<BlockNumber, MemberId, VotePower>
+{
+    fn default() -> ReferendumStage<BlockNumber, MemberId, VotePower> {
         ReferendumStage::Inactive
     }
 }
@@ -85,28 +87,28 @@ pub struct ReferendumStageVoting<BlockNumber> {
 /// Representation for revealing stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
+pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
     pub started: BlockNumber,      // block in which referendum started
     pub winning_target_count: u64, // target number of winners
-    pub intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
-    pub current_cycle_id: u64,     // index of current election
+    pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>, // intermediate winning options
+    pub current_cycle_id: u64,                                        // index of current election
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct OptionResult<VotePower> {
-    pub option_id: u64,
+pub struct OptionResult<MemberId, VotePower> {
+    pub option_id: MemberId,
     pub vote_power: VotePower,
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct CastVote<Hash, Currency> {
+pub struct CastVote<Hash, Currency, MemberId> {
     pub commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for
     pub cycle_id: u64,    // current referendum cycle number
     pub stake: Currency,  // stake locked for vote
-    pub vote_for: Option<u64>, // target option this vote favors; is `None` before the vote is revealed
+    pub vote_for: Option<MemberId>, // target option this vote favors; is `None` before the vote is revealed
 }
 
 /////////////////// Type aliases ///////////////////////////////////////////////
@@ -117,11 +119,17 @@ pub struct CastVote<Hash, Currency> {
 // types simplifying access to common structs and enums
 pub type Balance<T, I> =
     <<T as Trait<I>>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-pub type CastVoteOf<T, I> = CastVote<<T as frame_system::Trait>::Hash, Balance<T, I>>;
+pub type CastVoteOf<T, I> =
+    CastVote<<T as frame_system::Trait>::Hash, Balance<T, I>, <T as common::Trait>::MemberId>;
 pub type ReferendumStageVotingOf<T> =
     ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
-pub type ReferendumStageRevealingOf<T, I> =
-    ReferendumStageRevealing<<T as frame_system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
+pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as common::Trait>::MemberId,
+    <T as Trait<I>>::VotePower,
+>;
+pub type OptionResultOf<T, I> =
+    OptionResult<<T as common::Trait>::MemberId, <T as Trait<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
@@ -133,7 +141,7 @@ pub type CanRevealResult<T, I> = (
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 /// Trait that should be used by other modules to start the referendum, etc.
-pub trait ReferendumManager<Origin, AccountId, Hash> {
+pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
         + Member
@@ -163,12 +171,12 @@ pub trait ReferendumManager<Origin, AccountId, Hash> {
         account_id: &AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_id: &u64,
+        vote_option_id: &MemberId,
     ) -> Hash;
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance>: frame_system::Trait {
+pub trait Trait<I: Instance>: frame_system::Trait + common::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -210,25 +218,26 @@ pub trait Trait<I: Instance>: frame_system::Trait {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self, I>, Self::MemberId>)
+        -> bool;
 
     /// Gives runtime an ability to react on referendum result.
-    fn process_results(winners: &[OptionResult<Self::VotePower>]);
+    fn process_results(winners: &[OptionResult<Self::MemberId, Self::VotePower>]);
 
     /// Check if an option a user is voting for actually exists.
-    fn is_valid_option_id(option_id: &u64) -> bool;
+    fn is_valid_option_id(option_id: &Self::MemberId) -> bool;
 
     // If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
-    fn get_option_power(option_id: &u64) -> Self::VotePower;
+    fn get_option_power(option_id: &Self::MemberId) -> Self::VotePower;
 
     // Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
-    fn increase_option_power(option_id: &u64, amount: &Self::VotePower);
+    fn increase_option_power(option_id: &Self::MemberId, amount: &Self::VotePower);
 }
 
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Referendum {
         /// Current referendum stage.
-        pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::VotePower>;
+        pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
 
         /// Votes cast in the referendum. A new record is added to this map when a user casts a sealed vote.
         /// It is modified when a user reveals the vote's commitment proof.
@@ -245,6 +254,7 @@ decl_event! {
         <T as frame_system::Trait>::Hash,
         <T as frame_system::Trait>::AccountId,
         <T as Trait<I>>::VotePower,
+        <T as common::Trait>::MemberId,
     {
         /// Referendum started
         ReferendumStarted(u64),
@@ -256,13 +266,13 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Vec<OptionResult<VotePower>>),
+        ReferendumFinished(Vec<OptionResult<MemberId, VotePower>>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
 
         /// User revealed his vote
-        VoteRevealed(AccountId, u64),
+        VoteRevealed(AccountId, MemberId),
 
         /// User released his stake
         StakeReleased(AccountId),
@@ -373,7 +383,7 @@ decl_module! {
 
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: u64) -> Result<(), Error<T, I>> {
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: <T as common::Trait>::MemberId) -> Result<(), Error<T, I>> {
             let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
 
             //
@@ -453,7 +463,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash>
+impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
     for Module<T, I>
 {
     type VotePower = T::VotePower;
@@ -507,7 +517,7 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Has
         account_id: &<T as frame_system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_id: &u64,
+        vote_option_id: &<T as common::Trait>::MemberId,
     ) -> T::Hash {
         let mut payload = account_id.encode();
         let mut mut_option_id = vote_option_id.encode();
@@ -558,7 +568,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealingOf<T, I>,
-    ) -> Vec<OptionResult<<T as Trait<I>>::VotePower>> {
+    ) -> Vec<OptionResult<<T as common::Trait>::MemberId, <T as Trait<I>>::VotePower>> {
         // reset referendum state
         Stage::<T, I>::put(ReferendumStage::Inactive);
 
@@ -599,7 +609,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
         account_id: &<T as frame_system::Trait>::AccountId,
-        option_id: &u64,
+        option_id: &<T as common::Trait>::MemberId,
         cast_vote: CastVoteOf<T, I>,
     ) -> Result<(), Error<T, I>> {
         // prepare new values
@@ -642,16 +652,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Tries to insert option to the proper place in the winners list. Utility for reaveal_vote() function.
     fn try_winner_insert(
-        option_result: OptionResult<T::VotePower>,
-        current_winners: &[OptionResult<T::VotePower>],
+        option_result: OptionResultOf<T, I>,
+        current_winners: &[OptionResultOf<T, I>],
         winning_target_count: u64,
-    ) -> Vec<OptionResult<T::VotePower>> {
+    ) -> Vec<OptionResultOf<T, I>> {
         /// Tries to place record to temporary place in the winning list.
         fn place_record_to_winner_list<T: Trait<I>, I: Instance>(
-            option_result: OptionResult<T::VotePower>,
-            current_winners: &[OptionResult<T::VotePower>],
+            option_result: OptionResultOf<T, I>,
+            current_winners: &[OptionResultOf<T, I>],
             winning_target_count: u64,
-        ) -> (Vec<OptionResult<T::VotePower>>, Option<usize>) {
+        ) -> (Vec<OptionResultOf<T, I>>, Option<usize>) {
             let current_winners_count = current_winners.len();
 
             // check if option is already somewhere in list
@@ -803,10 +813,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok((current_cycle_id, account_id))
     }
 
-    fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::Hash>>(
+    fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
         origin: T::Origin,
         salt: &[u8],
-        vote_option_id: &u64,
+        vote_option_id: &<T as common::Trait>::MemberId,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;

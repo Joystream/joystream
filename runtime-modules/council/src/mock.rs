@@ -83,7 +83,6 @@ impl Trait for Runtime {
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
-    type MembershipId = u64;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
@@ -100,7 +99,7 @@ impl Trait for Runtime {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     fn is_council_member_account(
-        membership_id: &Self::MembershipId,
+        membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
         membership_id == account_id
@@ -236,7 +235,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 
     fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>>,
+        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -246,8 +245,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         <Module<Runtime> as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
-    fn process_results(winners: &[OptionResult<Self::VotePower>]) {
-        let tmp_winners: Vec<OptionResult<Self::VotePower>> = winners
+    fn process_results(winners: &[OptionResult<Self::MemberId, Self::VotePower>]) {
+        let tmp_winners: Vec<OptionResult<Self::MemberId, Self::VotePower>> = winners
             .iter()
             .map(|item| OptionResult {
                 option_id: item.option_id,
@@ -345,8 +344,8 @@ pub enum OriginType<AccountId> {
 #[derive(Clone)]
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
-    pub account_id: T::MembershipId,
-    pub membership_id: T::MembershipId,
+    pub account_id: T::MemberId,
+    pub membership_id: T::MemberId,
     pub candidate: CandidateOf<T>,
 }
 
@@ -497,7 +496,7 @@ pub struct InstanceMockUtils<T: Trait> {
 impl<T: Trait> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
-    T::MembershipId: From<u64>,
+    T::MemberId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 {
@@ -582,7 +581,7 @@ where
 
     pub fn vote_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &u64,
+        vote_option_index: &<T as common::Trait>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let salt = Self::generate_salt();
@@ -603,7 +602,7 @@ pub struct InstanceMocks<T: Trait> {
 impl<T: Trait> InstanceMocks<T>
 where
     T::AccountId: From<u64> + Into<u64>,
-    T::MembershipId: From<u64>,
+    T::MemberId: From<u64> + Into<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 
@@ -611,9 +610,9 @@ where
         From<<Runtime as frame_system::Trait>::Hash> + Into<<Runtime as frame_system::Trait>::Hash>,
     T::Origin: From<<Runtime as frame_system::Trait>::Origin>
         + Into<<Runtime as frame_system::Trait>::Origin>,
-    <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
+    <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
-    T::MembershipId: Into<T::AccountId>,
+    T::MemberId: Into<T::AccountId>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -664,12 +663,18 @@ where
         winning_target_count: u64,
         intermediate_winners: Vec<
             OptionResult<
-                <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower,
+                T::MemberId,
+                <T::Referendum as ReferendumManager<
+                    T::Origin,
+                    T::AccountId,
+                    T::MemberId,
+                    T::Hash,
+                >>::VotePower,
             >,
         >,
         intermediate_results: BTreeMap<
             u64,
-            <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower,
+            <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower,
         >,
         expected_update_block_number: T::BlockNumber,
     ) {
@@ -682,7 +687,7 @@ where
                 intermediate_winners: intermediate_winners
                     .iter()
                     .map(|item| OptionResult {
-                        option_id: item.option_id,
+                        option_id: <T::MemberId as Into<u64>>::into(item.option_id),
                         vote_power: item.vote_power.into(),
                     })
                     .collect(),
@@ -692,20 +697,20 @@ where
 
         // check intermediate results
         for (key, value) in intermediate_results {
-            let membership_id: T::MembershipId = key.into();
+            let membership_id: T::MemberId = key.into();
 
             assert!(Candidates::<T>::contains_key(membership_id));
             assert_eq!(Candidates::<T>::get(membership_id).vote_power, value);
         }
     }
 
-    pub fn check_announcing_stake(membership_id: &T::MembershipId, amount: Balance<T>) {
+    pub fn check_announcing_stake(membership_id: &T::MemberId, amount: Balance<T>) {
         assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
         assert_eq!(Candidates::<T>::get(membership_id).stake, amount);
     }
 
-    pub fn check_candidacy_note(membership_id: &T::MembershipId, note: Option<&[u8]>) {
+    pub fn check_candidacy_note(membership_id: &T::MemberId, note: Option<&[u8]>) {
         assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
         let note_hash = match note {
@@ -727,7 +732,7 @@ where
 
     pub fn set_candidacy_note(
         origin: OriginType<T::AccountId>,
-        membership_id: T::MembershipId,
+        membership_id: T::MemberId,
         note: &[u8],
         expected_result: Result<(), Error<T>>,
     ) {
@@ -750,7 +755,7 @@ where
                 .unwrap()
                 .event,
             TestEvent::event_mod(RawEvent::CandidacyNoteSet(
-                membership_id.into().into(),
+                membership_id.into(),
                 note.into()
             )),
         );
@@ -760,7 +765,7 @@ where
 
     pub fn announce_candidacy(
         origin: OriginType<T::AccountId>,
-        member_id: T::MembershipId,
+        member_id: T::MemberId,
         stake: Balance<T>,
         expected_result: Result<(), Error<T>>,
     ) {
@@ -777,7 +782,7 @@ where
 
     pub fn announce_candidacy_raw(
         origin: OriginType<T::AccountId>,
-        member_id: T::MembershipId,
+        member_id: T::MemberId,
         staking_account_id: T::AccountId,
         reward_account_id: T::AccountId,
         stake: Balance<T>,
@@ -804,16 +809,13 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::NewCandidate(
-                member_id.into().into(),
-                stake.into()
-            )),
+            TestEvent::event_mod(RawEvent::NewCandidate(member_id.into(), stake.into())),
         );
     }
 
     pub fn withdraw_candidacy(
         origin: OriginType<T::AccountId>,
-        member_id: T::MembershipId,
+        member_id: T::MemberId,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
@@ -831,13 +833,13 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyWithdraw(member_id.into().into(),)),
+            TestEvent::event_mod(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
     pub fn release_candidacy_stake(
         origin: OriginType<T::AccountId>,
-        member_id: T::MembershipId,
+        member_id: T::MemberId,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
@@ -858,7 +860,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyStakeRelease(member_id.into().into(),)),
+            TestEvent::event_mod(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 

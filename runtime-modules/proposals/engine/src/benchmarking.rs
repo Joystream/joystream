@@ -3,16 +3,20 @@ use super::*;
 use crate::Module as ProposalsEngine;
 use balances::Module as Balances;
 use core::convert::TryInto;
+use council::Module as Council;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
-use governance::council::Module as Council;
 use membership::Module as Membership;
+use referendum::Module as Referendum;
+use referendum::ReferendumManager;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::cmp::{max, min};
 use sp_std::prelude::*;
+
+type ReferendumInstance = referendum::Instance1;
 
 const SEED: u32 = 0;
 
@@ -73,7 +77,12 @@ fn member_funded_account<T: Trait + membership::Trait>(
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    assert_eq!(
+        Balances::<T>::usable_balance(account_id.clone()),
+        T::Balance::max_value()
+    );
 
+    let member_id = Membership::<T>::members_created();
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
@@ -84,11 +93,23 @@ fn member_funded_account<T: Trait + membership::Trait>(
         referrer_id: None,
     };
 
+    assert_eq!(
+        Balances::<T>::usable_balance(account_id.clone()),
+        T::Balance::max_value()
+    );
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+    assert_eq!(
+        Membership::<T>::membership(member_id).controller_account,
+        account_id
+    );
 
+    assert_eq!(
+        Membership::<T>::membership(member_id).root_account,
+        account_id
+    );
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    (account_id, member_id)
 }
 
 fn create_proposal<T: Trait + membership::Trait>(
@@ -161,8 +182,122 @@ fn create_proposal<T: Trait + membership::Trait>(
     (account_id, member_id, proposal_id)
 }
 
+fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance>>(
+    n: T::BlockNumber,
+) {
+    while System::<T>::block_number() < n {
+        let mut current_block_number = System::<T>::block_number();
+
+        System::<T>::on_finalize(current_block_number);
+        ProposalsEngine::<T>::on_finalize(current_block_number);
+        Council::<T>::on_finalize(current_block_number);
+        Referendum::<T, ReferendumInstance>::on_finalize(current_block_number);
+
+        current_block_number += One::one();
+        System::<T>::set_block_number(current_block_number);
+
+        System::<T>::on_initialize(current_block_number);
+        ProposalsEngine::<T>::on_initialize(current_block_number);
+        Council::<T>::on_initialize(current_block_number);
+        Referendum::<T, ReferendumInstance>::on_initialize(current_block_number);
+    }
+}
+
+fn elect_council<
+    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
+>(
+    start_id: u32,
+) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
+    let council_size = <T as council::Trait>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+
+    let councilor_stake = <T as council::Trait>::MinCandidateStake::get();
+
+    let mut voters = Vec::new();
+    let mut candidates = Vec::new();
+
+    for i in
+        start_id as usize..start_id as usize + (council_size + number_of_extra_candidates) as usize
+    {
+        let (account_id, member_id) =
+            member_funded_account::<T>("councilor", i.try_into().unwrap());
+        Council::<T>::announce_candidacy(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            account_id.clone(),
+            account_id.clone(),
+            councilor_stake,
+        )
+        .unwrap();
+
+        candidates.push((account_id, member_id));
+        voters.push(member_funded_account::<T>(
+            "voter",
+            (council_size + number_of_extra_candidates + i as u64)
+                .try_into()
+                .unwrap(),
+        ));
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + <T as council::Trait>::AnnouncingPeriodDuration::get());
+
+    let voter_stake = <T as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+    let mut council = Vec::new();
+    for i in start_id as usize..start_id as usize + council_size as usize {
+        council.push(candidates[i].clone());
+        let commitment = Referendum::<T, ReferendumInstance>::calculate_commitment(
+            &voters[i].0,
+            &[0u8],
+            &0,
+            &candidates[i].1,
+        );
+        Referendum::<T, ReferendumInstance>::vote(
+            RawOrigin::Signed(voters[i].0.clone()).into(),
+            commitment,
+            voter_stake,
+        )
+        .unwrap();
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(
+        current_block + <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+    );
+
+    for i in start_id as usize..start_id as usize + council_size as usize {
+        Referendum::<T, ReferendumInstance>::reveal_vote(
+            RawOrigin::Signed(voters[i].0.clone()).into(),
+            vec![0u8],
+            candidates[i].1.clone(),
+        )
+        .unwrap();
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(
+        current_block + <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+    );
+
+    let council_members = Council::<T>::council_members();
+    assert_eq!(
+        council_members
+            .iter()
+            .map(|m| *m.member_id())
+            .collect::<Vec<_>>(),
+        council.iter().map(|c| c.1).collect::<Vec<_>>()
+    );
+
+    (
+        council,
+        (2 * (council_size + number_of_extra_candidates))
+            .try_into()
+            .unwrap(),
+    )
+}
+
 fn create_multiple_finalized_proposals<
-    T: Trait + governance::council::Trait + membership::Trait,
+    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
 >(
     number_of_proposals: u32,
     constitutionality: u32,
@@ -170,32 +305,24 @@ fn create_multiple_finalized_proposals<
     total_voters: u32,
     grace_period: u32,
 ) -> (Vec<T::AccountId>, Vec<T::ProposalId>) {
-    let mut voters = Vec::new();
-    for i in 0..total_voters {
-        voters.push(member_funded_account::<T>("voter", i));
-    }
-
-    Council::<T>::set_council(
-        RawOrigin::Root.into(),
-        voters
-            .iter()
-            .map(|(account_id, _)| account_id.clone())
-            .collect(),
-    )
-    .unwrap();
+    let (council, last_id): (Vec<(T::AccountId, _)>, _) = elect_council::<T>(0);
 
     let mut proposers = Vec::new();
     let mut proposals = Vec::new();
-    for id in total_voters..number_of_proposals + total_voters {
-        let (proposer_account_id, _, proposal_id) =
-            create_proposal::<T>(id, id - total_voters + 1, constitutionality, grace_period);
+    for proposal_number in 1..number_of_proposals + 1 {
+        let (proposer_account_id, _, proposal_id) = create_proposal::<T>(
+            last_id + proposal_number,
+            proposal_number,
+            constitutionality,
+            grace_period,
+        );
         proposers.push(proposer_account_id);
         proposals.push(proposal_id);
 
-        for (voter_id, member_id) in voters.clone() {
+        for (voter_id, member_id) in council[0..total_voters.try_into().unwrap()].iter() {
             ProposalsEngine::<T>::vote(
                 RawOrigin::Signed(voter_id.clone()).into(),
-                member_id,
+                *member_id,
                 proposal_id,
                 vote_kind.clone(),
                 vec![0u8],
@@ -212,7 +339,7 @@ const MAX_BYTES: u32 = 16384;
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: governance::council::Trait, T: membership::Trait
+        where T: membership::Trait, T: council::Trait, T: referendum::Trait<ReferendumInstance>
     }
 
     _ { }
@@ -220,11 +347,9 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (_, _, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
-
-        let (account_voter_id, member_voter_id) = member_funded_account::<T>("voter", 1);
-
-        Council::<T>::set_council(RawOrigin::Root.into(), vec![account_voter_id.clone()]).unwrap();
+        let (council, last_id) = elect_council::<T>(1);
+        let (account_voter_id, member_voter_id) = council[0].clone();
+        let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);
     }: _ (
             RawOrigin::Signed(account_voter_id),
             member_voter_id,
@@ -380,15 +505,8 @@ benchmarks! {
             1,
         );
 
-        let mut current_block_number = System::<T>::block_number();
-
-        System::<T>::on_finalize(current_block_number);
-        System::<T>::on_finalize(current_block_number);
-
-        current_block_number += One::one();
-
-        System::<T>::on_initialize(current_block_number);
-        ProposalsEngine::<T>::on_initialize(current_block_number);
+        run_to_block::<T>(System::<T>::block_number() + One::one());
+        let current_block_number = System::<T>::block_number();
 
         assert_eq!(
             ProposalsEngine::<T>::active_proposal_count(),
@@ -402,11 +520,20 @@ benchmarks! {
                 "All proposals should still be stored"
             );
 
+            assert_eq!(
+                ProposalsEngine::<T>::proposals(proposal_id).status,
+                ProposalStatus::PendingExecution(current_block_number),
+                "Status not updated"
+            );
+
             assert!(
                 DispatchableCallCode::<T>::contains_key(proposal_id),
                 "All dispatchable call code should still be stored"
             );
         }
+
+        let current_block_number = System::<T>::block_number() + One::one();
+        System::<T>::set_block_number(current_block_number);
 
     }: { ProposalsEngine::<T>::on_initialize(current_block_number) }
     verify {
@@ -443,7 +570,7 @@ benchmarks! {
             2,
             VoteKind::Approve,
             1,
-            0,
+            1,
         );
 
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
@@ -482,21 +609,12 @@ benchmarks! {
             i,
             0,
             VoteKind::Reject,
-            max(T::TotalVotersCounter::total_voters_count(), 1),
+            max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
     verify {
-        for proposer_account_id in proposers {
-            assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
-                Zero::zero(),
-                "Shouldn't have any stake locked"
-            );
-        }
-
         for proposal_id in proposals.iter() {
-
             assert!(
                 !Proposals::<T>::contains_key(proposal_id),
                 "Proposal should not be in store"
@@ -518,6 +636,14 @@ benchmarks! {
             0,
             "There should not be any proposal left active"
         );
+
+        for proposer_account_id in proposers {
+            assert_eq!(
+                T::StakingHandler::current_stake(&proposer_account_id),
+                Zero::zero(),
+                "Shouldn't have any stake locked"
+            );
+        }
     }
 
     on_initialize_slashed {
@@ -527,7 +653,7 @@ benchmarks! {
             i,
             0,
             VoteKind::Slash,
-            max(T::TotalVotersCounter::total_voters_count(), 1),
+            max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
     }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }

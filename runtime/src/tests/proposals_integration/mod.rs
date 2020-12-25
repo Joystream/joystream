@@ -4,30 +4,29 @@
 
 mod working_group_proposals;
 
-use crate::{BlockNumber, ProposalCancellationFee, Runtime};
+use crate::tests::run_to_block;
+use crate::{ProposalCancellationFee, Runtime};
 use codec::Encode;
-use governance::election_params::ElectionParameters;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
-    ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
+    ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::Currency;
 use frame_support::{StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
 
 use super::{increase_total_balance_issuance_using_account_id, initial_test_ext, insert_member};
 
+use crate::tests::elect_council;
 use crate::CouncilManager;
 
 pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
-pub type Council = governance::council::Module<Runtime>;
-pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
@@ -38,39 +37,15 @@ fn setup_members(count: u8) {
     }
 }
 
-fn setup_council() {
+// Max Council size is 3
+fn setup_council(cycle_id: u64) {
     let councilor0 = AccountId32::default();
     let councilor1: [u8; 32] = [1; 32];
     let councilor2: [u8; 32] = [2; 32];
-    let councilor3: [u8; 32] = [3; 32];
-    let councilor4: [u8; 32] = [4; 32];
-    let councilor5: [u8; 32] = [5; 32];
-    assert!(Council::set_council(
-        frame_system::RawOrigin::Root.into(),
-        vec![
-            councilor0,
-            councilor1.into(),
-            councilor2.into(),
-            councilor3.into(),
-            councilor4.into(),
-            councilor5.into()
-        ]
-    )
-    .is_ok());
-}
-
-// Recommendation from Parity on testing on_finalize
-// https://substrate.dev/docs/en/next/development/module/tests
-fn run_to_block(n: BlockNumber) {
-    while System::block_number() < n {
-        <System as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        <Election as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        <ProposalsEngine as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        System::set_block_number(System::block_number() + 1);
-        <System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-        <Election as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-        <ProposalsEngine as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-    }
+    elect_council(
+        vec![councilor0, councilor1.into(), councilor2.into()],
+        cycle_id,
+    );
 }
 
 struct VoteGenerator {
@@ -100,6 +75,14 @@ impl VoteGenerator {
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
+        let vote_result = ProposalsEngine::vote(
+            frame_system::RawOrigin::Signed(self.current_account_id.clone()).into(),
+            self.current_voter_id,
+            self.proposal_id,
+            vote_kind,
+            Vec::new(),
+        );
+
         if self.auto_increment_voter_id {
             self.current_account_id_seed += 1;
             self.current_voter_id += 1;
@@ -107,13 +90,7 @@ impl VoteGenerator {
             self.current_account_id = account_id.into();
         }
 
-        ProposalsEngine::vote(
-            frame_system::RawOrigin::Signed(self.current_account_id.clone()).into(),
-            self.current_voter_id,
-            self.proposal_id,
-            vote_kind,
-            Vec::new(),
-        )
+        vote_result
     }
 }
 
@@ -324,7 +301,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
         setup_members(4);
-        setup_council();
+        setup_council(0);
         // create proposal
         let dummy_proposal = DummyProposalFixture::default().with_voting_period(100);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -348,19 +325,27 @@ fn proposal_reset_succeeds() {
         );
 
         // Ensure council was elected
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
 
-        let voted_member_id = 2;
         // Check for votes.
         assert_eq!(
-            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, 0),
+            VoteKind::Reject
+        );
+        assert_eq!(
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, 1),
             VoteKind::Abstain
+        );
+        assert_eq!(
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, 2),
+            VoteKind::Slash
         );
 
         // Check proposals CouncilElected hook just trigger the election hook (empty council).
         //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
 
-        elect_single_councilor();
+        end_idle_period();
+        setup_council(1);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -376,41 +361,21 @@ fn proposal_reset_succeeds() {
 
         // No votes could survive cleaning: should be default value.
         assert_eq!(
-            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, 2),
             VoteKind::default()
         );
 
-        // Check council CouncilElected hook. It should set current council. And we elected single councilor.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 1);
+        // Check council CouncilElected hook. It should set current council.
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
     });
 }
 
-fn elect_single_councilor() {
-    let res = Election::set_election_parameters(
-        RawOrigin::Root.into(),
-        ElectionParameters {
-            announcing_period: 1,
-            voting_period: 1,
-            revealing_period: 1,
-            council_size: 1,
-            candidacy_limit: 10,
-            new_term_duration: 2000000,
-            min_council_stake: 0,
-            min_voting_stake: 0,
-        },
-    );
-    assert_eq!(res, Ok(()));
-
-    let res = Election::force_start_election(RawOrigin::Root.into());
-    assert_eq!(res, Ok(()));
-
-    let councilor1: [u8; 32] = [1; 32];
-    increase_total_balance_issuance_using_account_id(councilor1.clone().into(), 1200000000);
-
-    let res = Election::apply(RawOrigin::Signed(councilor1.into()).into(), 0);
-    assert_eq!(res, Ok(()));
-
-    run_to_block(5);
+// Ends council idle period
+// Preconditions: currently in idle period, idle period started in currnet block
+fn end_idle_period() {
+    let current_block = System::block_number();
+    let idle_period_duration = <Runtime as council::Trait>::IdlePeriodDuration::get();
+    run_to_block(current_block + idle_period_duration);
 }
 
 struct CodexProposalTestFixture<SuccessfulCall>
@@ -421,7 +386,6 @@ where
     member_id: u64,
     setup_environment: bool,
     proposal_id: u32,
-    run_to_block: u32,
 }
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
@@ -434,7 +398,6 @@ where
             member_id: 1,
             setup_environment: true,
             proposal_id: 1,
-            run_to_block: 2,
         }
     }
 
@@ -461,13 +424,6 @@ where
             ..self
         }
     }
-
-    fn with_run_to_block(self, run_to_block: u32) -> Self {
-        Self {
-            run_to_block,
-            ..self
-        }
-    }
 }
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
@@ -479,21 +435,20 @@ where
 
         if self.setup_environment {
             setup_members(15);
-            setup_council();
+            setup_council(0);
 
             increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
         }
 
         assert_eq!((self.successful_call)(), Ok(()));
 
+        // Council size is 3
         let mut vote_generator = VoteGenerator::new(self.proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block(self.run_to_block);
+        run_to_block(System::block_number() + 1);
     }
 }
 
@@ -524,16 +479,18 @@ fn text_proposal_execution_succeeds() {
     });
 }
 
+/* TODO: Test will be commented out until Spending proposal is changed with the new
+ * FundingRequest
 #[test]
 fn spending_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;
         let account_id: [u8; 32] = [member_id; 32];
-        let new_balance = <BalanceOf<Runtime>>::from(5555u32);
+        let new_balance = pallet_council::Balance::<Runtime>::from(5555u32);
 
         let target_account_id: [u8; 32] = [12; 32];
 
-        assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
+        assert!(Council::set_budget(RawOrigin::Root.into(), new_balance).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -562,6 +519,7 @@ fn spending_proposal_execution_succeeds() {
         assert_eq!(Balances::free_balance(converted_account_id), new_balance);
     });
 }
+*/
 
 #[test]
 fn set_validator_count_proposal_execution_succeeds() {
@@ -625,9 +583,10 @@ fn amend_constitution_proposal_execution_succeeds() {
 #[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
-        let starting_block = 0;
         setup_members(5);
-        setup_council();
+        setup_council(0);
+
+        let starting_block = System::block_number();
         // create proposal
         let dummy_proposal = DummyProposalFixture::default()
             .with_voting_period(100)
@@ -635,13 +594,13 @@ fn proposal_reactivation_succeeds() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         // create some votes
+        // Council size is 3
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        run_to_block(2);
+        run_to_block(starting_block + 2);
 
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -654,9 +613,10 @@ fn proposal_reactivation_succeeds() {
         );
 
         // Ensure council was elected
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
 
-        elect_single_councilor();
+        end_idle_period();
+        setup_council(1);
 
         run_to_block(10);
 
@@ -665,6 +625,6 @@ fn proposal_reactivation_succeeds() {
         assert_eq!(updated_proposal.status, ProposalStatus::Active);
 
         // Check council CouncilElected hook. It should set current council. And we elected single councilor.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 1);
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 3);
     });
 }

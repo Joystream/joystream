@@ -41,18 +41,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
-use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
-};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
+use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
 use referendum::{CastVote, OptionResult, ReferendumManager};
@@ -121,28 +118,35 @@ pub struct Candidate<AccountId, Balance, Hash, VotePower> {
 /// Council member representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct CouncilMember<AccountId, MembershipId, Balance, BlockNumber> {
+pub struct CouncilMember<AccountId, MemberId, Balance, BlockNumber> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
-    membership_id: MembershipId,
+    membership_id: MemberId,
     stake: Balance,
-
     last_payment_block: BlockNumber,
     unpaid_reward: Balance,
 }
 
-impl<AccountId, MembershipId, Balance, Hash, VotePower, BlockNumber>
+impl<AccountId, MemberId, Balance, BlockNumber>
+    CouncilMember<AccountId, MemberId, Balance, BlockNumber>
+{
+    pub fn member_id(&self) -> &MemberId {
+        &self.membership_id
+    }
+}
+
+impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
     From<(
         Candidate<AccountId, Balance, Hash, VotePower>,
-        MembershipId,
+        MemberId,
         BlockNumber,
         Balance,
-    )> for CouncilMember<AccountId, MembershipId, Balance, BlockNumber>
+    )> for CouncilMember<AccountId, MemberId, Balance, BlockNumber>
 {
     fn from(
         from: (
             Candidate<AccountId, Balance, Hash, VotePower>,
-            MembershipId,
+            MemberId,
             BlockNumber,
             Balance,
         ),
@@ -164,18 +168,21 @@ impl<AccountId, MembershipId, Balance, Hash, VotePower, BlockNumber>
 pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
+    <T as common::Trait>::MemberId,
     <T as frame_system::Trait>::Hash,
 >>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
+    <T as common::Trait>::MemberId,
     <T as frame_system::Trait>::Hash,
 >>::VotePower;
-pub type CastVoteOf<T> = CastVote<<T as frame_system::Trait>::Hash, Balance<T>>;
+pub type CastVoteOf<T> =
+    CastVote<<T as frame_system::Trait>::Hash, Balance<T>, <T as common::Trait>::MemberId>;
 
 pub type CouncilMemberOf<T> = CouncilMember<
     <T as frame_system::Trait>::AccountId,
-    <T as Trait>::MembershipId,
+    <T as common::Trait>::MemberId,
     Balance<T>,
     <T as frame_system::Trait>::BlockNumber,
 >;
@@ -190,24 +197,12 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 /// The main council trait.
-pub trait Trait: frame_system::Trait {
+pub trait Trait: frame_system::Trait + common::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
-    /// Representation for council membership.
-    type MembershipId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
-
     /// Referendum used for council elections.
-    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::Hash>;
+    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::MemberId, Self::Hash>;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -218,9 +213,9 @@ pub trait Trait: frame_system::Trait {
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
     /// Identifier for currency lock used for candidacy staking.
-    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MembershipId>;
+    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -239,7 +234,7 @@ pub trait Trait: frame_system::Trait {
 
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
-        membership_id: &Self::MembershipId,
+        membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool;
 
@@ -252,7 +247,9 @@ pub trait Trait: frame_system::Trait {
 pub trait ReferendumConnection<T: Trait> {
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `process_results()`.
-    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]);
+    fn recieve_referendum_results(
+        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+    );
 
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `can_release_voting_stake()`.
@@ -260,13 +257,13 @@ pub trait ReferendumConnection<T: Trait> {
 
     /// Checks that user is indeed candidating. This function MUST be called in runtime's
     /// implementation of referendum's `is_valid_option_id()`.
-    fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool;
+    fn is_valid_candidate_id(membership_id: &T::MemberId) -> bool;
 
     /// Return current voting power for a selected candidate.
-    fn get_option_power(membership_id: &T::MembershipId) -> VotePowerOf<T>;
+    fn get_option_power(membership_id: &T::MemberId) -> VotePowerOf<T>;
 
     /// Recieve vote (power) for a selected candidate.
-    fn increase_option_power(membership_id: &T::MembershipId, amount: &VotePowerOf<T>);
+    fn increase_option_power(membership_id: &T::MemberId, amount: &VotePowerOf<T>);
 }
 
 decl_storage! {
@@ -279,7 +276,7 @@ decl_storage! {
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
-            T::MembershipId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
+            T::MemberId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period
         /// starts.
@@ -301,7 +298,7 @@ decl_event! {
     where
         Balance = Balance::<T>,
         <T as frame_system::Trait>::BlockNumber,
-        <T as Trait>::MembershipId,
+        <T as common::Trait>::MemberId,
         <T as frame_system::Trait>::AccountId,
     {
         /// New council was elected
@@ -314,25 +311,25 @@ decl_event! {
         VotingPeriodStarted(u64),
 
         /// New candidate announced
-        NewCandidate(MembershipId, Balance),
+        NewCandidate(MemberId, Balance),
 
         /// New council was elected and appointed
-        NewCouncilElected(Vec<MembershipId>),
+        NewCouncilElected(Vec<MemberId>),
 
         /// New council was elected and appointed
         NewCouncilNotElected(),
 
         /// Candidacy stake that was no longer needed was released
-        CandidacyStakeRelease(MembershipId),
+        CandidacyStakeRelease(MemberId),
 
         /// Candidate has withdrawn his candidacy
-        CandidacyWithdraw(MembershipId),
+        CandidacyWithdraw(MemberId),
 
         /// The candidate has set a new note for their candidacy
-        CandidacyNoteSet(MembershipId, Vec<u8>),
+        CandidacyNoteSet(MemberId, Vec<u8>),
 
         /// The whole reward was paid to the council member.
-        RewardPayment(MembershipId, AccountId, Balance, Balance),
+        RewardPayment(MemberId, AccountId, Balance, Balance),
 
         /// Budget balance was changed by the root.
         BudgetBalanceSet(Balance),
@@ -380,7 +377,7 @@ decl_error! {
         CantVoteForYourself,
 
         /// Invalid membership.
-        MembershipIdNotMatchAccount,
+        MemberIdNotMatchAccount,
 
         /// The combination of membership id and account id is invalid for unstaking an existing
         /// candidacy stake.
@@ -453,7 +450,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn announce_candidacy(
                 origin,
-                membership_id: T::MembershipId,
+                membership_id: T::MemberId,
                 staking_account_id: T::AccountId,
                 reward_account_id: T::AccountId,
                 stake: Balance<T>
@@ -489,7 +486,7 @@ decl_module! {
 
         /// Release candidacy stake that is no longer needed.
         #[weight = 10_000_000]
-        pub fn release_candidacy_stake(origin, membership_id: T::MembershipId)
+        pub fn release_candidacy_stake(origin, membership_id: T::MemberId)
             -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_release_candidacy_stake(origin, &membership_id)?;
@@ -509,7 +506,7 @@ decl_module! {
 
         /// Withdraw candidacy and release candidacy stake.
         #[weight = 10_000_000]
-        pub fn withdraw_candidacy(origin, membership_id: T::MembershipId) -> Result<(), Error<T>> {
+        pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
 
@@ -528,7 +525,7 @@ decl_module! {
 
         /// Set short description for the user's candidacy. Can be called anytime during user's candidacy.
         #[weight = 10_000_000]
-        pub fn set_candidacy_note(origin, membership_id: T::MembershipId, note: Vec<u8>)
+        pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_candidacy_note(origin, &membership_id)?;
@@ -649,7 +646,9 @@ impl<T: Trait> Module<T> {
     }
 
     // Conclude election period and elect new council if possible.
-    fn end_election_period(winners: &[OptionResult<VotePowerOf<T>>]) {
+    fn end_election_period(
+        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+    ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
             // reset candidacy announcement period
@@ -667,7 +666,7 @@ impl<T: Trait> Module<T> {
         let elected_members: Vec<CouncilMemberOf<T>> = winners
             .iter()
             .map(|item| {
-                let membership_id = item.option_id.into();
+                let membership_id = item.option_id;
                 let candidate = Candidates::<T>::get(membership_id);
 
                 // clear candidate record and unlock their candidacy stake
@@ -802,7 +801,9 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
     // Process candidates' results recieved from the referendum.
-    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>]) {
+    fn recieve_referendum_results(
+        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+    ) {
         //
         // == MUTATION SAFE ==
         //
@@ -830,7 +831,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         let voting_for_winner = CouncilMembers::<T>::get()
             .iter()
             .map(|council_member| council_member.membership_id)
-            .any(|membership_id| vote.vote_for == Some(membership_id.into()));
+            .any(|membership_id| vote.vote_for == Some(membership_id));
 
         // allow release for vote from previous elections only when not voted for winner
         if current_voting_cycle_id == vote.cycle_id + 1 {
@@ -853,7 +854,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     // Checks that user is indeed candidating.
-    fn is_valid_candidate_id(membership_id: &T::MembershipId) -> bool {
+    fn is_valid_candidate_id(membership_id: &T::MemberId) -> bool {
         if !Candidates::<T>::contains_key(membership_id) {
             return false;
         }
@@ -864,7 +865,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     // Return current voting power for a selected candidate.
-    fn get_option_power(membership_id: &T::MembershipId) -> VotePowerOf<T> {
+    fn get_option_power(membership_id: &T::MemberId) -> VotePowerOf<T> {
         if !Candidates::<T>::contains_key(membership_id) {
             return 0.into();
         }
@@ -875,7 +876,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     }
 
     // Recieve vote (power) for a selected candidate.
-    fn increase_option_power(membership_id: &T::MembershipId, amount: &VotePowerOf<T>) {
+    fn increase_option_power(membership_id: &T::MemberId, amount: &VotePowerOf<T>) {
         if !Candidates::<T>::contains_key(membership_id) {
             return;
         }
@@ -1007,7 +1008,7 @@ impl<T: Trait> Mutations<T> {
     // Announce user's candidacy.
     fn announce_candidacy(
         stage_data: &CouncilStageAnnouncing,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
         candidate: &CandidateOf<T>,
         stake: &Balance<T>,
     ) {
@@ -1034,7 +1035,7 @@ impl<T: Trait> Mutations<T> {
     }
 
     // Release user's stake that was used for candidacy.
-    fn release_candidacy_stake(membership_id: &T::MembershipId, account_id: &T::AccountId) {
+    fn release_candidacy_stake(membership_id: &T::MemberId, account_id: &T::AccountId) {
         // release stake amount
         T::CandidacyLock::unlock(&account_id);
 
@@ -1043,12 +1044,12 @@ impl<T: Trait> Mutations<T> {
     }
 
     // Set a new candidacy note for a candidate in the current election.
-    fn set_candidacy_note(membership_id: &T::MembershipId, note_hash: &T::Hash) {
+    fn set_candidacy_note(membership_id: &T::MemberId, note_hash: &T::Hash) {
         Candidates::<T>::mutate(membership_id, |value| value.note_hash = Some(*note_hash));
     }
 
     // Removes member's candidacy record.
-    fn clear_candidate(membership_id: &T::MembershipId, candidate: &CandidateOf<T>) {
+    fn clear_candidate(membership_id: &T::MemberId, candidate: &CandidateOf<T>) {
         // unlock candidacy stake
         T::CandidacyLock::unlock(&candidate.staking_account_id);
 
@@ -1085,6 +1086,7 @@ impl<T: Trait> Mutations<T> {
         <<<T as Trait>::Referendum as ReferendumManager<
             <T as frame_system::Trait>::Origin,
             <T as frame_system::Trait>::AccountId,
+            <T as common::Trait>::MemberId,
             <T as frame_system::Trait>::Hash,
         >>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::deposit_creating(
             account_id, *amount,
@@ -1119,13 +1121,13 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn ensure_user_membership(
         origin: T::Origin,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         let account_id = ensure_signed(origin)?;
 
         ensure!(
             T::is_council_member_account(membership_id, &account_id),
-            Error::MembershipIdNotMatchAccount,
+            Error::MemberIdNotMatchAccount,
         );
 
         Ok(account_id)
@@ -1136,7 +1138,7 @@ impl<T: Trait> EnsureChecks<T> {
     // Ensures there is no problem in announcing candidacy.
     fn can_announce_candidacy(
         origin: T::Origin,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
         staking_account_id: &T::AccountId,
         stake: &Balance<T>,
     ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
@@ -1145,7 +1147,7 @@ impl<T: Trait> EnsureChecks<T> {
 
         // ensure staking account's membership
         if !T::CandidacyLock::is_member_staking_account(&membership_id, &staking_account_id) {
-            return Err(Error::MembershipIdNotMatchAccount);
+            return Err(Error::MemberIdNotMatchAccount);
         }
 
         // ensure there are no conflicting stake types for the account
@@ -1190,7 +1192,7 @@ impl<T: Trait> EnsureChecks<T> {
     // Ensures there is no problem in releasing old candidacy stake.
     fn can_release_candidacy_stake(
         origin: T::Origin,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
@@ -1215,7 +1217,7 @@ impl<T: Trait> EnsureChecks<T> {
     // Ensures there is no problem in withdrawing already announced candidacy.
     fn can_withdraw_candidacy(
         origin: T::Origin,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
@@ -1244,7 +1246,7 @@ impl<T: Trait> EnsureChecks<T> {
     // Ensures there is no problem in setting new note for the candidacy.
     fn can_set_candidacy_note(
         origin: T::Origin,
-        membership_id: &T::MembershipId,
+        membership_id: &T::MemberId,
     ) -> Result<(), Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;

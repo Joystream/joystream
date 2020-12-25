@@ -66,9 +66,8 @@ common = { package = 'pallet-common', default-features = false, path = '../runti
 memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
-pallet_council = { package = 'pallet-council', default-features = false, path = '../runtime-modules/council'}
+council = { package = 'pallet-council', default-features = false, path = '../runtime-modules/council'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
@@ -142,8 +141,7 @@ std = [
     'memo/std',
     'forum/std',
     'membership/std',
-    'governance/std',
-    'pallet_council/std',
+    'council/std',
     'referendum/std',
     'minting/std',
     'recurring-rewards/std',

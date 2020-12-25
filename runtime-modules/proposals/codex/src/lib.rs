@@ -39,7 +39,7 @@
 //! - [proposals engine](../substrate_proposals_engine_module/index.html)
 //! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
 //! - [membership](../substrate_membership_module/index.html)
-//! - [governance](../substrate_governance_module/index.html)
+//! - [council](../substrate_council_module/index.html)
 //!
 //! ### Notes
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using its
@@ -91,8 +91,9 @@ pub trait Trait:
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + common::Trait
-    + governance::election::Trait
     + staking::Trait
+    + common::currency::GovernanceCurrency
+    + minting::Trait
 {
     /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<

@@ -90,7 +90,9 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_unlock_vote_stake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
+    fn can_unlock_vote_stake(
+        _vote: &CastVote<Self::Hash, Balance<Self, Instance0>, Self::MemberId>,
+    ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -99,7 +101,7 @@ impl Trait<Instance0> for Runtime {
         true
     }
 
-    fn process_results(_winners: &[OptionResult<Self::VotePower>]) {
+    fn process_results(_winners: &[OptionResult<Self::MemberId, Self::VotePower>]) {
         // not used right now
     }
 
@@ -125,6 +127,11 @@ impl Trait<Instance0> for Runtime {
             value.borrow_mut().insert(*option_id, amount + current);
         });
     }
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
 }
 
 parameter_types! {
@@ -316,7 +323,7 @@ where
 
     pub fn calculate_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &u64,
+        vote_option_index: &<T as common::Trait>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
@@ -324,7 +331,7 @@ where
 
     pub fn calculate_commitment_custom_salt(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &u64,
+        vote_option_index: &<T as common::Trait>::MemberId,
         custom_salt: &[u8],
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -345,7 +352,7 @@ where
     pub fn calculate_commitment_for_cycle(
         account_id: &<T as frame_system::Trait>::AccountId,
         cycle_id: &u64,
-        vote_option_index: &u64,
+        vote_option_index: &<T as common::Trait>::MemberId,
         custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
         let salt = match custom_salt {
@@ -357,6 +364,7 @@ where
             <Module<T, I> as ReferendumManager<
                 <T as frame_system::Trait>::Origin,
                 <T as frame_system::Trait>::AccountId,
+                <T as common::Trait>::MemberId,
                 <T as frame_system::Trait>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
@@ -415,6 +423,7 @@ impl InstanceMocks<Runtime, Instance0> {
             <Module::<Runtime, Instance0> as ReferendumManager<
                 <Runtime as frame_system::Trait>::Origin,
                 <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as common::Trait>::MemberId,
                 <Runtime as frame_system::Trait>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
@@ -484,7 +493,12 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     pub fn check_revealing_finished(
-        expected_winners: Vec<OptionResult<<Runtime as Trait<Instance0>>::VotePower>>,
+        expected_winners: Vec<
+            OptionResult<
+                <Runtime as common::Trait>::MemberId,
+                <Runtime as Trait<Instance0>>::VotePower,
+            >,
+        >,
         expected_referendum_result: BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>,
     ) {
         assert_eq!(

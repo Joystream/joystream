@@ -13,7 +13,7 @@ sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'ht
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-
+common = { package = 'pallet-common', default-features = false, path = '../common'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../referendum'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
@@ -23,7 +23,6 @@ sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com
 rand = "0.7.3"
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
-common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [features]
 default = ['std']
@@ -37,5 +36,6 @@ std = [
     'referendum/std',
     'frame-system/std',
     'staking-handler/std',
+    'common/std',
 ]
 
