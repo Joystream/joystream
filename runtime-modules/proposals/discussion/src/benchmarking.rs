@@ -150,7 +150,7 @@ benchmarks! {
         assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
 
         let new_text = vec![0u8; j.try_into().unwrap()];
-    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, post_id, new_text)
+    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text)
     verify {
         assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
     }

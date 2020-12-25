@@ -156,7 +156,8 @@ impl GovernanceCurrency for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [2; 8];
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -283,8 +284,9 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -292,6 +294,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
     ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
     }
 }

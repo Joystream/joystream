@@ -133,9 +133,6 @@ pub trait Trait: frame_system::Trait + common::Trait {
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// Author should match the post creator
-        NotAuthor,
-
         /// Thread doesn't exist
         ThreadDoesntExist,
 
@@ -240,22 +237,22 @@ decl_module! {
         #[weight = WeightInfoDiscussion::<T>::update_post()]
         pub fn update_post(
             origin,
-            post_author_id: MemberId<T>,
             thread_id: T::ThreadId,
             post_id : T::PostId,
             _text : Vec<u8>
         ){
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+            ensure!(
+                <PostThreadIdByPostId<T>>::contains_key(thread_id, post_id),
+                Error::<T>::PostDoesntExist
+            );
+
+            let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
+
             T::AuthorOriginValidator::ensure_actor_origin(
                 origin,
                 post_author_id,
             )?;
-
-            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
-            ensure!(<PostThreadIdByPostId<T>>::contains_key(thread_id, post_id), Error::<T>::PostDoesntExist);
-
-            let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
-
-            ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
 
             // mutation
 

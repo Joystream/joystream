@@ -588,7 +588,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
-    pub const MembershipFee: Balance = 100;
+    pub const DefaultMembershipPrice: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -618,11 +618,13 @@ impl common::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 parameter_types! {
+    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;

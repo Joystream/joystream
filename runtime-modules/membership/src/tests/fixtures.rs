@@ -1,5 +1,5 @@
 use super::mock::*;
-use crate::BuyMembershipParameters;
+use crate::{BuyMembershipParameters, InviteMembershipParameters};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::StorageMap;
@@ -77,6 +77,8 @@ pub fn get_bob_info() -> TestUserInfo {
 
 pub const ALICE_ACCOUNT_ID: u64 = 1;
 pub const BOB_ACCOUNT_ID: u64 = 2;
+pub const ALICE_MEMBER_ID: u64 = 0;
+pub const BOB_MEMBER_ID: u64 = 1;
 
 pub fn buy_default_membership_as_alice() -> DispatchResult {
     let info = get_alice_info();
@@ -256,6 +258,294 @@ impl SetReferralCutFixture {
 
         if actual_result.is_ok() {
             assert_eq!(Membership::referral_cut(), self.value);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub struct TransferInvitesFixture {
+    pub origin: RawOrigin<u64>,
+    pub source_member_id: u64,
+    pub target_member_id: u64,
+    pub invites: u32,
+}
+
+impl Default for TransferInvitesFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            source_member_id: ALICE_MEMBER_ID,
+            target_member_id: BOB_MEMBER_ID,
+            invites: 3,
+        }
+    }
+}
+
+impl TransferInvitesFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::transfer_invites(
+            self.origin.clone().into(),
+            self.source_member_id,
+            self.target_member_id,
+            self.invites,
+        );
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_source_member_id(self, source_member_id: u64) -> Self {
+        Self {
+            source_member_id,
+            ..self
+        }
+    }
+
+    pub fn with_target_member_id(self, target_member_id: u64) -> Self {
+        Self {
+            target_member_id,
+            ..self
+        }
+    }
+
+    pub fn with_invites_number(self, invites: u32) -> Self {
+        Self { invites, ..self }
+    }
+}
+
+pub struct InviteMembershipFixture {
+    pub member_id: u64,
+    pub origin: RawOrigin<u64>,
+    pub root_account: u64,
+    pub controller_account: u64,
+    pub name: Option<Vec<u8>>,
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+}
+
+impl Default for InviteMembershipFixture {
+    fn default() -> Self {
+        let bob = get_bob_info();
+        Self {
+            member_id: ALICE_MEMBER_ID,
+            origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
+            root_account: BOB_ACCOUNT_ID,
+            controller_account: BOB_ACCOUNT_ID,
+            name: bob.name,
+            handle: bob.handle,
+            avatar_uri: bob.avatar_uri,
+            about: bob.about,
+        }
+    }
+}
+
+impl InviteMembershipFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = InviteMembershipParameters {
+            inviting_member_id: self.member_id.clone(),
+            root_account: self.root_account.clone(),
+            controller_account: self.controller_account.clone(),
+            name: self.name.clone(),
+            handle: self.handle.clone(),
+            avatar_uri: self.avatar_uri.clone(),
+            about: self.about.clone(),
+        };
+
+        let actual_result = Membership::invite_member(self.origin.clone().into(), params);
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_name(self, name: Vec<u8>) -> Self {
+        Self {
+            name: Some(name),
+            ..self
+        }
+    }
+
+    pub fn with_avatar(self, avatar_uri: Vec<u8>) -> Self {
+        Self {
+            avatar_uri: Some(avatar_uri),
+            ..self
+        }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            handle: Some(handle),
+            ..self
+        }
+    }
+
+    pub fn with_empty_handle(self) -> Self {
+        Self {
+            handle: None,
+            ..self
+        }
+    }
+
+    pub fn with_accounts(self, account_id: u64) -> Self {
+        Self {
+            root_account: account_id,
+            controller_account: account_id,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub struct SetMembershipPriceFixture {
+    pub origin: RawOrigin<u64>,
+    pub price: u64,
+}
+
+pub const DEFAULT_MEMBERSHIP_PRICE: u64 = 100;
+
+impl Default for SetMembershipPriceFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            price: DEFAULT_MEMBERSHIP_PRICE,
+        }
+    }
+}
+
+impl SetMembershipPriceFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Membership::set_membership_price(self.origin.clone().into(), self.price);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::membership_price(), self.price);
+        }
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        Self { price, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub struct SetLeaderInvitationQuotaFixture {
+    pub origin: RawOrigin<u64>,
+    pub quota: u32,
+}
+
+pub const DEFAULT_LEADER_INVITATION_QUOTA: u32 = 100;
+
+impl Default for SetLeaderInvitationQuotaFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            quota: DEFAULT_LEADER_INVITATION_QUOTA,
+        }
+    }
+}
+
+impl SetLeaderInvitationQuotaFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Membership::set_leader_invitation_quota(self.origin.clone().into(), self.quota);
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Membership::membership(ALICE_MEMBER_ID).invites, self.quota);
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub struct SetInitialInvitationBalanceFixture {
+    pub origin: RawOrigin<u64>,
+    pub new_initial_balance: u64,
+}
+
+pub const DEFAULT_INITIAL_INVITATION_BALANCE: u64 = 200;
+
+impl Default for SetInitialInvitationBalanceFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_initial_balance: DEFAULT_INITIAL_INVITATION_BALANCE,
+        }
+    }
+}
+
+impl SetInitialInvitationBalanceFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_initial_invitation_balance(
+            self.origin.clone().into(),
+            self.new_initial_balance,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Membership::initial_invitation_balance(),
+                self.new_initial_balance
+            );
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+}
+
+pub struct SetInitialInvitationCountFixture {
+    pub origin: RawOrigin<u64>,
+    pub new_invitation_count: u32,
+}
+
+pub const DEFAULT_INITIAL_INVITATION_COUNT: u32 = 5;
+
+impl Default for SetInitialInvitationCountFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_invitation_count: DEFAULT_INITIAL_INVITATION_COUNT,
+        }
+    }
+}
+
+impl SetInitialInvitationCountFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Membership::set_initial_invitation_count(
+            self.origin.clone().into(),
+            self.new_invitation_count,
+        );
+
+        assert_eq!(expected_result, actual_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Membership::initial_invitation_count(),
+                self.new_invitation_count
+            );
         }
     }
 
