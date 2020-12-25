@@ -453,6 +453,18 @@ impl content_directory::Trait for Runtime {
     type WorkingGroup = ContentDirectoryWorkingGroup;
 }
 
+impl content_directory::ActorAuthenticator for Runtime {
+    type CuratorGroupId = u64;
+
+    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            member_id, account_id,
+        )
+        .is_ok()
+    }
+}
+
+
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;

@@ -35,9 +35,6 @@ pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
         + PartialEq
         + Ord;
 
-    /// Authorize actor as curator
-    fn is_curator(curator_id: &CuratorId<Self>, account_id: &Self::AccountId) -> bool;
-
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
@@ -48,7 +45,7 @@ pub fn ensure_curator_auth_success<T: Trait>(
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
     ensure!(
-        T::is_curator(curator_id, account_id),
+        T::WorkingGroup::is_worker_account_id(account_id, curator_id),
         Error::<T>::CuratorAuthFailed
     );
     Ok(())

@@ -293,10 +293,14 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
     }
 
     fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        account_id: &<Runtime as frame_system::Trait>::AccountId,
+        worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> bool {
-        unimplemented!()
+        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
+        let second_curator_account_id =
+            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
+        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *worker_id)
+            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *worker_id)
     }
 }
 
@@ -309,14 +313,6 @@ impl ActorAuthenticator for Runtime {
     type CuratorGroupId = u64;
 
     // Consider lazy_static crate?
-
-    fn is_curator(curator_id: &TestCuratorId, account_id: &Self::AccountId) -> bool {
-        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
-        let second_curator_account_id =
-            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
-    }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
