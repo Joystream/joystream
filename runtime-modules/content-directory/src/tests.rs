@@ -165,7 +165,7 @@ pub enum EntityAccessStateFailureType {
 
 pub fn emulate_entity_access_state_for_failure_case(
     entity_access_level_failure_type: EntityAccessStateFailureType,
-) -> Actor<CuratorGroupId, CuratorId, MemberId> {
+) -> Actor<CuratorGroupId, TestCuratorId, MemberId> {
     // Create class with default permissions
     assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
@@ -328,7 +328,7 @@ pub fn add_unique_class_reference_schema() {
 
 ///  Create class reference schema and add corresponding schema support to the Entity
 pub fn add_unique_class_reference_schema_and_entity_schema_support(
-    actor: &Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: &Actor<CuratorGroupId, TestCuratorId, MemberId>,
     origin: u64,
 ) {
     add_unique_class_reference_schema();
