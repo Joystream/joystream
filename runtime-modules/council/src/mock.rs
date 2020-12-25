@@ -196,7 +196,8 @@ parameter_types! {
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
 }
 
@@ -289,8 +290,9 @@ impl balances::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 impl common::working_group::WorkingGroupIntegration<Runtime> for () {
@@ -298,6 +300,10 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
         unimplemented!();
     }
 }

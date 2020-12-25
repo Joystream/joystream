@@ -572,8 +572,11 @@ impl council::Trait for Runtime {
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
     ) -> bool {
-        membership::Module::<Runtime>::ensure_member_controller_account(account_id, membership_id)
-            .is_ok()
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            membership_id,
+            account_id,
+        )
+        .is_ok()
     }
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
