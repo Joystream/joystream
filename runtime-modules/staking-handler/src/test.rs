@@ -177,21 +177,6 @@ fn is_enough_balance_for_stake_succeeds() {
     });
 }
 
-// Test stub: not implemented yet.
-#[ignore]
-#[test]
-fn is_member_staking_account_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let member_id = 1;
-
-        assert!(TestStakingManager::is_member_staking_account(
-            &member_id,
-            &account_id
-        ));
-    });
-}
-
 #[test]
 fn set_stake_succeeds() {
     build_test_externalities().execute_with(|| {

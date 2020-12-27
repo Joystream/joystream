@@ -6,7 +6,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use common::MemberId;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
@@ -38,9 +37,6 @@ pub trait StakingHandler<T: frame_system::Trait + common::Trait + pallet_balance
 
     /// Sets the new stake to a given amount.
     fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult;
-
-    /// Verifies that staking account bound to the member.
-    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
 
     /// Verifies that there no conflicting stakes on the staking account.
     fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool;
@@ -127,11 +123,6 @@ impl<
         Self::lock(account_id, new_stake);
 
         Ok(())
-    }
-
-    // Membership support for staking accounts required.
-    fn is_member_staking_account(_member_id: &MemberId<T>, _account_id: &T::AccountId) -> bool {
-        true
     }
 
     fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
