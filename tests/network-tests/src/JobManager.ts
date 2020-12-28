@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events'
 import { Flow } from './Flow'
-import { Job, JobOutcome } from './Job'
+import { Job, JobOutcome, JobProps } from './Job'
 import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
+import { ResourceManager } from './Resources'
 
 export class JobManager extends EventEmitter {
   private _jobs: Job[] = []
@@ -26,7 +27,7 @@ export class JobManager extends EventEmitter {
     return job
   }
 
-  private getJobProps() {
+  private getJobProps(): JobProps {
     return {
       env: this._env,
       query: this._query,
@@ -34,8 +35,8 @@ export class JobManager extends EventEmitter {
     }
   }
 
-  public async run(): Promise<void> {
-    this.emit('run', this.getJobProps())
+  public async run(resources: ResourceManager): Promise<void> {
+    this.emit('run', this.getJobProps(), resources)
 
     const outcomes = await Promise.all(this._jobs.map((job) => job.outcome))
 

@@ -7,6 +7,7 @@ import Debugger from 'debug'
 import { Flow } from './Flow'
 import { Job } from './Job'
 import { JobManager } from './JobManager'
+import { ResourceManager } from './Resources'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -45,8 +46,10 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   await scene({ env, debug, job: jobs.createJob.bind(jobs) })
 
+  const resources = new ResourceManager()
+
   try {
-    await jobs.run()
+    await jobs.run(resources)
   } catch (err) {
     console.error(err)
     process.exit(-1)

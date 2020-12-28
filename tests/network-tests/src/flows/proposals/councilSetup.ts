@@ -5,12 +5,15 @@ import { ElectCouncilFixture } from '../../fixtures/councilElectionModule'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
+import { ResourceName } from '../../Resources'
 
-export default async function councilSetup({ api, env }: FlowProps): Promise<void> {
+export default async function councilSetup({ api, env, lock }: FlowProps): Promise<void> {
   const label = 'councilSetup'
   const debug = Debugger(`flow:${label}`)
 
   debug('Started')
+
+  await lock(ResourceName.Council)
 
   // Skip creating council if already elected
   if ((await api.getCouncil()).length) {

@@ -3,25 +3,10 @@ import { EventEmitter } from 'events'
 import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { Flow } from './Flow'
+import { InvertedPromise } from './InvertedPromise'
+import { ResourceManager } from './Resources'
 
 export type JobProps = { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }
-
-function noop() {
-  // No-Op
-}
-
-class InvertedPromise<T> {
-  public resolve: (value: T) => void = noop
-  public reject: (reason?: any) => void = noop
-  public readonly promise: Promise<T>
-
-  constructor() {
-    this.promise = new Promise((resolve, reject) => {
-      this.resolve = resolve
-      this.reject = reject
-    })
-  }
-}
 
 export enum JobOutcome {
   Succeeded = 'Succeeded',
@@ -92,7 +77,7 @@ export class Job {
     return this._label
   }
 
-  private async run(jobProps: JobProps): Promise<void> {
+  private async run(jobProps: JobProps, resources: ResourceManager): Promise<void> {
     // prevent any additional changes to configuration
     this._locked = true
 
@@ -108,13 +93,21 @@ export class Job {
 
     this.debug('Running')
     const flowRunResults = await Promise.allSettled(
-      this._flows.map((flow) =>
-        flow({
-          api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}`),
-          env: jobProps.env,
-          query: jobProps.query,
-        })
-      )
+      this._flows.map(async (flow) => {
+        const locker = resources.createLocker()
+        try {
+          await flow({
+            api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}`),
+            env: jobProps.env,
+            query: jobProps.query,
+            lock: locker.lock,
+          })
+        } catch (err) {
+          locker.release()
+          throw err
+        }
+        locker.release()
+      })
     )
 
     flowRunResults.forEach((result, ix) => {
