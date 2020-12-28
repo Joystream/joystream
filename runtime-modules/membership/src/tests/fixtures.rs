@@ -4,6 +4,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_runtime::traits::Hash;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -53,23 +54,34 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 pub struct TestUserInfo {
     pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
+    pub handle_hash: Option<Vec<u8>>,
     pub avatar_uri: Option<Vec<u8>>,
     pub about: Option<Vec<u8>>,
 }
 
 pub fn get_alice_info() -> TestUserInfo {
+    let handle = b"alice".to_vec();
+    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hash = hashed.as_ref().to_vec();
+
     TestUserInfo {
         name: Some(b"Alice".to_vec()),
-        handle: Some(b"alice".to_vec()),
+        handle: Some(handle),
+        handle_hash: Some(hash),
         avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
         about: Some(b"my name is alice".to_vec()),
     }
 }
 
 pub fn get_bob_info() -> TestUserInfo {
+    let handle = b"bobby".to_vec();
+    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hash = hashed.as_ref().to_vec();
+
     TestUserInfo {
         name: Some(b"Bob".to_vec()),
-        handle: Some(b"bobby".to_vec()),
+        handle: Some(handle),
+        handle_hash: Some(hash),
         avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
         about: Some(b"my name is bob".to_vec()),
     }
@@ -195,13 +207,6 @@ impl BuyMembershipFixture {
     pub fn with_referrer_id(self, referrer_id: u64) -> Self {
         Self {
             referrer_id: Some(referrer_id),
-            ..self
-        }
-    }
-
-    pub fn with_name(self, name: Vec<u8>) -> Self {
-        Self {
-            name: Some(name),
             ..self
         }
     }
@@ -365,20 +370,6 @@ impl InviteMembershipFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
-    }
-
-    pub fn with_name(self, name: Vec<u8>) -> Self {
-        Self {
-            name: Some(name),
-            ..self
-        }
-    }
-
-    pub fn with_avatar(self, avatar_uri: Vec<u8>) -> Self {
-        Self {
-            avatar_uri: Some(avatar_uri),
-            ..self
-        }
     }
 
     pub fn with_handle(self, handle: Vec<u8>) -> Self {
