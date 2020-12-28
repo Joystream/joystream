@@ -42,9 +42,6 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
     /// Sets the new stake to a given amount.
     fn set_stake(account_id: &AccountId, new_stake: Balance) -> DispatchResult;
 
-    /// Verifies that staking account bound to the member.
-    fn is_member_staking_account(member_id: &MemberId, account_id: &AccountId) -> bool;
-
     /// Verifies that there no conflicting stakes on the staking account.
     fn is_account_free_of_conflicting_stakes(account_id: &AccountId) -> bool;
 
@@ -155,17 +152,7 @@ impl<
         Ok(())
     }
 
-    // Membership support for staking accounts required.
-    fn is_member_staking_account(
-        _member_id: &<T as common::Trait>::MemberId,
-        _account_id: &<T as frame_system::Trait>::AccountId,
-    ) -> bool {
-        true
-    }
-
-    fn is_account_free_of_conflicting_stakes(
-        account_id: &<T as frame_system::Trait>::AccountId,
-    ) -> bool {
+    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
         let locks = <pallet_balances::Module<T>>::locks(&account_id);
         let lock_ids: Vec<LockIdentifier> =
             locks.iter().map(|balance_lock| balance_lock.id).collect();

@@ -98,6 +98,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
         T::Balance::max_value()
     );
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+
     assert_eq!(
         Membership::<T>::membership(member_id).controller_account,
         account_id
@@ -108,6 +109,19 @@ fn member_funded_account<T: Trait + membership::Trait>(
         account_id
     );
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+    )
+    .unwrap();
+
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .unwrap();
 
     (account_id, member_id)
 }

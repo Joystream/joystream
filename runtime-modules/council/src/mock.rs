@@ -95,6 +95,8 @@ impl Trait for Runtime {
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
+    type StakingAccountValidator = ();
+
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
@@ -111,6 +113,12 @@ impl Trait for Runtime {
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
         });
+    }
+}
+
+impl common::StakingAccountValidator<Runtime> for () {
+    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
+        true
     }
 }
 
