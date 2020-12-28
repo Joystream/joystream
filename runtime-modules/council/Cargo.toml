@@ -17,9 +17,9 @@ common = { package = 'pallet-common', default-features = false, path = '../commo
 referendum = { package = 'pallet-referendum', default-features = false, path = '../referendum'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
-# Benchmarking dependencies
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true }
-
+#Benchmark dependencies
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership', optional = true}
 
 [dev-dependencies]
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -30,7 +30,7 @@ membership = { package = 'pallet-membership', default-features = false, path = '
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+runtime-benchmarks = ['frame-benchmarking', 'membership']
 std = [
     'codec/std',
     'sp-core/std',

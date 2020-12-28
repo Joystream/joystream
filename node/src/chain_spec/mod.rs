@@ -265,7 +265,7 @@ pub fn testnet_genesis(
                 .collect::<Vec<_>>(),
         }),
         referendum_Instance1: Some(council_config::create_referendum_config()),
-        new_council: Some(council_config::create_council_config()),
+        council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {

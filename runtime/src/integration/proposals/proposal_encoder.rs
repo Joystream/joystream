@@ -36,7 +36,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Text(text) => {
                 Call::ProposalsCodex(proposals_codex::Call::execute_text_proposal(text))
             }
-            ProposalDetails::Spending(_balance, _destination) => Call::NewCouncil(
+            ProposalDetails::Spending(_balance, _destination) => Call::Council(
                 // TODO: This is an stub since this has been modified in
                 // the proposal branch
                 council::Call::set_budget(0),

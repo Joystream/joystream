@@ -5,7 +5,7 @@ use crate::{
     AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
     CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
     CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
-    ReferendumConnection, Stage, Trait,
+    ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
@@ -317,6 +317,34 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         <Module<Runtime> as ReferendumConnection<Runtime>>::increase_option_power(
             option_id, amount,
         );
+    }
+}
+
+pub struct ReferendumWeightInfo;
+impl referendum::WeightInfo for ReferendumWeightInfo {
+    fn on_finalize_revealing(_: u32) -> Weight {
+        0
+    }
+    fn on_finalize_voting() -> Weight {
+        0
+    }
+    fn vote() -> Weight {
+        0
+    }
+    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_already_existing(_: u32) -> Weight {
+        0
+    }
+    fn release_vote_stake() -> Weight {
+        0
     }
 }
 

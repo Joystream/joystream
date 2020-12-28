@@ -5,12 +5,21 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
+use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::prelude::*;
 
 use crate::Module as Referendum;
 
 const SEED: u32 = 0;
+
+// This is needed to prevent a circular reference with council
+// when running the benchmarks. Since you need to vote for a valid
+// candidate (See the implementation of `is_valid_option_id` in
+// the Runtime.
+pub trait OptionCreator<AccountId, MemberId> {
+    fn create_option(account_id: AccountId, member_id: MemberId);
+}
 
 fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
     let events = System::<T>::events();
@@ -20,15 +29,16 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-const MAX_WINNERS: u32 = 500;
+const MAX_WINNERS: u32 = 50;
 
 fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
-    Referendum::<T, I>::force_start(winning_target_count.into());
+    Referendum::<T, I>::force_start(winning_target_count.into(), 0);
     assert_eq!(
         Stage::<T, I>::get(),
         ReferendumStage::Voting(ReferendumStageVoting {
             started: System::<T>::block_number() + One::one(),
             winning_target_count: (winning_target_count + 1).into(),
+            current_cycle_id: 0,
         }),
         "Vote cycle not started"
     );
@@ -41,47 +51,62 @@ fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::A
     account_id
 }
 
-fn make_multiple_votes_for_multiple_options<T: Trait<I>, I: Instance>(
-    n: u32,
+fn make_multiple_votes_for_multiple_options<
+    T: Trait<I>
+        + membership::Trait
+        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+    I: Instance,
+>(
+    number_of_options: u32,
     cycle_id: u32,
 ) -> (
-    Vec<(T::AccountId, T::Hash, Vec<u8>, u32)>,
-    Vec<OptionResult<T::VotePower>>,
+    Vec<(T::AccountId, T::Hash, Vec<u8>, T::MemberId)>,
+    Vec<OptionResult<T::MemberId, T::VotePower>>,
 ) {
     let mut votes = Vec::new();
     let mut intermediate_winners = Vec::new();
     let stake = T::MinimumStake::get() + One::one();
 
-    for option in 0..n {
-        let (account_id, commitment) =
-            create_account_and_vote::<T, I>("voter", option, option, cycle_id, Zero::zero());
+    for option in 0..number_of_options {
+        let (account_id, option, commitment) = create_account_and_vote::<T, I>(
+            "voter",
+            option.into(),
+            number_of_options + option,
+            cycle_id,
+            Zero::zero(),
+        );
         let salt = vec![0u8];
 
         intermediate_winners.push(OptionResult {
-            option_id: option.into(),
+            option_id: option,
             vote_power: T::calculate_vote_power(&account_id, &stake),
         });
-        votes.push((account_id, commitment, salt, option));
+        votes.push((account_id, commitment, salt, option.into()));
     }
 
     (votes, intermediate_winners)
 }
 
-fn create_account_and_vote<T: Trait<I>, I: Instance>(
+fn vote_for<
+    T: Trait<I>
+        + membership::Trait
+        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+    I: Instance,
+>(
     name: &'static str,
-    id: u32,
-    option: u32,
+    voter_id: u32,
+    member_option: T::MemberId,
     cycle_id: u32,
     extra_stake: Balance<T, I>,
-) -> (T::AccountId, T::Hash) {
-    let account_id = funded_account::<T, I>(name, id);
+) -> (T::AccountId, T::MemberId, T::Hash) {
+    let account_id = funded_account::<T, I>(name, voter_id);
     let stake = T::MinimumStake::get() + One::one() + extra_stake;
     let salt = vec![0u8];
     let commitment = Referendum::<T, I>::calculate_commitment(
         &account_id,
         &salt,
         &cycle_id.into(),
-        &option.into(),
+        &member_option,
     );
 
     Referendum::<T, I>::vote(
@@ -107,12 +132,30 @@ fn create_account_and_vote<T: Trait<I>, I: Instance>(
         "Vote is not correctly Stored",
     );
 
-    (account_id, commitment)
+    (account_id, member_option, commitment)
+}
+
+fn create_account_and_vote<
+    T: Trait<I>
+        + membership::Trait
+        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+    I: Instance,
+>(
+    name: &'static str,
+    voter_id: u32,
+    option: u32,
+    cycle_id: u32,
+    extra_stake: Balance<T, I>,
+) -> (T::AccountId, T::MemberId, T::Hash) {
+    let (account_option, member_option) = member_funded_account::<T, I>(option.into());
+    T::create_option(account_option, member_option);
+
+    vote_for::<T, I>(name, voter_id, member_option, cycle_id, extra_stake)
 }
 
 fn move_to_block<T: Trait<I>, I: Instance>(
     target_block: T::BlockNumber,
-    target_stage: ReferendumStage<T::BlockNumber, T::VotePower>,
+    target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
 ) {
     let mut current_block_number = System::<T>::block_number();
 
@@ -128,25 +171,87 @@ fn move_to_block<T: Trait<I>, I: Instance>(
     assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
 }
 
-fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: Instance>(
+fn get_byte(num: u32, byte_number: u8) -> u8 {
+    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+}
+
+// Method to generate a distintic valid handle
+// for a membership. For each index.
+fn handle_from_id<T: Trait<I> + membership::Trait, I: Instance>(id: u32) -> Vec<u8> {
+    let mut handle = vec![];
+
+    for i in 0..4 {
+        handle.push(get_byte(id, i));
+    }
+
+    handle
+}
+
+fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
+    let account_id = funded_account::<T, I>("account", id);
+
+    let handle = handle_from_id::<T, I>(id);
+
+    let member_id = Membership::<T>::members_created();
+
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+
+    T::Currency::make_free_balance_be(&account_id, Balance::<T, I>::max_value());
+
+    (account_id, member_id)
+}
+
+fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
+    T: Trait<I>
+        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>
+        + membership::Trait,
+    I: Instance,
+>(
     target_winners: u32,
     number_of_voters: u32,
     extra_vote_option: u32,
     extra_stake: Balance<T, I>,
-) -> (Vec<OptionResult<T::VotePower>>, T::AccountId, T::Hash) {
+) -> (
+    Vec<OptionResult<T::MemberId, T::VotePower>>,
+    T::AccountId,
+    T::MemberId,
+    T::Hash,
+) {
     start_voting_cycle::<T, I>(target_winners);
 
     let cycle_id = 0;
     let (votes, intermediate_winners) =
         make_multiple_votes_for_multiple_options::<T, I>(number_of_voters, cycle_id);
 
-    let (account_id, commitment) = create_account_and_vote::<T, I>(
-        "caller",
-        number_of_voters + 1,
-        extra_vote_option,
-        cycle_id,
-        extra_stake,
-    );
+    let (account_id, option_id, commitment) = if extra_vote_option >= number_of_voters {
+        create_account_and_vote::<T, I>(
+            "caller",
+            (2 * number_of_voters + 1).into(),
+            extra_vote_option,
+            cycle_id,
+            extra_stake,
+        )
+    } else {
+        vote_for::<T, I>(
+            "caller",
+            (2 * number_of_voters + 1).into(),
+            intermediate_winners[extra_vote_option as usize].option_id,
+            cycle_id,
+            extra_stake,
+        )
+    };
 
     let started_voting_block_number = System::<T>::block_number() + One::one();
     let target_block_number = T::VoteStageDuration::get() + started_voting_block_number;
@@ -155,6 +260,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: I
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
         intermediate_winners: vec![],
+        current_cycle_id: 0,
     });
 
     move_to_block::<T, I>(
@@ -171,6 +277,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: I
         intermediate_winners: intermediate_winners.clone(),
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
+        current_cycle_id: 0,
     });
 
     assert_eq!(
@@ -179,20 +286,21 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<T: Trait<I>, I: I
         "Votes not revealed",
     );
 
-    (intermediate_winners, account_id, commitment)
+    (intermediate_winners, account_id, option_id, commitment)
 }
 
 benchmarks_instance! {
+    where_clause {where T: OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>, T: membership::Trait}
     _ { }
 
     on_finalize_revealing {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = i;
+        let vote_option = 2 * (i + 1);
         let started_voting_block_number = System::<T>::block_number();
 
-        let (intermediate_winners, _, _) =
+        let (intermediate_winners, _, _, _) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i,
@@ -209,6 +317,7 @@ benchmarks_instance! {
                 intermediate_winners: intermediate_winners.clone(),
                 started: started_voting_block_number + T::VoteStageDuration::get() + One::one(),
                 winning_target_count: (i + 1).into(),
+                current_cycle_id: 0,
             }
         );
 
@@ -222,12 +331,6 @@ benchmarks_instance! {
             Referendum::<T, I>::stage(),
             ReferendumStage::Inactive,
             "Reveal perdiod hasn't ended",
-        );
-
-        assert_eq!(
-            Referendum::<T, I>::current_cycle_id(),
-            1,
-            "Cycle haven't advanced"
         );
 
         assert_last_event::<T, I>(RawEvent::ReferendumFinished(intermediate_winners).into());
@@ -244,6 +347,7 @@ benchmarks_instance! {
         let target_stage = ReferendumStage::Voting(ReferendumStageVoting {
                 started: System::<T>::block_number() + One::one(),
                 winning_target_count: (winning_target_count + 1).into(),
+                current_cycle_id: 0,
         });
 
         move_to_block::<T, I>(target_block_number, target_stage);
@@ -252,7 +356,8 @@ benchmarks_instance! {
         let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
             started: target_block_number + One::one(),
             winning_target_count: 1,
-            intermediate_winners: vec![]
+            intermediate_winners: vec![],
+            current_cycle_id: 0,
         });
 
         assert_eq!(
@@ -273,7 +378,12 @@ benchmarks_instance! {
         let cycle_id = 0;
         let vote_option = 0;
         let commitment =
-            Referendum::<T, I>::calculate_commitment(&account_id, &salt, &cycle_id, &vote_option);
+            Referendum::<T, I>::calculate_commitment(
+                &account_id,
+                &salt,
+                &cycle_id,
+                &vote_option.into()
+            );
 
         let stake = T::MinimumStake::get() + One::one();
     }: _ (RawOrigin::Signed(account_id.clone()), commitment, stake)
@@ -298,24 +408,24 @@ benchmarks_instance! {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = i;
+        let vote_option = 2 * (i + 1);
         let started_block_number = System::<T>::block_number();
 
-        let (mut intermediate_winners, account_id, commitment) =
+        let (mut intermediate_winners, account_id, option_id, commitment) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i,
                 vote_option,
                 One::one()
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, vote_option.into())
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
 
         intermediate_winners.insert(
             0,
             OptionResult{
-                option_id: vote_option.into(),
+                option_id: option_id,
                 vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
             }
         );
@@ -326,6 +436,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                current_cycle_id: 0,
             }),
             "Vote not revealed",
         );
@@ -336,29 +447,29 @@ benchmarks_instance! {
                 commitment,
                 stake,
                 cycle_id: 0,
-                vote_for: Some(vote_option.into()),
+                vote_for: Some(option_id),
             },
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, vote_option.into()).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
     }
 
     reveal_vote_space_not_in_winners {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = i+1;
+        let vote_option = 2 * (i + 1);
         let started_block_number = System::<T>::block_number();
 
-        let (intermediate_winners, account_id, commitment) =
+        let (intermediate_winners, account_id, option_id, commitment) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i + 1,
                 vote_option,
                 Zero::zero(),
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, vote_option.into())
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
 
@@ -368,6 +479,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                current_cycle_id: 0,
             }),
             "Vote not revealed",
         );
@@ -378,36 +490,36 @@ benchmarks_instance! {
                 commitment,
                 stake,
                 cycle_id: 0,
-                vote_for: Some(vote_option.into()),
+                vote_for: Some(option_id),
             },
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, vote_option.into()).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
     }
 
     reveal_vote_space_replace_last_winner {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = i+1;
+        let vote_option = 2 * (i + 1);
         let started_block_number = System::<T>::block_number();
 
-        let (mut intermediate_winners, account_id, commitment) =
+        let (mut intermediate_winners, account_id, option_id, commitment) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i + 1,
                 vote_option,
                 One::one(),
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, vote_option.into())
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
 
         intermediate_winners.pop();
 
         intermediate_winners.insert(0, OptionResult{
-            option_id: vote_option.into(),
+            option_id: option_id,
             vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
         });
 
@@ -417,6 +529,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                current_cycle_id: 0,
             }),
             "Vote not revealed",
         );
@@ -427,12 +540,12 @@ benchmarks_instance! {
                 commitment,
                 stake,
                 cycle_id: 0,
-                vote_for: Some(vote_option.into()),
+                vote_for: Some(option_id),
             },
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, vote_option.into()).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
     }
 
     reveal_vote_already_existing {
@@ -442,7 +555,7 @@ benchmarks_instance! {
         let vote_option = i;
         let started_block_number = System::<T>::block_number();
 
-        let (mut intermediate_winners, account_id, commitment) =
+        let (mut intermediate_winners, account_id, option_id, commitment) =
             add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote::<T, I>(
                 i,
                 i + 1,
@@ -451,13 +564,13 @@ benchmarks_instance! {
             );
 
         let old_vote_power = intermediate_winners[i as usize].vote_power;
-        let new_vote_power = old_vote_power + T::get_option_power(&vote_option.into());
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, vote_option.into())
+        let new_vote_power = old_vote_power + T::get_option_power(&option_id);
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
 
         intermediate_winners[i as usize] = OptionResult {
-            option_id: i.into(),
+            option_id: option_id,
             vote_power: new_vote_power,
         };
 
@@ -469,6 +582,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                current_cycle_id: 0,
             }),
             "Vote not revealed",
         );
@@ -479,12 +593,12 @@ benchmarks_instance! {
                 commitment,
                 stake,
                 cycle_id: 0,
-                vote_for: Some(vote_option.into()),
+                vote_for: Some(option_id),
             },
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, vote_option.into()).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
     }
 
     release_vote_stake {
@@ -495,7 +609,7 @@ benchmarks_instance! {
         let stake = T::MinimumStake::get() + One::one();
         let salt = vec![0u8];
 
-        let (account_id, commitment) =
+        let (account_id, option, commitment) =
             create_account_and_vote::<T, I>("caller", 0, 0, cycle_id, Zero::zero());
 
         let salt = vec![0u8];
@@ -526,6 +640,19 @@ mod tests {
     use super::*;
     use crate::mock::{build_test_externalities, default_genesis_config, Runtime};
     use frame_support::assert_ok;
+
+    impl
+        OptionCreator<
+            <Runtime as frame_system::Trait>::AccountId,
+            <Runtime as common::Trait>::MemberId,
+        > for Runtime
+    {
+        fn create_option(
+            _: <Runtime as frame_system::Trait>::AccountId,
+            _: <Runtime as common::Trait>::MemberId,
+        ) {
+        }
+    }
 
     #[test]
     fn test_vote() {

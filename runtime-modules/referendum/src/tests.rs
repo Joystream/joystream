@@ -72,7 +72,7 @@ fn voting() {
 
         let winning_target_count = 1;
         let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -106,7 +106,7 @@ fn voting_referendum_not_running() {
 
         let winning_target_count = 1;
         let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -154,7 +154,7 @@ fn voting_stake_too_low() {
 
         let winning_target_count = 1;
         let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get() - 1;
+        let stake = <Runtime as Trait>::MinimumStake::get() - 1;
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -257,7 +257,7 @@ fn reveal() {
         let winning_target_count = 1;
 
         let option_to_vote_for = 1;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -302,7 +302,7 @@ fn reveal_reveal_stage_not_running() {
         let winning_target_count = 1;
 
         let option_to_vote_for = 1;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -392,7 +392,7 @@ fn reveal_salt_too_long() {
         }
 
         let option_to_vote_for = 1;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, _) = MockUtils::calculate_commitment_custom_salt(
             &account_id,
             &option_to_vote_for,
@@ -441,7 +441,7 @@ fn reveal_invalid_vote() {
 
         let invalid_option = 1000;
         let option_to_vote_for = 1;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -488,7 +488,7 @@ fn reveal_invalid_commitment_proof() {
 
         let option_to_vote_for = 0;
         let invalid_option = option_to_vote_for + 1;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -535,7 +535,7 @@ fn finish_revealing_period() {
         let winning_target_count = 1;
 
         let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
@@ -935,7 +935,7 @@ fn referendum_release_stake() {
         let winning_target_count = 1;
 
         let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let stake = <Runtime as Trait>::MinimumStake::get();
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id1);
 

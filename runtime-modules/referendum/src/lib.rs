@@ -32,9 +32,6 @@
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
@@ -50,6 +47,13 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec;
 use sp_std::vec::Vec;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
+// We need to re-expose this to implement in the runtime
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::OptionCreator;
 
 // declared modules
 mod benchmarking;
@@ -194,7 +198,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance>: frame_system::Trait + common::Trait {
+pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 

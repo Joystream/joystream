@@ -5,6 +5,7 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
+use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
@@ -72,6 +73,7 @@ fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>
     <<T as Trait>::Referendum as ReferendumManager<
         <T as frame_system::Trait>::Origin,
         <T as frame_system::Trait>::AccountId,
+        <T as common::Trait>::MemberId,
         <T as frame_system::Trait>::Hash,
     >>::Currency::make_free_balance_be(&account_id, balance);
 }
@@ -100,12 +102,12 @@ fn start_announcing_period<T: Trait>() {
     );
 }
 
-fn start_period_announce_multiple_candidates<T: Trait>(
+fn start_period_announce_multiple_candidates<T: Trait + membership::Trait>(
     number_of_candidates: u32,
-) -> (Vec<T::AccountId>, Vec<T::MembershipId>)
+) -> (Vec<T::AccountId>, Vec<T::MemberId>)
 where
     T::AccountId: CreateAccountId,
-    T::MembershipId: From<u32>,
+    T::MemberId: From<u32>,
 {
     let mut candidates = Vec::new();
     let mut accounts = Vec::new();
@@ -119,16 +121,62 @@ where
     (accounts, candidates)
 }
 
-fn announce_candidate<T: Trait>(id: u32) -> (T::AccountId, T::MembershipId)
+fn get_byte(num: u32, byte_number: u8) -> u8 {
+    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+}
+
+// Method to generate a distintic valid handle
+// for a membership. For each index.
+fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+    let mut handle = vec![];
+
+    for i in 0..4 {
+        handle.push(get_byte(id, i));
+    }
+
+    handle
+}
+
+fn member_funded_account<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
-    T::MembershipId: From<u32>,
+    T::MemberId: From<u32>,
+{
+    let account_id = T::AccountId::create_account_id(id);
+    let handle = handle_from_id::<T>(id);
+
+    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    let member_id = if cfg!(test) {
+        id.into()
+    } else {
+        Membership::<T>::members_created()
+    };
+
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+
+    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+
+    (account_id, member_id)
+}
+
+fn announce_candidate<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+where
+    T::AccountId: CreateAccountId,
+    T::MemberId: From<u32>,
 {
     let id = START_ID + id;
 
-    let account_id = T::AccountId::create_account_id(id);
-    let member_id = id.into();
-    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    let (account_id, member_id) = member_funded_account::<T>(id);
 
     // Announce once before to take the branch that release the stake
     Council::<T>::announce_candidacy(
@@ -136,7 +184,7 @@ where
         member_id,
         account_id.clone(),
         account_id.clone(),
-        Balance::<T>::max_value(),
+        T::MinCandidateStake::get(),
     )
     .unwrap();
 
@@ -150,9 +198,10 @@ where
         Candidate {
             staking_account_id: account_id.clone(),
             cycle_id: 1,
-            stake: Balance::<T>::max_value(),
+            stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
+            vote_power: Council::<T>::get_option_power(&member_id),
         },
         "Candidacy hasn't been announced"
     );
@@ -160,20 +209,23 @@ where
     (account_id, member_id)
 }
 
-fn start_period_announce_candidacy<T: Trait>(id: u32) -> (T::AccountId, T::MembershipId)
+fn start_period_announce_candidacy<T: Trait + membership::Trait>(
+    id: u32,
+) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
-    T::MembershipId: From<u32>,
+    T::MemberId: From<u32>,
 {
     start_announcing_period::<T>();
 
     announce_candidate::<T>(id)
 }
 
-fn start_period_announce_candidacy_and_restart_period<T: Trait>() -> (T::AccountId, T::MembershipId)
+fn start_period_announce_candidacy_and_restart_period<T: Trait + membership::Trait>(
+) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
-    T::MembershipId: From<u32>,
+    T::MemberId: From<u32>,
 {
     let current_block_number = System::<T>::block_number();
 
@@ -239,7 +291,7 @@ const MAX_CANDIDATES: u64 = 100;
 const START_ID: u32 = 5000;
 
 benchmarks! {
-    where_clause { where T::AccountId: CreateAccountId, T::MembershipId: From<u32>}
+    where_clause { where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait}
     _ { }
 
     // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
@@ -256,7 +308,7 @@ benchmarks! {
         );
 
         let winners = candidates_id.iter().map(|candidate_id| {
-            let option_id: T::MembershipId = *candidate_id;
+            let option_id: T::MemberId = *candidate_id;
             OptionResult {
                 option_id: option_id.into(),
                 vote_power: Zero::zero(),
@@ -276,7 +328,7 @@ benchmarks! {
                 staking_account_id: accounts_id[idx].clone(),
                 reward_account_id: accounts_id[idx].clone(),
                 membership_id: member_id.clone(),
-                stake: Balance::<T>::max_value(),
+                stake: T::MinCandidateStake::get(),
                 last_payment_block: Zero::zero(),
                 unpaid_reward: Zero::zero(),
             }).collect::<Vec<_>>();
@@ -376,7 +428,7 @@ benchmarks! {
         );
 
         candidates_id.into_iter().enumerate().for_each(|(idx, member_id)| {
-            let member_id: T::MembershipId = member_id;
+            let member_id: T::MemberId = member_id;
             let account_id: T::AccountId = accounts_id[idx].clone();
             assert_in_events::<T>(
                 RawEvent::RewardPayment(
@@ -505,13 +557,13 @@ benchmarks! {
     announce_candidacy {
         let current_block_number = System::<T>::block_number();
         let (account_id, member_id) = start_period_announce_candidacy_and_restart_period::<T>();
-
+        Council::<T>::release_candidacy_stake(RawOrigin::Signed(account_id.clone()).into(), member_id).unwrap();
     }: _ (
         RawOrigin::Signed(account_id.clone()),
         member_id,
         account_id.clone(),
         account_id.clone(),
-        Balance::<T>::max_value()
+        T::MinCandidateStake::get()
     )
     verify{
         assert!(Candidates::<T>::contains_key(member_id), "Candidacy not announced");
@@ -521,9 +573,10 @@ benchmarks! {
             Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 2,
-                stake: Balance::<T>::max_value(),
+                stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),
+                vote_power: Council::<T>::get_option_power(&member_id),
             },
             "Candidacy hasn't been announced"
         );
@@ -542,7 +595,7 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::NewCandidate(member_id, Balance::<T>::max_value()).into()
+            RawEvent::NewCandidate(member_id, T::MinCandidateStake::get()).into()
         );
     }
 
@@ -572,9 +625,10 @@ benchmarks! {
             Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 1,
-                stake: Balance::<T>::max_value(),
+                stake: T::MinCandidateStake::get(),
                 note_hash: Some(T::Hashing::hash(&note)),
                 reward_account_id: account_id.clone(),
+                vote_power: Council::<T>::get_option_power(&member_id),
             },
             "Note not set"
         );

@@ -59,8 +59,6 @@ use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
-use ::council as new_council;
-
 // Node dependencies
 pub use common;
 pub use content_directory;
@@ -915,7 +913,7 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
-        NewCouncil: new_council::{Module, Call, Storage, Event<T>, Config<T>},
+        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},

@@ -58,6 +58,7 @@ use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
 // declared modules
+mod benchmarking;
 mod mock;
 mod tests;
 
@@ -1096,7 +1097,7 @@ impl<T: Trait> Mutations<T> {
 
     // Refill budget's balance.
     fn refill_budget(refill_amount: &Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance += *refill_amount);
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(*refill_amount));
     }
 
     // Plan next budget refill.

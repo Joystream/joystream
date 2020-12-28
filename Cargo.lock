@@ -4038,6 +4038,8 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
  "parity-scale-codec",
  "rand 0.7.3",
  "serde",

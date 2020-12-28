@@ -4,10 +4,12 @@
 use crate::{
     Balance, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
+    WeightInfo,
 };
 
 pub use crate::DefaultInstance;
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
 use frame_support::weights::Weight;
 use frame_support::{
@@ -92,7 +94,7 @@ impl Trait for Runtime {
     }
 
     fn can_unlock_vote_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, Instance0>, Self::MemberId>,
+        _vote: &CastVote<Self::Hash, Balance<Self, DefaultInstance>, Self::MemberId>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -127,6 +129,65 @@ impl Trait for Runtime {
 
             value.borrow_mut().insert(*option_id, amount + current);
         });
+    }
+}
+
+impl WeightInfo for () {
+    fn on_finalize_revealing(_: u32) -> Weight {
+        0
+    }
+    fn on_finalize_voting() -> Weight {
+        0
+    }
+    fn vote() -> Weight {
+        0
+    }
+    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_already_existing(_: u32) -> Weight {
+        0
+    }
+    fn release_vote_stake() -> Weight {
+        0
+    }
+}
+
+parameter_types! {
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+}
+
+impl membership::Trait for Runtime {
+    type Event = TestEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+}
+
+impl pallet_timestamp::Trait for Runtime {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+        unimplemented!();
     }
 }
 
@@ -179,11 +240,16 @@ mod tmp {
     pub use pallet_balances::Event;
 }
 
+mod membership_mod {
+    pub use membership::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod DefaultInstance <T>,
         frame_system<T>,
         tmp<T>,
+        membership_mod<T>,
     }
 }
 
@@ -490,12 +556,9 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
     pub fn check_revealing_finished(
         expected_winners: Vec<
-            OptionResult<
-                <Runtime as common::Trait>::MemberId,
-                <Runtime as Trait<Instance0>>::VotePower,
-            >,
+            OptionResult<<Runtime as common::Trait>::MemberId, <Runtime as Trait>::VotePower>,
         >,
-        expected_referendum_result: BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>,
+        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -518,9 +581,9 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         account_id: <Runtime as frame_system::Trait>::AccountId,
         commitment: <Runtime as frame_system::Trait>::Hash,
-        stake: Balance<Runtime, Instance0>,
+        stake: Balance<Runtime, DefaultInstance>,
         cycle_id: u64,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
