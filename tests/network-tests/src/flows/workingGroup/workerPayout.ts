@@ -16,19 +16,21 @@ import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
+import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.StorageWorkingGroup)
+  storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workerPayouts(api, env, WorkingGroups.StorageWorkingGroup, lock)
   },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return workerPayouts(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  content: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workerPayouts(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
   },
 }
 
-async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
   const debug = Debugger(`flow:workerPayout:${group}`)
   debug('Started')
+  await lock(Resource.Proposals)
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

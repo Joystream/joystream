@@ -4,10 +4,10 @@ import Debugger from 'debug'
 
 const debug = Debugger('resources')
 
-export type Resources = Record<ResourceName, Resource>
-export type ResourceLocker = (resource: ResourceName, timeout?: number) => Promise<() => void>
+type NamedLocks = Record<Resource, Lock>
+export type ResourceLocker = (resource: Resource, timeout?: number) => Promise<() => void>
 
-export class Resource {
+class Lock {
   private name: string
 
   // the number of concurrent locks that can be acquired concurrently before the resource
@@ -20,7 +20,7 @@ export class Resource {
     this.concurrency = concurrency || 1
   }
 
-  public async lock(timeoutMinutes = 1): Promise<() => void> {
+  public async lock(timeoutMinutes = 2): Promise<() => void> {
     const timeoutAt = Date.now() + timeoutMinutes * 60 * 1000
 
     while (this.lockCount === this.concurrency) {
@@ -45,31 +45,35 @@ export class Resource {
   }
 }
 
-export enum ResourceName {
+export enum Resource {
   Council = 'Council',
   Proposals = 'Proposals',
 }
 
 export class ResourceManager {
   // Internal Map
-  private resources = new Map<string, Resource>()
+  private resources = new Map<string, Lock>()
 
-  private readonly locks: Resources
+  private readonly locks: NamedLocks
 
   constructor() {
-    this.locks = this.createNamedResources()
+    this.locks = this.createNamedLocks()
   }
 
-  private add(key: string, concurrency?: number): Resource {
+  private add(key: string, concurrency?: number): Lock {
     assert(!this.resources.has(key))
-    this.resources.set(key, new Resource(key, concurrency))
-    return this.resources.get(key) as Resource
+    this.resources.set(key, new Lock(key, concurrency))
+    return this.resources.get(key) as Lock
   }
 
-  private createNamedResources(): Resources {
+  private createNamedLocks(): NamedLocks {
     return {
-      [ResourceName.Council]: this.add(ResourceName.Council),
-      [ResourceName.Proposals]: this.add(ResourceName.Proposals, 5),
+      [Resource.Council]: this.add(Resource.Council),
+      // We assume that a flow will only have one active proposal at a time
+      // Runtime is configured for MaxActiveProposalLimit = 5
+      // So we should ensure we don't exceed that number of active proposals
+      // which limits the number of concurrent tests that create proposals
+      [Resource.Proposals]: this.add(Resource.Proposals, 5),
     }
   }
 
@@ -80,7 +84,7 @@ export class ResourceManager {
     }
     return {
       release,
-      lock: async (resource: ResourceName, timeout?: number) => {
+      lock: async (resource: Resource, timeout?: number) => {
         const unlock = await this.locks[resource].lock(timeout)
         unlockers.push(unlock)
         return unlock

@@ -93,11 +93,11 @@ export class Job {
 
     this.debug('Running')
     const flowRunResults = await Promise.allSettled(
-      this._flows.map(async (flow) => {
+      this._flows.map(async (flow, index) => {
         const locker = resources.createLocker()
         try {
           await flow({
-            api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}`),
+            api: jobProps.apiFactory.getApi(`${this.label}:${flow.name}-${index}`),
             env: jobProps.env,
             query: jobProps.query,
             lock: locker.lock,

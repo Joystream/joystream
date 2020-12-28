@@ -20,19 +20,21 @@ import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
+import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup)
+  storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup, lock)
   },
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  content: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
   },
 }
 
-async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
   const debug = Debugger(`flow:managerLeaderRole:${group}`)
   debug('Started')
+  await lock(Resource.Proposals)
 
   const leaderAccount = api.createKeyPairs(1)[0].address
 
@@ -80,6 +82,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   )
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
+
   const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
   assert(openingId)
 
@@ -107,6 +110,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
     api,
     beginWorkingGroupLeaderApplicationReviewFixture.getCreatedProposalId() as ProposalId
   )
+
   await new FixtureRunner(voteForBeginReviewProposal).run()
 
   const fillLeaderOpeningProposalFixture = new FillLeaderOpeningProposalFixture(

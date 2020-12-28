@@ -6,20 +6,22 @@ import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
+import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
-  storage: async function ({ api, env }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.StorageWorkingGroup)
+  storage: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workingGroupMintCapactiy(api, env, WorkingGroups.StorageWorkingGroup, lock)
   },
 
-  content: async function ({ api, env }: FlowProps): Promise<void> {
-    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  content: async function ({ api, env, lock }: FlowProps): Promise<void> {
+    return workingGroupMintCapactiy(api, env, WorkingGroups.ContentDirectoryWorkingGroup, lock)
   },
 }
 
-async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
   const debug = Debugger(`flow:workingGroupMintCapacityProposal:${group}`)
   debug('Started')
+  await lock(Resource.Proposals)
 
   const mintCapacityIncrement: BN = new BN(env.MINT_CAPACITY_INCREMENT!)
 

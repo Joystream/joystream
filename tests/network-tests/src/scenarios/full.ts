@@ -1,5 +1,5 @@
 import creatingMemberships from '../flows/membership/creatingMemberships'
-import councilSetup from '../flows/proposals/councilSetup'
+import councilSetup from '../flows/council/setup'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import electionParametersProposal from '../flows/proposals/electionParametersProposal'
 import manageLeaderRole from '../flows/proposals/manageLeaderRole'
@@ -18,30 +18,25 @@ scenario(async ({ job }) => {
 
   const councilJob = job('council setup', councilSetup)
 
-  // Runtime is configured for MaxActiveProposalLimit = 5
-  // So we should ensure we don't exceed that number of active proposals
-  // which limits the number of concurrent tests that create proposals
-  const proposalsJob1 = job('proposals 1', [
+  job('proposals', [
     electionParametersProposal,
     spendingProposal,
     textProposal,
     validatorCountProposal,
+    wgMintCapacityProposal.storage,
+    wgMintCapacityProposal.content,
+    manageLeaderRole.storage,
+    manageLeaderRole.content,
   ]).requires(councilJob)
 
-  const proposalsJob2 = job('proposals 2', [wgMintCapacityProposal.storage, wgMintCapacityProposal.content])
-    .requires(councilJob)
-    .after(proposalsJob1)
+  const manageLeadsJob = job('lead-roles', [manageLeaderRole.storage, manageLeaderRole.content]).requires(councilJob)
 
-  const leadRolesJob = job('lead roles', [manageLeaderRole.storage, manageLeaderRole.content])
-    .requires(councilJob)
-    .after(proposalsJob2)
-
-  const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(leadRolesJob)
+  const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(manageLeadsJob)
 
   // Test bug only on one instance of working group is sufficient
   job('at least value bug', atLeastValueBug).requires(leadSetupJob)
 
-  // tests minting payouts (required council to set mint capacity)
+  // tests minting payouts (requires council to set mint capacity)
   job('worker payouts', [workerPayout.storage, workerPayout.content]).requires(leadSetupJob).requires(councilJob)
 
   job('working group tests', [

@@ -6,10 +6,12 @@ import { PaidTermId } from '@joystream/types/members'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
+import { Resource } from '../../Resources'
 
-export default async function updateRuntime({ api, env }: FlowProps): Promise<void> {
+export default async function updateRuntime({ api, env, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:updateRuntime')
   debug('Started')
+  await lock(Resource.Proposals)
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const runtimePath: string = env.RUNTIME_WASM_PATH!

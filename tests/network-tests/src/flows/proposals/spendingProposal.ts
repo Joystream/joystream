@@ -4,10 +4,12 @@ import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
+import { Resource } from '../../Resources'
 
-export default async function spendingProposal({ api, env }: FlowProps): Promise<void> {
+export default async function spendingProposal({ api, env, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:spendingProposals')
   debug('Started')
+  await lock(Resource.Proposals)
 
   const spendingBalance: BN = new BN(+env.SPENDING_BALANCE!)
   const mintCapacity: BN = new BN(+env.COUNCIL_MINTING_CAPACITY!)
