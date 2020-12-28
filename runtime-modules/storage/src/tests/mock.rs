@@ -10,7 +10,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::LockComparator;
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
