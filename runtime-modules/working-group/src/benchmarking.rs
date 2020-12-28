@@ -199,12 +199,12 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id.clone(),
-        account_id.clone(),
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id.clone(),
+        account_id.clone(),
     )
     .unwrap();
 
