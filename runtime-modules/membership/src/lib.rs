@@ -52,7 +52,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_root;
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{One, Zero};
-use sp_std::borrow::ToOwned;
+use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupIntegration;
@@ -76,12 +76,6 @@ pub trait Trait:
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
 }
 
-// Default user info constraints
-const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
-const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
-const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
-const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
-const DEFAULT_MAX_NAME_LENGTH: u32 = 200;
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
@@ -90,17 +84,8 @@ pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
-    /// User name.
-    pub name: Vec<u8>,
-
-    /// The unique handle chosen by member.
-    pub handle: Vec<u8>,
-
-    /// A Url to member's Avatar image.
-    pub avatar_uri: Vec<u8>,
-
-    /// Short text chosen by member to share information about themselves.
-    pub about: Vec<u8>,
+    /// The hash of the handle chosen by member.
+    pub handle_hash: Vec<u8>,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
     /// and update the controller account. Other modules may only allow certain actions if
@@ -129,14 +114,6 @@ pub struct StakingAccountMemberBinding<MemberId> {
 
     /// Confirmation that an account id is bound to a member.
     pub confirmed: bool,
-}
-
-// Contains valid or default user details
-struct ValidatedUserInfo {
-    name: Vec<u8>,
-    handle: Vec<u8>,
-    avatar_uri: Vec<u8>,
-    about: Vec<u8>,
 }
 
 /// Parameters for the buy_membership extrinsic.
@@ -210,18 +187,6 @@ decl_error! {
         /// Handle already registered.
         HandleAlreadyRegistered,
 
-        /// Handle too short.
-        HandleTooShort,
-
-        /// Handle too long.
-        HandleTooLong,
-
-        /// Avatar uri too long.
-        AvatarUriTooLong,
-
-        /// Name too long.
-        NameTooLong,
-
         /// Handle must be provided during registration.
         HandleMustBeProvidedDuringRegistration,
 
@@ -266,24 +231,9 @@ decl_storage! {
         pub(crate) MemberIdsByControllerAccountId : map hasher(blake2_128_concat)
             T::AccountId => Vec<T::MemberId>;
 
-        /// Registered unique handles and their mapping to their owner.
-        pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
+        /// Registered unique handles hash and their mapping to their owner.
+        pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
-
-        /// Minimum allowed handle length.
-        pub MinHandleLength get(fn min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
-
-        /// Maximum allowed handle length.
-        pub MaxHandleLength get(fn max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
-
-        /// Maximum allowed avatar URI length.
-        pub MaxAvatarUriLength get(fn max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
-
-        /// Maximum allowed 'about' text length.
-        pub MaxAboutTextLength get(fn max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
-
-        /// Maximum allowed name length.
-        pub MaxNameLength get(fn max_name_length) : u32 = DEFAULT_MAX_NAME_LENGTH;
 
         /// Referral cut to receive during on buying the membership.
         pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
@@ -309,17 +259,14 @@ decl_storage! {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
-                let checked_user_info = <Module<T>>::check_user_registration_info(
-                    Some(member.name.clone().into_bytes()),
+                let handle_hash = <Module<T>>::get_handle_hash(
                     Some(member.handle.clone().into_bytes()),
-                    Some(member.avatar_uri.clone().into_bytes()),
-                    Some(member.about.clone().into_bytes())
                 ).expect("Importing Member Failed");
 
                 let member_id = <Module<T>>::insert_member(
                     &member.root_account,
                     &member.controller_account,
-                    &checked_user_info,
+                    handle_hash,
                     Zero::zero(),
                 ).expect("Importing Member Failed");
 
@@ -372,13 +319,9 @@ decl_module! {
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
-            // Verify user parameters.
-            let user_info = Self::check_user_registration_info(
-                params.name,
+            let handle_hash = Self::get_handle_hash(
                 params.handle,
-                params.avatar_uri,
-                params.about)
-            ?;
+            )?;
 
             let referrer = params
                 .referrer_id
@@ -394,7 +337,7 @@ decl_module! {
             let member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
-                &user_info,
+                handle_hash,
                 Self::initial_invitation_count(),
             )?;
 
@@ -435,45 +378,28 @@ decl_module! {
 
             Self::ensure_member_controller_account_signed(origin, &member_id)?;
 
-            let mut membership = Self::ensure_membership(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
-            // Prepare for possible handle change;
-            let old_handle = membership.handle.clone();
-            let mut new_handle: Option<Vec<u8>> = None;
-
-            // Update fields if needed
-            if let Some(uri) = avatar_uri {
-                Self::validate_avatar(&uri)?;
-                membership.avatar_uri = uri;
-            }
-            if let Some(name) = name {
-                Self::validate_name(&name)?;
-                membership.name = name;
-            }
-            if let Some(about) = about {
-                let text = Self::validate_text(&about);
-                membership.about = text;
-            }
-            if let Some(handle) = handle {
-                Self::validate_handle(&handle)?;
-                Self::ensure_unique_handle(&handle)?;
-
-                new_handle = Some(handle.clone());
-                membership.handle = handle;
-            }
+            let new_handle_hash = handle
+                .map(|handle| Self::get_handle_hash(Some(handle)))
+                .transpose()?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::insert(member_id, membership);
+            if let Some(new_handle_hash) = new_handle_hash{
+                // remove old handle hash
+                <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
 
-            if let Some(new_handle) = new_handle {
-                <MemberIdByHandle<T>>::remove(&old_handle);
-                <MemberIdByHandle<T>>::insert(new_handle, member_id);
+                <MembershipById<T>>::mutate(&member_id, |membership| {
+                    membership.handle_hash = new_handle_hash.clone();
+                });
+
+                <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
+
+                Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
             }
-
-            Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
         }
 
         /// Updates member root or controller accounts. No effect if both new accounts are empty.
@@ -617,12 +543,8 @@ decl_module! {
 
             ensure!(membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
 
-            // Verify user parameters.
-            let user_info = Self::check_user_registration_info(
-                params.name,
+            let handle_hash = Self::get_handle_hash(
                 params.handle,
-                params.avatar_uri,
-                params.about
             )?;
 
             //
@@ -632,7 +554,7 @@ decl_module! {
             let member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
-                &user_info,
+                handle_hash,
                 Zero::zero(),
             )?;
 
@@ -822,94 +744,43 @@ impl<T: Trait> Module<T> {
             || <MemberIdsByControllerAccountId<T>>::contains_key(who)
     }
 
-    // Ensure possible member handle is unique.
-    #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
-    fn ensure_unique_handle(handle: &Vec<u8>) -> Result<(), Error<T>> {
+    // Ensure possible member handle hash is unique.
+    fn ensure_unique_handle_hash(handle_hash: Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
-            !<MemberIdByHandle<T>>::contains_key(handle),
+            !<MemberIdByHandleHash<T>>::contains_key(handle_hash),
             Error::<T>::HandleAlreadyRegistered
         );
         Ok(())
     }
 
-    // Provides possible handle validation.
-    fn validate_handle(handle: &[u8]) -> Result<(), Error<T>> {
-        ensure!(
-            handle.len() >= Self::min_handle_length() as usize,
-            Error::<T>::HandleTooShort
-        );
-        ensure!(
-            handle.len() <= Self::max_handle_length() as usize,
-            Error::<T>::HandleTooLong
-        );
-        Ok(())
-    }
-
-    // Provides possible member about text validation.
-    fn validate_text(text: &[u8]) -> Vec<u8> {
-        let mut text = text.to_owned();
-        text.truncate(Self::max_about_text_length() as usize);
-        text
-    }
-
-    // Provides possible member avatar uri validation.
-    fn validate_avatar(uri: &[u8]) -> Result<(), Error<T>> {
-        ensure!(
-            uri.len() <= Self::max_avatar_uri_length() as usize,
-            Error::<T>::AvatarUriTooLong
-        );
-        Ok(())
-    }
-
-    // Provides possible member name validation.
-    fn validate_name(name: &[u8]) -> Result<(), Error<T>> {
-        ensure!(
-            name.len() <= Self::max_name_length() as usize,
-            Error::<T>::NameTooLong
-        );
-        Ok(())
-    }
-
-    // Basic user input validation
-    fn check_user_registration_info(
-        name: Option<Vec<u8>>,
-        handle: Option<Vec<u8>>,
-        avatar_uri: Option<Vec<u8>>,
-        about: Option<Vec<u8>>,
-    ) -> Result<ValidatedUserInfo, Error<T>> {
+    // Validate handle and return its hash.
+    fn get_handle_hash(handle: Option<Vec<u8>>) -> Result<Vec<u8>, Error<T>> {
         // Handle is required during registration
         let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
-        Self::ensure_unique_handle(&handle)?;
-        Self::validate_handle(&handle)?;
 
-        let about = Self::validate_text(&about.unwrap_or_default());
-        let avatar_uri = avatar_uri.unwrap_or_default();
-        Self::validate_avatar(&avatar_uri)?;
-        let name = name.unwrap_or_default();
-        Self::validate_name(&name)?;
+        if handle.is_empty() {
+            return Err(Error::<T>::HandleMustBeProvidedDuringRegistration);
+        }
 
-        Ok(ValidatedUserInfo {
-            name,
-            handle,
-            avatar_uri,
-            about,
-        })
+        let hashed = T::Hashing::hash(&handle);
+        let handle_hash = hashed.as_ref().to_vec();
+
+        Self::ensure_unique_handle_hash(handle_hash.clone())?;
+
+        Ok(handle_hash)
     }
 
     // Inserts a member using a validated information. Sets handle, accounts caches, etc..
     fn insert_member(
         root_account: &T::AccountId,
         controller_account: &T::AccountId,
-        user_info: &ValidatedUserInfo,
+        handle_hash: Vec<u8>,
         allowed_invites: u32,
     ) -> Result<T::MemberId, Error<T>> {
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
-            name: user_info.name.clone(),
-            handle: user_info.handle.clone(),
-            avatar_uri: user_info.avatar_uri.clone(),
-            about: user_info.about.clone(),
+            handle_hash: handle_hash.clone(),
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
@@ -924,7 +795,7 @@ impl<T: Trait> Module<T> {
         });
 
         <MembershipById<T>>::insert(new_member_id, membership);
-        <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
+        <MemberIdByHandleHash<T>>::insert(handle_hash, new_member_id);
 
         <NextMemberId<T>>::put(new_member_id + One::one());
         Ok(new_member_id)

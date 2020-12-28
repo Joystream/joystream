@@ -157,11 +157,11 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 
@@ -198,13 +198,12 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id,
+        member_id.clone(),
     )
     .unwrap();
-
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id,
+        member_id.clone(),
         account_id.clone(),
     )
     .unwrap();
