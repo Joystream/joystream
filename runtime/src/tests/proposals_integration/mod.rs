@@ -19,7 +19,10 @@ use frame_support::{StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
 
-use super::{increase_total_balance_issuance_using_account_id, initial_test_ext, insert_member};
+use super::{
+    increase_total_balance_issuance_using_account_id, initial_test_ext, insert_member,
+    set_staking_account,
+};
 
 use crate::tests::elect_council;
 use crate::CouncilManager;
@@ -33,7 +36,8 @@ fn setup_members(count: u8) {
     for i in 0..count {
         let account_id: [u8; 32] = [i; 32];
         let account_id_converted: AccountId32 = account_id.clone().into();
-        insert_member(account_id_converted);
+        insert_member(account_id_converted.clone());
+        set_staking_account(account_id_converted, i as u64);
     }
 }
 

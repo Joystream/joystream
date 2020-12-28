@@ -35,7 +35,8 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
 
 fn get_account_membership(account: AccountId32, i: usize) -> u64 {
     if !Membership::is_member_account(&account) {
-        insert_member(account);
+        insert_member(account.clone());
+        set_staking_account(account, i as u64);
     }
 
     i as u64
@@ -53,7 +54,9 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             councilor.clone().into(),
             councilor_stake + 1,
         );
+
         let member_id = get_account_membership(councilor.clone(), i);
+
         Council::announce_candidacy(
             RawOrigin::Signed(councilor.clone()).into(),
             member_id,
@@ -160,6 +163,21 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     };
 
     Membership::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+}
+
+pub(crate) fn set_staking_account(account_id: AccountId32, member_id: u64) {
+    membership::Module::<Runtime>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+    )
+    .unwrap();
+
+    membership::Module::<Runtime>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .unwrap();
 }
 
 // Recommendation from Parity on testing on_finalize

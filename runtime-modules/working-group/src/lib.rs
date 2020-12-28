@@ -57,7 +57,7 @@ use types::{ApplicationInfo, WorkerInfo};
 pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
-use common::MemberId;
+use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 
@@ -103,6 +103,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// Stakes and balance locks handler.
     type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+
+    /// Validates staking account ownership for a member.
+    type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -385,7 +388,10 @@ decl_module! {
             // Checks external conditions for staking.
             if let Some(sp) = p.stake_parameters.clone() {
                 ensure!(
-                    T::StakingHandler::is_member_staking_account(&p.member_id, &sp.staking_account_id),
+                    T::StakingAccountValidator::is_member_staking_account(
+                        &p.member_id,
+                        &sp.staking_account_id
+                    ),
                     Error::<T, I>::InvalidStakingAccountForMember
                 );
 

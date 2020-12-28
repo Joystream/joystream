@@ -221,6 +221,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
+    type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -303,6 +304,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -454,6 +456,8 @@ impl council::Trait for Test {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
+    type StakingAccountValidator = ();
+
     fn is_council_member_account(
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -462,6 +466,12 @@ impl council::Trait for Test {
     }
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+}
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
+        true
+    }
 }
 
 parameter_types! {

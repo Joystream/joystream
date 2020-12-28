@@ -9,7 +9,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::LockComparator;
 
 use crate::{DefaultInstance, Module, Trait};
 
@@ -128,11 +128,18 @@ parameter_types! {
 impl Trait for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
     type WeightInfo = ();
+}
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
+        true
+    }
 }
 
 impl crate::WeightInfo for () {

@@ -6,15 +6,11 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    Perbill,
 };
 
 impl_outer_origin! {
     pub enum Origin for Test {}
-}
-
-mod membership_mod {
-    pub use membership::Event;
 }
 
 parameter_types! {
@@ -75,13 +71,6 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
-impl membership::Trait for Test {
-    type Event = ();
-    type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
-    type DefaultInitialInvitationBalance = ();
-}
-
 impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         // simple check preventing lock reuse
@@ -89,23 +78,6 @@ impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
             .iter()
             .find(|lock| *lock == new_lock)
             .is_some()
-    }
-}
-
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
-}
-
-impl common::working_group::WorkingGroupIntegration<Test> for () {
-    fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
-    ) -> DispatchResult {
-        unimplemented!();
-    }
-
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
-        unimplemented!();
     }
 }
 

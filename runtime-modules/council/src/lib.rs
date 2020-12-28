@@ -52,6 +52,7 @@ use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
+use common::StakingAccountValidator;
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
@@ -216,6 +217,9 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
     /// Identifier for currency lock used for candidacy staking.
     type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
+
+    /// Validates staking account ownership for a member.
+    type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -1146,7 +1150,10 @@ impl<T: Trait> EnsureChecks<T> {
         Self::ensure_user_membership(origin, membership_id)?;
 
         // ensure staking account's membership
-        if !T::CandidacyLock::is_member_staking_account(&membership_id, &staking_account_id) {
+        if !T::StakingAccountValidator::is_member_staking_account(
+            &membership_id,
+            &staking_account_id,
+        ) {
             return Err(Error::MemberIdNotMatchAccount);
         }
 
