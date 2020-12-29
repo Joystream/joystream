@@ -1,22 +1,25 @@
 //! # Proposals engine module
-//! Proposals `engine` module for the Joystream platform. Version 3.
+//! Proposals `engine` module for the Joystream platform.
 //! The main component of the proposals system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
 //! ## Overview
-//! Proposals `engine` module provides an abstract mechanism to work with proposals: creation, voting,
-//! execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal code.
-//! It could be any _Dispatchable_ + _Parameter_ type, but most likely, it would be serialized (via
-//! Parity _codec_ crate) extrisic call. A proposal stage can be described by its [status](./enum.ProposalStatus.html).
+//! Proposals `engine` module provides an abstract mechanism to work with proposals: creation,
+//! voting, execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal
+//! code. It could be any _Dispatchable_ + _Parameter_ type, but most likely, it would be serialized
+//! (via Parity _codec_ crate) extrisic call. A proposal stage can be described by
+//! its [status](./enum.ProposalStatus.html).
 //!
 //! ## Proposal lifecycle
 //! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
-//! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
-//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or canceled during its
-//! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
-//! to be approved - the proposal becomes _PendingExecution_ or _PendingConstitutionality_. The proposal
-//! could also be slashed or rejected. If the _voting period_ ends with no decision it becomes expired.
-//! If the proposal got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
+//! for its [parameters](./struct.ProposalParameters.html) -
+//! it can be [created](./struct.Module.html#method.create_proposal).
+//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or
+//! canceled during its _voting period_. Votes can be [different](./enum.VoteKind.html). When the
+//! proposal gets enough votes to be approved - the proposal becomes _PendingExecution_ or
+//! _PendingConstitutionality_. The proposal could also be slashed or rejected. If the _voting
+//! period_ ends with no decision it becomes expired. If the proposal got approved
+//! and _grace period_ passed - the  `engine` module tries to execute the proposal.
 //!
 //! ### Notes
 //!
@@ -24,7 +27,8 @@
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
 //! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
-//! all active proposals got rejected and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! all active proposals got rejected and it also calls
+//! [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
 //! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
 //!
@@ -42,14 +46,19 @@
 //!
 //! ### Supported extrinsics
 //! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
-//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal (can be canceled only by owner)
+//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal
+//! (can be canceled only by owner)
 //! - [veto_proposal](./struct.Module.html#method.veto_proposal) - vetoes the proposal
 //!
 //! ### Public API
-//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
-//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all active proposals.
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals) - reactivate proposals with pending constitutionality.
+//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using
+//! provided parameters
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! - ensures that we can create the proposal
+//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all
+//! active proposals.
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -179,7 +188,7 @@ pub trait Trait:
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self>;
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
     type CancellationFee: Get<BalanceOf<Self>>;

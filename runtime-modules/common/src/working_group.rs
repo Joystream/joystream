@@ -21,7 +21,10 @@ pub enum WorkingGroup {
 
 /// Working group interface to use in the in the pallets with working groups.
 pub trait WorkingGroupIntegration<T: crate::Trait> {
+    /// Validate origin for the worker
     fn ensure_worker_origin(origin: T::Origin, worker_id: &T::ActorId) -> DispatchResult;
+
+    fn get_leader_member_id() -> Option<T::MemberId>;
 
     // TODO: Implement or remove during the Forum refactoring to this interface
     // /// Defines whether the member is the leader of the working group.

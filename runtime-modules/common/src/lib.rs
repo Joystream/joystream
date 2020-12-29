@@ -42,6 +42,12 @@ pub trait Trait: frame_system::Trait {
         + PartialEq;
 }
 
+/// Validates staking account ownership for a member.
+pub trait StakingAccountValidator<T: Trait> {
+    /// Verifies that staking account bound to the member.
+    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
+}
+
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug, Default)]

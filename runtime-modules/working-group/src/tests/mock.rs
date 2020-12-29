@@ -1,3 +1,4 @@
+use frame_support::traits::LockIdentifier;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -8,6 +9,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::LockComparator;
 
 use crate::{DefaultInstance, Module, Trait};
 
@@ -35,7 +37,8 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 0;
+    pub const DefaultMembershipPrice: u64 = 0;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -98,8 +101,18 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
+    type DefaultInitialInvitationBalance = ();
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub type Balances = balances::Module<Test>;
@@ -116,10 +129,17 @@ impl Trait for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
     type WeightInfo = ();
+}
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
+        true
+    }
 }
 
 impl crate::WeightInfo for () {

@@ -32,7 +32,7 @@ use frame_support::weights::{
     Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
-use frame_system::EnsureRoot;
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -55,7 +55,9 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
-use governance::{council, election};
+use council::ReferendumConnection;
+use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
+use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
 // Node dependencies
@@ -64,13 +66,14 @@ pub use content_directory;
 pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
+pub use council;
 pub use forum;
-pub use governance::election_params::ElectionParameters;
 pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
+pub use referendum;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
@@ -465,14 +468,124 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
 
-impl governance::election::Trait for Runtime {
-    type Event = Event;
-    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
+// The referendum instance alias.
+pub type ReferendumInstance = referendum::Instance1;
+pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
+pub type CouncilModule = council::Module<Runtime>;
+
+parameter_types! {
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = 5;
+    pub const RevealStageDuration: BlockNumber = 7;
+    pub const MinimumVotingStake: u64 = 10000;
+
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: BlockNumber = 15;
+    pub const IdlePeriodDuration: BlockNumber = 27;
+    pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    pub const BudgetRefillPeriod: BlockNumber = 1000;
 }
 
-impl governance::council::Trait for Runtime {
+impl referendum::Trait<ReferendumInstance> for Runtime {
     type Event = Event;
-    type CouncilTermEnded = (CouncilElection,);
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = pallet_balances::Module<Self>;
+    type LockId = VotingLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = BalanceReferendum<Self, ReferendumInstance>;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumVotingStake;
+
+    fn calculate_vote_power(
+        _account_id: &<Self as frame_system::Trait>::AccountId,
+        stake: &BalanceReferendum<Self, ReferendumInstance>,
+    ) -> Self::VotePower {
+        *stake
+    }
+
+    fn can_unlock_vote_stake(
+        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
+    ) -> bool {
+        <CouncilModule as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
+    }
+
+    fn process_results(winners: &[OptionResult<Self::MemberId, Self::VotePower>]) {
+        let tmp_winners: Vec<OptionResult<Self::MemberId, Self::VotePower>> = winners
+            .iter()
+            .map(|item| OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power,
+            })
+            .collect();
+        <CouncilModule as ReferendumConnection<Runtime>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        );
+    }
+
+    fn is_valid_option_id(option_index: &u64) -> bool {
+        <CouncilModule as ReferendumConnection<Runtime>>::is_valid_candidate_id(option_index)
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        <CouncilModule as ReferendumConnection<Runtime>>::get_option_power(option_id)
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        <CouncilModule as ReferendumConnection<Runtime>>::increase_option_power(option_id, amount);
+    }
+}
+
+impl council::Trait for Runtime {
+    type Event = Event;
+
+    type Referendum = ReferendumModule;
+
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+
+    type StakingAccountValidator = Members;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillAmount = BudgetRefillAmount;
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    fn is_council_member_account(
+        membership_id: &Self::MemberId,
+        account_id: &<Self as frame_system::Trait>::AccountId,
+    ) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            membership_id,
+            account_id,
+        )
+        .is_ok()
+    }
+
+    fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
+        <proposals_engine::Module<Runtime>>::reject_active_proposals();
+        <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
+    }
 }
 
 impl memo::Trait for Runtime {
@@ -481,7 +594,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
-    pub const MembershipFee: Balance = 100;
+    pub const DefaultMembershipPrice: Balance = 100;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -511,11 +624,13 @@ impl common::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 parameter_types! {
+    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
@@ -593,6 +708,14 @@ impl forum::Trait for Runtime {
     }
 }
 
+impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        existing_locks
+            .iter()
+            .any(|lock| !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)))
+    }
+}
+
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
@@ -612,10 +735,6 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
-    pub const StorageWorkingGroupLockId: LockIdentifier = [6; 8];
-    pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
-    pub const ForumGroupLockId: LockIdentifier = [8; 8];
-    pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
 }
 
 // Staking managers type aliases.
@@ -632,6 +751,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
@@ -642,6 +762,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
@@ -652,6 +773,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
@@ -662,6 +784,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
+    type StakingAccountValidator = Members;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
@@ -678,7 +801,6 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
-    pub const ProposalsLockId: LockIdentifier = [5; 8];
 }
 
 impl proposals_engine::Trait for Runtime {
@@ -803,8 +925,8 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         // Joystream
-        CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},

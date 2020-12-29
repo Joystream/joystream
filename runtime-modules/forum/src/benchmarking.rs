@@ -9,11 +9,10 @@ use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_runtime::traits::Bounded;
-use sp_std::cmp::min;
 use sp_std::collections::btree_set::BTreeSet;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    RewardPolicy, WorkerById,
+    WorkerById,
 };
 
 // The forum working group instance alias.
@@ -49,27 +48,44 @@ fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
+
+    (account_id, member_id)
 }
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 
@@ -136,9 +152,7 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
         vec![],
         *job_opening_type,
         None,
-        Some(RewardPolicy {
-            reward_per_block: One::one(),
-        }),
+        Some(One::one()),
     )
     .unwrap();
 

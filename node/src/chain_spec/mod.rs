@@ -30,15 +30,15 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, DAYS,
+    ContentDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys,
+    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
+pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
@@ -206,7 +206,7 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
+    members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
@@ -264,23 +264,8 @@ pub fn testnet_genesis(
                 })
                 .collect::<Vec<_>>(),
         }),
-        council: Some(CouncilConfig {
-            active_council: vec![],
-            term_ends_at: 1,
-        }),
-        election: Some(CouncilElectionConfig {
-            auto_start: true,
-            election_parameters: ElectionParameters {
-                announcing_period: 2 * DAYS,
-                voting_period: 1 * DAYS,
-                revealing_period: 1 * DAYS,
-                council_size: 6,
-                candidacy_limit: 25,
-                min_council_stake: 1_000,
-                new_term_duration: 10 * DAYS,
-                min_voting_stake: 100,
-            },
-        }),
+        referendum_Instance1: Some(council_config::create_referendum_config()),
+        council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {

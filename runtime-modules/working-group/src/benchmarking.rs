@@ -54,9 +54,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
         vec![],
         *job_opening_type,
         staking_policy,
-        Some(RewardPolicy {
-            reward_per_block: One::one(),
-        }),
+        Some(One::one()),
     )
     .unwrap();
 
@@ -159,11 +157,11 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 
@@ -183,17 +181,34 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
+
+    (account_id, member_id)
 }
 
 fn force_missed_reward<T: Trait<I>, I: Instance>() {
@@ -870,10 +885,6 @@ benchmarks_instance! {
             leaving_unstaking_period: T::BlockNumber::max_value(),
         };
 
-        let reward_policy = RewardPolicy {
-            reward_per_block: BalanceOf::<T>::max_value(),
-        };
-
         let description = vec![0u8; i.try_into().unwrap()];
 
     }: _(
@@ -881,7 +892,7 @@ benchmarks_instance! {
             description,
             OpeningType::Regular,
             Some(stake_policy),
-            Some(reward_policy)
+            Some(BalanceOf::<T>::max_value())
         )
     verify {
         assert!(OpeningById::<T, I>::contains_key(1));

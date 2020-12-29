@@ -1,18 +1,16 @@
+use crate::LockComparator;
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    Perbill,
 };
 
 impl_outer_origin! {
     pub enum Origin for Test {}
-}
-
-mod membership_mod {
-    pub use membership::Event;
 }
 
 parameter_types! {
@@ -22,7 +20,8 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -72,18 +71,13 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
-impl membership::Trait for Test {
-    type Event = ();
-    type MembershipFee = MembershipFee;
-    type WorkingGroup = ();
-}
-
-impl common::working_group::WorkingGroupIntegration<Test> for () {
-    fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
-    ) -> DispatchResult {
-        unimplemented!();
+impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        // simple check preventing lock reuse
+        existing_locks
+            .iter()
+            .find(|lock| *lock == new_lock)
+            .is_some()
     }
 }
 

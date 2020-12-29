@@ -2,9 +2,12 @@
 
 pub use crate::{GenesisConfig, Trait};
 
+use staking_handler::LockComparator;
+
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -15,8 +18,6 @@ use sp_runtime::{
 };
 
 pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
-
-pub use common::currency::GovernanceCurrency;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -83,7 +84,7 @@ impl pallet_timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -104,16 +105,27 @@ impl common::Trait for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingAccountValidator = Membership;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+}
+
+impl LockComparator<u64> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 // Weights info stub
@@ -222,8 +234,9 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -243,6 +256,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         } else {
             Err(DispatchError::BadOrigin)
         }
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+        Some(ALICE_MEMBER_ID)
     }
 }
 
@@ -285,6 +302,18 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     TestExternalitiesBuilder::<Test>::default().build()
+}
+
+pub fn build_test_externalities_with_initial_members(
+    initial_members: Vec<(u64, u64)>,
+) -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            crate::genesis::GenesisConfigBuilder::default()
+                .members(initial_members)
+                .build(),
+        )
+        .build()
 }
 
 pub type Balances = balances::Module<Test>;

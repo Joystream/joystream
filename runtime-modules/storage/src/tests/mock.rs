@@ -10,6 +10,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::LockComparator;
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
@@ -155,7 +156,8 @@ impl GovernanceCurrency for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [2; 8];
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -163,6 +165,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -282,8 +285,9 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -291,6 +295,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
     ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
     }
 }
@@ -304,6 +312,15 @@ impl recurringrewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub struct ExtBuilder {
@@ -366,7 +383,7 @@ impl ExtBuilder {
                 handle: "alice".into(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                registered_at_time: 0,
+                name: "".into(),
             }],
         }
         .assimilate_storage(&mut t)

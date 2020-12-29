@@ -1,6 +1,6 @@
 use crate::{
-    ApplicationId, BalanceOf, Instance, Opening, OpeningId, OpeningType, RewardPolicy, StakePolicy,
-    Trait, Worker, WorkerId,
+    ApplicationId, BalanceOf, Instance, Opening, OpeningId, OpeningType, StakePolicy, Trait,
+    Worker, WorkerId,
 };
 
 use super::Error;
@@ -205,13 +205,13 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
     Ok(())
 }
 
-// Check opening: verifies reward policy for the opening.
-pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
-    reward_policy: &Option<RewardPolicy<BalanceOf<T>>>,
+// Check opening: verifies reward per block for the opening.
+pub(crate) fn ensure_valid_reward_per_block<T: Trait<I>, I: Instance>(
+    reward_per_block: &Option<BalanceOf<T>>,
 ) -> Result<(), DispatchError> {
-    if let Some(reward_policy) = reward_policy {
+    if let Some(reward_per_block) = reward_per_block {
         ensure!(
-            reward_policy.reward_per_block != Zero::zero(),
+            *reward_per_block != Zero::zero(),
             Error::<T, I>::CannotRewardWithZero
         )
     }

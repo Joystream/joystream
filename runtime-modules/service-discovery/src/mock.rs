@@ -2,6 +2,7 @@
 
 pub use crate::*;
 
+use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -10,6 +11,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     DispatchResult, Perbill,
 };
+use staking_handler::{LockComparator, StakingManager};
 
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
@@ -49,7 +51,8 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 100;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl frame_system::Trait for Test {
@@ -96,8 +99,9 @@ impl common::Trait for Test {
 
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type DefaultInitialInvitationBalance = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {
@@ -105,6 +109,10 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
     ) -> DispatchResult {
+        unimplemented!();
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
     }
 }
@@ -138,7 +146,8 @@ pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type StakingHandler = StakingManager<Self, LockId1>;
+    type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -230,6 +239,15 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {

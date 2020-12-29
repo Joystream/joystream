@@ -70,8 +70,8 @@ pub struct Opening<BlockNumber: Ord, Balance> {
     /// Stake policy for the job opening.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 
-    /// Reward policy for the job opening.
-    pub reward_policy: Option<RewardPolicy<Balance>>,
+    /// Reward per block for the job opening.
+    pub reward_per_block: Option<Balance>,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -195,14 +195,6 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
     pub fn is_leaving(&self) -> bool {
         self.started_leaving_at.is_some()
     }
-}
-
-/// Reward policy for the job opening.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
-pub struct RewardPolicy<Balance> {
-    /// Reward per block for the worker.
-    pub reward_per_block: Balance,
 }
 
 /// Stake policy for the job opening.

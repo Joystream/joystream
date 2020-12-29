@@ -15,31 +15,34 @@ sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'ht
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
-staking-handler = { package = 'staking-handler', default-features = false, path = '../../staking-handler'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
 
 # Benchmark dependencies.
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
-governance = { package = 'pallet-governance', default-features = false, path = '../../governance', optional = true}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward', optional = true}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting', optional = true}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
+council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
+council = { package = 'pallet-council', default-features = false, path = '../../council'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum'}
 
 [features]
 default = ['std']
 runtime-benchmarks = [
     'frame-benchmarking',
-    'governance',
     'recurringrewards',
     'minting',
     'membership',
+    'council',
+    'referendum',
 ]
 std = [
 	'serde',

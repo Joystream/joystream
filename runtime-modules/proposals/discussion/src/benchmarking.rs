@@ -9,7 +9,6 @@ use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
-use sp_std::cmp::min;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 
@@ -22,11 +21,11 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 
@@ -60,13 +59,17 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
         "Balance not added",
     );
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Some(handle),
-        None,
-        None,
-    )
-    .unwrap();
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
@@ -146,7 +149,7 @@ benchmarks! {
         assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
 
         let new_text = vec![0u8; j.try_into().unwrap()];
-    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, post_id, new_text)
+    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text)
     verify {
         assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
     }

@@ -1,21 +1,23 @@
 //! # Proposals discussion module
-//! Proposals `discussion` module for the Joystream platform. Version 3.
+//! Proposals `discussion` module for the Joystream platform.
 //! It contains discussion subsystem of the proposals.
 //!
 //! ## Overview
 //!
-//! The proposals discussion module is used by the codex module to provide a platform for discussions
-//! about different proposals. It allows to create discussion threads and then add and update related
-//! posts.
+//! The proposals discussion module is used by the codex module to provide a platform for
+//! discussions about different proposals. It allows to create discussion threads and then add and
+//! update related posts.
 //!
 //! ## Supported extrinsics
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
-//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread permission mode
+//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread
+//! permission mode
 //!
 //! ## Public API methods
 //! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
-//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures safe thread creation
+//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures
+//! safe thread creation
 //!
 //! ## Usage
 //!
@@ -131,9 +133,6 @@ pub trait Trait: frame_system::Trait + common::Trait {
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// Author should match the post creator
-        NotAuthor,
-
         /// Thread doesn't exist
         ThreadDoesntExist,
 
@@ -238,22 +237,22 @@ decl_module! {
         #[weight = WeightInfoDiscussion::<T>::update_post()]
         pub fn update_post(
             origin,
-            post_author_id: MemberId<T>,
             thread_id: T::ThreadId,
             post_id : T::PostId,
             _text : Vec<u8>
         ){
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+            ensure!(
+                <PostThreadIdByPostId<T>>::contains_key(thread_id, post_id),
+                Error::<T>::PostDoesntExist
+            );
+
+            let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
+
             T::AuthorOriginValidator::ensure_actor_origin(
                 origin,
                 post_author_id,
             )?;
-
-            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
-            ensure!(<PostThreadIdByPostId<T>>::contains_key(thread_id, post_id), Error::<T>::PostDoesntExist);
-
-            let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
-
-            ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
 
             // mutation
 

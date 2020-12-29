@@ -1,5 +1,5 @@
 //! # Proposals codex module
-//! Proposals `codex` module for the Joystream platform. Version 3.
+//! Proposals `codex` module for the Joystream platform.
 //! Component of the proposals system. It contains preset proposal types.
 //!
 //! ## Overview
@@ -39,17 +39,18 @@
 //! - [proposals engine](../substrate_proposals_engine_module/index.html)
 //! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
 //! - [membership](../substrate_membership_module/index.html)
-//! - [governance](../substrate_governance_module/index.html)
+//! - [council](../substrate_council_module/index.html)
 //!
 //! ### Notes
-//! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
-//! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
+//! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using its
+//! details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
 // `decl_module!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-// Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
+// Disable this lint warning because Substrate generates function without an alias for
+// the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
 
 mod types;
@@ -90,8 +91,9 @@ pub trait Trait:
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + common::Trait
-    + governance::election::Trait
     + staking::Trait
+    + common::currency::GovernanceCurrency
+    + minting::Trait
 {
     /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<
