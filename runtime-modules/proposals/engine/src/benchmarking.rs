@@ -13,7 +13,7 @@ use membership::Module as Membership;
 use referendum::Module as Referendum;
 use referendum::ReferendumManager;
 use sp_runtime::traits::{Bounded, One};
-use sp_std::cmp::{max, min};
+use sp_std::cmp::max;
 use sp_std::prelude::*;
 
 type ReferendumInstance = referendum::Instance1;
@@ -27,11 +27,11 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
-    let min_handle_length = Membership::<T>::min_handle_length();
+    let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+    for i in 0..4 {
         handle.push(get_byte(id, i));
     }
 

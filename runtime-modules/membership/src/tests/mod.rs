@@ -31,10 +31,7 @@ fn buy_membership_succeeds() {
 
         let profile = get_membership_by_id(next_member_id);
 
-        assert_eq!(Some(profile.name), get_alice_info().name);
-        assert_eq!(Some(profile.handle), get_alice_info().handle);
-        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
-        assert_eq!(Some(profile.about), get_alice_info().about);
+        assert_eq!(Some(profile.handle_hash), get_alice_info().handle_hash);
         assert_eq!(profile.invites, crate::DEFAULT_MEMBER_INVITES_COUNT);
 
         // controller account initially set to primary account
@@ -83,7 +80,7 @@ fn buy_membership_fails_with_non_unique_handle() {
         set_alice_free_balance(initial_balance);
 
         // alice's handle already taken
-        <crate::MemberIdByHandle<Test>>::insert(get_alice_info().handle.unwrap(), 1);
+        <crate::MemberIdByHandleHash<Test>>::insert(get_alice_info().handle_hash.unwrap(), 1);
 
         // should not be allowed to buy membership with that handle
         assert_dispatch_error_message(
@@ -117,13 +114,10 @@ fn update_profile_succeeds() {
 
         let profile = get_membership_by_id(next_member_id);
 
-        assert_eq!(Some(profile.name), get_bob_info().name);
-        assert_eq!(Some(profile.handle), get_bob_info().handle);
-        assert_eq!(Some(profile.avatar_uri), get_bob_info().avatar_uri);
-        assert_eq!(Some(profile.about), get_bob_info().about);
+        assert_eq!(Some(profile.handle_hash), get_bob_info().handle_hash);
 
-        assert!(<crate::MemberIdByHandle<Test>>::contains_key(
-            get_bob_info().handle.unwrap()
+        assert!(<crate::MemberIdByHandleHash<Test>>::contains_key(
+            get_bob_info().handle_hash.unwrap()
         ));
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(next_member_id));
@@ -150,13 +144,10 @@ fn update_profile_has_no_effect_on_empty_parameters() {
 
         let profile = get_membership_by_id(next_member_id);
 
-        assert_eq!(Some(profile.name), get_alice_info().name);
-        assert_eq!(Some(profile.handle), get_alice_info().handle);
-        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
-        assert_eq!(Some(profile.about), get_alice_info().about);
+        assert_eq!(Some(profile.handle_hash), get_alice_info().handle_hash);
 
-        assert!(<crate::MemberIdByHandle<Test>>::contains_key(
-            get_alice_info().handle.unwrap()
+        assert!(<crate::MemberIdByHandleHash<Test>>::contains_key(
+            get_alice_info().handle_hash.unwrap()
         ));
     });
 }
@@ -293,20 +284,6 @@ fn update_verification_status_fails_with_invalid_worker_id() {
                 MembershipWorkingGroupInstance,
             >::WorkerDoesNotExist
                 .into()));
-    });
-}
-
-#[test]
-fn buy_membership_fails_with_invalid_name() {
-    build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
-        set_alice_free_balance(initial_balance);
-
-        let name: [u8; 500] = [1; 500];
-
-        let buy_membership_fixture = BuyMembershipFixture::default().with_name(name.to_vec());
-
-        buy_membership_fixture.call_and_assert(Err(Error::<Test>::NameTooLong.into()));
     });
 }
 
@@ -508,10 +485,7 @@ fn invite_member_succeeds() {
         let profile = get_membership_by_id(bob_member_id);
 
         let bob = get_bob_info();
-        assert_eq!(Some(profile.name), bob.name);
-        assert_eq!(Some(profile.handle), bob.handle);
-        assert_eq!(Some(profile.avatar_uri), bob.avatar_uri);
-        assert_eq!(Some(profile.about), bob.about);
+        assert_eq!(Some(profile.handle_hash), bob.handle_hash);
         assert_eq!(profile.invites, 0);
 
         // controller account initially set to primary account
@@ -584,20 +558,10 @@ fn invite_member_fails_with_bad_user_information() {
         assert_ok!(buy_default_membership_as_alice());
 
         InviteMembershipFixture::default()
-            .with_name([1u8; 5000].to_vec())
-            .call_and_assert(Err(Error::<Test>::NameTooLong.into()));
-
-        InviteMembershipFixture::default()
-            .with_avatar([1u8; 5000].to_vec())
-            .call_and_assert(Err(Error::<Test>::AvatarUriTooLong.into()));
-
-        InviteMembershipFixture::default()
-            .with_handle([1u8; 5000].to_vec())
-            .call_and_assert(Err(Error::<Test>::HandleTooLong.into()));
-
-        InviteMembershipFixture::default()
             .with_handle(Vec::new())
-            .call_and_assert(Err(Error::<Test>::HandleTooShort.into()));
+            .call_and_assert(Err(
+                Error::<Test>::HandleMustBeProvidedDuringRegistration.into()
+            ));
 
         InviteMembershipFixture::default()
             .with_empty_handle()
