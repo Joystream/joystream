@@ -112,10 +112,6 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
     }
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
-}
-
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
@@ -247,7 +243,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 

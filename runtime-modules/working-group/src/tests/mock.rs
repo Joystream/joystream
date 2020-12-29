@@ -73,10 +73,6 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
-}
-
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();

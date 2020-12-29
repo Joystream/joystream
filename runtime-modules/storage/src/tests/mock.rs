@@ -16,7 +16,6 @@ use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-use common::currency::GovernanceCurrency;
 use frame_support::sp_runtime::DispatchResult;
 
 use membership;
@@ -147,10 +146,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 parameter_types! {
