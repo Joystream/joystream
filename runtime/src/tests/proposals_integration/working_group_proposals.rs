@@ -785,14 +785,13 @@ fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
 }
 
 fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
     <T as common::Trait>::MemberId: From<u64>,
-    <T as minting::Trait>::MintId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -843,7 +842,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
 }
 
 fn run_create_set_group_leader_reward_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
@@ -851,7 +850,6 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
     <T as common::Trait>::MemberId: From<u64>,
     <T as common::Trait>::ActorId: Into<u64>,
-    <T as minting::Trait>::MintId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -951,7 +949,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
 }
 
 fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
@@ -965,7 +963,6 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     <T as common::Trait>::MemberId: From<u64>,
     common::MemberId<T>: From<u64>,
     <T as common::Trait>::ActorId: Into<u64>,
-    <T as minting::Trait>::MintId: From<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -1085,7 +1082,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
 }
 
 fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + minting::Trait,
+    T: working_group::Trait<I> + frame_system::Trait,
     I: frame_support::traits::Instance,
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,

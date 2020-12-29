@@ -12,7 +12,6 @@ members = [
 	"runtime-modules/referendum",
 	"runtime-modules/service-discovery",
 	"runtime-modules/storage",
-	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
 	"runtime-modules/content-directory",
 	"runtime-modules/constitution",
