@@ -152,11 +152,6 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -311,12 +306,6 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type WeightInfo = WorkingGroupWeightInfo;
 }
 
-impl recurring_rewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
 pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
@@ -396,10 +385,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
         required_stake: Some(100_000),
         constitutionality: 1,
     }
-}
-
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 impl crate::Trait for Test {
