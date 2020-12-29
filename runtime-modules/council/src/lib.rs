@@ -46,12 +46,14 @@ use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
+use frame_support::dispatch::DispatchError;
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
+use common::origin::ActorOriginValidator;
 use common::StakingAccountValidator;
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -392,6 +394,9 @@ decl_error! {
 
         /// Can't withdraw candidacy outside of the candidacy announcement period.
         CantWithdrawCandidacyNow,
+
+        /// The member is not a councilor.
+        NotCouncilor,
     }
 }
 
@@ -1290,5 +1295,32 @@ impl<T: Trait> EnsureChecks<T> {
         ensure_root(origin)?;
 
         Ok(())
+    }
+}
+
+impl<T: Trait + common::Trait> ActorOriginValidator<T::Origin, T::MemberId, T::AccountId>
+    for Module<T>
+{
+    /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
+    /// the membership module
+    fn ensure_actor_origin(
+        origin: T::Origin,
+        actor_id: T::MemberId,
+    ) -> Result<T::AccountId, DispatchError> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            T::is_council_member_account(&actor_id, &account_id),
+            Error::<T>::MemberIdNotMatchAccount
+        );
+
+        if Self::council_members()
+            .iter()
+            .any(|council_member| council_member.member_id() == &actor_id)
+        {
+            Ok(account_id)
+        } else {
+            Err(Error::<T>::NotCouncilor.into())
+        }
     }
 }

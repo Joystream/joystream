@@ -787,7 +787,7 @@ parameter_types! {
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
     type ProposerOriginValidator = Members;
-    type VoterOriginValidator = CouncilManager<Self>;
+    type VoterOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
     type StakingHandler = staking_handler::StakingManager<Self, ProposalsLockId>;
@@ -814,7 +814,7 @@ parameter_types! {
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type AuthorOriginValidator = Members;
-    type CouncilOriginValidator = CouncilManager<Self>;
+    type CouncilOriginValidator = Council;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;

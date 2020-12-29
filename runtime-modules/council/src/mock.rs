@@ -1197,3 +1197,5 @@ where
         params
     }
 }
+
+pub type Council = crate::Module<Runtime>;
