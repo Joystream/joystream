@@ -9,7 +9,6 @@ members = [
 	"runtime-modules/forum",
 	"runtime-modules/membership",
 	"runtime-modules/memo",
-	"runtime-modules/recurring-reward",
 	"runtime-modules/referendum",
 	"runtime-modules/service-discovery",
 	"runtime-modules/storage",

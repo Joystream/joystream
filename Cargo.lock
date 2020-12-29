@@ -4003,11 +4003,9 @@ dependencies = [
  "pallet-common",
  "pallet-council",
  "pallet-membership",
- "pallet-recurring-reward",
  "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
- "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4028,21 +4026,6 @@ dependencies = [
  "safe-mix",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-recurring-reward"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-token-mint",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
