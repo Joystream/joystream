@@ -310,9 +310,6 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             exact_execution_block: None,
         };
 
-        let budget_capacity = 100;
-        council::Module::<Test>::set_budget(RawOrigin::Root.into(), budget_capacity).unwrap();
-
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
