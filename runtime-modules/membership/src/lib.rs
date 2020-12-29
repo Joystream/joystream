@@ -56,7 +56,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::working_group::WorkingGroupIntegration;
 
 // Balance type alias
@@ -885,10 +885,10 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
     }
 }
 
-impl<T: Trait> ActorOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
-    fn ensure_actor_origin(
+    fn ensure_member_controller_account(
         origin: T::Origin,
         actor_id: T::MemberId,
     ) -> Result<T::AccountId, DispatchError> {

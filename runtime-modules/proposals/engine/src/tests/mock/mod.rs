@@ -261,8 +261,11 @@ impl Default for proposals::Call<Test> {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, DispatchError> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account(
+        origin: Origin,
+        _account_id: u64,
+    ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)

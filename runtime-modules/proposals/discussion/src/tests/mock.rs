@@ -11,8 +11,8 @@ use sp_runtime::{
     DispatchResult, Perbill,
 };
 
-use crate::ActorOriginValidator;
 use crate::CouncilOriginValidator;
+use crate::MemberOriginValidator;
 use crate::WeightInfo;
 use frame_support::dispatch::DispatchError;
 
@@ -140,8 +140,11 @@ impl WeightInfo for () {
     }
 }
 
-impl ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, DispatchError> {
+impl MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account(
+        origin: Origin,
+        actor_id: u64,
+    ) -> Result<u64, DispatchError> {
         if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }

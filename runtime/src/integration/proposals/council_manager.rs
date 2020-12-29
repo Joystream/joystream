@@ -6,7 +6,7 @@ use sp_std::marker::PhantomData;
 use proposals_engine::VotersParameters;
 
 /// Handles work with the council.
-/// Provides implementations for ActorOriginValidator and VotersParameters.
+/// Provides implementations for MemberOriginValidator and VotersParameters.
 pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }

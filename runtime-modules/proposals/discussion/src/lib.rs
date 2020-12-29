@@ -62,7 +62,7 @@ use frame_support::{
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
-use common::origin::{ActorOriginValidator, CouncilOriginValidator};
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
@@ -112,7 +112,7 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates post author id and origin combination
-    type AuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: CouncilOriginValidator<
@@ -205,7 +205,7 @@ decl_module! {
             thread_id : T::ThreadId,
             _text : Vec<u8>
         ) {
-            T::AuthorOriginValidator::ensure_actor_origin(
+            T::AuthorOriginValidator::ensure_member_controller_account(
                 origin.clone(),
                 post_author_id,
             )?;
@@ -253,7 +253,7 @@ decl_module! {
 
             let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
 
-            T::AuthorOriginValidator::ensure_actor_origin(
+            T::AuthorOriginValidator::ensure_member_controller_account(
                 origin,
                 post_author_id,
             )?;
@@ -286,7 +286,7 @@ decl_module! {
             thread_id : T::ThreadId,
             mode : ThreadMode<MemberId<T>>
         ) {
-            T::AuthorOriginValidator::ensure_actor_origin(origin.clone(), member_id)?;
+            T::AuthorOriginValidator::ensure_member_controller_account(origin.clone(), member_id)?;
 
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 

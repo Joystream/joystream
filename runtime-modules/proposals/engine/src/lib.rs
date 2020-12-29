@@ -146,7 +146,7 @@ use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
-use common::origin::{ActorOriginValidator, CouncilOriginValidator};
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::MemberId;
 use staking_handler::StakingHandler;
 
@@ -173,7 +173,7 @@ pub trait Trait:
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
-    type ProposerOriginValidator: ActorOriginValidator<
+    type ProposerOriginValidator: MemberOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
@@ -479,7 +479,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
+            T::ProposerOriginValidator::ensure_member_controller_account(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
