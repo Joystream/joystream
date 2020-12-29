@@ -7,9 +7,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 
-use common::currency::GovernanceCurrency;
-
-pub trait Trait: frame_system::Trait + GovernanceCurrency {
+pub trait Trait: frame_system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
@@ -36,7 +34,7 @@ decl_module! {
         fn update_memo(origin, memo: MemoText) {
             let sender = ensure_signed(origin)?;
 
-            ensure!(!T::Currency::total_balance(&sender).is_zero(), "account must have a balance");
+            ensure!(!<balances::Module<T>>::total_balance(&sender).is_zero(), "account must have a balance");
             ensure!(memo.len() as u32 <= Self::max_memo_length(), "memo too long");
 
             <Memo<T>>::insert(&sender, memo);
