@@ -6,7 +6,10 @@ pub use frame_support::assert_err;
 use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use staking_handler::LockComparator;
+
+// pub use frame_support::traits::{Currency, LockIdentifier};
 
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_runtime::{
@@ -57,7 +60,8 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 0;
-    pub const MembershipFee: u64 = 0;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl frame_system::Trait for Runtime {
@@ -121,11 +125,21 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Runtime>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+}
+
+impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 // Weights info stub
@@ -226,7 +240,8 @@ impl working_group::WeightInfo for Weights {
 
 impl membership::Trait for Runtime {
     type Event = TestEvent;
-    type MembershipFee = MembershipFee;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
 }
 
