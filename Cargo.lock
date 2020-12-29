@@ -2354,9 +2354,9 @@ dependencies = [
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
+ "pallet-council",
  "pallet-finality-tracker",
  "pallet-forum",
- "pallet-governance",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
@@ -2368,10 +2368,12 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-recurring-reward",
+ "pallet-referendum",
  "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-staking",
+ "pallet-staking-handler",
  "pallet-staking-reward-curve",
  "pallet-storage",
  "pallet-sudo",
@@ -2398,7 +2400,6 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "staking-handler",
  "strum 0.19.5",
  "substrate-wasm-builder-runner",
 ]
@@ -3780,6 +3781,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-council"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rand 0.7.3",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-finality-tracker"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -3803,27 +3826,6 @@ dependencies = [
  "frame-system",
  "pallet-common",
  "pallet-timestamp",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-governance"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-timestamp",
- "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -3883,6 +3885,7 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-working-group",
  "parity-scale-codec",
@@ -3892,7 +3895,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "staking-handler",
 ]
 
 [[package]]
@@ -3952,12 +3954,14 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-constitution",
- "pallet-governance",
+ "pallet-council",
  "pallet-membership",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-recurring-reward",
+ "pallet-referendum",
  "pallet-staking",
+ "pallet-staking-handler",
  "pallet-staking-reward-curve",
  "pallet-timestamp",
  "pallet-token-mint",
@@ -3970,7 +3974,6 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
- "staking-handler",
  "strum 0.19.5",
 ]
 
@@ -4002,9 +4005,11 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-governance",
+ "pallet-council",
  "pallet-membership",
  "pallet-recurring-reward",
+ "pallet-referendum",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-token-mint",
  "parity-scale-codec",
@@ -4014,7 +4019,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "staking-handler",
 ]
 
 [[package]]
@@ -4046,6 +4050,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-referendum"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "parity-scale-codec",
+ "rand 0.7.3",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-service-discovery"
 version = "4.0.0"
 dependencies = [
@@ -4055,6 +4077,7 @@ dependencies = [
  "pallet-common",
  "pallet-membership",
  "pallet-recurring-reward",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-token-mint",
  "pallet-working-group",
@@ -4065,7 +4088,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "staking-handler",
 ]
 
 [[package]]
@@ -4127,6 +4149,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-staking-handler"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-staking-reward-curve"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
@@ -4147,6 +4186,7 @@ dependencies = [
  "pallet-common",
  "pallet-membership",
  "pallet-recurring-reward",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-token-mint",
  "pallet-working-group",
@@ -4157,7 +4197,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "staking-handler",
 ]
 
 [[package]]
@@ -4280,6 +4319,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -4288,7 +4328,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "staking-handler",
 ]
 
 [[package]]
@@ -7204,23 +7243,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "staking-handler"
-version = "1.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-timestamp",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
 
 [[package]]
 name = "static_assertions"

@@ -2,6 +2,7 @@
 
 pub use crate::*;
 
+use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -10,6 +11,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     DispatchResult, Perbill,
 };
+use staking_handler::{LockComparator, StakingManager};
 
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
@@ -144,7 +146,7 @@ pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId1>;
+    type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
@@ -237,6 +239,15 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {

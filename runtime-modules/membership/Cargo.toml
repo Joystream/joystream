@@ -19,7 +19,7 @@ common = { package = 'pallet-common', default-features = false, path = '../commo
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-staking-handler = { package = 'staking-handler', default-features = false, path = '../staking-handler'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 
 [features]

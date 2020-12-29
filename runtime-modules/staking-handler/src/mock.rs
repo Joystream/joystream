@@ -1,3 +1,5 @@
+use crate::LockComparator;
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
@@ -67,6 +69,16 @@ impl pallet_balances::Trait for Test {
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        // simple check preventing lock reuse
+        existing_locks
+            .iter()
+            .find(|lock| *lock == new_lock)
+            .is_some()
+    }
 }
 
 impl pallet_timestamp::Trait for Test {

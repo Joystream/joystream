@@ -2,6 +2,8 @@
 
 pub use crate::{GenesisConfig, Trait};
 
+use staking_handler::LockComparator;
+
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
@@ -115,6 +117,15 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+}
+
+impl LockComparator<u64> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 // Weights info stub

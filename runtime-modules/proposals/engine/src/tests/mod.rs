@@ -1086,7 +1086,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
 }
 
 #[test]
-fn create_proposal_fais_with_insufficient_stake_parameters() {
+fn create_proposal_fails_with_insufficient_stake_parameters() {
     initial_test_ext().execute_with(|| {
         let parameters_fixture = ProposalParametersFixture::default();
 
@@ -1107,7 +1107,7 @@ fn create_proposal_fais_with_insufficient_stake_parameters() {
 }
 
 #[test]
-fn create_proposal_fais_with_empty_stake() {
+fn create_proposal_fails_with_empty_stake() {
     initial_test_ext().execute_with(|| {
         let parameters_fixture = ProposalParametersFixture::default().with_required_stake(300);
         let dummy_proposal =
@@ -1118,7 +1118,7 @@ fn create_proposal_fais_with_empty_stake() {
 }
 
 #[test]
-fn create_proposal_fais_with_conflicting_stakes() {
+fn create_proposal_fails_with_conflicting_stakes() {
     initial_test_ext().execute_with(|| {
         let staking_account_id = 1;
 

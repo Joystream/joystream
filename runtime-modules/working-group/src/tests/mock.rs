@@ -1,3 +1,4 @@
+use frame_support::traits::LockIdentifier;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -8,6 +9,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use staking_handler::LockComparator;
 
 use crate::{DefaultInstance, Module, Trait};
 
@@ -102,6 +104,15 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
     type DefaultInitialInvitationBalance = ();
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub type Balances = balances::Module<Test>;

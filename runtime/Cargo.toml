@@ -66,7 +66,8 @@ common = { package = 'pallet-common', default-features = false, path = '../runti
 memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
+council = { package = 'pallet-council', default-features = false, path = '../runtime-modules/council'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
@@ -77,7 +78,7 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 pallet_constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
-staking-handler = { package = 'staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -140,7 +141,8 @@ std = [
     'memo/std',
     'forum/std',
     'membership/std',
-    'governance/std',
+    'council/std',
+    'referendum/std',
     'minting/std',
     'recurring-rewards/std',
     'working-group/std',
