@@ -13,7 +13,7 @@ use sp_std::cmp::min;
 use sp_std::collections::btree_set::BTreeSet;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    RewardPolicy, StakeParameters, StakePolicy, WorkerById,
+    RewardPolicy, WorkerById,
 };
 
 // The forum working group instance alias.
@@ -27,11 +27,6 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
-
-enum StakingRole {
-    WithStakes,
-    WithoutStakes,
-}
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
@@ -88,7 +83,6 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
 fn insert_a_lead_member<
     T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
 >(
-    staking_role: StakingRole,
     job_opening_type: OpeningType,
     id: u32,
 ) -> T::AccountId {
@@ -98,7 +92,6 @@ fn insert_a_lead_member<
 
     let (opening_id, application_id) = add_and_apply_opening::<T>(
         &T::Origin::from(add_worker_origin.clone()),
-        &staking_role,
         &caller_id,
         &member_id,
         &job_opening_type,
@@ -123,37 +116,26 @@ fn insert_a_lead_member<
 
 fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
-    staking_role: &StakingRole,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, ApplicationId) {
-    let opening_id = add_opening_helper::<T>(add_opening_origin, staking_role, job_opening_type);
+    let opening_id = add_opening_helper::<T>(add_opening_origin, job_opening_type);
 
-    let application_id =
-        apply_on_opening_helper::<T>(staking_role, applicant_id, member_id, &opening_id);
+    let application_id = apply_on_opening_helper::<T>(applicant_id, member_id, &opening_id);
 
     (opening_id, application_id)
 }
 
 fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
-    staking_role: &StakingRole,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
-    let staking_policy = match staking_role {
-        StakingRole::WithStakes => Some(StakePolicy {
-            stake_amount: One::one(),
-            leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
-        }),
-        StakingRole::WithoutStakes => None,
-    };
-
     ForumGroup::<T>::add_opening(
         add_opening_origin.clone(),
         vec![],
         *job_opening_type,
-        staking_policy,
+        None,
         Some(RewardPolicy {
             reward_per_block: One::one(),
         }),
@@ -171,20 +153,10 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
 }
 
 fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
-    staking_role: &StakingRole,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
     opening_id: &OpeningId,
 ) -> ApplicationId {
-    let stake_parameters = match staking_role {
-        StakingRole::WithStakes => Some(StakeParameters {
-            // Due to mock implementation of StakingHandler we can't go over 1000
-            stake: min(BalanceOf::<T>::max_value(), BalanceOf::<T>::from(1000)),
-            staking_account_id: applicant_id.clone(),
-        }),
-        StakingRole::WithoutStakes => None,
-    };
-
     ForumGroup::<T>::apply_on_opening(
         RawOrigin::Signed(applicant_id.clone()).into(),
         ApplyOnOpeningParameters::<T> {
@@ -193,7 +165,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
             role_account_id: applicant_id.clone(),
             reward_account_id: applicant_id.clone(),
             description: vec![],
-            stake_parameters,
+            stake_parameters: None,
         },
     )
     .unwrap();
@@ -300,9 +272,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, lead_id);
-
-        let i in 1 .. T::MaxCategoryDepth::get() as u32;
+            insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
         let j in 0 .. MAX_BYTES;
 
@@ -356,7 +326,7 @@ benchmarks! {
         let moderator_id = 0;
 
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, moderator_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, moderator_id);
 
         let i in 0 .. 1;
 
@@ -399,7 +369,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, lead_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
         let text = vec![0u8];
 
@@ -428,7 +398,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, lead_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
         let text = vec![0u8];
 
@@ -466,7 +436,7 @@ benchmarks! {
     create_thread {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let j in 0 .. MAX_BYTES;
 
@@ -518,7 +488,7 @@ benchmarks! {
     }
     edit_thread_title {
         let forum_user_id = 0;        let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let j in 0 .. MAX_BYTES;
 
@@ -541,7 +511,7 @@ benchmarks! {
     update_thread_archival_status {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // Create category
         let category_id = create_new_category::<T>(caller_id.clone(), None, vec![0u8], vec![0u8]);
@@ -562,7 +532,7 @@ benchmarks! {
     delete_thread {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // Create category
         let category_id = create_new_category::<T>(caller_id.clone(), None, vec![0u8], vec![0u8]);
@@ -597,7 +567,7 @@ benchmarks! {
     move_thread_to_category {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // Create first category
         let category_id = create_new_category::<T>(caller_id.clone(), None, vec![0u8], vec![0u8]);
@@ -629,7 +599,7 @@ benchmarks! {
     vote_on_poll {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let i in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
@@ -683,7 +653,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, lead_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
         let i in 0 .. MAX_BYTES;
 
@@ -723,7 +693,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let i in 0 .. MAX_BYTES;
 
@@ -761,7 +731,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // Generate categories tree
         let mut parent_category_id: Option<T::CategoryId> = None;
@@ -795,7 +765,7 @@ benchmarks! {
     edit_post_text {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let i in 0 .. MAX_BYTES;
 
@@ -839,7 +809,7 @@ benchmarks! {
     moderate_post {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let i in 0 .. MAX_BYTES;
 
@@ -881,7 +851,7 @@ benchmarks! {
     set_stickied_threads {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_lead_member::<T>(StakingRole::WithoutStakes, OpeningType::Leader, forum_user_id);
+            insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
