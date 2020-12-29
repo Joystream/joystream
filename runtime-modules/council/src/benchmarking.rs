@@ -146,10 +146,13 @@ where
     let handle = handle_from_id::<T>(id);
 
     let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    let members_created = Membership::<T>::members_created();
     let member_id = if cfg!(test) {
+        // For the tests we need member_id == account_id even if that's not what's registered
+        // in the council module.
         id.into()
     } else {
-        Membership::<T>::members_created()
+        members_created
     };
 
     let params = membership::BuyMembershipParameters {
@@ -165,6 +168,19 @@ where
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        members_created,
+    )
+    .unwrap();
+
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        members_created,
+        account_id.clone(),
+    )
+    .unwrap();
 
     (account_id, member_id)
 }
@@ -291,7 +307,9 @@ const MAX_CANDIDATES: u64 = 100;
 const START_ID: u32 = 5000;
 
 benchmarks! {
-    where_clause { where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait}
+    where_clause {
+        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait
+    }
     _ { }
 
     // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
@@ -340,8 +358,6 @@ benchmarks! {
         );
 
         // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
-        // We also take into account that this case is worse thatn block number == 0 since
-        // `plan_budget_refill` is called by `refill_budget`
         current_block_number = T::BudgetRefillPeriod::get() * T::ElectedMemberRewardPeriod::get();
 
         // The first time we reach the next_reward_payments
@@ -557,7 +573,10 @@ benchmarks! {
     announce_candidacy {
         let current_block_number = System::<T>::block_number();
         let (account_id, member_id) = start_period_announce_candidacy_and_restart_period::<T>();
-        Council::<T>::release_candidacy_stake(RawOrigin::Signed(account_id.clone()).into(), member_id).unwrap();
+        Council::<T>::release_candidacy_stake(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id
+        ).unwrap();
     }: _ (
         RawOrigin::Signed(account_id.clone()),
         member_id,
@@ -656,6 +675,17 @@ benchmarks! {
     verify {
         assert_eq!(Council::<T>::budget(), Balance::<T>::max_value(), "Budget not updated");
         assert_last_event::<T>(RawEvent::BudgetBalanceSet(Balance::<T>::max_value()).into());
+    }
+
+    plan_budget_refill {
+    }: _(RawOrigin::Root, One::one())
+    verify {
+        assert_eq!(
+            Council::<T>::next_budget_refill(),
+            One::one(),
+            "Budget refill not updated correctly"
+        );
+        assert_last_event::<T>(RawEvent::BudgetRefillPlanned(One::one()).into());
     }
 }
 

@@ -210,6 +210,19 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     T::Currency::make_free_balance_be(&account_id, Balance::<T, I>::max_value());
 
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+    )
+    .unwrap();
+
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .unwrap();
+
     (account_id, member_id)
 }
 
@@ -290,7 +303,11 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 }
 
 benchmarks_instance! {
-    where_clause {where T: OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>, T: membership::Trait}
+    where_clause {
+        where T: OptionCreator<<T as frame_system::Trait>::AccountId,
+        <T as common::Trait>::MemberId>,
+        T: membership::Trait
+    }
     _ { }
 
     on_finalize_revealing {

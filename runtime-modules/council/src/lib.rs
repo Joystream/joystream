@@ -204,13 +204,14 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 pub trait WeightInfo {
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
+    fn try_progress_stage_announcing_start_election() -> Weight; // Parameter discarded
     fn try_progress_stage_announcing_restart() -> Weight;
     fn announce_candidacy() -> Weight;
     fn release_candidacy_stake() -> Weight;
     fn set_candidacy_note(i: u32) -> Weight;
     fn withdraw_candidacy() -> Weight;
     fn set_budget() -> Weight;
+    fn plan_budget_refill() -> Weight;
 }
 
 /// The main council trait.
@@ -470,7 +471,15 @@ decl_module! {
         /////////////////// Election-related ///////////////////////////////////
 
         /// Subscribe candidate
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::announce_candidacy()]
         pub fn announce_candidacy(
                 origin,
                 membership_id: T::MemberId,
@@ -508,7 +517,15 @@ decl_module! {
         }
 
         /// Release candidacy stake that is no longer needed.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::release_candidacy_stake()]
         pub fn release_candidacy_stake(origin, membership_id: T::MemberId)
             -> Result<(), Error<T>> {
             let staking_account_id =
@@ -528,7 +545,15 @@ decl_module! {
         }
 
         /// Withdraw candidacy and release candidacy stake.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::withdraw_candidacy()]
         pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
@@ -547,7 +572,16 @@ decl_module! {
         }
 
         /// Set short description for the user's candidacy. Can be called anytime during user's candidacy.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (N)` where:
+        /// `N` is the length of `note`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::set_candidacy_note(note.len().saturated_into())]
         pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
@@ -597,7 +631,15 @@ decl_module! {
         }
 
         /// Plan the next budget refill.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::plan_budget_refill()]
         pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_plan_budget_refill(origin)?;

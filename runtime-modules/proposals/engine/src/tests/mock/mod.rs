@@ -387,7 +387,7 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn try_progress_stage_idle() -> Weight {
         0
     }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
+    fn try_progress_stage_announcing_start_election() -> Weight {
         0
     }
     fn try_progress_stage_announcing_restart() -> Weight {
@@ -406,6 +406,9 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn set_budget() -> Weight {
+        0
+    }
+    fn plan_budget_refill() -> Weight {
         0
     }
 }
