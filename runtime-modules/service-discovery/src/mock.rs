@@ -87,11 +87,6 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
@@ -129,12 +124,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
 }
 
 parameter_types! {
