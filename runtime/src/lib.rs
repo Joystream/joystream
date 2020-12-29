@@ -464,7 +464,6 @@ impl content_directory::ActorAuthenticator for Runtime {
     }
 }
 
-
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
