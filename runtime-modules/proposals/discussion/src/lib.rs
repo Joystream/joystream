@@ -62,7 +62,7 @@ use frame_support::{
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
+use common::origin::{ActorOriginValidator, CouncilOriginValidator};
 use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
@@ -115,7 +115,11 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type AuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines whether the member is an active councilor.
-    type CouncilOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type CouncilOriginValidator: CouncilOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Discussion thread Id type
     type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
@@ -296,7 +300,7 @@ decl_module! {
             let thread = Self::thread_by_id(&thread_id);
 
             let is_councilor =
-                    T::CouncilOriginValidator::ensure_actor_origin(origin, member_id)
+                    T::CouncilOriginValidator::ensure_member_consulate(origin, member_id)
                         .is_ok();
             let is_thread_author = thread.author_id == member_id;
 
@@ -374,7 +378,7 @@ impl<T: Trait> Module<T> {
             ThreadMode::Closed(members) => {
                 let is_thread_author = thread_author_id == thread.author_id;
                 let is_councilor =
-                    T::CouncilOriginValidator::ensure_actor_origin(origin, thread_author_id)
+                    T::CouncilOriginValidator::ensure_member_consulate(origin, thread_author_id)
                         .is_ok();
                 let is_allowed_member = members
                     .iter()

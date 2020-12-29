@@ -12,6 +12,7 @@ use sp_runtime::{
 };
 
 use crate::ActorOriginValidator;
+use crate::CouncilOriginValidator;
 use crate::WeightInfo;
 use frame_support::dispatch::DispatchError;
 
@@ -166,10 +167,10 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
 }
 
 pub struct CouncilMock;
-impl ActorOriginValidator<Origin, u64, u64> for CouncilMock {
-    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, DispatchError> {
+impl CouncilOriginValidator<Origin, u64, u64> for CouncilMock {
+    fn ensure_member_consulate(origin: Origin, actor_id: u64) -> DispatchResult {
         if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
-            return Ok(2);
+            return Ok(());
         }
 
         Err(DispatchError::Other("Not a council"))

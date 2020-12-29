@@ -46,14 +46,14 @@ use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
-use frame_support::dispatch::DispatchError;
+use frame_support::dispatch::DispatchResult;
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
+use common::origin::CouncilOriginValidator;
 use common::StakingAccountValidator;
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -1298,29 +1298,23 @@ impl<T: Trait> EnsureChecks<T> {
     }
 }
 
-impl<T: Trait + common::Trait> ActorOriginValidator<T::Origin, T::MemberId, T::AccountId>
+impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId>
     for Module<T>
 {
-    /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
-    /// the membership module
-    fn ensure_actor_origin(
-        origin: T::Origin,
-        actor_id: T::MemberId,
-    ) -> Result<T::AccountId, DispatchError> {
+    fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
         ensure!(
-            T::is_council_member_account(&actor_id, &account_id),
+            T::is_council_member_account(&member_id, &account_id),
             Error::<T>::MemberIdNotMatchAccount
         );
 
-        if Self::council_members()
+        let is_councilor = Self::council_members()
             .iter()
-            .any(|council_member| council_member.member_id() == &actor_id)
-        {
-            Ok(account_id)
-        } else {
-            Err(Error::<T>::NotCouncilor.into())
-        }
+            .any(|council_member| council_member.member_id() == &member_id);
+
+        ensure!(is_councilor, Error::<T>::NotCouncilor);
+
+        Ok(())
     }
 }

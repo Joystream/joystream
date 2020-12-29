@@ -114,7 +114,7 @@ pub struct MockProposalsEngineWeight;
 impl proposals_engine::Trait for Test {
     type Event = ();
     type ProposerOriginValidator = ();
-    type VoterOriginValidator = ();
+    type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
     type StakingHandler = StakingManager<Test, LockId>;
@@ -178,6 +178,14 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
+    }
+}
+
+impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+        frame_system::ensure_signed(origin)?;
+
+        Ok(())
     }
 }
 

@@ -787,7 +787,7 @@ parameter_types! {
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
     type ProposerOriginValidator = Members;
-    type VoterOriginValidator = Council;
+    type CouncilOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
     type StakingHandler = staking_handler::StakingManager<Self, ProposalsLockId>;

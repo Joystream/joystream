@@ -203,7 +203,7 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
 impl crate::Trait for Test {
     type Event = TestEvent;
     type ProposerOriginValidator = ();
-    type VoterOriginValidator = ();
+    type CouncilOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
     type StakingHandler = StakingManager<Test, LockId>;
@@ -266,6 +266,14 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
         let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
+    }
+}
+
+impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+        frame_system::ensure_signed(origin)?;
+
+        Ok(())
     }
 }
 

@@ -5,7 +5,7 @@ use super::{
     Module, Trait,
 };
 use crate::mock::*;
-use common::origin::ActorOriginValidator;
+use common::origin::CouncilOriginValidator;
 use frame_support::StorageValue;
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
@@ -1376,7 +1376,7 @@ fn council_origin_validator_fails_with_unregistered_member() {
         let origin = RawOrigin::Signed(account_id);
         let member_id = 1;
 
-        let validation_result = Council::ensure_actor_origin(origin.into(), member_id);
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
 
         assert_eq!(
             validation_result,
@@ -1406,9 +1406,10 @@ fn council_origin_validator_succeeds() {
 
         let origin = RawOrigin::Signed(councilor1_account_id.clone());
 
-        let validation_result = Council::ensure_actor_origin(origin.into(), councilor1_member_id);
+        let validation_result =
+            Council::ensure_member_consulate(origin.into(), councilor1_member_id);
 
-        assert_eq!(validation_result, Ok(councilor1_account_id));
+        assert!(validation_result.is_ok());
     });
 }
 
@@ -1421,7 +1422,7 @@ fn council_origin_validator_fails_with_not_councilor() {
         let member_id = 1;
         let origin = RawOrigin::Signed(account_id.clone());
 
-        let validation_result = Council::ensure_actor_origin(origin.into(), member_id);
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
 
         assert_eq!(
             validation_result,
