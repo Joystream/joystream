@@ -28,10 +28,12 @@
   ],
   "resolutions": {
     "@polkadot/api": "2.4.1",
+    "@polkadot/api-derive": "2.4.1",
     "@polkadot/api-contract": "2.4.1",
     "@polkadot/keyring": "3.6.1",
     "@polkadot/networks": "3.6.1",
     "@polkadot/types": "2.4.1",
+    "@polkadot/types-known": "2.4.1",
     "@polkadot/util": "3.6.1",
     "@polkadot/util-crypto": "3.6.1",
     "@polkadot/wasm-crypto": "1.4.1",
