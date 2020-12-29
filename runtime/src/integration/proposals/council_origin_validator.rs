@@ -1,13 +1,11 @@
 #![warn(missing_docs)]
 
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{DispatchError, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
 use common::MemberId;
 use proposals_engine::VotersParameters;
-
-use super::MembershipOriginValidator;
 
 /// Handles work with the council.
 /// Provides implementations for ActorOriginValidator and VotersParameters.
@@ -27,8 +25,8 @@ impl<T: council::Trait + membership::Trait>
     fn ensure_actor_origin(
         origin: <T as frame_system::Trait>::Origin,
         actor_id: MemberId<T>,
-    ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
-        let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
+    ) -> Result<<T as frame_system::Trait>::AccountId, DispatchError> {
+        let account_id = <membership::Module<T>>::ensure_actor_origin(origin, actor_id)?;
 
         if council::Module::<T>::council_members()
             .iter()
@@ -36,7 +34,9 @@ impl<T: council::Trait + membership::Trait>
         {
             Ok(account_id)
         } else {
-            Err("Council validation failed: account id doesn't belong to a council member")
+            Err(DispatchError::Other(
+                "Council validation failed: account id doesn't belong to a council member",
+            ))
         }
     }
 }
@@ -57,7 +57,7 @@ mod tests {
     use common::origin::ActorOriginValidator;
     use frame_system::RawOrigin;
     use proposals_engine::VotersParameters;
-    use sp_runtime::AccountId32;
+    use sp_runtime::{AccountId32, DispatchError};
 
     use crate::tests::elect_council;
     use crate::tests::{initial_test_ext, insert_member};
@@ -67,12 +67,14 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let origin = RawOrigin::Signed(AccountId32::default());
             let member_id = 1;
-            let error = "Membership validation failed: cannot find a profile for a member";
 
             let validation_result =
                 CouncilManager::<Runtime>::ensure_actor_origin(origin.into(), member_id);
 
-            assert_eq!(validation_result, Err(error));
+            assert_eq!(
+                validation_result,
+                Err(membership::Error::<Runtime>::MemberProfileNotFound.into())
+            );
         });
     }
 
@@ -101,8 +103,6 @@ mod tests {
     fn council_origin_validator_fails_with_incompatible_account_id_and_member_id() {
         initial_test_ext().execute_with(|| {
             let account_id = AccountId32::default();
-            let error =
-                "Membership validation failed: given account doesn't match with profile accounts";
             insert_member(account_id);
             let member_id = 0; // newly created member_id
 
@@ -112,7 +112,10 @@ mod tests {
                 member_id,
             );
 
-            assert_eq!(validation_result, Err(error));
+            assert_eq!(
+                validation_result,
+                Err(membership::Error::<Runtime>::ControllerAccountRequired.into())
+            );
         });
     }
 
@@ -121,7 +124,9 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let account_id = AccountId32::default();
             let origin = RawOrigin::Signed(account_id.clone());
-            let error = "Council validation failed: account id doesn't belong to a council member";
+            let error = DispatchError::Other(
+                "Council validation failed: account id doesn't belong to a council member",
+            );
             insert_member(account_id);
             let member_id = 0; // newly created member_id
 

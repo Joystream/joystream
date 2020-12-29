@@ -368,7 +368,7 @@ fn vote_fails_with_insufficient_rights() {
                 VoteKind::Approve,
                 Vec::new()
             ),
-            Err(DispatchError::Other("Bad origin"))
+            Err(DispatchError::BadOrigin)
         );
     });
 }

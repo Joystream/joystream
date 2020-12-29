@@ -15,6 +15,7 @@ use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use referendum::Balance as BalanceReferendum;
 use sp_runtime::testing::TestXt;
@@ -173,7 +174,7 @@ impl minting::Trait for Test {
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)

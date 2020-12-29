@@ -47,6 +47,7 @@ pub mod genesis;
 mod tests;
 
 use codec::{Decode, Encode};
+use frame_support::sp_runtime::DispatchError;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_root;
@@ -55,6 +56,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
+use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroupIntegration;
 
 // Balance type alias
@@ -880,5 +882,20 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
         account_id: &T::AccountId,
     ) -> bool {
         Self::staking_account_confirmed(account_id, member_id)
+    }
+}
+
+impl<T: Trait> ActorOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+    /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
+    /// the membership module
+    fn ensure_actor_origin(
+        origin: T::Origin,
+        actor_id: T::MemberId,
+    ) -> Result<T::AccountId, DispatchError> {
+        let signer_account_id = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
+
+        Self::ensure_is_controller_account_for_member(&actor_id, &signer_account_id)?;
+
+        Ok(signer_account_id)
     }
 }

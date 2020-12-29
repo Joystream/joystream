@@ -7,6 +7,7 @@ use crate::{Error, Event};
 use fixtures::*;
 use mock::*;
 
+use common::origin::ActorOriginValidator;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
@@ -903,5 +904,48 @@ fn is_member_staking_account_works() {
             Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             false
         );
+    });
+}
+
+#[test]
+fn membership_origin_validator_fails_with_unregistered_member() {
+    build_test_externalities().execute_with(|| {
+        let origin = RawOrigin::Signed(ALICE_ACCOUNT_ID);
+        let error = Error::<Test>::MemberProfileNotFound;
+
+        let validation_result = Membership::ensure_actor_origin(origin.into(), ALICE_MEMBER_ID);
+
+        assert_eq!(validation_result, Err(error.into()));
+    });
+}
+
+#[test]
+fn membership_origin_validator_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let account_id = ALICE_ACCOUNT_ID;
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        let validation_result = Membership::ensure_actor_origin(origin.into(), ALICE_MEMBER_ID);
+
+        assert_eq!(validation_result, Ok(account_id));
+    });
+}
+
+#[test]
+fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let error = Error::<Test>::ControllerAccountRequired;
+
+        let invalid_account_id = BOB_ACCOUNT_ID;
+        let validation_result = Membership::ensure_actor_origin(
+            RawOrigin::Signed(invalid_account_id.into()).into(),
+            ALICE_MEMBER_ID,
+        );
+
+        assert_eq!(validation_result, Err(error.into()));
     });
 }

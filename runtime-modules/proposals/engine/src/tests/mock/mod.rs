@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
@@ -261,7 +262,7 @@ impl Default for proposals::Call<Test> {
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)

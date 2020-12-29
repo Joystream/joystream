@@ -2,6 +2,7 @@
 
 pub use crate::*;
 
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -242,7 +243,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)

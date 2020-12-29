@@ -225,7 +225,7 @@ impl working_group::WeightInfo for Weights {
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)

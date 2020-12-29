@@ -52,7 +52,7 @@ pub use primitives::*;
 pub use proposals_configuration::*;
 pub use runtime_api::*;
 
-use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use council::ReferendumConnection;
 use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
@@ -619,7 +619,7 @@ impl storage::data_directory::Trait for Runtime {
     type ContentId = ContentId;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
@@ -733,7 +733,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -744,7 +744,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -755,7 +755,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -766,7 +766,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -786,7 +786,7 @@ parameter_types! {
 
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
-    type ProposerOriginValidator = MembershipOriginValidator<Self>;
+    type ProposerOriginValidator = Members;
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
@@ -813,7 +813,7 @@ parameter_types! {
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type AuthorOriginValidator = MembershipOriginValidator<Self>;
+    type AuthorOriginValidator = Members;
     type CouncilOriginValidator = CouncilManager<Self>;
     type ThreadId = ThreadId;
     type PostId = PostId;
@@ -826,7 +826,7 @@ parameter_types! {
 }
 
 impl proposals_codex::Trait for Runtime {
-    type MembershipOriginValidator = MembershipOriginValidator<Self>;
+    type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
