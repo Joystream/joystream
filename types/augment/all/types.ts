@@ -3,7 +3,6 @@
 
 import { ITuple } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Enum, Option, Struct, U8aFixed, Vec } from '@polkadot/types/codec';
-import { GenericAccountId } from '@polkadot/types/generic';
 import { Bytes, Null, Text, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types/primitive';
 import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
@@ -41,7 +40,7 @@ export interface ActiveOpeningStageVariant extends Struct {
 /** @name ActiveStake */
 export interface ActiveStake extends Struct {
   readonly stake_id: StakeId;
-  readonly source_account_id: GenericAccountId;
+  readonly source_account_id: AccountId;
 }
 
 /** @name Actor */
@@ -123,7 +122,7 @@ export interface ApplicationIdToWorkerIdMap extends BTreeMap<ApplicationId, Work
 
 /** @name ApplicationOf */
 export interface ApplicationOf extends Struct {
-  readonly role_account_id: GenericAccountId;
+  readonly role_account_id: AccountId;
   readonly opening_id: OpeningId;
   readonly member_id: MemberId;
   readonly application_id: ApplicationId;
@@ -153,7 +152,7 @@ export interface Approved extends Enum {
 
 /** @name Backer */
 export interface Backer extends Struct {
-  readonly member: GenericAccountId;
+  readonly member: AccountId;
   readonly stake: u128;
 }
 
@@ -181,7 +180,7 @@ export interface Category extends Struct {
   readonly num_direct_unmoderated_threads: u32;
   readonly num_direct_moderated_threads: u32;
   readonly position_in_parent_category: Option<ChildPositionInParentCategory>;
-  readonly moderator_id: GenericAccountId;
+  readonly moderator_id: AccountId;
 }
 
 /** @name CategoryId */
@@ -197,7 +196,7 @@ export interface Channel extends Struct {
   readonly banner: OptionalText;
   readonly content: ChannelContentType;
   readonly owner: MemberId;
-  readonly role_account: GenericAccountId;
+  readonly role_account: AccountId;
   readonly publication_status: ChannelPublicationStatus;
   readonly curation_status: ChannelCurationStatus;
   readonly created: u32;
@@ -296,7 +295,7 @@ export interface CurationActor extends Enum {
 
 /** @name Curator */
 export interface Curator extends Struct {
-  readonly role_account: GenericAccountId;
+  readonly role_account: AccountId;
   readonly reward_relationship: Option<RewardRelationshipId>;
   readonly role_stake_profile: Option<CuratorRoleStakeProfile>;
   readonly stage: CuratorRoleStage;
@@ -306,7 +305,7 @@ export interface Curator extends Struct {
 
 /** @name CuratorApplication */
 export interface CuratorApplication extends Struct {
-  readonly role_account: GenericAccountId;
+  readonly role_account: AccountId;
   readonly curator_opening_id: CuratorOpeningId;
   readonly member_id: MemberId;
   readonly application_id: ApplicationId;
@@ -615,7 +614,7 @@ export interface IPNSIdentity extends Text {}
 /** @name Lead */
 export interface Lead extends Struct {
   readonly member_id: MemberId;
-  readonly role_account: GenericAccountId;
+  readonly role_account: AccountId;
   readonly reward_relationship: Option<RewardRelationshipId>;
   readonly inducted: u32;
   readonly stage: LeadRoleState;
@@ -654,8 +653,8 @@ export interface Membership extends Struct {
   readonly entry: EntryMethod;
   readonly suspended: bool;
   readonly subscription: Option<SubscriptionId>;
-  readonly root_account: GenericAccountId;
-  readonly controller_account: GenericAccountId;
+  readonly root_account: AccountId;
+  readonly controller_account: AccountId;
 }
 
 /** @name MemoText */
@@ -678,7 +677,7 @@ export interface MintId extends u64 {}
 /** @name ModerationAction */
 export interface ModerationAction extends Struct {
   readonly moderated_at: BlockAndTime;
-  readonly moderator_id: GenericAccountId;
+  readonly moderator_id: AccountId;
   readonly rationale: Text;
 }
 
@@ -810,7 +809,7 @@ export interface Post extends Struct {
   readonly moderation: Option<ModerationAction>;
   readonly text_change_history: Vec<PostTextChange>;
   readonly created_at: BlockAndTime;
-  readonly author_id: GenericAccountId;
+  readonly author_id: AccountId;
 }
 
 /** @name PostId */
@@ -910,7 +909,7 @@ export interface ProposalDetails extends Enum {
   readonly isSetContentWorkingGroupMintCapacity: boolean;
   readonly asSetContentWorkingGroupMintCapacity: u128;
   readonly isEvictStorageProvider: boolean;
-  readonly asEvictStorageProvider: GenericAccountId;
+  readonly asEvictStorageProvider: AccountId;
   readonly isSetValidatorCount: boolean;
   readonly asSetValidatorCount: u32;
   readonly isSetStorageRoleParameters: boolean;
@@ -948,7 +947,7 @@ export interface ProposalDetailsOf extends Enum {
   readonly isSetContentWorkingGroupMintCapacity: boolean;
   readonly asSetContentWorkingGroupMintCapacity: u128;
   readonly isEvictStorageProvider: boolean;
-  readonly asEvictStorageProvider: GenericAccountId;
+  readonly asEvictStorageProvider: AccountId;
   readonly isSetValidatorCount: boolean;
   readonly asSetValidatorCount: u32;
   readonly isSetStorageRoleParameters: boolean;
@@ -1024,7 +1023,7 @@ export interface ReferenceCounterSideEffects extends BTreeMap<EntityId, EntityRe
 
 /** @name Reply */
 export interface Reply extends Struct {
-  readonly owner: GenericAccountId;
+  readonly owner: AccountId;
   readonly thread_id: ThreadId;
   readonly text: Text;
   readonly moderation: Option<ModerationAction>;
@@ -1050,7 +1049,7 @@ export interface RewardPolicy extends Struct {
 export interface RewardRelationship extends Struct {
   readonly recipient: RecipientId;
   readonly mint_id: MintId;
-  readonly account: GenericAccountId;
+  readonly account: AccountId;
   readonly amount_per_payout: u128;
   readonly next_payment_at_block: Option<u32>;
   readonly payout_interval: Option<u32>;
@@ -1096,15 +1095,15 @@ export interface SchemaId extends u16 {}
 
 /** @name SealedVote */
 export interface SealedVote extends Struct {
-  readonly voter: GenericAccountId;
+  readonly voter: AccountId;
   readonly commitment: Hash;
   readonly stake: ElectionStake;
-  readonly vote: Option<GenericAccountId>;
+  readonly vote: Option<AccountId>;
 }
 
 /** @name Seat */
 export interface Seat extends Struct {
-  readonly member: GenericAccountId;
+  readonly member: AccountId;
   readonly stake: u128;
   readonly backers: Backers;
 }
@@ -1119,7 +1118,7 @@ export interface ServiceProviderRecord extends Struct {
 }
 
 /** @name SetLeadParams */
-export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
+export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
 
 /** @name SideEffect */
 export interface SideEffect extends Option<ITuple<[EntityId, EntityReferenceCounterSideEffect]>> {}
@@ -1255,7 +1254,7 @@ export interface Thread extends Struct {
   readonly num_unmoderated_posts: u32;
   readonly num_moderated_posts: u32;
   readonly created_at: BlockAndTime;
-  readonly author_id: GenericAccountId;
+  readonly author_id: AccountId;
 }
 
 /** @name ThreadCounter */
@@ -1379,7 +1378,7 @@ export interface WorkerId extends u64 {}
 /** @name WorkerOf */
 export interface WorkerOf extends Struct {
   readonly member_id: MemberId;
-  readonly role_account_id: GenericAccountId;
+  readonly role_account_id: AccountId;
   readonly reward_relationship: Option<RewardRelationshipId>;
   readonly role_stake_profile: Option<RoleStakeProfile>;
 }

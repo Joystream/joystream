@@ -1,7 +1,6 @@
 import { bool, u32, u64, Text, Option, Vec as Vector } from '@polkadot/types'
-import { BlockAndTime, ThreadId, PostId, JoyStructCustom, JoyStructDecorated } from './common'
+import { AccountId, BlockAndTime, ThreadId, PostId, JoyStructCustom, JoyStructDecorated } from './common'
 import { RegistryTypes } from '@polkadot/types/types'
-import AccountId from '@polkadot/types/generic/AccountId'
 
 export type ModerationActionType = {
   moderated_at: BlockAndTime

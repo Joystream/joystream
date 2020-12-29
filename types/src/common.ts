@@ -1,4 +1,17 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, Compact, UInt } from '@polkadot/types'
+import {
+  GenericAccountId,
+  Struct,
+  Option,
+  Text,
+  bool,
+  u16,
+  u32,
+  u64,
+  Null,
+  U8aFixed,
+  BTreeSet,
+  UInt,
+} from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
 import { u8aConcat, u8aToHex } from '@polkadot/util'
@@ -6,7 +19,6 @@ import { u8aConcat, u8aToHex } from '@polkadot/util'
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
-import AccountId from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
@@ -26,7 +38,8 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
       const encoded = new Array<Uint8Array>()
 
       if (!isBare) {
-        encoded.push(Compact.encodeU8a(this.size))
+        const sizeValue = new UInt(this.registry, this.size)
+        encoded.push(sizeValue.toU8a(isBare))
       }
 
       const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
@@ -131,8 +144,10 @@ export class SlashingTerms extends JoyEnum({
 } as const) {}
 
 export class MemoText extends Text {}
+
 // @polkadot/types overrides required since migration to Substrate 2.0,
-// see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+// see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
+export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
 
@@ -148,6 +163,7 @@ export const commonTypes: RegistryTypes = {
   SlashingTerms,
   SlashableTerms,
   MemoText,
+  // Customize Address type for joystream chain
   Address,
   LookupSource,
 }

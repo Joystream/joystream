@@ -1,12 +1,11 @@
 import { Bytes, BTreeMap, BTreeSet, Option } from '@polkadot/types'
 import { Null, u32, u128 } from '@polkadot/types/primitive'
-import AccountId from '@polkadot/types/generic/AccountId'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { MemberId, ActorId } from '../members'
 import { RewardRelationshipId } from '../recurring-rewards'
 import { StakeId } from '../stake'
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring'
-import { JoyEnum, JoyStructDecorated, SlashingTerms, JoyBTreeSet } from '../common'
+import { AccountId, JoyEnum, JoyStructDecorated, SlashingTerms, JoyBTreeSet } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class RationaleText extends Bytes {}

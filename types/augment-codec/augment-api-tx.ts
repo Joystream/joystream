@@ -1,10 +1,11 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import { AnyNumber, ITuple } from '@polkadot/types/types';
+import { AnyNumber } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Compact, Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageProviderId, TerminateRoleParameters, ThreadId, Url, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
+import { Actor, ActorId, ApplicationId, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningType, OperationType, PostId, Property, PropertyId, ProposalDetailsOf, ProposalId, SchemaId, StorageProviderId, ThreadId, Url, VecMaxLength, VoteKind, WorkerId } from './all';
+import { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
 import { Heartbeat } from '@polkadot/types/interfaces/imOnline';
@@ -21,6 +22,26 @@ declare module '@polkadot/api/types/submittable' {
        * Provide a set of uncles.
        **/
       setUncles: AugmentedSubmittable<(newUncles: Vec<Header> | (Header | { parentHash?: any; number?: any; stateRoot?: any; extrinsicsRoot?: any; digest?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+    };
+    babe: {
+      /**
+       * Report authority equivocation/misbehavior. This method will verify
+       * the equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence will
+       * be reported.
+       **/
+      reportEquivocation: AugmentedSubmittable<(equivocationProof: BabeEquivocationProof | { offender?: any; slotNumber?: any; firstHeader?: any; secondHeader?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Report authority equivocation/misbehavior. This method will verify
+       * the equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence will
+       * be reported.
+       * This extrinsic must be called unsigned and it is expected that only
+       * block authors will call it (validated in `ValidateUnsigned`), as such
+       * if the block author is defined it will be defined as the equivocation
+       * reporter.
+       **/
+      reportEquivocationUnsigned: AugmentedSubmittable<(equivocationProof: BabeEquivocationProof | { offender?: any; slotNumber?: any; firstHeader?: any; secondHeader?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     balances: {
       /**
@@ -97,6 +118,17 @@ declare module '@polkadot/api/types/submittable' {
        * #</weight>
        **/
       transferKeepAlive: AugmentedSubmittable<(dest: LookupSource | string | Uint8Array, value: Compact<Balance> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+    };
+    constitution: {
+      /**
+       * Sets the current constitution hash. Requires root origin.
+       * # <weight>
+       * - Complexity: `O(C)` where C is the length of the constitution text.
+       * - Db reads: 0
+       * - Db writes: 1 (constant value)
+       * # </weight>
+       **/
+      amendConstitution: AugmentedSubmittable<(constitutionText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     contentDirectory: {
       /**
@@ -195,220 +227,240 @@ declare module '@polkadot/api/types/submittable' {
     };
     contentDirectoryWorkingGroup: {
       /**
-       * Begin accepting worker applications to an opening that is active.
-       * Require signed leader origin or the root (to accept applications for the leader position).
-       **/
-      acceptApplications: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Add an opening for a worker role.
+       * Add a job opening for a regular worker/lead role.
        * Require signed leader origin or the root (to add opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addOpening: AugmentedSubmittable<(description: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array, stakePolicy: Option<StakePolicy> | null | object | string | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Apply on a worker opening.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `p.description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      applyOnOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, roleAccountId: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      applyOnOpening: AugmentedSubmittable<(p: ApplyOnOpeningParameters | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Begin reviewing, and therefore not accepting new applications.
-       * Require signed leader origin or the root (to begin review applications for the leader position).
+       * Cancel an opening for the regular worker/lead position.
+       * Require signed leader origin or the root (to cancel opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      beginApplicantReview: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      cancelOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
-       * Can be decreased to zero, no actions on zero stake.
-       * Require signed leader origin or the root (to decrease the leader stake).
+       * Decreases the regular worker/lead stake and returns the remainder to the
+       * worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+       * Accepts the stake amount to decrease.
+       * Requires signed leader origin or the root (to decrease the leader stake).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Fill opening for worker/lead.
+       * Fill opening for the regular/lead position.
        * Require signed leader origin or the root (to fill opening for the leader position).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `successful_application_ids`
+       * - DB:
+       * - O(A)
+       * # </weight>
        **/
-      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: ApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: BTreeSet<ApplicationId>) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
-       * role_account_id to the stake. No limits on the stake.
+       * Increases the regular worker/lead stake, demands a worker origin.
+       * Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Leave the role by the active worker.
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Sets the capacity to enable working group budget. Requires root origin.
+       * Sets a new budget for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setBudget: AugmentedSubmittable<(newBudget: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * Sets a new status text for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (S)` where:
+       * - `S` is the length of the contents of `status_text` when it is not none
+       * 
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setStatusText: AugmentedSubmittable<(statusText: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
        * If slashing balance greater than the existing stake - stake is slashed to zero.
-       * Require signed leader origin or the root (to slash the leader stake).
+       * Requires signed leader origin or the root (to slash the leader stake).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penality.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Penalty | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Terminate the worker application. Can be done by the lead only.
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      terminateApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId | string | Uint8Array, amount: BalanceOf | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Terminate the active worker by the lead.
-       * Require signed leader origin or the root (to terminate the leader role).
+       * Requires signed leader origin or the root (to terminate the leader role).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penalty.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array, slashStake: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Option<Penalty> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Update the reward account associated with a set reward relationship for the active worker.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Update the reward amount associated with a set reward relationship for the active worker.
-       * Require signed leader origin or the root (to update leader reward amount).
+       * Update the reward per block for the active worker.
+       * Require signed leader origin or the root (to update leader's reward amount).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newAmount: BalanceOfMint | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Update the associated role account of the active worker/lead.
+       * Update the associated role account of the active regular worker/lead.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Withdraw the worker application. Can be done by the worker itself only.
+       * Withdraw the worker application. Can be done by the worker only.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
-    contentWorkingGroup: {
-      /**
-       * Begin accepting curator applications to an opening that is active.
-       **/
-      acceptCuratorApplications: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Add an opening for a curator role.
-       **/
-      addCuratorOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Apply on a curator opening.
-       **/
-      applyOnCuratorOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array, roleAccount: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Begin reviewing, and therefore not accepting new applications.
-       **/
-      beginCuratorApplicantReview: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create a new channel.
-       **/
-      createChannel: AugmentedSubmittable<(owner: MemberId | AnyNumber | Uint8Array, roleAccount: AccountId | string | Uint8Array, content: ChannelContentType | 'Video'|'Music'|'Ebook' | number | Uint8Array, handle: Bytes | string | Uint8Array, title: OptionalText | null | object | string | Uint8Array, description: OptionalText | null | object | string | Uint8Array, avatar: OptionalText | null | object | string | Uint8Array, banner: OptionalText | null | object | string | Uint8Array, publicationStatus: ChannelPublicationStatus | 'Public'|'Unlisted' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Fill opening for curator
-       **/
-      fillCuratorOpening: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array, successfulCuratorApplicationIds: CuratorApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Add to capacity of current acive mint.
-       * This may be deprecated in the future, since set_mint_capacity is sufficient to
-       * both increase and decrease capacity. Although when considering that it may be executed
-       * by a proposal, given the temporal delay in approving a proposal, it might be more suitable
-       * than set_mint_capacity?
-       **/
-      increaseMintCapacity: AugmentedSubmittable<(additionalCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * An active curator leaves role
-       **/
-      leaveCuratorRole: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Replace the current lead. First unsets the active lead if there is one.
-       * If a value is provided for new_lead it will then set that new lead.
-       * It is responsibility of the caller to ensure the new lead can be set
-       * to avoid the lead role being vacant at the end of the call.
-       **/
-      replaceLead: AugmentedSubmittable<(newLead: Option<ITuple<[MemberId, AccountId]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Add an opening for a curator role.
-       **/
-      setChannelCreationEnabled: AugmentedSubmittable<(enabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Sets the capacity of the current active mint
-       **/
-      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Lead terminate curator application
-       **/
-      terminateCuratorApplication: AugmentedSubmittable<(curatorApplicationId: CuratorApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Lead can terminate and active curator
-       **/
-      terminateCuratorRole: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * An owner transfers channel ownership to a new owner.
-       * 
-       * Notice that working group participants cannot do this.
-       * Notice that censored or unlisted channel may still be transferred.
-       * Notice that transfers are unilateral, so new owner cannot block. This may be problematic: https://github.com/Joystream/substrate-runtime-joystream/issues/95
-       **/
-      transferChannelOwnership: AugmentedSubmittable<(channelId: ChannelId | AnyNumber | Uint8Array, newOwner: MemberId | AnyNumber | Uint8Array, newRoleAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Update channel as a curation actor
-       **/
-      updateChannelAsCurationActor: AugmentedSubmittable<(curationActor: CurationActor | { Lead: any } | { Curator: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, newVerified: Option<bool> | null | object | string | Uint8Array, newCurationStatus: Option<ChannelCurationStatus> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Channel owner updates some channel properties
-       **/
-      updateChannelAsOwner: AugmentedSubmittable<(channelId: ChannelId | AnyNumber | Uint8Array, newHandle: Option<Bytes> | null | object | string | Uint8Array, newTitle: Option<OptionalText> | null | object | string | Uint8Array, newDescription: Option<OptionalText> | null | object | string | Uint8Array, newAvatar: Option<OptionalText> | null | object | string | Uint8Array, newBanner: Option<OptionalText> | null | object | string | Uint8Array, newPublicationStatus: Option<ChannelPublicationStatus> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * An active curator can update the reward account associated
-       * with a set reward relationship.
-       **/
-      updateCuratorRewardAccount: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, newRewardAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * An active curator can update the associated role account.
-       **/
-      updateCuratorRoleAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array, newRoleAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      withdrawCuratorApplication: AugmentedSubmittable<(curatorApplicationId: CuratorApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-    };
     council: {
       /**
-       * Adds a zero staked council member. A member added in this way does not get a recurring reward.
+       * Subscribe candidate
        **/
-      addCouncilMember: AugmentedSubmittable<(account: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      announceCandidacy: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array, stakingAccountId: AccountId | string | Uint8Array, rewardAccountId: AccountId | string | Uint8Array, stake: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Remove a single council member and their reward.
+       * Plan the next budget refill.
        **/
-      removeCouncilMember: AugmentedSubmittable<(accountToRemove: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      planBudgetRefill: AugmentedSubmittable<(nextRefill: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Force set a zero staked council. Stakes in existing council seats are not returned.
-       * Existing council rewards are removed and new council members do NOT get any rewards.
-       * Avoid using this call if possible, will be deprecated. The term of the new council is
-       * not extended.
+       * Release candidacy stake that is no longer needed.
        **/
-      setCouncil: AugmentedSubmittable<(accounts: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      releaseCandidacyStake: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Sets the capacity of the the council mint, if it doesn't exist, attempts to
-       * create a new one.
+       * Sets the budget balance.
        **/
-      setCouncilMintCapacity: AugmentedSubmittable<(capacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setBudget: AugmentedSubmittable<(balance: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Sets the council rewards which is only applied on new council being elected.
+       * Set short description for the user's candidacy. Can be called anytime during user's candidacy.
        **/
-      setCouncilRewards: AugmentedSubmittable<(amountPerPayout: BalanceOf | AnyNumber | Uint8Array, payoutInterval: Option<BlockNumber> | null | object | string | Uint8Array, firstPayoutAfterRewardCreated: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setCandidacyNote: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array, note: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Set blocknumber when council term will end
+       * Withdraw candidacy and release candidacy stake.
        **/
-      setTermEndsAt: AugmentedSubmittable<(endsAt: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Attempts to mint and transfer amount to destination account
-       **/
-      spendFromCouncilMint: AugmentedSubmittable<(amount: BalanceOf | AnyNumber | Uint8Array, destination: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-    };
-    councilElection: {
-      apply: AugmentedSubmittable<(stake: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      forceStartElection: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
-      forceStopElection: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
-      reveal: AugmentedSubmittable<(commitment: Hash | string | Uint8Array, vote: AccountId | string | Uint8Array, salt: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setAutoStart: AugmentedSubmittable<(flag: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Sets new election parameters. Some combination of parameters that are not desirable, so
-       * the parameters are checked for validity.
-       * The call will fail if an election is in progress. If a council is not being elected for some
-       * reaon after multiple rounds, force_stop_election() can be called to stop elections and followed by
-       * set_election_parameters().
-       **/
-      setElectionParameters: AugmentedSubmittable<(params: ElectionParameters | { announcing_period?: any; voting_period?: any; revealing_period?: any; council_size?: any; candidacy_limit?: any; new_term_duration?: any; min_council_stake?: any; min_voting_stake?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setStageAnnouncing: AugmentedSubmittable<(endsAt: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setStageRevealing: AugmentedSubmittable<(endsAt: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setStageVoting: AugmentedSubmittable<(endsAt: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      vote: AugmentedSubmittable<(commitment: Hash | string | Uint8Array, stake: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      withdrawCandidacy: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     dataDirectory: {
       /**
@@ -503,57 +555,302 @@ declare module '@polkadot/api/types/submittable' {
     };
     forum: {
       /**
-       * Edit post text
+       * Add post
        **/
-      addPost: AugmentedSubmittable<(threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addPost: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add a new category.
        **/
-      createCategory: AugmentedSubmittable<(parent: Option<CategoryId> | null | object | string | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createCategory: AugmentedSubmittable<(parentCategoryId: Option<CategoryId> | null | object | string | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Create new thread in category
+       * Create new thread in category with poll
        **/
-      createThread: AugmentedSubmittable<(categoryId: CategoryId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createThread: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, poll: Option<Poll> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteCategory: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteThread: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Edit post text
        **/
-      editPostText: AugmentedSubmittable<(postId: PostId | AnyNumber | Uint8Array, newText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      editPostText: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, newText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      editThreadTitle: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newTitle: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Moderate post
        **/
-      moderatePost: AugmentedSubmittable<(postId: PostId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moderatePost: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moderateThread: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moveThreadToCategory: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newCategoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Moderate thread
+       * like or unlike a post.
        **/
-      moderateThread: AugmentedSubmittable<(threadId: ThreadId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      reactPost: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, react: PostReactionId | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Set forum sudo.
+       * Set stickied threads for category
        **/
-      setForumSudo: AugmentedSubmittable<(newForumSudo: Option<AccountId> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setStickiedThreads: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, stickiedIds: Vec<ThreadId> | (ThreadId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Update category
        **/
-      updateCategory: AugmentedSubmittable<(categoryId: CategoryId | AnyNumber | Uint8Array, newArchivalStatus: Option<bool> | null | object | string | Uint8Array, newDeletionStatus: Option<bool> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateCategoryArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Enable a moderator can moderate a category and its sub categories.
+       **/
+      updateCategoryMembershipOfModerator: AugmentedSubmittable<(moderatorId: ModeratorId | null, categoryId: CategoryId | AnyNumber | Uint8Array, newValue: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update category
+       **/
+      updateThreadArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * submit a poll
+       **/
+      voteOnPoll: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+    };
+    forumWorkingGroup: {
+      /**
+       * Add a job opening for a regular worker/lead role.
+       * Require signed leader origin or the root (to add opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      addOpening: AugmentedSubmittable<(description: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array, stakePolicy: Option<StakePolicy> | null | object | string | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Apply on a worker opening.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `p.description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      applyOnOpening: AugmentedSubmittable<(p: ApplyOnOpeningParameters | null) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Cancel an opening for the regular worker/lead position.
+       * Require signed leader origin or the root (to cancel opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      cancelOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Decreases the regular worker/lead stake and returns the remainder to the
+       * worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+       * Accepts the stake amount to decrease.
+       * Requires signed leader origin or the root (to decrease the leader stake).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Fill opening for the regular/lead position.
+       * Require signed leader origin or the root (to fill opening for the leader position).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `successful_application_ids`
+       * - DB:
+       * - O(A)
+       * # </weight>
+       **/
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: BTreeSet<ApplicationId>) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Increases the regular worker/lead stake, demands a worker origin.
+       * Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Leave the role by the active worker.
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets a new budget for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setBudget: AugmentedSubmittable<(newBudget: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets a new status text for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (S)` where:
+       * - `S` is the length of the contents of `status_text` when it is not none
+       * 
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setStatusText: AugmentedSubmittable<(statusText: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Requires signed leader origin or the root (to slash the leader stake).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penality.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Penalty | null) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId | string | Uint8Array, amount: BalanceOf | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Terminate the active worker by the lead.
+       * Requires signed leader origin or the root (to terminate the leader role).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penalty.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Option<Penalty> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the reward account associated with a set reward relationship for the active worker.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the reward per block for the active worker.
+       * Require signed leader origin or the root (to update leader's reward amount).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the associated role account of the active regular worker/lead.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Withdraw the worker application. Can be done by the worker only.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     grandpa: {
+      /**
+       * Note that the current authority set of the GRANDPA finality gadget has
+       * stalled. This will trigger a forced authority set change at the beginning
+       * of the next session, to be enacted `delay` blocks after that. The delay
+       * should be high enough to safely assume that the block signalling the
+       * forced change will not be re-orged (e.g. 1000 blocks). The GRANDPA voters
+       * will start the new authority set using the given finalized block as base.
+       * Only callable by root.
+       **/
+      noteStalled: AugmentedSubmittable<(delay: BlockNumber | AnyNumber | Uint8Array, bestFinalizedBlockNumber: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Report voter equivocation/misbehavior. This method will verify the
+       * equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence
+       * will be reported.
+       **/
+      reportEquivocation: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Report voter equivocation/misbehavior. This method will verify the
        * equivocation proof and validate the given key ownership proof
        * against the extracted offender. If both are valid, the offence
        * will be reported.
        * 
-       * Since the weight of the extrinsic is 0, in order to avoid DoS by
-       * submission of invalid equivocation reports, a mandatory pre-validation of
-       * the extrinsic is implemented in a `SignedExtension`.
+       * This extrinsic must be called unsigned and it is expected that only
+       * block authors will call it (validated in `ValidateUnsigned`), as such
+       * if the block author is defined it will be defined as the equivocation
+       * reporter.
        **/
-      reportEquivocation: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      reportEquivocationUnsigned: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     imOnline: {
       /**
        * # <weight>
-       * - Complexity: `O(K + E)` where K is length of `Keys` and E is length of
-       * `Heartbeat.network_state.external_address`
-       * 
+       * - Complexity: `O(K + E)` where K is length of `Keys` (heartbeat.validators_len)
+       * and E is length of `heartbeat.network_state.external_address`
        * - `O(K)`: decoding of length `K`
        * - `O(E)`: decoding/encoding of length `E`
        * - DbReads: pallet_session `Validators`, pallet_session `CurrentIndex`, `Keys`,
@@ -564,100 +861,284 @@ declare module '@polkadot/api/types/submittable' {
       heartbeat: AugmentedSubmittable<(heartbeat: Heartbeat | { blockNumber?: any; networkState?: any; sessionIndex?: any; authorityIndex?: any; validatorsLen?: any } | string | Uint8Array, signature: Signature | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     members: {
-      addScreenedMember: AugmentedSubmittable<(newMemberAccount: AccountId | string | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Non-members can buy membership
+       * Add staking account candidate for a member.
+       * The membership must be confirmed before usage.
        **/
-      buyMembership: AugmentedSubmittable<(paidTermsId: PaidTermId | AnyNumber | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addStakingAccountCandidate: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Change member's about text
+       * Non-members can buy membership.
        **/
-      changeMemberAboutText: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      buyMembership: AugmentedSubmittable<(params: BuyMembershipParameters | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Change member's avatar
+       * Confirm staking account candidate for a member.
        **/
-      changeMemberAvatar: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, uri: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      confirmStakingAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, stakingAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Change member's handle. Will ensure new handle is unique and old one will be available
-       * for other members to use.
+       * Invite a new member.
        **/
-      changeMemberHandle: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, handle: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setControllerAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, newControllerAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setRootAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, newRootAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setScreeningAuthority: AugmentedSubmittable<(authority: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      inviteMember: AugmentedSubmittable<(params: InviteMembershipParameters | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Update member's all or some of handle, avatar and about text.
+       * Remove staking account for a member.
        **/
-      updateMembership: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      removeStakingAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates initial invitation balance for a invited member. Requires root origin.
+       **/
+      setInitialInvitationBalance: AugmentedSubmittable<(newInitialBalance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates initial invitation count for a member. Requires root origin.
+       **/
+      setInitialInvitationCount: AugmentedSubmittable<(newInvitationCount: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates leader invitation quota. Requires root origin.
+       **/
+      setLeaderInvitationQuota: AugmentedSubmittable<(invitationQuota: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates membership price. Requires root origin.
+       **/
+      setMembershipPrice: AugmentedSubmittable<(newPrice: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates membership referral cut. Requires root origin.
+       **/
+      setReferralCut: AugmentedSubmittable<(value: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Transfers invites from one member to another.
+       **/
+      transferInvites: AugmentedSubmittable<(sourceMemberId: MemberId | AnyNumber | Uint8Array, targetMemberId: MemberId | AnyNumber | Uint8Array, numberOfInvites: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates member root or controller accounts. No effect if both new accounts are empty.
+       **/
+      updateAccounts: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, newRootAccount: Option<AccountId> | null | object | string | Uint8Array, newControllerAccount: Option<AccountId> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update member's all or some of name, handle, avatar and about text.
+       * No effect if no changed fields.
+       **/
+      updateProfile: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, name: Option<Bytes> | null | object | string | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates member profile verification status. Requires working group member origin.
+       **/
+      updateProfileVerification: AugmentedSubmittable<(workerId: ActorId | AnyNumber | Uint8Array, targetMemberId: MemberId | AnyNumber | Uint8Array, isVerified: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+    };
+    membershipWorkingGroup: {
+      /**
+       * Add a job opening for a regular worker/lead role.
+       * Require signed leader origin or the root (to add opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      addOpening: AugmentedSubmittable<(description: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array, stakePolicy: Option<StakePolicy> | null | object | string | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Apply on a worker opening.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `p.description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      applyOnOpening: AugmentedSubmittable<(p: ApplyOnOpeningParameters | null) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Cancel an opening for the regular worker/lead position.
+       * Require signed leader origin or the root (to cancel opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      cancelOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Decreases the regular worker/lead stake and returns the remainder to the
+       * worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+       * Accepts the stake amount to decrease.
+       * Requires signed leader origin or the root (to decrease the leader stake).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Fill opening for the regular/lead position.
+       * Require signed leader origin or the root (to fill opening for the leader position).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `successful_application_ids`
+       * - DB:
+       * - O(A)
+       * # </weight>
+       **/
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: BTreeSet<ApplicationId>) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Increases the regular worker/lead stake, demands a worker origin.
+       * Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Leave the role by the active worker.
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets a new budget for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setBudget: AugmentedSubmittable<(newBudget: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets a new status text for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (S)` where:
+       * - `S` is the length of the contents of `status_text` when it is not none
+       * 
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setStatusText: AugmentedSubmittable<(statusText: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Requires signed leader origin or the root (to slash the leader stake).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penality.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Penalty | null) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId | string | Uint8Array, amount: BalanceOf | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Terminate the active worker by the lead.
+       * Requires signed leader origin or the root (to terminate the leader role).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penalty.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Option<Penalty> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the reward account associated with a set reward relationship for the active worker.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the reward per block for the active worker.
+       * Require signed leader origin or the root (to update leader's reward amount).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the associated role account of the active regular worker/lead.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Withdraw the worker application. Can be done by the worker only.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     memo: {
       updateMemo: AugmentedSubmittable<(memo: MemoText | string) => SubmittableExtrinsic<ApiType>>;
     };
     proposalsCodex: {
       /**
-       * Create 'Add working group leader opening' proposal type.
-       * This proposal uses `add_opening()` extrinsic from the Joystream `working group` module.
+       * Create a proposal, the type of proposal depends on the `proposal_details` variant
        **/
-      createAddWorkingGroupLeaderOpeningProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, addOpeningParameters: AddOpeningParameters | { activate_at?: any; commitment?: any; human_readable_text?: any; working_group?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Begin review working group leader applications' proposal type.
-       * This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
-       **/
-      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'decrease working group leader stake' proposal type.
-       * This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
-       **/
-      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Fill working group leader opening' proposal type.
-       * This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
-       **/
-      createFillWorkingGroupLeaderOpeningProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, fillOpeningParameters: FillOpeningParameters | { opening_id?: any; successful_application_id?: any; reward_policy?: any; working_group?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Runtime upgrade' proposal type. Runtime upgrade can be initiated only by
-       * members from the hardcoded list `RuntimeUpgradeProposalAllowedProposers`
-       **/
-      createRuntimeUpgradeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, wasm: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Set election parameters' proposal type. This proposal uses `set_election_parameters()`
-       * extrinsic from the `governance::election module`.
-       **/
-      createSetElectionParametersProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, electionParameters: ElectionParameters | { announcing_period?: any; voting_period?: any; revealing_period?: any; council_size?: any; candidacy_limit?: any; new_term_duration?: any; min_council_stake?: any; min_voting_stake?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Evict storage provider' proposal type.
-       * This proposal uses `set_validator_count()` extrinsic from the Substrate `staking`  module.
-       **/
-      createSetValidatorCountProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, newValidatorCount: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'set working group leader reward' proposal type.
-       * This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
-       **/
-      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Set working group mint capacity' proposal type.
-       * This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
-       **/
-      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'slash working group leader stake' proposal type.
-       * This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
-       **/
-      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Spending' proposal type.
-       * This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
-       **/
-      createSpendingProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, balance: BalanceOfMint | AnyNumber | Uint8Array, destination: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'terminate working group leader rolw' proposal type.
-       * This proposal uses `terminate_role()` extrinsic from the `working-group`  module.
-       **/
-      createTerminateWorkingGroupLeaderRoleProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, terminateRoleParameters: TerminateRoleParameters | { worker_id?: any; rationale?: any; slash?: any; working_group?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Create 'Text (signal)' proposal type.
-       **/
-      createTextProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createProposal: AugmentedSubmittable<(generalProposalParameters: GeneralProposalParameters | null, proposalDetails: ProposalDetailsOf | { Text: any } | { RuntimeUpgrade: any } | { SetElectionParameters: any } | { Spending: any } | { SetLead: any } | { SetContentWorkingGroupMintCapacity: any } | { EvictStorageProvider: any } | { SetValidatorCount: any } | { SetStorageRoleParameters: any } | { AddWorkingGroupLeaderOpening: any } | { BeginReviewWorkingGroupLeaderApplication: any } | { FillWorkingGroupLeaderOpening: any } | { SetWorkingGroupMintCapacity: any } | { DecreaseWorkingGroupLeaderStake: any } | { SlashWorkingGroupLeaderStake: any } | { SetWorkingGroupLeaderReward: any } | { TerminateWorkingGroupLeaderRole: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Runtime upgrade proposal extrinsic.
        * Should be used as callable object to pass to the `engine` module.
@@ -671,26 +1152,96 @@ declare module '@polkadot/api/types/submittable' {
     proposalsDiscussion: {
       /**
        * Adds a post with author origin check.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - `W` is the number of whitelisted members for `thread_id`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       addPost: AugmentedSubmittable<(postAuthorId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Updates a post with author origin check. Update attempts number is limited.
+       * Changes thread permission mode.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` if ThreadMode is close or O(1) otherwise where:
+       * - `W` is the number of whitelisted members in `mode`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      updatePost: AugmentedSubmittable<(postAuthorId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      changeThreadMode: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, mode: ThreadMode | null) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Updates a post with author origin check. Update attempts number is limited.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)` doesn't depend on the state or parameters
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updatePost: AugmentedSubmittable<(threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     proposalsEngine: {
       /**
        * Cancel a proposal by its original proposer.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (L)` where:
+       * - `L` is the total number of locks in `Balances`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       cancelProposal: AugmentedSubmittable<(proposerId: MemberId | AnyNumber | Uint8Array, proposalId: ProposalId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Veto a proposal. Must be root.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)` doesn't depend on the state or parameters
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       vetoProposal: AugmentedSubmittable<(proposalId: ProposalId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Vote extrinsic. Conditions:  origin must allow votes.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (R)` where:
+       * - `R` is the length of `rationale`
+       * - DB:
+       * - O(1) doesn't depend on the state or paraemters
+       * # </weight>
        **/
-      vote: AugmentedSubmittable<(voterId: MemberId | AnyNumber | Uint8Array, proposalId: ProposalId | AnyNumber | Uint8Array, vote: VoteKind | 'Approve'|'Reject'|'Slash'|'Abstain' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      vote: AugmentedSubmittable<(voterId: MemberId | AnyNumber | Uint8Array, proposalId: ProposalId | AnyNumber | Uint8Array, vote: VoteKind | 'Approve'|'Reject'|'Slash'|'Abstain' | number | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+    };
+    referendum: {
+      /**
+       * Release a locked stake.
+       **/
+      releaseVoteStake: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Reveal a sealed vote in the referendum.
+       **/
+      revealVote: AugmentedSubmittable<(salt: Bytes | string | Uint8Array, voteOptionId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Cast a sealed vote in the referendum.
+       **/
+      vote: AugmentedSubmittable<(commitment: Hash | string | Uint8Array, stake: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     session: {
       /**
@@ -745,13 +1296,13 @@ declare module '@polkadot/api/types/submittable' {
        * NOTE: Two of the storage writes (`Self::bonded`, `Self::payee`) are _never_ cleaned
        * unless the `origin` falls below _existential deposit_ and gets removed as dust.
        * ------------------
-       * Base Weight: 67.87 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Bonded, Ledger, [Origin Account], Current Era, History Depth, Locks
        * - Write: Bonded, Payee, [Origin Account], Locks, Ledger
        * # </weight>
        **/
-      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | 'Staked'|'Stash'|'Controller' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
@@ -770,7 +1321,6 @@ declare module '@polkadot/api/types/submittable' {
        * - O(1).
        * - One DB entry.
        * ------------
-       * Base Weight: 54.88 µs
        * DB Weight:
        * - Read: Era Election Status, Bonded, Ledger, [Origin Account], Locks
        * - Write: [Origin Account], Locks, Ledger
@@ -788,7 +1338,6 @@ declare module '@polkadot/api/types/submittable' {
        * Complexity: O(U + S)
        * with U unapplied slashes weighted with U=1000
        * and S is the number of slash indices to be canceled.
-       * - Base: 5870 + 34.61 * S µs
        * - Read: Unapplied Slashes
        * - Write: Unapplied Slashes
        * # </weight>
@@ -807,7 +1356,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains one read.
        * - Writes are limited to the `origin` account key.
        * --------
-       * Base Weight: 16.53 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: EraElectionStatus, Ledger
        * - Write: Validators, Nominators
@@ -822,7 +1371,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - No arguments.
-       * - Base Weight: 1.959 µs
+       * - Weight: O(1)
        * - Write ForceEra
        * # </weight>
        **/
@@ -833,7 +1382,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * - Base Weight: 2.05 µs
+       * - Weight: O(1)
        * - Write: ForceEra
        * # </weight>
        **/
@@ -845,7 +1394,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - No arguments.
-       * - Base Weight: 1.857 µs
+       * - Weight: O(1)
        * - Write: ForceEra
        * # </weight>
        **/
@@ -857,7 +1406,6 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * O(S) where S is the number of slashing spans to be removed
-       * Base Weight: 53.07 + 2.365 * S µs
        * Reads: Bonded, Slashing Spans, Account, Locks
        * Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, Account, Locks
        * Writes Each: SpanSlash * S
@@ -870,8 +1418,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
-       * Read/Write: Validator Count
+       * Same as [`set_validator_count`].
        * # </weight>
        **/
       increaseValidatorCount: AugmentedSubmittable<(additional: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -889,7 +1436,7 @@ declare module '@polkadot/api/types/submittable' {
        * which is capped at CompactAssignments::LIMIT (MAX_NOMINATIONS).
        * - Both the reads and writes follow a similar pattern.
        * ---------
-       * Base Weight: 22.34 + .36 * N µs
+       * Weight: O(N)
        * where N is the number of targets
        * DB Weight:
        * - Reads: Era Election Status, Ledger, Current Era
@@ -914,14 +1461,17 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads and writes.
        * -----------
        * N is the Number of payouts for the validator (including the validator)
-       * Base Weight:
-       * - Reward Destination Staked: 110 + 54.2 * N µs (Median Slopes)
-       * - Reward Destination Controller (Creating): 120 + 41.95 * N µs (Median Slopes)
+       * Weight:
+       * - Reward Destination Staked: O(N)
+       * - Reward Destination Controller (Creating): O(N)
        * DB Weight:
        * - Read: EraElectionStatus, CurrentEra, HistoryDepth, ErasValidatorReward,
        * ErasStakersClipped, ErasRewardPoints, ErasValidatorPrefs (8 items)
        * - Read Each: Bonded, Ledger, Payee, Locks, System Account (5 items)
        * - Write Each: System Account, Locks, Ledger (3 items)
+       * 
+       * NOTE: weights are assuming that payouts are made to alive stash account (Staked).
+       * Paying even a dead controller is cheaper weight-wise. We don't do any refunds here.
        * # </weight>
        **/
       payoutStakers: AugmentedSubmittable<(validatorStash: AccountId | string | Uint8Array, era: EraIndex | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -936,7 +1486,6 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * Complexity: O(S) where S is the number of slashing spans on the account.
-       * Base Weight: 75.94 + 2.396 * S µs
        * DB Weight:
        * - Reads: Stash Account, Bonded, Slashing Spans, Locks
        * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, Stash Account, Locks
@@ -955,7 +1504,6 @@ declare module '@polkadot/api/types/submittable' {
        * - Bounded by `MAX_UNLOCKING_CHUNKS`.
        * - Storage changes: Can't increase storage, only decrease it.
        * ---------------
-       * - Base Weight: 34.51 µs * .048 L µs
        * - DB Weight:
        * - Reads: EraElectionStatus, Ledger, Locks, [Origin Account]
        * - Writes: [Origin Account], Locks, Ledger
@@ -968,8 +1516,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
-       * Read/Write: Validator Count
+       * Same as [`set_validator_count`].
        * # </weight>
        **/
       scaleValidatorCount: AugmentedSubmittable<(factor: Percent | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -985,7 +1532,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * ----------
-       * Base Weight: 25.22 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Bonded, Ledger New Controller, Ledger Old Controller
        * - Write: Bonded, Ledger New Controller, Ledger Old Controller
@@ -1007,7 +1554,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - E: Number of history depths removed, i.e. 10 -> 7 = 3
-       * - Base Weight: 29.13 * E µs
+       * - Weight: O(E)
        * - DB Weight:
        * - Reads: Current Era, History Depth
        * - Writes: History Depth
@@ -1023,11 +1570,10 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - O(V)
-       * - Base Weight: 2.208 + .006 * V µs
        * - Write: Invulnerables
        * # </weight>
        **/
-      setInvulnerables: AugmentedSubmittable<(validators: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      setInvulnerables: AugmentedSubmittable<(invulnerables: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * (Re-)set the payment target for a controller.
        * 
@@ -1040,20 +1586,20 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * ---------
-       * - Base Weight: 11.33 µs
+       * - Weight: O(1)
        * - DB Weight:
        * - Read: Ledger
        * - Write: Payee
        * # </weight>
        **/
-      setPayee: AugmentedSubmittable<(payee: RewardDestination | 'Staked'|'Stash'|'Controller' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Sets the ideal number of validators.
        * 
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
+       * Weight: O(1)
        * Write: Validator Count
        * # </weight>
        **/
@@ -1104,7 +1650,9 @@ declare module '@polkadot/api/types/submittable' {
        * minimized (to ensure less variance)
        * 
        * # <weight>
-       * See `crate::weight` module.
+       * The transaction is assumed to be the longest path, a better solution.
+       * - Initial solution is almost the same.
+       * - Worse solution is retraced in pre-dispatch-checks which sets its own weight.
        * # </weight>
        **/
       submitElectionSolution: AugmentedSubmittable<(winners: Vec<ValidatorIndex> | (ValidatorIndex | AnyNumber | Uint8Array)[], compact: CompactAssignments | { votes1?: any; votes2?: any; votes3?: any; votes4?: any; votes5?: any; votes6?: any; votes7?: any; votes8?: any; votes9?: any; votes10?: any; votes11?: any; votes12?: any; votes13?: any; votes14?: any; votes15?: any; votes16?: any } | string | Uint8Array, score: ElectionScore, era: EraIndex | AnyNumber | Uint8Array, size: ElectionSize | { validators?: any; nominators?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -1148,10 +1696,10 @@ declare module '@polkadot/api/types/submittable' {
        * `withdraw_unbonded`.
        * - One DB entry.
        * ----------
-       * Base Weight: 50.34 µs
+       * Weight: O(1)
        * DB Weight:
-       * - Read: Era Election Status, Ledger, Current Era, Locks, [Origin Account]
-       * - Write: [Origin Account], Locks, Ledger
+       * - Read: EraElectionStatus, Ledger, CurrentEra, Locks, BalanceOf Stash,
+       * - Write: Locks, Ledger, BalanceOf Stash,
        * </weight>
        **/
       unbond: AugmentedSubmittable<(value: Compact<BalanceOf> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -1168,7 +1716,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * -----------
-       * Base Weight: 17.13 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Era Election Status, Ledger
        * - Write: Nominators, Validators
@@ -1196,13 +1744,14 @@ declare module '@polkadot/api/types/submittable' {
        * - Writes are limited to the `origin` account key.
        * ---------------
        * Complexity O(S) where S is the number of slashing spans to remove
-       * Base Weight:
-       * Update: 50.52 + .028 * S µs
+       * Update:
        * - Reads: EraElectionStatus, Ledger, Current Era, Locks, [Origin Account]
        * - Writes: [Origin Account], Locks, Ledger
-       * Kill: 79.41 + 2.366 * S µs
-       * - Reads: EraElectionStatus, Ledger, Current Era, Bonded, Slashing Spans, [Origin Account], Locks
-       * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, [Origin Account], Locks
+       * Kill:
+       * - Reads: EraElectionStatus, Ledger, Current Era, Bonded, Slashing Spans, [Origin
+       * Account], Locks, BalanceOf stash
+       * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators,
+       * [Origin Account], Locks, BalanceOf stash.
        * - Writes Each: SpanSlash * S
        * NOTE: Weight annotation is the kill scenario, we refund otherwise.
        * # </weight>
@@ -1211,78 +1760,212 @@ declare module '@polkadot/api/types/submittable' {
     };
     storageWorkingGroup: {
       /**
-       * Begin accepting worker applications to an opening that is active.
-       * Require signed leader origin or the root (to accept applications for the leader position).
-       **/
-      acceptApplications: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Add an opening for a worker role.
+       * Add a job opening for a regular worker/lead role.
        * Require signed leader origin or the root (to add opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addOpening: AugmentedSubmittable<(description: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader'|'Worker' | number | Uint8Array, stakePolicy: Option<StakePolicy> | null | object | string | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Apply on a worker opening.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the length of `p.description`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      applyOnOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, roleAccountId: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      applyOnOpening: AugmentedSubmittable<(p: ApplyOnOpeningParameters | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Begin reviewing, and therefore not accepting new applications.
-       * Require signed leader origin or the root (to begin review applications for the leader position).
+       * Cancel an opening for the regular worker/lead position.
+       * Require signed leader origin or the root (to cancel opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      beginApplicantReview: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      cancelOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
-       * Can be decreased to zero, no actions on zero stake.
-       * Require signed leader origin or the root (to decrease the leader stake).
+       * Decreases the regular worker/lead stake and returns the remainder to the
+       * worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+       * Accepts the stake amount to decrease.
+       * Requires signed leader origin or the root (to decrease the leader stake).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Fill opening for worker/lead.
+       * Fill opening for the regular/lead position.
        * Require signed leader origin or the root (to fill opening for the leader position).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `successful_application_ids`
+       * - DB:
+       * - O(A)
+       * # </weight>
        **/
-      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: ApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: BTreeSet<ApplicationId>) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
-       * role_account_id to the stake. No limits on the stake.
+       * Increases the regular worker/lead stake, demands a worker origin.
+       * Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, stakeBalanceDelta: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Leave the role by the active worker.
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Sets the capacity to enable working group budget. Requires root origin.
+       * Sets a new budget for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setBudget: AugmentedSubmittable<(newBudget: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * Sets a new status text for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (S)` where:
+       * - `S` is the length of the contents of `status_text` when it is not none
+       * 
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setStatusText: AugmentedSubmittable<(statusText: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
        * If slashing balance greater than the existing stake - stake is slashed to zero.
-       * Require signed leader origin or the root (to slash the leader stake).
+       * Requires signed leader origin or the root (to slash the leader stake).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penality.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Penalty | null) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Terminate the worker application. Can be done by the lead only.
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      terminateApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId | string | Uint8Array, amount: BalanceOf | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Terminate the active worker by the lead.
-       * Require signed leader origin or the root (to terminate the leader role).
+       * Requires signed leader origin or the root (to terminate the leader role).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the length of `penalty.slashing_text`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array, slashStake: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, penalty: Option<Penalty> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Update the reward account associated with a set reward relationship for the active worker.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Update the reward amount associated with a set reward relationship for the active worker.
-       * Require signed leader origin or the root (to update leader reward amount).
+       * Update the reward per block for the active worker.
+       * Require signed leader origin or the root (to update leader's reward amount).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newAmount: BalanceOfMint | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rewardPerBlock: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Update the associated role account of the active worker/lead.
+       * Update the associated role account of the active regular worker/lead.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Withdraw the worker application. Can be done by the worker itself only.
+       * Withdraw the worker application. Can be done by the worker only.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
@@ -1469,9 +2152,6 @@ declare module '@polkadot/api/types/submittable' {
        * - `O(T)` where `T` complexity of `on_timestamp_set`
        * - 1 storage read and 1 storage mutation (codec `O(1)`). (because of `DidUpdate::take` in `on_finalize`)
        * - 1 event handler `on_timestamp_set` `O(T)`.
-       * - Benchmark: 7.678 (min squares analysis)
-       * - NOTE: This benchmark was done for a runtime with insignificant `on_timestamp_set` handlers.
-       * New benchmarking is needed when adding new handlers.
        * # </weight>
        **/
       set: AugmentedSubmittable<(now: Compact<Moment> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -1485,31 +2165,14 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * NOTE: If you need to ensure that any account-based filtering is not honored (i.e.
        * because you expect `proxy` to have been used prior in the call stack and you do not want
-       * the call restrictions to apply to any sub-accounts), then use `as_sub` instead.
+       * the call restrictions to apply to any sub-accounts), then use `as_multi_threshold_1`
+       * in the Multisig pallet instead.
+       * 
+       * NOTE: Prior to version *12, this was called `as_limited_sub`.
        * 
        * The dispatch origin for this call must be _Signed_.
-       * 
-       * # <weight>
-       * - Base weight: 2.861 µs
-       * - Plus the weight of the `call`
-       * # </weight>
        **/
-      asLimitedSub: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Send a call through an indexed pseudonym of the sender.
-       * 
-       * NOTE: If you need to ensure that any account-based filtering is honored (i.e. because
-       * you expect `proxy` to have been used prior in the call stack and you want it to apply to
-       * any sub-accounts), then use `as_limited_sub` instead.
-       * 
-       * The dispatch origin for this call must be _Signed_.
-       * 
-       * # <weight>
-       * - Base weight: 2.861 µs
-       * - Plus the weight of the `call`
-       * # </weight>
-       **/
-      asSub: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      asDerivative: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Send a batch of dispatch calls.
        * 
@@ -1533,28 +2196,6 @@ declare module '@polkadot/api/types/submittable' {
        * event is deposited.
        **/
       batch: AugmentedSubmittable<(calls: Vec<Call> | (Call | { callIndex?: any; args?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
-    };
-    versionedStorePermissions: {
-      addClassSchema: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, existingProperties: Vec<u16> | (u16 | AnyNumber | Uint8Array)[], newProperties: Vec<Property> | (Property | { property_type?: any; required?: any; unique?: any; name?: any; description?: any; locking_policy?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
-      addSchemaSupportToEntity: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, asEntityMaintainer: bool | boolean | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, schemaId: u16 | AnyNumber | Uint8Array, propertyValues: Vec<ClassPropertyValue> | (ClassPropertyValue | null)[]) => SubmittableExtrinsic<ApiType>>;
-      createClass: AugmentedSubmittable<(name: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, classPermissions: ClassPermissionsType | null) => SubmittableExtrinsic<ApiType>>;
-      createClassWithDefaultPermissions: AugmentedSubmittable<(name: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the provided credential
-       * associated with signer.
-       **/
-      createEntity: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setClassAddSchemasSet: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, credentialSet: CredentialSet) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Sets the admins for a class
-       **/
-      setClassAdmins: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, admins: CredentialSet) => SubmittableExtrinsic<ApiType>>;
-      setClassCreateEntitiesSet: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, credentialSet: CredentialSet) => SubmittableExtrinsic<ApiType>>;
-      setClassEntitiesCanBeCreated: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, canBeCreated: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setClassEntityPermissions: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, entityPermissions: EntityPermissions | { controller?: any; frozen?: any; referenceable?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      setClassReferenceConstraint: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, constraint: ReferenceConstraint | null) => SubmittableExtrinsic<ApiType>>;
-      transaction: AugmentedSubmittable<(operations: Vec<Operation> | (Operation | null)[]) => SubmittableExtrinsic<ApiType>>;
-      updateEntityPropertyValues: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, asEntityMaintainer: bool | boolean | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, propertyValues: Vec<ClassPropertyValue> | (ClassPropertyValue | null)[]) => SubmittableExtrinsic<ApiType>>;
     };
   }
 

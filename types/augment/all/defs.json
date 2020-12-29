@@ -49,8 +49,8 @@
         "entry": "EntryMethod",
         "suspended": "bool",
         "subscription": "Option<SubscriptionId>",
-        "root_account": "GenericAccountId",
-        "controller_account": "GenericAccountId"
+        "root_account": "AccountId",
+        "controller_account": "AccountId"
     },
     "PaidMembershipTerms": {
         "fee": "u128",
@@ -69,10 +69,10 @@
         "transferred": "u128"
     },
     "SealedVote": {
-        "voter": "GenericAccountId",
+        "voter": "AccountId",
         "commitment": "Hash",
         "stake": "ElectionStake",
-        "vote": "Option<GenericAccountId>"
+        "vote": "Option<AccountId>"
     },
     "TransferableStake": {
         "seat": "u128",
@@ -89,13 +89,13 @@
         "min_voting_stake": "u128"
     },
     "Seat": {
-        "member": "GenericAccountId",
+        "member": "AccountId",
         "stake": "u128",
         "backers": "Backers"
     },
     "Seats": "Vec<Seat>",
     "Backer": {
-        "member": "GenericAccountId",
+        "member": "AccountId",
         "stake": "u128"
     },
     "Backers": "Vec<Backer>",
@@ -117,7 +117,7 @@
     },
     "ModerationAction": {
         "moderated_at": "BlockAndTime",
-        "moderator_id": "GenericAccountId",
+        "moderator_id": "AccountId",
         "rationale": "Text"
     },
     "ChildPositionInParentCategory": {
@@ -136,7 +136,7 @@
         "num_direct_unmoderated_threads": "u32",
         "num_direct_moderated_threads": "u32",
         "position_in_parent_category": "Option<ChildPositionInParentCategory>",
-        "moderator_id": "GenericAccountId"
+        "moderator_id": "AccountId"
     },
     "Thread": {
         "id": "ThreadId",
@@ -147,7 +147,7 @@
         "num_unmoderated_posts": "u32",
         "num_moderated_posts": "u32",
         "created_at": "BlockAndTime",
-        "author_id": "GenericAccountId"
+        "author_id": "AccountId"
     },
     "Post": {
         "id": "PostId",
@@ -157,11 +157,11 @@
         "moderation": "Option<ModerationAction>",
         "text_change_history": "Vec<PostTextChange>",
         "created_at": "BlockAndTime",
-        "author_id": "GenericAccountId"
+        "author_id": "AccountId"
     },
     "ReplyId": "u64",
     "Reply": {
-        "owner": "GenericAccountId",
+        "owner": "AccountId",
         "thread_id": "ThreadId",
         "text": "Text",
         "moderation": "Option<ModerationAction>"
@@ -233,7 +233,7 @@
     "RewardRelationship": {
         "recipient": "RecipientId",
         "mint_id": "MintId",
-        "account": "GenericAccountId",
+        "account": "AccountId",
         "amount_per_payout": "u128",
         "next_payment_at_block": "Option<u32>",
         "payout_interval": "Option<u32>",
@@ -369,7 +369,7 @@
         "banner": "OptionalText",
         "content": "ChannelContentType",
         "owner": "MemberId",
-        "role_account": "GenericAccountId",
+        "role_account": "AccountId",
         "publication_status": "ChannelPublicationStatus",
         "curation_status": "ChannelCurationStatus",
         "created": "u32",
@@ -401,7 +401,7 @@
         }
     },
     "Curator": {
-        "role_account": "GenericAccountId",
+        "role_account": "AccountId",
         "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<CuratorRoleStakeProfile>",
         "stage": "CuratorRoleStage",
@@ -409,7 +409,7 @@
         "principal_id": "PrincipalId"
     },
     "CuratorApplication": {
-        "role_account": "GenericAccountId",
+        "role_account": "AccountId",
         "curator_opening_id": "CuratorOpeningId",
         "member_id": "MemberId",
         "application_id": "ApplicationId"
@@ -421,7 +421,7 @@
     },
     "Lead": {
         "member_id": "MemberId",
-        "role_account": "GenericAccountId",
+        "role_account": "AccountId",
         "reward_relationship": "Option<RewardRelationshipId>",
         "inducted": "u32",
         "stage": "LeadRoleState"
@@ -494,7 +494,7 @@
     },
     "RationaleText": "Bytes",
     "ApplicationOf": {
-        "role_account_id": "GenericAccountId",
+        "role_account_id": "AccountId",
         "opening_id": "OpeningId",
         "member_id": "MemberId",
         "application_id": "ApplicationId"
@@ -504,7 +504,7 @@
     "WorkerId": "u64",
     "WorkerOf": {
         "member_id": "MemberId",
-        "role_account_id": "GenericAccountId",
+        "role_account_id": "AccountId",
         "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<RoleStakeProfile>"
     },
@@ -605,7 +605,7 @@
             "Spending": "(Balance,AccountId)",
             "SetLead": "Option<SetLeadParams>",
             "SetContentWorkingGroupMintCapacity": "u128",
-            "EvictStorageProvider": "GenericAccountId",
+            "EvictStorageProvider": "AccountId",
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
@@ -626,7 +626,7 @@
             "Spending": "(Balance,AccountId)",
             "SetLead": "Option<SetLeadParams>",
             "SetContentWorkingGroupMintCapacity": "u128",
-            "EvictStorageProvider": "GenericAccountId",
+            "EvictStorageProvider": "AccountId",
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
@@ -699,7 +699,7 @@
     },
     "ActiveStake": {
         "stake_id": "StakeId",
-        "source_account_id": "GenericAccountId"
+        "source_account_id": "AccountId"
     },
     "Finalized": {
         "proposalStatus": "ProposalDecisionStatus",
@@ -727,7 +727,7 @@
             "ExecutionFailed": "ExecutionFailed"
         }
     },
-    "SetLeadParams": "(MemberId,GenericAccountId)",
+    "SetLeadParams": "(MemberId,AccountId)",
     "Nonce": "u64",
     "EntityId": "u64",
     "ClassId": "u64",
