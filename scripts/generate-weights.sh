@@ -28,10 +28,10 @@ benchmark() {
 }
 
 # FRAME benchmarks
-benchmark frame_system
-benchmark pallet_utility
-benchmark pallet_session
-benchmark pallet_timestamp
+# benchmark frame_system
+# benchmark pallet_utility
+# benchmark pallet_session
+# benchmark pallet_timestamp
 
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
 # Will have it commented out until we test it in the reference machine. If there
@@ -40,7 +40,9 @@ benchmark pallet_timestamp
 # benchmark pallet_im_online
 
 # Joystrem benchmarks
-benchmark proposals_discussion
-benchmark proposals_engine
-benchmark pallet_constitution
-benchmark working_group
+# benchmark proposals_discussion
+# benchmark proposals_engine
+# benchmark pallet_constitution
+# benchmark working_group
+benchmark forum
+

@@ -666,6 +666,7 @@ impl forum::Trait for Runtime {
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
+    type WeightInfo = weights::forum::WeightInfo;
 
     fn is_lead(_account_id: &AccountId) -> bool {
         // get current lead id

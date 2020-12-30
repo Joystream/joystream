@@ -21,6 +21,29 @@ mod tests;
 
 mod benchmarking;
 
+type WeightInfoForum<T> = <T as Trait>::WeightInfo;
+
+/// pallet_forum WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn create_category(j: u32) -> Weight;
+    fn update_category_membership_of_moderator(i: u32) -> Weight;
+    fn update_category_archival_status() -> Weight;
+    fn delete_category() -> Weight;
+    fn create_thread(j: u32, i: u32) -> Weight;
+    fn edit_thread_title(j: u32) -> Weight;
+    fn update_thread_archival_status() -> Weight;
+    fn delete_thread() -> Weight;
+    fn move_thread_to_category() -> Weight;
+    fn vote_on_poll(i: u32) -> Weight;
+    fn moderate_thread(i: u32) -> Weight;
+    fn add_post(i: u32) -> Weight;
+    fn react_post() -> Weight;
+    fn edit_post_text(i: u32) -> Weight;
+    fn moderate_post(i: u32) -> Weight;
+    fn set_stickied_threads(i: u32) -> Weight;
+}
+
 pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
     type ForumUserId: Parameter
@@ -91,6 +114,9 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
 
     type MaxCategoryDepth: Get<u64>;
     type MapLimits: StorageLimits;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool;
     fn is_forum_member(
@@ -446,6 +472,11 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Enable a moderator can moderate a category and its sub categories.
+        /// # <weight>
+        /// - Complexity: `O(C)` where C is the length of the constitution text.
+        /// - Db reads: 0
+        /// - Db writes: 1 (constant value)
+        /// # </weight>
         #[weight = 10_000_000] // TODO: adjust weight
         fn update_category_membership_of_moderator(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
             // Ensure data migration is done

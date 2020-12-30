@@ -287,7 +287,7 @@ pub fn generate_categories_tree<T: Trait>(
 
     let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-    for n in 0..T::MaxCategoryDepth::get() {
+    for n in 0..=T::MaxCategoryDepth::get() {
         if n > 1 {
             parent_category_id = Some((n as u64).into());
         }
@@ -810,7 +810,7 @@ benchmarks! {
 
         let mut post = Module::<T>::post_by_id(thread_id, post_id);
 
-        let new_text = vec![0u8].repeat(MAX_BYTES as usize);
+        let new_text = vec![0u8].repeat(i as usize);
 
     }: _ (RawOrigin::Signed(caller_id), (forum_user_id as u64).into(), category_id, thread_id, post_id, new_text.clone())
     verify {
