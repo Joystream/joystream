@@ -28,6 +28,7 @@ export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
   toArray(): V[]
 }
+
 export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
   return class extends BTreeSet.with(valType) {
     public toArray(): V[] {
@@ -57,13 +58,15 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
   }
 }
 
-export class Credential extends u64 {}
-export class CredentialSet extends JoyBTreeSet(Credential) {}
+export class ActorId extends u64 {}
+export class MemberId extends u64 {}
 
-// common types between Forum and Proposal Discussions modules
+// Indentical type names for Forum and Proposal Discussions modules
+// Ensure they are both configured in runtime to have same type
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
 
+// Which module uses this?
 export class Hash extends U8aFixed implements PolkadotHash {}
 
 export type BlockAndTimeType = {
@@ -109,7 +112,11 @@ export type InputValidationLengthConstraintType = {
   max_min_diff: u16
 }
 
-export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
+export class InputValidationLengthConstraint
+  extends JoyStructDecorated({
+    min: u16,
+    max_min_diff: u16,
+  })
   implements InputValidationLengthConstraintType {
   get max(): u16 {
     return this.registry.createType('u16', this.min.add(this.max_min_diff))
@@ -117,31 +124,13 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 }
 
 export const WorkingGroupDef = {
+  Forum: Null,
   Storage: Null,
   Content: Null,
+  Membership: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
-
-// Temporarly in "common", because used both by /working-group and /content-working-group:
-export type ISlashableTerms = {
-  max_count: u16
-  max_percent_pts_per_time: u16
-}
-
-export class SlashableTerms
-  extends JoyStructDecorated({
-    max_count: u16,
-    max_percent_pts_per_time: u16,
-  })
-  implements ISlashableTerms {}
-
-export class UnslashableTerms extends Null {}
-
-export class SlashingTerms extends JoyEnum({
-  Unslashable: UnslashableTerms,
-  Slashable: SlashableTerms,
-} as const) {}
 
 export class MemoText extends Text {}
 
@@ -152,16 +141,13 @@ export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
 
 export const commonTypes: RegistryTypes = {
-  Credential,
-  CredentialSet,
+  ActorId,
+  MemberId,
   BlockAndTime,
   ThreadId,
   PostId,
   InputValidationLengthConstraint,
   WorkingGroup,
-  // Expose in registry for api.createType purposes:
-  SlashingTerms,
-  SlashableTerms,
   MemoText,
   // Customize Address type for joystream chain
   Address,
