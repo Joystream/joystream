@@ -7,6 +7,7 @@ pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
+use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
@@ -26,22 +27,22 @@ type WeightInfoForum<T> = <T as Trait>::WeightInfo;
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_category(j: u32) -> Weight;
+    fn create_category(i: u32, j: u32) -> Weight;
     fn update_category_membership_of_moderator(i: u32) -> Weight;
-    fn update_category_archival_status() -> Weight;
-    fn delete_category() -> Weight;
-    fn create_thread(j: u32, i: u32) -> Weight;
-    fn edit_thread_title(j: u32) -> Weight;
-    fn update_thread_archival_status() -> Weight;
-    fn delete_thread() -> Weight;
-    fn move_thread_to_category() -> Weight;
-    fn vote_on_poll(i: u32) -> Weight;
-    fn moderate_thread(i: u32) -> Weight;
-    fn add_post(i: u32) -> Weight;
-    fn react_post() -> Weight;
-    fn edit_post_text(i: u32) -> Weight;
-    fn moderate_post(i: u32) -> Weight;
-    fn set_stickied_threads(i: u32) -> Weight;
+    fn update_category_archival_status(i: u32) -> Weight;
+    fn delete_category(i: u32) -> Weight;
+    fn create_thread(i: u32, j: u32, k: u32) -> Weight;
+    fn edit_thread_title(i: u32, j: u32) -> Weight;
+    fn update_thread_archival_status(i: u32) -> Weight;
+    fn delete_thread(i: u32) -> Weight;
+    fn move_thread_to_category(i: u32) -> Weight;
+    fn vote_on_poll(i: u32, j: u32) -> Weight;
+    fn moderate_thread(i: u32, j: u32) -> Weight;
+    fn add_post(i: u32, j: u32) -> Weight;
+    fn react_post(i: u32) -> Weight;
+    fn edit_post_text(i: u32, j: u32) -> Weight;
+    fn moderate_post(i: u32, j: u32) -> Weight;
+    fn set_stickied_threads(i: u32, j: u32) -> Weight;
 }
 
 pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {

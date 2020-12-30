@@ -281,13 +281,14 @@ pub fn generate_poll<T: Trait>(
 /// Generates categories tree
 pub fn generate_categories_tree<T: Trait>(
     caller_id: T::AccountId,
+    category_depth: u32,
 ) -> (T::CategoryId, Option<T::CategoryId>) {
     let mut parent_category_id = None;
     let mut category_id = T::CategoryId::default();
 
     let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-    for n in 0..=T::MaxCategoryDepth::get() {
+    for n in 0..=category_depth {
         if n > 1 {
             parent_category_id = Some((n as u64).into());
         }
@@ -312,12 +313,14 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         let j in 0 .. MAX_BYTES;
 
         let text = vec![0u8].repeat(j as usize);
 
         // Generate categories tree
-        let (_, parent_category_id) = generate_categories_tree::<T>(caller_id.clone());
+        let (_, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         let parent_category = if let Some(parent_category_id) = parent_category_id {
             Some(Module::<T>::category_by_id(parent_category_id))
@@ -404,15 +407,17 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
         let new_archival_status = true;
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
 
     }: _ (RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_archival_status)
     verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+
         let new_category = Category {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
@@ -428,20 +433,23 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
     }
     delete_category {
+
         let lead_id = 0;
 
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         let category_counter = <Module<T>>::category_counter();
 
     }: _ (RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id)
     verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+
         let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Trait>::Hash> = Category {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
@@ -470,18 +478,20 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         let j in 0 .. MAX_BYTES;
 
-        let i in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
+        let k in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
         let mut category = Module::<T>::category_by_id(category_id);
 
         let text = vec![0u8].repeat(j as usize);
 
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, i));
+        let poll = Some(generate_poll::<T>(expiration_diff, k));
 
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
@@ -519,13 +529,17 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::ThreadCreated(next_thread_id).into());
     }
     edit_thread_title {
-        let forum_user_id = 0;        let caller_id =
+        let forum_user_id = 0;
+
+        let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
+
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_BYTES;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let thread_id = create_new_thread::<T>(
@@ -544,13 +558,15 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::ThreadTitleUpdated(thread_id).into());
     }
     update_thread_archival_status {
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         let forum_user_id = 0;
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let thread_id = create_new_thread::<T>(caller_id.clone(), (forum_user_id as u64).into(), category_id, text.clone(), text.clone(), None);
@@ -566,12 +582,14 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
     }
     delete_thread {
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         let forum_user_id = 0;
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
@@ -602,17 +620,37 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
     }
     move_thread_to_category {
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         let forum_user_id = 0;
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone());
+        // If category depth is less or equal to one, create two separate categories
+        let (category_id, new_category_id) = if i <= 1 {
+            let category_id = create_new_category::<T>(
+                caller_id.clone(),
+                None,
+                text.clone(),
+                text.clone(),
+            );
 
-        // Assume we have at least one parent category here.
-        let new_category_id = parent_category_id.unwrap();
+            let new_category_id = create_new_category::<T>(
+                caller_id.clone(),
+                None,
+                text.clone(),
+                text.clone(),
+            );
+
+            (category_id, new_category_id)
+        } else {
+            // Generate categories tree
+            let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
+
+            (category_id, parent_category_id.unwrap())
+        };
 
         // Create thread
         let thread_id = create_new_thread::<T>(caller_id.clone(), (forum_user_id as u64).into(), category_id, text.clone(), text.clone(), None);
@@ -636,18 +674,21 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::ThreadMoved(thread_id, new_category_id).into());
     }
     vote_on_poll {
+
         let forum_user_id = 0;
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        let j in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, i));
+        let poll = Some(generate_poll::<T>(expiration_diff, j));
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
@@ -657,13 +698,13 @@ benchmarks! {
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-    }: _ (RawOrigin::Signed(caller_id), (forum_user_id as u64).into(), category_id, thread_id, i - 1)
+    }: _ (RawOrigin::Signed(caller_id), (forum_user_id as u64).into(), category_id, thread_id, j - 1)
     verify {
         // Store new poll alternative statistics
         if let Some(ref mut poll) = thread.poll {
             let new_poll_alternatives: Vec<PollAlternative<T::Hash>> = poll.poll_alternatives.iter()
                 .enumerate()
-                .map(|(old_index, old_value)| if (i - 1) as usize == old_index
+                .map(|(old_index, old_value)| if (j - 1) as usize == old_index
                     { PollAlternative {
                         alternative_text_hash: old_value.alternative_text_hash,
                         vote_count: old_value.vote_count + 1,
@@ -678,7 +719,7 @@ benchmarks! {
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, i - 1).into());
+        assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, j - 1).into());
     }
     moderate_thread {
         let lead_id = 0;
@@ -686,10 +727,12 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        let j in 0 .. MAX_BYTES;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
@@ -706,7 +749,7 @@ benchmarks! {
         for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
             add_thread_post::<T>(caller_id.clone(), (lead_id as u64).into(), category_id, thread_id, text.clone());
         }
-        let rationale = vec![0u8].repeat(i as usize);
+        let rationale = vec![0u8].repeat(j as usize);
 
     }: _ (RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
     verify {
@@ -726,12 +769,14 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
-        let text = vec![0u8].repeat(i as usize);
+        let j in 0 .. MAX_BYTES;
+
+        let text = vec![0u8].repeat(j as usize);
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let thread_id = create_new_thread::<T>(
@@ -765,8 +810,10 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
@@ -791,10 +838,12 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        let j in 0 .. MAX_BYTES;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
@@ -810,7 +859,7 @@ benchmarks! {
 
         let mut post = Module::<T>::post_by_id(thread_id, post_id);
 
-        let new_text = vec![0u8].repeat(i as usize);
+        let new_text = vec![0u8].repeat(j as usize);
 
     }: _ (RawOrigin::Signed(caller_id), (forum_user_id as u64).into(), category_id, thread_id, post_id, new_text.clone())
     verify {
@@ -827,10 +876,12 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        let j in 0 .. MAX_BYTES;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create thread
         let expiration_diff = 10.into();
@@ -845,7 +896,7 @@ benchmarks! {
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let rationale = vec![0u8].repeat(i as usize);
+        let rationale = vec![0u8].repeat(j as usize);
 
     }: _ (RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, post_id, rationale.clone())
     verify {
@@ -861,17 +912,19 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get() as u32;
+        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+
+        let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get() as u32;
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone());
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
 
         // Create threads
         let expiration_diff = 10.into();
         let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
-        let stickied_ids: Vec<T::ThreadId> = (0..i)
+        let stickied_ids: Vec<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
                 caller_id.clone(), (forum_user_id as u64).into(), category_id,

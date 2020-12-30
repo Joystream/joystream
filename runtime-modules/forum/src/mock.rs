@@ -278,6 +278,7 @@ impl Trait for Runtime {
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
+    type WeightInfo = ();
 
     fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool {
         *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
@@ -296,6 +297,57 @@ impl Trait for Runtime {
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
+    }
+}
+
+impl WeightInfo for () {
+    fn create_category(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_category_membership_of_moderator(_: u32) -> Weight {
+        0
+    }
+    fn update_category_archival_status(_: u32) -> Weight {
+        0
+    }
+    fn delete_category(_: u32) -> Weight {
+        0
+    }
+    fn create_thread(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn edit_thread_title(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_thread_archival_status(_: u32) -> Weight {
+        0
+    }
+    fn delete_thread(_: u32) -> Weight {
+        0
+    }
+    fn move_thread_to_category(_: u32) -> Weight {
+        0
+    }
+    fn vote_on_poll(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_thread(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn add_post(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn react_post(_: u32) -> Weight {
+        0
+    }
+    fn edit_post_text(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_post(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_stickied_threads(_: u32, _: u32) -> Weight {
+        0
     }
 }
 
