@@ -262,12 +262,6 @@ export class OperationType extends JoyEnum({
   AddSchemaSupportToEntity: AddSchemaSupportToEntityOperation,
 }) {}
 
-// Versioned store relicts - to be removed:
-export class ClassPermissionsType extends Null {}
-export class ClassPropertyValue extends Null {}
-export class Operation extends Null {}
-export class ReferenceConstraint extends Null {}
-
 export class InputEntityValuesMap extends BTreeMap.with(PropertyId, InputPropertyValue) {}
 
 export class FailedAt extends u32 {}
@@ -320,11 +314,6 @@ export const contentDirectoryTypes = {
   AddSchemaSupportToEntityOperation,
   OperationType,
   InputEntityValuesMap,
-  // Versioned store relicts - to be removed:
-  ClassPermissionsType,
-  ClassPropertyValue,
-  Operation,
-  ReferenceConstraint,
   FailedAt,
 }
 
