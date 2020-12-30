@@ -23,7 +23,7 @@ export default abstract class MediaCommandBase extends ContentDirectoryCommandBa
     })
     if (licenseType === 'known') {
       const [id, knownLicenseEntity] = await this.promptForEntityEntry('Choose License', 'KnownLicense', 'code')
-      const knownLicense = await this.parseToKnownEntityJson<KnownLicenseEntity>(knownLicenseEntity)
+      const knownLicense = await this.parseToEntityJson<KnownLicenseEntity>(knownLicenseEntity)
       licenseInput = { knownLicense: id.toNumber() }
       if (knownLicense.attributionRequired) {
         licenseInput.attribution = await this.simplePrompt({ message: 'Attribution' })
