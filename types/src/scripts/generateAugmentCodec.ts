@@ -17,7 +17,6 @@ import stake from '../stake'
 import mint from '../mint'
 import recurringRewards from '../recurring-rewards'
 import hiring from '../hiring'
-import contentWorkingGroup from '../content-working-group'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
 import media from '../media'
@@ -39,7 +38,6 @@ const typesByModule = {
   'mint': mint,
   'recurring-rewards': recurringRewards,
   'hiring': hiring,
-  'content-working-group': contentWorkingGroup,
   'working-group': workingGroup,
   'discovery': discovery,
   'media': media,

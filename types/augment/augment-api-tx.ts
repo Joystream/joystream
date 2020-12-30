@@ -4,7 +4,7 @@
 import { AnyNumber } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Compact, Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { Actor, ActorId, ApplicationId, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningType, OperationType, PostId, Property, PropertyId, ProposalDetailsOf, ProposalId, SchemaId, StorageProviderId, ThreadId, Url, VecMaxLength, VoteKind, WorkerId } from './all';
+import { Actor, ActorId, ApplicationId, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningType, OperationType, PostId, Property, PropertyId, ProposalDetailsOf, ProposalId, SchemaId, StorageProviderId, ThreadId, Url, VecMaxLength, VoteKind, WorkerId } from './all';
 import { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -142,7 +142,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Add curator to curator group under given `curator_group_id`
        **/
-      addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | null) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add curator group under given `curator_group_id` as `Class` maintainer
        **/
@@ -178,7 +178,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Remove curator from a given curator group
        **/
-      removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | null) => SubmittableExtrinsic<ApiType>>;
       /**
        * Remove curator group under given `curator_group_id` from runtime storage
        **/
