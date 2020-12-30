@@ -1,7 +1,6 @@
 import { BTreeMap, Option, Tuple, Text, Vec } from '@polkadot/types'
 import { bool, u64, u32, u16, i16, i32, i64, Null } from '@polkadot/types/primitive'
-import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, Hash, JoyBTreeSet } from '../common'
+import { MemberId, JoyStructDecorated, JoyEnum, Hash, JoyBTreeSet } from '../common'
 
 export class Nonce extends u64 {}
 export class EntityId extends u64 {}

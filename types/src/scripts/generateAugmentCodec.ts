@@ -11,12 +11,8 @@ import fs from 'fs'
 import common from '../common'
 import members from '../members'
 import council from '../council'
-import roles from '../roles'
 import forum from '../forum'
 import stake from '../stake'
-import mint from '../mint'
-import recurringRewards from '../recurring-rewards'
-import hiring from '../hiring'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
 import media from '../media'
@@ -32,12 +28,8 @@ const typesByModule = {
   'common': common,
   'members': members,
   'council': council,
-  'roles': roles,
   'forum': forum,
   'stake': stake,
-  'mint': mint,
-  'recurring-rewards': recurringRewards,
-  'hiring': hiring,
   'working-group': workingGroup,
   'discovery': discovery,
   'media': media,

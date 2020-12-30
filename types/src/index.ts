@@ -2,12 +2,8 @@ import { Codec, RegistryTypes } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
-import roles from './roles'
 import forum from './forum'
 import stake from './stake'
-import mint from './mint'
-import recurringRewards from './recurring-rewards'
-import hiring from './hiring'
 import workingGroup from './working-group'
 import discovery from './discovery'
 import media from './media'
@@ -19,33 +15,14 @@ import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
 import BN from 'bn.js'
 
-export {
-  common,
-  members,
-  council,
-  roles,
-  forum,
-  stake,
-  mint,
-  recurringRewards,
-  hiring,
-  workingGroup,
-  discovery,
-  media,
-  proposals,
-  contentDirectory,
-}
+export { common, members, council, forum, stake, workingGroup, discovery, media, proposals, contentDirectory }
 
 export const types: RegistryTypes = {
   ...common,
   ...members,
   ...council,
-  ...roles,
   ...forum,
   ...stake,
-  ...mint,
-  ...recurringRewards,
-  ...hiring,
   ...workingGroup,
   ...discovery,
   ...media,
