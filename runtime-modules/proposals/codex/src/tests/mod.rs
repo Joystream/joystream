@@ -1005,6 +1005,45 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
 }
 
 #[test]
+fn test_funding_request_fails_permission() {
+    initial_test_ext().execute_with(|| {
+        assert_eq!(
+            ProposalCodex::funding_request(RawOrigin::Signed(0).into(), 1, 0),
+            Err(DispatchError::BadOrigin)
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_insufficient_fundings() {
+    initial_test_ext().execute_with(|| {
+        Council::<Test>::set_budget(RawOrigin::Root.into(), 0).unwrap();
+        assert_eq!(
+            ProposalCodex::funding_request(RawOrigin::Root.into(), 1, 0),
+            Err(Error::<Test>::InsufficientFundsForFundingRequest.into())
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let initial_budget = 100;
+        let funding_amount = 5;
+        let recieving_account = 0;
+        Council::<Test>::set_budget(RawOrigin::Root.into(), initial_budget).unwrap();
+        assert_eq!(Council::<Test>::budget(), initial_budget);
+        ProposalCodex::funding_request(RawOrigin::Root.into(), funding_amount, recieving_account)
+            .unwrap();
+        assert_eq!(Council::<Test>::budget(), initial_budget - funding_amount);
+        assert_eq!(
+            balances::Module::<Test>::free_balance(recieving_account),
+            funding_amount
+        );
+    });
+}
+
+#[test]
 fn create_amend_constitution_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 1_500_000);

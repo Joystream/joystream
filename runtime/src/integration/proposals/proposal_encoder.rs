@@ -36,10 +36,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Signal(signal) => {
                 Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(signal))
             }
-            ProposalDetails::FundingRequest(balance, _destination) => Call::Council(
-                // TODO This is a stub it should be changed
-                council::Call::set_budget(balance),
-            ),
+            ProposalDetails::FundingRequest(balance, destination) => {
+                Call::ProposalsCodex(proposals_codex::Call::funding_request(balance, destination))
+            }
             ProposalDetails::SetMaxValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),
             ),
@@ -59,7 +58,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::UpdateWorkingGroupBudget(amount, working_group, balance_kind) => {
-                // TODO: the logic for this proposal changed!
                 Call::ProposalsCodex(proposals_codex::Call::update_working_group_budget(
                     working_group,
                     amount,
@@ -101,24 +99,33 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     Wg::cancel_working_group_leader_opening(opening_id)
                 )
             }
-            ProposalDetails::SetMembershipPrice(_membership_price) => {
-                // TODO: Update when membership is updated
-                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            ProposalDetails::SetMembershipPrice(membership_price) => {
+                Call::Members(membership::Call::set_membership_price(membership_price))
             }
 
             ProposalDetails::SetCouncilBudgetIncrement(_budget_increment) => {
-                // TODO: Update when membership is updated
+                // TODO: replace_stub
                 Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
             }
 
             ProposalDetails::SetCouncilorReward(_councilor_reward) => {
-                // TODO: Update when membership is updated
+                // TODO: replace stub
                 Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
             }
 
-            ProposalDetails::SetInitialInvitationBalance(_initial_invitaiton_balance) => {
-                // TODO: Update when membership is updated
-                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance) => {
+                Call::Members(membership::Call::set_initial_invitation_balance(
+                    initial_invitation_balance,
+                ))
+            }
+            ProposalDetails::SetInitialInvitationCount(new_default_invite_count) => Call::Members(
+                membership::Call::set_initial_invitation_count(new_default_invite_count),
+            ),
+            ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count) => Call::Members(
+                membership::Call::set_leader_invitation_quota(new_invite_count),
+            ),
+            ProposalDetails::SetReferralCut(new_referral_cut) => {
+                Call::Members(membership::Call::set_referral_cut(new_referral_cut))
             }
         };
 

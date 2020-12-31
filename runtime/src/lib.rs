@@ -817,6 +817,10 @@ impl proposals_codex::Trait for Runtime {
     type SetCouncilorRewardProposalParameters = SetCouncilorRewardProposalParameters;
     type SetInitialInvitationBalanceProposalParameters =
         SetInitialInvitationBalanceProposalParameters;
+    type SetInvitationCountProposalParameters = SetInvitationCountProposalParameters;
+    type SetMembershipLeadInvitationQuotaProposalParameters =
+        SetMembershipLeadInvitationQuotaProposalParameters;
+    type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

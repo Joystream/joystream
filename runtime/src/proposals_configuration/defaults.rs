@@ -248,3 +248,49 @@ pub(crate) fn set_initial_invitation_balance_proposal() -> ProposalParameters<Bl
         constitutionality: 1,
     }
 }
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Initial Invitation Quota' proposal
+pub(crate) fn set_membership_lead_invitation_quota_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 0,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Referral Cut' proposal
+pub(crate) fn set_referral_cut_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 0,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// TODO: decide on parameters
+// Proposal parameters for the 'Set Initial Invitation Count' proposal
+pub(crate) fn set_invitation_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 0,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

@@ -61,11 +61,12 @@ mod tests;
 mod benchmarking;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Get;
+use frame_support::traits::{Currency, Get};
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
@@ -76,10 +77,12 @@ pub use crate::types::{
 };
 use common::origin::MemberOriginValidator;
 use common::MemberId;
+use council::Module as Council;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
+use types::CouncilBalance;
 
 use common::working_group::WorkingGroup;
 
@@ -220,6 +223,18 @@ pub trait Trait:
     type SetInitialInvitationBalanceProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    type SetInvitationCountProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    type SetMembershipLeadInvitationQuotaProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    type SetReferralCutProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -282,6 +297,9 @@ decl_error! {
 
         /// Invalid 'decrease stake proposal' parameter - cannot decrease by zero balance.
         DecreasingStakeIsZero,
+
+        /// Insufficent funds in council for executing 'Funding Request' proposal
+        InsufficientFundsForFundingRequest,
     }
 }
 
@@ -295,6 +313,19 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
     }
+}
+
+// Calls the function $function in the instance corresponding to $working_group with
+// arguments in $x
+macro_rules! call_wg {
+    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => $working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Storage => $working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Forum => $working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Membership => $working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
+        }
+    }};
 }
 
 decl_module! {
@@ -370,6 +401,15 @@ decl_module! {
         /// Exports `Set Initial Invitation Balance` proposal parameters.
         const SetInitialInvitationBalanceProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetInitialInvitationBalanceProposalParameters::get();
+
+        const SetInvitationCountProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetInvitationCountProposalParameters::get();
+
+        const SetMembershipLeadInvitationQuotaProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetMembershipLeadInvitationQuotaProposalParameters::get();
+
+        const SetReferralCutProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetReferralCutProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -489,17 +529,42 @@ decl_module! {
         ) {
             ensure_root(origin.clone())?;
 
-            // TODO: Discount from council
 
-            match working_group {
-                WorkingGroup::Forum =>  working_group::Module::<T, ForumWorkingGroupInstance>::set_budget(origin, amount)?,
-                WorkingGroup::Storage => working_group::Module::<T, StorageWorkingGroupInstance>::set_budget(origin, amount)?,
-                WorkingGroup::Content => working_group::Module::<T, ContentDirectoryWorkingGroupInstance>::set_budget(origin, amount)?,
-                WorkingGroup::Membership => working_group::Module::<T, MembershipWorkingGroupInstance>::set_budget(origin, amount)?,
-            };
+            let wg_budget = call_wg!(working_group<T>, budget);
+            let current_budget = Council::<T>::budget();
 
+            match balance_kind {
+                BalanceKind::Positive => {
+                    ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
+
+                    call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget.saturating_add(amount))?;
+                    Council::<T>::set_budget(origin, current_budget - amount)?;
+                },
+                BalanceKind::Negative => {
+                    ensure!(amount <= wg_budget, Error::<T>::InsufficientFundsForFundingRequest);
+
+                    call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget - amount)?;
+                    Council::<T>::set_budget(origin, current_budget.saturating_add(amount))?;
+                }
+            }
         }
 
+        /// Funding request proposal
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn funding_request(
+            origin,
+            amount: BalanceOf<T>,
+            account: T::AccountId,
+        ) {
+            // Checks
+            ensure_root(origin.clone())?;
+            let current_budget = Council::<T>::budget();
+            ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
+
+            // Mutation safe
+            Council::<T>::set_budget(origin, current_budget - amount)?;
+            let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+        }
     }
 }
 
@@ -593,6 +658,15 @@ impl<T: Trait> Module<T> {
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::SetInitialInvitationCount(..) => {
+                // TODO add checks
+            }
+            ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
+                // TODO add checks
+            }
+            ProposalDetails::SetReferralCut(..) => {
+                // TODO add checks
+            }
         }
 
         Ok(())
@@ -646,6 +720,13 @@ impl<T: Trait> Module<T> {
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 T::SetInitialInvitationBalanceProposalParameters::get()
             }
+            ProposalDetails::SetInitialInvitationCount(..) => {
+                T::SetInvitationCountProposalParameters::get()
+            }
+            ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
+                T::SetMembershipLeadInvitationQuotaProposalParameters::get()
+            }
+            ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
         }
     }
 
@@ -746,6 +827,15 @@ impl<T: Trait> Module<T> {
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
+            }
+            ProposalDetails::SetInitialInvitationCount(..) => {
+                1_000_000 // TODO benchmark
+            }
+            ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
+                1_000_000 // TODO benchmark
+            }
+            ProposalDetails::SetReferralCut(..) => {
+                1_000_000 // TODO benchmark
             }
         }
     }

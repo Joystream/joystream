@@ -5,7 +5,7 @@ use super::*;
 
 use common::working_group::WorkingGroup;
 use frame_system::RawOrigin;
-use proposals_codex::CreateOpeningParameters;
+use proposals_codex::{BalanceKind, CreateOpeningParameters};
 use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 
@@ -275,6 +275,7 @@ fn set_mint_capacity<
     sequence_number: u32, // action sequence number to align with other actions
     setup_environment: bool,
     working_group: WorkingGroup,
+    balance_kind: BalanceKind,
 ) {
     let expected_proposal_id = sequence_number;
 
@@ -294,11 +295,7 @@ fn set_mint_capacity<
         ProposalCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
-            ProposalDetails::UpdateWorkingGroupBudget(
-                mint_capacity,
-                working_group,
-                proposals_codex::BalanceKind::Positive,
-            ),
+            ProposalDetails::UpdateWorkingGroupBudget(mint_capacity, working_group, balance_kind),
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -847,6 +844,9 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
         setup_council(0);
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
+
+        Council::set_budget(RawOrigin::Root.into(), 5_000_000).unwrap();
+
         set_mint_capacity::<T, I>(
             member_id,
             account_id,
@@ -854,11 +854,69 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
             1,
             false,
             working_group,
+            BalanceKind::Positive,
         );
 
         assert_eq!(
             working_group::Module::<T, I>::budget(),
             mint_capacity.into()
+        );
+    });
+}
+
+fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
+    T: working_group::Trait<I> + frame_system::Trait,
+    I: frame_support::traits::Instance,
+>(
+    working_group: WorkingGroup,
+) where
+    <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
+    <T as common::Trait>::MemberId: From<u64>,
+    working_group::BalanceOf<T>: From<u128>,
+{
+    initial_test_ext().execute_with(|| {
+        let member_id: MemberId = 1;
+        let account_id: [u8; 32] = [member_id as u8; 32];
+
+        let funding = 999999;
+        let mint_capacity = 5_000_000;
+
+        let opening_id = add_opening(member_id, account_id, None, 1, working_group);
+
+        let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
+            RawOrigin::Signed(account_id.into()).into(),
+            working_group::ApplyOnOpeningParameters::<T> {
+                member_id: member_id.into(),
+                opening_id,
+                role_account_id: account_id.into(),
+                reward_account_id: account_id.into(),
+                description: Vec::new(),
+                stake_parameters: None,
+            },
+        );
+
+        assert_eq!(apply_result, Ok(()));
+        working_group::Module::<T, I>::set_budget(RawOrigin::Root.into(), mint_capacity.into())
+            .unwrap();
+
+        assert_eq!(
+            working_group::Module::<T, I>::budget(),
+            mint_capacity.into()
+        );
+
+        set_mint_capacity::<T, I>(
+            member_id,
+            account_id,
+            funding,
+            2,
+            false,
+            working_group,
+            BalanceKind::Negative,
+        );
+
+        assert_eq!(
+            working_group::Module::<T, I>::budget(),
+            (mint_capacity - funding).into()
         );
     });
 }
@@ -888,6 +946,39 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             }
             WorkingGroup::Membership => {
                 run_create_set_group_leader_reward_proposal_execution_succeeds::<
+                    Runtime,
+                    MembershipWorkingGroupInstance,
+                >(group);
+            }
+        }
+    }
+}
+
+#[test]
+fn create_syphon_working_group_mint_capacity_proposal_execution_succeeds() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        match group {
+            WorkingGroup::Content => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    ContentDirectoryWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Storage => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    StorageWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Forum => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
+                    Runtime,
+                    ForumWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Membership => {
+                run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds::<
                     Runtime,
                     MembershipWorkingGroupInstance,
                 >(group);
@@ -934,7 +1025,15 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
         let lead = WorkingGroupInstance::<T, I>::current_lead();
         assert!(lead.is_none());
 
-        set_mint_capacity::<T, I>(member_id, account_id, 999999, 2, false, working_group);
+        set_mint_capacity::<T, I>(
+            member_id,
+            account_id,
+            999999,
+            2,
+            false,
+            working_group,
+            BalanceKind::Positive,
+        );
 
         fill_opening(
             member_id,
@@ -1059,7 +1158,15 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let lead = WorkingGroupInstance::<T, I>::current_lead();
         assert!(lead.is_none());
 
-        set_mint_capacity::<T, I>(member_id, account_id, 999999, 2, false, working_group);
+        set_mint_capacity::<T, I>(
+            member_id,
+            account_id,
+            999999,
+            2,
+            false,
+            working_group,
+            BalanceKind::Positive,
+        );
 
         fill_opening(
             member_id,
@@ -1191,7 +1298,15 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let lead = WorkingGroupInstance::<T, I>::current_lead();
         assert!(lead.is_none());
 
-        set_mint_capacity::<T, I>(member_id, account_id, 999999, 2, false, working_group);
+        set_mint_capacity::<T, I>(
+            member_id,
+            account_id,
+            999999,
+            2,
+            false,
+            working_group,
+            BalanceKind::Positive,
+        );
 
         fill_opening(
             member_id,

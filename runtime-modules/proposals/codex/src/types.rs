@@ -7,6 +7,7 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 
+pub(crate) use council::Balance as CouncilBalance;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
@@ -26,7 +27,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 
 /// Kind of Balance for `Update Working Group Budget`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug)]
 pub enum BalanceKind {
     /// Increasing Working Group budget decreasing Council budget
     Positive,
@@ -93,6 +94,15 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
 
     /// `Set Initial Invitation Balance` proposal
     SetInitialInvitationBalance(Balance),
+
+    /// `Set Initial Invitation Count` proposal
+    SetInitialInvitationCount(u32),
+
+    /// `Set Membership Lead Invitation Quota` proposal
+    SetMembershipLeadInvitationQuota(u32),
+
+    /// `Set Referral Cut` proposal
+    SetReferralCut(Balance),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId> Default

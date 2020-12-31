@@ -47,6 +47,12 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.set_councilor_reward_proposal;
     pub SetInitialInvitationBalanceProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.set_initial_invitation_balance_proposal;
+    pub SetMembershipLeadInvitationQuotaProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_membership_lead_invitation_quota_proposal;
+    pub SetReferralCutProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_referral_cut_proposal;
+    pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_invitation_count_proposal;
 }
 
 ///////////
@@ -69,6 +75,9 @@ struct AllProposalsParameters {
     pub set_council_budget_increment_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_councilor_reward_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_initial_invitation_balance_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_membership_lead_invitation_quota_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_referral_cut_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_invitation_count_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -153,7 +162,18 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), set_membership_price_proposal);
         init_proposal_parameter_object!(params, jo.clone(), set_council_budget_increment_proposal);
         init_proposal_parameter_object!(params, jo.clone(), set_councilor_reward_proposal);
-        init_proposal_parameter_object!(params, jo, set_initial_invitation_balance_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            set_initial_invitation_balance_proposal
+        );
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            set_membership_lead_invitation_quota_proposal
+        );
+        init_proposal_parameter_object!(params, jo.clone(), set_referral_cut_proposal);
+        init_proposal_parameter_object!(params, jo, set_invitation_count_proposal);
     }
 
     params
@@ -280,5 +300,9 @@ fn default_parameters() -> AllProposalsParameters {
         set_councilor_reward_proposal: defaults::set_councilor_reward_proposal(),
         set_initial_invitation_balance_proposal: defaults::set_initial_invitation_balance_proposal(
         ),
+        set_membership_lead_invitation_quota_proposal:
+            defaults::set_membership_lead_invitation_quota_proposal(),
+        set_referral_cut_proposal: defaults::set_referral_cut_proposal(),
+        set_invitation_count_proposal: defaults::set_invitation_count_proposal(),
     }
 }

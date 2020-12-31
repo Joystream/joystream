@@ -478,6 +478,9 @@ impl crate::Trait for Test {
     type SetCouncilBudgetIncrementProposalParameters = DefaultProposalParameters;
     type SetCouncilorRewardProposalParameters = DefaultProposalParameters;
     type SetInitialInvitationBalanceProposalParameters = DefaultProposalParameters;
+    type SetInvitationCountProposalParameters = DefaultProposalParameters;
+    type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
+    type SetReferralCutProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
