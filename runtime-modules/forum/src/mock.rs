@@ -301,10 +301,13 @@ impl Trait for Runtime {
 }
 
 impl WeightInfo for () {
-    fn create_category(_: u32, _: u32) -> Weight {
+    fn create_category(_: u32, _: u32, _: u32) -> Weight {
         0
     }
-    fn update_category_membership_of_moderator(_: u32) -> Weight {
+    fn update_category_membership_of_moderator_new() -> Weight {
+        0
+    }
+    fn update_category_membership_of_moderator_old() -> Weight {
         0
     }
     fn update_category_archival_status(_: u32) -> Weight {
@@ -313,7 +316,7 @@ impl WeightInfo for () {
     fn delete_category(_: u32) -> Weight {
         0
     }
-    fn create_thread(_: u32, _: u32, _: u32) -> Weight {
+    fn create_thread(_: u32, _: u32, _: u32, _: u32) -> Weight {
         0
     }
     fn edit_thread_title(_: u32, _: u32) -> Weight {
@@ -331,7 +334,7 @@ impl WeightInfo for () {
     fn vote_on_poll(_: u32, _: u32) -> Weight {
         0
     }
-    fn moderate_thread(_: u32, _: u32) -> Weight {
+    fn moderate_thread(_: u32, _: u32, _: u32) -> Weight {
         0
     }
     fn add_post(_: u32, _: u32) -> Weight {

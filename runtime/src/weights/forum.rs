@@ -7,123 +7,130 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 pub struct WeightInfo;
 impl forum::WeightInfo for WeightInfo {
-    fn create_category(i: u32, j: u32) -> Weight {
-        (631_476_000 as Weight)
-            .saturating_add((55_290_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((161_000 as Weight).saturating_mul(j as Weight))
+    fn create_category(i: u32, j: u32, k: u32) -> Weight {
+        (1_363_759_000 as Weight)
+            .saturating_add((19_278_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((50_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add((76_000 as Weight).saturating_mul(k as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
-    fn update_category_membership_of_moderator(i: u32) -> Weight {
-        (467_944_000 as Weight)
-            .saturating_add((28_940_000 as Weight).saturating_mul(i as Weight))
+    fn update_category_membership_of_moderator_new() -> Weight {
+        (500_435_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+            .saturating_add(DbWeight::get().writes(2 as Weight))
+    }
+    fn update_category_membership_of_moderator_old() -> Weight {
+        (511_333_000 as Weight)
+            .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_category_archival_status(i: u32) -> Weight {
-        (385_266_000 as Weight)
-            .saturating_add((88_031_000 as Weight).saturating_mul(i as Weight))
+        (397_290_000 as Weight)
+            .saturating_add((91_980_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn delete_category(i: u32) -> Weight {
-        (345_791_000 as Weight)
-            .saturating_add((108_329_000 as Weight).saturating_mul(i as Weight))
+        (346_102_000 as Weight)
+            .saturating_add((113_078_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
-    fn create_thread(i: u32, j: u32, k: u32) -> Weight {
-        (390_747_000 as Weight)
-            .saturating_add((115_660_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((162_000 as Weight).saturating_mul(j as Weight))
-            .saturating_add((14_114_000 as Weight).saturating_mul(k as Weight))
-            .saturating_add(DbWeight::get().reads(8 as Weight))
+    fn create_thread(i: u32, j: u32, k: u32, z: u32) -> Weight {
+        (657_005_000 as Weight)
+            .saturating_add((95_246_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((78_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add((80_000 as Weight).saturating_mul(k as Weight))
+            .saturating_add((9_492_000 as Weight).saturating_mul(z as Weight))
+            .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(5 as Weight))
     }
     fn edit_thread_title(i: u32, j: u32) -> Weight {
-        (468_008_000 as Weight)
-            .saturating_add((95_367_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((79_000 as Weight).saturating_mul(j as Weight))
+        (459_293_000 as Weight)
+            .saturating_add((101_319_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((80_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn update_thread_archival_status(i: u32) -> Weight {
-        (514_424_000 as Weight)
-            .saturating_add((172_248_000 as Weight).saturating_mul(i as Weight))
+        (546_242_000 as Weight)
+            .saturating_add((172_225_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn delete_thread(i: u32) -> Weight {
-        (855_303_000 as Weight)
-            .saturating_add((89_267_000 as Weight).saturating_mul(i as Weight))
+        (879_571_000 as Weight)
+            .saturating_add((91_074_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(22 as Weight))
     }
     fn move_thread_to_category(i: u32) -> Weight {
-        (761_056_000 as Weight)
-            .saturating_add((143_287_000 as Weight).saturating_mul(i as Weight))
+        (777_236_000 as Weight)
+            .saturating_add((147_076_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn vote_on_poll(i: u32, j: u32) -> Weight {
-        (548_167_000 as Weight)
-            .saturating_add((95_874_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((32_120_000 as Weight).saturating_mul(j as Weight))
+        (550_223_000 as Weight)
+            .saturating_add((99_728_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((33_379_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
-    fn moderate_thread(i: u32, j: u32) -> Weight {
-        (777_889_000 as Weight)
-            .saturating_add((110_233_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((237_000 as Weight).saturating_mul(j as Weight))
-            .saturating_add(DbWeight::get().reads(4 as Weight))
+    fn moderate_thread(i: u32, j: u32, k: u32) -> Weight {
+        (670_412_000 as Weight)
+            .saturating_add((119_954_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((7_205_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add((237_000 as Weight).saturating_mul(k as Weight))
+            .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-            .saturating_add(DbWeight::get().writes(22 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
+            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(j as Weight)))
     }
     fn add_post(i: u32, j: u32) -> Weight {
-        (601_342_000 as Weight)
-            .saturating_add((81_573_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((79_000 as Weight).saturating_mul(j as Weight))
+        (523_937_000 as Weight)
+            .saturating_add((98_619_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((80_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn react_post(i: u32) -> Weight {
-        (682_564_000 as Weight)
-            .saturating_add((87_829_000 as Weight).saturating_mul(i as Weight))
+        (694_814_000 as Weight)
+            .saturating_add((90_128_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
     }
     fn edit_post_text(i: u32, j: u32) -> Weight {
-        (737_358_000 as Weight)
-            .saturating_add((99_006_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((79_000 as Weight).saturating_mul(j as Weight))
+        (756_404_000 as Weight)
+            .saturating_add((100_995_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((80_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn moderate_post(i: u32, j: u32) -> Weight {
-        (1_522_139_000 as Weight)
-            .saturating_add((167_569_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((223_000 as Weight).saturating_mul(j as Weight))
+        (1_295_460_000 as Weight)
+            .saturating_add((202_417_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((233_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn set_stickied_threads(i: u32, j: u32) -> Weight {
-        (402_844_000 as Weight)
-            .saturating_add((104_128_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((344_596_000 as Weight).saturating_mul(j as Weight))
+        (413_468_000 as Weight)
+            .saturating_add((102_465_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((351_896_000 as Weight).saturating_mul(j as Weight))
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
