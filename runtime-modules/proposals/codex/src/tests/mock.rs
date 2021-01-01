@@ -491,7 +491,6 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
@@ -514,7 +513,6 @@ impl council::Trait for Test {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
     type BudgetRefillPeriod = BudgetRefillPeriod;

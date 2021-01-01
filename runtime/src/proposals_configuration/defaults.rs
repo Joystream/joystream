@@ -223,7 +223,7 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
 pub(crate) fn set_councilor_reward_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
-        grace_period: 72200,
+        grace_period: 0,
         approval_quorum_percentage: 80,
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,

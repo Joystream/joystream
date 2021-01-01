@@ -474,7 +474,6 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 27;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
     pub const DefaultBudgetIncrement: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
@@ -554,7 +553,6 @@ impl council::Trait for Runtime {
 
     type StakingAccountValidator = Members;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
     type BudgetRefillPeriod = BudgetRefillPeriod;

@@ -395,7 +395,7 @@ benchmarks! {
             .collect::<Vec<_>>();
     }: { Council::<T>::try_process_budget(target); }
     verify {
-        let reward_per_block: Balance<T> = T::ElectedMemberRewardPerBlock::get();
+        let reward_per_block: Balance<T> = Council::<T>::councilor_reward();
 
         let reward_per_councillor: Balance<T> =
             reward_period

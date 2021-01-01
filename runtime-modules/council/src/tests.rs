@@ -1147,6 +1147,35 @@ fn council_budget_increment_can_be_upddated() {
     })
 }
 
+// Test that budget increment can be set from external source.
+#[test]
+fn council_budget_increment_can_be_updated() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let budget_increment = 1000;
+        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+
+        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - 1);
+
+        // Check budget currently is 0
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased with the expected increment
+        Mocks::check_budget_refill(
+            budget_increment,
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
+    })
+}
+
 // Test that rewards for council members are paid.
 #[test]
 fn council_rewards_are_paid() {
@@ -1184,6 +1213,52 @@ fn council_rewards_are_paid() {
             &tmp_council_members.as_slice(),
             0,
         );
+    });
+}
+
+// Test that can set councilor reward correctly.
+#[test]
+fn councilor_reward_can_be_set() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+        let origin = OriginType::Root;
+
+        let sufficient_balance = 10000000;
+
+        Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
+        Mocks::set_councilor_reward(origin.clone(), 1, Ok(()));
+
+        // run 1st council cycle
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
+
+        // calculate council member last reward block
+        let last_payment_block = council_settings.cycle_duration
+            + (<Runtime as Trait>::ElectedMemberRewardPeriod::get()
+                - (council_settings.idle_stage_duration
+                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get()))
+            - 1; // -1 because current block is not finalized yet
+
+        let start_rewarding_block = council_settings.reveal_stage_duration
+            + council_settings.announcing_stage_duration
+            + council_settings.voting_stage_duration
+            - 1;
+
+        let councilor_initial_balance = council_settings.min_candidate_stake * TOPUP_MULTIPLIER;
+        let current_council_balance =
+            (last_payment_block - start_rewarding_block) + councilor_initial_balance;
+
+        // Check that reward was correctly paid out
+        params
+            .expected_final_council_members
+            .iter()
+            .for_each(|council_member| {
+                assert_eq!(
+                    balances::Module::<Runtime>::free_balance(council_member.reward_account_id),
+                    current_council_balance
+                )
+            });
     });
 }
 

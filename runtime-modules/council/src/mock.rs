@@ -4,8 +4,8 @@
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
     CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
-    CouncilStageUpdate, CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill,
-    RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
+    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
@@ -64,7 +64,6 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
@@ -89,7 +88,6 @@ impl Trait for Runtime {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
     type StakingAccountValidator = ();
@@ -585,6 +583,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         next_reward_payments: 0,
         next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
         budget_increment: 1,
+        councilor_reward: 100,
     }
 }
 
@@ -1097,6 +1096,36 @@ where
                 .unwrap()
                 .event,
             TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+        );
+    }
+
+    pub fn set_councilor_reward(
+        origin: OriginType<T::AccountId>,
+        councilor_reward: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_councilor_reward(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                councilor_reward,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(CouncilorReward::<T>::get(), councilor_reward);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 

@@ -242,8 +242,6 @@ pub trait Trait: frame_system::Trait + common::Trait + balances::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
-    /// The value elected members will be awarded each block of their reign.
-    type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
     /// Interval for automatic reward payments.
     type ElectedMemberRewardPeriod: Get<Self::BlockNumber>;
 
@@ -315,6 +313,9 @@ decl_storage! {
 
         /// Amount of balance to be refilled every budget period
         pub BudgetIncrement get(fn budget_increment) config(): Balance::<T>;
+
+        /// Councilor reward per block
+        pub CouncilorReward get(fn councilor_reward) config(): Balance::<T>;
     }
 }
 
@@ -367,6 +368,9 @@ decl_event! {
 
         /// Budget increment has been updated.
         BudgetIncrementUpdated(Balance),
+
+        /// Councilor reward has been updated.
+        CouncilorRewardUpdated(Balance),
     }
 }
 
@@ -455,8 +459,6 @@ decl_module! {
         const AnnouncingPeriodDuration: T::BlockNumber = T::AnnouncingPeriodDuration::get();
         /// Duration of idle period
         const IdlePeriodDuration: T::BlockNumber = T::IdlePeriodDuration::get();
-        /// The value elected members will be awarded each block of their reign.
-        const ElectedMemberRewardPerBlock: Balance<T> = T::ElectedMemberRewardPerBlock::get();
         /// Interval for automatic reward payments.
         const ElectedMemberRewardPeriod: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
         /// Interval between automatic budget refills.
@@ -686,6 +688,25 @@ decl_module! {
 
             Ok(())
         }
+
+        #[weight = 10_000_000]
+        pub fn set_councilor_reward(origin, councilor_reward: Balance::<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_councilor_reward(origin)?;
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_councilor_reward(&councilor_reward);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilorRewardUpdated(councilor_reward));
+
+            Ok(())
+        }
     }
 }
 
@@ -831,7 +852,7 @@ impl<T: Trait> Module<T> {
 
     // Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
-        let reward_per_block = T::ElectedMemberRewardPerBlock::get();
+        let reward_per_block = Self::councilor_reward();
         let starting_balance = Budget::<T>::get();
 
         // pay reward to all council members
@@ -1206,6 +1227,11 @@ impl<T: Trait> Mutations<T> {
         BudgetIncrement::<T>::put(budget_increment);
     }
 
+    // Set councilor reward.
+    fn set_councilor_reward(councilor_reward: &Balance<T>) {
+        CouncilorReward::<T>::put(councilor_reward);
+    }
+
     // Pay reward to a single elected council member.
     fn pay_reward(
         member_index: usize,
@@ -1414,6 +1440,13 @@ impl<T: Trait> EnsureChecks<T> {
 
     // Ensures there is no problem in setting the budget increment.
     fn can_set_budget_increment(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in setting the councilor reward.
+    fn can_set_councilor_reward(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())

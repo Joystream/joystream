@@ -107,9 +107,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 Call::Council(council::Call::set_budget_increment(budget_increment))
             }
 
-            ProposalDetails::SetCouncilorReward(_councilor_reward) => {
-                // TODO: replace stub
-                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            ProposalDetails::SetCouncilorReward(councilor_reward) => {
+                Call::Council(council::Call::set_councilor_reward(councilor_reward))
             }
 
             ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance) => {
