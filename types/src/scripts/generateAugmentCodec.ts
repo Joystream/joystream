@@ -12,7 +12,6 @@ import common from '../common'
 import members from '../members'
 import council from '../council'
 import forum from '../forum'
-import stake from '../stake'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
 import media from '../media'
@@ -29,7 +28,6 @@ const typesByModule = {
   'members': members,
   'council': council,
   'forum': forum,
-  'stake': stake,
   'working-group': workingGroup,
   'discovery': discovery,
   'media': media,
