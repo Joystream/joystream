@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use super::{
-    AnnouncementPeriodNr, Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error,
-    Module, Trait,
+    AnnouncementPeriodNr, Budget, BudgetIncrement, CouncilMemberOf, CouncilMembers,
+    CouncilStageAnnouncing, Error, Module, Trait,
 };
 use crate::mock::*;
 use common::origin::CouncilOriginValidator;
@@ -1112,7 +1112,36 @@ fn council_budget_refill_can_be_planned() {
 
         // check budget was increased
         Mocks::check_budget_refill(
-            <Runtime as Trait>::BudgetRefillAmount::get(),
+            BudgetIncrement::<Runtime>::get(),
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
+    })
+}
+
+// Test that budget increment can be set from external source.
+#[test]
+fn council_budget_increment_can_be_upddated() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let budget_increment = 1000;
+        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+
+        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - 1);
+
+        // Check budget currently is 0
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased with the expected increment
+        Mocks::check_budget_refill(
+            budget_increment,
             next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
         );
     })
@@ -1270,6 +1299,7 @@ fn council_budget_auto_refill() {
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
         let start_balance = Budget::<Runtime>::get();
+        let budget_increment = BudgetIncrement::<Runtime>::get();
 
         // forward before next refill
         // Note: initial block is 1 so current_block + budget_refill_period - 2 = budget_refill_period - 1
@@ -1284,17 +1314,14 @@ fn council_budget_auto_refill() {
         // forward to next filling
         MockUtils::increase_block_number(1);
 
-        assert_eq!(
-            Budget::<Runtime>::get(),
-            start_balance + council_settings.budget_refill_amount,
-        );
+        assert_eq!(Budget::<Runtime>::get(), start_balance + budget_increment,);
 
         // forward to next filling
         MockUtils::increase_block_number(council_settings.budget_refill_period);
 
         assert_eq!(
             Budget::<Runtime>::get(),
-            start_balance + 2 * council_settings.budget_refill_amount,
+            start_balance + 2 * budget_increment,
         );
     });
 }

@@ -476,7 +476,7 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
+    pub const DefaultBudgetIncrement: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -557,7 +557,6 @@ impl council::Trait for Runtime {
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = weights::council::WeightInfo;

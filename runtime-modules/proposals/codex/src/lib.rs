@@ -82,7 +82,6 @@ use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
-use types::CouncilBalance;
 
 use common::working_group::WorkingGroup;
 

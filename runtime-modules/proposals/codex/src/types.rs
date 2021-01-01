@@ -7,7 +7,6 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 
-pub(crate) use council::Balance as CouncilBalance;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.

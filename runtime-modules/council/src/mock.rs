@@ -2,10 +2,10 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
-    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
-    ReferendumConnection, Stage, Trait, WeightInfo,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
+    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
+    CouncilStageUpdate, CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill,
+    RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
@@ -66,7 +66,6 @@ parameter_types! {
     pub const CouncilorLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
 }
@@ -95,7 +94,6 @@ impl Trait for Runtime {
 
     type StakingAccountValidator = ();
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = ();
@@ -488,7 +486,6 @@ pub struct CouncilSettings<T: Trait> {
     pub idle_stage_duration: T::BlockNumber,
     pub election_duration: T::BlockNumber,
     pub cycle_duration: T::BlockNumber,
-    pub budget_refill_amount: Balance<T>,
     pub budget_refill_period: T::BlockNumber,
 }
 
@@ -523,7 +520,6 @@ where
                 + voting_stage_duration
                 + idle_stage_duration,
 
-            budget_refill_amount: <T as Trait>::BudgetRefillAmount::get(),
             budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
         }
     }
@@ -588,6 +584,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         budget: 0,
         next_reward_payments: 0,
         next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
     }
 }
 
@@ -1100,6 +1097,36 @@ where
                 .unwrap()
                 .event,
             TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+        );
+    }
+
+    pub fn set_budget_increment(
+        origin: OriginType<T::AccountId>,
+        budget_increment: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_budget_increment(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                budget_increment,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(BudgetIncrement::<T>::get(), budget_increment,);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 

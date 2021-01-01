@@ -517,7 +517,6 @@ impl council::Trait for Test {
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = ();

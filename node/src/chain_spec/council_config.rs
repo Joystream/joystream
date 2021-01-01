@@ -11,6 +11,7 @@ pub fn create_council_config() -> CouncilConfig {
         budget: 0,
         next_reward_payments: 0,
         next_budget_refill: <Runtime as CouncilTrait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
     }
 }
 

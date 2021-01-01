@@ -807,6 +807,36 @@ fn set_referral_cut_proposal_succeeds() {
 }
 
 #[test]
+fn set_budget_increment_proposal_succeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let budget_increment = 500;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Council::budget_increment(), budget_increment);
+    });
+}
+
+#[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
         setup_members(5);

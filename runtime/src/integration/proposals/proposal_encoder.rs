@@ -103,9 +103,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 Call::Members(membership::Call::set_membership_price(membership_price))
             }
 
-            ProposalDetails::SetCouncilBudgetIncrement(_budget_increment) => {
-                // TODO: replace_stub
-                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(Vec::new()))
+            ProposalDetails::SetCouncilBudgetIncrement(budget_increment) => {
+                Call::Council(council::Call::set_budget_increment(budget_increment))
             }
 
             ProposalDetails::SetCouncilorReward(_councilor_reward) => {
