@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build",
-    "_postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build && yarn workspace @joystream/cli build",
+    "postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build",
+    "build-joystream-cli": "yarn workspace @joystream/cli build",
     "build": "./build.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
@@ -41,14 +41,14 @@
     "@polkadot/rpc-provider": "2.4.1",
     "@polkadot/metadata": "2.4.1",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^4.0.3",
+    "typescript": "^4.1.3",
     "bn.js": "^5.1.2",
     "@dzlzv/hydra-indexer-lib": "0.0.21-legacy.1.26.1"
   },
   "devDependencies": {
     "eslint": "^7.6.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2"
+    "prettier": "2.2.1"
   },
   "husky": {
     "hooks": {

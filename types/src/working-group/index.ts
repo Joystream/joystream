@@ -179,6 +179,7 @@ export const workingGroupTypes: RegistryTypes = {
   Opening,
   OpeningId,
   StakePolicy,
+  StakeParameters,
   StorageProviderId,
   OpeningType,
   ApplyOnOpeningParameters,

@@ -67,7 +67,7 @@ export interface ApplyOnOpeningParameters extends Struct {
   readonly role_account_id: AccountId;
   readonly reward_account_id: AccountId;
   readonly description: Text;
-  readonly stake_parameters: Option<{"stake":"u128","staking_account_id":"AccountId"}>;
+  readonly stake_parameters: Option<StakeParameters>;
 }
 
 /** @name Approved */
@@ -744,6 +744,12 @@ export interface SideEffect extends Option<ITuple<[EntityId, EntityReferenceCoun
 
 /** @name SideEffects */
 export interface SideEffects extends Option<ReferenceCounterSideEffects> {}
+
+/** @name StakeParameters */
+export interface StakeParameters extends Struct {
+  readonly stake: u128;
+  readonly staking_account_id: AccountId;
+}
 
 /** @name StakePolicy */
 export interface StakePolicy extends Struct {

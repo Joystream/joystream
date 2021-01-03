@@ -174,6 +174,10 @@
         "stake_amount": "u128",
         "leaving_unstaking_period": "u32"
     },
+    "StakeParameters": {
+        "stake": "u128",
+        "staking_account_id": "AccountId"
+    },
     "StorageProviderId": "u64",
     "OpeningType": {
         "_enum": {
@@ -187,7 +191,7 @@
         "role_account_id": "AccountId",
         "reward_account_id": "AccountId",
         "description": "Text",
-        "stake_parameters": "Option<{\"stake\":\"u128\",\"staking_account_id\":\"AccountId\"}>"
+        "stake_parameters": "Option<StakeParameters>"
     },
     "Penalty": {
         "slashing_text": "Text",
