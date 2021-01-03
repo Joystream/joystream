@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, Category, CategoryId, ClassId, ClassOf, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, ServiceProviderRecord, StorageProviderId, Thread, ThreadId, Url, VoteKind, WorkerId } from './all';
+import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, Opening, OpeningId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, Thread, ThreadId, Url, VoteKind, Worker, WorkerId } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -508,16 +508,6 @@ declare module '@polkadot/api/types/storage' {
       maxMemoLength: AugmentedQuery<ApiType, () => Observable<u32>>;
       memo: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<MemoText>>;
     };
-    minting: {
-      /**
-       * Mints
-       **/
-      mints: AugmentedQuery<ApiType, (arg: MintId | AnyNumber | Uint8Array) => Observable<Mint>>;
-      /**
-       * The number of mints created.
-       **/
-      mintsCreated: AugmentedQuery<ApiType, () => Observable<MintId>>;
-    };
     offences: {
       /**
        * A vector of reports of the same kind that happened at the same time slot.
@@ -599,12 +589,6 @@ declare module '@polkadot/api/types/storage' {
        * the oldest hash.
        **/
       randomMaterial: AugmentedQuery<ApiType, () => Observable<Vec<Hash>>>;
-    };
-    recurringRewards: {
-      recipients: AugmentedQuery<ApiType, (arg: RecipientId | AnyNumber | Uint8Array) => Observable<Recipient>>;
-      recipientsCreated: AugmentedQuery<ApiType, () => Observable<RecipientId>>;
-      rewardRelationships: AugmentedQuery<ApiType, (arg: RewardRelationshipId | AnyNumber | Uint8Array) => Observable<RewardRelationship>>;
-      rewardRelationshipsCreated: AugmentedQuery<ApiType, () => Observable<RewardRelationshipId>>;
     };
     referendum: {
       /**
