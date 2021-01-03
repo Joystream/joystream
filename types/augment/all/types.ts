@@ -161,6 +161,11 @@ export interface ClassPermissions extends Struct {
   readonly maintainers: Vec<CuratorGroupId>;
 }
 
+/** @name ConstitutionInfo */
+export interface ConstitutionInfo extends Struct {
+  readonly text_hash: Hash;
+}
+
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
 

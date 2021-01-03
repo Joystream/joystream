@@ -628,5 +628,8 @@
         "option_id": "MemberId",
         "vote_power": "VotePower"
     },
-    "VotePower": "u128"
+    "VotePower": "u128",
+    "ConstitutionInfo": {
+        "text_hash": "Hash"
+    }
 }
