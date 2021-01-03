@@ -73,7 +73,7 @@
         "reward_account_id": "AccountId",
         "cycle_id": "u64",
         "stake": "u32",
-        "vote_power": "u128",
+        "vote_power": "VotePower",
         "note_hash": "Option<Hash>"
     },
     "CouncilMemberOf": {
@@ -605,5 +605,28 @@
         }
     },
     "InputEntityValuesMap": "BTreeMap<PropertyId,InputPropertyValue>",
-    "FailedAt": "u32"
+    "FailedAt": "u32",
+    "ReferendumStageVoting": {
+        "started": "u32",
+        "winning_target_count": "u64",
+        "current_cycle_id": "u64"
+    },
+    "ReferendumStageRevealing": {
+        "started": "u32",
+        "winning_target_count": "u64",
+        "intermediate_winners": "Vec<OptionResult>",
+        "current_cycle_id": "u64"
+    },
+    "ReferendumStage": {
+        "_enum": {
+            "Inactive": "Null",
+            "Voting": "ReferendumStageVoting",
+            "Revealing": "ReferendumStageRevealing"
+        }
+    },
+    "OptionResult": {
+        "option_id": "MemberId",
+        "vote_power": "VotePower"
+    },
+    "VotePower": "u128"
 }

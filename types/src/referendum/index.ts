@@ -73,6 +73,8 @@ export class CastVote
   implements ICastVote {}
 
 export const referendumTypes: RegistryTypes = {
+  ReferendumStageVoting,
+  ReferendumStageRevealing,
   ReferendumStage,
   OptionResult,
   VotePower,

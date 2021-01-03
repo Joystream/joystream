@@ -99,7 +99,7 @@ export interface Candidate extends Struct {
   readonly reward_account_id: AccountId;
   readonly cycle_id: u64;
   readonly stake: u32;
-  readonly vote_power: u128;
+  readonly vote_power: VotePower;
   readonly note_hash: Option<Hash>;
 }
 
@@ -465,6 +465,12 @@ export interface OperationType extends Enum {
   readonly asAddSchemaSupportToEntity: AddSchemaSupportToEntityOperation;
 }
 
+/** @name OptionResult */
+export interface OptionResult extends Struct {
+  readonly option_id: MemberId;
+  readonly vote_power: VotePower;
+}
+
 /** @name ParameterizedEntity */
 export interface ParameterizedEntity extends Enum {
   readonly isInternalEntityJustAdded: boolean;
@@ -683,6 +689,30 @@ export interface ProposalStatus extends Enum {
 /** @name ReferenceCounterSideEffects */
 export interface ReferenceCounterSideEffects extends BTreeMap<EntityId, EntityReferenceCounterSideEffect> {}
 
+/** @name ReferendumStage */
+export interface ReferendumStage extends Enum {
+  readonly isInactive: boolean;
+  readonly isVoting: boolean;
+  readonly asVoting: ReferendumStageVoting;
+  readonly isRevealing: boolean;
+  readonly asRevealing: ReferendumStageRevealing;
+}
+
+/** @name ReferendumStageRevealing */
+export interface ReferendumStageRevealing extends Struct {
+  readonly started: u32;
+  readonly winning_target_count: u64;
+  readonly intermediate_winners: Vec<OptionResult>;
+  readonly current_cycle_id: u64;
+}
+
+/** @name ReferendumStageVoting */
+export interface ReferendumStageVoting extends Struct {
+  readonly started: u32;
+  readonly winning_target_count: u64;
+  readonly current_cycle_id: u64;
+}
+
 /** @name SameController */
 export interface SameController extends bool {}
 
@@ -863,6 +893,9 @@ export interface VoteKind extends Enum {
   readonly isSlash: boolean;
   readonly isAbstain: boolean;
 }
+
+/** @name VotePower */
+export interface VotePower extends u128 {}
 
 /** @name VotingResults */
 export interface VotingResults extends Struct {

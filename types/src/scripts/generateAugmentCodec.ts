@@ -17,6 +17,7 @@ import discovery from '../discovery'
 import media from '../media'
 import proposals from '../proposals'
 import contentDirectory from '../content-directory'
+import referendum from '../referendum'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -33,6 +34,7 @@ const typesByModule = {
   'media': media,
   'proposals': proposals,
   'content-directory': contentDirectory,
+  'referendum': referendum,
 }
 
 type Imports = { [moduleName: string]: string[] }
