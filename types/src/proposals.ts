@@ -173,7 +173,7 @@ export class ProposalCreationParameters extends JoyStructDecorated({
   exact_execution_block: Option.with(u32),
 }) {}
 
-export type IGeneralProposalParams = {
+export type IGeneralProposalParameters = {
   member_id: MemberId
   title: Text
   description: Text
@@ -181,7 +181,7 @@ export type IGeneralProposalParams = {
   exact_execution_block: Option<BlockNumber>
 }
 
-export class GeneralProposalParams
+export class GeneralProposalParameters
   extends JoyStructDecorated({
     member_id: MemberId,
     title: Text,
@@ -189,7 +189,7 @@ export class GeneralProposalParams
     staking_account_id: Option.with(AccountId),
     exact_execution_block: Option.with(u32),
   })
-  implements IGeneralProposalParams {}
+  implements IGeneralProposalParameters {}
 
 export type IAddOpeningParameters = {
   description: Text
@@ -279,6 +279,7 @@ export const proposalsTypes = {
   ProposalDetailsOf: ProposalDetails, // Runtime alias
   VotingResults,
   ProposalParameters,
+  GeneralProposalParameters,
   VoteKind,
   DiscussionThread,
   DiscussionPost,
@@ -289,6 +290,8 @@ export const proposalsTypes = {
   ExecutionFailed,
   Approved,
   SetLeadParams,
+  ThreadMode,
+  ExecutionStatus,
 }
 
 export default proposalsTypes

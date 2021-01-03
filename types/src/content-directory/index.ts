@@ -270,6 +270,7 @@ export const contentDirectoryTypes = {
   Nonce,
   EntityId,
   ClassId,
+  CuratorId,
   CuratorGroupId,
   VecMaxLength,
   TextMaxLength,

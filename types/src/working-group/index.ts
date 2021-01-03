@@ -108,7 +108,7 @@ export class StakeParameters
   })
   implements IStakeParameters {}
 
-export type IApplyOnOpeningParams = {
+export type IApplyOnOpeningParameters = {
   member_id: MemberId
   opening_id: OpeningId
   role_account_id: AccountId
@@ -117,7 +117,7 @@ export type IApplyOnOpeningParams = {
   stake_parameters: Option<StakeParameters>
 }
 
-export class ApplyOnOpeningParams
+export class ApplyOnOpeningParameters
   extends JoyStructDecorated({
     member_id: MemberId,
     opening_id: OpeningId,
@@ -126,7 +126,7 @@ export class ApplyOnOpeningParams
     description: Text,
     stake_parameters: Option.with(StakeParameters),
   })
-  implements IApplyOnOpeningParams {}
+  implements IApplyOnOpeningParameters {}
 
 export type IPenalty = {
   slashing_text: Text
@@ -181,7 +181,7 @@ export const workingGroupTypes: RegistryTypes = {
   StakePolicy,
   StorageProviderId,
   OpeningType,
-  ApplyOnOpeningParams,
+  ApplyOnOpeningParameters,
   Penalty,
 }
 

@@ -1,6 +1,6 @@
 import { Option } from '@polkadot/types/codec'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { u32, u64, u128 } from '@polkadot/types/primitive'
+import { u32, u64, u128 } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from '../JoyStruct'
 import { JoyEnum } from '../JoyEnum'
@@ -8,24 +8,24 @@ import { AccountId, MemberId, Hash } from '../common'
 import { VotePower, CastVote } from '../referendum'
 
 export type ICouncilStageAnnouncing = {
-  candidates_count: u64
+  candidatesCount: u64
 }
 
 export class CouncilStageAnnouncing
   extends JoyStructDecorated({
-    candidates_count: u64,
+    candidatesCount: u64,
   })
   implements ICouncilStageAnnouncing {}
 
 export type ICouncilStageElection = {
-  candidates_count: u64
+  candidatesCount: u64
 }
 
 export class CouncilStageElection
   extends JoyStructDecorated({
-    candidates_count: u64,
+    candidatesCount: u64,
   })
-  implements ICouncilStageAnnouncing {}
+  implements ICouncilStageElection {}
 
 export class CouncilStage extends JoyEnum({
   Announcing: CouncilStageAnnouncing,
@@ -90,6 +90,8 @@ export class CouncilMemberOf extends CouncilMember {}
 export class CastVoteOf extends CastVote {}
 
 export const councilTypes: RegistryTypes = {
+  CouncilStageAnnouncing,
+  CouncilStageElection,
   CouncilStageUpdate,
   CouncilStage,
   Candidate,
