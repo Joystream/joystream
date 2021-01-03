@@ -113,27 +113,18 @@ export interface CastVoteOf extends Struct {
 
 /** @name Category */
 export interface Category extends Struct {
-  readonly id: CategoryId;
-  readonly title: Text;
-  readonly description: Text;
-  readonly created_at: BlockAndTime;
-  readonly deleted: bool;
+  readonly title_hash: Hash;
+  readonly description_hash: Hash;
   readonly archived: bool;
   readonly num_direct_subcategories: u32;
-  readonly num_direct_unmoderated_threads: u32;
-  readonly num_direct_moderated_threads: u32;
-  readonly position_in_parent_category: Option<ChildPositionInParentCategory>;
-  readonly moderator_id: AccountId;
+  readonly num_direct_threads: u32;
+  readonly num_direct_moderators: u32;
+  readonly parent_category_id: Option<CategoryId>;
+  readonly sticky_thread_ids: Vec<ThreadId>;
 }
 
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
-
-/** @name ChildPositionInParentCategory */
-export interface ChildPositionInParentCategory extends Struct {
-  readonly parent_id: CategoryId;
-  readonly child_nr_in_parent_category: u32;
-}
 
 /** @name Class */
 export interface Class extends Struct {
@@ -339,6 +330,9 @@ export interface FillOpeningParameters extends Struct {
   readonly working_group: WorkingGroup;
 }
 
+/** @name ForumUserId */
+export interface ForumUserId extends u64 {}
+
 /** @name GeneralProposalParameters */
 export interface GeneralProposalParameters extends Struct {
   readonly member_id: MemberId;
@@ -437,12 +431,8 @@ export interface Membership extends Struct {
 /** @name MemoText */
 export interface MemoText extends Text {}
 
-/** @name ModerationAction */
-export interface ModerationAction extends Struct {
-  readonly moderated_at: BlockAndTime;
-  readonly moderator_id: AccountId;
-  readonly rationale: Text;
-}
+/** @name ModeratorId */
+export interface ModeratorId extends u64 {}
 
 /** @name Nonce */
 export interface Nonce extends u64 {}
@@ -505,25 +495,37 @@ export interface Penalty extends Struct {
   readonly slashing_amount: u128;
 }
 
+/** @name Poll */
+export interface Poll extends Struct {
+  readonly description_hash: Hash;
+  readonly end_time: u64;
+  readonly poll_alternatives: Vec<PollAlternative>;
+}
+
+/** @name PollAlternative */
+export interface PollAlternative extends Struct {
+  readonly alternative_text_hash: Hash;
+  readonly vote_count: u32;
+}
+
 /** @name Post */
 export interface Post extends Struct {
-  readonly id: PostId;
   readonly thread_id: ThreadId;
-  readonly nr_in_thread: u32;
-  readonly current_text: Text;
-  readonly moderation: Option<ModerationAction>;
-  readonly text_change_history: Vec<PostTextChange>;
-  readonly created_at: BlockAndTime;
-  readonly author_id: AccountId;
+  readonly text_hash: Hash;
+  readonly author_id: ForumUserId;
 }
 
 /** @name PostId */
 export interface PostId extends u64 {}
 
-/** @name PostTextChange */
-export interface PostTextChange extends Struct {
-  readonly expired_at: BlockAndTime;
-  readonly text: Text;
+/** @name PostReactionId */
+export interface PostReactionId extends u64 {}
+
+/** @name PrivilegedActor */
+export interface PrivilegedActor extends Enum {
+  readonly isLead: boolean;
+  readonly isModerator: boolean;
+  readonly asModerator: ModeratorId;
 }
 
 /** @name Property */
@@ -681,17 +683,6 @@ export interface ProposalStatus extends Enum {
 /** @name ReferenceCounterSideEffects */
 export interface ReferenceCounterSideEffects extends BTreeMap<EntityId, EntityReferenceCounterSideEffect> {}
 
-/** @name Reply */
-export interface Reply extends Struct {
-  readonly owner: AccountId;
-  readonly thread_id: ThreadId;
-  readonly text: Text;
-  readonly moderation: Option<ModerationAction>;
-}
-
-/** @name ReplyId */
-export interface ReplyId extends u64 {}
-
 /** @name SameController */
 export interface SameController extends bool {}
 
@@ -781,15 +772,12 @@ export interface TextMaxLength extends u16 {}
 
 /** @name Thread */
 export interface Thread extends Struct {
-  readonly id: ThreadId;
-  readonly title: Text;
+  readonly title_hash: Hash;
   readonly category_id: CategoryId;
-  readonly nr_in_category: u32;
-  readonly moderation: Option<ModerationAction>;
-  readonly num_unmoderated_posts: u32;
-  readonly num_moderated_posts: u32;
-  readonly created_at: BlockAndTime;
-  readonly author_id: AccountId;
+  readonly author_id: ForumUserId;
+  readonly archived: bool;
+  readonly poll: Option<Poll>;
+  readonly num_direct_posts: u32;
 }
 
 /** @name ThreadId */

@@ -4,7 +4,7 @@
 import { AnyNumber } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Compact, Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { Actor, ActorId, ApplicationId, ApplyOnOpeningParameters, BuyMembershipParameters, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, GeneralProposalParameters, InputPropertyValue, InputValue, InviteMembershipParameters, MemberId, MemoText, Nonce, OpeningId, OpeningType, OperationType, Penalty, PostId, Property, PropertyId, ProposalDetailsOf, ProposalId, SchemaId, StakePolicy, StorageProviderId, ThreadId, ThreadMode, Url, VecMaxLength, VoteKind, WorkerId } from './all';
+import { Actor, ActorId, ApplicationId, ApplyOnOpeningParameters, BuyMembershipParameters, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, ForumUserId, GeneralProposalParameters, InputPropertyValue, InputValue, InviteMembershipParameters, MemberId, MemoText, ModeratorId, Nonce, OpeningId, OpeningType, OperationType, Penalty, Poll, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, ProposalDetailsOf, ProposalId, SchemaId, StakePolicy, StorageProviderId, ThreadId, ThreadMode, Url, VecMaxLength, VoteKind, WorkerId } from './all';
 import { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -557,7 +557,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Add post
        **/
-      addPost: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addPost: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add a new category.
        **/
@@ -565,44 +565,44 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Create new thread in category with poll
        **/
-      createThread: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, poll: Option<Poll> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      deleteCategory: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      deleteThread: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createThread: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, poll: Option<Poll> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteCategory: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteThread: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Edit post text
        **/
-      editPostText: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, newText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      editThreadTitle: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newTitle: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      editPostText: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, newText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      editThreadTitle: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newTitle: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Moderate post
        **/
-      moderatePost: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      moderateThread: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      moveThreadToCategory: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newCategoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moderatePost: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moderateThread: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      moveThreadToCategory: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newCategoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * like or unlike a post.
        **/
-      reactPost: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, react: PostReactionId | null) => SubmittableExtrinsic<ApiType>>;
+      reactPost: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, react: PostReactionId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Set stickied threads for category
        **/
-      setStickiedThreads: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, stickiedIds: Vec<ThreadId> | (ThreadId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      setStickiedThreads: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, stickiedIds: Vec<ThreadId> | (ThreadId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Update category
        **/
-      updateCategoryArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateCategoryArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Enable a moderator can moderate a category and its sub categories.
        **/
-      updateCategoryMembershipOfModerator: AugmentedSubmittable<(moderatorId: ModeratorId | null, categoryId: CategoryId | AnyNumber | Uint8Array, newValue: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateCategoryMembershipOfModerator: AugmentedSubmittable<(moderatorId: ModeratorId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, newValue: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Update category
        **/
-      updateThreadArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateThreadArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * submit a poll
        **/
-      voteOnPoll: AugmentedSubmittable<(forumUserId: ForumUserId | null, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      voteOnPoll: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     forumWorkingGroup: {
       /**

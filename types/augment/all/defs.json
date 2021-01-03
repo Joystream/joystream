@@ -90,60 +90,47 @@
         "stake": "u128",
         "vote_for": "Option<MemberId>"
     },
-    "PostTextChange": {
-        "expired_at": "BlockAndTime",
-        "text": "Text"
-    },
-    "ModerationAction": {
-        "moderated_at": "BlockAndTime",
-        "moderator_id": "AccountId",
-        "rationale": "Text"
-    },
-    "ChildPositionInParentCategory": {
-        "parent_id": "CategoryId",
-        "child_nr_in_parent_category": "u32"
-    },
+    "ForumUserId": "u64",
+    "ModeratorId": "u64",
     "CategoryId": "u64",
+    "PostReactionId": "u64",
     "Category": {
-        "id": "CategoryId",
-        "title": "Text",
-        "description": "Text",
-        "created_at": "BlockAndTime",
-        "deleted": "bool",
+        "title_hash": "Hash",
+        "description_hash": "Hash",
         "archived": "bool",
         "num_direct_subcategories": "u32",
-        "num_direct_unmoderated_threads": "u32",
-        "num_direct_moderated_threads": "u32",
-        "position_in_parent_category": "Option<ChildPositionInParentCategory>",
-        "moderator_id": "AccountId"
+        "num_direct_threads": "u32",
+        "num_direct_moderators": "u32",
+        "parent_category_id": "Option<CategoryId>",
+        "sticky_thread_ids": "Vec<ThreadId>"
     },
     "Thread": {
-        "id": "ThreadId",
-        "title": "Text",
+        "title_hash": "Hash",
         "category_id": "CategoryId",
-        "nr_in_category": "u32",
-        "moderation": "Option<ModerationAction>",
-        "num_unmoderated_posts": "u32",
-        "num_moderated_posts": "u32",
-        "created_at": "BlockAndTime",
-        "author_id": "AccountId"
+        "author_id": "ForumUserId",
+        "archived": "bool",
+        "poll": "Option<Poll>",
+        "num_direct_posts": "u32"
     },
     "Post": {
-        "id": "PostId",
         "thread_id": "ThreadId",
-        "nr_in_thread": "u32",
-        "current_text": "Text",
-        "moderation": "Option<ModerationAction>",
-        "text_change_history": "Vec<PostTextChange>",
-        "created_at": "BlockAndTime",
-        "author_id": "AccountId"
+        "text_hash": "Hash",
+        "author_id": "ForumUserId"
     },
-    "ReplyId": "u64",
-    "Reply": {
-        "owner": "AccountId",
-        "thread_id": "ThreadId",
-        "text": "Text",
-        "moderation": "Option<ModerationAction>"
+    "PollAlternative": {
+        "alternative_text_hash": "Hash",
+        "vote_count": "u32"
+    },
+    "Poll": {
+        "description_hash": "Hash",
+        "end_time": "u64",
+        "poll_alternatives": "Vec<PollAlternative>"
+    },
+    "PrivilegedActor": {
+        "_enum": {
+            "Lead": "Null",
+            "Moderator": "ModeratorId"
+        }
     },
     "ApplicationId": "u64",
     "Application": {

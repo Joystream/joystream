@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, Opening, OpeningId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, Thread, ThreadId, Url, VoteKind, Worker, WorkerId } from './all';
+import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, Thread, ThreadId, Url, VoteKind, Worker, WorkerId } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -292,7 +292,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Moderator set for each Category
        **/
-      categoryByModerator: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ModeratorId | null) => Observable<ITuple<[]>>>;
+      categoryByModerator: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ModeratorId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>>;
       /**
        * Counter for all existing categories.
        **/
