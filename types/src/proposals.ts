@@ -1,12 +1,7 @@
-import { Text, u32, Tuple, u8, Vec, Option, Null, Bytes } from '@polkadot/types'
-import { bool, u128 } from '@polkadot/types/primitive'
+import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { AccountId, ThreadId, MemberId, WorkingGroup, JoyEnum, JoyStructDecorated } from './common'
-import { RoleParameters } from './roles'
-import { StakeId } from './stake'
-import { ElectionParameters } from './council'
-import { ActivateOpeningAt, OpeningId, ApplicationId } from './hiring'
-import { WorkingGroupOpeningPolicyCommitment, WorkerId, RewardPolicy } from './working-group'
+import { AccountId, MemberId, WorkingGroup, JoyEnum, JoyStructDecorated } from './common'
+import { ApplicationId, OpeningId, Penalty, StakePolicy, WorkerId } from './working-group'
 
 export type IVotingResults = {
   abstensions: u32
@@ -38,6 +33,9 @@ export type ProposalParametersType = {
   slashingThresholdPercentage: u32
   // Proposal stake
   requiredStake: Option<Balance>
+  // The number of councils in that must approve the proposal in a row before it has its
+  // intended effect. Integer no less than 1.
+  constitutionality: u32
 }
 
 export class ProposalParameters
@@ -49,17 +47,19 @@ export class ProposalParameters
     slashingQuorumPercentage: u32,
     slashingThresholdPercentage: u32,
     requiredStake: Option.with(u128),
+    constitutionality: u32,
   })
   implements ProposalParametersType {}
 
 export type IProposal = {
   parameters: ProposalParameters
   proposerId: MemberId
-  title: Text
-  description: Text
-  createdAt: BlockNumber
+  activatedAt: BlockNumber
   status: ProposalStatus
   votingResults: VotingResults
+  exactExecutionBlock: Option<BlockNumber>
+  nrOfCouncilConfirmations: u32
+  stakingAccountId: Option<AccountId>
 }
 
 export const IProposalStatus: { [key: string]: string } = {
@@ -76,30 +76,22 @@ export const IProposalStatus: { [key: string]: string } = {
   Slashed: 'Slashed',
 }
 
-export type IActiveStake = {
-  stake_id: StakeId
-  source_account_id: AccountId
-}
-export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
-  implements IActiveStake {}
-
 export class ExecutionFailedStatus extends JoyStructDecorated({
   error: Text,
 }) {}
 
 export class ExecutionFailed extends ExecutionFailedStatus {}
 
-export const ApprovedProposalDef = {
+export const ApprovedProposalDecisionDef = {
   PendingExecution: Null,
-  Executed: Null,
-  ExecutionFailed,
+  PendingConstitutionality: Null,
 } as const
-export type ApprovedProposalStatuses = keyof typeof ApprovedProposalDef
-export class ApprovedProposalStatus extends JoyEnum(ApprovedProposalDef) {}
+export type ApprovedProposalDecisions = keyof typeof ApprovedProposalDecisionDef
+export class ApprovedProposalDecision extends JoyEnum(ApprovedProposalDecisionDef) {}
 
-export class Approved extends ApprovedProposalStatus {}
+export class Approved extends ApprovedProposalDecision {}
 
-export const ProposalDecisionStatusesDef = {
+export const ProposalDecisionDef = {
   Canceled: Null,
   Vetoed: Null,
   Rejected: Null,
@@ -107,32 +99,22 @@ export const ProposalDecisionStatusesDef = {
   Expired: Null,
   Approved,
 } as const
-export type ProposalDecisionStatuses = keyof typeof ProposalDecisionStatusesDef
-export class ProposalDecisionStatus extends JoyEnum(ProposalDecisionStatusesDef) {}
+export type ProposalDecisions = keyof typeof ProposalDecisionDef
+export class ProposalDecision extends JoyEnum(ProposalDecisionDef) {}
 
-export type IFinalizationData = {
-  proposalStatus: ProposalDecisionStatus
-  finalizedAt: BlockNumber
-  encodedUnstakingErrorDueToBrokenRuntime: Option<Vec<u8>>
-  stakeDataAfterUnstakingError: Option<ActiveStake>
-}
-
-export class FinalizationData
-  // FIXME: Snake case for consistency?
-  extends JoyStructDecorated({
-    proposalStatus: ProposalDecisionStatus,
-    finalizedAt: u32,
-    encodedUnstakingErrorDueToBrokenRuntime: Option.with(Vec.with(u8)),
-    stakeDataAfterUnstakingError: Option.with(ActiveStake),
-  })
-  implements IFinalizationData {}
-
-export class Active extends Option.with(ActiveStake) {}
-export class Finalized extends FinalizationData {}
+export class Active extends Null {}
+export class PendingExecution extends u32 {}
+export class PendingConstitutionality extends Null {}
 
 export class ProposalStatus extends JoyEnum({
   Active,
-  Finalized,
+  PendingExecution,
+  PendingConstitutionality,
+} as const) {}
+
+export class ExecutionStatus extends JoyEnum({
+  Executed: Null,
+  ExecutionFailed,
 } as const) {}
 
 export const VoteKinds = ['Approve', 'Reject', 'Slash', 'Abstain'] as const
@@ -158,59 +140,69 @@ export class SetLead extends Option.with(SetLeadParams) {}
 export class Proposal
   // FIXME: Snake case for consistency?
   extends JoyStructDecorated({
-    // Proposals parameter, characterize different proposal types.
     parameters: ProposalParameters,
-    // Identifier of member proposing.
     proposerId: MemberId,
-    // Proposal description
-    title: Text,
-    // Proposal body
-    description: Text,
-    // When it was created.
-    createdAt: u32, // BlockNumber
-    /// Current proposal status
+    activatedAt: u32,
     status: ProposalStatus,
-    /// Curring voting result for the proposal
     votingResults: VotingResults,
-  }) {}
+    exactExecutionBlock: Option.with(u32),
+    nrOfCouncilConfirmations: u32,
+    stakingAccountId: Option.with(AccountId),
+  })
+  implements IProposal {}
 
-export class ThreadCounter extends JoyStructDecorated({
-  author_id: MemberId,
-  counter: u32,
+export type IProposalCreationParameters = {
+  account_id: AccountId
+  proposer_id: MemberId
+  proposal_parameters: ProposalParameters
+  title: Text
+  description: Text
+  staking_account_id: Option<AccountId>
+  encoded_dispatchable_call_code: Vec<u8>
+  exact_execution_block: Option<u32>
+}
+
+export class ProposalCreationParameters extends JoyStructDecorated({
+  account_id: AccountId,
+  proposer_id: MemberId,
+  proposal_parameters: ProposalParameters,
+  title: Text,
+  description: Text,
+  staking_account_id: Option.with(AccountId),
+  encoded_dispatchable_call_code: Vec.with(u8),
+  exact_execution_block: Option.with(u32),
 }) {}
 
-export class DiscussionThread extends JoyStructDecorated({
-  title: Bytes,
-  created_at: u32, // BlockNumber
-  author_id: MemberId,
-}) {}
+export type IGeneralProposalParams = {
+  member_id: MemberId
+  title: Text
+  description: Text
+  staking_account_id: Option<AccountId>
+  exact_execution_block: Option<BlockNumber>
+}
 
-export class DiscussionPost extends JoyStructDecorated({
-  text: Bytes,
-  /// When post was added.
-  created_at: u32, // BlockNumber
-  /// When post was updated last time.
-  updated_at: u32, // BlockNumber
-  /// Author of the post.
-  author_id: MemberId,
-  /// Parent thread id for this post
-  thread_id: ThreadId,
-  /// Defines how many times this post was edited. Zero on creation.
-  edition_number: u32,
-}) {}
+export class GeneralProposalParams
+  extends JoyStructDecorated({
+    member_id: MemberId,
+    title: Text,
+    description: Text,
+    staking_account_id: Option.with(AccountId),
+    exact_execution_block: Option.with(u32),
+  })
+  implements IGeneralProposalParams {}
 
 export type IAddOpeningParameters = {
-  activate_at: ActivateOpeningAt
-  commitment: WorkingGroupOpeningPolicyCommitment
-  human_readable_text: Bytes
+  description: Text
+  stake_policy: Option<StakePolicy>
+  reward_per_block: Option<Balance>
   working_group: WorkingGroup
 }
 
 export class AddOpeningParameters
   extends JoyStructDecorated({
-    activate_at: ActivateOpeningAt,
-    commitment: WorkingGroupOpeningPolicyCommitment,
-    human_readable_text: Bytes,
+    description: Text,
+    stake_policy: Option.with(StakePolicy),
+    reward_per_block: Option.with(u128),
     working_group: WorkingGroup,
   })
   implements IAddOpeningParameters {}
@@ -218,7 +210,6 @@ export class AddOpeningParameters
 export type IFillOpeningParameters = {
   opening_id: OpeningId
   successful_application_id: ApplicationId
-  reward_policy: Option<RewardPolicy>
   working_group: WorkingGroup
 }
 
@@ -226,23 +217,20 @@ export class FillOpeningParameters
   extends JoyStructDecorated({
     opening_id: OpeningId,
     successful_application_id: ApplicationId,
-    reward_policy: Option.with(RewardPolicy),
     working_group: WorkingGroup,
   })
   implements IFillOpeningParameters {}
 
 export type ITerminateRoleParameters = {
   worker_id: WorkerId
-  rationale: Bytes
-  slash: bool
+  penalty: Option<Penalty>
   working_group: WorkingGroup
 }
 
 export class TerminateRoleParameters
   extends JoyStructDecorated({
     worker_id: WorkerId,
-    rationale: Bytes,
-    slash: bool,
+    penalty: Option.with(Penalty),
     working_group: WorkingGroup,
   })
   implements ITerminateRoleParameters {}
@@ -250,22 +238,37 @@ export class TerminateRoleParameters
 export class ProposalDetails extends JoyEnum({
   Text: Text,
   RuntimeUpgrade: Bytes,
-  SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
-  SetLead: SetLead,
-  SetContentWorkingGroupMintCapacity: u128,
-  EvictStorageProvider: AccountId,
   SetValidatorCount: u32,
-  SetStorageRoleParameters: RoleParameters,
   AddWorkingGroupLeaderOpening: AddOpeningParameters,
-  BeginReviewWorkingGroupLeaderApplication: Tuple.with([OpeningId, WorkingGroup]),
   FillWorkingGroupLeaderOpening: FillOpeningParameters,
-  SetWorkingGroupMintCapacity: Tuple.with(['Balance', WorkingGroup]),
+  SetWorkingGroupBudgetCapacity: Tuple.with(['Balance', WorkingGroup]),
   DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
   SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
   SetWorkingGroupLeaderReward: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
   TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
+  AmendConstitution: Text,
 } as const) {}
+
+// Discussions
+
+export class ThreadAuthorId extends MemberId {}
+export class PostAuthorId extends MemberId {}
+
+export class ThreadMode extends JoyEnum({
+  Open: Null,
+  Closed: Vec.with(MemberId),
+} as const) {}
+
+export class DiscussionThread extends JoyStructDecorated({
+  activated_at: u32, // BlockNumber
+  author_id: ThreadAuthorId,
+  mode: ThreadMode,
+}) {}
+
+export class DiscussionPost extends JoyStructDecorated({
+  author_id: PostAuthorId,
+}) {}
 
 // export default proposalTypes;
 export const proposalsTypes = {
@@ -277,16 +280,12 @@ export const proposalsTypes = {
   VotingResults,
   ProposalParameters,
   VoteKind,
-  ThreadCounter,
   DiscussionThread,
   DiscussionPost,
   AddOpeningParameters,
   FillOpeningParameters,
   TerminateRoleParameters,
-  // Expose in registry for api.createType purposes:
-  ActiveStake,
-  Finalized,
-  ProposalDecisionStatus,
+  ProposalDecision,
   ExecutionFailed,
   Approved,
   SetLeadParams,
