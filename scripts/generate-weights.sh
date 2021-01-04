@@ -47,6 +47,7 @@ benchmark pallet_session
 # Joystrem benchmarks
 benchmark proposals_discussion
 benchmark proposals_engine
+benchmark proposals_codex
 benchmark pallet_constitution
 benchmark working_group
 benchmark council

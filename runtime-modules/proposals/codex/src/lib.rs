@@ -94,23 +94,35 @@ const MAX_VALIDATOR_COUNT: u32 = 100;
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight;
-    fn create_proposal_signal(i: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_funding_request() -> Weight; // Extra parameters not used
-    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_working_group_budget(d: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_decrease_working_group_lead_stake() -> Weight; // Extra parameters not used
-    fn create_proposal_slash_working_group_lead(d: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_set_working_group_lead_reward(d: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
-    fn create_proposal_amend_constitution(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_cancel_working_group_lead_opening(t: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_council_budget_increment(d: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_set_councilor_reward(t: u32) -> Weight; // Extra parameters not used
-    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
+    fn create_proposal_signal(i: u32, t: u32) -> Weight;
+    fn create_proposal_runtime_upgrade(i: u32) -> Weight;
+    fn create_proposal_funding_request(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_max_validator_count() -> Weight;
+    fn create_proposal_create_working_group_lead_opening(i: u32, d: u32) -> Weight;
+    fn create_proposal_fill_working_group_lead_opening(t: u32) -> Weight;
+    fn create_proposal_update_working_group_budget(d: u32) -> Weight;
+    fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
+    fn create_proposal_slash_working_group_lead() -> Weight;
+    fn create_proposal_set_working_group_lead_reward(t: u32) -> Weight;
+    fn create_proposal_terminate_working_group_lead(t: u32) -> Weight;
+    fn create_proposal_amend_constitution(i: u32, t: u32) -> Weight;
+    fn create_proposal_cancel_working_group_lead_opening() -> Weight;
+    fn create_proposal_set_membership_price(d: u32) -> Weight;
+    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_councilor_reward(d: u32) -> Weight;
+    fn create_proposal_set_initial_invitation_balance(t: u32) -> Weight;
+    fn create_proposal_set_initial_invitation_count() -> Weight;
+    fn create_proposal_set_membership_lead_invitation_quota() -> Weight;
+    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
+    fn update_working_group_budget_positive_forum() -> Weight;
+    fn update_working_group_budget_negative_forum() -> Weight;
+    fn update_working_group_budget_positive_storage() -> Weight;
+    fn update_working_group_budget_negative_storage() -> Weight;
+    fn update_working_group_budget_positive_content() -> Weight;
+    fn update_working_group_budget_negative_content() -> Weight;
+    fn update_working_group_budget_positive_membership() -> Weight;
+    fn update_working_group_budget_negative_membership() -> Weight;
+    fn funding_request() -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -316,13 +328,14 @@ decl_storage! {
 
 // Calls the function $function in the instance corresponding to $working_group with
 // arguments in $x
+#[macro_export]
 macro_rules! call_wg {
     ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => $working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Storage => $working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Forum => $working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Membership => $working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Content => working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Storage => working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Forum => working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Membership => working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
         }
     }};
 }
@@ -519,7 +532,7 @@ decl_module! {
         }
 
         /// Update working group budget
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::get_update_working_group_budget_weight(&working_group, &balance_kind)]
         pub fn update_working_group_budget(
             origin,
             working_group: WorkingGroup,
@@ -549,7 +562,7 @@ decl_module! {
         }
 
         /// Funding request proposal
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoCodex::<T>::funding_request()] // TODO: adjust weight
         pub fn funding_request(
             origin,
             amount: BalanceOf<T>,
@@ -579,7 +592,7 @@ type StorageWorkingGroupInstance = working_group::Instance2;
 type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
+type MembershipWorkingGroupInstance = working_group::Instance4;
 
 impl<T: Trait> Module<T> {
     // Ensure that the proposal details respects all the checks
@@ -658,13 +671,13 @@ impl<T: Trait> Module<T> {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::SetInitialInvitationCount(..) => {
-                // TODO add checks
+                // Note: No checks for this proposal for now
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
-                // TODO add checks
+                // Note: No checks for this proposal for now
             }
             ProposalDetails::SetReferralCut(..) => {
-                // TODO add checks
+                // Note: No checks for this proposal for now
             }
         }
 
@@ -729,7 +742,44 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Returns weight for the proposal creatin according to parameters
+    // Returns the weigt for update_working_group_budget extrinsic according to parameters
+    fn get_update_working_group_budget_weight(
+        group: &WorkingGroup,
+        balance_kind: &BalanceKind,
+    ) -> Weight {
+        match balance_kind {
+            BalanceKind::Positive => match group {
+                WorkingGroup::Forum => {
+                    WeightInfoCodex::<T>::update_working_group_budget_positive_forum()
+                }
+                WorkingGroup::Storage => {
+                    WeightInfoCodex::<T>::update_working_group_budget_positive_storage()
+                }
+                WorkingGroup::Content => {
+                    WeightInfoCodex::<T>::update_working_group_budget_positive_content()
+                }
+                WorkingGroup::Membership => {
+                    WeightInfoCodex::<T>::update_working_group_budget_positive_membership()
+                }
+            },
+            BalanceKind::Negative => match group {
+                WorkingGroup::Forum => {
+                    WeightInfoCodex::<T>::update_working_group_budget_negative_forum()
+                }
+                WorkingGroup::Storage => {
+                    WeightInfoCodex::<T>::update_working_group_budget_negative_storage()
+                }
+                WorkingGroup::Membership => {
+                    WeightInfoCodex::<T>::update_working_group_budget_negative_membership()
+                }
+                WorkingGroup::Content => {
+                    WeightInfoCodex::<T>::update_working_group_budget_negative_content()
+                }
+            },
+        }
+    }
+
+    // Returns weight for the proposal creation according to parameters
     fn get_create_proposal_weight(
         general: &GeneralProposalParameters<T>,
         details: &ProposalDetailsOf<T>,
@@ -737,36 +787,31 @@ impl<T: Trait> Module<T> {
         let title_length = general.title.len();
         let description_length = general.description.len();
         match details {
-            ProposalDetails::Signal(signal) => {
-                WeightInfoCodex::<T>::create_proposal_signal(signal.len().saturated_into())
-            }
+            ProposalDetails::Signal(signal) => WeightInfoCodex::<T>::create_proposal_signal(
+                signal.len().saturated_into(),
+                title_length.saturated_into(),
+            ),
             ProposalDetails::RuntimeUpgrade(blob) => {
-                WeightInfoCodex::<T>::create_proposal_runtime_upgrade(
-                    blob.len().saturated_into(),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
+                WeightInfoCodex::<T>::create_proposal_runtime_upgrade(blob.len().saturated_into())
             }
             ProposalDetails::FundingRequest(..) => {
-                WeightInfoCodex::<T>::create_proposal_funding_request()
-            }
-            ProposalDetails::SetMaxValidatorCount(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_max_validator_count(
+                WeightInfoCodex::<T>::create_proposal_funding_request(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
+            }
+            ProposalDetails::SetMaxValidatorCount(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_max_validator_count()
             }
             ProposalDetails::CreateWorkingGroupLeadOpening(opening_params) => {
                 WeightInfoCodex::<T>::create_proposal_create_working_group_lead_opening(
                     opening_params.description.len().saturated_into(),
-                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::FillWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening(
                     title_length.saturated_into(),
-                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
@@ -775,66 +820,65 @@ impl<T: Trait> Module<T> {
                 )
             }
             ProposalDetails::DecreaseWorkingGroupLeadStake(..) => {
-                WeightInfoCodex::<T>::create_proposal_decrease_working_group_lead_stake()
-            }
-            ProposalDetails::SlashWorkingGroupLead(..) => {
-                WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                WeightInfoCodex::<T>::create_proposal_decrease_working_group_lead_stake(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
+            ProposalDetails::SlashWorkingGroupLead(..) => {
+                WeightInfoCodex::<T>::create_proposal_slash_working_group_lead()
+            }
             ProposalDetails::SetWorkingGroupLeadReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_working_group_lead_reward(
-                    description_length.saturated_into(),
+                    title_length.saturated_into(),
                 )
             }
             ProposalDetails::TerminateWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead(
                     title_length.saturated_into(),
-                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
                     title_length.saturated_into(),
-                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetMembershipPrice(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_price(
-                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
-                WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
-                    title_length.saturated_into(),
-                )
+                WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening()
             }
             ProposalDetails::SetCouncilBudgetIncrement(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_council_budget_increment(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetCouncilorReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_councilor_reward(
-                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_initial_invitation_balance(
                     title_length.saturated_into(),
-                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetInitialInvitationCount(..) => {
-                1_000_000 // TODO benchmark
+                WeightInfoCodex::<T>::create_proposal_set_initial_invitation_count()
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
-                1_000_000 // TODO benchmark
+                WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota()
             }
             ProposalDetails::SetReferralCut(..) => {
-                1_000_000 // TODO benchmark
+                WeightInfoCodex::<T>::create_proposal_set_referral_cut(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
         }
     }

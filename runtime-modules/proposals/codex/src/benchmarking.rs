@@ -18,6 +18,8 @@ use sp_std::prelude::*;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
+use crate::call_wg;
+
 // Note: We use proposals_engine::Trait::Event here because crate::Trait
 // doesn't implement Event and we only use this function to assert events
 // from the proposals_engine pallet
@@ -169,6 +171,48 @@ fn create_proposal_verify<T: Trait>(
         ProposalDetailsByProposalId::<T>::get(proposal_id),
         proposal_details,
         "Proposal details doesn't match"
+    );
+}
+
+fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
+    Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
+
+    call_wg!(
+        group<T>,
+        set_budget,
+        RawOrigin::Root.into(),
+        BalanceOf::<T>::from(budget)
+    )
+    .unwrap();
+
+    assert_eq!(
+        Council::<T>::budget(),
+        BalanceOf::<T>::from(budget),
+        "Council budget not updated"
+    );
+
+    assert_eq!(
+        call_wg!(group<T>, budget),
+        BalanceOf::<T>::from(budget),
+        "Working Group budget not updated"
+    );
+}
+
+fn assert_new_budgets<T: Trait>(
+    new_budget_council: u32,
+    new_budget_working_group: u32,
+    group: WorkingGroup,
+) {
+    assert_eq!(
+        Council::<T>::budget(),
+        BalanceOf::<T>::from(new_budget_council),
+        "Council budget not updated"
+    );
+
+    assert_eq!(
+        call_wg!(group<T>, budget),
+        BalanceOf::<T>::from(new_budget_working_group),
+        "Working Group budget not updated"
     );
 }
 
@@ -429,6 +473,130 @@ benchmarks! {
     verify {
         create_proposal_verify::<T>(account_id, member_id, proposal_details);
     }
+
+    create_proposal_set_initial_invitation_count {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::SetInitialInvitationCount(One::one());
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    create_proposal_set_membership_lead_invitation_quota {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::SetMembershipLeadInvitationQuota(One::one());
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    create_proposal_set_referral_cut {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::SetReferralCut(One::one());
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    update_working_group_budget_positive_forum {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Forum, One::one(), BalanceKind::Positive)
+    verify {
+        assert_new_budgets::<T>(99, 101, WorkingGroup::Forum);
+    }
+
+    update_working_group_budget_negative_forum {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Forum, One::one(), BalanceKind::Negative)
+    verify{
+        assert_new_budgets::<T>(101, 99, WorkingGroup::Forum);
+    }
+
+    update_working_group_budget_positive_storage {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Storage, One::one(), BalanceKind::Positive)
+    verify {
+        assert_new_budgets::<T>(99, 101, WorkingGroup::Storage);
+    }
+
+    update_working_group_budget_negative_storage {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Storage, One::one(), BalanceKind::Negative)
+    verify {
+        assert_new_budgets::<T>(101, 99, WorkingGroup::Storage);
+    }
+
+    update_working_group_budget_positive_content {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Content, One::one(), BalanceKind::Positive)
+    verify {
+        assert_new_budgets::<T>(99, 101, WorkingGroup::Content);
+    }
+
+    update_working_group_budget_negative_content {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Content, One::one(),
+    BalanceKind::Negative)
+    verify {
+        assert_new_budgets::<T>(101, 99, WorkingGroup::Content);
+    }
+
+    update_working_group_budget_positive_membership {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Membership, One::one(), BalanceKind::Positive)
+    verify {
+        assert_new_budgets::<T>(99, 101, WorkingGroup::Membership);
+    }
+
+    update_working_group_budget_negative_membership {
+        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
+    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Membership, One::one(), BalanceKind::Negative)
+    verify {
+        assert_new_budgets::<T>(101, 99, WorkingGroup::Membership);
+    }
+
+    funding_request {
+        let council_budget = BalanceOf::<T>::from(100);
+        let transfer_balance = BalanceOf::<T>::from(60);
+        let recieving_account = account::<T::AccountId>("reciever", 0, SEED);
+        Council::<T>::set_budget(RawOrigin::Root.into(), council_budget).unwrap();
+        assert_eq!(
+            Council::<T>::budget(),
+            council_budget,
+            "Council budget not updated"
+        );
+
+        assert_eq!(
+            Balances::<T>::free_balance(&recieving_account),
+            Zero::zero(),
+            "Recieving account has funds",
+        );
+    }: _ (RawOrigin::Root, transfer_balance, recieving_account.clone())
+    verify {
+        assert_eq!(
+            Council::<T>::budget(),
+            council_budget - transfer_balance,
+            "Council didn't discount transference",
+        );
+
+        assert_eq!(
+            Balances::<T>::free_balance(recieving_account),
+            transfer_balance,
+            "Recieving account didn't recieve amount",
+        );
+    }
 }
 
 #[cfg(test)]
@@ -555,6 +723,89 @@ mod tests {
     fn test_create_proposal_set_initial_invitation_balance() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_set_initial_invitation_balance::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_set_initial_invitation_count() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_set_initial_invitation_count::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_set_membership_lead_invitation_quota() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(
+                test_benchmark_create_proposal_set_membership_lead_invitation_quota::<Test>()
+            );
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_set_referral_cut() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_set_referral_cut::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_positive_forum() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_positive_forum::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_negative_forum() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_negative_forum::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_positive_storage() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_positive_storage::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_negative_storage() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_negative_storage::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_positive_content() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_positive_content::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_negative_content() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_negative_content::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_positive_membership() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_positive_membership::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_working_group_budget_negative_membership() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_working_group_budget_negative_membership::<Test>());
         });
     }
 }
