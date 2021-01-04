@@ -1,7 +1,7 @@
 {
   "name": "License",
   "description": "Describes a license the media can be published under",
-  "maximum_entities_count": 400,
-  "default_entity_creation_voucher_upper_bound": 50,
+  "maximum_entities_count": 5000,
+  "default_entity_creation_voucher_upper_bound": 100,
   "class_permissions": { "any_member": true }
 }

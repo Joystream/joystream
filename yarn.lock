@@ -1174,10 +1174,10 @@
     typeorm-model-generator "^0.4.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.22.0/warthog-v2.22.0.tgz"
 
-"@dzlzv/hydra-indexer-lib@0.0.21-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.21-legacy.1.26.1":
-  version "0.0.21-legacy.1.26.1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.21-legacy.1.26.1.tgz#c6a3ff3905cce03e139852900e074abb67c19efd"
-  integrity sha512-yUDqhl+ZlSo+t3qtIqqsYwh/vXUGwgsBOOToV+Bdry1Ngzw1+zQ0jh4fVItPMZMAAjGiw8AKoVbDu9kgAR1nEA==
+"@dzlzv/hydra-indexer-lib@0.0.22-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.22-legacy.1.26.1":
+  version "0.0.22-legacy.1.26.1"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.22-legacy.1.26.1.tgz#4e63994c27b77f39bd9c83e607b5c2adcfe22e78"
+  integrity sha512-NOOJviG/5HTmWpEPYcfE/wvSHoxBbXjTCvB/zHKpNq0xkeedl7x3xSi0gyZDUZsNpxEYQIaUHW9xti3X8MrU7A==
   dependencies:
     "@polkadot/api" "^1.26.1"
     "@types/express" "^4.17.8"

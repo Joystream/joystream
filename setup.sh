@@ -31,6 +31,10 @@ fi
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
-volta install node@12
-volta install yarn
-volta install npx
+# After installing volta the .profile and .bash_profile are updated
+# to add it to the PATH, so we start new shell to use it
+env bash -c "volta install node@12"
+env bash -c "volta install yarn"
+env bash -c "volta install npx"
+
+echo "Open a new terminal to start using newly installed tools"

@@ -102,10 +102,7 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-# pass the scenario name without .ts extension
-SCENARIO=$1
-# fallback to full.ts scenario if not specified
-SCENARIO=${SCENARIO:=full}
+echo "Waiting for chain to startup..."
+sleep 5s
 
-# Execute the tests
-time DEBUG=* yarn workspace network-tests test-run src/scenarios/${SCENARIO}.ts
+./run-test-scenario.sh $1

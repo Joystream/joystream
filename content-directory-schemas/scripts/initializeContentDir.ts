@@ -4,7 +4,7 @@ import { getInitializationInputs } from '../src/helpers/inputs'
 import fs from 'fs'
 import path from 'path'
 import { InputParser } from '../src/helpers/InputParser'
-import { ExtrinsicsHelper, getAlicePair } from '../src/helpers/extrinsics'
+import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from '../src/helpers/extrinsics'
 
 // Save entity operations output here for easier debugging
 const ENTITY_OPERATIONS_OUTPUT_PATH = path.join(__dirname, '../operations.json')
@@ -18,7 +18,7 @@ async function main() {
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider, types })
 
-  const ALICE = getAlicePair()
+  const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
 
   // Emptiness check
   if ((await api.query.contentDirectory.classById.keys()).length > 0) {
@@ -31,11 +31,11 @@ async function main() {
 
   console.log(`Initializing classes (${classInputs.length} input files found)...\n`)
   const classExtrinsics = parser.getCreateClassExntrinsics()
-  await txHelper.sendAndCheck(ALICE, classExtrinsics, 'Class initialization failed!')
+  await txHelper.sendAndCheck(LeadKeyPair, classExtrinsics, 'Class initialization failed!')
 
   console.log(`Initializing schemas (${schemaInputs.length} input files found)...\n`)
   const schemaExtrinsics = await parser.getAddSchemaExtrinsics()
-  await txHelper.sendAndCheck(ALICE, schemaExtrinsics, 'Schemas initialization failed!')
+  await txHelper.sendAndCheck(LeadKeyPair, schemaExtrinsics, 'Schemas initialization failed!')
 
   console.log(`Initializing entities (${entityBatchInputs.length} input files found)`)
   const entityOperations = await parser.getEntityBatchOperations()
@@ -51,7 +51,7 @@ async function main() {
   )
   console.log(`Sending Transaction extrinsic (${entityOperations.length} operations)...`)
   await txHelper.sendAndCheck(
-    ALICE,
+    LeadKeyPair,
     [api.tx.contentDirectory.transaction({ Lead: null }, entityOperations)],
     'Entity initialization failed!'
   )
@@ -59,4 +59,7 @@ async function main() {
 
 main()
   .then(() => process.exit())
-  .catch((e) => console.error(e))
+  .catch((e) => {
+    console.error(e)
+    process.exit(-1)
+  })
