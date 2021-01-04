@@ -87,11 +87,6 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
@@ -117,10 +112,6 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
     }
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
-}
-
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
@@ -129,12 +120,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
 }
 
 parameter_types! {
@@ -258,7 +243,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 

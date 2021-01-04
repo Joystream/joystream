@@ -16,7 +16,6 @@ use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-use common::currency::GovernanceCurrency;
 use frame_support::sp_runtime::DispatchResult;
 
 use membership;
@@ -147,10 +146,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 parameter_types! {
@@ -303,17 +298,6 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
     }
 }
 
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
@@ -395,7 +379,6 @@ impl ExtBuilder {
 
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
-pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;

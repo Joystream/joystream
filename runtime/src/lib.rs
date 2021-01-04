@@ -452,21 +452,6 @@ impl content_directory::Trait for Runtime {
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
-impl minting::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type MintId = u64;
-}
-
-impl recurring_rewards::Trait for Runtime {
-    type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
-}
-
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
@@ -929,8 +914,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Minting: minting::{Module, Call, Storage},
-        RecurringRewards: recurring_rewards::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage

@@ -70,10 +70,6 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
-}
-
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
