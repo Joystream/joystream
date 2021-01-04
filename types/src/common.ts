@@ -11,6 +11,7 @@ import {
   U8aFixed,
   BTreeSet,
   UInt,
+  Compact,
 } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
@@ -39,8 +40,7 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
       const encoded = new Array<Uint8Array>()
 
       if (!isBare) {
-        const sizeValue = new UInt(this.registry, this.size)
-        encoded.push(sizeValue.toU8a(isBare))
+        encoded.push(Compact.encodeU8a(this.size))
       }
 
       const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
