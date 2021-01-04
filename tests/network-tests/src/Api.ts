@@ -16,7 +16,7 @@ import { ElectionStake, Seat } from '@joystream/types/council'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { Sender } from './sender'
+import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@joystream/types/stake'
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
@@ -34,25 +34,26 @@ import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntit
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
-import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { ContentId, DataObject } from '@joystream/types/media'
-
 import Debugger from 'debug'
-const debug = Debugger('api')
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
   ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
 }
 
-export class Api {
-  protected readonly api: ApiPromise
-  protected readonly sender: Sender
-  protected readonly keyring: Keyring
+export class ApiFactory {
+  private readonly api: ApiPromise
+  private readonly keyring: Keyring
   // source of funds for all new accounts
-  protected readonly treasuryAccount: string
+  private readonly treasuryAccount: string
 
-  public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
+  public static async create(
+    provider: WsProvider,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ): Promise<ApiFactory> {
+    const debug = Debugger('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
@@ -67,7 +68,7 @@ export class Api {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new Api(api, treasuryAccountUri, sudoAccountUri)
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -80,14 +81,39 @@ export class Api {
   constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
-    const treasuryKey = this.keyring.addFromUri(treasuryAccountUri)
-    this.treasuryAccount = treasuryKey.address
+    this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
-    this.sender = new Sender(api, this.keyring)
+  }
+
+  public getApi(label: string): Api {
+    return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
   public close(): void {
     this.api.disconnect()
+  }
+}
+
+export class Api {
+  private readonly api: ApiPromise
+  private readonly sender: Sender
+  private readonly keyring: Keyring
+  // source of funds for all new accounts
+  private readonly treasuryAccount: string
+
+  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.api = api
+    this.keyring = keyring
+    this.treasuryAccount = treasuryAccount
+    this.sender = new Sender(api, keyring, label)
+  }
+
+  public enableDebugTxLogs(): void {
+    this.sender.setLogLevel(LogLevel.Debug)
+  }
+
+  public enableVerboseTxLogs(): void {
+    this.sender.setLogLevel(LogLevel.Debug)
   }
 
   public createKeyPairs(n: number): KeyringPair[] {
@@ -110,25 +136,19 @@ export class Api {
     }
   }
 
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>, expectFailure = false): Promise<ISubmittableResult> {
+  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
-    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo, expectFailure)
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
   }
 
   public createPaidTermId(value: BN): PaidTermId {
     return this.api.createType('PaidTermId', value)
   }
 
-  public async buyMembership(
-    account: string,
-    paidTermsId: PaidTermId,
-    name: string,
-    expectFailure = false
-  ): Promise<ISubmittableResult> {
+  public async buyMembership(account: string, paidTermsId: PaidTermId, name: string): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
       this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ ''),
-      account,
-      expectFailure
+      account
     )
   }
 
@@ -149,8 +169,8 @@ export class Api {
     return this.transferBalance(this.treasuryAccount, to, amount)
   }
 
-  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): void {
-    to.map((account) => this.transferBalance(this.treasuryAccount, account, amount))
+  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(to.map((account) => this.transferBalance(this.treasuryAccount, account, amount)))
   }
 
   public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<PaidMembershipTerms> {
@@ -552,15 +572,11 @@ export class Api {
   }
 
   private applyForCouncilElection(account: string, amount: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account)
   }
 
-  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<void[]> {
-    return Promise.all(
-      accounts.map(async (account) => {
-        await this.applyForCouncilElection(account, amount)
-      })
-    )
+  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<ISubmittableResult[]> {
+    return Promise.all(accounts.map(async (account) => this.applyForCouncilElection(account, amount)))
   }
 
   public async getCouncilElectionStake(address: string): Promise<BN> {
@@ -569,44 +585,47 @@ export class Api {
 
   private voteForCouncilMember(account: string, nominee: string, salt: string, stake: BN): Promise<ISubmittableResult> {
     const hashedVote: string = Utils.hashVote(nominee, salt)
-    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account)
   }
 
-  public batchVoteForCouncilMember(accounts: string[], nominees: string[], salt: string[], stake: BN): Promise<void[]> {
+  public batchVoteForCouncilMember(
+    accounts: string[],
+    nominees: string[],
+    salt: string[],
+    stake: BN
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
-      accounts.map(async (account, index) => {
-        await this.voteForCouncilMember(account, nominees[index], salt[index], stake)
-      })
+      accounts.map(async (account, index) => this.voteForCouncilMember(account, nominees[index], salt[index], stake))
     )
   }
 
   private revealVote(account: string, commitment: string, nominee: string, salt: string): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account, false)
+    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account)
   }
 
-  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<void[]> {
+  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<ISubmittableResult[]> {
     return Promise.all(
       accounts.map(async (account, index) => {
         const commitment = Utils.hashVote(nominees[index], salt[index])
-        await this.revealVote(account, commitment, nominees[index], salt[index])
+        return this.revealVote(account, commitment, nominees[index], salt[index])
       })
     )
   }
 
   public sudoStartAnnouncingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock))
   }
 
   public sudoStartVotingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock))
   }
 
   public sudoStartRevealingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock), false)
+    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock))
   }
 
   public sudoSetCouncilMintCapacity(capacity: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity), false)
+    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity))
   }
 
   public getBestBlock(): Promise<BN> {
@@ -624,12 +643,6 @@ export class Api {
     return council.map((seat) => seat.member.toString())
   }
 
-  // This method is deprecated. Is there a replacement in newer versions of substrate?
-  // Do we even use this method?
-  // public getRuntime(): Promise<Bytes> {
-  //   return this.api.query.substrate.code<Bytes>()
-  // }
-
   public async proposeRuntime(
     account: string,
     stake: BN,
@@ -640,8 +653,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
-      account,
-      false
+      account
     )
   }
 
@@ -655,8 +667,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
-      account,
-      false
+      account
     )
   }
 
@@ -671,8 +682,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
-      account,
-      false
+      account
     )
   }
 
@@ -686,8 +696,7 @@ export class Api {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
-      account,
-      false
+      account
     )
   }
 
@@ -717,8 +726,7 @@ export class Api {
         min_council_stake: minCouncilStake,
         min_voting_stake: minVotingStake,
       }),
-      account,
-      false
+      account
     )
   }
 
@@ -740,21 +748,20 @@ export class Api {
         openingId,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
   public approveProposal(account: string, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false)
+    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account)
   }
 
-  public async batchApproveProposal(proposal: ProposalId): Promise<void[]> {
+  public async batchApproveProposal(proposal: ProposalId): Promise<ISubmittableResult[]> {
     const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
       councilAccounts.map(async (account) => {
         const memberId: MemberId = (await this.getMemberIds(account))[0]
-        await this.approveProposal(account, memberId, proposal)
+        return this.approveProposal(account, memberId, proposal)
       })
     )
   }
@@ -767,96 +774,84 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
-  public expectMemberRegisteredEvent(events: EventRecord[]): MemberId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'MemberRegistered')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[0] as MemberId
+  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
+    return events.find((record) => record.event.section === section && record.event.method === method)
   }
 
-  public expectProposalCreatedEvent(events: EventRecord[]): ProposalId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'ProposalCreated')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[1] as ProposalId
-  }
-
-  public expectOpeningAddedEvent(events: EventRecord[]): OpeningId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'OpeningAdded')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return record.event.data[0] as OpeningId
-  }
-
-  public expectLeaderSetEvent(events: EventRecord[]): WorkerId {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'LeaderSet')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data as unknown) as WorkerId
-  }
-
-  public expectBeganApplicationReviewEvent(events: EventRecord[]): ApplicationId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'BeganApplicationReview'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data as unknown) as ApplicationId
-  }
-
-  public expectTerminatedLeaderEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'TerminatedLeader')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
+    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
+    if (record) {
+      return record.event.data[0] as MemberId
     }
   }
 
-  public expectWorkerRewardAmountUpdatedEvent(events: EventRecord[]): WorkerId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
-    }
-    return (record.event.data[0] as unknown) as WorkerId
-  }
-
-  public expectStakeDecreasedEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeDecreased')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
+    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
+    if (record) {
+      return record.event.data[1] as ProposalId
     }
   }
 
-  public expectStakeSlashedEvent(events: EventRecord[]): void {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeSlashed')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
+    if (record) {
+      return record.event.data[0] as OpeningId
     }
   }
 
-  public expectMintCapacityChangedEvent(events: EventRecord[]): BN {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'MintCapacityChanged'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
+    if (record) {
+      return (record.event.data as unknown) as WorkerId
     }
-    return (record.event.data[1] as unknown) as BN
   }
 
-  public async expectRuntimeUpgraded(): Promise<void> {
-    await this.expectSystemEvent('RuntimeUpdated')
+  public findBeganApplicationReviewEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
+    }
   }
 
-  // Resolves with events that were emitted at the same time that the proposal
-  // was finalized (I think!)
-  public waitForProposalToFinalize(id: ProposalId): Promise<EventRecord[]> {
+  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
+  }
+
+  public findWorkerRewardAmountUpdatedEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups,
+    workerId: WorkerId
+  ): WorkerId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
+    if (record) {
+      const id = (record.event.data[0] as unknown) as WorkerId
+      if (id.eq(workerId)) {
+        return workerId
+      }
+    }
+  }
+
+  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
+  }
+
+  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
+    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
+  }
+
+  public findMintCapacityChangedEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'MintCapacityChanged')
+    if (record) {
+      return (record.event.data[1] as unknown) as BN
+    }
+  }
+
+  // Resolves to true when proposal finalized and executed successfully
+  // Resolved to false when proposal finalized and execution fails
+  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
@@ -867,7 +862,7 @@ export class Api {
             record.event.data[1].toString().includes('Executed')
           ) {
             unsubscribe()
-            resolve(events)
+            resolve([true, events])
           } else if (
             record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
@@ -875,24 +870,26 @@ export class Api {
             record.event.data[1].toString().includes('ExecutionFailed')
           ) {
             unsubscribe()
-            resolve(events)
+            resolve([false, events])
           }
         })
       })
     })
   }
 
-  public expectOpeningFilledEvent(events: EventRecord[]): ApplicationIdToWorkerIdMap {
-    const record = events.find((record) => record.event.method && record.event.method.toString() === 'OpeningFilled')
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findOpeningFilledEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationIdToWorkerIdMap | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
+    if (record) {
+      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
     }
-    return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
   }
 
   // Looks for the first occurance of an expected event, and resolves.
   // Use this when the event we are expecting is not particular to a specific extrinsic
-  public expectSystemEvent(eventName: string): Promise<Event> {
+  public waitForSystemEvent(eventName: string): Promise<Event> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
@@ -905,14 +902,14 @@ export class Api {
     })
   }
 
-  public expectApplicationReviewBeganEvent(events: EventRecord[]): ApplicationId {
-    const record = events.find(
-      (record) => record.event.method && record.event.method.toString() === 'BeganApplicationReview'
-    )
-    if (!record) {
-      throw new Error('Expected Event Not Found')
+  public findApplicationReviewBeganEvent(
+    events: EventRecord[],
+    workingGroup: WorkingGroups
+  ): ApplicationId | undefined {
+    const record = this.findEventRecord(events, workingGroup, 'BeganApplicationReview')
+    if (record) {
+      return (record.event.data as unknown) as ApplicationId
     }
-    return (record.event.data as unknown) as ApplicationId
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
@@ -949,8 +946,7 @@ export class Api {
       text: string
       type: string
     },
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
     const activateAt: ActivateOpeningAt = this.api.createType(
       'ActivateOpeningAt',
@@ -1015,8 +1011,7 @@ export class Api {
 
     return this.sender.signAndSend(
       this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
-      lead,
-      expectFailure
+      lead
     )
   }
 
@@ -1107,8 +1102,7 @@ export class Api {
     })
 
     return this.makeSudoCall(
-      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
-      false
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module)
     )
   }
 
@@ -1206,8 +1200,7 @@ export class Api {
           working_group: leaderOpening.workingGroup,
         }
       ),
-      leaderOpening.account,
-      false
+      leaderOpening.account
     )
   }
 
@@ -1244,8 +1237,7 @@ export class Api {
         fillOpening.proposalStake,
         fillOpeningParameters
       ),
-      fillOpening.account,
-      false
+      fillOpening.account
     )
   }
 
@@ -1273,8 +1265,7 @@ export class Api {
           'working_group': workingGroup,
         }
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1298,8 +1289,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1323,8 +1313,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1348,8 +1337,7 @@ export class Api {
         rewardAmount,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1371,8 +1359,7 @@ export class Api {
         mintCapacity,
         this.api.createType('WorkingGroup', workingGroup)
       ),
-      account,
-      false
+      account
     )
   }
 
@@ -1391,7 +1378,7 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader)
   }
 
   public async beginApplicantReview(
@@ -1399,11 +1386,11 @@ export class Api {
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader)
   }
 
   public async sudoBeginApplicantReview(openingId: OpeningId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId), false)
+    return this.makeSudoCall(this.api.tx[module].beginApplicantReview(openingId))
   }
 
   public async applyOnOpening(
@@ -1413,14 +1400,12 @@ export class Api {
     roleStake: BN,
     applicantStake: BN,
     text: string,
-    expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
     const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
-      account,
-      expectFailure
+      account
     )
   }
 
@@ -1430,12 +1415,11 @@ export class Api {
     roleStake: BN,
     applicantStake: BN,
     text: string,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult[]> {
     return Promise.all(
       accounts.map(async (account) =>
-        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, expectFailure, module)
+        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, module)
       )
     )
   }
@@ -1455,8 +1439,7 @@ export class Api {
         next_payment_at_block: nextPaymentBlock,
         payout_interval: payoutInterval,
       }),
-      leader,
-      false
+      leader
     )
   }
 
@@ -1473,8 +1456,7 @@ export class Api {
         'amount_per_payout': amountPerPayout,
         'next_payment_at_block': nextPaymentBlock,
         'payout_interval': payoutInterval,
-      }),
-      false
+      })
     )
   }
 
@@ -1484,27 +1466,25 @@ export class Api {
     stake: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker)
   }
 
   public async decreaseStake(
     leader: string,
     workerId: WorkerId,
     stake: BN,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader)
   }
 
   public async slashStake(
     leader: string,
     workerId: WorkerId,
     stake: BN,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader)
   }
 
   public async updateRoleAccount(
@@ -1513,7 +1493,7 @@ export class Api {
     newRoleAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker)
   }
 
   public async updateRewardAccount(
@@ -1522,7 +1502,7 @@ export class Api {
     newRewardAccount: string,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false)
+    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker)
   }
 
   public async withdrawApplication(
@@ -1530,7 +1510,7 @@ export class Api {
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account, false)
+    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account)
   }
 
   public async batchWithdrawActiveApplications(
@@ -1557,7 +1537,7 @@ export class Api {
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false)
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader)
   }
 
   public async batchTerminateApplication(
@@ -1572,33 +1552,30 @@ export class Api {
     leader: string,
     workerId: WorkerId,
     text: string,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, text, false), leader)
   }
 
   public async leaveRole(
     account: string,
     workerId: WorkerId,
     text: string,
-    expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure)
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account)
   }
 
   public async batchLeaveRole(
     workerIds: WorkerId[],
     text: string,
-    expectFailure: boolean,
     module: WorkingGroups
-  ): Promise<void[]> {
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
       workerIds.map(async (workerId) => {
         // get role_account of worker
         const worker = await this.getWorkerById(workerId, module)
-        await this.leaveRole(worker.role_account_id.toString(), workerId, text, expectFailure, module)
+        return this.leaveRole(worker.role_account_id.toString(), workerId, text, module)
       })
     )
   }
@@ -1752,16 +1729,16 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<void> {
+  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
     const transaction = this.api.tx.contentDirectory.transaction(
       { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
       operations // We provide parsed operations as second argument
     )
     const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    await this.sender.signAndSend(transaction, lead.role_account_id, false)
+    return this.sender.signAndSend(transaction, lead.role_account_id)
   }
 
-  public async createChannelEntity(channel: ChannelEntity): Promise<void> {
+  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(
       this.api,
@@ -1775,10 +1752,10 @@ export class Api {
     )
     // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
     const operations = await parser.getEntityBatchOperations()
-    return await this.sendContentDirectoryTransaction(operations)
+    return this.sendContentDirectoryTransaction(operations)
   }
 
-  public async createVideoEntity(video: VideoEntity): Promise<void> {
+  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(
       this.api,
@@ -1792,13 +1769,13 @@ export class Api {
     )
     // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
     const operations = await parser.getEntityBatchOperations()
-    return await this.sendContentDirectoryTransaction(operations)
+    return this.sendContentDirectoryTransaction(operations)
   }
 
   public async updateChannelEntity(
     channelUpdateInput: Record<string, any>,
     uniquePropValue: Record<string, any>
-  ): Promise<void> {
+  ): Promise<ISubmittableResult> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
     const parser = InputParser.createWithKnownSchemas(this.api)
 
@@ -1810,7 +1787,7 @@ export class Api {
       'Channel', // Class name
       CHANNEL_ID // Id of the entity we want to update
     )
-    return await this.sendContentDirectoryTransaction(updateOperations)
+    return this.sendContentDirectoryTransaction(updateOperations)
   }
 
   async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
@@ -1818,127 +1795,12 @@ export class Api {
     return dataObject.unwrapOr(null)
   }
 
-  public async initializeContentDirectory(leadKeyPair: KeyringPair): Promise<void> {
-    await initializeContentDir(this.api, leadKeyPair)
-  }
-}
-
-export class QueryNodeApi extends Api {
-  private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
-
-  public static async new(
-    provider: WsProvider,
-    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
-    treasuryAccountUri: string,
-    sudoAccountUri: string
-  ): Promise<QueryNodeApi> {
-    let connectAttempts = 0
-    while (true) {
-      connectAttempts++
-      debug(`Connecting to chain, attempt ${connectAttempts}..`)
-      try {
-        const api = await ApiPromise.create({ provider, types })
-
-        // Wait for api to be connected and ready
-        await api.isReady
-
-        // If a node was just started up it might take a few seconds to start producing blocks
-        // Give it a few seconds to be ready.
-        await Utils.wait(5000)
-
-        return new QueryNodeApi(api, queryNodeProvider, treasuryAccountUri, sudoAccountUri)
-      } catch (err) {
-        if (connectAttempts === 3) {
-          throw new Error('Unable to connect to chain')
-        }
-      }
-      await Utils.wait(5000)
+  public async initializeContentDirectory(): Promise<void> {
+    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
+    if (!lead) {
+      throw new Error('No Lead is set for storage wokring group')
     }
-  }
-
-  constructor(
-    api: ApiPromise,
-    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
-    treasuryAccountUri: string,
-    sudoAccountUri: string
-  ) {
-    super(api, treasuryAccountUri, sudoAccountUri)
-    this.queryNodeProvider = queryNodeProvider
-  }
-
-  public async getChannelbyHandle(handle: string): Promise<ApolloQueryResult<any>> {
-    const GET_CHANNEL_BY_TITLE = gql`
-      query($handle: String!) {
-        channels(where: { handle_eq: $handle }) {
-          handle
-          description
-          coverPhotoUrl
-          avatarPhotoUrl
-          isPublic
-          isCurated
-          videos {
-            title
-            description
-            duration
-            thumbnailUrl
-            isExplicit
-            isPublic
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { handle } })
-  }
-
-  public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Channel {
-              handle
-              description
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
-  }
-
-  public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
-    const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
-      query($text: String!) {
-        search(text: $text) {
-          item {
-            ... on Video {
-              title
-            }
-          }
-        }
-      }
-    `
-
-    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
-  }
-
-  public async performWhereQueryByVideoTitle(title: string): Promise<ApolloQueryResult<any>> {
-    const WHERE_QUERY_ON_VIDEO_TITLE = gql`
-      query($title: String!) {
-        videos(where: { title_eq: $title }) {
-          media {
-            location {
-              __typename
-              ... on JoystreamMediaLocation {
-                dataObjectId
-              }
-            }
-          }
-        }
-      }
-    `
-    return await this.queryNodeProvider.query({ query: WHERE_QUERY_ON_VIDEO_TITLE, variables: { title } })
+    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
+    return initializeContentDir(this.api, leadKeyPair)
   }
 }

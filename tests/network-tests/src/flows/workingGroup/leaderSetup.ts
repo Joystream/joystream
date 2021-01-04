@@ -1,19 +1,29 @@
 import { Api, WorkingGroups } from '../../Api'
+import { FlowProps } from '../../Flow'
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
-import { KeyringPair } from '@polkadot/keyring/types'
+// import { KeyringPair } from '@polkadot/keyring/types'
+import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
+
+export default {
+  storage: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+  content: async function ({ api, env }: FlowProps): Promise<void> {
+    return leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
 
 // Worker application happy case scenario
-export default async function leaderSetup(
-  api: Api,
-  env: NodeJS.ProcessEnv,
-  group: WorkingGroups
-): Promise<KeyringPair> {
-  const lead = await api.getGroupLead(group)
+async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+  const debug = Debugger(`flow:leaderSetup:${group}`)
+  debug('Started')
 
-  assert(!lead, `Lead is already set`)
+  const existingLead = await api.getGroupLead(group)
+  assert.equal(existingLead, undefined, 'Lead is already set')
 
   const leadKeyPair = api.createKeyPairs(1)[0]
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
@@ -36,11 +46,14 @@ export default async function leaderSetup(
     payoutAmount,
     group
   )
-  await leaderHiringHappyCaseFixture.runner(false)
+  await new FixtureRunner(leaderHiringHappyCaseFixture).run()
 
   const hiredLead = await api.getGroupLead(group)
-  assert(hiredLead, `${group} group Lead was not hired!`)
+  assert.notEqual(hiredLead, undefined, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
 
-  return leadKeyPair
+  debug('Done')
+
+  // Who ever needs it will need to get it from the Api layer
+  // return leadKeyPair
 }

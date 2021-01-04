@@ -1,4 +1,5 @@
 import { Api, WorkingGroups } from '../../Api'
+import { FlowProps } from '../../Flow'
 import {
   ApplyForOpeningFixture,
   AddWorkerOpeningFixture,
@@ -13,10 +14,21 @@ import BN from 'bn.js'
 import { OpeningId } from '@joystream/types/hiring'
 import { assert } from 'chai'
 import Debugger from 'debug'
+import { FixtureRunner } from '../../Fixture'
 
-// Manage worker as lead scenario
-export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
-  const debug = Debugger(`manageWorker:${group}`)
+export default {
+  storage: async function ({ api, env }: FlowProps): Promise<void> {
+    return manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup)
+  },
+  content: async function ({ api, env }: FlowProps): Promise<void> {
+    return manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  },
+}
+
+async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
+  const debug = Debugger(`flow:manageWorkerAsLead:${group}`)
+  debug('Started')
+
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -31,7 +43,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
 
   const applicants = api.createKeyPairs(5).map((key) => key.address)
   const memberSetFixture = new BuyMembershipHappyCaseFixture(api, applicants, paidTerms)
-  await memberSetFixture.runner(false)
+  await new FixtureRunner(memberSetFixture).run()
 
   const addWorkerOpeningFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
     api,
@@ -42,7 +54,8 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     group
   )
   // Add worker opening
-  await addWorkerOpeningFixture.runner(false)
+  await new FixtureRunner(addWorkerOpeningFixture).run()
+  assert(addWorkerOpeningFixture.getCreatedOpeningId())
 
   // First apply for worker opening
   const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
@@ -53,9 +66,11 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await applyForWorkerOpeningFixture.runner(false)
+  await new FixtureRunner(applyForWorkerOpeningFixture).run()
+  const applicationIds = applyForWorkerOpeningFixture.getApplicationIds()
+  assert.equal(applicants.length, applicationIds.length)
 
-  const applicationIdsToHire = applyForWorkerOpeningFixture.getApplicationIds().slice(0, 2)
+  const applicationIdsToHire = applicationIds.slice(0, 2)
 
   // Begin application review
   const beginApplicationReviewFixture = new BeginApplicationReviewFixture(
@@ -63,7 +78,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
-  await beginApplicationReviewFixture.runner(false)
+  await new FixtureRunner(beginApplicationReviewFixture).run()
 
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
@@ -75,20 +90,22 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     payoutAmount,
     group
   )
-  await fillOpeningFixture.runner(false)
+  await new FixtureRunner(fillOpeningFixture).run()
 
   const firstWorkerId = fillOpeningFixture.getWorkerIds()[0]
 
   const decreaseStakeFixture = new DecreaseStakeFixture(api, firstWorkerId, group)
   // Decrease worker stake
-  await decreaseStakeFixture.runner(false)
+  await new FixtureRunner(decreaseStakeFixture).run()
 
   const slashFixture: SlashFixture = new SlashFixture(api, firstWorkerId, group)
   // Slash worker
-  await slashFixture.runner(false)
+  await new FixtureRunner(slashFixture).run()
 
   const terminateRoleFixture = new TerminateRoleFixture(api, firstWorkerId, group)
 
   // Terminate workers
-  await terminateRoleFixture.runner(false)
+  await new FixtureRunner(terminateRoleFixture).run()
+
+  debug('Done')
 }
