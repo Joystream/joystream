@@ -609,6 +609,7 @@ impl<T: Trait> Module<T> {
                     *amount != BalanceOf::<T>::zero(),
                     Error::<T>::InvalidFundingRequestProposalBalance
                 );
+
                 ensure!(
                     *amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
                     Error::<T>::InvalidFundingRequestProposalBalance

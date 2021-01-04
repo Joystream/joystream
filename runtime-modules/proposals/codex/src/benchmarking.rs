@@ -324,7 +324,7 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::UpdateWorkingGroupBudget(
-            BalanceOf::<T>::one(),
+            One::one(),
             WorkingGroup::Forum,
             BalanceKind::Positive
         );
