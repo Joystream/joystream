@@ -1,11 +1,18 @@
 import BN from 'bn.js'
-import { Api } from '../../Api'
+import { FlowProps } from '../../Flow'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { UpdateRuntimeFixture } from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
+import { Resource } from '../../Resources'
 
-export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
+export default async function updateRuntime({ api, env, lock }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:updateRuntime')
+  debug('Started')
+  await lock(Resource.Proposals)
+
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const runtimePath: string = env.RUNTIME_WASM_PATH!
 
@@ -16,7 +23,7 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
   const proposer = council[0].member.toString()
 
   const updateRuntimeFixture: UpdateRuntimeFixture = new UpdateRuntimeFixture(api, proposer, runtimePath)
-  await updateRuntimeFixture.runner(false)
+  await new FixtureRunner(updateRuntimeFixture).run()
 
   // Some tests after runtime update
   const createMembershipsFixture = new BuyMembershipHappyCaseFixture(
@@ -24,5 +31,7 @@ export default async function updateRuntime(api: Api, env: NodeJS.ProcessEnv) {
     api.createKeyPairs(1).map((key) => key.address),
     paidTerms
   )
-  await createMembershipsFixture.runner(false)
+  await new FixtureRunner(createMembershipsFixture).run()
+
+  debug('Done')
 }

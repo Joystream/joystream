@@ -1,30 +1,110 @@
 import { Api } from './Api'
+import { assert } from 'chai'
+import { ISubmittableResult } from '@polkadot/types/types/'
+import { DispatchResult } from '@polkadot/types/interfaces/system'
 
-export interface Fixture {
-  runner(expectFailure: boolean): Promise<void>
-}
-
-// Fixture that measures start and end blocks
-// ensures fixture only runs once
-export class BaseFixture implements Fixture {
-  protected api: Api
-  private ran = false
+export abstract class BaseFixture {
+  protected readonly api: Api
+  private _executed = false
+  // The reason of the "Unexpected" failure of running the fixture
+  private _err: Error | undefined = undefined
 
   constructor(api: Api) {
     this.api = api
-    // record starting block
   }
 
-  public async runner(expectFailure: boolean): Promise<void> {
-    if (this.ran) {
-      return
+  // Derviced classes must not override this
+  public async runner(): Promise<void> {
+    this._executed = true
+    return this.execute()
+  }
+
+  abstract execute(): Promise<void>
+
+  // Used by execution implementation to signal failure
+  protected error(err: Error): void {
+    this._err = err
+  }
+
+  get executed(): boolean {
+    return this._executed
+  }
+
+  public didFail(): boolean {
+    if (!this.execute) {
+      throw new Error('Trying to check execution result before running fixture')
     }
-    this.ran = true
-    return this.execute(expectFailure)
-    // record end blocks
+    return this._err !== undefined
   }
 
-  protected async execute(expectFailure: boolean): Promise<void> {
-    return
+  public executionError(): Error | undefined {
+    if (!this.executed) {
+      throw new Error('Trying to check execution result before running fixture')
+    }
+    return this._err
+  }
+
+  protected expectDispatchError(result: ISubmittableResult, errMessage: string): ISubmittableResult {
+    const success = result.findRecord('system', 'ExtrinsicSuccess')
+
+    if (success) {
+      const sudid = result.findRecord('sudo', 'Sudid')
+      if (sudid) {
+        const dispatchResult = sudid.event.data[0] as DispatchResult
+        if (dispatchResult.isOk) {
+          this.error(new Error(errMessage))
+        }
+      } else {
+        this.error(new Error(errMessage))
+      }
+    }
+
+    return result
+  }
+
+  protected expectDispatchSuccess(result: ISubmittableResult, errMessage: string): ISubmittableResult {
+    const success = result.findRecord('system', 'ExtrinsicSuccess')
+
+    if (success) {
+      const sudid = result.findRecord('sudo', 'Sudid')
+      if (sudid) {
+        const dispatchResult = sudid.event.data[0] as DispatchResult
+        if (dispatchResult.isError) {
+          this.error(new Error(errMessage))
+          // Log DispatchError details
+        }
+      }
+    } else {
+      this.error(new Error(errMessage))
+      // Log DispatchError
+    }
+
+    return result
+  }
+}
+
+// Runs a fixture and measures how long it took to run
+// Ensures fixture only runs once, and asserts that it doesn't fail
+export class FixtureRunner {
+  private fixture: BaseFixture
+  private ran = false
+
+  constructor(fixture: BaseFixture) {
+    this.fixture = fixture
+  }
+
+  public async run(): Promise<void> {
+    if (this.ran) {
+      throw new Error('Fixture already ran')
+    }
+
+    this.ran = true
+
+    // TODO: record starting block
+
+    await this.fixture.runner()
+    // TODO: record ending block
+    const err = this.fixture.executionError()
+    assert.equal(err, undefined)
   }
 }

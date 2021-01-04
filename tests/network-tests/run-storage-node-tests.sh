@@ -37,7 +37,8 @@ docker-compose up -d processor
 yarn workspace @joystream/cd-schemas initialize:dev
 
 # Fixes Error: No active storage providers available
-sleep 3m
+echo "Waiting for ipfs name registration"
+sleep 120
 
 echo "Creating channel..."
 yarn joystream-cli media:createChannel \

@@ -1,4 +1,4 @@
-import { Api } from '../../Api'
+import { FlowProps } from '../../Flow'
 import {
   BuyMembershipHappyCaseFixture,
   BuyMembershipWithInsufficienFundsFixture,
@@ -6,31 +6,31 @@ import {
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 import Debugger from 'debug'
+import { FixtureRunner } from '../../Fixture'
+import { assert } from 'chai'
 
-export default async function membershipCreation(api: Api, env: NodeJS.ProcessEnv) {
+export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:memberships')
-  debug('started')
+  debug('Started')
+  api.enableDebugTxLogs()
 
   const N: number = +env.MEMBERSHIP_CREATION_N!
+  assert(N > 0)
   const nAccounts = api.createKeyPairs(N).map((key) => key.address)
   const aAccount = api.createKeyPairs(1)[0].address
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
+  // Assert membership can be bought if sufficient funds are available
   const happyCaseFixture = new BuyMembershipHappyCaseFixture(api, nAccounts, paidTerms)
-  // Buy membeship is accepted with sufficient funds
-  await happyCaseFixture.runner(false)
+  await new FixtureRunner(happyCaseFixture).run()
 
-  const insufficientFundsFixture: BuyMembershipWithInsufficienFundsFixture = new BuyMembershipWithInsufficienFundsFixture(
-    api,
-    aAccount,
-    paidTerms
-  )
-  // Account A can not buy the membership with insufficient funds
-  await insufficientFundsFixture.runner(false)
+  // Assert account can not buy the membership with insufficient funds
+  const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, aAccount, paidTerms)
+  await new FixtureRunner(insufficientFundsFixture).run()
 
+  // Assert account was able to buy the membership with sufficient funds
   const buyMembershipAfterAccountTopUp = new BuyMembershipHappyCaseFixture(api, [aAccount], paidTerms)
+  await new FixtureRunner(buyMembershipAfterAccountTopUp).run()
 
-  // Account A was able to buy the membership with sufficient funds
-  await buyMembershipAfterAccountTopUp.runner(false)
-  debug('finished')
+  debug('Done')
 }

@@ -1,9 +1,16 @@
 import BN from 'bn.js'
-import { Api } from '../../Api'
+import { FlowProps } from '../../Flow'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
+import { Resource } from '../../Resources'
 
-export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
+export default async function validatorCount({ api, env, lock }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:validatorCountProposal')
+  debug('Started')
+  await lock(Resource.Proposals)
+
   // Pre-conditions: members and council
   const council = await api.getCouncil()
   assert(council.length)
@@ -17,5 +24,7 @@ export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
     proposer,
     validatorCountIncrement
   )
-  await validatorCountProposalFixture.runner(false)
+  await new FixtureRunner(validatorCountProposalFixture).run()
+
+  debug('Done')
 }
