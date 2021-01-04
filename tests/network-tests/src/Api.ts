@@ -113,7 +113,7 @@ export class Api {
   }
 
   public enableVerboseTxLogs(): void {
-    this.sender.setLogLevel(LogLevel.Debug)
+    this.sender.setLogLevel(LogLevel.Verbose)
   }
 
   public createKeyPairs(n: number): KeyringPair[] {
