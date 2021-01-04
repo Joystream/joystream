@@ -25,7 +25,14 @@ async function main() {
   if (aliceMemberId === undefined) {
     console.log('Perparing Alice member account creation extrinsic...')
     aliceMemberId = (await api.query.members.nextMemberId()).toNumber()
-    extrinsics.push(api.tx.members.buyMembership(0, 'alice', null, null))
+    extrinsics.push(
+      api.tx.members.buyMembership({
+        root_account: ALICE.address,
+        controller_account: ALICE.address,
+        name: 'Alice',
+        handle: 'Alice',
+      })
+    )
   } else {
     console.log(`Alice member id found: ${aliceMemberId}...`)
   }
@@ -36,42 +43,28 @@ async function main() {
     const newApplicationId = (await api.query.contentDirectoryWorkingGroup.nextApplicationId()).toNumber()
     // Create curator lead opening
     console.log('Perparing Create Curator Lead Opening extrinsic...')
-    extrinsics.push(
-      sudo(
-        api.tx.contentDirectoryWorkingGroup.addOpening(
-          { CurrentBlock: null }, // activate_at
-          { max_review_period_length: 9999 }, // OpeningPolicyCommitment
-          'api-examples curator opening', // human_readable_text
-          'Leader' // opening_type
-        )
-      )
-    )
+    extrinsics.push(sudo(api.tx.contentDirectoryWorkingGroup.addOpening('init-alice-lead', 'Leader', null, null)))
 
     // Apply to lead opening
     console.log('Perparing Apply to Curator Lead Opening as Alice extrinsic...')
     extrinsics.push(
-      api.tx.contentDirectoryWorkingGroup.applyOnOpening(
-        aliceMemberId, // member id
-        newOpeningId, // opening id
-        ALICE.address, // address
-        null, // opt role stake
-        null, // opt appl. stake
-        'api-examples curator opening appl.' // human_readable_text
-      )
+      api.tx.contentDirectoryWorkingGroup.applyOnOpening({
+        member_id: aliceMemberId,
+        opening_id: newOpeningId,
+        role_account_id: ALICE.address,
+        reward_account_id: ALICE.address,
+        description: 'api-examples curator opening appl.',
+        stake_parameters: null,
+      })
     )
-
-    // Begin review period
-    console.log('Perparing Begin Applicant Review extrinsic...')
-    extrinsics.push(sudo(api.tx.contentDirectoryWorkingGroup.beginApplicantReview(newOpeningId)))
 
     // Fill opening
     console.log('Perparing Fill Opening extrinsic...')
     extrinsics.push(
       sudo(
         api.tx.contentDirectoryWorkingGroup.fillOpening(
-          newOpeningId, // opening id
-          api.createType('ApplicationIdSet', [newApplicationId]), // succesful applicants
-          null // reward policy
+          newOpeningId,
+          api.createType('ApplicationIdSet', [newApplicationId])
         )
       )
     )
