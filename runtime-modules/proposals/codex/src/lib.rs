@@ -82,6 +82,10 @@ use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
+use working_group::{
+    ContentDirectoryWorkingGroupInstance, ForumWorkingGroupInstance,
+    MembershipWorkingGroupInstance, StorageWorkingGroupInstance,
+};
 
 use common::working_group::WorkingGroup;
 
@@ -580,20 +584,6 @@ decl_module! {
     }
 }
 
-// TODO: This code is repeated from runtime, see if there's somewhere to extract this that makes
-// sense
-// The forum working group instance alias.
-type ForumWorkingGroupInstance = working_group::Instance1;
-
-// The storage working group instance alias.
-type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-// The membership working group instance alias.
-type MembershipWorkingGroupInstance = working_group::Instance4;
-
 impl<T: Trait> Module<T> {
     // Ensure that the proposal details respects all the checks
     fn ensure_details_checks(details: &ProposalDetailsOf<T>) -> DispatchResult {
@@ -632,7 +622,6 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::FillWorkingGroupLeadOpening(..) => {
                 // Note: No checks for this proposal for now
-                // TODO: shouldn't we check that it exists?
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 // Note: No checks for this proposal for now
@@ -657,7 +646,6 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 // Note: No checks for this proposal for now
-                // TODO: Shouldn't we check that it exists?
             }
             ProposalDetails::SetMembershipPrice(..) => {
                 // Note: No checks for this proposal for now

@@ -59,6 +59,10 @@ use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
+use working_group::{
+    ContentDirectoryWorkingGroupInstance, ForumWorkingGroupInstance,
+    MembershipWorkingGroupInstance, StorageWorkingGroupInstance,
+};
 
 // Node dependencies
 pub use common;
@@ -658,18 +662,6 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
             .any(|lock| !ALLOWED_LOCK_COMBINATIONS.contains(&(*new_lock, *lock)))
     }
 }
-
-// The forum working group instance alias.
-pub type ForumWorkingGroupInstance = working_group::Instance1;
-
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
