@@ -12,7 +12,7 @@ use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
-    Perbill,
+    DispatchError, Perbill,
 };
 
 impl_outer_origin! {
@@ -100,7 +100,6 @@ impl StorageLimits for MapLimits {
 
 impl Trait for Runtime {
     type Event = TestEvent;
-    type ForumUserId = u64;
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
@@ -109,22 +108,29 @@ impl Trait for Runtime {
 
     type MapLimits = MapLimits;
     type WorkingGroup = ();
+    type MemberOriginValidator = ();
 
-    fn is_forum_member(
-        account_id: &<Self as frame_system::Trait>::AccountId,
-        forum_user_id: &Self::ForumUserId,
-    ) -> bool {
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        _origin: Origin,
+        _member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        unimplemented!()
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
         let allowed_accounts = [
             FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_2_ORIGIN_ID,
         ];
 
-        allowed_accounts.contains(account_id) && account_id == forum_user_id
-    }
-
-    fn calculate_hash(text: &[u8]) -> Self::Hash {
-        Self::Hashing::hash(text)
+        allowed_accounts.contains(account_id) && account_id == member_id
     }
 }
 
@@ -301,7 +307,7 @@ pub fn create_category_mock(
 
 pub fn create_thread_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
@@ -334,7 +340,7 @@ pub fn create_thread_mock(
 
 pub fn edit_thread_title_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_title: Vec<u8>,
@@ -454,7 +460,7 @@ pub fn update_thread_archival_status_mock(
 
 pub fn create_post_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
@@ -483,7 +489,7 @@ pub fn create_post_mock(
 
 pub fn edit_post_text_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
@@ -554,7 +560,7 @@ pub fn update_category_membership_of_moderator_mock(
 
 pub fn vote_on_poll_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     index: u32,
@@ -724,7 +730,7 @@ pub fn set_stickied_threads_mock(
 
 pub fn react_post_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,

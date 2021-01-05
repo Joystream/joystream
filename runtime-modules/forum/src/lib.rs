@@ -16,6 +16,7 @@ pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::prelude::*;
 
+use common::origin::MemberOriginValidator;
 use common::working_group::WorkingGroupIntegration;
 
 mod mock;
@@ -24,16 +25,11 @@ mod tests;
 /// Moderator ID alias for the actor of the system.
 pub type ModeratorId<T> = common::ActorId<T>;
 
+/// Forum user ID alias for the member of the system.
+pub type ForumUserId<T> = common::MemberId<T>;
+
 pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-    type ForumUserId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 
     type CategoryId: Parameter
         + Member
@@ -83,12 +79,14 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type MapLimits: StorageLimits;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+    type WorkingGroup: WorkingGroupIntegration<Self>;
 
-    fn is_forum_member(
-        account_id: &<Self as frame_system::Trait>::AccountId,
-        forum_user_id: &Self::ForumUserId,
-    ) -> bool;
+    /// Validates member id and origin combination
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::Origin,
+        common::MemberId<Self>,
+        Self::AccountId,
+    >;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
@@ -346,13 +344,16 @@ decl_storage! {
         pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) T::ThreadId => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
+        pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat)
+            T::CategoryId, hasher(blake2_128_concat) T::ThreadId =>
+                Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(fn post_by_id) config(): double_map  hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId => Post<T::ForumUserId, T::ThreadId, T::Hash>;
+        pub PostById get(fn post_by_id) config(): double_map  hasher(blake2_128_concat) T::ThreadId,
+            hasher(blake2_128_concat) T::PostId => Post<ForumUserId<T>, T::ThreadId, T::Hash>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(fn next_post_id) config(): T::PostId;
@@ -373,7 +374,7 @@ decl_event!(
         ModeratorId = ModeratorId<T>,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
-        <T as Trait>::ForumUserId,
+        ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
     {
         /// A category was introduced
@@ -580,7 +581,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         fn create_thread(
             origin,
-            forum_user_id: T::ForumUserId,
+            forum_user_id: ForumUserId<T>,
             category_id: T::CategoryId,
             title: Vec<u8>,
             text: Vec<u8>,
@@ -640,7 +641,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        fn edit_thread_title(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, new_title: Vec<u8>) -> DispatchResult {
+        fn edit_thread_title(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_title: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -741,7 +742,7 @@ decl_module! {
 
         /// submit a poll
         #[weight = 10_000_000] // TODO: adjust weight
-        fn vote_on_poll(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, index: u32) -> DispatchResult {
+        fn vote_on_poll(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, index: u32) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -820,7 +821,7 @@ decl_module! {
 
         /// Add post
         #[weight = 10_000_000] // TODO: adjust weight
-        fn add_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, text: Vec<u8>) -> DispatchResult {
+        fn add_post(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, text: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -852,7 +853,7 @@ decl_module! {
 
         /// like or unlike a post.
         #[weight = 10_000_000] // TODO: adjust weight
-        fn react_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: T::PostReactionId) -> DispatchResult {
+        fn react_post(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: T::PostReactionId) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -875,7 +876,7 @@ decl_module! {
 
         /// Edit post text
         #[weight = 10_000_000] // TODO: adjust weight
-        fn edit_post_text(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, new_text: Vec<u8>) -> DispatchResult {
+        fn edit_post_text(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, new_text: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -956,8 +957,8 @@ impl<T: Trait> Module<T> {
     pub fn add_new_post(
         thread_id: T::ThreadId,
         text: &[u8],
-        author_id: T::ForumUserId,
-    ) -> (T::PostId, Post<T::ForumUserId, T::ThreadId, T::Hash>) {
+        author_id: ForumUserId<T>,
+    ) -> (T::PostId, Post<ForumUserId<T>, T::ThreadId, T::Hash>) {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
 
@@ -1028,7 +1029,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
         // Make sure post exists
         let post = Self::ensure_post_exists(thread_id, post_id)?;
 
@@ -1041,7 +1042,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
         if !<PostById<T>>::contains_key(thread_id, post_id) {
             return Err(Error::<T>::PostDoesNotExist);
         }
@@ -1055,7 +1056,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
         // Ensure the moderator can moderate the category
         Self::ensure_can_moderate_category(account_id, &actor, &category_id)?;
 
@@ -1071,7 +1072,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+            Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error<T>,
     > {
@@ -1096,7 +1097,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+            Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error<T>,
     > {
@@ -1114,7 +1115,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
+    ) -> Result<Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
         if !<ThreadById<T>>::contains_key(category_id, thread_id) {
             return Err(Error::<T>::ThreadDoesNotExist);
         }
@@ -1126,8 +1127,8 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-        forum_user_id: &T::ForumUserId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
+        forum_user_id: &ForumUserId<T>,
+    ) -> Result<Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, &forum_user_id)?;
 
@@ -1141,8 +1142,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_is_thread_author(
-        thread: &Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
-        forum_user_id: &T::ForumUserId,
+        thread: &Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
+        forum_user_id: &ForumUserId<T>,
     ) -> Result<(), Error<T>> {
         ensure!(
             thread.author_id == *forum_user_id,
@@ -1178,9 +1179,10 @@ impl<T: Trait> Module<T> {
     /// Ensure forum user id registered and its account id matched
     fn ensure_is_forum_user(
         account_id: T::AccountId,
-        forum_user_id: &T::ForumUserId,
+        forum_user_id: &ForumUserId<T>,
     ) -> Result<(), Error<T>> {
-        let is_member = T::is_forum_member(&account_id, forum_user_id);
+        let is_member =
+            T::MemberOriginValidator::is_member_controller_account(forum_user_id, &account_id);
 
         ensure!(is_member, Error::<T>::ForumUserIdNotMatchAccount);
         Ok(())
@@ -1204,7 +1206,7 @@ impl<T: Trait> Module<T> {
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
+    ) -> Result<Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
         // Check that account is forum member
         Self::ensure_can_moderate_category(account_id, actor, category_id)?;
 
@@ -1219,7 +1221,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         new_category_id: &T::CategoryId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
+    ) -> Result<Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>, Error<T>> {
         ensure!(
             category_id != new_category_id,
             Error::<T>::ThreadMoveInvalid,
@@ -1477,7 +1479,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_create_thread(
         account_id: T::AccountId,
-        forum_user_id: &T::ForumUserId,
+        forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Check that account is forum member
@@ -1494,13 +1496,13 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_add_post(
         account_id: T::AccountId,
-        forum_user_id: &T::ForumUserId,
+        forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+            Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error<T>,
     > {
@@ -1531,7 +1533,7 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        thread: Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
         index: u32,
     ) -> Result<Poll<T::Moment, T::Hash>, Error<T>> {
         // Ensure poll exists

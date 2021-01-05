@@ -667,26 +667,19 @@ impl forum::Trait for Runtime {
     type Event = Event;
     type ThreadId = ThreadId;
     type PostId = PostId;
-    type ForumUserId = ForumUserId;
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
 
-    fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            _forum_user_id,
-            _account_id,
-        )
-        .is_ok()
-    }
-
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hash::from_slice(text)
     }
 
     type WorkingGroup = ForumWorkingGroup;
+
+    type MemberOriginValidator = Members;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -859,8 +852,7 @@ parameter_types! {
     pub const SurchargeReward: Balance = 0; // no reward
 }
 
-/// Forum identifiers for user, moderator and category
-pub type ForumUserId = u64;
+/// Forum identifier for category
 pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
