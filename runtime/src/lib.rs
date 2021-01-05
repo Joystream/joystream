@@ -451,17 +451,8 @@ impl content_directory::Trait for Runtime {
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
     type WorkingGroup = ContentDirectoryWorkingGroup;
-}
-
-impl content_directory::ActorAuthenticator for Runtime {
     type CuratorGroupId = u64;
-
-    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            member_id, account_id,
-        )
-        .is_ok()
-    }
+    type MemberOriginValidator = Members;
 }
 
 impl minting::Trait for Runtime {
