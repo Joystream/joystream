@@ -28,10 +28,15 @@ benchmark() {
 }
 
 # FRAME benchmarks
-benchmark frame_system
+# Some FRAME pallets are commented out since the parameter's in some of the extrinsic's
+# benchmarking are being discarded and we can't adjust the trait since it's part of
+# Substrate. This problem has been fixed in this PR: https://github.com/paritytech/substrate/pull/7233
+# So uncomment this when we move to a version that contains that PR.
+# See issue: #1979
+# benchmark frame_system
 benchmark pallet_utility
 benchmark pallet_session
-benchmark pallet_timestamp
+# benchmark pallet_timestamp
 
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
 # Will have it commented out until we test it in the reference machine. If there
