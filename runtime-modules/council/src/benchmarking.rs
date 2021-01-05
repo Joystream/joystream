@@ -40,16 +40,14 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
 }
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
-    if !cfg!(test) {
-        let events = System::<T>::events();
-        let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
-        assert!(events.len() > 0, "There are no events in event queue");
+    assert!(events.len() > 0, "There are no events in event queue");
 
-        // compare to the last event record
-        let EventRecord { event, .. } = &events[events.len() - 1];
-        assert_eq!(event, &system_event);
-    }
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
 }
 
 fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {

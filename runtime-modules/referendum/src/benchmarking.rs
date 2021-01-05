@@ -273,7 +273,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
         intermediate_winners: vec![],
-        current_cycle_id: 0,
+        current_cycle_id: cycle_id.into(),
     });
 
     move_to_block::<T, I>(
@@ -290,7 +290,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         intermediate_winners: intermediate_winners.clone(),
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
-        current_cycle_id: 0,
+        current_cycle_id: cycle_id.into(),
     });
 
     assert_eq!(
@@ -313,8 +313,9 @@ benchmarks_instance! {
     on_finalize_revealing {
         let i in 0 .. MAX_WINNERS;
 
+        let cycle_id = 0;
         let salt = vec![0u8];
-        let vote_option = 2 * (i + 1);
+        let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_voting_block_number = System::<T>::block_number();
 
         let (intermediate_winners, _, _, _) =
@@ -334,7 +335,7 @@ benchmarks_instance! {
                 intermediate_winners: intermediate_winners.clone(),
                 started: started_voting_block_number + T::VoteStageDuration::get() + One::one(),
                 winning_target_count: (i + 1).into(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
             }
         );
 
@@ -355,6 +356,7 @@ benchmarks_instance! {
 
     on_finalize_voting {
         let winning_target_count = 0;
+        let cycle_id = 0;
         start_voting_cycle::<T, I>(winning_target_count);
 
         let started_voting_block_number = System::<T>::block_number() + One::one();
@@ -364,7 +366,7 @@ benchmarks_instance! {
         let target_stage = ReferendumStage::Voting(ReferendumStageVoting {
                 started: System::<T>::block_number() + One::one(),
                 winning_target_count: (winning_target_count + 1).into(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
         });
 
         move_to_block::<T, I>(target_block_number, target_stage);
@@ -374,7 +376,7 @@ benchmarks_instance! {
             started: target_block_number + One::one(),
             winning_target_count: 1,
             intermediate_winners: vec![],
-            current_cycle_id: 0,
+            current_cycle_id: cycle_id,
         });
 
         assert_eq!(
@@ -425,7 +427,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = 2 * (i + 1);
+        let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_block_number = System::<T>::block_number();
 
         let (mut intermediate_winners, account_id, option_id, commitment) =
@@ -438,6 +440,7 @@ benchmarks_instance! {
     }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
+        let cycle_id = 0;
 
         intermediate_winners.insert(
             0,
@@ -453,7 +456,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
         );
@@ -463,7 +466,7 @@ benchmarks_instance! {
             CastVote {
                 commitment,
                 stake,
-                cycle_id: 0,
+                cycle_id,
                 vote_for: Some(option_id),
             },
             "Vote not revealed",
@@ -476,7 +479,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = 2 * (i + 1);
+        let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_block_number = System::<T>::block_number();
 
         let (intermediate_winners, account_id, option_id, commitment) =
@@ -489,6 +492,7 @@ benchmarks_instance! {
     }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
+        let cycle_id = 0;
 
         assert_eq!(
             Referendum::<T, I>::stage(),
@@ -496,7 +500,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
         );
@@ -506,7 +510,7 @@ benchmarks_instance! {
             CastVote {
                 commitment,
                 stake,
-                cycle_id: 0,
+                cycle_id: cycle_id,
                 vote_for: Some(option_id),
             },
             "Vote not revealed",
@@ -519,7 +523,7 @@ benchmarks_instance! {
         let i in 0 .. MAX_WINNERS;
 
         let salt = vec![0u8];
-        let vote_option = 2 * (i + 1);
+        let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_block_number = System::<T>::block_number();
 
         let (mut intermediate_winners, account_id, option_id, commitment) =
@@ -532,6 +536,7 @@ benchmarks_instance! {
     }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
+        let cycle_id = 0;
 
         intermediate_winners.pop();
 
@@ -546,7 +551,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
         );
@@ -556,7 +561,7 @@ benchmarks_instance! {
             CastVote {
                 commitment,
                 stake,
-                cycle_id: 0,
+                cycle_id,
                 vote_for: Some(option_id),
             },
             "Vote not revealed",
@@ -585,6 +590,7 @@ benchmarks_instance! {
     }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
+        let cycle_id = 0;
 
         intermediate_winners[i as usize] = OptionResult {
             option_id: option_id,
@@ -599,7 +605,7 @@ benchmarks_instance! {
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number + One::one(),
-                current_cycle_id: 0,
+                current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
         );
@@ -609,7 +615,7 @@ benchmarks_instance! {
             CastVote {
                 commitment,
                 stake,
-                cycle_id: 0,
+                cycle_id,
                 vote_for: Some(option_id),
             },
             "Vote not revealed",

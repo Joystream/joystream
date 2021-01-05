@@ -284,7 +284,11 @@ impl_runtime_apis! {
                         account_id.clone(),
                         account_id.clone(),
                         <Runtime as council::Trait>::MinCandidateStake::get().into(),
-                    ).unwrap();
+                    ).expect(
+                        "Should pass a valid member associated to the account and the account
+                        should've enough
+                        free balance to stake the minimum for a council candidate."
+                    );
                 }
             }
 
