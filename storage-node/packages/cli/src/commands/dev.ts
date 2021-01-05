@@ -3,7 +3,6 @@
 import dbug from 'debug'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { RuntimeApi } from '@joystream/storage-runtime-api'
-import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 const debug = dbug('joystream:storage-cli:dev')
 
@@ -117,7 +116,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
   debug('Making Alice the storage Lead.')
   const leadOpeningId = await api.workers.devAddStorageLeadOpening()
   const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
-  api.workers.devBeginLeadOpeningReview(leadOpeningId)
   await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
 
   const leadAccount = await api.workers.getLeadRoleAccount()
@@ -133,8 +131,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
 
   const applicationId = await api.workers.devApplyOnOpening(openingId, aliceMemberId, alice, roleAccount)
   debug(`Applied with application id: ${applicationId}`)
-
-  api.workers.devBeginStorageOpeningReview(openingId)
 
   debug(`Filling storage opening.`)
   const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
@@ -193,11 +189,9 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
 
   debug(`Creating Leader with role key: ${leadAccount}`)
   debug('Creating Lead Opening')
-  const leadOpeningId = await api.workers.devAddStorageLeadOpening(JSON.stringify(getLeadOpeningInfo()))
+  const leadOpeningId = await api.workers.devAddStorageLeadOpening()
   debug('Applying')
   const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, memberId, memberController, leadAccount)
-  debug('Starting Review')
-  api.workers.devBeginLeadOpeningReview(leadOpeningId)
   debug('Filling Opening')
   await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
 
@@ -209,64 +203,16 @@ const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise
   // Create a storage openinging, apply, start review, and fill opening
   debug(`Making ${workerAccount} account a storage provider.`)
 
-  const openingId = await api.workers.devAddStorageOpening(JSON.stringify(getWorkerOpeningInfo()))
+  const openingId = await api.workers.devAddStorageOpening()
   debug(`Created new storage opening: ${openingId}`)
 
   const applicationId = await api.workers.devApplyOnOpening(openingId, memberId, memberController, workerAccount)
   debug(`Applied with application id: ${applicationId}`)
 
-  api.workers.devBeginStorageOpeningReview(openingId)
-
   debug(`Filling storage opening.`)
   const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
 
   debug(`Assigned storage provider id: ${providerId}`)
-}
-
-function getLeadOpeningInfo(): HRTJson {
-  return {
-    'version': 1,
-    'headline': 'Initial Storage Lead',
-    'job': {
-      'title': 'Bootstrap Lead',
-      'description': 'Starting opportunity to bootstrap the network',
-    },
-    'application': {
-      'sections': [],
-    },
-    'reward': 'None',
-    'creator': {
-      'membership': {
-        'handle': 'mokhtar',
-      },
-    },
-    'process': {
-      'details': ['automated'],
-    },
-  }
-}
-
-function getWorkerOpeningInfo(): HRTJson {
-  return {
-    'version': 1,
-    'headline': 'Initial Storage Worker',
-    'job': {
-      'title': 'Bootstrap Worker',
-      'description': 'Starting opportunity to bootstrap the network',
-    },
-    'application': {
-      'sections': [],
-    },
-    'reward': 'None',
-    'creator': {
-      'membership': {
-        'handle': 'mokhtar',
-      },
-    },
-    'process': {
-      'details': ['automated'],
-    },
-  }
 }
 
 export { init, check, aliceKeyPair, roleKeyPair, developmentPort, makeMemberInitialLeadAndStorageProvider }
