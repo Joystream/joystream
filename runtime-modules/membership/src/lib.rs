@@ -814,8 +814,8 @@ impl<T: Trait> Module<T> {
         Self::ensure_is_controller_account_for_member(member_id, &signer_account_id)
     }
 
-    /// Ensure that given member has given account as the controller account
-    pub fn ensure_is_controller_account_for_member(
+    // Ensure that given member has given account as the controller account
+    fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
         account: &T::AccountId,
     ) -> Result<Membership<T>, Error<T>> {

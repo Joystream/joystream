@@ -9,12 +9,12 @@ use crate::{
 };
 
 use balances;
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
     Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
@@ -100,19 +100,34 @@ impl Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
         let is_ok = elected_members == CouncilMembers::<Runtime>::get();
 
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
         });
+    }
+
+    type MemberOriginValidator = ();
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            member_id == account_id,
+            DispatchError::Other("Membership error")
+        );
+
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
     }
 }
 

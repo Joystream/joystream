@@ -47,13 +47,13 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, e
 
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchResult;
-use frame_system::{ensure_root, ensure_signed};
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
-use common::origin::CouncilOriginValidator;
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::StakingAccountValidator;
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -238,14 +238,15 @@ pub trait Trait: frame_system::Trait + common::Trait {
     /// Interval between automatic budget refills.
     type BudgetRefillPeriod: Get<Self::BlockNumber>;
 
-    /// Checks that the user account is indeed associated with the member.
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool;
-
     /// Hook called right after the new council is elected.
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]);
+
+    /// Validates member id and origin combination
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::Origin,
+        common::MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the
@@ -1132,12 +1133,11 @@ impl<T: Trait> EnsureChecks<T> {
         origin: T::Origin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
-        let account_id = ensure_signed(origin)?;
-
-        ensure!(
-            T::is_council_member_account(membership_id, &account_id),
-            Error::MemberIdNotMatchAccount,
-        );
+        let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+            origin,
+            *membership_id,
+        )
+        .map_err(|_| Error::MemberIdNotMatchAccount)?;
 
         Ok(account_id)
     }
@@ -1302,12 +1302,7 @@ impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T:
     for Module<T>
 {
     fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        ensure!(
-            T::is_council_member_account(&member_id, &account_id),
-            Error::<T>::MemberIdNotMatchAccount
-        );
+        EnsureChecks::<T>::ensure_user_membership(origin, &member_id)?;
 
         let is_councilor = Self::council_members()
             .iter()

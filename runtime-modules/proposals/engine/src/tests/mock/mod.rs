@@ -272,7 +272,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     }
 
     fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
-        unimplemented!()
+        true
     }
 }
 
@@ -373,14 +373,9 @@ impl council::Trait for Test {
 
     type StakingAccountValidator = membership::Module<Test>;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership::Module::<Self>::membership(membership_id).controller_account == *account_id
-    }
-
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+
+    type MemberOriginValidator = ();
 }
 
 impl recurringrewards::Trait for Test {

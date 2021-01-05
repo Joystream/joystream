@@ -573,21 +573,12 @@ impl council::Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            membership_id,
-            account_id,
-        )
-        .is_ok()
-    }
-
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
         <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
+
+    type MemberOriginValidator = Members;
 }
 
 impl memo::Trait for Runtime {
