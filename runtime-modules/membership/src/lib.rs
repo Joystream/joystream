@@ -225,14 +225,6 @@ decl_storage! {
         pub MembershipById get(fn membership) : map hasher(blake2_128_concat)
             T::MemberId => Membership<T>;
 
-        /// Mapping of a root account id to vector of member ids it controls.
-        pub(crate) MemberIdsByRootAccountId : map hasher(blake2_128_concat)
-            T::AccountId => Vec<T::MemberId>;
-
-        /// Mapping of a controller account id to vector of member ids it controls.
-        pub(crate) MemberIdsByControllerAccountId : map hasher(blake2_128_concat)
-            T::AccountId => Vec<T::MemberId>;
-
         /// Registered unique handles hash and their mapping to their owner.
         pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
@@ -427,26 +419,10 @@ decl_module! {
             //
 
             if let Some(root_account) = new_root_account {
-                <MemberIdsByRootAccountId<T>>::mutate(&membership.root_account, |ids| {
-                    ids.retain(|id| *id != member_id);
-                });
-
-                <MemberIdsByRootAccountId<T>>::mutate(&root_account, |ids| {
-                    ids.push(member_id);
-                });
-
                 membership.root_account = root_account;
             }
 
             if let Some(controller_account) = new_controller_account {
-                <MemberIdsByControllerAccountId<T>>::mutate(&membership.controller_account, |ids| {
-                    ids.retain(|id| *id != member_id);
-                });
-
-                <MemberIdsByControllerAccountId<T>>::mutate(&controller_account, |ids| {
-                    ids.push(member_id);
-                });
-
                 membership.controller_account = controller_account;
             }
 
@@ -740,12 +716,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Returns true if account is either a member's root or controller account
-    pub fn is_member_account(who: &T::AccountId) -> bool {
-        <MemberIdsByRootAccountId<T>>::contains_key(who)
-            || <MemberIdsByControllerAccountId<T>>::contains_key(who)
-    }
-
     // Ensure possible member handle hash is unique.
     fn ensure_unique_handle_hash(handle_hash: Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
@@ -788,13 +758,6 @@ impl<T: Trait> Module<T> {
             verified: false,
             invites: allowed_invites,
         };
-
-        <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
-            ids.push(new_member_id);
-        });
-        <MemberIdsByControllerAccountId<T>>::mutate(controller_account, |ids| {
-            ids.push(new_member_id);
-        });
 
         <MembershipById<T>>::insert(new_member_id, membership);
         <MemberIdByHandleHash<T>>::insert(handle_hash, new_member_id);

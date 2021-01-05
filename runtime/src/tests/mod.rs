@@ -34,12 +34,13 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
 }
 
 fn get_account_membership(account: AccountId32, i: usize) -> u64 {
-    if !Membership::is_member_account(&account) {
+    let member_id = i as u64;
+    if Membership::membership(member_id).controller_account != account {
         insert_member(account.clone());
-        set_staking_account(account, i as u64);
+        set_staking_account(account, member_id);
     }
 
-    i as u64
+    member_id
 }
 
 pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {

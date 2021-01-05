@@ -37,10 +37,6 @@ fn buy_membership_succeeds() {
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(ALICE_ACCOUNT_ID),
-            vec![next_member_id]
-        );
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(next_member_id));
     });
@@ -173,18 +169,7 @@ fn update_profile_accounts_succeeds() {
         let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_NEW_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-        assert!(<crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
-
         assert_eq!(profile.root_account, ALICE_NEW_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-        assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(
             ALICE_MEMBER_ID,
@@ -207,16 +192,7 @@ fn update_accounts_has_effect_on_empty_account_parameters() {
         let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-
         assert_eq!(profile.root_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
     });
 }
 
@@ -491,10 +467,6 @@ fn invite_member_succeeds() {
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(BOB_ACCOUNT_ID),
-            vec![bob_member_id]
-        );
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
     });
