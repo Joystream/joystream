@@ -314,7 +314,7 @@ decl_module! {
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
-                T::MembershipOriginValidator::ensure_member_controller_account(
+                T::MembershipOriginValidator::ensure_member_controller_account_origin(
                     origin,
                     general_proposal_parameters.member_id
                 )?;

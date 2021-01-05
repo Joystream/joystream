@@ -204,7 +204,7 @@ decl_module! {
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            <T as Trait>::MemberOriginValidator::ensure_member_controller_account(
+            <T as Trait>::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id,
             )?;

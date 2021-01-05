@@ -378,7 +378,7 @@ decl_module! {
                 return Ok(())
             }
 
-            Self::ensure_member_controller_account_signed(origin, &member_id)?;
+            Self::ensure_member_controller_account_origin_signed(origin, &member_id)?;
 
             let membership = Self::ensure_membership(member_id)?;
 
@@ -501,7 +501,7 @@ decl_module! {
             target_member_id: T::MemberId,
             number_of_invites: u32
         ) {
-            Self::ensure_member_controller_account_signed(origin, &source_member_id)?;
+            Self::ensure_member_controller_account_origin_signed(origin, &source_member_id)?;
 
             let source_membership = Self::ensure_membership(source_member_id)?;
             Self::ensure_membership_with_error(
@@ -538,7 +538,7 @@ decl_module! {
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
         ) {
-            let membership = Self::ensure_member_controller_account_signed(
+            let membership = Self::ensure_member_controller_account_origin_signed(
                 origin,
                 &params.inviting_member_id
             )?;
@@ -693,7 +693,7 @@ decl_module! {
             member_id: T::MemberId,
             staking_account_id: T::AccountId,
         ) {
-            Self::ensure_member_controller_account_signed(origin, &member_id)?;
+            Self::ensure_member_controller_account_origin_signed(origin, &member_id)?;
 
             ensure!(
                 Self::staking_account_registered_for_member(&staking_account_id, &member_id),
@@ -804,7 +804,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure origin corresponds to the controller account of the member.
-    fn ensure_member_controller_account_signed(
+    fn ensure_member_controller_account_origin_signed(
         origin: T::Origin,
         member_id: &T::MemberId,
     ) -> Result<Membership<T>, Error<T>> {
@@ -886,9 +886,7 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
 }
 
 impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
-    /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
-    /// the membership module
-    fn ensure_member_controller_account(
+    fn ensure_member_controller_account_origin(
         origin: T::Origin,
         actor_id: T::MemberId,
     ) -> Result<T::AccountId, DispatchError> {
@@ -897,5 +895,9 @@ impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for M
         Self::ensure_is_controller_account_for_member(&actor_id, &signer_account_id)?;
 
         Ok(signer_account_id)
+    }
+
+    fn is_member_controller_account(member_id: &T::MemberId, account_id: &T::AccountId) -> bool {
+        Self::ensure_is_controller_account_for_member(member_id, account_id).is_ok()
     }
 }

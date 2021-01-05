@@ -205,7 +205,7 @@ decl_module! {
             thread_id : T::ThreadId,
             _text : Vec<u8>
         ) {
-            T::AuthorOriginValidator::ensure_member_controller_account(
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
                 post_author_id,
             )?;
@@ -253,7 +253,7 @@ decl_module! {
 
             let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
 
-            T::AuthorOriginValidator::ensure_member_controller_account(
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 post_author_id,
             )?;
@@ -286,7 +286,7 @@ decl_module! {
             thread_id : T::ThreadId,
             mode : ThreadMode<MemberId<T>>
         ) {
-            T::AuthorOriginValidator::ensure_member_controller_account(origin.clone(), member_id)?;
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(origin.clone(), member_id)?;
 
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 

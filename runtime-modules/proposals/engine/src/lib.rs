@@ -479,7 +479,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_member_controller_account(origin, proposer_id)?;
+            T::ProposerOriginValidator::ensure_member_controller_account_origin(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);

@@ -377,7 +377,7 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_member_controller_account(origin, p.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
@@ -518,7 +518,7 @@ decl_module! {
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_member_controller_account(origin, worker.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);

@@ -155,7 +155,7 @@ benchmarks! {
     }
 
     // TODO: Review this after changes to the governance/council are merged:
-    // this extrinsic uses `T::CouncilOriginValidator::ensure_member_controller_account`
+    // this extrinsic uses `T::CouncilOriginValidator::ensure_member_controller_account_origin`
     // this is a hook to the runtime. Since the pallet implementation shouldn't have any
     // information on the runtime this hooks should be constant.
     // However, the implementation in the runtime is linear in the number of council members.

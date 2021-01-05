@@ -218,7 +218,7 @@ impl crate::WeightInfo for () {
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
 
 impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_controller_account(
+    fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
@@ -229,6 +229,10 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
         }
 
         Ok(signed_account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
     }
 }
 

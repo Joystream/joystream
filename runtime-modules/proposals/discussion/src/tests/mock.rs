@@ -141,7 +141,7 @@ impl WeightInfo for () {
 }
 
 impl MemberOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_controller_account(
+    fn ensure_member_controller_account_origin(
         origin: Origin,
         actor_id: u64,
     ) -> Result<u64, DispatchError> {
@@ -166,6 +166,10 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
         }
 
         Err(DispatchError::Other("Invalid author"))
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
     }
 }
 

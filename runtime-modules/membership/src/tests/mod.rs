@@ -914,7 +914,7 @@ fn membership_origin_validator_fails_with_unregistered_member() {
         let error = Error::<Test>::MemberProfileNotFound;
 
         let validation_result =
-            Membership::ensure_member_controller_account(origin.into(), ALICE_MEMBER_ID);
+            Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
 
         assert_eq!(validation_result, Err(error.into()));
     });
@@ -929,7 +929,7 @@ fn membership_origin_validator_succeeds() {
         let origin = RawOrigin::Signed(account_id.clone());
 
         let validation_result =
-            Membership::ensure_member_controller_account(origin.into(), ALICE_MEMBER_ID);
+            Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
 
         assert_eq!(validation_result, Ok(account_id));
     });
@@ -943,7 +943,7 @@ fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id(
         let error = Error::<Test>::ControllerAccountRequired;
 
         let invalid_account_id = BOB_ACCOUNT_ID;
-        let validation_result = Membership::ensure_member_controller_account(
+        let validation_result = Membership::ensure_member_controller_account_origin(
             RawOrigin::Signed(invalid_account_id.into()).into(),
             ALICE_MEMBER_ID,
         );
