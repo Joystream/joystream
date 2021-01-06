@@ -57,7 +57,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       channelEntity = channel
     }
 
-    const currentValues = await this.parseToKnownEntityJson<ChannelEntity>(channelEntity)
+    const currentValues = await this.parseToEntityJson<ChannelEntity>(channelEntity)
     this.jsonPrettyPrint(JSON.stringify(currentValues))
 
     const channelJsonSchema = (ChannelEntitySchema as unknown) as JSONSchema

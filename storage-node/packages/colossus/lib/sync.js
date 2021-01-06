@@ -132,30 +132,35 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       return retry()
     }
 
-    // Retry later if provider is not active
-    if (!(await api.providerIsActiveWorker())) {
-      debug(
-        'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
-      )
-      return retry()
-    }
+    if (!flags.anonymous) {
+      // Retry later if provider is not active
+      if (!(await api.providerIsActiveWorker())) {
+        debug(
+          'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
+        )
+        return retry()
+      }
 
-    const recommendedBalance = await api.providerHasMinimumBalance(300)
-    if (!recommendedBalance) {
-      debug('Warning: Provider role account is running low on balance.')
-    }
+      const recommendedBalance = await api.providerHasMinimumBalance(300)
+      if (!recommendedBalance) {
+        debug('Warning: Provider role account is running low on balance.')
+      }
 
-    const sufficientBalance = await api.providerHasMinimumBalance(100)
-    if (!sufficientBalance) {
-      debug('Provider role account does not have sufficient balance. Postponing sync run!')
-      return retry()
+      const sufficientBalance = await api.providerHasMinimumBalance(100)
+      if (!sufficientBalance) {
+        debug('Provider role account does not have sufficient balance. Postponing sync run!')
+        return retry()
+      }
     }
 
     await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
-    const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
-    await setRelationshipsReady({ api, relationshipIds })
 
-    debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    // Only update on chain state if not in anonymous mode
+    if (!flags.anonymous) {
+      const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
+      await setRelationshipsReady({ api, relationshipIds })
+      debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    }
   } catch (err) {
     debug(`Error in sync run ${err.stack}`)
   }

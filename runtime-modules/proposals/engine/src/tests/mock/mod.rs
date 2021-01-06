@@ -87,6 +87,8 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
     type MinimumStake = MinimumVotingStake;
 
+    type WeightInfo = ReferendumWeightInfo;
+
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,
         _: &BalanceReferendum<Self, ReferendumInstance>,
@@ -126,6 +128,34 @@ impl referendum::Trait<ReferendumInstance> for Test {
     }
 
     fn increase_option_power(_: &u64, _: &Self::VotePower) {}
+}
+
+pub struct ReferendumWeightInfo;
+impl referendum::WeightInfo for ReferendumWeightInfo {
+    fn on_finalize_revealing(_: u32) -> Weight {
+        0
+    }
+    fn on_finalize_voting() -> Weight {
+        0
+    }
+    fn vote() -> Weight {
+        0
+    }
+    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_already_existing(_: u32) -> Weight {
+        0
+    }
+    fn release_vote_stake() -> Weight {
+        0
+    }
 }
 
 parameter_types! {
@@ -352,6 +382,7 @@ impl council::Trait for Test {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = membership::Module<Test>;
+    type WeightInfo = CouncilWeightInfo;
 
     fn is_council_member_account(
         membership_id: &Self::MemberId,
@@ -361,6 +392,40 @@ impl council::Trait for Test {
     }
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+}
+
+pub struct CouncilWeightInfo;
+impl council::WeightInfo for CouncilWeightInfo {
+    fn try_process_budget() -> Weight {
+        0
+    }
+    fn try_progress_stage_idle() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_start_election() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_restart() -> Weight {
+        0
+    }
+    fn announce_candidacy() -> Weight {
+        0
+    }
+    fn release_candidacy_stake() -> Weight {
+        0
+    }
+    fn set_candidacy_note(_: u32) -> Weight {
+        0
+    }
+    fn withdraw_candidacy() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn plan_budget_refill() -> Weight {
+        0
+    }
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {

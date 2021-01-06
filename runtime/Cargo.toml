@@ -168,6 +168,8 @@ runtime-benchmarks = [
     "pallet_constitution/runtime-benchmarks",
     "working-group/runtime-benchmarks",
     "forum/runtime-benchmarks",
+    "council/runtime-benchmarks",
+    "referendum/runtime-benchmarks",
     "hex-literal",
 ]
 

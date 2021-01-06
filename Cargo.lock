@@ -3781,8 +3781,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-council"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -4036,12 +4037,15 @@ dependencies = [
 
 [[package]]
 name = "pallet-referendum"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
  "parity-scale-codec",
  "rand 0.7.3",
  "serde",

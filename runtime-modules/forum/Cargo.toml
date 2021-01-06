@@ -25,12 +25,14 @@ staking-handler = { package = 'pallet-staking-handler', default-features = false
 
 [dev-dependencies]
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 [features]
 default = ['std']
 runtime-benchmarks = [
     'frame-benchmarking',
-    'balances',
 	'membership',
 	'working-group',
 	'staking-handler'

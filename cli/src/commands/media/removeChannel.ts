@@ -33,7 +33,7 @@ export default class RemoveChannelCommand extends ContentDirectoryCommandBase {
       channelId = id.toNumber()
       channelEntity = channel
     }
-    const channel = await this.parseToKnownEntityJson<ChannelEntity>(channelEntity)
+    const channel = await this.parseToEntityJson<ChannelEntity>(channelEntity)
 
     await this.requireConfirmation(`Are you sure you want to remove "${channel.handle}" channel?`)
 
