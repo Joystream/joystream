@@ -435,39 +435,24 @@ impl content_directory::Trait for Runtime {
     type Nonce = u64;
     type ClassId = u64;
     type EntityId = u64;
+    type CuratorGroupId = u64;
     type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
     type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
     type ClassNameLengthConstraint = ClassNameLengthConstraint;
     type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
     type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
-    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
     type VecMaxLengthConstraint = VecMaxLengthConstraint;
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
     type WorkingGroup = ContentDirectoryWorkingGroup;
-    type CuratorGroupId = u64;
     type MemberOriginValidator = Members;
-}
-
-impl minting::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type MintId = u64;
-}
-
-impl recurring_rewards::Trait for Runtime {
-    type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
 }
 
 // The referendum instance alias.
@@ -660,7 +645,6 @@ impl forum::Trait for Runtime {
     }
 
     type WorkingGroup = ForumWorkingGroup;
-
     type MemberOriginValidator = Members;
 }
 
@@ -884,8 +868,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Minting: minting::{Module, Call, Storage},
-        RecurringRewards: recurring_rewards::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage

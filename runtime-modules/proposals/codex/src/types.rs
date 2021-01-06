@@ -17,8 +17,6 @@ pub trait ProposalEncoder<T: crate::Trait> {
 
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
-    crate::BalanceOfMint<T>,
-    crate::BalanceOfGovernanceCurrency<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as frame_system::Trait>::AccountId,
     crate::BalanceOf<T>,
@@ -28,14 +26,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub enum ProposalDetails<
-    MintedBalance,
-    CurrencyBalance,
-    BlockNumber,
-    AccountId,
-    StakeBalance,
-    WorkerId,
-> {
+pub enum ProposalDetails<BlockNumber, AccountId, Balance, WorkerId> {
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
@@ -43,45 +34,38 @@ pub enum ProposalDetails<
     RuntimeUpgrade(Vec<u8>),
 
     /// Balance and destination account for the `spending` proposal
-    Spending(MintedBalance, AccountId),
+    Spending(Balance, AccountId),
 
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
 
     /// Add opening for the working group leader position.
-    AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
+    AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, Balance>),
 
     /// Fill opening for the working group leader position.
     FillWorkingGroupLeaderOpening(FillOpeningParameters),
 
     /// Set working group budget capacity.
-    SetWorkingGroupBudgetCapacity(MintedBalance, WorkingGroup),
+    SetWorkingGroupBudgetCapacity(Balance, WorkingGroup),
 
     /// Decrease the working group leader stake.
-    DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
+    DecreaseWorkingGroupLeaderStake(WorkerId, Balance, WorkingGroup),
 
     /// Slash the working group leader stake.
-    SlashWorkingGroupLeaderStake(WorkerId, Penalty<StakeBalance>, WorkingGroup),
+    SlashWorkingGroupLeaderStake(WorkerId, Penalty<Balance>, WorkingGroup),
 
     /// Set working group leader reward balance.
-    SetWorkingGroupLeaderReward(WorkerId, Option<MintedBalance>, WorkingGroup),
+    SetWorkingGroupLeaderReward(WorkerId, Option<Balance>, WorkingGroup),
 
     /// Fire the working group leader with possible slashing.
-    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId, StakeBalance>),
+    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId, Balance>),
 
     /// Amend constitution.
     AmendConstitution(Vec<u8>),
 }
 
-impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, StakeBalance, WorkerId> Default
-    for ProposalDetails<
-        MintedBalance,
-        CurrencyBalance,
-        BlockNumber,
-        AccountId,
-        StakeBalance,
-        WorkerId,
-    >
+impl<BlockNumber, AccountId, Balance, WorkerId> Default
+    for ProposalDetails<BlockNumber, AccountId, Balance, WorkerId>
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())

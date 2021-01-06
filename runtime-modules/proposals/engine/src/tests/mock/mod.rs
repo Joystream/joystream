@@ -143,10 +143,6 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
-}
-
 impl proposals::Trait for Test {}
 
 parameter_types! {
@@ -376,17 +372,6 @@ impl council::Trait for Test {
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 
     type MemberOriginValidator = ();
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
