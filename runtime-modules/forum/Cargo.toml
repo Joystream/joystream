@@ -28,6 +28,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 [features]
 default = ['std']
