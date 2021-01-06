@@ -1,10 +1,13 @@
-import { QueryNodeApi } from '../../Api'
+import { Api } from '../../Api'
+import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
 
-export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixture {
+export function createSimpleChannelFixture(api: Api): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
     handle: 'New channel example',
     description: 'This is an example channel',
@@ -27,16 +30,21 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
   assert.equal(queriedChannel.isPublic, channel.isPublic, 'Should be equal')
 }
 
-export default async function channelCreation(api: QueryNodeApi) {
+export default async function channelCreation({ api, query }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:creatingChannel')
+  debug('Started')
+
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
-  await createChannelHappyCaseFixture.runner(false)
+  await new FixtureRunner(createChannelHappyCaseFixture).run()
 
   // Temporary solution (wait 2 minutes)
   await Utils.wait(120000)
 
   // Ensure newly created channel was parsed by query node
-  const result = await api.getChannelbyHandle(createChannelHappyCaseFixture.channelEntity.handle)
+  const result = await query.getChannelbyHandle(createChannelHappyCaseFixture.channelEntity.handle)
 
   assertChannelMatchQueriedResult(result.data.channels[0], createChannelHappyCaseFixture.channelEntity)
+
+  debug('Done')
 }

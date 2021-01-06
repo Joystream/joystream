@@ -73,13 +73,6 @@ function cleanup() {
 
 trap cleanup EXIT
 
-# Initialize content-directory
-# sleep 15
-# yarn workspace @joystream/cd-schemas initialize:dev
-# NOTE: Skipping this step and let the scenarios do this setup instead
-# or align the scenario expectations of the initial state to match
-# with what we do here.
-
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
@@ -102,10 +95,7 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
-# pass the scenario name without .ts extension
-SCENARIO=$1
-# fallback to full.ts scenario if not specified
-SCENARIO=${SCENARIO:=full}
+echo "Waiting for chain to startup..."
+sleep 10
 
-# Execute the tests
-time DEBUG=* yarn workspace network-tests test-run src/scenarios/${SCENARIO}.ts
+./run-test-scenario.sh $1

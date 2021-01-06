@@ -1,4 +1,4 @@
-# Joystream [![Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=master)](https://travis-ci.org/Joystream/joystream)
+# Joystream
 
 This is the main code repository for all Joystream software. In this mono-repo you will find all the software required to run a Joystream network: The Joystream full node, runtime and all reusable substrate runtime modules that make up the Joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
@@ -6,10 +6,6 @@ This is the main code repository for all Joystream software. In this mono-repo y
 
 The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
 functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
-
-## Build Status
-
-Development [![Development Branch Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=development)](https://travis-ci.org/Joystream/joystream) - build history on [Travis](https://travis-ci.org/github/Joystream/joystream/builds)
 
 ## Development Tools
 
