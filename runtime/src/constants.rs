@@ -1,3 +1,4 @@
+use super::Balance;
 use crate::{BlockNumber, Moment};
 use frame_support::parameter_types;
 use frame_support::traits::LockIdentifier;
@@ -37,6 +38,68 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
+
+/// This module is based on https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#relay-chain-transaction-fees-and-per-block-transaction-limits
+/// It was copied from Polkadot's implementation
+pub mod fees {
+    use super::{parameter_types, Balance};
+    use frame_support::weights::constants::ExtrinsicBaseWeight;
+    use frame_support::weights::{
+        WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+    };
+    use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+    use smallvec::smallvec;
+    use sp_runtime::FixedPointNumber;
+    pub use sp_runtime::Perbill;
+    use sp_runtime::Perquintill;
+
+    parameter_types! {
+        /// The portion of the `NORMAL_DISPATCH_RATIO` that we adjust the fees with. Blocks filled less
+        /// than this will decrease the weight and more will increase.
+        pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+        /// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
+        /// change the fees more rapidly.
+        pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
+        /// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
+        /// that combined with `AdjustmentVariable`, we can recover from the minimum.
+        /// See `multiplier_can_grow_from_zero`.
+        pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+    }
+
+    /// Parameterized slow adjusting fee updated based on
+    /// https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#-2.-slow-adjusting-mechanism
+    pub type SlowAdjustingFeeUpdate<R> =
+        TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+
+    /// The block saturation level. Fees will be updates based on this value.
+    pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
+
+    /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
+    /// node's balance type.
+    ///
+    /// This should typically create a mapping between the following ranges:
+    ///   - [0, MAXIMUM_BLOCK_WEIGHT]
+    ///   - [Balance::min, Balance::max]
+    ///
+    /// Yet, it can be used for any other sort of change to weight-fee. Some examples being:
+    ///   - Setting it to `0` will essentially disable the weight fee.
+    ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be charged.
+    pub struct WeightToFee;
+    impl WeightToFeePolynomial for WeightToFee {
+        type Balance = Balance;
+        fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+            // in Polkadot, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+            let p = super::currency::CENTS;
+            let q = 10 * Balance::from(ExtrinsicBaseWeight::get());
+            smallvec![WeightToFeeCoefficient {
+                degree: 1,
+                negative: false,
+                coeff_frac: Perbill::from_rational_approximation(p % q, q),
+                coeff_integer: p / q,
+            }]
+        }
+    }
+}
 
 parameter_types! {
     pub const VotingLockId: LockIdentifier = [0; 8];
@@ -123,14 +186,13 @@ lazy_static! {
     });
 }
 
-/// Tests only
-#[cfg(any(feature = "std", test))]
 pub mod currency {
-    use crate::primitives::Balance;
+    use super::Balance;
 
-    pub const MILLICENTS: Balance = 1_000_000_000;
-    pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
-    pub const DOLLARS: Balance = 100 * CENTS;
+    pub const DOTS: Balance = 1_000_000_000_000;
+    pub const DOLLARS: Balance = DOTS;
+    pub const CENTS: Balance = DOLLARS / 100;
+    pub const MILLICENTS: Balance = CENTS / 1_000;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
         items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS

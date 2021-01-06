@@ -261,15 +261,19 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
+    pub const TransactionByteFee: Balance = 10 * constants::currency::MILLICENTS;
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
+    // TODO: Implement a function that sends %80 of fee to treasury and %20 to author
+    // and %100 of the tip to author.
+    // See: https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#setting-transaction-fees
+    // and https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#-2.-slow-adjusting-mechanism
     type OnTransactionPayment = ();
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = integration::transactions::NoWeights; // TODO: adjust weight
-    type FeeMultiplierUpdate = (); // TODO: adjust fee
+    type WeightToFee = constants::fees::WeightToFee;
+    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Trait for Runtime {
