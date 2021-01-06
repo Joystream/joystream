@@ -43,6 +43,7 @@
 // used dependencies
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
+use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
@@ -57,6 +58,7 @@ use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
 // declared modules
+mod benchmarking;
 mod mock;
 mod tests;
 
@@ -195,7 +197,22 @@ pub type CandidateOf<T> = Candidate<
 >;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
 
-/////////////////// Trait, Storage, Errors, and Events /////////////////////////
+/////////////////// Traits, Storage, Errors, and Events /////////////////////////
+
+/// council WeightInfo
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn try_process_budget() -> Weight;
+    fn try_progress_stage_idle() -> Weight;
+    fn try_progress_stage_announcing_start_election() -> Weight; // Parameter discarded
+    fn try_progress_stage_announcing_restart() -> Weight;
+    fn announce_candidacy() -> Weight;
+    fn release_candidacy_stake() -> Weight;
+    fn set_candidacy_note(i: u32) -> Weight;
+    fn withdraw_candidacy() -> Weight;
+    fn set_budget() -> Weight;
+    fn plan_budget_refill() -> Weight;
+}
 
 /// The main council trait.
 pub trait Trait: frame_system::Trait + common::Trait {
@@ -235,6 +252,9 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type BudgetRefillAmount: Get<Balance<Self>>;
     /// Interval between automatic budget refills.
     type BudgetRefillPeriod: Get<Self::BlockNumber>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// Checks that the user account is indeed associated with the member.
     fn is_council_member_account(
@@ -451,7 +471,15 @@ decl_module! {
         /////////////////// Election-related ///////////////////////////////////
 
         /// Subscribe candidate
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::announce_candidacy()]
         pub fn announce_candidacy(
                 origin,
                 membership_id: T::MemberId,
@@ -489,7 +517,15 @@ decl_module! {
         }
 
         /// Release candidacy stake that is no longer needed.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::release_candidacy_stake()]
         pub fn release_candidacy_stake(origin, membership_id: T::MemberId)
             -> Result<(), Error<T>> {
             let staking_account_id =
@@ -509,7 +545,15 @@ decl_module! {
         }
 
         /// Withdraw candidacy and release candidacy stake.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::withdraw_candidacy()]
         pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
@@ -528,7 +572,16 @@ decl_module! {
         }
 
         /// Set short description for the user's candidacy. Can be called anytime during user's candidacy.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (N)` where:
+        /// `N` is the length of `note`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::set_candidacy_note(note.len().saturated_into())]
         pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
@@ -551,7 +604,15 @@ decl_module! {
         }
 
         /// Sets the budget balance.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::set_budget()]
         pub fn set_budget(origin, balance: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget(origin)?;
@@ -570,7 +631,15 @@ decl_module! {
         }
 
         /// Plan the next budget refill.
-        #[weight = 10_000_000]
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = T::WeightInfo::plan_budget_refill()]
         pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_plan_budget_refill(origin)?;
@@ -1070,7 +1139,7 @@ impl<T: Trait> Mutations<T> {
 
     // Refill budget's balance.
     fn refill_budget(refill_amount: &Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance += *refill_amount);
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(*refill_amount));
     }
 
     // Plan next budget refill.

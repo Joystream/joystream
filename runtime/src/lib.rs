@@ -506,6 +506,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MinimumStake = MinimumVotingStake;
 
+    type WeightInfo = weights::referendum::WeightInfo;
+
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
@@ -566,6 +568,8 @@ impl council::Trait for Runtime {
 
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    type WeightInfo = weights::council::WeightInfo;
 
     fn is_council_member_account(
         membership_id: &Self::MemberId,

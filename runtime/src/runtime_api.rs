@@ -259,6 +259,7 @@ impl_runtime_apis! {
 
             use pallet_session_benchmarking::Module as SessionBench;
             use frame_system_benchmarking::Module as SystemBench;
+            use frame_system::RawOrigin;
             use crate::ProposalsDiscussion;
             use crate::ProposalsEngine;
             use crate::Constitution;
@@ -266,6 +267,8 @@ impl_runtime_apis! {
             use crate::Utility;
             use crate::Timestamp;
             use crate::ImOnline;
+            use crate::Council;
+            use crate::Referendum;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -273,6 +276,21 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Trait for Runtime {}
             impl frame_system_benchmarking::Trait for Runtime {}
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::Trait>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::Trait>::MemberId) {
+                    crate::council::Module::<Runtime>::announce_candidacy(
+                        RawOrigin::Signed(account_id.clone()).into(),
+                        member_id,
+                        account_id.clone(),
+                        account_id.clone(),
+                        <Runtime as council::Trait>::MinCandidateStake::get().into(),
+                    ).expect(
+                        "Should pass a valid member associated to the account and the account
+                        should've enough
+                        free balance to stake the minimum for a council candidate."
+                    );
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -313,6 +331,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
+            add_benchmark!(params, batches, referendum, Referendum);
+            add_benchmark!(params, batches, council, Council);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
