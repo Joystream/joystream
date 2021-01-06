@@ -14,11 +14,13 @@ use staking_handler::LockComparator;
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-pub use crate::StorageWorkingGroupInstance;
+
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use frame_support::sp_runtime::DispatchResult;
 
 use membership;
+
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
@@ -250,6 +252,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectTypeId = u64;
+    type WorkingGroup = StorageWorkingGroup;
 }
 
 impl data_directory::Trait for Test {
@@ -293,8 +296,23 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         unimplemented!();
     }
 
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
     }
 }
 
@@ -379,6 +397,7 @@ impl ExtBuilder {
 
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
+pub type StorageWorkingGroup = working_group::Module<Test, StorageWorkingGroupInstance>;
 pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;

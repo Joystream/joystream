@@ -22,9 +22,9 @@ pub type EntityId = <Runtime as Trait>::EntityId;
 pub type Nonce = <Runtime as Trait>::Nonce;
 pub type Hashed = <Runtime as frame_system::Trait>::Hash;
 
-pub type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
+pub type TestCuratorId = CuratorId<Runtime>;
 pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
-pub type MemberId = <Runtime as ActorAuthenticator>::MemberId;
+pub type MemberId = <Runtime as common::Trait>::MemberId;
 
 /// Origins
 
@@ -39,8 +39,8 @@ pub const UNKNOWN_ORIGIN: u64 = 7777;
 
 /// Runtime Id's
 
-pub const FIRST_CURATOR_ID: CuratorId = 1;
-pub const SECOND_CURATOR_ID: CuratorId = 2;
+pub const FIRST_CURATOR_ID: TestCuratorId = 1;
+pub const SECOND_CURATOR_ID: TestCuratorId = 2;
 
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
@@ -267,27 +267,52 @@ impl Trait for Runtime {
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type WorkingGroup = ();
 }
 
-impl ActorAuthenticator for Runtime {
-    type CuratorId = u64;
-    type MemberId = u64;
-    type CuratorGroupId = u64;
+impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
 
-    // Consider lazy_static crate?
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
 
-    fn is_lead(account_id: &Self::AccountId) -> bool {
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
+
         *account_id == lead_account_id
     }
 
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
+    fn is_worker_account_id(
+        account_id: &<Runtime as frame_system::Trait>::AccountId,
+        worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
         let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
         let second_curator_account_id =
             ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
+        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *worker_id)
+            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *worker_id)
     }
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+impl ActorAuthenticator for Runtime {
+    type CuratorGroupId = u64;
+
+    // Consider lazy_static crate?
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
@@ -424,13 +449,13 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
 
 type RawTestEvent = RawEvent<
     CuratorGroupId,
-    CuratorId,
+    TestCuratorId,
     ClassId,
     EntityId,
     EntityController<MemberId>,
     EntityCreationVoucher<Runtime>,
     bool,
-    Actor<CuratorGroupId, CuratorId, MemberId>,
+    Actor<CuratorGroupId, TestCuratorId, MemberId>,
     Nonce,
     Option<ReferenceCounterSideEffects<Runtime>>,
     Option<(EntityId, EntityReferenceCounterSideEffect)>,
@@ -483,7 +508,7 @@ pub fn remove_curator_group(lead_origin: u64, curator_group_id: CuratorGroupId) 
 pub fn add_curator_to_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
-    curator_id: CuratorId,
+    curator_id: TestCuratorId,
 ) -> DispatchResult {
     TestModule::add_curator_to_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
@@ -491,7 +516,7 @@ pub fn add_curator_to_group(
 pub fn remove_curator_from_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
-    curator_id: CuratorId,
+    curator_id: TestCuratorId,
 ) -> DispatchResult {
     TestModule::remove_curator_from_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
@@ -504,7 +529,7 @@ pub fn set_curator_group_status(
     TestModule::set_curator_group_status(Origin::signed(lead_origin), curator_group_id, is_active)
 }
 
-pub fn curator_group_by_id(curator_group_id: CuratorGroupId) -> CuratorGroup<Runtime> {
+pub fn curator_group_by_id(curator_group_id: CuratorGroupId) -> CuratorGroup<TestCuratorId> {
     TestModule::curator_group_by_id(curator_group_id)
 }
 
@@ -716,14 +741,14 @@ pub fn next_entity_id() -> EntityId {
 pub fn create_entity(
     origin: u64,
     class_id: ClassId,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
 ) -> DispatchResult {
     TestModule::create_entity(Origin::signed(origin), class_id, actor)
 }
 
 pub fn remove_entity(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
 ) -> DispatchResult {
     TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
@@ -745,7 +770,7 @@ pub fn update_entity_permissions(
 
 pub fn add_schema_support_to_entity(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
     schema_id: SchemaId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
@@ -761,7 +786,7 @@ pub fn add_schema_support_to_entity(
 
 pub fn update_entity_property_values(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
 ) -> DispatchResult {
@@ -775,7 +800,7 @@ pub fn update_entity_property_values(
 
 pub fn clear_entity_property_vector(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
 ) -> DispatchResult {
@@ -789,7 +814,7 @@ pub fn clear_entity_property_vector(
 
 pub fn insert_at_entity_property_vector(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
@@ -809,7 +834,7 @@ pub fn insert_at_entity_property_vector(
 
 pub fn remove_at_entity_property_vector(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
@@ -846,7 +871,7 @@ pub fn transfer_entity_ownership(
 
 pub fn transaction(
     origin: u64,
-    actor: Actor<CuratorGroupId, CuratorId, MemberId>,
+    actor: Actor<CuratorGroupId, TestCuratorId, MemberId>,
     operations: Vec<OperationType<Runtime>>,
 ) -> DispatchResult {
     TestModule::transaction(Origin::signed(origin), actor, operations)

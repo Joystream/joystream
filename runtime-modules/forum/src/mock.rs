@@ -101,7 +101,6 @@ impl StorageLimits for MapLimits {
 impl Trait for Runtime {
     type Event = TestEvent;
     type ForumUserId = u64;
-    type ModeratorId = u64;
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
@@ -109,10 +108,7 @@ impl Trait for Runtime {
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
-
-    fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool {
-        *account_id == FORUM_LEAD_ORIGIN_ID
-    }
+    type WorkingGroup = ();
 
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -127,18 +123,47 @@ impl Trait for Runtime {
         allowed_accounts.contains(account_id) && account_id == forum_user_id
     }
 
-    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+        *account_id == FORUM_LEAD_ORIGIN_ID
+    }
+
+    fn is_worker_account_id(
+        account_id: &<Runtime as frame_system::Trait>::AccountId,
+        worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
         let allowed_accounts = [
             FORUM_LEAD_ORIGIN_ID,
             FORUM_MODERATOR_ORIGIN_ID,
             FORUM_MODERATOR_2_ORIGIN_ID,
         ];
 
-        allowed_accounts.contains(account_id) && account_id == moderator_id
-    }
-
-    fn calculate_hash(text: &[u8]) -> Self::Hash {
-        Self::Hashing::hash(text)
+        allowed_accounts.contains(account_id) && account_id == worker_id
     }
 }
 
@@ -340,7 +365,7 @@ pub fn edit_thread_title_mock(
 
 pub fn delete_thread_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     result: DispatchResult,
@@ -373,7 +398,7 @@ pub fn delete_thread_mock(
 
 pub fn move_thread_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_category_id: <Runtime as Trait>::CategoryId,
@@ -495,7 +520,7 @@ pub fn change_current_time(diff: u64) -> () {
 
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     new_value: bool,
     result: DispatchResult,
@@ -608,7 +633,7 @@ pub fn delete_category_mock(
 
 pub fn moderate_thread_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     rationale: Vec<u8>,
@@ -636,7 +661,7 @@ pub fn moderate_thread_mock(
 
 pub fn moderate_post_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
@@ -667,7 +692,7 @@ pub fn moderate_post_mock(
 
 pub fn set_stickied_threads_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
     result: DispatchResult,

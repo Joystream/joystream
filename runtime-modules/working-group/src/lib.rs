@@ -54,7 +54,7 @@ pub use types::{
 };
 use types::{ApplicationInfo, WorkerInfo};
 
-pub use checks::{ensure_origin_is_active_leader, ensure_worker_exists, ensure_worker_signed};
+pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
 use common::origin::ActorOriginValidator;
 use common::{MemberId, StakingAccountValidator};
@@ -1344,10 +1344,24 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 
+    fn ensure_leader_origin(origin: T::Origin) -> DispatchResult {
+        checks::ensure_origin_is_active_leader::<T, I>(origin)
+    }
+
     fn get_leader_member_id() -> Option<T::MemberId> {
         checks::ensure_lead_is_set::<T, I>()
             .map(Self::worker_by_id)
             .map(|worker| worker.member_id)
             .ok()
+    }
+
+    fn is_leader_account_id(account_id: &T::AccountId) -> bool {
+        checks::ensure_is_lead_account::<T, I>(account_id.clone()).is_ok()
+    }
+
+    fn is_worker_account_id(account_id: &T::AccountId, worker_id: &WorkerId<T>) -> bool {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|worker| worker.role_account_id == account_id.clone())
+            .unwrap_or(false)
     }
 }
