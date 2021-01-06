@@ -2367,7 +2367,6 @@ dependencies = [
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
- "pallet-recurring-reward",
  "pallet-referendum",
  "pallet-service-discovery",
  "pallet-session",
@@ -2378,7 +2377,6 @@ dependencies = [
  "pallet-storage",
  "pallet-sudo",
  "pallet-timestamp",
- "pallet-token-mint",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
@@ -3767,10 +3765,11 @@ dependencies = [
 
 [[package]]
 name = "pallet-content-directory"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-common",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -3908,7 +3907,7 @@ version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-common",
+ "pallet-balances",
  "parity-scale-codec",
  "sp-arithmetic",
  "sp-std",
@@ -3963,13 +3962,11 @@ dependencies = [
  "pallet-membership",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
- "pallet-recurring-reward",
  "pallet-referendum",
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
  "pallet-timestamp",
- "pallet-token-mint",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -4012,11 +4009,9 @@ dependencies = [
  "pallet-common",
  "pallet-council",
  "pallet-membership",
- "pallet-recurring-reward",
  "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
- "pallet-token-mint",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4037,21 +4032,6 @@ dependencies = [
  "safe-mix",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-recurring-reward"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-token-mint",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
@@ -4081,10 +4061,8 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-recurring-reward",
  "pallet-staking-handler",
  "pallet-timestamp",
- "pallet-token-mint",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -4190,10 +4168,8 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-recurring-reward",
  "pallet-staking-handler",
  "pallet-timestamp",
- "pallet-token-mint",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -4234,20 +4210,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-timestamp",
-]
-
-[[package]]
-name = "pallet-token-mint"
-version = "3.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]

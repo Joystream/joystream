@@ -87,11 +87,6 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
 impl common::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
@@ -112,13 +107,24 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         unimplemented!();
     }
 
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
     }
-}
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
 }
 
 impl balances::Trait for Test {
@@ -129,12 +135,6 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
 }
 
 parameter_types! {
@@ -258,7 +258,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 

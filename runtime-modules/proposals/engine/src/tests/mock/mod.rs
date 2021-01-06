@@ -142,10 +142,6 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
-}
-
 impl proposals::Trait for Test {}
 
 parameter_types! {
@@ -179,8 +175,23 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         unimplemented!();
     }
 
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
     }
 }
 
@@ -350,17 +361,6 @@ impl council::Trait for Test {
     }
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {

@@ -63,8 +63,23 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
         unimplemented!();
     }
 
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
         unimplemented!();
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
     }
 }
 
@@ -150,11 +165,6 @@ impl Default for crate::Call<Test> {
     fn default() -> Self {
         panic!("shouldn't call default for Call");
     }
-}
-
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
@@ -311,12 +321,6 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type WeightInfo = WorkingGroupWeightInfo;
 }
 
-impl recurring_rewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
 pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
@@ -396,10 +400,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
         required_stake: Some(100_000),
         constitutionality: 1,
     }
-}
-
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 impl crate::Trait for Test {

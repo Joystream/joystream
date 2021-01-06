@@ -18,10 +18,15 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
+use common::working_group::WorkingGroupIntegration;
+
 mod mock;
 mod tests;
 
 mod benchmarking;
+
+/// Moderator ID alias for the actor of the system.
+pub type ModeratorId<T> = common::ActorId<T>;
 
 type WeightInfoForum<T> = <T as Trait>::WeightInfo;
 
@@ -47,20 +52,9 @@ pub trait WeightInfo {
     fn set_stickied_threads(i: u32, j: u32) -> Weight;
 }
 
-pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
     type ForumUserId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
-
-    type ModeratorId: Parameter
         + Member
         + BaseArithmetic
         + Codec
@@ -121,12 +115,13 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    fn is_lead(account_id: &<Self as frame_system::Trait>::AccountId) -> bool;
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,
         forum_user_id: &Self::ForumUserId,
     ) -> bool;
-    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
@@ -247,7 +242,7 @@ pub struct Category<CategoryId, ThreadId, Hash> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum PrivilegedActor<T: Trait> {
     Lead,
-    Moderator(T::ModeratorId),
+    Moderator(ModeratorId<T>),
 }
 
 impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
@@ -396,7 +391,8 @@ decl_storage! {
         pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(fn category_by_moderator) config(): double_map hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) T::ModeratorId => ();
+        pub CategoryByModerator get(fn category_by_moderator) config(): double_map
+            hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) ModeratorId<T> => ();
 
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(fn data_migration_done) config(): bool;
@@ -407,7 +403,7 @@ decl_event!(
     pub enum Event<T>
     where
         <T as Trait>::CategoryId,
-        <T as Trait>::ModeratorId,
+        ModeratorId = ModeratorId<T>,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
@@ -485,7 +481,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::update_category_membership_of_moderator_new()
             .max(WeightInfoForum::<T>::update_category_membership_of_moderator_old())]
-        fn update_category_membership_of_moderator(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
+        fn update_category_membership_of_moderator(origin, moderator_id: ModeratorId<T>, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById");
@@ -1399,7 +1395,7 @@ impl<T: Trait> Module<T> {
 
     // Ensure forum user is lead - check via account
     fn ensure_is_forum_lead_account(account_id: &T::AccountId) -> Result<(), Error<T>> {
-        let is_lead = T::is_lead(account_id);
+        let is_lead = T::WorkingGroup::is_leader_account_id(account_id);
 
         ensure!(is_lead, Error::<T>::OriginNotForumLead);
         Ok(())
@@ -1416,14 +1412,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure moderator id registered and its accound id matched - check via account
+    /// Ensure moderator id registered and its account id matched - check via account
     fn ensure_is_moderator_account(
         account_id: &T::AccountId,
-        moderator_id: &T::ModeratorId,
+        moderator_id: &ModeratorId<T>,
     ) -> Result<(), Error<T>> {
-        let is_moderator = T::is_moderator(&account_id, moderator_id);
+        let is_moderator = T::WorkingGroup::is_worker_account_id(account_id, moderator_id);
 
         ensure!(is_moderator, Error::<T>::ModeratorIdNotMatchAccount);
+
         Ok(())
     }
 
@@ -1611,7 +1608,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         fn check_moderator<T: Trait>(
             category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
-            moderator_id: &T::ModeratorId,
+            moderator_id: &ModeratorId<T>,
         ) -> Result<(), Error<T>> {
             for item in category_tree_path {
                 if <CategoryByModerator<T>>::contains_key(item.0, moderator_id) {
@@ -1642,7 +1639,7 @@ impl<T: Trait> Module<T> {
     fn ensure_can_update_category_membership_of_moderator(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
-        moderator_id: &T::ModeratorId,
+        moderator_id: &ModeratorId<T>,
         new_value: bool,
     ) -> Result<(), Error<T>> {
         // Not signed by forum LEAD

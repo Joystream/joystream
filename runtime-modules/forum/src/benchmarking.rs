@@ -373,7 +373,7 @@ benchmarks! {
 
         let new_value_flag = true;
 
-    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), (moderator_id as u64).into(), category_id, new_value_flag)
+    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag)
     verify {
         let num_direct_moderators = 1;
 
@@ -389,7 +389,7 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated((moderator_id as u64).into(), category_id, new_value_flag).into());
+        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag).into());
 
     }
     update_category_membership_of_moderator_old{
@@ -405,12 +405,12 @@ benchmarks! {
 
         // Set up category membership of moderator.
         Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), (moderator_id as u64).into(), category_id, true
+            RawOrigin::Signed(caller_id.clone()).into(),  ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, true
         ).unwrap();
 
         let new_value_flag = false;
 
-    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), (moderator_id as u64).into(), category_id, new_value_flag)
+    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag)
     verify {
         let num_direct_moderators = 0;
 
@@ -426,7 +426,7 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated((moderator_id as u64).into(), category_id, new_value_flag).into());
+        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag).into());
 
     }
     update_category_archival_status{

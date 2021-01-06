@@ -451,21 +451,18 @@ impl content_directory::Trait for Runtime {
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type WorkingGroup = ContentDirectoryWorkingGroup;
 }
 
-impl minting::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type MintId = u64;
-}
+impl content_directory::ActorAuthenticator for Runtime {
+    type CuratorGroupId = u64;
 
-impl recurring_rewards::Trait for Runtime {
-    type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
+    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            member_id, account_id,
+        )
+        .is_ok()
+    }
 }
 
 // The referendum instance alias.
@@ -600,6 +597,7 @@ parameter_types! {
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
+    type WorkingGroup = StorageWorkingGroup;
 }
 
 impl storage::data_directory::Trait for Runtime {
@@ -651,40 +649,17 @@ impl forum::StorageLimits for MapLimits {
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
-// Alias for forum working group
-type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
-
 impl forum::Trait for Runtime {
     type Event = Event;
-    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type ForumUserId = ForumUserId;
-    type ModeratorId = ModeratorId;
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
     type WeightInfo = weights::forum::WeightInfo;
-
-    fn is_lead(_account_id: &AccountId) -> bool {
-        // get current lead id
-        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
-        if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) = working_group::ensure_worker_exists::<
-                Runtime,
-                ForumWorkingGroupInstance,
-            >(current_lead_id)
-            {
-                *_account_id == worker.role_account_id
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
 
     fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
         membership::Module::<Runtime>::ensure_is_controller_account_for_member(
@@ -694,19 +669,11 @@ impl forum::Trait for Runtime {
         .is_ok()
     }
 
-    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
-        if let Ok(worker) =
-            working_group::ensure_worker_exists::<Runtime, ForumWorkingGroupInstance>(_moderator_id)
-        {
-            *_account_id == worker.role_account_id
-        } else {
-            false
-        }
-    }
-
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
     }
+
+    type WorkingGroup = ForumWorkingGroup;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -721,7 +688,7 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
-pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
@@ -881,7 +848,6 @@ parameter_types! {
 
 /// Forum identifiers for user, moderator and category
 pub type ForumUserId = u64;
-pub type ModeratorId = u64;
 pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -931,8 +897,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Minting: minting::{Module, Call, Storage},
-        RecurringRewards: recurring_rewards::{Module, Call, Storage},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         // --- Storage

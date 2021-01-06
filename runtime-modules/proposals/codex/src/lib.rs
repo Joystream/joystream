@@ -59,7 +59,7 @@ mod types;
 mod tests;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::Get;
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
@@ -92,8 +92,6 @@ pub trait Trait:
     + proposals_discussion::Trait
     + common::Trait
     + staking::Trait
-    + common::currency::GovernanceCurrency
-    + minting::Trait
 {
     /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<
@@ -168,16 +166,6 @@ pub type GeneralProposalParameters<T> = GeneralProposalParams<
     <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
 >;
-
-/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
-pub type BalanceOfGovernanceCurrency<T> =
-    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as frame_system::Trait>::AccountId,
-    >>::Balance;
-
-/// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
-pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 decl_error! {
     /// Codex module predefined errors
@@ -399,11 +387,11 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::Spending(ref balance, _) => {
                 ensure!(
-                    *balance != BalanceOfMint::<T>::zero(),
+                    *balance != BalanceOf::<T>::zero(),
                     Error::<T>::InvalidSpendingProposalBalance
                 );
                 ensure!(
-                    *balance <= <BalanceOfMint<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
+                    *balance <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
                     Error::<T>::InvalidSpendingProposalBalance
                 );
             }
@@ -426,8 +414,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SetWorkingGroupBudgetCapacity(ref mint_balance, _) => {
                 ensure!(
-                    *mint_balance
-                        <= <BalanceOfMint<T>>::from(WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE),
+                    *mint_balance <= <BalanceOf<T>>::from(WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE),
                     Error::<T>::InvalidWorkingGroupBudgetCapacity
                 );
             }
