@@ -36,7 +36,8 @@ runtime-benchmarks = [
     'frame-benchmarking',
 	'membership',
 	'working-group',
-	'staking-handler'
+	'staking-handler',
+	'balances'
 ]
 std = [
 	'serde',
