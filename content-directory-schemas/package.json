@@ -14,9 +14,9 @@
     "generate:types": "ts-node --files ./scripts/schemasToTS.ts",
     "generate:entity-schemas": "ts-node ./scripts/inputSchemasToEntitySchemas.ts",
     "generate:all": "yarn generate:entity-schemas && yarn generate:types",
-    "initialize:alice-as-lead": "ts-node ./scripts/devInitAliceLead.ts",
+    "initialize:lead": "ts-node ./scripts/devInitContentLead.ts",
     "initialize:content-dir": "ts-node ./scripts/initializeContentDir.ts",
-    "initialize:dev": "yarn initialize:alice-as-lead && yarn initialize:content-dir",
+    "initialize:dev": "yarn initialize:lead && yarn initialize:content-dir",
     "example:createChannel": "ts-node ./examples/createChannel.ts",
     "example:createVideo": "ts-node ./examples/createVideo.ts",
     "example:updateChannelHandle": "ts-node ./examples/updateChannelHandle.ts",
@@ -48,5 +48,9 @@
   "volta": {
     "node": "12.18.2",
     "yarn": "1.22.4"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

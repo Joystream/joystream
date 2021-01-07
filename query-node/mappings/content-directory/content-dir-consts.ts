@@ -1,4 +1,4 @@
-import { IPropertyWithId } from '../types'
+import { IKnownClass, IPropertyWithId } from '../types'
 
 // Content directory predefined class names
 export enum ContentDirectoryKnownClasses {
@@ -18,7 +18,7 @@ export enum ContentDirectoryKnownClasses {
 }
 
 // Predefined content-directory classes, classId may change after the runtime seeding
-export const contentDirectoryClassNamesWithId: { classId: number; name: string }[] = [
+export const contentDirectoryClassNamesWithId: IKnownClass[] = [
   { name: ContentDirectoryKnownClasses.CHANNEL, classId: 1 },
   { name: ContentDirectoryKnownClasses.CATEGORY, classId: 2 },
   { name: ContentDirectoryKnownClasses.HTTPMEDIALOCATION, classId: 3 },

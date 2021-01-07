@@ -11,11 +11,13 @@ import { LicenseEntity } from '../../generated/graphql-server/src/modules/licens
 import { MediaLocationEntity } from '../../generated/graphql-server/src/modules/media-location-entity/media-location-entity.model'
 import { Video } from '../../generated/graphql-server/src/modules/video/video.model'
 import { NextEntityId } from '../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
+import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
 import { decode } from './decode'
 import {
   categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
+  contentDirectoryClassNamesWithId,
   httpMediaLocationPropertyNamesWithId,
   joystreamMediaLocationPropertyNamesWithId,
   knownLicensePropertyNamesWIthId,
@@ -34,6 +36,7 @@ import {
   IEntity,
   IHttpMediaLocation,
   IJoystreamMediaLocation,
+  IKnownClass,
   IKnownLicense,
   ILanguage,
   ILicense,
@@ -43,6 +46,7 @@ import {
   IVideo,
   IVideoMedia,
   IVideoMediaEncoding,
+  IWhereCond,
 } from '../types'
 
 import {
@@ -370,24 +374,19 @@ async function mediaLocation(
   location: IReference,
   nextEntityIdBeforeTransaction: number
 ): Promise<MediaLocationEntity> {
-  let loc: MediaLocationEntity | undefined
   const { entityId, existing } = location
+  // Relationships to be loaded
+  const relations = ['httpMediaLocation', 'joystreamMediaLocation']
   if (existing) {
-    loc = await db.get(MediaLocationEntity, { where: { id: entityId.toString() } })
+    const loc = await db.get(MediaLocationEntity, { where: { id: entityId.toString() }, relations })
     if (!loc) throw Error(`MediaLocation entity not found`)
     return loc
   }
+  // Could be created in the same transaction so try to query
   const id = generateEntityIdFromIndex(nextEntityIdBeforeTransaction + entityId)
-
-  // could be created in the transaction
-  loc = await db.get(MediaLocationEntity, {
-    where: { id },
-    relations: ['httpMediaLocation', 'joystreamMediaLocation'],
-  })
-  if (loc) {
-    return loc
-  }
-
+  const loc = await db.get(MediaLocationEntity, { where: { id }, relations })
+  if (loc) return loc
+  // Create entity
   const { properties } = findEntity(entityId, 'MediaLocation', classEntityMap)
   return await createMediaLocation(
     { db, block, id },
@@ -421,6 +420,17 @@ async function video(
     decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
     nextEntityIdBeforeTransaction
   )
+}
+
+export async function getKnownClass(db: DB, where: IWhereCond): Promise<[IKnownClass | undefined, ClassEntity]> {
+  const ce = await db.get(ClassEntity, where)
+  if (!ce) {
+    throw Error(`Class not found for the EntityId: ${where.where.id} or the entity has not been created.`)
+  }
+
+  const knownClass = contentDirectoryClassNamesWithId.find((c) => c.classId === ce.classId)
+  if (!knownClass) console.log('Unknown class')
+  return [knownClass, ce]
 }
 
 export const getOrCreate = {

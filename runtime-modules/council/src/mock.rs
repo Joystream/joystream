@@ -5,12 +5,13 @@ use crate::{
     AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
     CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
     CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
-    ReferendumConnection, Stage, Trait,
+    ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
+use frame_support::weights::Weight;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
@@ -100,6 +101,8 @@ impl Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
+    type WeightInfo = ();
+
     fn is_council_member_account(
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -119,6 +122,39 @@ impl Trait for Runtime {
 impl common::StakingAccountValidator<Runtime> for () {
     fn is_member_staking_account(_: &u64, _: &u64) -> bool {
         true
+    }
+}
+
+impl WeightInfo for () {
+    fn try_process_budget() -> Weight {
+        0
+    }
+    fn try_progress_stage_idle() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_start_election() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_restart() -> Weight {
+        0
+    }
+    fn announce_candidacy() -> Weight {
+        0
+    }
+    fn release_candidacy_stake() -> Weight {
+        0
+    }
+    fn set_candidacy_note(_: u32) -> Weight {
+        0
+    }
+    fn withdraw_candidacy() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn plan_budget_refill() -> Weight {
+        0
     }
 }
 
@@ -230,6 +266,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
+    type WeightInfo = ReferendumWeightInfo;
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -286,6 +323,34 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 }
 
+pub struct ReferendumWeightInfo;
+impl referendum::WeightInfo for ReferendumWeightInfo {
+    fn on_finalize_revealing(_: u32) -> Weight {
+        0
+    }
+    fn on_finalize_voting() -> Weight {
+        0
+    }
+    fn vote() -> Weight {
+        0
+    }
+    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_already_existing(_: u32) -> Weight {
+        0
+    }
+    fn release_vote_stake() -> Weight {
+        0
+    }
+}
+
 impl balances::Trait for Runtime {
     type Balance = u64;
     type Event = TestEvent;
@@ -313,6 +378,21 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
 
     fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
         unimplemented!();
+    }
+
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Runtime as frame_system::Trait>::AccountId,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!()
     }
 }
 

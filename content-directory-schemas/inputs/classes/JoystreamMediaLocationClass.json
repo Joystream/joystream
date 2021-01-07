@@ -1,7 +1,7 @@
 {
   "name": "JoystreamMediaLocation",
   "description": "An object describing location of media object in a format specific to Joystream platform",
-  "maximum_entities_count": 400,
-  "default_entity_creation_voucher_upper_bound": 50,
+  "maximum_entities_count": 5000,
+  "default_entity_creation_voucher_upper_bound": 100,
   "class_permissions": { "any_member": true }
 }

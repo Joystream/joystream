@@ -421,13 +421,13 @@ parameter_types! {
     pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
     pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
     pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 400;
+    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
     pub const VecMaxLengthConstraint: VecMaxLength = 200;
     pub const TextMaxLengthConstraint: TextMaxLength = 5000;
     pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 50;
+    pub const IndividualEntitiesCreationLimit: EntityId = 500;
 }
 
 impl content_directory::Trait for Runtime {
@@ -450,6 +450,18 @@ impl content_directory::Trait for Runtime {
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type WorkingGroup = ContentDirectoryWorkingGroup;
+}
+
+impl content_directory::ActorAuthenticator for Runtime {
+    type CuratorGroupId = u64;
+
+    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            member_id, account_id,
+        )
+        .is_ok()
+    }
 }
 
 // The referendum instance alias.
@@ -493,6 +505,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
+
+    type WeightInfo = weights::referendum::WeightInfo;
 
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
@@ -555,6 +569,8 @@ impl council::Trait for Runtime {
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
+    type WeightInfo = weights::council::WeightInfo;
+
     fn is_council_member_account(
         membership_id: &Self::MemberId,
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -584,6 +600,7 @@ parameter_types! {
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
+    type WorkingGroup = StorageWorkingGroup;
 }
 
 impl storage::data_directory::Trait for Runtime {
@@ -635,39 +652,16 @@ impl forum::StorageLimits for MapLimits {
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
-// Alias for forum working group
-type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
-
 impl forum::Trait for Runtime {
     type Event = Event;
-    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type ForumUserId = ForumUserId;
-    type ModeratorId = ModeratorId;
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
-
-    fn is_lead(_account_id: &AccountId) -> bool {
-        // get current lead id
-        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
-        if let Some(ref current_lead_id) = maybe_current_lead_id {
-            if let Ok(worker) = working_group::ensure_worker_exists::<
-                Runtime,
-                ForumWorkingGroupInstance,
-            >(current_lead_id)
-            {
-                *_account_id == worker.role_account_id
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
 
     fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
         membership::Module::<Runtime>::ensure_is_controller_account_for_member(
@@ -677,19 +671,11 @@ impl forum::Trait for Runtime {
         .is_ok()
     }
 
-    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
-        if let Ok(worker) =
-            working_group::ensure_worker_exists::<Runtime, ForumWorkingGroupInstance>(_moderator_id)
-        {
-            *_account_id == worker.role_account_id
-        } else {
-            false
-        }
-    }
-
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hash::from_slice(text)
     }
+
+    type WorkingGroup = ForumWorkingGroup;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -704,7 +690,7 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
-pub type StorageWorkingGroupInstance = storage::StorageWorkingGroupInstance;
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
@@ -864,7 +850,6 @@ parameter_types! {
 
 /// Forum identifiers for user, moderator and category
 pub type ForumUserId = u64;
-pub type ModeratorId = u64;
 pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

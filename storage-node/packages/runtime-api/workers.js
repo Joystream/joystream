@@ -150,8 +150,8 @@ class WorkersApi {
    * Add a new storage group opening using the lead account. Returns the
    * new opening id.
    */
-  async devAddStorageOpening() {
-    const openTx = this.devMakeAddOpeningTx('Worker')
+  async devAddStorageOpening(info) {
+    const openTx = this.devMakeAddOpeningTx('Worker', info)
     return this.devSubmitAddOpeningTx(openTx, await this.getLeadRoleAccount())
   }
 
@@ -159,8 +159,8 @@ class WorkersApi {
    * Add a new storage working group lead opening using sudo account. Returns the
    * new opening id.
    */
-  async devAddStorageLeadOpening() {
-    const openTx = this.devMakeAddOpeningTx('Leader')
+  async devAddStorageLeadOpening(info) {
+    const openTx = this.devMakeAddOpeningTx('Leader', info)
     const sudoTx = this.base.api.tx.sudo.sudo(openTx)
     return this.devSubmitAddOpeningTx(sudoTx, await this.base.identities.getSudoAccount())
   }
@@ -168,17 +168,17 @@ class WorkersApi {
   /*
    * Constructs an addOpening tx of openingType
    */
-  devMakeAddOpeningTx(openingType) {
+  devMakeAddOpeningTx(openingType, info) {
     return this.base.api.tx.storageWorkingGroup.addOpening(
       'CurrentBlock',
       {
         application_rationing_policy: {
           max_active_applicants: 1,
         },
-        max_review_period_length: 1000,
+        max_review_period_length: 10,
         // default values for everything else..
       },
-      'dev-opening',
+      info || 'dev-opening',
       openingType
     )
   }

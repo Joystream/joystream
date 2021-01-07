@@ -29,9 +29,6 @@ function cleanup() {
 
 trap cleanup EXIT
 
-# We expect docker image to be started by test runner
-export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
-
 # Bring up db
 docker-compose up -d db
 
@@ -40,8 +37,10 @@ yarn workspace query-node-root db:migrate
 
 docker-compose up -d graphql-server
 
+# Start the joystream-node before the indexer
+docker-compose up -d joystream-node
+
 # Starting up processor will bring up all services it depends on
 docker-compose up -d processor
 
-# Run tests
-ATTACH_TO_NETWORK=joystream_default ../tests/network-tests/run-tests.sh content-directory
+time yarn workspace network-tests run-test-scenario content-directory

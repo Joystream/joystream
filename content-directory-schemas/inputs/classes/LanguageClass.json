@@ -1,6 +1,6 @@
 {
   "name": "Language",
   "description": "A language in which the content on the platform may be published",
-  "maximum_entities_count": 100,
-  "default_entity_creation_voucher_upper_bound": 50
+  "maximum_entities_count": 500,
+  "default_entity_creation_voucher_upper_bound": 500
 }
