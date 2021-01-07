@@ -24,7 +24,9 @@ pub mod pallet_timestamp;
 pub mod pallet_utility;
 
 // Joystream pallets
+pub mod council;
 pub mod pallet_constitution;
 pub mod proposals_discussion;
 pub mod proposals_engine;
+pub mod referendum;
 pub mod working_group;

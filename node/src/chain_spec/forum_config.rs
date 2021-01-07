@@ -10,7 +10,7 @@ use std::{fs, path::Path};
 
 type CategoryId = <Runtime as forum::Trait>::CategoryId;
 type ForumUserId = <Runtime as forum::Trait>::ForumUserId;
-type ModeratorId = <Runtime as forum::Trait>::ModeratorId;
+type ModeratorId = forum::ModeratorId<Runtime>;
 type ThreadOf = (
     CategoryId,
     ThreadId,

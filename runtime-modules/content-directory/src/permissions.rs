@@ -18,34 +18,10 @@ pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
+use common::working_group::WorkingGroupIntegration;
+
 /// Model of authentication manager.
-pub trait ActorAuthenticator: frame_system::Trait {
-    /// Curator identifier
-    type CuratorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// Member identifier
-    type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
+pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
     /// Curator group identifier
     type CuratorGroupId: Parameter
         + Member
@@ -59,23 +35,17 @@ pub trait ActorAuthenticator: frame_system::Trait {
         + PartialEq
         + Ord;
 
-    /// Authorize actor as lead
-    fn is_lead(account_id: &Self::AccountId) -> bool;
-
-    /// Authorize actor as curator
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
-
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
 
 /// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(
-    curator_id: &T::CuratorId,
+    curator_id: &CuratorId<T>,
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
     ensure!(
-        T::is_curator(curator_id, account_id),
+        T::WorkingGroup::is_worker_account_id(account_id, curator_id),
         Error::<T>::CuratorAuthFailed
     );
     Ok(())
@@ -95,7 +65,10 @@ pub fn ensure_member_auth_success<T: Trait>(
 
 /// Ensure lead authorization performed succesfully
 pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(), Error<T>> {
-    ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
+    ensure!(
+        T::WorkingGroup::is_leader_account_id(account_id),
+        Error::<T>::LeadAuthFailed
+    );
     Ok(())
 }
 

@@ -9,8 +9,5 @@ mod tests;
 
 pub use common::MemberId;
 
-/// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
 /// Storage provider is a worker from the working group module.
 pub type StorageProviderId<T> = working_group::WorkerId<T>;
