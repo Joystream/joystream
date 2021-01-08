@@ -576,8 +576,19 @@ decl_module! {
             Ok(())
         }
 
-        /// Update category
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Update archival status
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the category depth
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoForum::<T>::update_category_archival_status(
+            T::MaxCategoryDepth::get() as u32,
+        )]
         fn update_category_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, new_archival_status: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
