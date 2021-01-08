@@ -628,6 +628,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = MembershipWorkingGroup;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = InvitedMemberStakingManager;
 }
 
 parameter_types! {
@@ -716,6 +717,8 @@ pub type StorageWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
 pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
+pub type InvitedMemberStakingManager =
+    staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;

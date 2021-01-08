@@ -55,7 +55,8 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::{WorkingGroupBudgetHandler, WorkingGroupIntegration};
+use staking_handler::StakingHandler;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -70,10 +71,18 @@ pub trait Trait:
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
+
+    /// Staking handler used for invited member staking.
+    type InvitedMemberStakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        Self::MemberId,
+    >;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
@@ -210,6 +219,10 @@ decl_error! {
 
         /// Staking account has already been confirmed.
         StakingAccountAlreadyConfirmed,
+
+        /// Cannot invite a member. Working group balance is not sufficient to set the default
+        /// balance.
+        WorkingGroupBudgetIsNotSufficientForInviting,
     }
 }
 
@@ -547,6 +560,14 @@ decl_module! {
                 params.handle,
             )?;
 
+            let current_wg_budget = T::WorkingGroup::get_budget();
+            let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+
+            ensure!(
+                default_invitation_balance <= current_wg_budget,
+                Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
+            );
+
             //
             // == MUTATION SAFE ==
             //
@@ -562,6 +583,16 @@ decl_module! {
             <MembershipById<T>>::mutate(&member_id, |membership| {
                 membership.invites = membership.invites.saturating_sub(1);
             });
+
+            // Decrease the working group balance.
+            let new_wg_budget = current_wg_budget - default_invitation_balance;
+            T::WorkingGroup::set_budget(new_wg_budget);
+
+            // Lock invitation balance.
+            T::InvitedMemberStakingHandler::lock(
+                &params.controller_account,
+                default_invitation_balance
+            );
 
             // Fire the event.
             Self::deposit_event(RawEvent::MemberRegistered(member_id));

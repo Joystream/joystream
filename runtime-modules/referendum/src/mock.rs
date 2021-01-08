@@ -29,6 +29,8 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
+use staking_handler::LockComparator;
+
 use crate::GenesisConfig;
 
 pub const USER_ADMIN: u64 = 1;
@@ -162,6 +164,7 @@ impl WeightInfo for () {
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl membership::Trait for Runtime {
@@ -169,6 +172,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
 impl pallet_timestamp::Trait for Runtime {
@@ -176,6 +180,25 @@ impl pallet_timestamp::Trait for Runtime {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
 }
 
 impl common::working_group::WorkingGroupIntegration<Runtime> for () {

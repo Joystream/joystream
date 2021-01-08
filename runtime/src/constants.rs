@@ -47,6 +47,7 @@ parameter_types! {
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
     pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
+    pub const InvitedMemberLockId: LockIdentifier = [10; 8];
 }
 
 lazy_static! {

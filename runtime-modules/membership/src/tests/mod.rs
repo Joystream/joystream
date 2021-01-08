@@ -7,6 +7,7 @@ use crate::{Error, Event};
 use fixtures::*;
 use mock::*;
 
+use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
@@ -495,7 +496,30 @@ fn invite_member_succeeds() {
             vec![bob_member_id]
         );
 
+        assert_eq!(
+            WORKING_GROUP_BUDGET - <Test as Trait>::DefaultInitialInvitationBalance::get(),
+            <Test as Trait>::WorkingGroup::get_budget()
+        );
+
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_insufficient_working_group_balance() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        WG_BUDGET.with(|val| {
+            *val.borrow_mut() = 50;
+        });
+
+        InviteMembershipFixture::default().call_and_assert(Err(
+            Error::<Test>::WorkingGroupBudgetIsNotSufficientForInviting.into(),
+        ));
     });
 }
 

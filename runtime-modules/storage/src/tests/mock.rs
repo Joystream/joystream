@@ -155,6 +155,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [2; 8];
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -286,6 +287,17 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
 }
 
 impl common::working_group::WorkingGroupIntegration<Test> for () {

@@ -24,6 +24,7 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
 
 [features]
 default = ['std']

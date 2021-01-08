@@ -864,7 +864,7 @@ decl_module! {
             //
 
             // Update the budget.
-            <Budget::<T, I>>::put(new_budget);
+            Self::set_working_group_budget(new_budget);
 
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSet(new_budget));
@@ -1331,6 +1331,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         false
     }
 
+    // Sets the working group budget.
+    fn set_working_group_budget(new_budget: BalanceOf<T>) {
+        <Budget<T, I>>::put(new_budget);
+    }
+
     /// Returns all existing worker id list.
     pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
         <WorkerById<T, I>>::iter()
@@ -1363,5 +1368,17 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
         checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
+    for Module<T, I>
+{
+    fn get_budget() -> BalanceOf<T> {
+        Self::budget()
+    }
+
+    fn set_budget(new_value: BalanceOf<T>) {
+        Self::set_working_group_budget(new_value);
     }
 }
