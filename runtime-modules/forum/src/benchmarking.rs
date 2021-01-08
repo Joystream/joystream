@@ -360,6 +360,7 @@ benchmarks! {
             }
             assert_last_event::<T>(RawEvent::CategoryCreated(category_id).into());
     }
+
     update_category_membership_of_moderator_new{
         let moderator_id = 0;
 
@@ -373,7 +374,9 @@ benchmarks! {
 
         let new_value_flag = true;
 
-    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag)
+    }: update_category_membership_of_moderator(
+        RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag
+    )
     verify {
         let num_direct_moderators = 1;
 
@@ -389,9 +392,16 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag).into());
+        assert!(<CategoryByModerator<T>>::contains_key(category_id, ModeratorId::<T>::from((moderator_id).try_into().unwrap())));
+
+        assert_last_event::<T>(
+            RawEvent::CategoryMembershipOfModeratorUpdated(
+                ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag
+            ).into()
+        );
 
     }
+
     update_category_membership_of_moderator_old{
         let moderator_id = 0;
 
@@ -410,7 +420,9 @@ benchmarks! {
 
         let new_value_flag = false;
 
-    }: update_category_membership_of_moderator(RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag)
+    }: update_category_membership_of_moderator(
+        RawOrigin::Signed(caller_id), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag
+    )
     verify {
         let num_direct_moderators = 0;
 
@@ -426,9 +438,15 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryMembershipOfModeratorUpdated(ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag).into());
+        assert!(!<CategoryByModerator<T>>::contains_key(category_id, ModeratorId::<T>::from((moderator_id).try_into().unwrap())));
 
+        assert_last_event::<T>(
+            RawEvent::CategoryMembershipOfModeratorUpdated(
+                ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, new_value_flag
+            ).into()
+        );
     }
+
     update_category_archival_status{
         let lead_id = 0;
 
@@ -460,6 +478,7 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
         assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
     }
+
     delete_category {
 
         let lead_id = 0;
@@ -501,6 +520,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::CategoryDeleted(category_id).into());
     }
+
     create_thread {
         let forum_user_id = 0;
         let caller_id =
@@ -566,6 +586,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadCreated(next_thread_id).into());
     }
+
     edit_thread_title {
         let forum_user_id = 0;
 
@@ -595,6 +616,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadTitleUpdated(thread_id).into());
     }
+
     update_thread_archival_status {
         let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
@@ -619,6 +641,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
     }
+
     delete_thread {
         let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
@@ -631,7 +654,9 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
@@ -657,6 +682,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
     }
+
     move_thread_to_category {
         let i in 0 .. T::MaxCategoryDepth::get() as u32;
 
@@ -711,6 +737,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadMoved(thread_id, new_category_id).into());
     }
+
     vote_on_poll {
 
         let forum_user_id = 0;
@@ -759,6 +786,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, j - 1).into());
     }
+
     moderate_thread {
         let lead_id = 0;
 
@@ -776,7 +804,9 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
         let thread_id = create_new_thread::<T>(
@@ -803,6 +833,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ThreadModerated(thread_id, rationale).into());
     }
+
     add_post {
 
         let forum_user_id = 0;
@@ -844,6 +875,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::PostAdded(post_id).into());
     }
+
     react_post {
 
         let forum_user_id = 0;
@@ -857,7 +889,9 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
@@ -873,6 +907,7 @@ benchmarks! {
     verify {
         assert_last_event::<T>(RawEvent::PostReacted(forum_user_id.into(), post_id, react).into());
     }
+
     edit_post_text {
         let forum_user_id = 0;
         let caller_id =
@@ -887,7 +922,9 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
@@ -911,6 +948,7 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::PostTextUpdated(post_id).into());
 
     }
+
     moderate_post {
         let forum_user_id = 0;
         let caller_id =
@@ -925,7 +963,9 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
@@ -947,6 +987,7 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::PostModerated(post_id, rationale).into());
     }
+
     set_stickied_threads {
         let forum_user_id = 0;
         let caller_id =
@@ -961,7 +1002,9 @@ benchmarks! {
 
         // Create threads
         let expiration_diff = 10.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32));
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let stickied_ids: Vec<T::ThreadId> = (0..j)
