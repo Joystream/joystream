@@ -55,14 +55,11 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
+use common::working_group::WorkingGroup;
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
-use working_group::{
-    ContentDirectoryWorkingGroupInstance, ForumWorkingGroupInstance,
-    MembershipWorkingGroupInstance, StorageWorkingGroupInstance,
-};
 
 // Node dependencies
 pub use common;
@@ -684,6 +681,18 @@ pub type MembershipWorkingGroupStakingManager =
 pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
 
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
+
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -781,6 +790,17 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
+macro_rules! call_wg {
+    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Storage => working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Forum => working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Membership => working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
+        }
+    }};
+}
+
 impl proposals_codex::Trait for Runtime {
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
@@ -811,6 +831,12 @@ impl proposals_codex::Trait for Runtime {
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
+    fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
+        call_wg!(working_group<Runtime>, get_budget)
+    }
+    fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
+        call_wg!(working_group<Runtime>, put_budget, budget)
+    }
 }
 
 impl pallet_constitution::Trait for Runtime {

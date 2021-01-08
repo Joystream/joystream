@@ -1041,6 +1041,16 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    // Set working group budget
+    pub fn put_budget(new_budget: BalanceOf<T>) {
+        <Budget<T, I>>::put(new_budget);
+    }
+
+    // Gets working group budget
+    pub fn get_budget() -> BalanceOf<T> {
+        Self::budget()
+    }
+
     // Calculate weight for on_initialize
     // We assume worst case scenario in a safe manner
     // We take the most number of workers that will be processed and use it as input of the most costly function

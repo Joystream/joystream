@@ -14,7 +14,9 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
+use crate::BalanceOf;
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use common::working_group::WorkingGroup;
 use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
@@ -457,6 +459,17 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
     }
 }
 
+macro_rules! call_wg {
+    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Storage => working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Forum => working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Membership => working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
+        }
+    }};
+}
+
 impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
@@ -481,6 +494,13 @@ impl crate::Trait for Test {
     type SetInvitationCountProposalParameters = DefaultProposalParameters;
     type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
     type SetReferralCutProposalParameters = DefaultProposalParameters;
+
+    fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
+        call_wg!(working_group<Test>, get_budget)
+    }
+    fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
+        call_wg!(working_group<Test>, put_budget, budget)
+    }
 }
 
 parameter_types! {

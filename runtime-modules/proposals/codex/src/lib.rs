@@ -82,10 +82,6 @@ use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
-use working_group::{
-    ContentDirectoryWorkingGroupInstance, ForumWorkingGroupInstance,
-    MembershipWorkingGroupInstance, StorageWorkingGroupInstance,
-};
 
 use common::working_group::WorkingGroup;
 
@@ -139,10 +135,6 @@ pub trait Trait:
     + common::Trait
     + council::Trait
     + staking::Trait
-    + working_group::Trait<ForumWorkingGroupInstance>
-    + working_group::Trait<StorageWorkingGroupInstance>
-    + working_group::Trait<ContentDirectoryWorkingGroupInstance>
-    + working_group::Trait<MembershipWorkingGroupInstance>
 {
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
@@ -235,21 +227,31 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Initial Invitation Balance` proposal parameters
     type SetInitialInvitationBalanceProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Invitation Count` proposal parameters
     type SetInvitationCountProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Membership Lead Invitaiton Quota` proposal parameters
     type SetMembershipLeadInvitationQuotaProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Referral Cut` proposal parameters
     type SetReferralCutProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// Gets the budget of the given WorkingGroup
+    fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Self>;
+
+    /// Sets the budget for the given WorkingGroup
+    fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Self>);
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -328,20 +330,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
     }
-}
-
-// Calls the function $function in the instance corresponding to $working_group with
-// arguments in $x
-#[macro_export]
-macro_rules! call_wg {
-    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
-        match $working_group {
-            WorkingGroup::Content => working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Storage => working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Forum => working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Membership => working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
-        }
-    }};
 }
 
 decl_module! {
@@ -546,20 +534,20 @@ decl_module! {
             ensure_root(origin.clone())?;
 
 
-            let wg_budget = call_wg!(working_group<T>, budget);
+            let wg_budget = T::get_working_group_budget(working_group);
             let current_budget = Council::<T>::budget();
 
             match balance_kind {
                 BalanceKind::Positive => {
                     ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
 
-                    call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget.saturating_add(amount))?;
+                    T::set_working_group_budget(working_group, wg_budget.saturating_add(amount));
                     Council::<T>::set_budget(origin, current_budget - amount)?;
                 },
                 BalanceKind::Negative => {
                     ensure!(amount <= wg_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
 
-                    call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget - amount)?;
+                    T::set_working_group_budget(working_group, wg_budget - amount);
                     Council::<T>::set_budget(origin, current_budget.saturating_add(amount))?;
                 }
             }

@@ -18,8 +18,6 @@ use sp_std::prelude::*;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-use crate::call_wg;
-
 // Note: We use proposals_engine::Trait::Event here because crate::Trait
 // doesn't implement Event and we only use this function to assert events
 // from the proposals_engine pallet
@@ -177,13 +175,7 @@ fn create_proposal_verify<T: Trait>(
 fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
     Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
 
-    call_wg!(
-        group<T>,
-        set_budget,
-        RawOrigin::Root.into(),
-        BalanceOf::<T>::from(budget)
-    )
-    .unwrap();
+    T::set_working_group_budget(group, BalanceOf::<T>::from(budget));
 
     assert_eq!(
         Council::<T>::budget(),
@@ -192,7 +184,7 @@ fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
     );
 
     assert_eq!(
-        call_wg!(group<T>, budget),
+        T::get_working_group_budget(group),
         BalanceOf::<T>::from(budget),
         "Working Group budget not updated"
     );
@@ -210,7 +202,7 @@ fn assert_new_budgets<T: Trait>(
     );
 
     assert_eq!(
-        call_wg!(group<T>, budget),
+        T::get_working_group_budget(group),
         BalanceOf::<T>::from(new_budget_working_group),
         "Working Group budget not updated"
     );
