@@ -136,6 +136,14 @@ class IdentitiesApi {
   }
 
   /*
+   * Return all the member IDs of an account by the controller account id
+   */
+  async memberIdsOfController(accountId) {
+    const decoded = this.keyring.decodeAddress(accountId)
+    return this.base.api.query.members.memberIdsByControllerAccountId(decoded)
+  }
+
+  /*
    * Return the first member ID of an account, or undefined if not a member root account.
    */
   async firstMemberIdOf(accountId) {

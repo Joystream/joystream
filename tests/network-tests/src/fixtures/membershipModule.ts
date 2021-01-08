@@ -1,7 +1,7 @@
 import { Api } from '../Api'
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Fixture, BaseFixture } from '../Fixture'
+import { BaseFixture } from '../Fixture'
 import { PaidTermId, MemberId } from '@joystream/types/members'
 import Debugger from 'debug'
 
@@ -22,8 +22,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
     return this.memberIds.slice()
   }
 
-  public async execute(expectFailure: boolean): Promise<void> {
-    this.debug(`Registering ${this.accounts.length} new members`)
+  async execute(): Promise<void> {
     // Fee estimation and transfer
     const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
     const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
@@ -31,6 +30,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
+
     this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
 
     this.memberIds = (
@@ -39,29 +39,31 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
           this.api.buyMembership(account, this.paidTerms, `member${account.substring(0, 14)}`)
         )
       )
-    ).map(({ events }) => this.api.expectMemberRegisteredEvent(events))
+    )
+      .map(({ events }) => this.api.findMemberRegisteredEvent(events))
+      .filter((id) => id !== undefined) as MemberId[]
 
-    this.debug(`New member ids: ${this.memberIds}`)
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
+    this.debug(`Registered ${this.memberIds.length} new members`)
+
+    assert.equal(this.memberIds.length, this.accounts.length)
   }
 }
 
-export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
-  private api: Api
+export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
   private account: string
   private paidTerms: PaidTermId
 
   public constructor(api: Api, account: string, paidTerms: PaidTermId) {
-    this.api = api
+    super(api)
     this.account = account
     this.paidTerms = paidTerms
   }
 
-  public async runner(expectFailure: boolean) {
+  async execute(): Promise<void> {
     // Assertions
-    this.api.getMemberIds(this.account).then((membership) => assert(membership.length === 0, 'Account A is a member'))
+    const membership = await this.api.getMemberIds(this.account)
+
+    assert(membership.length === 0, 'Account must not be associated with a member')
 
     // Fee estimation and transfer
     const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
@@ -70,25 +72,20 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    this.api.treasuryTransferBalance(this.account, membershipTransactionFee)
 
-    // Balance assertion
-    await this.api
-      .getBalance(this.account)
-      .then((balance) =>
-        assert(
-          balance.toBn() < membershipFee.add(membershipTransactionFee),
-          'Account A already have sufficient balance to purchase membership'
-        )
-      )
+    // Only provide enough funds for transaction fee but not enough to cover the membership fee
+    await this.api.treasuryTransferBalance(this.account, membershipTransactionFee)
 
-    // Buying memebership
-    await this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`, true)
+    const balance = await this.api.getBalance(this.account)
 
-    // Assertions
-    this.api.getMemberIds(this.account).then((membership) => assert(membership.length === 0, 'Account A is a member'))
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
+    assert(
+      balance.toBn() < membershipFee.add(membershipTransactionFee),
+      'Account already has sufficient balance to purchase membership'
+    )
+
+    this.expectDispatchError(
+      await this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`),
+      'Buying membership with insufficient funds should fail.'
+    )
   }
 }

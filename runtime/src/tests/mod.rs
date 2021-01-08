@@ -101,12 +101,14 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
         <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get().into();
     for (i, voter) in voters.iter().enumerate() {
         increase_total_balance_issuance_using_account_id(voter.clone().into(), voter_stake + 1);
+
         let commitment = Referendum::calculate_commitment(
             voter.into(),
             &[0u8],
             &cycle_id,
             &council_member_ids[i],
-        ); //TODO: fixme
+        );
+
         Referendum::vote(
             RawOrigin::Signed(voter.clone()).into(),
             commitment,

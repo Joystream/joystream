@@ -421,13 +421,13 @@ parameter_types! {
     pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
     pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
     pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 400;
+    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
     pub const VecMaxLengthConstraint: VecMaxLength = 200;
     pub const TextMaxLengthConstraint: TextMaxLength = 5000;
     pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 50;
+    pub const IndividualEntitiesCreationLimit: EntityId = 500;
 }
 
 impl content_directory::Trait for Runtime {
@@ -497,6 +497,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MinimumStake = MinimumVotingStake;
 
+    type WeightInfo = weights::referendum::WeightInfo;
+
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
         stake: &BalanceReferendum<Self, ReferendumInstance>,
@@ -557,6 +559,8 @@ impl council::Trait for Runtime {
 
     type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    type WeightInfo = weights::council::WeightInfo;
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();

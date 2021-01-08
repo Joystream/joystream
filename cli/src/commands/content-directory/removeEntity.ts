@@ -1,6 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { Actor } from '@joystream/types/content-directory'
-import { createType } from '@joystream/types'
 import ExitCodes from '../../ExitCodes'
 
 export default class RemoveEntityCommand extends ContentDirectoryCommandBase {
@@ -31,20 +30,9 @@ export default class RemoveEntityCommand extends ContentDirectoryCommandBase {
     }
 
     const account = await this.getRequiredSelectedAccount()
-    let actor: Actor
-    if (context === 'Curator') {
-      actor = await this.getCuratorContext([entityClass.name.toString()])
-    } else if (context === 'Member') {
-      const memberId = await this.getRequiredMemberId()
-      if (
-        !entity.entity_permissions.controller.isOfType('Member') ||
-        entity.entity_permissions.controller.asType('Member').toNumber() !== memberId
-      ) {
-        this.error('You are not the entity controller!', { exit: ExitCodes.AccessDenied })
-      }
-      actor = createType('Actor', { Member: memberId })
-    } else {
-      actor = createType('Actor', { Lead: null })
+    const actor: Actor = await this.getActor(context, entityClass)
+    if (!actor.isOfType('Curator') && !this.isActorEntityController(actor, entity, false)) {
+      this.error('You are not the entity controller!', { exit: ExitCodes.AccessDenied })
     }
 
     await this.requireConfirmation(

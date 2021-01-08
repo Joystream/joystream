@@ -28,6 +28,10 @@
       "@polkadot/joy-utils/*": [ "packages/joy-utils/src/*" ],
       "@polkadot/joy-forum": [ "packages/joy-forum/src/" ],
       "@polkadot/joy-forum/*": [ "packages/joy-forum/src/*" ],
+      "@polkadot/joy-media": [ "packages/joy-media/src" ],
+      "@polkadot/joy-media/*": [ "packages/joy-media/src/*" ],
+      "@polkadot/joy-tokenomics": [ "packages/joy-tokenomics/src" ],
+      "@polkadot/joy-tokenomics/*": [ "packages/joy-tokenomics/src/*" ],
       "@polkadot/apps/*": ["packages/apps/src/*"],
       "@polkadot/apps": ["packages/apps/src"],
       "@polkadot/apps-config/*": [ "packages/apps-config/src/*" ],
@@ -86,9 +90,7 @@
       "@polkadot/react-query": [ "packages/react-query/src" ],
       "@polkadot/react-query/*": [ "packages/react-query/src/*" ],
       "@polkadot/react-signer": [ "packages/react-signer/src" ],
-      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ],
-      "@polkadot/joy-tokenomics": [ "packages/joy-tokenomics/src" ],
-      "@polkadot/joy-tokenomics/*": [ "packages/joy-tokenomics/src/*" ]
+      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ]
     },
     "skipLibCheck": true,
     "typeRoots": [

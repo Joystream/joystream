@@ -1,9 +1,16 @@
 import BN from 'bn.js'
-import { Api } from '../../Api'
+import { FlowProps } from '../../Flow'
 import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
+import { FixtureRunner } from '../../Fixture'
+import Debugger from 'debug'
+import { Resource } from '../../Resources'
 
-export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv) {
+export default async function spendingProposal({ api, env, lock }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:spendingProposals')
+  debug('Started')
+  await lock(Resource.Proposals)
+
   const spendingBalance: BN = new BN(+env.SPENDING_BALANCE!)
   const mintCapacity: BN = new BN(+env.COUNCIL_MINTING_CAPACITY!)
 
@@ -16,5 +23,7 @@ export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv)
   const spendingProposalFixture = new SpendingProposalFixture(api, proposer, spendingBalance, mintCapacity)
 
   // Spending proposal test
-  await spendingProposalFixture.runner(false)
+  await new FixtureRunner(spendingProposalFixture).run()
+
+  debug('Done')
 }

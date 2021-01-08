@@ -31,18 +31,22 @@ const FLAG_DEFINITIONS = {
   keyFile: {
     type: 'string',
     isRequired: (flags, input) => {
-      // Only required if running server command and not in dev mode
-      const serverCmd = input[0] === 'server'
-      return !flags.dev && serverCmd
+      // Only required if running server command and not in dev or anonymous mode
+      if (flags.anonymous || flags.dev) {
+        return false
+      }
+      return input[0] === 'server'
     },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
     isRequired: (flags, input) => {
-      // Only required if running server command and not in dev mode
-      const serverCmd = input[0] === 'server'
-      return !flags.dev && serverCmd
+      // Only required if running server command and not in dev or anonymous mode
+      if (flags.anonymous || flags.dev) {
+        return false
+      }
+      return input[0] === 'server'
     },
   },
   passphrase: {
@@ -56,14 +60,20 @@ const FLAG_DEFINITIONS = {
     type: 'number',
     alias: 'i',
     isRequired: (flags, input) => {
-      // Only required if running server command and not in dev mode
-      const serverCmd = input[0] === 'server'
-      return !flags.dev && serverCmd
+      // Only required if running server command and not in dev or anonymous mode
+      if (flags.anonymous || flags.dev) {
+        return false
+      }
+      return input[0] === 'server'
     },
   },
   ipfsHost: {
     type: 'string',
     default: 'localhost',
+  },
+  anonymous: {
+    type: 'boolean',
+    default: false,
   },
 }
 
@@ -77,7 +87,7 @@ const cli = meow(
                   This is the default command if not specified.
     discovery     Run the discovery service only.
 
-  Arguments (required for server. Ignored if running server with --dev option):
+  Arguments (required for with server command, unless --dev or --anonymous args are used):
     --provider-id ID, -i ID     StorageProviderId assigned to you in working group.
     --key-file FILE             JSON key export file to use as the storage provider (role account).
     --public-url=URL, -u URL    API Public URL to announce.
@@ -88,6 +98,8 @@ const cli = meow(
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
     --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
     --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
+    --anonymous             Runs server in anonymous mode. Replicates content without need to register
+                            on-chain, and can serve content. Cannot be used to upload content.
   `,
   { flags: FLAG_DEFINITIONS }
 )
@@ -116,8 +128,8 @@ function startExpressApp(app, port) {
 }
 
 // Start app
-function startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api, discoveryClient, ipfsHttpGatewayUrl)
+function startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl, anonymous }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, discoveryClient, ipfsHttpGatewayUrl, anonymous)
   return startExpressApp(app, port)
 }
 
@@ -149,7 +161,7 @@ function getStorage(runtimeApi, { ipfsHost }) {
   return Storage.create(options)
 }
 
-async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
+async function initApiProduction({ wsProvider, providerId, keyFile, passphrase, anonymous }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
@@ -160,7 +172,7 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
     storageProviderId: providerId,
   })
 
-  if (!api.identities.key) {
+  if (!anonymous && !api.identities.key) {
     throw new Error('Failed to unlock storage provider account')
   }
 
@@ -168,7 +180,7 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
 
   // We allow the node to startup without correct provider id and account, but syncing and
   // publishing of identity will be skipped.
-  if (!(await api.providerIsActiveWorker())) {
+  if (!anonymous && !(await api.providerIsActiveWorker())) {
     debug('storage provider role account and storageProviderId are not associated with a worker')
   }
 
@@ -295,17 +307,19 @@ const commands = {
 
     const ipfsHost = cli.flags.ipfsHost
     const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
-    const { PublisherClient, DiscoveryClient } = require('@joystream/service-discovery')
-    const publisherClient = new PublisherClient(ipfs)
-    const discoveryClient = new DiscoveryClient({ ipfs, api })
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
 
     const { startSyncing } = require('../lib/sync')
-    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS, anonymous: cli.flags.anonymous }, store)
 
-    announcePublicUrl(api, publicUrl, publisherClient)
+    if (!cli.flags.anonymous) {
+      const { PublisherClient } = require('@joystream/service-discovery')
+      announcePublicUrl(api, publicUrl, new PublisherClient(ipfs))
+    }
 
-    return startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl })
+    const { DiscoveryClient } = require('@joystream/service-discovery')
+    const discoveryClient = new DiscoveryClient({ ipfs, api })
+    return startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl, anonymous: cli.flags.anonymous })
   },
   discovery: async () => {
     banner()
