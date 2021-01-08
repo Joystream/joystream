@@ -200,14 +200,17 @@ fn create_new_category<T: Trait>(
     title: Vec<u8>,
     description: Vec<u8>,
 ) -> T::CategoryId {
+    let category_id = Module::<T>::next_category_id();
+
     Module::<T>::create_category(
         RawOrigin::Signed(account_id).into(),
         parent_category_id,
         title,
         description,
-    )
-    .unwrap();
-    Module::<T>::next_category_id() - T::CategoryId::one()
+    ).unwrap();
+
+    assert!(<CategoryById<T>>::contains_key(category_id));
+    category_id
 }
 
 fn create_new_thread<T: Trait>(
@@ -415,7 +418,7 @@ benchmarks! {
 
         // Set up category membership of moderator.
         Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(),  ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, true
+            RawOrigin::Signed(caller_id.clone()).into(), ModeratorId::<T>::from((moderator_id).try_into().unwrap()), category_id, true
         ).unwrap();
 
         let new_value_flag = false;
