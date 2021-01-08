@@ -371,6 +371,9 @@ decl_event! {
 
         /// Councilor reward has been updated.
         CouncilorRewardUpdated(Balance),
+
+        /// Request has been funded
+        RequestFunded(AccountId, Balance),
     }
 }
 
@@ -423,6 +426,9 @@ decl_error! {
 
         /// The member is not a councilor.
         NotCouncilor,
+
+        /// Insufficent funds in council for executing 'Funding Request'
+        InsufficientFundsForFundingRequest,
     }
 }
 
@@ -670,7 +676,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000]
+        #[weight = 10_000_000] // TODO: Adjust weight
         pub fn set_budget_increment(origin, budget_increment: Balance::<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget_increment(origin)?;
@@ -689,7 +695,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000]
+        #[weight = 10_000_000] // TODO: Adjust weight
         pub fn set_councilor_reward(origin, councilor_reward: Balance::<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_councilor_reward(origin)?;
@@ -706,6 +712,27 @@ decl_module! {
             Self::deposit_event(RawEvent::CouncilorRewardUpdated(councilor_reward));
 
             Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn funding_request(
+            origin,
+            amount: Balance::<T>,
+            account: T::AccountId,
+        ) {
+            // Checks
+            ensure_root(origin)?;
+            let current_budget = Self::budget();
+            ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Mutations::<T>::set_budget(&(current_budget - amount));
+            let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+            Self::deposit_event(RawEvent::RequestFunded(account, amount));
         }
     }
 }

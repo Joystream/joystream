@@ -566,37 +566,6 @@ benchmarks! {
     verify {
         assert_new_budgets::<T>(101, 99, WorkingGroup::Membership);
     }
-
-    funding_request {
-        let council_budget = BalanceOf::<T>::from(100);
-        let transfer_balance = BalanceOf::<T>::from(60);
-        let recieving_account = account::<T::AccountId>("reciever", 0, SEED);
-        Council::<T>::set_budget(RawOrigin::Root.into(), council_budget).unwrap();
-        assert_eq!(
-            Council::<T>::budget(),
-            council_budget,
-            "Council budget not updated"
-        );
-
-        assert_eq!(
-            Balances::<T>::free_balance(&recieving_account),
-            Zero::zero(),
-            "Recieving account has funds",
-        );
-    }: _ (RawOrigin::Root, transfer_balance, recieving_account.clone())
-    verify {
-        assert_eq!(
-            Council::<T>::budget(),
-            council_budget - transfer_balance,
-            "Council didn't discount transference",
-        );
-
-        assert_eq!(
-            Balances::<T>::free_balance(recieving_account),
-            transfer_balance,
-            "Recieving account didn't recieve amount",
-        );
-    }
 }
 
 #[cfg(test)]

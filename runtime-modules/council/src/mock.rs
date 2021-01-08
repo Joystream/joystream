@@ -1069,6 +1069,43 @@ where
         );
     }
 
+    pub fn funding_request(
+        origin: OriginType<T::AccountId>,
+        amount: Balance<T>,
+        reciever: T::AccountId,
+        expected_result: Result<(), Error<T>>,
+    ) {
+        let initial_budget = Module::<T>::budget();
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::funding_request(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                amount,
+                reciever.clone(),
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::RequestFunded(
+                reciever.clone().into(),
+                amount.into()
+            )),
+        );
+
+        assert_eq!(Module::<T>::budget(), initial_budget - amount);
+        assert_eq!(balances::Module::<T>::free_balance(reciever), amount);
+    }
+
     pub fn plan_budget_refill(
         origin: OriginType<T::AccountId>,
         next_refill: T::BlockNumber,

@@ -61,7 +61,7 @@ mod tests;
 mod benchmarking;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::Get;
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
@@ -313,8 +313,8 @@ decl_error! {
         /// Invalid 'decrease stake proposal' parameter - cannot decrease by zero balance.
         DecreasingStakeIsZero,
 
-        /// Insufficent funds in council for executing 'Funding Request' proposal
-        InsufficientFundsForFundingRequest,
+        /// Insufficient funds for 'Update Working Group Budget' proposal execution
+        InsufficientFundsForBudgetUpdate,
     }
 }
 
@@ -551,13 +551,13 @@ decl_module! {
 
             match balance_kind {
                 BalanceKind::Positive => {
-                    ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
+                    ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
 
                     call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget.saturating_add(amount))?;
                     Council::<T>::set_budget(origin, current_budget - amount)?;
                 },
                 BalanceKind::Negative => {
-                    ensure!(amount <= wg_budget, Error::<T>::InsufficientFundsForFundingRequest);
+                    ensure!(amount <= wg_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
 
                     call_wg!(working_group<T>, set_budget, origin.clone(), wg_budget - amount)?;
                     Council::<T>::set_budget(origin, current_budget.saturating_add(amount))?;
@@ -565,22 +565,6 @@ decl_module! {
             }
         }
 
-        /// Funding request proposal
-        #[weight = WeightInfoCodex::<T>::funding_request()] // TODO: adjust weight
-        pub fn funding_request(
-            origin,
-            amount: BalanceOf<T>,
-            account: T::AccountId,
-        ) {
-            // Checks
-            ensure_root(origin.clone())?;
-            let current_budget = Council::<T>::budget();
-            ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
-
-            // Mutation safe
-            Council::<T>::set_budget(origin, current_budget - amount)?;
-            let  _ = balances::Module::<T>::deposit_creating(&account, amount);
-        }
     }
 }
 

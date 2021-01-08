@@ -1478,6 +1478,17 @@ fn council_origin_validator_fails_with_unregistered_member() {
 }
 
 #[test]
+fn test_funding_request_fails_insufficient_fundings() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 0, Ok(()));
+        Mocks::funding_request(origin, 1, 0, Err(Error::InsufficientFundsForFundingRequest));
+    });
+}
+
+#[test]
 fn council_origin_validator_succeeds() {
     let config = default_genesis_config();
 
@@ -1502,6 +1513,16 @@ fn council_origin_validator_succeeds() {
             Council::ensure_member_consulate(origin.into(), councilor1_member_id);
 
         assert!(validation_result.is_ok());
+    });
+}
+
+#[test]
+fn test_funding_request_fails_permission() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Signed(0);
+        Mocks::funding_request(origin.into(), 1, 0, Err(Error::BadOrigin));
     });
 }
 
@@ -1585,5 +1606,19 @@ fn council_many_cycle_rewards() {
             num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
                 + num_iterations * auto_topup_amount
         );
+    });
+}
+
+#[test]
+fn test_funding_request_succeeds() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let initial_budget = 100;
+        let funding_amount = 5;
+        let recieving_account = 0;
+        Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
+        Mocks::funding_request(origin, funding_amount, recieving_account, Ok(()));
     });
 }
