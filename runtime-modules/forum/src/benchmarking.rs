@@ -207,7 +207,8 @@ fn create_new_category<T: Trait>(
         parent_category_id,
         title,
         description,
-    ).unwrap();
+    )
+    .unwrap();
 
     assert!(<CategoryById<T>>::contains_key(category_id));
     category_id
@@ -289,9 +290,11 @@ pub fn generate_categories_tree<T: Trait>(
     let mut parent_category_id = None;
     let mut category_id = T::CategoryId::default();
 
+    let categories_counter_before_tree_construction = <Module<T>>::category_counter();
+
     let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-    for n in 0..=category_depth {
+    for n in 0..category_depth {
         if n > 1 {
             parent_category_id = Some((n as u64).into());
         }
@@ -303,6 +306,12 @@ pub fn generate_categories_tree<T: Trait>(
             text.clone(),
         );
     }
+
+    assert_eq!(
+        categories_counter_before_tree_construction + (category_depth as u64).into(),
+        <Module<T>>::category_counter()
+    );
+
     (category_id, parent_category_id)
 }
 
@@ -316,7 +325,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -456,7 +465,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let new_archival_status = true;
 
@@ -489,7 +498,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i);
@@ -529,7 +538,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -596,7 +605,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -621,7 +630,7 @@ benchmarks! {
     }
 
     update_thread_archival_status {
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
         let caller_id =
@@ -646,7 +655,7 @@ benchmarks! {
     }
 
     delete_thread {
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
         let caller_id =
@@ -687,7 +696,7 @@ benchmarks! {
     }
 
     move_thread_to_category {
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -696,7 +705,7 @@ benchmarks! {
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
         // If category depth is less or equal to one, create two separate categories
-        let (category_id, new_category_id) = if i <= 1 {
+        let (category_id, new_category_id) = if i <= 2 {
             let category_id = create_new_category::<T>(
                 caller_id.clone(),
                 None,
@@ -747,7 +756,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
@@ -796,7 +805,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, lead_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as u32 - 1;
 
@@ -843,7 +852,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -885,7 +894,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i);
@@ -916,7 +925,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -957,7 +966,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. MAX_BYTES;
 
@@ -996,7 +1005,7 @@ benchmarks! {
         let caller_id =
             insert_a_lead_member::<T>(OpeningType::Leader, forum_user_id);
 
-        let i in 0 .. T::MaxCategoryDepth::get() as u32;
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get() as u32;
 
