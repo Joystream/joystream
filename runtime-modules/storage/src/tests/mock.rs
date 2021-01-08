@@ -300,7 +300,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     }
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+impl common::working_group::WorkingGroupParticipation<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,

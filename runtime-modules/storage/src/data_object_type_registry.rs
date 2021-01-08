@@ -27,7 +27,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupParticipation;
 
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
@@ -48,7 +48,7 @@ pub trait Trait: frame_system::Trait + common::Trait {
         + PartialEq;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>;
 }
 
 decl_error! {

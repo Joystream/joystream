@@ -16,7 +16,7 @@ pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::prelude::*;
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupParticipation;
 
 mod mock;
 mod tests;
@@ -83,7 +83,7 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type MapLimits: StorageLimits;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>;
 
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,

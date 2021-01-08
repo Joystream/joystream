@@ -283,7 +283,7 @@ pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
     type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>;
 }
 
 decl_storage! {

@@ -18,7 +18,7 @@ pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupParticipation;
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: frame_system::Trait + common::Trait {

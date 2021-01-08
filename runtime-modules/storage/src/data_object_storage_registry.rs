@@ -25,7 +25,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupParticipation;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::StorageProviderId;

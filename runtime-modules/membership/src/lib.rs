@@ -55,7 +55,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
-use common::working_group::{WorkingGroupBudgetHandler, WorkingGroupIntegration};
+use common::working_group::{WorkingGroupBudgetHandler, WorkingGroupParticipation};
 use staking_handler::StakingHandler;
 
 // Balance type alias
@@ -71,7 +71,7 @@ pub trait Trait:
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupIntegration<Self>
+    type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>
         + common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Defines the default balance for the invited member.

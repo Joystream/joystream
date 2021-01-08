@@ -1344,7 +1344,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupParticipation<T>
+    for Module<T, I>
+{
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
