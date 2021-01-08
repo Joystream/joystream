@@ -1603,8 +1603,7 @@ fn council_many_cycle_rewards() {
 
         assert_eq!(
             balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
-            num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
-                + num_iterations * auto_topup_amount
+            num_blocks_elected * Council::councilor_reward() + num_iterations * auto_topup_amount
         );
     });
 }
