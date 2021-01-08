@@ -662,7 +662,9 @@ decl_module! {
             T::MaxCategoryDepth::get() as u32,
             title.len().saturated_into(),
             text.len().saturated_into(),
-            poll.as_ref().map(|poll| poll.poll_alternatives.len().saturated_into()).unwrap_or_default(),
+            poll.as_ref()
+                .map(|poll| poll.poll_alternatives.len().saturated_into())
+                .unwrap_or_default(),
         )]
         fn create_thread(
             origin,
