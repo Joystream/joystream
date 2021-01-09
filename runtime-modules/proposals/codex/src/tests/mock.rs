@@ -689,13 +689,13 @@ impl crate::WeightInfo for () {
     fn execute_signal_proposal(_: u32) -> Weight {
         0
     }
-    fn create_proposal_signal(_: u32, _: u32) -> Weight {
+    fn create_proposal_signal(_: u32, _: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_runtime_upgrade(_: u32) -> Weight {
+    fn create_proposal_runtime_upgrade(_: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_funding_request(_: u32, _: u32) -> Weight {
+    fn create_proposal_funding_request() -> Weight {
         0
     }
     fn create_proposal_set_max_validator_count() -> Weight {
@@ -704,13 +704,13 @@ impl crate::WeightInfo for () {
     fn create_proposal_create_working_group_lead_opening(_: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_fill_working_group_lead_opening(_: u32) -> Weight {
+    fn create_proposal_fill_working_group_lead_opening() -> Weight {
         0
     }
-    fn create_proposal_update_working_group_budget(_: u32) -> Weight {
+    fn create_proposal_update_working_group_budget(_: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_decrease_working_group_lead_stake(_: u32, _: u32) -> Weight {
+    fn create_proposal_decrease_working_group_lead_stake(_: u32) -> Weight {
         0
     }
     fn create_proposal_slash_working_group_lead() -> Weight {
@@ -725,10 +725,10 @@ impl crate::WeightInfo for () {
     fn create_proposal_amend_constitution(_: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_cancel_working_group_lead_opening() -> Weight {
+    fn create_proposal_cancel_working_group_lead_opening(_: u32) -> Weight {
         0
     }
-    fn create_proposal_set_membership_price(_: u32) -> Weight {
+    fn create_proposal_set_membership_price(_: u32, _: u32) -> Weight {
         0
     }
     fn create_proposal_set_council_budget_increment(_: u32, _: u32) -> Weight {
@@ -740,13 +740,13 @@ impl crate::WeightInfo for () {
     fn create_proposal_set_initial_invitation_balance(_: u32) -> Weight {
         0
     }
-    fn create_proposal_set_initial_invitation_count() -> Weight {
+    fn create_proposal_set_initial_invitation_count(_: u32, _: u32) -> Weight {
         0
     }
     fn create_proposal_set_membership_lead_invitation_quota() -> Weight {
         0
     }
-    fn create_proposal_set_referral_cut(_: u32, _: u32) -> Weight {
+    fn create_proposal_set_referral_cut(_: u32) -> Weight {
         0
     }
     fn update_working_group_budget_positive_forum() -> Weight {
@@ -771,9 +771,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn update_working_group_budget_negative_membership() -> Weight {
-        0
-    }
-    fn funding_request() -> Weight {
         0
     }
 }
