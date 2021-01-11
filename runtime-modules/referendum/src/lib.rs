@@ -150,8 +150,8 @@ pub type CanRevealResult<T, I> = (
 /// referendum WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn on_finalize_revealing(i: u32) -> Weight;
-    fn on_finalize_voting() -> Weight;
+    fn on_initialize_revealing(i: u32) -> Weight;
+    fn on_initialize_voting() -> Weight;
     fn vote() -> Weight;
     fn reveal_vote_space_for_new_winner(i: u32) -> Weight;
     fn reveal_vote_space_not_in_winners(i: u32) -> Weight;
@@ -384,7 +384,8 @@ decl_module! {
         fn on_initialize() -> Weight{
             Self::try_progress_stage(frame_system::Module::<T>::block_number());
 
-            1_000_000 // TODO: Replace
+            T::WeightInfo::on_initialize_voting()
+                .max(T::WeightInfo::on_initialize_revealing(MAX_WINNERS))
         }
 
         /////////////////// User actions ///////////////////////////////////////

@@ -204,7 +204,7 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 pub trait WeightInfo {
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election() -> Weight; // Parameter discarded
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight; // Parameter discarded
     fn try_progress_stage_announcing_restart() -> Weight;
     fn announce_candidacy() -> Weight;
     fn release_candidacy_stake() -> Weight;
@@ -463,13 +463,30 @@ decl_module! {
         fn on_initialize() -> Weight {
             let now = frame_system::Module::<T>::block_number();
 
+            let try_progress_weight = T::WeightInfo::try_progress_stage_idle().max(
+                T::WeightInfo::try_progress_stage_announcing_restart()
+            );
+
             // council stage progress
-            Self::try_progress_stage(now);
+            let try_progress_weight = if let Some(candidate_count) = Self::try_progress_stage(now) {
+                // We can use the candidate count to calculate the worst case
+                // if we are in announcement period without an additional storage access
+                try_progress_weight.max(
+                    T::WeightInfo::try_progress_stage_announcing_start_election(
+                            candidate_count.saturated_into()
+                        )
+                    )
+            } else {
+                // If we don't have the candidate count we only take into account the weight
+                // of the functions that doesn't depend on it
+                try_progress_weight
+            };
 
             // budget reward payment + budget refill
             Self::try_process_budget(now);
 
-            1_000_000 // TODO: replace
+            // Total weight = try progress weight + try process budget weight
+            T::WeightInfo::try_process_budget().saturating_add(try_progress_weight)
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -669,20 +686,26 @@ impl<T: Trait> Module<T> {
     /////////////////// Lifetime ///////////////////////////////////////////
 
     // Checkout expire of referendum stage.
-    fn try_progress_stage(now: T::BlockNumber) {
+    // Returns the number of candidates if currently in stage announcing
+    fn try_progress_stage(now: T::BlockNumber) -> Option<u64> {
         // election progress
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
+                let number_of_candidates = stage_data.candidates_count;
                 if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
                     Self::end_announcement_period(stage_data);
                 }
+
+                Some(number_of_candidates)
             }
             CouncilStage::Idle => {
                 if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
                     Self::end_idle_period();
                 }
+
+                None
             }
-            _ => (),
+            _ => None,
         }
     }
 

@@ -134,10 +134,10 @@ impl Trait for Runtime {
 }
 
 impl WeightInfo for () {
-    fn on_finalize_revealing(_: u32) -> Weight {
+    fn on_initialize_revealing(_: u32) -> Weight {
         0
     }
-    fn on_finalize_voting() -> Weight {
+    fn on_initialize_voting() -> Weight {
         0
     }
     fn vote() -> Weight {
