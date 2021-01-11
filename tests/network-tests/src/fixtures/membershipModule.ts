@@ -2,19 +2,22 @@ import { Api } from '../Api'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { BaseFixture } from '../Fixture'
-import { PaidTermId, MemberId } from '@joystream/types/members'
+import { MemberId } from '@joystream/types/common'
 import Debugger from 'debug'
+import { ISubmittableResult } from '@polkadot/types/types'
+
+function generateHandleFromAccountId(accountId: string): string {
+  return `handle${accountId.substring(0, 14)}`
+}
 
 export class BuyMembershipHappyCaseFixture extends BaseFixture {
   private accounts: string[]
-  private paidTerms: PaidTermId
   private debug: Debugger.Debugger
   private memberIds: MemberId[] = []
 
-  public constructor(api: Api, accounts: string[], paidTerms: PaidTermId) {
+  public constructor(api: Api, accounts: string[]) {
     super(api)
     this.accounts = accounts
-    this.paidTerms = paidTerms
     this.debug = Debugger('fixture:BuyMembershipHappyCaseFixture')
   }
 
@@ -22,55 +25,74 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
     return this.memberIds.slice()
   }
 
+  // TODO: Factor our this method using mixin pattern https://www.typescriptlang.org/docs/handbook/mixins.html
+  // Buy a membership, setting root and controller accounts to be the same as the origin/sender account id
+  // and handle generated from account id.
+  private async buyMembership(account: string): Promise<ISubmittableResult> {
+    const handle = generateHandleFromAccountId(account)
+    return this.api.signAndSend(
+      this.api.tx.members.buyMembership({
+        root_account: account,
+        controller_account: account,
+        handle,
+      }),
+      account
+    )
+  }
+
   async execute(): Promise<void> {
     // Fee estimation and transfer
-    const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
-    const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
-      this.accounts[0],
-      this.paidTerms,
-      'member_name_which_is_longer_than_expected'
-    )
+    const membershipFee: BN = await this.api.getMembershipFee()
+    const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(this.accounts[0], 'handle')
+    const estimatedFee = membershipTransactionFee.add(new BN(membershipFee))
 
-    this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
+    this.api.treasuryTransferBalanceToAccounts(this.accounts, estimatedFee)
 
-    this.memberIds = (
-      await Promise.all(
-        this.accounts.map((account) =>
-          this.api.buyMembership(account, this.paidTerms, `member${account.substring(0, 14)}`)
-        )
-      )
-    )
+    this.memberIds = (await Promise.all(this.accounts.map((account) => this.buyMembership(account))))
       .map(({ events }) => this.api.findMemberRegisteredEvent(events))
       .filter((id) => id !== undefined) as MemberId[]
 
     this.debug(`Registered ${this.memberIds.length} new members`)
 
     assert.equal(this.memberIds.length, this.accounts.length)
+
+    // Assert that created members have expected handle and root and controller accounts
   }
 }
 
 export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
   private account: string
-  private paidTerms: PaidTermId
 
-  public constructor(api: Api, account: string, paidTerms: PaidTermId) {
+  public constructor(api: Api, account: string) {
     super(api)
     this.account = account
-    this.paidTerms = paidTerms
+  }
+
+  // Buy a membership, setting root and controller accounts to be the same as the origin/sender account id
+  // and handle generated from account id.
+  private async buyMembership(account: string): Promise<ISubmittableResult> {
+    const handle = generateHandleFromAccountId(account)
+    return this.api.signAndSend(
+      this.api.tx.members.buyMembership({
+        root_account: account,
+        controller_account: account,
+        handle,
+      }),
+      account
+    )
   }
 
   async execute(): Promise<void> {
-    // Assertions
-    const membership = await this.api.getMemberIds(this.account)
-
-    assert(membership.length === 0, 'Account must not be associated with a member')
+    // It is acceptable for same account to register a new member account
+    // So no need to assert
+    // const membership = await this.api.getMemberIds(this.account)
+    // assert(membership.length === 0, 'Account must not be associated with a member')
 
     // Fee estimation and transfer
-    const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
+    const membershipFee: BN = await this.api.getMembershipFee()
     const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
       this.account,
-      this.paidTerms,
-      'member_name_which_is_longer_than_expected'
+      generateHandleFromAccountId(this.account)
     )
 
     // Only provide enough funds for transaction fee but not enough to cover the membership fee
@@ -83,9 +105,12 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
       'Account already has sufficient balance to purchase membership'
     )
 
-    this.expectDispatchError(
-      await this.api.buyMembership(this.account, this.paidTerms, `late_member_${this.account.substring(0, 8)}`),
+    const result = this.expectDispatchError(
+      await this.buyMembership(this.account),
       'Buying membership with insufficient funds should fail.'
     )
+
+    // Assert that failure is because of lack of balance
+    assert.equal(this.api.getErrorNameFromExtrinsicFailedRecord(result), 'NotEnoughBalanceToBuyMembership')
   }
 }

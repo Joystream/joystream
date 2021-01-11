@@ -7,14 +7,12 @@ import {
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
 import { Api, WorkingGroups } from '../Api'
-import { OpeningId } from '@joystream/types/hiring'
-import { PaidTermId } from '@joystream/types/members'
+import { OpeningId } from '@joystream/types/working-group'
 import BN from 'bn.js'
 import { assert } from 'chai'
 
 export class SudoHireLeadFixture extends BaseFixture {
   private leadAccount: string
-  private paidTerms: PaidTermId
   private applicationStake: BN
   private roleStake: BN
   private openingActivationDelay: BN
@@ -26,7 +24,6 @@ export class SudoHireLeadFixture extends BaseFixture {
   constructor(
     api: Api,
     leadAccount: string,
-    paidTerms: PaidTermId,
     applicationStake: BN,
     roleStake: BN,
     openingActivationDelay: BN,
@@ -37,7 +34,6 @@ export class SudoHireLeadFixture extends BaseFixture {
   ) {
     super(api)
     this.leadAccount = leadAccount
-    this.paidTerms = paidTerms
     this.applicationStake = applicationStake
     this.roleStake = roleStake
     this.openingActivationDelay = openingActivationDelay
