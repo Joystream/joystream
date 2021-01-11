@@ -236,7 +236,8 @@ fn finish_voting() {
 
         let voting_stage_duration = <Runtime as Trait>::VoteStageDuration::get();
 
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id.clone());
     });
@@ -275,7 +276,8 @@ fn reveal() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -329,7 +331,8 @@ fn reveal_reveal_stage_not_running() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         MockUtils::increase_block_number(reveal_stage_duration);
@@ -364,7 +367,8 @@ fn reveal_no_vote() {
             cycle_id,
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         MockUtils::increase_block_number(reveal_stage_duration);
@@ -414,7 +418,8 @@ fn reveal_salt_too_long() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -459,7 +464,8 @@ fn reveal_invalid_vote() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Runtime::feature_option_id_valid(false);
 
@@ -506,7 +512,8 @@ fn reveal_invalid_commitment_proof() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -553,7 +560,9 @@ fn finish_revealing_period() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -623,7 +632,9 @@ fn finish_revealing_period_vote_power() {
             cycle_id.clone(),
             Ok(()),
         ); // vote for second option by prominent user
-        MockUtils::increase_block_number(voting_stage_duration);
+
+        // Voting start at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -640,6 +651,7 @@ fn finish_revealing_period_vote_power() {
             option_to_vote_for2,
             Ok(()),
         );
+
         MockUtils::increase_block_number(reveal_stage_duration);
 
         // option 2 should win because prominent user has more powerfull vote with the same stake
@@ -672,7 +684,8 @@ fn winners_no_vote_revealed() {
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         MockUtils::increase_block_number(reveal_stage_duration);
         Mocks::check_revealing_finished(vec![], MockUtils::transform_results(vec![]));
@@ -738,7 +751,8 @@ fn winners_multiple_winners() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
 
@@ -829,7 +843,8 @@ fn winners_multiple_winners_extra() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -894,7 +909,8 @@ fn winners_multiple_not_enough() {
             cycle_id.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
@@ -953,7 +969,8 @@ fn referendum_release_stake() {
             cycle_id1.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration);
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id1);
         Mocks::reveal_vote(

@@ -10,7 +10,7 @@ use crate::{
 
 use balances;
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
+use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
@@ -603,17 +603,21 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Module::<T>::block_number();
 
-        for i in 0..increase {
-            let tmp_index: T::BlockNumber = block_number + i.into();
-
-            <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
+        for _ in 0..increase {
+            <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
                 <Runtime as frame_system::Trait>::BlockNumber,
-            >>::on_finalize(tmp_index.into());
+            >>::on_finalize(block_number.into());
 
-            frame_system::Module::<T>::set_block_number(tmp_index + 1.into());
+            block_number = block_number + 1.into();
+            frame_system::Module::<T>::set_block_number(block_number);
+
+            <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+            <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
+                <Runtime as frame_system::Trait>::BlockNumber,
+            >>::on_initialize(block_number.into());
         }
     }
 
@@ -1101,9 +1105,7 @@ where
         );
 
         // forward to election-voting period
-        InstanceMockUtils::<T>::increase_block_number(
-            settings.announcing_stage_duration.into() + 1,
-        );
+        InstanceMockUtils::<T>::increase_block_number(settings.announcing_stage_duration.into());
 
         // finish announcing period / start referendum -> will cause period prolongement
         Self::check_election_period(
@@ -1134,7 +1136,7 @@ where
         );
 
         // forward to election-revealing period
-        InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into());
 
         // referendum - start revealing period
         Self::check_referendum_revealing(
@@ -1167,7 +1169,7 @@ where
         );
 
         // finish election / start idle period
-        InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into());
         Self::check_idle_period(
             params.cycle_start_block_number
                 + settings.reveal_stage_duration
@@ -1177,7 +1179,7 @@ where
         Self::check_council_members(params.expected_final_council_members.clone());
 
         // finish idle period
-        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into());
     }
 
     // Simulate one full round of council lifecycle (announcing, election, idle). Use it to
@@ -1211,21 +1213,21 @@ where
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),

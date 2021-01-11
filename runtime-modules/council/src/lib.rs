@@ -460,12 +460,16 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
-        fn on_finalize(now: T::BlockNumber) {
+        fn on_initialize() -> Weight {
+            let now = frame_system::Module::<T>::block_number();
+
             // council stage progress
             Self::try_progress_stage(now);
 
             // budget reward payment + budget refill
             Self::try_process_budget(now);
+
+            1_000_000 // TODO: replace
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -669,14 +673,12 @@ impl<T: Trait> Module<T> {
         // election progress
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
-                if now
-                    == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() - 1.into()
-                {
+                if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
                     Self::end_announcement_period(stage_data);
                 }
             }
             CouncilStage::Idle => {
-                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() - 1.into() {
+                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
                     Self::end_idle_period();
                 }
             }
@@ -1020,9 +1022,7 @@ impl<T: Trait> Mutations<T> {
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
             stage: CouncilStage::Announcing(stage_data),
-            // set next block as the start of next phase (this function is invoke on block
-            // finalization)
-            changed_at: block_number + 1.into(),
+            changed_at: block_number,
         });
 
         // increase anouncement cycle id
@@ -1043,8 +1043,7 @@ impl<T: Trait> Mutations<T> {
             stage: CouncilStage::Election(CouncilStageElection {
                 candidates_count: stage_data.candidates_count,
             }),
-            // set next block as the start of next phase (this function is invoke on block finalization)
-            changed_at: block_number + 1.into(),
+            changed_at: block_number,
         });
     }
 
@@ -1056,7 +1055,7 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
-                changed_at: block_number + 1.into(), // set next block as the start of next phase
+                changed_at: block_number, // set current block as the start of next phase
             }
         });
 

@@ -10,7 +10,7 @@ use crate::{
 pub use crate::DefaultInstance;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
+use frame_support::traits::{Currency, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
@@ -19,6 +19,7 @@ use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use pallet_balances;
 use rand::Rng;
 use sp_core::H256;
+use sp_runtime::traits::One;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -388,13 +389,23 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Module::<T>::block_number();
 
-        for i in 0..increase {
-            let tmp_index: T::BlockNumber = block_number + i.into();
+        for _ in 0..increase {
+            <frame_system::Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
+            <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
+            block_number = block_number + One::one();
+            frame_system::Module::<T>::set_block_number(block_number);
+            <frame_system::Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+            <Module<T, I> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+        }
+    }
 
-            <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
-            frame_system::Module::<T>::set_block_number(tmp_index + 1.into());
+    pub fn move_to_block(block_number: T::BlockNumber) {
+        let mut current_block = frame_system::Module::<T>::block_number();
+        while current_block < block_number {
+            Self::increase_block_number(1);
+            current_block = frame_system::Module::<T>::block_number();
         }
     }
 
@@ -529,7 +540,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
-                started: block_number + 1, // actual voting starts in the next block (thats why +1)
+                started: block_number,
                 winning_target_count,
                 current_cycle_id: cycle_id,
             }),

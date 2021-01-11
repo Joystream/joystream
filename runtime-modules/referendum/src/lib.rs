@@ -381,8 +381,10 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
-        fn on_finalize(now: T::BlockNumber) {
-            Self::try_progress_stage(now);
+        fn on_initialize() -> Weight{
+            Self::try_progress_stage(frame_system::Module::<T>::block_number());
+
+            1_000_000 // TODO: Replace
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -493,12 +495,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.started + T::VoteStageDuration::get() - 1.into() {
+                if now == stage_data.started + T::VoteStageDuration::get() {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.started + T::RevealStageDuration::get() - 1.into() {
+                if now == stage_data.started + T::RevealStageDuration::get() {
                     Self::end_reveal_period(stage_data);
                 }
             }
@@ -611,7 +613,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <frame_system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number(),
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
         }));
@@ -624,7 +626,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T,
             I,
         > {
-            started: <frame_system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
             current_cycle_id: old_stage.current_cycle_id,
