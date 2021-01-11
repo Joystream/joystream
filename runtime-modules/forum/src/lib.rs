@@ -1592,13 +1592,13 @@ impl<T: Trait> Module<T> {
             Self::ensure_can_moderate_category_path(actor, &parent_category_id)
                 .map_err(|_| Error::<T>::ModeratorCantDeleteCategory)?;
 
-            return Ok(category);
-        }
-
-        // category is root - only lead can delete it
-        match actor {
-            PrivilegedActor::Lead => Ok(category),
-            PrivilegedActor::Moderator(_) => Err(Error::<T>::ModeratorCantDeleteCategory),
+            Ok(category)
+        } else {
+            // category is root - only lead can delete it
+            match actor {
+                PrivilegedActor::Lead => Ok(category),
+                PrivilegedActor::Moderator(_) => Err(Error::<T>::ModeratorCantDeleteCategory),
+            }
         }
     }
 
