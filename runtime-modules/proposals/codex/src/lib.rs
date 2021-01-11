@@ -12,34 +12,27 @@
 //! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
 //! `ProposalDetailsByProposalId` map.
 //!
-//! ### General proposals
-//! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
-//! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
-//! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
+//! To create a proposal you need to call the extrinsic `create_proposal` with the `ProposalDetails` variant
+//! corresponding to the proposal you want to create. [See the possible details with their proposal](./enum.ProposalDetails.html)
 //!
-//! ### Council and election proposals
-//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
-//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
+//! ## Extrinsics
 //!
-//! ### Working group proposals
-//! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
-//! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
-//! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
-//! - [create_set_working_group_budget_capacity_proposal](./struct.Module.html#method.create_set_working_group_budget_capacity_proposal)
-//! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
-//! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
-//! - [create_set_working_group_leader_reward_proposal](./struct.Module.html#method.create_set_working_group_leader_reward_proposal)
-//! - [create_terminate_working_group_leader_role_proposal](./struct.Module.html#method.create_terminate_working_group_leader_role_proposal)
+//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal
+//! - [execute_runtime_upgrade_proposal](./struct.Module.html#method.execute_runtime_upgrade_proposal) - Sets the
+//! runtime code
+//! - [execute_signal_proposal](./struct.Module.html#method.execute_signal_proposal) - prints the proposal to the log
+//! - [update_working_group_budget](./struct.Module.html#method.update_working_group_budget) - Move funds between
+//! council and working group
 //!
-//! ### Proposal implementations of this module
-//! - execute_text_proposal - prints the proposal to the log
-//! - execute_runtime_upgrade_proposal - sets the runtime code
 //!
 //! ### Dependencies:
 //! - [proposals engine](../substrate_proposals_engine_module/index.html)
 //! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
 //! - [membership](../substrate_membership_module/index.html)
 //! - [council](../substrate_council_module/index.html)
+//! - [common](../substrate_common_module/index.html)
+//! - [staking](../substrate_staking_module/index.html)
+//! - [working_group](../substrate_working_group_module/index.html)
 //!
 //! ### Notes
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using its
