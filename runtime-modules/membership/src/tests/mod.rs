@@ -496,10 +496,21 @@ fn invite_member_succeeds() {
             vec![bob_member_id]
         );
 
+        let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
+        // Working group budget reduced.
         assert_eq!(
-            WORKING_GROUP_BUDGET - <Test as Trait>::DefaultInitialInvitationBalance::get(),
+            WORKING_GROUP_BUDGET - initial_invitation_balance,
             <Test as Trait>::WorkingGroup::get_budget()
         );
+
+        // Invited member account filled.
+        assert_eq!(
+            initial_invitation_balance,
+            Balances::free_balance(&profile.controller_account)
+        );
+
+        // Invited member balance locked.
+        assert_eq!(0, Balances::usable_balance(&profile.controller_account));
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
     });

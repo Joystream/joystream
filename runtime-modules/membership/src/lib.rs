@@ -47,7 +47,7 @@ pub mod genesis;
 mod tests;
 
 use codec::{Decode, Encode};
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::ensure_root;
 use frame_system::ensure_signed;
@@ -588,10 +588,17 @@ decl_module! {
             let new_wg_budget = current_wg_budget - default_invitation_balance;
             T::WorkingGroup::set_budget(new_wg_budget);
 
-            // Lock invitation balance.
-            T::InvitedMemberStakingHandler::lock(
+            // Create default balance for the invited member.
+            let _ = balances::Module::<T>::deposit_creating(
                 &params.controller_account,
                 default_invitation_balance
+            );
+
+            // Lock invitation balance. Allow only transaction payments.
+            T::InvitedMemberStakingHandler::lock_with_reasons(
+                &params.controller_account,
+                default_invitation_balance,
+                WithdrawReasons::except(WithdrawReason::TransactionPayment)
             );
 
             // Fire the event.
