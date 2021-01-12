@@ -783,7 +783,7 @@ benchmarks! {
         )
         .unwrap();
 
-    }: update_thread_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, new_archival_status)
+    }: update_thread_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, new_archival_status)
     verify {
         thread.archived = new_archival_status;
 
@@ -868,7 +868,7 @@ benchmarks! {
             add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
         }
 
-    }: delete_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id)
+    }: delete_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id)
     verify {
         // Ensure category num_direct_threads updated successfully.
         category.num_direct_threads-=1;
