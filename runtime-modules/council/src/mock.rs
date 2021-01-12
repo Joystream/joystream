@@ -120,8 +120,8 @@ impl Trait for Runtime {
 }
 
 impl common::StakingAccountValidator<Runtime> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(membership_id: &u64, account_id: &u64) -> bool {
+        membership_id == account_id
     }
 }
 
@@ -229,9 +229,6 @@ pub type ReferendumInstance = referendum::Instance0;
 thread_local! {
     // global switch for stake locking features; use it to simulate lock fails
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, ));
-
-    // global switch used to test is_valid_option_id()
-    pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, ));
 }
 
 parameter_types! {
@@ -305,10 +302,6 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
-            return false;
-        }
-
         <Module<Runtime> as ReferendumConnection<Runtime>>::is_valid_candidate_id(option_index)
     }
 
@@ -401,14 +394,6 @@ impl pallet_timestamp::Trait for Runtime {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
-}
-
-impl Runtime {
-    pub fn _feature_option_id_valid(is_valid: bool) -> () {
-        IS_OPTION_ID_VALID.with(|value| {
-            *value.borrow_mut() = (is_valid,);
-        });
-    }
 }
 
 parameter_types! {

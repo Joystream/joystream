@@ -1328,9 +1328,6 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id,
         );
 
-        // TODO: uncomment this once StakingHandler's `is_member_staking_account` is properly
-        // implemented
-        /*
         // test that staking_account_id has to be associated with membership_id
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
@@ -1338,9 +1335,8 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id.clone(), // second candidate's account id
             candidate1.candidate.reward_account_id.clone(),
             candidate1.candidate.stake.clone(),
-            Err(Error::MembershipIdNotMatchAccount),
+            Err(Error::MemberIdNotMatchAccount),
         );
-        */
 
         // test that reward_account_id not associated with membership_id can be used
         Mocks::announce_candidacy_raw(
