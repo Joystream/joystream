@@ -36,20 +36,28 @@ pub trait WeightInfo {
     fn create_category(i: u32, j: u32, k: u32) -> Weight;
     fn update_category_membership_of_moderator_new() -> Weight;
     fn update_category_membership_of_moderator_old() -> Weight;
-    fn update_category_archival_status(i: u32) -> Weight;
-    fn delete_category(i: u32) -> Weight;
+    fn update_category_archival_status_lead(i: u32) -> Weight;
+    fn update_category_archival_status_moderator(i: u32) -> Weight;
+    fn delete_category_lead(i: u32) -> Weight;
+    fn delete_category_moderator(i: u32) -> Weight;
     fn create_thread(i: u32, j: u32, k: u32, z: u32) -> Weight;
     fn edit_thread_title(i: u32, j: u32) -> Weight;
-    fn update_thread_archival_status(i: u32) -> Weight;
-    fn delete_thread(i: u32) -> Weight;
-    fn move_thread_to_category(i: u32) -> Weight;
+    fn update_thread_archival_status_lead(i: u32) -> Weight;
+    fn update_thread_archival_status_moderator(i: u32) -> Weight;
+    fn delete_thread_lead(i: u32) -> Weight;
+    fn delete_thread_moderator(i: u32) -> Weight;
+    fn move_thread_to_category_lead(i: u32) -> Weight;
+    fn move_thread_to_category_moderator(i: u32) -> Weight;
     fn vote_on_poll(i: u32, j: u32) -> Weight;
-    fn moderate_thread(i: u32, j: u32, k: u32) -> Weight;
+    fn moderate_thread_lead(i: u32, j: u32, k: u32) -> Weight;
+    fn moderate_thread_moderator(i: u32, j: u32, k: u32) -> Weight;
     fn add_post(i: u32, j: u32) -> Weight;
     fn react_post(i: u32) -> Weight;
     fn edit_post_text(i: u32, j: u32) -> Weight;
-    fn moderate_post(i: u32, j: u32) -> Weight;
-    fn set_stickied_threads(i: u32, j: u32) -> Weight;
+    fn moderate_post_lead(i: u32, j: u32) -> Weight;
+    fn moderate_post_moderator(i: u32, j: u32) -> Weight;
+    fn set_stickied_threads_lead(i: u32, j: u32) -> Weight;
+    fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
 }
 
 pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
@@ -586,9 +594,11 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::update_category_archival_status(
+        #[weight = WeightInfoForum::<T>::update_category_archival_status_lead(
             T::MaxCategoryDepth::get() as u32,
-        )]
+        ).max(WeightInfoForum::<T>::update_category_archival_status_moderator(
+            T::MaxCategoryDepth::get() as u32,
+        ))]
         fn update_category_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, new_archival_status: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -626,9 +636,11 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::delete_category(
+        #[weight = WeightInfoForum::<T>::delete_category_lead(
             T::MaxCategoryDepth::get() as u32,
-        )]
+        ).max(WeightInfoForum::<T>::delete_category_moderator(
+            T::MaxCategoryDepth::get() as u32,
+        ))]
         fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -785,9 +797,11 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::update_thread_archival_status(
+        #[weight = WeightInfoForum::<T>::update_thread_archival_status_lead(
             T::MaxCategoryDepth::get() as u32,
-        )]
+        ).max(WeightInfoForum::<T>::update_thread_archival_status_moderator(
+            T::MaxCategoryDepth::get() as u32,
+        ))]
         fn update_thread_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_archival_status: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -825,9 +839,11 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::delete_thread(
+        #[weight = WeightInfoForum::<T>::delete_thread_lead(
             T::MaxCategoryDepth::get() as u32,
-        )]
+        ).max(WeightInfoForum::<T>::delete_thread_moderator(
+            T::MaxCategoryDepth::get() as u32,
+        ))]
         fn delete_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -859,9 +875,11 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::move_thread_to_category(
+        #[weight = WeightInfoForum::<T>::move_thread_to_category_lead(
             T::MaxCategoryDepth::get() as u32,
-        )]
+        ).max(WeightInfoForum::<T>::move_thread_to_category_moderator(
+            T::MaxCategoryDepth::get() as u32,
+        ))]
         fn move_thread_to_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -967,10 +985,16 @@ decl_module! {
         /// - DB:
         ///    - O(W + V)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::moderate_thread(
+        #[weight = WeightInfoForum::<T>::moderate_thread_lead(
             T::MaxCategoryDepth::get() as u32,
             <T::MapLimits as StorageLimits>::MaxPostsInThread::get() as u32,
             rationale.len().saturated_into(),
+        ).max(
+            WeightInfoForum::<T>::moderate_thread_moderator(
+                T::MaxCategoryDepth::get() as u32,
+                <T::MapLimits as StorageLimits>::MaxPostsInThread::get() as u32,
+                rationale.len().saturated_into(),
+            )
         )]
         fn moderate_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
@@ -1128,10 +1152,13 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::moderate_post(
+        #[weight = WeightInfoForum::<T>::moderate_post_lead(
             T::MaxCategoryDepth::get() as u32,
             rationale.len().saturated_into(),
-        )]
+        ).max(WeightInfoForum::<T>::moderate_post_moderator(
+            T::MaxCategoryDepth::get() as u32,
+            rationale.len().saturated_into(),
+        ))]
         fn moderate_post(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -1164,9 +1191,14 @@ decl_module! {
         /// - DB:
         ///    - O(W + V)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::set_stickied_threads(
+        #[weight = WeightInfoForum::<T>::set_stickied_threads_lead(
             T::MaxCategoryDepth::get() as u32,
             stickied_ids.len().saturated_into(),
+        ).max(
+            WeightInfoForum::<T>::set_stickied_threads_moderator(
+                T::MaxCategoryDepth::get() as u32,
+                stickied_ids.len().saturated_into(),
+            )
         )]
         fn set_stickied_threads(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> DispatchResult {
             // Ensure data migration is done

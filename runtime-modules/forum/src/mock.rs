@@ -328,10 +328,16 @@ impl WeightInfo for () {
     fn update_category_membership_of_moderator_old() -> Weight {
         0
     }
-    fn update_category_archival_status(_: u32) -> Weight {
+    fn update_category_archival_status_lead(_: u32) -> Weight {
         0
     }
-    fn delete_category(_: u32) -> Weight {
+    fn update_category_archival_status_moderator(_: u32) -> Weight {
+        0
+    }
+    fn delete_category_lead(_: u32) -> Weight {
+        0
+    }
+    fn delete_category_moderator(_: u32) -> Weight {
         0
     }
     fn create_thread(_: u32, _: u32, _: u32, _: u32) -> Weight {
@@ -340,19 +346,31 @@ impl WeightInfo for () {
     fn edit_thread_title(_: u32, _: u32) -> Weight {
         0
     }
-    fn update_thread_archival_status(_: u32) -> Weight {
+    fn update_thread_archival_status_lead(_: u32) -> Weight {
         0
     }
-    fn delete_thread(_: u32) -> Weight {
+    fn update_thread_archival_status_moderator(_: u32) -> Weight {
         0
     }
-    fn move_thread_to_category(_: u32) -> Weight {
+    fn delete_thread_lead(_: u32) -> Weight {
+        0
+    }
+    fn delete_thread_moderator(_: u32) -> Weight {
+        0
+    }
+    fn move_thread_to_category_lead(_: u32) -> Weight {
+        0
+    }
+    fn move_thread_to_category_moderator(_: u32) -> Weight {
         0
     }
     fn vote_on_poll(_: u32, _: u32) -> Weight {
         0
     }
-    fn moderate_thread(_: u32, _: u32, _: u32) -> Weight {
+    fn moderate_thread_lead(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_thread_moderator(_: u32, _: u32, _: u32) -> Weight {
         0
     }
     fn add_post(_: u32, _: u32) -> Weight {
@@ -364,10 +382,16 @@ impl WeightInfo for () {
     fn edit_post_text(_: u32, _: u32) -> Weight {
         0
     }
-    fn moderate_post(_: u32, _: u32) -> Weight {
+    fn moderate_post_lead(_: u32, _: u32) -> Weight {
         0
     }
-    fn set_stickied_threads(_: u32, _: u32) -> Weight {
+    fn moderate_post_moderator(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_stickied_threads_lead(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_stickied_threads_moderator(_: u32, _: u32) -> Weight {
         0
     }
 }
