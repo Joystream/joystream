@@ -570,8 +570,11 @@ impl<T: Trait> Module<T> {
                 );
             }
             ProposalDetails::SetMaxValidatorCount(ref new_validator_count) => {
+                // Since `set_validator_count` doesn't check that `new_validator_count`
+                // isn't less than `minimum_validator_count` we need to do this here.
+                // We shouldn't access the storage for creation checks but we do it here for the
+                // reasons just explained **as an exception**.
                 ensure!(
-                    // TODO: Should this be replaced by a const MIN_VALIDATOR_COUNT?
                     *new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
                     Error::<T>::InvalidValidatorCount
                 );
