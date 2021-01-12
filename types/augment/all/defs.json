@@ -23,7 +23,7 @@
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "Membership": {
-        "handle_hash": "Text",
+        "handle_hash": "Bytes",
         "root_account": "AccountId",
         "controller_account": "AccountId",
         "verified": "bool",
