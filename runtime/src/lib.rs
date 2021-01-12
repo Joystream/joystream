@@ -56,7 +56,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use council::ReferendumConnection;
-use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
+use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
@@ -486,13 +486,12 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Self>;
-    type LockId = VotingLockId;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
-    type VotePower = BalanceReferendum<Self, ReferendumInstance>;
+    type VotePower = Balance;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -504,14 +503,12 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance,
     ) -> Self::VotePower {
         *stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance, Self::MemberId>) -> bool {
         <CouncilModule as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 

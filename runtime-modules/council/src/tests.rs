@@ -1504,9 +1504,7 @@ fn council_many_cycle_rewards() {
                 % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
 
         assert_eq!(
-            <Runtime as referendum::Trait<ReferendumInstance>>::Currency::total_balance(
-                &council_members[0].staking_account_id
-            ),
+            balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
             num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
                 + num_iterations * auto_topup_amount
         );

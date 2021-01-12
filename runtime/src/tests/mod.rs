@@ -66,7 +66,12 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             councilor_stake,
         )
         .unwrap();
-        voters.push([council.len() as u8 + extra_candidates as u8 + i as u8; 32].into());
+        // Make sure to use different voters in each election cycle to prevent problems with
+        // staking
+        voters.push(
+            [(council.len() as u8 + extra_candidates as u8) * (cycle_id as u8 + 1) + i as u8; 32]
+                .into(),
+        );
         council_member_ids.push(member_id);
     }
 

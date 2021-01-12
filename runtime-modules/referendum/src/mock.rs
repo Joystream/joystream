@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
+    BalanceOf, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
     WeightInfo,
 };
@@ -16,7 +16,6 @@ use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
-use pallet_balances;
 use rand::Rng;
 use sp_core::H256;
 use sp_runtime::traits::One;
@@ -66,14 +65,21 @@ thread_local! {
     pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait>::VotePower>::new());
 }
 
+impl LockComparator<u64> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Runtime>;
-    type LockId = LockId;
-
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
@@ -89,7 +95,7 @@ impl Trait for Runtime {
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &Balance<Self, DefaultInstance>,
+        stake: &BalanceOf<Self>,
     ) -> <Self as Trait<DefaultInstance>>::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -100,7 +106,7 @@ impl Trait for Runtime {
     }
 
     fn can_unlock_vote_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, DefaultInstance>, Self::MemberId>,
+        _vote: &CastVote<Self::Hash, BalanceOf<Self>, Self::MemberId>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -186,15 +192,6 @@ impl pallet_timestamp::Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
-    }
-}
-
 impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     fn get_budget() -> u64 {
         unimplemented!()
@@ -243,7 +240,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl pallet_balances::Trait for Runtime {
+impl balances::Trait for Runtime {
     type Balance = u64;
     type Event = TestEvent;
     type DustRemoval = ();
@@ -279,7 +276,7 @@ mod event_mod {
 }
 
 mod tmp {
-    pub use pallet_balances::Event;
+    pub use balances::Event;
 }
 
 mod membership_mod {
@@ -325,7 +322,7 @@ impl frame_system::Trait for Runtime {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type PalletInfo = ();
-    type AccountData = pallet_balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -381,7 +378,7 @@ pub fn build_test_externalities(
 // topup currency to the account
 fn topup_account(account_id: u64, amount: u64) {
     let account_id = account_id;
-    let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount);
+    let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount);
 }
 
 pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
@@ -654,7 +651,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         account_id: <Runtime as frame_system::Trait>::AccountId,
         commitment: <Runtime as frame_system::Trait>::Hash,
-        stake: Balance<Runtime, DefaultInstance>,
+        stake: BalanceOf<Runtime>,
         cycle_id: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
