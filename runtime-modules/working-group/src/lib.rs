@@ -63,18 +63,6 @@ use staking_handler::StakingHandler;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
 
-/// The forum working group instance alias.
-pub type ForumWorkingGroupInstance = Instance1;
-
-/// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = Instance2;
-
-/// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = Instance3;
-
-/// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = Instance4;
-
 /// Working group WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
