@@ -1,9 +1,9 @@
-import { Option, bool, u32, Text } from '@polkadot/types'
+import { Option, bool, u32, Text, Bytes } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { AccountId, MemberId, JoyStructDecorated } from './common'
 
 export type IMembership = {
-  handle_hash: Text
+  handle_hash: Bytes
   root_account: AccountId
   controller_account: AccountId
   verified: bool
@@ -12,7 +12,7 @@ export type IMembership = {
 
 export class Membership
   extends JoyStructDecorated({
-    handle_hash: Text,
+    handle_hash: Bytes,
     root_account: AccountId,
     controller_account: AccountId,
     verified: bool,

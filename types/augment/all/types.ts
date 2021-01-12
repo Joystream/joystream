@@ -426,7 +426,7 @@ export interface MemberId extends u64 {}
 
 /** @name Membership */
 export interface Membership extends Struct {
-  readonly handle_hash: Text;
+  readonly handle_hash: Bytes;
   readonly root_account: AccountId;
   readonly controller_account: AccountId;
   readonly verified: bool;

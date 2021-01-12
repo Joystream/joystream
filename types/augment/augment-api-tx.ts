@@ -439,26 +439,75 @@ declare module '@polkadot/api/types/submittable' {
     council: {
       /**
        * Subscribe candidate
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       announceCandidacy: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array, stakingAccountId: AccountId | string | Uint8Array, rewardAccountId: AccountId | string | Uint8Array, stake: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Plan the next budget refill.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       planBudgetRefill: AugmentedSubmittable<(nextRefill: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Release candidacy stake that is no longer needed.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       releaseCandidacyStake: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Sets the budget balance.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       setBudget: AugmentedSubmittable<(balance: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Set short description for the user's candidacy. Can be called anytime during user's candidacy.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)` where:
+       * `N` is the length of `note`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       setCandidacyNote: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array, note: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Withdraw candidacy and release candidacy stake.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       withdrawCandidacy: AugmentedSubmittable<(membershipId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
@@ -498,13 +547,15 @@ declare module '@polkadot/api/types/submittable' {
        **/
       addRelationship: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, cid: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Activates storage provider-to-content relationship. The storage provider should be registered
-       * in the storage working group. A storage provider may flip their own ready state, but nobody else.
+       * Activates storage provider-to-content relationship. The storage provider should be
+       * registered in the storage working group. A storage provider may flip their own ready
+       * state, but nobody else.
        **/
       setRelationshipReady: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, id: DataObjectStorageRelationshipId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Deactivates storage provider-to-content relationship. The storage provider should be registered
-       * in the storage working group. A storage provider may flip their own ready state, but nobody else.
+       * Deactivates storage provider-to-content relationship. The storage provider should be
+       * registered in the storage working group. A storage provider may flip their own r
+       * eady state, but nobody else.
        **/
       unsetRelationshipReady: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, id: DataObjectStorageRelationshipId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
@@ -1232,14 +1283,38 @@ declare module '@polkadot/api/types/submittable' {
     referendum: {
       /**
        * Release a locked stake.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       releaseVoteStake: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
       /**
        * Reveal a sealed vote in the referendum.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - `W` is the number of `intermediate_winners` stored in the current `Stage::<T, I>::get()`
+       * - DB:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       revealVote: AugmentedSubmittable<(salt: Bytes | string | Uint8Array, voteOptionId: MemberId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Cast a sealed vote in the referendum.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
        **/
       vote: AugmentedSubmittable<(commitment: Hash | string | Uint8Array, stake: Balance | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
