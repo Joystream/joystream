@@ -45,6 +45,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::SaturatedConversion;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -160,8 +161,6 @@ pub trait WeightInfo {
     fn release_vote_stake() -> Weight;
 }
 
-const MAX_WINNERS: u32 = 500; // TODO: Replace with a trait type
-
 /// Trait that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
@@ -186,6 +185,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 
     /// Start referendum independent of the current state.
     /// If an election is running before calling this function, it will be discontinued without any winners selected.
+    /// If it is called with a bigger winning target count greated than the max allowed the max will be used
     fn force_start(extra_winning_target_count: u64, cycle_id: u64);
 
     /// Calculate commitment for a vote.
@@ -235,6 +235,9 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
+    /// Maximum number of winning target count
+    type MaxWinnerTargetCount: Get<u64>;
+
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -252,10 +255,10 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// Check if an option a user is voting for actually exists.
     fn is_valid_option_id(option_id: &Self::MemberId) -> bool;
 
-    // If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
+    /// If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
     fn get_option_power(option_id: &Self::MemberId) -> Self::VotePower;
 
-    // Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
+    /// Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
     fn increase_option_power(option_id: &Self::MemberId, amount: &Self::VotePower);
 }
 
@@ -385,7 +388,9 @@ decl_module! {
             Self::try_progress_stage(frame_system::Module::<T>::block_number());
 
             T::WeightInfo::on_initialize_voting()
-                .max(T::WeightInfo::on_initialize_revealing(MAX_WINNERS))
+                .max(T::WeightInfo::on_initialize_revealing(
+                        T::MaxWinnerTargetCount::get().saturated_into()
+                ))
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -427,7 +432,9 @@ decl_module! {
         /// - DB:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::calculate_reveal_vote_weight(MAX_WINNERS)]
+        #[weight = Module::<T, I>::calculate_reveal_vote_weight(
+            T::MaxWinnerTargetCount::get().saturated_into()
+        )]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: <T as common::Trait>::MemberId) -> Result<(), Error<T, I>> {
             let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
 
@@ -548,6 +555,7 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
+        EnsureChecks::<T, I>::allowed_winner_target_count(winning_target_count)?;
 
         //
         // == MUTATION SAFE ==
@@ -566,6 +574,9 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
     // If an election is running before calling this function, it will be discontinued without any winners selected.
     fn force_start(extra_winning_target_count: u64, cycle_id: u64) {
         let winning_target_count = extra_winning_target_count + 1;
+
+        // If a greater than the max allowed target count is used the max will be used in its place
+        let winning_target_count = winning_target_count.min(T::MaxWinnerTargetCount::get());
 
         // remember if referendum is running
         let referendum_running = !matches!(Stage::<T, I>::get(), ReferendumStage::Inactive);
@@ -880,6 +891,14 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         Ok((current_cycle_id, account_id))
+    }
+
+    fn allowed_winner_target_count(count: u64) -> Result<(), ()> {
+        if count <= T::MaxWinnerTargetCount::get() {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(

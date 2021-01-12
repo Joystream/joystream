@@ -1020,3 +1020,30 @@ fn referendum_manager_referendum_start() {
         Mocks::start_referendum_manager(winning_target_count, cycle_id, Ok(()));
     });
 }
+
+/// Test that trying to start with more than allowed targets fails
+#[test]
+fn referendum_manager_referendum_start_error_with_more_than_allowed_target() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let winning_target_count = <Runtime as Trait>::MaxWinnerTargetCount::get() + 1;
+        let cycle_id = 1;
+
+        Mocks::start_referendum_manager(winning_target_count, cycle_id, Err(()));
+    });
+}
+
+/// Test that forcing the start with more than allowed max winners is capped
+#[test]
+fn referendum_manager_force_start_error_with_more_than_allowed_target() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let winning_target_count = <Runtime as Trait>::MaxWinnerTargetCount::get() + 5;
+        let cycle_id = 1;
+
+        Mocks::force_start(winning_target_count, cycle_id);
+        Mocks::check_winning_target_count(winning_target_count - 5);
+    });
+}
