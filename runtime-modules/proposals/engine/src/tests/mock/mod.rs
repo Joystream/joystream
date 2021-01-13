@@ -256,7 +256,7 @@ impl crate::WeightInfo for () {
         0
     }
 
-    fn cancel_proposal(_: u32) -> Weight {
+    fn cancel_proposal() -> Weight {
         0
     }
 
@@ -281,6 +281,10 @@ impl crate::WeightInfo for () {
     }
 
     fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
         0
     }
 }
