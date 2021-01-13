@@ -22,9 +22,9 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "^2.4.1",
-    "@polkadot/keyring": "^3.6.1",
-    "@polkadot/types": "^2.4.1",
+    "@polkadot/api": "2.4.1",
+    "@polkadot/keyring": "3.6.1",
+    "@polkadot/types": "2.4.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
