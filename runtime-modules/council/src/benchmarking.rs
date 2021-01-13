@@ -88,7 +88,7 @@ fn start_announcing_period<T: Trait>() {
         Council::<T>::stage(),
         CouncilStageUpdate {
             stage: CouncilStage::Announcing(current_state),
-            changed_at: current_block_number + One::one(),
+            changed_at: current_block_number,
         },
         "Announcement period not started"
     );
@@ -255,7 +255,7 @@ where
         Council::<T>::stage(),
         CouncilStageUpdate {
             stage: CouncilStage::Announcing(current_state),
-            changed_at: current_block_number + One::one(),
+            changed_at: current_block_number,
         },
         "Announcement period not started"
     );
@@ -263,39 +263,35 @@ where
     (account_id, member_id)
 }
 
+fn finalize_block<T: Trait>(block: T::BlockNumber) {
+    System::<T>::on_finalize(block);
+    Council::<T>::on_finalize(block);
+
+    let block = System::<T>::block_number() + One::one();
+    System::<T>::set_block_number(block);
+}
+
 fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
     let mut current_block_number = System::<T>::block_number();
 
+    Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
     while current_block_number < target_block {
+        finalize_block::<T>(current_block_number);
+        current_block_number = System::<T>::block_number();
+
         // Worst case scenarios either need this or don't change
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
-        System::<T>::on_finalize(current_block_number);
-        Council::<T>::on_finalize(current_block_number);
-
-        current_block_number = System::<T>::block_number() + One::one();
-        System::<T>::set_block_number(current_block_number);
-
         System::<T>::on_initialize(current_block_number);
         Council::<T>::on_initialize(current_block_number);
     }
 }
 
-fn move_to_block_assert_stage<T: Trait>(
+fn move_to_block_before_initialize_assert_stage<T: Trait>(
     target_block: T::BlockNumber,
     target_stage: CouncilStageUpdate<T::BlockNumber>,
 ) {
-    let mut current_block_number = System::<T>::block_number();
-
-    while current_block_number < target_block {
-        System::<T>::on_finalize(current_block_number);
-        Council::<T>::on_finalize(current_block_number);
-
-        current_block_number = System::<T>::block_number() + One::one();
-        System::<T>::set_block_number(current_block_number);
-
-        System::<T>::on_initialize(current_block_number);
-        Council::<T>::on_initialize(current_block_number);
-    }
+    move_to_block::<T>(target_block - One::one());
+    finalize_block::<T>(target_block);
 
     assert_eq!(Stage::<T>::get(), target_stage, "Stage not reached");
 }
@@ -356,7 +352,9 @@ benchmarks! {
         );
 
         // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
-        current_block_number = T::BudgetRefillPeriod::get() * T::ElectedMemberRewardPeriod::get();
+        // -1 because we want to move just before the refill
+        current_block_number = T::BudgetRefillPeriod::get() *
+            T::ElectedMemberRewardPeriod::get() - One::one();
 
         // The first time we reach the next_reward_payments
         // the next time will be now + next_reward_payments
@@ -368,17 +366,17 @@ benchmarks! {
         // Worst case scenario we can pay as much as it is possible
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
 
-        let now = System::<T>::block_number();
+        let target = System::<T>::block_number() + One::one();
 
         assert_eq!(
             Council::<T>::next_budget_refill(),
-            now,
+            target,
             "Budget refill not now",
         );
 
         assert_eq!(
             Council::<T>::next_reward_payments(),
-            now,
+            target,
             "Reward payment not now",
         );
 
@@ -386,7 +384,7 @@ benchmarks! {
 
         let current_council = Council::<T>::council_members();
         let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = now - reward_period;
+            councillor.last_payment_block = target - reward_period;
             councillor
         }).collect::<Vec<_>>();
 
@@ -399,7 +397,7 @@ benchmarks! {
             .iter()
             .map(|member| member.unpaid_reward)
             .collect::<Vec<_>>();
-    }: { Council::<T>::try_process_budget(now); }
+    }: { Council::<T>::try_process_budget(target); }
     verify {
         let reward_per_block: Balance<T> = T::ElectedMemberRewardPerBlock::get();
 
@@ -411,13 +409,13 @@ benchmarks! {
 
         assert_eq!(
             Council::<T>::next_budget_refill(),
-            now + T::BudgetRefillPeriod::get(),
+            target + T::BudgetRefillPeriod::get(),
             "Budget refill not updated"
         );
 
         let current_council = Council::<T>::council_members();
         let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = now;
+            councillor.last_payment_block = target;
             councillor
         }).collect::<Vec<_>>();
 
@@ -462,7 +460,7 @@ benchmarks! {
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
-                changed_at: current_block_number + One::one(),
+                changed_at: current_block_number,
             };
 
         // Force idle state without depenending on Referndum
@@ -475,11 +473,11 @@ benchmarks! {
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
-                changed_at: current_block_number + One::one(),
+                changed_at: current_block_number,
             };
 
         let target_block_number = current_block_number + T::IdlePeriodDuration::get();
-        move_to_block_assert_stage::<T>(target_block_number, current_stage_update);
+        move_to_block_before_initialize_assert_stage::<T>(target_block_number, current_stage_update);
 
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
@@ -489,7 +487,7 @@ benchmarks! {
                 stage: CouncilStage::Announcing(CouncilStageAnnouncing {
                     candidates_count: 0,
                 }),
-                changed_at: target_block_number + One::one(),
+                changed_at: target_block_number,
             },
             "Idle period didn't end"
         );
@@ -512,11 +510,11 @@ benchmarks! {
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
-                changed_at: current_block_number + One::one(),
+                changed_at: current_block_number,
             };
 
         let target_block_number = current_block_number + T::AnnouncingPeriodDuration::get();
-        move_to_block_assert_stage::<T>(target_block_number, current_stage_update);
+        move_to_block_before_initialize_assert_stage::<T>(target_block_number, current_stage_update);
 
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
@@ -527,7 +525,7 @@ benchmarks! {
                     CouncilStageElection {
                         candidates_count: (i + 1).into(),
                     }),
-                changed_at: target_block_number + One::one(),
+                changed_at: target_block_number,
             },
             "Announcing period didn't end"
         );
@@ -545,11 +543,13 @@ benchmarks! {
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
-                changed_at: current_block_number + One::one(),
+                changed_at: current_block_number,
             };
 
         let target_block_number = current_block_number + T::AnnouncingPeriodDuration::get();
-        move_to_block_assert_stage::<T>(target_block_number, current_stage_update);
+        move_to_block_before_initialize_assert_stage::<T>(
+            target_block_number, current_stage_update
+        );
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
         let current_stage =
@@ -559,7 +559,7 @@ benchmarks! {
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
-                changed_at: target_block_number + One::one(),
+                changed_at: target_block_number,
             };
 
         assert_eq!(Council::<T>::stage(), current_stage_update, "Council stage not restarted");
@@ -606,7 +606,7 @@ benchmarks! {
             Council::<T>::stage(),
             CouncilStageUpdate {
                 stage: CouncilStage::Announcing(current_state),
-                changed_at: current_block_number + One::one(),
+                changed_at: current_block_number,
             },
             "Announcement period not started"
         );

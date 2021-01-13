@@ -359,7 +359,7 @@ fn council_announcement_reset_on_not_enough_winners() {
         Mocks::simulate_council_cycle(params.clone());
 
         // forward to finish election / start idle period
-        MockUtils::increase_block_number(council_settings.reveal_stage_duration + 1);
+        MockUtils::increase_block_number(council_settings.reveal_stage_duration);
 
         // check announcements were reset
         Mocks::check_announcing_period(
@@ -401,21 +401,21 @@ fn council_two_consecutive_rounds() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -465,21 +465,21 @@ fn council_two_consecutive_rounds() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[2].candidate.clone(),
                 candidates[2].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -592,21 +592,21 @@ fn council_candidate_stake_can_be_unlocked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -700,21 +700,21 @@ fn council_candidate_stake_automaticly_converted() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -791,21 +791,21 @@ fn council_member_stake_is_locked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -886,21 +886,21 @@ fn council_member_stake_automaticly_unlocked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[2].candidate.clone(),
                 candidates[2].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration - 1,
+                council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -1110,14 +1110,25 @@ fn council_budget_refill_can_be_planned() {
 
         Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
 
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
+
         // forward to one block before refill
-        MockUtils::increase_block_number(next_refill - 1);
+        MockUtils::increase_block_number(next_refill - current_block - 1);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::block_number(),
+            next_refill - 1
+        );
 
         // check no refill happened yet
         Mocks::check_budget_refill(0, next_refill);
 
         // forward to after block refill
         MockUtils::increase_block_number(1);
+
+        assert_eq!(frame_system::Module::<Runtime>::block_number(), next_refill);
 
         // check budget was increased
         Mocks::check_budget_refill(
@@ -1144,11 +1155,11 @@ fn council_rewards_are_paid() {
         let params = Mocks::run_full_council_cycle(0, &[], 0);
 
         // calculate council member last reward block
+        // the duration of the complete cycle minus the part of the idle cycle where there was
+        // no time to pay out the the reward
         let last_payment_block = council_settings.cycle_duration
-            + (<Runtime as Trait>::ElectedMemberRewardPeriod::get()
-                - (council_settings.idle_stage_duration
-                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get()))
-            - 1; // -1 because current block is not finalized yet
+            - (council_settings.idle_stage_duration
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
             .expected_final_council_members
             .iter()
@@ -1190,10 +1201,8 @@ fn council_missed_rewards_are_paid_later() {
         MockUtils::increase_block_number(<Runtime as Trait>::ElectedMemberRewardPeriod::get());
 
         let last_payment_block = council_settings.cycle_duration
-            + (reward_period
-                - (council_settings.idle_stage_duration
-                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get()))
-            - 1; // -1 because current block is not finalized yet
+            - (council_settings.idle_stage_duration
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
 
         // check unpaid rewards were discarded
         for council_member in CouncilMembers::<Runtime>::get() {
@@ -1201,8 +1210,7 @@ fn council_missed_rewards_are_paid_later() {
             assert_eq!(
                 council_member.last_payment_block,
                 //last_payment_block + reward_period,
-                // -1 because council was elected (last_payment_block set) in on_finalize
-                council_settings.election_duration - 1,
+                council_settings.election_duration,
             );
         }
 
@@ -1241,11 +1249,11 @@ fn council_discard_remaining_rewards_on_depose() {
         let params = Mocks::run_full_council_cycle(0, &[], 0);
 
         // calculate council member last reward block
+        // the duration of the complete cycle minus the part of the idle cycle where there was
+        // no time to pay out the the reward
         let last_payment_block = council_settings.cycle_duration
-            + (<Runtime as Trait>::ElectedMemberRewardPeriod::get()
-                - (council_settings.idle_stage_duration
-                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get()))
-            - 1; // -1 because current block is not finalized yet
+            - (council_settings.idle_stage_duration
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
             .expected_final_council_members
             .iter()
@@ -1284,7 +1292,12 @@ fn council_budget_auto_refill() {
         let start_balance = Budget::<Runtime>::get();
 
         // forward before next refill
-        MockUtils::increase_block_number(council_settings.budget_refill_period - 1);
+        // Note: initial block is 1 so current_block + budget_refill_period - 2 = budget_refill_period - 1
+        MockUtils::increase_block_number(council_settings.budget_refill_period - 2);
+        assert_eq!(
+            frame_system::Module::<Runtime>::block_number(),
+            council_settings.budget_refill_period - 1
+        );
 
         assert_eq!(Budget::<Runtime>::get(), start_balance,);
 

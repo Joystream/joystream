@@ -206,7 +206,7 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 pub trait WeightInfo {
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election() -> Weight; // Parameter discarded
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight; // Parameter discarded
     fn try_progress_stage_announcing_restart() -> Weight;
     fn announce_candidacy() -> Weight;
     fn release_candidacy_stake() -> Weight;
@@ -466,12 +466,18 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
-        fn on_finalize(now: T::BlockNumber) {
-            // council stage progress
-            Self::try_progress_stage(now);
+        fn on_initialize() -> Weight {
+            let now = frame_system::Module::<T>::block_number();
 
-            // budget reward payment + budget refill
+            // Council stage progress it returns the number of candidates
+            // if in announcing stage
+            let mb_candidate_count = Self::try_progress_stage(now);
+
+            // Budget reward payment + budget refill
             Self::try_process_budget(now);
+
+            // Calculates the weight using the candidate count
+            Self::calculate_on_initialize_weight(mb_candidate_count)
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -671,22 +677,26 @@ impl<T: Trait> Module<T> {
     /////////////////// Lifetime ///////////////////////////////////////////
 
     // Checkout expire of referendum stage.
-    fn try_progress_stage(now: T::BlockNumber) {
+    // Returns the number of candidates if currently in stage announcing
+    fn try_progress_stage(now: T::BlockNumber) -> Option<u64> {
         // election progress
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
-                if now
-                    == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() - 1.into()
-                {
+                let number_of_candidates = stage_data.candidates_count;
+                if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
                     Self::end_announcement_period(stage_data);
                 }
+
+                Some(number_of_candidates)
             }
             CouncilStage::Idle => {
-                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() - 1.into() {
+                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
                     Self::end_idle_period();
                 }
+
+                None
             }
-            _ => (),
+            _ => None,
         }
     }
 
@@ -876,6 +886,27 @@ impl<T: Trait> Module<T> {
             note_hash: None,
         }
     }
+
+    fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
+        // Minimum weight for progress stage
+        let weight = T::WeightInfo::try_progress_stage_idle()
+            .max(T::WeightInfo::try_progress_stage_announcing_restart());
+
+        let weight = if let Some(candidate_count) = mb_candidate_count {
+            // We can use the candidate count to calculate the worst case
+            // if we are in announcement period without an additional storage access
+            weight.max(T::WeightInfo::try_progress_stage_announcing_start_election(
+                candidate_count.saturated_into(),
+            ))
+        } else {
+            // If we don't have the candidate count we only take into account the weight
+            // of the functions that doesn't depend on it
+            weight
+        };
+
+        // Total weight = try progress weight + try process budget weight
+        T::WeightInfo::try_process_budget().saturating_add(weight)
+    }
 }
 
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
@@ -1026,9 +1057,7 @@ impl<T: Trait> Mutations<T> {
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
             stage: CouncilStage::Announcing(stage_data),
-            // set next block as the start of next phase (this function is invoke on block
-            // finalization)
-            changed_at: block_number + 1.into(),
+            changed_at: block_number,
         });
 
         // increase anouncement cycle id
@@ -1049,8 +1078,7 @@ impl<T: Trait> Mutations<T> {
             stage: CouncilStage::Election(CouncilStageElection {
                 candidates_count: stage_data.candidates_count,
             }),
-            // set next block as the start of next phase (this function is invoke on block finalization)
-            changed_at: block_number + 1.into(),
+            changed_at: block_number,
         });
     }
 
@@ -1062,7 +1090,7 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
-                changed_at: block_number + 1.into(), // set next block as the start of next phase
+                changed_at: block_number, // set current block as the start of next phase
             }
         });
 

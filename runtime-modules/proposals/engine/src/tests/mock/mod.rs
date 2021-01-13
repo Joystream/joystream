@@ -133,10 +133,10 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
 pub struct ReferendumWeightInfo;
 impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_finalize_revealing(_: u32) -> Weight {
+    fn on_initialize_revealing(_: u32) -> Weight {
         0
     }
-    fn on_finalize_voting() -> Weight {
+    fn on_initialize_voting() -> Weight {
         0
     }
     fn vote() -> Weight {
@@ -413,7 +413,7 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn try_progress_stage_idle() -> Weight {
         0
     }
-    fn try_progress_stage_announcing_start_election() -> Weight {
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
         0
     }
     fn try_progress_stage_announcing_restart() -> Weight {
