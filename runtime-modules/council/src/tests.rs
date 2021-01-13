@@ -1456,8 +1456,6 @@ fn council_many_cycle_rewards() {
 
         // quite high number of election cycles that will uncover any reward payment iregularities
         let num_iterations = 100;
-        //let num_iterations = 12; // working
-        //let num_iterations = 13; // not working
 
         let mut council_members = vec![];
         let mut auto_topup_amount = 0;
