@@ -497,14 +497,12 @@ benchmarks! {
             );
         }
 
-        if cfg!(test) {
-            for proposal_id in proposals.iter() {
-                assert_in_events::<T>(
-                    RawEvent::ProposalExecuted(
-                        proposal_id.clone(),
-                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-                );
-            }
+        for proposal_id in proposals.iter() {
+            assert_in_events::<T>(
+                RawEvent::ProposalExecuted(
+                    proposal_id.clone(),
+                    ExecutionStatus::failed_execution("Decoding error")).into()
+            );
         }
     }
 
@@ -565,14 +563,12 @@ benchmarks! {
             assert!(!DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable code should've been removed");
         }
 
-        if cfg!(test) {
-            for proposal_id in proposals.iter() {
-                assert_in_events::<T>(
-                    RawEvent::ProposalExecuted(
-                        proposal_id.clone(),
-                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-                );
-            }
+        for proposal_id in proposals.iter() {
+            assert_in_events::<T>(
+                RawEvent::ProposalExecuted(
+                    proposal_id.clone(),
+                    ExecutionStatus::failed_execution("Decoding error")).into()
+            );
         }
     }
 
