@@ -49,5 +49,6 @@ benchmark proposals_discussion
 benchmark proposals_engine
 benchmark pallet_constitution
 benchmark working_group
+benchmark forum
 benchmark council
 benchmark referendum

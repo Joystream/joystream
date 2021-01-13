@@ -150,8 +150,8 @@ pub type CanRevealResult<T, I> = (
 /// referendum WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn on_finalize_revealing(i: u32) -> Weight;
-    fn on_finalize_voting() -> Weight;
+    fn on_initialize_revealing(i: u32) -> Weight;
+    fn on_initialize_voting() -> Weight;
     fn vote() -> Weight;
     fn reveal_vote_space_for_new_winner(i: u32) -> Weight;
     fn reveal_vote_space_not_in_winners(i: u32) -> Weight;
@@ -381,8 +381,11 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
-        fn on_finalize(now: T::BlockNumber) {
-            Self::try_progress_stage(now);
+        fn on_initialize() -> Weight {
+            Self::try_progress_stage(frame_system::Module::<T>::block_number());
+
+            T::WeightInfo::on_initialize_voting()
+                .max(T::WeightInfo::on_initialize_revealing(MAX_WINNERS))
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -493,12 +496,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.started + T::VoteStageDuration::get() - 1.into() {
+                if now == stage_data.started + T::VoteStageDuration::get() {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.started + T::RevealStageDuration::get() - 1.into() {
+                if now == stage_data.started + T::RevealStageDuration::get() {
                     Self::end_reveal_period(stage_data);
                 }
             }
@@ -611,7 +614,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <frame_system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number(),
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
         }));
@@ -624,7 +627,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T,
             I,
         > {
-            started: <frame_system::Module<T>>::block_number() + 1.into(),
+            started: <frame_system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
             current_cycle_id: old_stage.current_cycle_id,
