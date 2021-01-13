@@ -882,6 +882,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
+        // Minimum weight for progress stage
         let weight = T::WeightInfo::try_progress_stage_idle()
             .max(T::WeightInfo::try_progress_stage_announcing_restart());
 
