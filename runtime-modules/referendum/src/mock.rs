@@ -190,6 +190,10 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
         unimplemented!()
     }
 
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
         unimplemented!()
     }
@@ -203,6 +207,17 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
         _worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+        true
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Runtime as frame_system::Trait>::AccountId,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
+        true
     }
 }
 

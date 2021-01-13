@@ -38,6 +38,7 @@ use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
+use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
@@ -662,6 +663,7 @@ impl forum::Trait for Runtime {
     type MaxCategoryDepth = MaxCategoryDepth;
 
     type MapLimits = MapLimits;
+    type WeightInfo = weights::forum::WeightInfo;
 
     fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
         membership::Module::<Runtime>::ensure_is_controller_account_for_member(
@@ -672,7 +674,7 @@ impl forum::Trait for Runtime {
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
-        Self::Hash::from_slice(text)
+        Self::Hashing::hash(text)
     }
 
     type WorkingGroup = ForumWorkingGroup;
