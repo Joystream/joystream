@@ -36,7 +36,7 @@ fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     assert_eq!(
         Stage::<T, I>::get(),
         ReferendumStage::Voting(ReferendumStageVoting {
-            started: System::<T>::block_number() + One::one(),
+            started: System::<T>::block_number(),
             winning_target_count: (winning_target_count + 1).into(),
             current_cycle_id: 0,
         }),
@@ -171,6 +171,29 @@ fn move_to_block<T: Trait<I>, I: Instance>(
     assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
 }
 
+fn move_to_block_before_initialize<T: Trait<I>, I: Instance>(
+    target_block: T::BlockNumber,
+    target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
+) {
+    let mut current_block_number = System::<T>::block_number();
+
+    while current_block_number < target_block - One::one() {
+        System::<T>::on_finalize(current_block_number);
+        Referendum::<T, I>::on_finalize(current_block_number);
+        current_block_number = System::<T>::block_number() + One::one();
+        System::<T>::set_block_number(current_block_number);
+        System::<T>::on_initialize(current_block_number);
+        Referendum::<T, I>::on_initialize(current_block_number);
+    }
+
+    System::<T>::on_finalize(current_block_number);
+    Referendum::<T, I>::on_finalize(current_block_number);
+    current_block_number = System::<T>::block_number() + One::one();
+    System::<T>::set_block_number(current_block_number);
+
+    assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
+}
+
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
@@ -266,7 +289,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         )
     };
 
-    let started_voting_block_number = System::<T>::block_number() + One::one();
+    let started_voting_block_number = System::<T>::block_number();
     let target_block_number = T::VoteStageDuration::get() + started_voting_block_number;
 
     let target_stage = ReferendumStage::Revealing(ReferendumStageRevealingOf::<T, I> {
@@ -310,7 +333,7 @@ benchmarks_instance! {
     }
     _ { }
 
-    on_finalize_revealing {
+    on_initialize_revealing {
         let i in 0 .. MAX_WINNERS;
 
         let cycle_id = 0;
@@ -333,17 +356,17 @@ benchmarks_instance! {
         let target_stage = ReferendumStage::Revealing(
             ReferendumStageRevealingOf::<T, I> {
                 intermediate_winners: intermediate_winners.clone(),
-                started: started_voting_block_number + T::VoteStageDuration::get() + One::one(),
+                started: started_voting_block_number + T::VoteStageDuration::get(),
                 winning_target_count: (i + 1).into(),
                 current_cycle_id: cycle_id,
             }
         );
 
-        move_to_block::<T, I>(
+        move_to_block_before_initialize::<T, I>(
             target_block_number,
             target_stage
         );
-    }: { Referendum::<T, I>::on_finalize(System::<T>::block_number()); }
+    }: { Referendum::<T, I>::on_initialize(System::<T>::block_number()); }
     verify {
         assert_eq!(
             Referendum::<T, I>::stage(),
@@ -354,26 +377,26 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::ReferendumFinished(intermediate_winners).into());
     }
 
-    on_finalize_voting {
+    on_initialize_voting {
         let winning_target_count = 0;
         let cycle_id = 0;
         start_voting_cycle::<T, I>(winning_target_count);
 
-        let started_voting_block_number = System::<T>::block_number() + One::one();
+        let started_voting_block_number = System::<T>::block_number();
         let target_block_number =
-            T::VoteStageDuration::get() + started_voting_block_number - One::one();
+            T::VoteStageDuration::get() + started_voting_block_number;
 
         let target_stage = ReferendumStage::Voting(ReferendumStageVoting {
-                started: System::<T>::block_number() + One::one(),
+                started: System::<T>::block_number(),
                 winning_target_count: (winning_target_count + 1).into(),
                 current_cycle_id: cycle_id,
         });
 
-        move_to_block::<T, I>(target_block_number, target_stage);
-    }: { Referendum::<T, I>::on_finalize(System::<T>::block_number()); }
+        move_to_block_before_initialize::<T, I>(target_block_number, target_stage);
+    }: { Referendum::<T, I>::on_initialize(System::<T>::block_number()); }
     verify {
         let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
-            started: target_block_number + One::one(),
+            started: target_block_number,
             winning_target_count: 1,
             intermediate_winners: vec![],
             current_cycle_id: cycle_id,
@@ -455,7 +478,7 @@ benchmarks_instance! {
             ReferendumStage::Revealing(ReferendumStageRevealing{
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
-                started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
@@ -499,7 +522,7 @@ benchmarks_instance! {
             ReferendumStage::Revealing(ReferendumStageRevealing{
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
-                started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
@@ -550,7 +573,7 @@ benchmarks_instance! {
             ReferendumStage::Revealing(ReferendumStageRevealing{
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
-                started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
@@ -604,7 +627,7 @@ benchmarks_instance! {
             ReferendumStage::Revealing(ReferendumStageRevealing{
                 intermediate_winners,
                 winning_target_count: (i+1).into(),
-                started: T::VoteStageDuration::get() + started_block_number + One::one(),
+                started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
             }),
             "Vote not revealed",
@@ -728,18 +751,18 @@ mod tests {
     }
 
     #[test]
-    fn test_on_finalize_voting() {
+    fn test_on_initialize_voting() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_finalize_voting::<Runtime>());
+            assert_ok!(test_benchmark_on_initialize_voting::<Runtime>());
         })
     }
 
     #[test]
-    fn test_on_finalize_revealing() {
+    fn test_on_initialize_revealing() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_finalize_revealing::<Runtime>());
+            assert_ok!(test_benchmark_on_initialize_revealing::<Runtime>());
         })
     }
 }
