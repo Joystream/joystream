@@ -195,14 +195,14 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
     }
 
     fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
-        unimplemented!()
+        true
     }
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Trait>::AccountId,
         _worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> bool {
-        unimplemented!()
+        true
     }
 }
 
