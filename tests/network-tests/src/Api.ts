@@ -16,7 +16,7 @@ import {
 
 import { AccountInfo, Balance, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
@@ -105,15 +105,15 @@ export class Api {
     this.sender = new Sender(api, keyring, label)
   }
 
-  public get tx() {
+  public get tx(): SubmittableExtrinsics<'promise'> {
     return this.api.tx
   }
 
-  public get query() {
+  public get query(): QueryableStorage<'promise'> {
     return this.api.query
   }
 
-  public get consts() {
+  public get consts(): QueryableConsts<'promise'> {
     return this.api.consts
   }
 

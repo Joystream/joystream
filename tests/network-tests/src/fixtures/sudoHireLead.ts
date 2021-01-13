@@ -44,11 +44,9 @@ export class SudoHireLeadFixture extends BaseFixture {
   }
 
   public async execute(): Promise<void> {
-    const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.api,
-      [this.leadAccount],
-      this.paidTerms
-    )
+    const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(this.api, [
+      this.leadAccount,
+    ])
     // Buying membership for leader account
     await leaderHappyCaseFixture.runner()
 
