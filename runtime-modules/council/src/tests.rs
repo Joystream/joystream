@@ -1455,13 +1455,15 @@ fn council_many_cycle_rewards() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         // quite high number of election cycles that will uncover any reward payment iregularities
-        let num_iterations = 1000;
+        let num_iterations = 100;
         //let num_iterations = 12; // working
         //let num_iterations = 13; // not working
 
         let mut council_members = vec![];
         let mut auto_topup_amount = 0;
 
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), u64::MAX.into(), Ok(()));
         for i in 0..num_iterations {
             let tmp_params = Mocks::run_full_council_cycle(
                 i * council_settings.cycle_duration,
@@ -1471,13 +1473,38 @@ fn council_many_cycle_rewards() {
 
             auto_topup_amount = tmp_params.candidates_announcing[0].auto_topup_amount;
             council_members = tmp_params.expected_final_council_members;
+
+            /*
+             *  Since we have enough budget to pay during idle period
+             *  we update the councilor last payment block during the idle period
+             *  that are not accounted in the `run_full_council_cycle` code expected final member
+             */
+
+            // This is the last paid block taking into account the last idle period
+            let last_payment_block = i * council_settings.cycle_duration
+                + council_settings.cycle_duration
+                - (council_settings.idle_stage_duration
+                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+
+            // Update the expected final council from `run_full_council_cycle` to use the current
+            // `last_payment_block`
+            council_members = council_members
+                .into_iter()
+                .map(|councilor| CouncilMemberOf::<Runtime> {
+                    last_payment_block,
+                    ..councilor
+                })
+                .collect();
         }
 
+        // All blocks are paid except for the first iteration while the council is not elected
+        // that means discounting the idle stage duration. And the last blocks of the last idle
+        // period aren't paid until a full extra reward period passes.
         let num_blocks_elected = num_iterations * council_settings.cycle_duration
-            - (council_settings.cycle_duration - council_settings.idle_stage_duration);
+            - (council_settings.cycle_duration - council_settings.idle_stage_duration) // Unpaid blocks from first cycle
+            - (council_settings.idle_stage_duration // Unpaid blocks from last cycle
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
 
-        /*
-        // TODO: proper expected balance calculation
         assert_eq!(
             <Runtime as referendum::Trait<ReferendumInstance>>::Currency::total_balance(
                 &council_members[0].staking_account_id
@@ -1485,6 +1512,5 @@ fn council_many_cycle_rewards() {
             num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
                 + num_iterations * auto_topup_amount
         );
-        */
     });
 }
