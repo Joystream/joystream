@@ -468,6 +468,7 @@ pub struct CandidateInfo<T: Trait> {
     pub account_id: T::MemberId,
     pub membership_id: T::MemberId,
     pub candidate: CandidateOf<T>,
+    pub auto_topup_amount: Balance<T>,
 }
 
 #[derive(Clone)]
@@ -665,13 +666,16 @@ where
             note_hash: None,
         };
 
-        Self::topup_account(account_id.into(), stake * TOPUP_MULTIPLIER.into());
+        let auto_topup_amount = stake * TOPUP_MULTIPLIER.into();
+
+        Self::topup_account(account_id.into(), auto_topup_amount);
 
         CandidateInfo {
             origin,
             candidate,
             membership_id: account_id.into(),
             account_id: account_id.into(),
+            auto_topup_amount,
         }
     }
 
@@ -852,7 +856,14 @@ where
     }
 
     pub fn check_new_council_elected_hook() {
-        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0))
+        let result = LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
+
+        // clear election sign
+        LAST_COUNCIL_ELECTED_OK.with(|value| {
+            *value.borrow_mut() = (false,);
+        });
+
+        result
     }
 
     pub fn set_candidacy_note(

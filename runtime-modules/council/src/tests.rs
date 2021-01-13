@@ -6,6 +6,7 @@ use super::{
 };
 use crate::mock::*;
 use common::origin::CouncilOriginValidator;
+use frame_support::traits::Currency;
 use frame_support::StorageValue;
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
@@ -1369,6 +1370,7 @@ fn council_membership_checks() {
     });
 }
 
+// Test that the hook is properly called after a new council is elected.
 #[test]
 fn council_new_council_elected_hook() {
     let config = default_genesis_config();
@@ -1440,6 +1442,47 @@ fn council_origin_validator_fails_with_not_councilor() {
         assert_eq!(
             validation_result,
             Err(Error::<Runtime>::NotCouncilor.into())
+        );
+    });
+}
+
+// Test that rewards for council members are paid as expected even after many council election cycles.
+#[test]
+fn council_many_cycle_rewards() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // quite high number of election cycles that will uncover any reward payment iregularities
+        let num_iterations = 1000;
+        //let num_iterations = 12; // working
+        //let num_iterations = 13; // not working
+
+        let mut council_members = vec![];
+        let mut auto_topup_amount = 0;
+
+        for i in 0..num_iterations {
+            let tmp_params = Mocks::run_full_council_cycle(
+                i * council_settings.cycle_duration,
+                &council_members,
+                0,
+            );
+
+            auto_topup_amount = tmp_params.candidates_announcing[0].auto_topup_amount;
+            council_members = tmp_params.expected_final_council_members;
+        }
+
+        let num_blocks_elected = num_iterations * council_settings.cycle_duration
+            - (council_settings.cycle_duration - council_settings.idle_stage_duration);
+
+        // TODO: proper expected balance calculation
+        assert_eq!(
+            <Runtime as referendum::Trait<ReferendumInstance>>::Currency::total_balance(
+                &council_members[0].staking_account_id
+            ),
+            num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
+                + num_iterations * auto_topup_amount
         );
     });
 }
