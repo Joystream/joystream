@@ -381,7 +381,7 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // No origin so this is a priviledged call
-        fn on_initialize() -> Weight{
+        fn on_initialize() -> Weight {
             Self::try_progress_stage(frame_system::Module::<T>::block_number());
 
             T::WeightInfo::on_initialize_voting()

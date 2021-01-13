@@ -463,30 +463,15 @@ decl_module! {
         fn on_initialize() -> Weight {
             let now = frame_system::Module::<T>::block_number();
 
-            let try_progress_weight = T::WeightInfo::try_progress_stage_idle().max(
-                T::WeightInfo::try_progress_stage_announcing_restart()
-            );
+            // Council stage progress it returns the number of candidates
+            // if in announcing stage
+            let mb_candidate_count = Self::try_progress_stage(now);
 
-            // council stage progress
-            let try_progress_weight = if let Some(candidate_count) = Self::try_progress_stage(now) {
-                // We can use the candidate count to calculate the worst case
-                // if we are in announcement period without an additional storage access
-                try_progress_weight.max(
-                    T::WeightInfo::try_progress_stage_announcing_start_election(
-                            candidate_count.saturated_into()
-                        )
-                    )
-            } else {
-                // If we don't have the candidate count we only take into account the weight
-                // of the functions that doesn't depend on it
-                try_progress_weight
-            };
-
-            // budget reward payment + budget refill
+            // Budget reward payment + budget refill
             Self::try_process_budget(now);
 
-            // Total weight = try progress weight + try process budget weight
-            T::WeightInfo::try_process_budget().saturating_add(try_progress_weight)
+            // Calculates the weight using the candidate count
+            Self::calculate_on_initialize_weight(mb_candidate_count)
         }
 
         /////////////////// Election-related ///////////////////////////////////
@@ -894,6 +879,26 @@ impl<T: Trait> Module<T> {
             vote_power: 0.into(),
             note_hash: None,
         }
+    }
+
+    fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
+        let weight = T::WeightInfo::try_progress_stage_idle()
+            .max(T::WeightInfo::try_progress_stage_announcing_restart());
+
+        let weight = if let Some(candidate_count) = mb_candidate_count {
+            // We can use the candidate count to calculate the worst case
+            // if we are in announcement period without an additional storage access
+            weight.max(T::WeightInfo::try_progress_stage_announcing_start_election(
+                candidate_count.saturated_into(),
+            ))
+        } else {
+            // If we don't have the candidate count we only take into account the weight
+            // of the functions that doesn't depend on it
+            weight
+        };
+
+        // Total weight = try progress weight + try process budget weight
+        T::WeightInfo::try_process_budget().saturating_add(weight)
     }
 }
 

@@ -1108,10 +1108,12 @@ fn council_budget_refill_can_be_planned() {
 
         Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
 
-        assert_eq!(frame_system::Module::<Runtime>::block_number(), 1);
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
 
         // forward to one block before refill
-        MockUtils::increase_block_number(next_refill - 2);
+        MockUtils::increase_block_number(next_refill - current_block - 1);
 
         assert_eq!(
             frame_system::Module::<Runtime>::block_number(),
