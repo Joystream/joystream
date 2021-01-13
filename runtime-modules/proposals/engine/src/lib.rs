@@ -772,7 +772,7 @@ impl<T: Trait> Module<T> {
                     ExecutionStatus::Executed
                 }
             }
-            Err(error) => ExecutionStatus::failed_execution(error.what()),
+            Err(_) => ExecutionStatus::failed_execution("Decoding error"),
         };
 
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));

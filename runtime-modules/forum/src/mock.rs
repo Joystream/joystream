@@ -6,7 +6,8 @@ pub use frame_support::assert_err;
 use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use staking_handler::LockComparator;
 
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_runtime::{
@@ -27,6 +28,23 @@ impl_outer_event! {
     pub enum TestEvent for Runtime {
         forum_mod<T>,
         frame_system<T>,
+        balances<T>,
+        membership<T>,
+        working_group Instance1 <T>,
+    }
+}
+
+pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        if member_id > 10 {
+            return Err(ACTOR_ORIGIN_ERROR);
+        }
+
+        Ok(signed_account_id)
     }
 }
 
@@ -39,6 +57,9 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const ExistentialDeposit: u32 = 0;
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 impl frame_system::Trait for Runtime {
@@ -62,11 +83,11 @@ impl frame_system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = ();
     type PalletInfo = ();
-    type SystemWeightInfo = ();
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
@@ -74,6 +95,154 @@ impl pallet_timestamp::Trait for Runtime {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+impl balances::Trait for Runtime {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: [u8; 8] = [9; 8];
+    pub const InviteMemberLockId: [u8; 8] = [9; 8];
+}
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Runtime>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = Weights;
+}
+
+impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
+// Weights info stub
+pub struct Weights;
+impl working_group::WeightInfo for Weights {
+    fn on_initialize_leaving(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn apply_on_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_lead() -> u64 {
+        unimplemented!()
+    }
+
+    fn fill_opening_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_role_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn cancel_opening() -> u64 {
+        unimplemented!()
+    }
+
+    fn withdraw_application() -> u64 {
+        unimplemented!()
+    }
+
+    fn slash_stake(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_worker(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn terminate_role_lead(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn increase_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake() -> u64 {
+        unimplemented!()
+    }
+
+    fn spend_from_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_amount() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_status_text(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn update_reward_account() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn add_opening(_: u32) -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_immediatly() -> u64 {
+        unimplemented!()
+    }
+
+    fn leave_role_later() -> u64 {
+        unimplemented!()
+    }
+}
+
+impl membership::Trait for Runtime {
+    type Event = TestEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
 }
 
 parameter_types! {
@@ -109,28 +278,18 @@ impl Trait for Runtime {
 
     type MapLimits = MapLimits;
     type WorkingGroup = ();
+    type WeightInfo = ();
 
     fn is_forum_member(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        forum_user_id: &Self::ForumUserId,
+        _forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        let allowed_accounts = [
-            FORUM_LEAD_ORIGIN_ID,
-            NOT_FORUM_LEAD_ORIGIN_ID,
-            NOT_FORUM_LEAD_2_ORIGIN_ID,
-        ];
-
-        allowed_accounts.contains(account_id) && account_id == forum_user_id
+        *account_id != NOT_FORUM_MEMBER_ORIGIN_ID
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
     }
-}
-
-impl common::Trait for Runtime {
-    type MemberId = u64;
-    type ActorId = u64;
 }
 
 impl common::working_group::WorkingGroupParticipation<Runtime> for () {
@@ -150,20 +309,92 @@ impl common::working_group::WorkingGroupParticipation<Runtime> for () {
     }
 
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
-        *account_id == FORUM_LEAD_ORIGIN_ID
+        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
     }
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Trait>::AccountId,
-        worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> bool {
-        let allowed_accounts = [
-            FORUM_LEAD_ORIGIN_ID,
-            FORUM_MODERATOR_ORIGIN_ID,
-            FORUM_MODERATOR_2_ORIGIN_ID,
-        ];
+        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+    }
+}
 
-        allowed_accounts.contains(account_id) && account_id == worker_id
+impl WeightInfo for () {
+    fn create_category(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_category_membership_of_moderator_new() -> Weight {
+        0
+    }
+    fn update_category_membership_of_moderator_old() -> Weight {
+        0
+    }
+    fn update_category_archival_status_lead(_: u32) -> Weight {
+        0
+    }
+    fn update_category_archival_status_moderator(_: u32) -> Weight {
+        0
+    }
+    fn delete_category_lead(_: u32) -> Weight {
+        0
+    }
+    fn delete_category_moderator(_: u32) -> Weight {
+        0
+    }
+    fn create_thread(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn edit_thread_title(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_thread_archival_status_lead(_: u32) -> Weight {
+        0
+    }
+    fn update_thread_archival_status_moderator(_: u32) -> Weight {
+        0
+    }
+    fn delete_thread_lead(_: u32) -> Weight {
+        0
+    }
+    fn delete_thread_moderator(_: u32) -> Weight {
+        0
+    }
+    fn move_thread_to_category_lead(_: u32) -> Weight {
+        0
+    }
+    fn move_thread_to_category_moderator(_: u32) -> Weight {
+        0
+    }
+    fn vote_on_poll(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_thread_lead(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_thread_moderator(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn add_post(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn react_post(_: u32) -> Weight {
+        0
+    }
+    fn edit_post_text(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_post_lead(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn moderate_post_moderator(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_stickied_threads_lead(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_stickied_threads_moderator(_: u32, _: u32) -> Weight {
+        0
     }
 }
 
@@ -178,7 +409,7 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 110;
+pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 0;
 
 pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
 
@@ -189,6 +420,15 @@ pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_
 pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 112;
 
 pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
+
+pub const NOT_FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 113;
+
+pub const NOT_FORUM_MODERATOR_ORIGIN: OriginType =
+    OriginType::Signed(NOT_FORUM_MODERATOR_ORIGIN_ID);
+
+pub const NOT_FORUM_MEMBER_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 114;
+
+pub const NOT_FORUM_MEMBER_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_MEMBER_ORIGIN_ID);
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 

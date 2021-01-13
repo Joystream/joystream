@@ -3823,10 +3823,15 @@ dependencies = [
 name = "pallet-forum"
 version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-working-group",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
