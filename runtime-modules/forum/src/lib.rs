@@ -19,7 +19,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 use common::origin::MemberOriginValidator;
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupAuthenticator;
 
 mod mock;
 mod tests;
@@ -117,7 +117,7 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type WeightInfo: WeightInfo;
 
     /// Working group pallet integration.
-    type WorkingGroup: WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>;
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<

@@ -272,7 +272,7 @@ impl Trait for Runtime {
     type MemberOriginValidator = ();
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,

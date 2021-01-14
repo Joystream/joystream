@@ -16,7 +16,7 @@ use frame_support::ensure;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupAuthenticator;
 
 /// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(

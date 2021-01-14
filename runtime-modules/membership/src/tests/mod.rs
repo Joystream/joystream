@@ -8,6 +8,7 @@ use fixtures::*;
 use mock::*;
 
 use common::origin::MemberOriginValidator;
+use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
@@ -468,7 +469,41 @@ fn invite_member_succeeds() {
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
 
+        let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
+        // Working group budget reduced.
+        assert_eq!(
+            WORKING_GROUP_BUDGET - initial_invitation_balance,
+            <Test as Trait>::WorkingGroup::get_budget()
+        );
+
+        // Invited member account filled.
+        assert_eq!(
+            initial_invitation_balance,
+            Balances::free_balance(&profile.controller_account)
+        );
+
+        // Invited member balance locked.
+        assert_eq!(0, Balances::usable_balance(&profile.controller_account));
+
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_insufficient_working_group_balance() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        WG_BUDGET.with(|val| {
+            *val.borrow_mut() = 50;
+        });
+
+        InviteMembershipFixture::default().call_and_assert(Err(
+            Error::<Test>::WorkingGroupBudgetIsNotSufficientForInviting.into(),
+        ));
     });
 }
 

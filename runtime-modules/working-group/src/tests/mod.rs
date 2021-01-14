@@ -18,7 +18,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{DefaultInstance, Error, OpeningType, Penalty, RawEvent, StakePolicy, Worker};
-use common::working_group::WorkingGroupIntegration;
+use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
     EventFixture, FillOpeningFixture, HireLeadFixture, HireRegularWorkerFixture,

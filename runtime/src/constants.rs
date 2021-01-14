@@ -47,6 +47,7 @@ parameter_types! {
     pub const ContentWorkingGroupLockId: LockIdentifier = [7; 8];
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
     pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
+    pub const InvitedMemberLockId: LockIdentifier = [10; 8];
 }
 
 lazy_static! {
@@ -61,6 +62,7 @@ lazy_static! {
             CouncilorLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (ContentWorkingGroupLockId::get(), [
             ForumGroupLockId::get(),
@@ -70,6 +72,7 @@ lazy_static! {
             CouncilorLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (StorageWorkingGroupLockId::get(), [
             ForumGroupLockId::get(),
@@ -79,6 +82,7 @@ lazy_static! {
             CouncilorLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (ProposalsLockId::get(), [
             ForumGroupLockId::get(),
@@ -88,6 +92,7 @@ lazy_static! {
             CouncilorLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (CandidacyLockId::get(), [
             ForumGroupLockId::get(),
@@ -97,6 +102,7 @@ lazy_static! {
             CouncilorLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (CouncilorLockId::get(), [
             ForumGroupLockId::get(),
@@ -106,6 +112,7 @@ lazy_static! {
             CandidacyLockId::get(),
             VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (VotingLockId::get(), [
             ForumGroupLockId::get(),
@@ -115,6 +122,7 @@ lazy_static! {
             CandidacyLockId::get(),
             CouncilorLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
         (MembershipWorkingGroupLockId::get(), [
             ForumGroupLockId::get(),
@@ -124,6 +132,17 @@ lazy_static! {
             CandidacyLockId::get(),
             CouncilorLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
+        ]),
+         (InvitedMemberLockId::get(), [
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            ProposalsLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ]),
     ]
     .iter()

@@ -2,7 +2,7 @@
 
 pub use frame_system;
 
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
@@ -15,6 +15,8 @@ use crate::CouncilOriginValidator;
 use crate::MemberOriginValidator;
 use crate::WeightInfo;
 use frame_support::dispatch::DispatchError;
+
+use staking_handler::LockComparator;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -60,6 +62,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 4;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl balances::Trait for Test {
@@ -82,9 +85,29 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,

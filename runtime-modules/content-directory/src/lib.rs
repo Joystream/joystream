@@ -159,7 +159,6 @@ use sp_std::vec;
 use sp_std::vec::Vec;
 
 use common::origin::MemberOriginValidator;
-use common::working_group::WorkingGroupIntegration;
 
 pub use errors::Error;
 
@@ -299,7 +298,7 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
 
     /// Working group pallet integration.
-    type WorkingGroup: WorkingGroupIntegration<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>;
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<

@@ -101,6 +101,7 @@ impl common::Trait for Runtime {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
+    pub const InviteMemberLockId: [u8; 8] = [9; 8];
 }
 
 // The forum working group instance alias.
@@ -227,6 +228,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
 }
 
 parameter_types! {
@@ -289,7 +291,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,

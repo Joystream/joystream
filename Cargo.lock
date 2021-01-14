@@ -3739,6 +3739,7 @@ version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-balances",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -3990,6 +3991,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -4045,6 +4047,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
  "rand 0.7.3",
