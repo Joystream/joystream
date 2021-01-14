@@ -15,6 +15,7 @@ use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use referendum::Balance as BalanceReferendum;
 use sp_runtime::testing::TestXt;
@@ -125,7 +126,7 @@ pub struct MockProposalsEngineWeight;
 impl proposals_engine::Trait for Test {
     type Event = ();
     type ProposerOriginValidator = ();
-    type VoterOriginValidator = ();
+    type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
     type StakingHandler = StakingManager<Test, LockId>;
@@ -179,11 +180,26 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _: u64,
+    ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
+    }
+}
+
+impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+        frame_system::ensure_signed(origin)?;
+
+        Ok(())
     }
 }
 
@@ -471,14 +487,9 @@ impl council::Trait for Test {
     type StakingAccountValidator = ();
     type WeightInfo = CouncilWeightInfo;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+
+    type MemberOriginValidator = ();
 }
 
 impl common::StakingAccountValidator<Test> for () {

@@ -62,7 +62,7 @@ where
     fn check_call_for_insufficient_rights(&self) {
         assert_eq!(
             (self.insufficient_rights_call)(),
-            Err(DispatchError::Other("Bad origin"))
+            Err(DispatchError::BadOrigin)
         );
     }
 

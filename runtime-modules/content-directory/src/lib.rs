@@ -158,6 +158,8 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
 
+use common::origin::MemberOriginValidator;
+
 pub use errors::Error;
 
 use core::debug_assert;
@@ -176,7 +178,7 @@ pub type EntityOf<T> = Entity<
 
 /// Type simplification
 pub type ClassOf<T> =
-    Class<<T as Trait>::EntityId, <T as Trait>::ClassId, <T as ActorAuthenticator>::CuratorGroupId>;
+    Class<<T as Trait>::EntityId, <T as Trait>::ClassId, <T as Trait>::CuratorGroupId>;
 
 /// Type simplification
 pub type StoredPropertyValueOf<T> = StoredPropertyValue<
@@ -189,7 +191,7 @@ pub type StoredPropertyValueOf<T> = StoredPropertyValue<
 pub type CuratorId<T> = common::ActorId<T>;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
+pub trait Trait: frame_system::Trait + common::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -230,6 +232,19 @@ pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
         + Copy
         + Clone
         + Hash
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
+
+    /// Curator group identifier
+    type CuratorGroupId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -284,6 +299,13 @@ pub trait Trait: frame_system::Trait + ActorAuthenticator + common::Trait {
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>;
+
+    /// Validates member id and origin combination
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::Origin,
+        common::MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 
 decl_storage! {
@@ -2880,18 +2902,14 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
-        CuratorGroupId = <T as ActorAuthenticator>::CuratorGroupId,
+        CuratorGroupId = <T as Trait>::CuratorGroupId,
         CuratorId = CuratorId<T>,
         ClassId = <T as Trait>::ClassId,
         EntityId = <T as Trait>::EntityId,
         EntityController = EntityController<<T as common::Trait>::MemberId>,
         EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
-        Actor = Actor<
-            <T as ActorAuthenticator>::CuratorGroupId,
-            CuratorId<T>,
-            <T as common::Trait>::MemberId,
-        >,
+        Actor = Actor<<T as Trait>::CuratorGroupId, CuratorId<T>, <T as common::Trait>::MemberId>,
         Nonce = <T as Trait>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
         SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,

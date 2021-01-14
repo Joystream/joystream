@@ -56,7 +56,7 @@ use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -108,7 +108,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination
-    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -377,7 +377,7 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
@@ -518,7 +518,7 @@ decl_module! {
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);

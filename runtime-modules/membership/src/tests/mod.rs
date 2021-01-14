@@ -7,6 +7,7 @@ use crate::{Error, Event};
 use fixtures::*;
 use mock::*;
 
+use common::origin::MemberOriginValidator;
 use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
@@ -37,10 +38,6 @@ fn buy_membership_succeeds() {
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(ALICE_ACCOUNT_ID),
-            vec![next_member_id]
-        );
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(next_member_id));
     });
@@ -173,18 +170,7 @@ fn update_profile_accounts_succeeds() {
         let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_NEW_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-        assert!(<crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
-
         assert_eq!(profile.root_account, ALICE_NEW_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_NEW_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-        assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(
             ALICE_MEMBER_ID,
@@ -207,16 +193,7 @@ fn update_accounts_has_effect_on_empty_account_parameters() {
         let profile = get_membership_by_id(ALICE_MEMBER_ID);
 
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
-
         assert_eq!(profile.root_account, ALICE_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID),
-            vec![ALICE_MEMBER_ID]
-        );
     });
 }
 
@@ -491,10 +468,6 @@ fn invite_member_succeeds() {
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
-        assert_eq!(
-            <crate::MemberIdsByControllerAccountId<Test>>::get(BOB_ACCOUNT_ID),
-            vec![bob_member_id]
-        );
 
         let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
         // Working group budget reduced.
@@ -938,5 +911,50 @@ fn is_member_staking_account_works() {
             Membership::is_member_staking_account(&ALICE_MEMBER_ID, &ALICE_ACCOUNT_ID),
             false
         );
+    });
+}
+
+#[test]
+fn membership_origin_validator_fails_with_unregistered_member() {
+    build_test_externalities().execute_with(|| {
+        let origin = RawOrigin::Signed(ALICE_ACCOUNT_ID);
+        let error = Error::<Test>::MemberProfileNotFound;
+
+        let validation_result =
+            Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
+
+        assert_eq!(validation_result, Err(error.into()));
+    });
+}
+
+#[test]
+fn membership_origin_validator_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let account_id = ALICE_ACCOUNT_ID;
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        let validation_result =
+            Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
+
+        assert_eq!(validation_result, Ok(account_id));
+    });
+}
+
+#[test]
+fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let error = Error::<Test>::ControllerAccountRequired;
+
+        let invalid_account_id = BOB_ACCOUNT_ID;
+        let validation_result = Membership::ensure_member_controller_account_origin(
+            RawOrigin::Signed(invalid_account_id.into()).into(),
+            ALICE_MEMBER_ID,
+        );
+
+        assert_eq!(validation_result, Err(error.into()));
     });
 }

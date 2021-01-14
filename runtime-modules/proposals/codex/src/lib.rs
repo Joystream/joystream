@@ -70,7 +70,7 @@ pub use crate::types::{
     AddOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
     ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::MemberId;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
@@ -93,7 +93,7 @@ pub trait Trait:
     + staking::Trait
 {
     /// Validates member id and origin combination.
-    type MembershipOriginValidator: ActorOriginValidator<
+    type MembershipOriginValidator: MemberOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
@@ -301,7 +301,7 @@ decl_module! {
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
-                T::MembershipOriginValidator::ensure_actor_origin(
+                T::MembershipOriginValidator::ensure_member_controller_account_origin(
                     origin,
                     general_proposal_parameters.member_id
                 )?;

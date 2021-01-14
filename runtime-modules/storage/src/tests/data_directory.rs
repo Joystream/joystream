@@ -37,7 +37,7 @@ fn add_content_fails_with_invalid_origin() {
             0,
             vec![1, 3, 3, 7],
         );
-        assert_eq!(res, Err(DispatchError::Other("Bad origin")));
+        assert_eq!(res, Err(DispatchError::BadOrigin));
     });
 }
 
