@@ -32,7 +32,8 @@ fi
 curl https://get.volta.sh | bash
 
 # source env variables added by Volta
-source ~/.bashrc
+source ~/.bashrc || :
+source ~/.bash_profile || :
 
 volta install node@12
 volta install yarn
