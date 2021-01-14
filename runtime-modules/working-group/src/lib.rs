@@ -549,6 +549,7 @@ decl_module! {
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
+            _rationale: Option<Vec<u8>>
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -579,11 +580,14 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&penalty)]
+        // Note: We use separate penalty and rationale instead of Penalty struct to be able to have
+        // one set and not the other
+        #[weight = Module::<T, I>::terminate_role_weight(&_rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
-            penalty: Option<Penalty<BalanceOf<T>>>,
+            penalty: Option<BalanceOf<T>>,
+            _rationale: Option<Vec<u8>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -605,7 +609,7 @@ decl_module! {
 
             if let Some(penalty) = penalty {
                 if let Some(staking_account_id) = worker.staking_account_id.clone() {
-                    Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount));
+                    Self::slash(worker_id, &staking_account_id, Some(penalty));
                 }
             }
 
@@ -1045,17 +1049,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Calculate weights for terminate_role
-    fn terminate_role_weight(penalty: &Option<Penalty<BalanceOf<T>>>) -> Weight {
+    fn terminate_role_weight(penalty: &Option<Vec<u8>>) -> Weight {
         WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
             penalty
                 .as_ref()
-                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         )
         .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
             penalty
                 .as_ref()
-                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         ))
     }

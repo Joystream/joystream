@@ -293,7 +293,7 @@ fn terminate_role(
     member_id: MemberId,
     account_id: [u8; 32],
     leader_worker_id: u64,
-    penalty: Option<Penalty<Balance>>,
+    penalty: Option<u128>,
     sequence_number: u32, // action sequence number to align with other actions
     working_group: WorkingGroup,
 ) {
@@ -314,7 +314,7 @@ fn terminate_role(
             ProposalDetails::TerminateWorkingGroupLeaderRole(
                 proposals_codex::TerminateRoleParameters {
                     worker_id: leader_worker_id,
-                    penalty: penalty.clone(),
+                    penalty,
                     working_group,
                 },
             ),
@@ -1161,10 +1161,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
             member_id,
             account_id,
             leader_worker_id.into(),
-            Some(Penalty {
-                slashing_amount: stake_amount.into(),
-                slashing_text: Vec::new(),
-            }),
+            Some(stake_amount),
             4,
             working_group,
         );

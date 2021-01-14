@@ -1134,11 +1134,6 @@ fn terminate_worker_with_slashing_succeeds() {
             leaving_unstaking_period: 10,
         });
 
-        let penalty = Penalty {
-            slashing_amount: stake,
-            slashing_text: Vec::new(),
-        };
-
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1148,8 +1143,7 @@ fn terminate_worker_with_slashing_succeeds() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
 
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
-                .with_penalty(Some(penalty));
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_penalty(Some(stake));
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1164,11 +1158,6 @@ fn terminate_worker_with_slashing_fails_with_no_staking_account() {
         let total_balance = 300;
         let stake = 200;
 
-        let penalty = Penalty {
-            slashing_amount: stake,
-            slashing_text: Vec::new(),
-        };
-
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HiringWorkflow::default()
@@ -1177,8 +1166,7 @@ fn terminate_worker_with_slashing_fails_with_no_staking_account() {
             .unwrap();
 
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
-                .with_penalty(Some(penalty));
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_penalty(Some(stake));
 
         terminate_worker_role_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),

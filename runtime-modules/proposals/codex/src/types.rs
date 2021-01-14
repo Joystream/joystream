@@ -100,7 +100,7 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
     pub worker_id: WorkerId,
 
     /// Terminate role slash penalty.
-    pub penalty: Option<Penalty<Balance>>,
+    pub penalty: Option<Balance>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,

@@ -515,7 +515,7 @@ impl LeaveWorkerRoleFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
-            TestWorkingGroup::leave_role(self.origin.clone().into(), self.worker_id);
+            TestWorkingGroup::leave_role(self.origin.clone().into(), self.worker_id, None);
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
@@ -541,7 +541,8 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
-    penalty: Option<Penalty<u64>>,
+    penalty: Option<u64>,
+    rationale: Option<Vec<u8>>,
 }
 
 impl TerminateWorkerRoleFixture {
@@ -550,13 +551,14 @@ impl TerminateWorkerRoleFixture {
             worker_id,
             origin: RawOrigin::Signed(1),
             penalty: None,
+            rationale: None,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
 
-    pub fn with_penalty(self, penalty: Option<Penalty<u64>>) -> Self {
+    pub fn with_penalty(self, penalty: Option<u64>) -> Self {
         Self { penalty, ..self }
     }
 
@@ -565,6 +567,7 @@ impl TerminateWorkerRoleFixture {
             self.origin.clone().into(),
             self.worker_id,
             self.penalty.clone(),
+            self.rationale.clone(),
         );
         assert_eq!(actual_result, expected_result);
 

@@ -174,6 +174,7 @@ where
         working_group::Call::<T, I>::terminate_role(
             terminate_role_params.worker_id,
             terminate_role_params.penalty,
+            None, // The rationale is given in the proposal description
         )
     }
 
