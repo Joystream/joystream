@@ -9,13 +9,13 @@ use crate::{
 };
 
 use balances;
-use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
     Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
@@ -103,19 +103,34 @@ impl Trait for Runtime {
 
     type WeightInfo = ();
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
         let is_ok = elected_members == CouncilMembers::<Runtime>::get();
 
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
         });
+    }
+
+    type MemberOriginValidator = ();
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            member_id == account_id,
+            DispatchError::Other("Membership error")
+        );
+
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
     }
 }
 
@@ -132,7 +147,7 @@ impl WeightInfo for () {
     fn try_progress_stage_idle() -> Weight {
         0
     }
-    fn try_progress_stage_announcing_start_election() -> Weight {
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
         0
     }
     fn try_progress_stage_announcing_restart() -> Weight {
@@ -243,6 +258,7 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 mod balances_mod {
@@ -325,10 +341,10 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
 pub struct ReferendumWeightInfo;
 impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_finalize_revealing(_: u32) -> Weight {
+    fn on_initialize_revealing(_: u32) -> Weight {
         0
     }
-    fn on_finalize_voting() -> Weight {
+    fn on_initialize_voting() -> Weight {
         0
     }
     fn vote() -> Weight {
@@ -366,9 +382,20 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
@@ -603,17 +630,21 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Module::<T>::block_number();
 
-        for i in 0..increase {
-            let tmp_index: T::BlockNumber = block_number + i.into();
-
-            <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
+        for _ in 0..increase {
+            <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
                 <Runtime as frame_system::Trait>::BlockNumber,
-            >>::on_finalize(tmp_index.into());
+            >>::on_finalize(block_number.into());
 
-            frame_system::Module::<T>::set_block_number(tmp_index + 1.into());
+            block_number = block_number + 1.into();
+            frame_system::Module::<T>::set_block_number(block_number);
+
+            <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+            <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
+                <Runtime as frame_system::Trait>::BlockNumber,
+            >>::on_initialize(block_number.into());
         }
     }
 
@@ -1101,9 +1132,7 @@ where
         );
 
         // forward to election-voting period
-        InstanceMockUtils::<T>::increase_block_number(
-            settings.announcing_stage_duration.into() + 1,
-        );
+        InstanceMockUtils::<T>::increase_block_number(settings.announcing_stage_duration.into());
 
         // finish announcing period / start referendum -> will cause period prolongement
         Self::check_election_period(
@@ -1134,7 +1163,7 @@ where
         );
 
         // forward to election-revealing period
-        InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into());
 
         // referendum - start revealing period
         Self::check_referendum_revealing(
@@ -1167,7 +1196,7 @@ where
         );
 
         // finish election / start idle period
-        InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into());
         Self::check_idle_period(
             params.cycle_start_block_number
                 + settings.reveal_stage_duration
@@ -1177,7 +1206,7 @@ where
         Self::check_council_members(params.expected_final_council_members.clone());
 
         // finish idle period
-        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into() + 1);
+        InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into());
     }
 
     // Simulate one full round of council lifecycle (announcing, election, idle). Use it to
@@ -1211,21 +1240,21 @@ where
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                start_block_number + council_settings.election_duration - 1.into(),
+                start_block_number + council_settings.election_duration,
                 0.into(),
             )
                 .into(),
@@ -1262,3 +1291,5 @@ where
         params
     }
 }
+
+pub type Council = crate::Module<Runtime>;

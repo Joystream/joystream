@@ -64,14 +64,13 @@ use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
-use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 
 pub use crate::types::{
     AddOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
     ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::MemberId;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
@@ -94,7 +93,7 @@ pub trait Trait:
     + staking::Trait
 {
     /// Validates member id and origin combination.
-    type MembershipOriginValidator: ActorOriginValidator<
+    type MembershipOriginValidator: MemberOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
@@ -302,7 +301,7 @@ decl_module! {
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
-                T::MembershipOriginValidator::ensure_actor_origin(
+                T::MembershipOriginValidator::ensure_member_controller_account_origin(
                     origin,
                     general_proposal_parameters.member_id
                 )?;
@@ -343,18 +342,16 @@ decl_module! {
 
 // *************** Extrinsic to execute
 
-        /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        /// Text proposal extrinsic.
+        /// Should be used as callable object to pass to the `engine` module.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn execute_text_proposal(
             origin,
             text: Vec<u8>,
         ) {
             ensure_root(origin)?;
-            print("Text proposal: ");
-            let text_string_result = from_utf8(text.as_slice());
-            if let Ok(text_string) = text_string_result{
-                print(text_string);
-            }
+
+            // Text proposal stub: no code implied.
         }
 
         /// Runtime upgrade proposal extrinsic.

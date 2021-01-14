@@ -263,6 +263,7 @@ impl_runtime_apis! {
             use crate::ProposalsDiscussion;
             use crate::ProposalsEngine;
             use crate::Constitution;
+            use crate::Forum;
             use crate::ContentDirectoryWorkingGroup;
             use crate::Utility;
             use crate::Timestamp;
@@ -329,6 +330,7 @@ impl_runtime_apis! {
             // Joystream Benchmarks
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, forum, Forum);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);

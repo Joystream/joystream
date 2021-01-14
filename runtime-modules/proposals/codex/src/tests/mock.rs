@@ -15,6 +15,7 @@ use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use referendum::Balance as BalanceReferendum;
 use sp_runtime::testing::TestXt;
@@ -32,6 +33,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl_outer_dispatch! {
@@ -53,9 +55,20 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
@@ -113,7 +126,7 @@ pub struct MockProposalsEngineWeight;
 impl proposals_engine::Trait for Test {
     type Event = ();
     type ProposerOriginValidator = ();
-    type VoterOriginValidator = ();
+    type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
     type StakingHandler = StakingManager<Test, LockId>;
@@ -167,11 +180,26 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _: u64,
+    ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
+    }
+}
+
+impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+        frame_system::ensure_signed(origin)?;
+
+        Ok(())
     }
 }
 
@@ -459,14 +487,9 @@ impl council::Trait for Test {
     type StakingAccountValidator = ();
     type WeightInfo = CouncilWeightInfo;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+
+    type MemberOriginValidator = ();
 }
 
 impl common::StakingAccountValidator<Test> for () {
@@ -483,7 +506,7 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn try_progress_stage_idle() -> Weight {
         0
     }
-    fn try_progress_stage_announcing_start_election() -> Weight {
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
         0
     }
     fn try_progress_stage_announcing_restart() -> Weight {
@@ -586,10 +609,10 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
 pub struct ReferendumWeightInfo;
 impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_finalize_revealing(_: u32) -> Weight {
+    fn on_initialize_revealing(_: u32) -> Weight {
         0
     }
-    fn on_finalize_voting() -> Weight {
+    fn on_initialize_voting() -> Weight {
         0
     }
     fn vote() -> Weight {

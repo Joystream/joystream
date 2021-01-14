@@ -11,7 +11,8 @@
 //! its [status](./enum.ProposalStatus.html).
 //!
 //! ## Proposal lifecycle
-//! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! When a proposal passes
+//! [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
 //! for its [parameters](./struct.ProposalParameters.html) -
 //! it can be [created](./struct.Module.html#method.create_proposal).
 //! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or
@@ -145,7 +146,7 @@ use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::MemberId;
 use staking_handler::StakingHandler;
 
@@ -172,14 +173,18 @@ pub trait Trait:
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
-    type ProposerOriginValidator: ActorOriginValidator<
+    type ProposerOriginValidator: MemberOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
     /// Validates voter id and origin combination
-    type VoterOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type CouncilOriginValidator: CouncilOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Provides data for voting. Defines maximum voters count for the proposal.
     type TotalVotersCounter: VotersParameters;
@@ -373,7 +378,8 @@ decl_module! {
         /// Exports const - the fee is applied when cancel the proposal. A fee would be slashed (burned).
         const CancellationFee: BalanceOf<T> = T::CancellationFee::get();
 
-        /// Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+        /// Exports const -  the fee is applied when the proposal gets rejected. A fee would
+        /// be slashed (burned).
         const RejectionFee: BalanceOf<T> = T::RejectionFee::get();
 
         /// Exports const -  max allowed proposal title length.
@@ -433,12 +439,15 @@ decl_module! {
             vote: VoteKind,
             _rationale: Vec<u8>, // we use it on the query node side.
         ) {
-            T::VoterOriginValidator::ensure_actor_origin(origin, voter_id)?;
+            T::CouncilOriginValidator::ensure_member_consulate(origin, voter_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
 
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
+            ensure!(
+                matches!(proposal.status, ProposalStatus::Active{..}),
+                Error::<T>::ProposalFinalized
+            );
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::contains_key(
                 proposal_id,
@@ -470,13 +479,16 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
+            T::ProposerOriginValidator::ensure_member_controller_account_origin(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
             ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
+            ensure!(
+                matches!(proposal.status, ProposalStatus::Active{..}),
+                Error::<T>::ProposalFinalized
+            );
             ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
             //
@@ -772,7 +784,7 @@ impl<T: Trait> Module<T> {
                     ExecutionStatus::Executed
                 }
             }
-            Err(error) => ExecutionStatus::failed_execution(error.what()),
+            Err(_) => ExecutionStatus::failed_execution("Decoding error"),
         };
 
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));

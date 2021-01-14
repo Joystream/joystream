@@ -6,6 +6,7 @@ use staking_handler::LockComparator;
 
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_std::cell::RefCell;
 
 use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use frame_system;
@@ -85,6 +86,7 @@ impl pallet_timestamp::Trait for Test {
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const DefaultMembershipPrice: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl balances::Trait for Test {
@@ -224,11 +226,18 @@ impl working_group::WeightInfo for Weights {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _: u64,
+    ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
     }
 }
 
@@ -237,9 +246,28 @@ impl Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+pub const WORKING_GROUP_BUDGET: u64 = 100;
+
+thread_local! {
+    pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        WG_BUDGET.with(|val| *val.borrow())
+    }
+
+    fn set_budget(new_value: u64) {
+        WG_BUDGET.with(|val| {
+            *val.borrow_mut() = new_value;
+        });
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
         worker_id: &<Test as common::Trait>::ActorId,
