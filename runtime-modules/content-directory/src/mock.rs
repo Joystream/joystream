@@ -23,7 +23,7 @@ pub type Nonce = <Runtime as Trait>::Nonce;
 pub type Hashed = <Runtime as frame_system::Trait>::Hash;
 
 pub type TestCuratorId = CuratorId<Runtime>;
-pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
+pub type CuratorGroupId = <Runtime as Trait>::CuratorGroupId;
 pub type MemberId = <Runtime as common::Trait>::MemberId;
 
 /// Origins
@@ -252,22 +252,24 @@ impl Trait for Runtime {
     type Nonce = u64;
     type ClassId = u64;
     type EntityId = u64;
+    type CuratorGroupId = u64;
     type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
     type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
     type ClassNameLengthConstraint = ClassNameLengthConstraint;
     type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
     type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
-    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
     type VecMaxLengthConstraint = VecMaxLengthConstraint;
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
     type WorkingGroup = ();
+    type MemberOriginValidator = ();
 }
 
 impl common::working_group::WorkingGroupIntegration<Runtime> for () {
@@ -309,12 +311,15 @@ impl common::Trait for Runtime {
     type ActorId = u64;
 }
 
-impl ActorAuthenticator for Runtime {
-    type CuratorGroupId = u64;
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        _origin: Origin,
+        _member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        unimplemented!()
+    }
 
-    // Consider lazy_static crate?
-
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
         *member_id < MaxNumberOfEntitiesPerClass::get() && unknown_member_account_id != *account_id
     }

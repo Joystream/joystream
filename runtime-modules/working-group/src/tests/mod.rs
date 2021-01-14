@@ -177,7 +177,7 @@ fn apply_on_opening_fails_with_bad_origin() {
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::None, member_id);
 
-        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
+        apply_on_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -499,7 +499,7 @@ fn update_worker_role_account_fails_with_invalid_origin() {
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
                 .with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
+        update_worker_account_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 

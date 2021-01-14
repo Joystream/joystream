@@ -11,8 +11,10 @@ use sp_runtime::{
     DispatchResult, Perbill,
 };
 
-use crate::ActorOriginValidator;
+use crate::CouncilOriginValidator;
+use crate::MemberOriginValidator;
 use crate::WeightInfo;
+use frame_support::dispatch::DispatchError;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -134,8 +136,11 @@ impl WeightInfo for () {
     }
 }
 
-impl ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
+impl MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        actor_id: u64,
+    ) -> Result<u64, DispatchError> {
         if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
@@ -156,18 +161,22 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
             return Ok(12);
         }
 
-        Err("Invalid author")
+        Err(DispatchError::Other("Invalid author"))
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
     }
 }
 
 pub struct CouncilMock;
-impl ActorOriginValidator<Origin, u64, u64> for CouncilMock {
-    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
+impl CouncilOriginValidator<Origin, u64, u64> for CouncilMock {
+    fn ensure_member_consulate(origin: Origin, actor_id: u64) -> DispatchResult {
         if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
-            return Ok(2);
+            return Ok(());
         }
 
-        Err("Not a council")
+        Err(DispatchError::Other("Not a council"))
     }
 }
 
