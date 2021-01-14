@@ -556,10 +556,9 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
-        ensure!(
-            EnsureChecks::<T, I>::allowed_winner_target_count(winning_target_count),
-            ()
-        );
+
+        // ensure that the winning target count doesn't go over the limit
+        ensure!(winning_target_count <= T::MaxWinnerTargetCount::get(), ());
 
         //
         // == MUTATION SAFE ==
@@ -895,10 +894,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         Ok((current_cycle_id, account_id))
-    }
-
-    fn allowed_winner_target_count(count: u64) -> bool {
-        count <= T::MaxWinnerTargetCount::get()
     }
 
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
