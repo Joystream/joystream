@@ -47,13 +47,12 @@ pub mod genesis;
 mod tests;
 
 use codec::{Decode, Encode};
-use frame_support::sp_runtime::DispatchError;
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
-use frame_system::ensure_root;
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::Hash;
+use sp_runtime::traits::{Hash, Saturating};
 use sp_std::vec::Vec;
 
 use common::origin::MemberOriginValidator;
@@ -566,7 +565,7 @@ decl_module! {
             });
 
             // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget - default_invitation_balance;
+            let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
