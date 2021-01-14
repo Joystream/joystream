@@ -28,7 +28,11 @@ pub trait LockComparator<Balance> {
 /// and LockIdentifier to lock balance consistently with pallet_staking.
 pub trait StakingHandler<AccountId, Balance, MemberId> {
     /// Locks the specified balance on the account using specific lock identifier.
+    /// It locks for all withdraw reasons.
     fn lock(account_id: &AccountId, amount: Balance);
+
+    /// Locks the specified balance on the account using specific lock identifier.
+    fn lock_with_reasons(account_id: &AccountId, amount: Balance, reasons: WithdrawReasons);
 
     /// Removes the specified lock on the account.
     fn unlock(account_id: &AccountId);
@@ -83,12 +87,15 @@ impl<
         account_id: &<T as frame_system::Trait>::AccountId,
         amount: <T as pallet_balances::Trait>::Balance,
     ) {
-        <pallet_balances::Module<T>>::set_lock(
-            LockId::get(),
-            &account_id,
-            amount,
-            WithdrawReasons::all(),
-        )
+        Self::lock_with_reasons(account_id, amount, WithdrawReasons::all())
+    }
+
+    fn lock_with_reasons(
+        account_id: &<T as frame_system::Trait>::AccountId,
+        amount: <T as pallet_balances::Trait>::Balance,
+        reasons: WithdrawReasons,
+    ) {
+        <pallet_balances::Module<T>>::set_lock(LockId::get(), &account_id, amount, reasons)
     }
 
     fn unlock(account_id: &<T as frame_system::Trait>::AccountId) {

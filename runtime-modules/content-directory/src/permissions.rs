@@ -12,32 +12,11 @@ pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
 use core::fmt::Debug;
-use frame_support::{ensure, Parameter};
+use frame_support::ensure;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
-use common::working_group::WorkingGroupIntegration;
-
-/// Model of authentication manager.
-pub trait ActorAuthenticator: frame_system::Trait + common::Trait {
-    /// Curator group identifier
-    type CuratorGroupId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// Authorize actor as member
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
-}
+use common::working_group::WorkingGroupAuthenticator;
 
 /// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(
@@ -57,9 +36,10 @@ pub fn ensure_member_auth_success<T: Trait>(
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
     ensure!(
-        T::is_member(member_id, account_id),
+        T::MemberOriginValidator::is_member_controller_account(member_id, &account_id),
         Error::<T>::MemberAuthFailed
     );
+
     Ok(())
 }
 

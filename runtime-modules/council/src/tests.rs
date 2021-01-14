@@ -5,7 +5,9 @@ use super::{
     Module, Trait,
 };
 use crate::mock::*;
+use common::origin::CouncilOriginValidator;
 use frame_support::StorageValue;
+use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -1375,5 +1377,69 @@ fn council_new_council_elected_hook() {
         Mocks::run_full_council_cycle(0, &[], 0);
 
         Mocks::check_new_council_elected_hook();
+    });
+}
+
+#[test]
+fn council_origin_validator_fails_with_unregistered_member() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 10;
+        let origin = RawOrigin::Signed(account_id);
+        let member_id = 1;
+
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Runtime>::MemberIdNotMatchAccount.into())
+        );
+    });
+}
+
+#[test]
+fn council_origin_validator_succeeds() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let councilor1_member_id = 1u64;
+        let councilor1_account_id = 1u64;
+
+        let councilor1 = CouncilMemberOf::<Runtime> {
+            staking_account_id: councilor1_account_id,
+            reward_account_id: councilor1_account_id,
+            membership_id: councilor1_member_id,
+            stake: 0,
+            last_payment_block: 0,
+            unpaid_reward: 0,
+        };
+
+        CouncilMembers::<Runtime>::put(vec![councilor1]);
+
+        let origin = RawOrigin::Signed(councilor1_account_id.clone());
+
+        let validation_result =
+            Council::ensure_member_consulate(origin.into(), councilor1_member_id);
+
+        assert!(validation_result.is_ok());
+    });
+}
+
+#[test]
+fn council_origin_validator_fails_with_not_councilor() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Runtime>::NotCouncilor.into())
+        );
     });
 }

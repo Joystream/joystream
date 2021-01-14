@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 pub use frame_system;
@@ -183,6 +184,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [1; 8];
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl common::Trait for Test {
@@ -195,9 +197,20 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
@@ -228,7 +241,7 @@ impl common::working_group::WorkingGroupIntegration<Test> for () {
 impl crate::Trait for Test {
     type Event = TestEvent;
     type ProposerOriginValidator = ();
-    type VoterOriginValidator = ();
+    type CouncilOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
     type StakingHandler = StakingManager<Test, LockId>;
@@ -286,11 +299,26 @@ impl Default for proposals::Call<Test> {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _account_id: u64,
+    ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        true
+    }
+}
+
+impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+        frame_system::ensure_signed(origin)?;
+
+        Ok(())
     }
 }
 
@@ -384,14 +412,9 @@ impl council::Trait for Test {
     type StakingAccountValidator = membership::Module<Test>;
     type WeightInfo = CouncilWeightInfo;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership::Module::<Self>::membership(membership_id).controller_account == *account_id
-    }
-
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+
+    type MemberOriginValidator = ();
 }
 
 pub struct CouncilWeightInfo;

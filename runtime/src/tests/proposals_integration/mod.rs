@@ -236,7 +236,7 @@ impl CancelProposalFixture {
 }
 
 /// Main purpose of this integration test: check balance of the member on proposal finalization (cancellation)
-/// It tests StakingEventsHandler integration. Also, membership module is tested during the proposal creation (ActorOriginValidator).
+/// It tests StakingEventsHandler integration. Also, membership module is tested during the proposal creation (MemberOriginValidator).
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
