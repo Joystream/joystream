@@ -46,6 +46,8 @@
 pub mod genesis;
 mod tests;
 
+mod benchmarking;
+
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
@@ -81,7 +83,7 @@ pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, PartialEq, Decode, Debug, Default)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.

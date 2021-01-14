@@ -3886,6 +3886,7 @@ dependencies = [
 name = "pallet-membership"
 version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
