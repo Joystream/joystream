@@ -15,6 +15,29 @@ use working_group::{
     WorkerById,
 };
 
+// We create this trait because we need to be compatible with the runtime
+// in the mock for tests. In that case we need to be able to have `membership_id == account_id`
+// We can't create an account from an `u32` or from a memberhsip_dd,
+// so this trait allows us to get an account id from an u32, in the case of `64` which is what
+// the mock use we get the parameter as a return.
+// In the case of `AccountId32` we use the method provided by `frame_benchmarking` to get an
+// AccountId.
+pub trait CreateAccountId {
+    fn create_account_id(id: u32) -> Self;
+}
+
+impl CreateAccountId for u64 {
+    fn create_account_id(id: u32) -> Self {
+        id.into()
+    }
+}
+
+impl CreateAccountId for sp_core::crypto::AccountId32 {
+    fn create_account_id(id: u32) -> Self {
+        account::<Self>("default", id, SEED)
+    }
+}
+
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
@@ -40,10 +63,12 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
-    name: &'static str,
     id: u32,
-) -> (T::AccountId, T::MemberId) {
-    let account_id = account::<T::AccountId>(name, id, SEED);
+) -> (T::AccountId, T::MemberId)
+where
+    T::AccountId: CreateAccountId,
+{
+    let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
@@ -101,8 +126,11 @@ fn insert_a_worker<
 >(
     job_opening_type: OpeningType,
     id: u64,
-) -> T::AccountId {
-    let (caller_id, member_id) = member_funded_account::<T>("member", id as u32);
+) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+{
+    let (caller_id, member_id) = member_funded_account::<T>(id as u32);
 
     let add_worker_origin = match job_opening_type {
         OpeningType::Leader => RawOrigin::Root,
@@ -334,7 +362,13 @@ pub fn generate_categories_tree<T: Trait>(
 }
 
 benchmarks! {
-    where_clause { where T: balances::Trait, T: membership::Trait, T: working_group::Trait<ForumWorkingGroupInstance> }
+    where_clause { where
+        T: balances::Trait,
+        T: membership::Trait,
+        T: working_group::Trait<ForumWorkingGroupInstance> ,
+        T::AccountId: CreateAccountId
+    }
+
     _{  }
 
     create_category{

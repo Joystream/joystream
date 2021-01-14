@@ -274,10 +274,15 @@ impl Trait for Runtime {
 
 impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        _origin: Origin,
-        _member_id: u64,
+        origin: Origin,
+        member_id: u64,
     ) -> Result<u64, DispatchError> {
-        unimplemented!()
+        let account_id = ensure_signed(origin).unwrap();
+        ensure!(
+            Self::is_member_controller_account(&member_id, &account_id),
+            DispatchError::BadOrigin
+        );
+        Ok(account_id)
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
