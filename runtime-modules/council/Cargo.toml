@@ -42,5 +42,7 @@ std = [
     'frame-system/std',
     'staking-handler/std',
     'common/std',
+    'balances/std',
+    'staking-handler/std',
 ]
 
