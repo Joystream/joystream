@@ -9,13 +9,13 @@ use crate::{
 };
 
 use balances;
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
     Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
@@ -103,19 +103,34 @@ impl Trait for Runtime {
 
     type WeightInfo = ();
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
         let is_ok = elected_members == CouncilMembers::<Runtime>::get();
 
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
         });
+    }
+
+    type MemberOriginValidator = ();
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            member_id == account_id,
+            DispatchError::Other("Membership error")
+        );
+
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
     }
 }
 
@@ -243,6 +258,7 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 mod balances_mod {
@@ -366,9 +382,20 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
@@ -1264,3 +1291,5 @@ where
         params
     }
 }
+
+pub type Council = crate::Module<Runtime>;

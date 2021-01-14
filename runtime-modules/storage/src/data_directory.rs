@@ -32,8 +32,8 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use common::origin::ActorOriginValidator;
-use common::working_group::WorkingGroupIntegration;
+use common::origin::MemberOriginValidator;
+use common::working_group::WorkingGroupAuthenticator;
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
@@ -57,7 +57,7 @@ pub trait Trait:
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
     /// Validates member id and origin combination.
-    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     type MaxObjectsPerInjection: Get<u32>;
 }
@@ -204,7 +204,7 @@ decl_module! {
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            <T as Trait>::MemberOriginValidator::ensure_actor_origin(
+            <T as Trait>::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id,
             )?;

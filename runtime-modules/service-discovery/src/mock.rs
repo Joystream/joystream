@@ -2,6 +2,7 @@
 
 pub use crate::*;
 
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -97,9 +98,20 @@ impl membership::Trait for Test {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Test> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::Trait>::ActorId,
@@ -140,6 +152,7 @@ impl balances::Trait for Test {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId1: [u8; 8] = [1; 8];
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -226,11 +239,18 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     }
 }
 
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _: u64,
+    ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
     }
 }
 

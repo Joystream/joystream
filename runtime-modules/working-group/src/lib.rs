@@ -56,7 +56,7 @@ use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -108,7 +108,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination
-    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -377,7 +377,7 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
@@ -518,7 +518,7 @@ decl_module! {
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
@@ -864,7 +864,7 @@ decl_module! {
             //
 
             // Update the budget.
-            <Budget::<T, I>>::put(new_budget);
+            Self::set_working_group_budget(new_budget);
 
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSet(new_budget));
@@ -1331,6 +1331,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         false
     }
 
+    // Sets the working group budget.
+    fn set_working_group_budget(new_budget: BalanceOf<T>) {
+        <Budget<T, I>>::put(new_budget);
+    }
+
     /// Returns all existing worker id list.
     pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
         <WorkerById<T, I>>::iter()
@@ -1339,7 +1344,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
+    for Module<T, I>
+{
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
@@ -1363,5 +1370,17 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
         checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
+    for Module<T, I>
+{
+    fn get_budget() -> BalanceOf<T> {
+        Self::budget()
+    }
+
+    fn set_budget(new_value: BalanceOf<T>) {
+        Self::set_working_group_budget(new_value);
     }
 }
