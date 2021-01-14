@@ -27,11 +27,15 @@ jobs:
       # - name: Check version modified correctly
       #   if: env.GIT_DIFF
 
-      # This Building natively is not really necessary because we have the docker build which
-      # hapens in the run-network-tests workflow which is sufficient!
-      # - name: Build if runtime was modified
-      #   run: |
-      #     ./setup.sh
-      #     yarn cargo-checks
-      #     yarn cargo-build
-      #   if: env.GIT_DIFF
+      - name: Build joystream-node (with benchmarking)
+        run: |
+          # Install required toolchains
+          ./setup.sh
+          # Build including benchmarks
+          pushd node
+          WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release --features runtime-benchmarks
+          popd
+          ./scripts/generate-weights.sh
+          # Show any changes in computed weights
+          git diff
+        if: env.GIT_DIFF
