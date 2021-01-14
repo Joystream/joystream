@@ -40,7 +40,8 @@ use frame_support::traits::{
 };
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
+    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
+    StorageValue,
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::BaseArithmetic;
@@ -555,7 +556,10 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
-        EnsureChecks::<T, I>::allowed_winner_target_count(winning_target_count)?;
+        ensure!(
+            EnsureChecks::<T, I>::allowed_winner_target_count(winning_target_count),
+            ()
+        );
 
         //
         // == MUTATION SAFE ==
@@ -893,12 +897,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok((current_cycle_id, account_id))
     }
 
-    fn allowed_winner_target_count(count: u64) -> Result<(), ()> {
-        if count <= T::MaxWinnerTargetCount::get() {
-            Ok(())
-        } else {
-            Err(())
-        }
+    fn allowed_winner_target_count(count: u64) -> bool {
+        count <= T::MaxWinnerTargetCount::get()
     }
 
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
