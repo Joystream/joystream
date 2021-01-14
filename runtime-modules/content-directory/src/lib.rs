@@ -298,7 +298,7 @@ pub trait Trait: frame_system::Trait + common::Trait {
     type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
 
     /// Working group pallet integration.
-    type WorkingGroup: common::working_group::WorkingGroupParticipation<Self>;
+    type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>;
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<

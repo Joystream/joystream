@@ -291,7 +291,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::working_group::WorkingGroupParticipation<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,

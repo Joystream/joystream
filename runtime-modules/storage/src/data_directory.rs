@@ -33,7 +33,7 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use common::origin::MemberOriginValidator;
-use common::working_group::WorkingGroupParticipation;
+use common::working_group::WorkingGroupAuthenticator;
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
