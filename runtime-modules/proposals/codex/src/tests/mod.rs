@@ -9,7 +9,6 @@ use frame_system::RawOrigin;
 use common::working_group::WorkingGroup;
 use proposals_engine::ProposalParameters;
 use referendum::ReferendumManager;
-use working_group::Penalty;
 
 use crate::*;
 use crate::{Error, ProposalDetails};
@@ -741,23 +740,11 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let slash_lead_details = ProposalDetails::SlashWorkingGroupLeaderStake(
-            0,
-            Penalty {
-                slashing_amount: 10,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-        );
+        let slash_lead_details =
+            ProposalDetails::SlashWorkingGroupLeaderStake(0, 10, working_group);
 
-        let slash_lead_details_success = ProposalDetails::SlashWorkingGroupLeaderStake(
-            10,
-            Penalty {
-                slashing_amount: 10,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-        );
+        let slash_lead_details_success =
+            ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -897,14 +884,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::SlashWorkingGroupLeaderStake(
-                    10,
-                    Penalty {
-                        slashing_amount: 0,
-                        slashing_text: Vec::new()
-                    },
-                    working_group,
-                )
+                ProposalDetails::SlashWorkingGroupLeaderStake(10, 0, working_group)
             ),
             Err(Error::<Test>::SlashingStakeIsZero.into())
         );

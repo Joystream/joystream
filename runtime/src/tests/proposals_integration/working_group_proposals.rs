@@ -7,7 +7,7 @@ use common::working_group::WorkingGroup;
 use frame_system::RawOrigin;
 use proposals_codex::AddOpeningParameters;
 use strum::IntoEnumIterator;
-use working_group::{Penalty, StakeParameters};
+use working_group::StakeParameters;
 
 use crate::primitives::{ActorId, MemberId};
 use crate::tests::run_to_block;
@@ -206,10 +206,7 @@ fn slash_stake(
             general_proposal_parameters,
             ProposalDetails::SlashWorkingGroupLeaderStake(
                 leader_worker_id,
-                Penalty {
-                    slashing_amount: stake_amount,
-                    slashing_text: Vec::new(),
-                },
+                stake_amount,
                 working_group,
             ),
         )

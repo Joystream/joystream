@@ -50,7 +50,7 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, Penalty, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
@@ -580,8 +580,6 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        // Note: We use separate penalty and rationale instead of Penalty struct to be able to have
-        // one set and not the other
         #[weight = Module::<T, I>::terminate_role_weight(&_rationale)]
         pub fn terminate_role(
             origin,
@@ -634,8 +632,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake(penalty.slashing_text.len().saturated_into())]
-        pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
+        #[weight = Module::<T, I>::slash_stake_weight(&_rationale)]
+        pub fn slash_stake(
+            origin,
+            worker_id: WorkerId<T>,
+            penalty: BalanceOf<T>,
+            _rationale: Option<Vec<u8>>
+        ) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -649,7 +652,7 @@ decl_module! {
             );
 
             ensure!(
-                penalty.slashing_amount != <BalanceOf<T>>::zero(),
+                penalty != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
@@ -658,7 +661,7 @@ decl_module! {
             //
 
             if let Some(staking_account_id) = worker.staking_account_id {
-                Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount))
+                Self::slash(worker_id, &staking_account_id, Some(penalty))
             }
         }
 
@@ -1062,6 +1065,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         ))
+    }
+
+    // Calculates slash_stake weight
+    fn slash_stake_weight(rationale: &Option<Vec<u8>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::slash_stake(
+            rationale
+                .as_ref()
+                .map(|text| text.len().saturated_into())
+                .unwrap_or_default(),
+        )
     }
 
     // Wrapper-function over frame_system::block_number()

@@ -699,11 +699,12 @@ benchmarks_instance! {
             Some(lead_id.clone())
         );
         let slashing_amount = One::one();
-        let penalty = Penalty {
-            slashing_text: vec![0u8; i.try_into().unwrap()],
-            slashing_amount,
-        };
-    }: _(RawOrigin::Signed(lead_id.clone()), worker_id, penalty)
+    }: _(
+        RawOrigin::Signed(lead_id.clone()),
+        worker_id,
+        slashing_amount,
+        Some(vec![0u8; i.try_into().unwrap()])
+    )
     verify {
         assert_last_event::<T, I>(RawEvent::StakeSlashed(worker_id, slashing_amount).into());
     }
