@@ -43,10 +43,10 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod benchmarking;
+
 pub mod genesis;
 mod tests;
-
-mod benchmarking;
 
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get};
