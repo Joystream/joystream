@@ -55,6 +55,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 7;
     pub const MinimumStake: u64 = 10000;
     pub const LockId: LockIdentifier = *b"referend";
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 thread_local! {
@@ -83,6 +84,8 @@ impl Trait for Runtime {
 
     type MinimumStake = MinimumStake;
     type WeightInfo = ();
+
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -522,6 +525,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
     }
 
+    // checks that winning_target_count equals expected
+    // fails if used outisde of voting stage
+    pub fn check_winning_target_count(winning_target_count: u64) {
+        if let ReferendumStage::Voting(stage_data) = Stage::<Runtime, DefaultInstance>::get() {
+            assert_eq!(stage_data.winning_target_count, winning_target_count);
+        } else {
+            assert!(false);
+        }
+    }
+
     pub fn start_referendum_manager(
         winning_target_count: u64,
         cycle_id: u64,
@@ -546,6 +559,17 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         );
 
         Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
+    }
+
+    pub fn force_start(winning_target_count: u64, cycle_id: u64) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+
+        <Module<Runtime> as ReferendumManager<
+            <Runtime as frame_system::Trait>::Origin,
+            <Runtime as frame_system::Trait>::AccountId,
+            <Runtime as common::Trait>::MemberId,
+            <Runtime as frame_system::Trait>::Hash,
+        >>::force_start(extra_winning_target_count, cycle_id);
     }
 
     fn start_referendum_inner(

@@ -40,11 +40,13 @@ use frame_support::traits::{
 };
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
+    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
+    StorageValue,
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::SaturatedConversion;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -95,10 +97,14 @@ pub struct ReferendumStageVoting<BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
-    pub started: BlockNumber,      // block in which referendum started
-    pub winning_target_count: u64, // target number of winners
-    pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>, // intermediate winning options
-    pub current_cycle_id: u64,                                        // index of current election
+    // block in which referendum started
+    pub started: BlockNumber,
+    // target number of winners
+    pub winning_target_count: u64,
+    // intermediate winning options
+    pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>,
+    // index of current election
+    pub current_cycle_id: u64,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -112,16 +118,21 @@ pub struct OptionResult<MemberId, VotePower> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CastVote<Hash, Currency, MemberId> {
-    pub commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for
-    pub cycle_id: u64,    // current referendum cycle number
-    pub stake: Currency,  // stake locked for vote
-    pub vote_for: Option<MemberId>, // target option this vote favors; is `None` before the vote is revealed
+    // A commitment that a user submits in the voting stage before revealing what this vote is
+    // actually for
+    pub commitment: Hash,
+    // current referendum cycle number
+    pub cycle_id: u64,
+    // stake locked for vote
+    pub stake: Currency,
+    // target option this vote favors; is `None` before the vote is revealed
+    pub vote_for: Option<MemberId>,
 }
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-// `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
-// aliasing existing structs and enums
+// `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique
+// short names aliasing existing structs and enums
 
 // types simplifying access to common structs and enums
 pub type Balance<T, I> =
@@ -160,8 +171,6 @@ pub trait WeightInfo {
     fn release_vote_stake() -> Weight;
 }
 
-const MAX_WINNERS: u32 = 500; // TODO: Replace with a trait type
-
 /// Trait that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
@@ -185,7 +194,10 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     ) -> Result<(), ()>;
 
     /// Start referendum independent of the current state.
-    /// If an election is running before calling this function, it will be discontinued without any winners selected.
+    /// If an election is running before calling this function, it will be discontinued without
+    /// any winners selected.
+    /// If it is called with a bigger winning target count greated than the max allowed the max
+    /// will be used
     fn force_start(extra_winning_target_count: u64, cycle_id: u64);
 
     /// Calculate commitment for a vote.
@@ -202,7 +214,8 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
-    /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
+    /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
+    /// e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
 
     /// Currency for referendum staking.
@@ -235,6 +248,9 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
+    /// Maximum number of winning target count
+    type MaxWinnerTargetCount: Get<u64>;
+
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
@@ -252,23 +268,29 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// Check if an option a user is voting for actually exists.
     fn is_valid_option_id(option_id: &Self::MemberId) -> bool;
 
-    // If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
+    /// If the id is a valid alternative, the current total voting mass backing it is returned,
+    /// otherwise nothing.
     fn get_option_power(option_id: &Self::MemberId) -> Self::VotePower;
 
-    // Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
+    /// Increases voting mass behind given alternative by given amount, if present and return true,
+    /// otherwise return false.
     fn increase_option_power(option_id: &Self::MemberId, amount: &Self::VotePower);
 }
 
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
-        pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
+        pub Stage get(fn stage) config():
+            ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
 
-        /// Votes cast in the referendum. A new record is added to this map when a user casts a sealed vote.
+        /// Votes cast in the referendum. A new record is added to this map when a user casts a
+        /// sealed vote.
         /// It is modified when a user reveals the vote's commitment proof.
-        /// A record is finally removed when the user unstakes, which can happen during a voting stage or after the current cycle ends.
+        /// A record is finally removed when the user unstakes, which can happen during a voting
+        /// stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => CastVoteOf<T, I>;
+        pub Votes get(fn votes) config(): map hasher(blake2_128_concat)
+                                          T::AccountId => CastVoteOf<T, I>;
     }
 }
 
@@ -360,14 +382,16 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call
+        where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T, I>;
 
         /// Setup events
         fn deposit_event() = default;
 
-        /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
+        /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
+        /// e.g. std::u64::MAX.
         const MaxSaltLength: u64 = T::MaxSaltLength::get();
         /// Identifier for currency locks used for staking.
         const LockId: LockIdentifier = T::LockId::get();
@@ -385,7 +409,9 @@ decl_module! {
             Self::try_progress_stage(frame_system::Module::<T>::block_number());
 
             T::WeightInfo::on_initialize_voting()
-                .max(T::WeightInfo::on_initialize_revealing(MAX_WINNERS))
+                .max(T::WeightInfo::on_initialize_revealing(
+                        T::MaxWinnerTargetCount::get().saturated_into()
+                ))
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -423,13 +449,21 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is the number of `intermediate_winners` stored in the current `Stage::<T, I>::get()`
+        /// - `W` is the number of `intermediate_winners` stored in the current
+        ///     `Stage::<T, I>::get()`
         /// - DB:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::calculate_reveal_vote_weight(MAX_WINNERS)]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: <T as common::Trait>::MemberId) -> Result<(), Error<T, I>> {
-            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
+        #[weight = Module::<T, I>::calculate_reveal_vote_weight(
+            T::MaxWinnerTargetCount::get().saturated_into()
+        )]
+        pub fn reveal_vote(
+            origin,
+            salt: Vec<u8>,
+            vote_option_id: <T as common::Trait>::MemberId
+        ) -> Result<(), Error<T, I>> {
+            let (stage_data, account_id, cast_vote) =
+                EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -549,6 +583,9 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
 
+        // ensure that the winning target count doesn't go over the limit
+        ensure!(winning_target_count <= T::MaxWinnerTargetCount::get(), ());
+
         //
         // == MUTATION SAFE ==
         //
@@ -563,9 +600,13 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
     }
 
     // Start referendum independent of the current state.
-    // If an election is running before calling this function, it will be discontinued without any winners selected.
+    // If an election is running before calling this function, it will be discontinued without any
+    // winners selected.
     fn force_start(extra_winning_target_count: u64, cycle_id: u64) {
         let winning_target_count = extra_winning_target_count + 1;
+
+        // If a greater than the max allowed target count is used the max will be used in its place
+        let winning_target_count = winning_target_count.min(T::MaxWinnerTargetCount::get());
 
         // remember if referendum is running
         let referendum_running = !matches!(Stage::<T, I>::get(), ReferendumStage::Inactive);
@@ -719,7 +760,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Votes::<T, I>::remove(account_id);
     }
 
-    // Tries to insert option to the proper place in the winners list. Utility for reaveal_vote() function.
+    // Tries to insert option to the proper place in the winners list. Utility for reaveal_vote()
+    // function.
     fn try_winner_insert(
         option_result: OptionResultOf<T, I>,
         current_winners: &[OptionResultOf<T, I>],
@@ -740,7 +782,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 .find(|(_, value)| option_result.option_id == value.option_id)
                 .map(|(index, _)| index);
 
-            // espace when item is currently not in winning list and still has not enough vote power to make it to already full list
+            // espace when item is currently not in winning list and still has not enough vote
+            // power to make it to already full list
             if current_winners_index_of_vote_recipient.is_none()
                 && current_winners_count as u64 == winning_target_count
                 && option_result.vote_power <= current_winners[current_winners_count - 1].vote_power

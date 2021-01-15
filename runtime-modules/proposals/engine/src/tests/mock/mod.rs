@@ -68,6 +68,7 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MinimumPeriod: u64 = 5;
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 impl referendum::Trait<ReferendumInstance> for Test {
@@ -89,6 +90,8 @@ impl referendum::Trait<ReferendumInstance> for Test {
     type MinimumStake = MinimumVotingStake;
 
     type WeightInfo = ReferendumWeightInfo;
+
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,

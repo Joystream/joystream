@@ -259,6 +259,7 @@ parameter_types! {
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 mod balances_mod {
@@ -283,6 +284,8 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MinimumStake = MinimumVotingStake;
     type WeightInfo = ReferendumWeightInfo;
+
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,

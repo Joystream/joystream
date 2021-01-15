@@ -29,8 +29,6 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-const MAX_WINNERS: u32 = 50;
-
 fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     Referendum::<T, I>::force_start(winning_target_count.into(), 0);
     assert_eq!(
@@ -334,7 +332,7 @@ benchmarks_instance! {
     _ { }
 
     on_initialize_revealing {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let cycle_id = 0;
         let salt = vec![0u8];
@@ -447,7 +445,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_for_new_winner {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -499,7 +497,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_not_in_winners {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -543,7 +541,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_replace_last_winner {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -594,7 +592,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_already_existing {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = i;

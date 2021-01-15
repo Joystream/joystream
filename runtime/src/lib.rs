@@ -478,6 +478,7 @@ parameter_types! {
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 impl referendum::Trait<ReferendumInstance> for Runtime {
@@ -499,6 +500,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MinimumStake = MinimumVotingStake;
 
     type WeightInfo = weights::referendum::WeightInfo;
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
