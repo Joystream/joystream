@@ -44,8 +44,6 @@ pub const VOTER_BASE_ID: u64 = 4000;
 pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
 pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
-pub const INVALID_USER_MEMBER: u64 = 9999;
-
 // multiplies topup value so that candidate/voter can candidate/vote multiple times
 pub const TOPUP_MULTIPLIER: u64 = 10;
 
@@ -135,8 +133,8 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
 }
 
 impl common::StakingAccountValidator<Runtime> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(member_id: &u64, account_id: &u64) -> bool {
+        *member_id == *account_id
     }
 }
 
