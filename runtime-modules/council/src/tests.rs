@@ -1130,8 +1130,12 @@ fn council_budget_increment_can_be_upddated() {
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
+
         // forward to one block before refill
-        MockUtils::increase_block_number(next_refill - 1);
+        MockUtils::increase_block_number(next_refill - current_block - 1);
 
         // Check budget currently is 0
         Mocks::check_budget_refill(0, next_refill);
@@ -1159,8 +1163,12 @@ fn council_budget_increment_can_be_updated() {
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
+
         // forward to one block before refill
-        MockUtils::increase_block_number(next_refill - 1);
+        MockUtils::increase_block_number(next_refill - current_block - 1);
 
         // Check budget currently is 0
         Mocks::check_budget_refill(0, next_refill);
@@ -1235,15 +1243,12 @@ fn councilor_reward_can_be_set() {
 
         // calculate council member last reward block
         let last_payment_block = council_settings.cycle_duration
-            + (<Runtime as Trait>::ElectedMemberRewardPeriod::get()
-                - (council_settings.idle_stage_duration
-                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get()))
-            - 1; // -1 because current block is not finalized yet
+            - (council_settings.idle_stage_duration
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
 
         let start_rewarding_block = council_settings.reveal_stage_duration
             + council_settings.announcing_stage_duration
-            + council_settings.voting_stage_duration
-            - 1;
+            + council_settings.voting_stage_duration;
 
         let councilor_initial_balance = council_settings.min_candidate_stake * TOPUP_MULTIPLIER;
         let current_council_balance =
