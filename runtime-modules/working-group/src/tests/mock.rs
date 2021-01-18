@@ -106,11 +106,8 @@ impl membership::Trait for Test {
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        existing_locks.to_vec().contains(new_lock)
     }
 }
 
@@ -136,8 +133,8 @@ impl Trait for Test {
 }
 
 impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
     }
 }
 
@@ -236,7 +233,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
 
 pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
-pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
 

@@ -13,8 +13,8 @@ use crate::tests::fixtures::{
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
-    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
-    STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
+    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
+    STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
 use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Worker};
@@ -913,7 +913,6 @@ fn apply_on_opening_fails_stake_amount_check() {
     });
 }
 
-#[ignore] // unlock after implementing members staking accounts
 #[test]
 fn apply_on_opening_fails_invalid_staking_check() {
     build_test_externalities().execute_with(|| {
@@ -925,13 +924,13 @@ fn apply_on_opening_fails_invalid_staking_check() {
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
         increase_total_balance_issuance_using_account_id(
-            STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+            STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
             total_balance,
         );
 
         let stake_parameters = StakeParameters {
             stake,
-            staking_account_id: STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+            staking_account_id: STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
         };
 
         let add_opening_fixture =
@@ -950,7 +949,6 @@ fn apply_on_opening_fails_invalid_staking_check() {
     });
 }
 
-#[ignore] // unlock after implementing conflicting stake
 #[test]
 fn apply_on_opening_fails_with_conflicting_stakes() {
     build_test_externalities().execute_with(|| {
@@ -977,6 +975,10 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
                 leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters.clone()));
+        apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_stake_parameters(Some(stake_parameters));
