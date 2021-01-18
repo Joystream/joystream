@@ -5,6 +5,7 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
+use sp_std::convert::TryInto;
 
 use common::working_group::WorkingGroup;
 use proposals_engine::ProposalParameters;
@@ -245,8 +246,6 @@ fn create_funding_request_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         let total_balance_issuance = 500000;
         increase_total_balance_issuance(total_balance_issuance);
-        council::Module::<Test>::set_budget(RawOrigin::Root.into(), total_balance_issuance)
-            .unwrap();
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -264,34 +263,41 @@ fn create_funding_request_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let funding_request_proposal_details = ProposalDetails::FundingRequest(20, 10);
-        let funding_request_details_succesful = ProposalDetails::FundingRequest(100, 2);
-        assert_eq!(council::Module::<Test>::budget(), total_balance_issuance);
+        let funding_request_proposal = ProposalDetails::FundingRequest(vec![
+            common::FundingRequestParameters {
+                amount: 100,
+                account: 2,
+            },
+            common::FundingRequestParameters {
+                amount: 50,
+                account: 3,
+            },
+        ]);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    funding_request_proposal_details.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
             empty_stake_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    funding_request_proposal_details.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
             successful_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_with_staking.clone(),
-                    funding_request_details_succesful.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
             proposal_parameters: <Test as crate::Trait>::FundingRequestProposalParameters::get(),
-            proposal_details: funding_request_details_succesful.clone(),
+            proposal_details: funding_request_proposal.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -310,24 +316,117 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             exact_execution_block: None,
         };
 
+        let funding_request_proposal_zero_balance =
+            ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                amount: 0,
+                account: 2,
+            }]);
+
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::FundingRequest(0, 2),
+                funding_request_proposal_zero_balance,
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
 
         let exceeded_budget = MAX_SPENDING_PROPOSAL_VALUE + 1;
 
+        let funding_request_proposal_exceeded_balance =
+            ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                amount: exceeded_budget.into(),
+                account: 2,
+            }]);
+
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::FundingRequest(exceeded_budget.into(), 2),
+                funding_request_proposal_exceeded_balance,
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
+        );
+    });
+}
+
+#[test]
+fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(500000, 1);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::FundingRequest(
+                    Vec::<common::FundingRequestParameters<u64, u64>>::new()
+                ),
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalNumberOfAccount.into())
+        );
+
+        let mut funding_request_proposal_exceeded_number_of_account =
+            Vec::<common::FundingRequestParameters<_, _>>::new();
+
+        for i in 0..=MAX_FUNDING_REQUEST_ACCOUNTS {
+            funding_request_proposal_exceeded_number_of_account.push(
+                common::FundingRequestParameters {
+                    amount: 100,
+                    account: i.try_into().unwrap(),
+                },
+            );
+        }
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::FundingRequest(
+                    funding_request_proposal_exceeded_number_of_account
+                ),
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalNumberOfAccount.into())
+        );
+    });
+}
+
+#[test]
+fn create_funding_request_proposal_call_fails_repeated_account() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(500000, 1);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let funding_request_proposal_details = vec![
+            common::FundingRequestParameters {
+                amount: 100,
+                account: 1u64,
+            };
+            2
+        ];
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::FundingRequest(funding_request_proposal_details),
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalRepeatedAccount.into())
         );
     });
 }

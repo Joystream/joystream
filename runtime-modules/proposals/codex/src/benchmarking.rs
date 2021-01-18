@@ -247,6 +247,7 @@ benchmarks! {
     }
 
     create_proposal_funding_request {
+        let i in 1 .. MAX_FUNDING_REQUEST_ACCOUNTS.try_into().unwrap();
         let t in ...;
         let d in ...;
 
@@ -254,10 +255,17 @@ benchmarks! {
 
         council::Module::<T>::set_budget(RawOrigin::Root.into(), council::Balance::<T>::max_value()).unwrap();
 
-        let proposal_details = ProposalDetails::FundingRequest(
-                crate::BalanceOf::<T>::one(),
-                account::<T::AccountId>("reciever", 1, SEED)
-            );
+        let mut funding_requests =
+            Vec::<common::FundingRequestParameters<council::Balance::<T>, T::AccountId>>::new();
+
+        for id in 0 .. i {
+            funding_requests.push(common::FundingRequestParameters {
+                account: account::<T::AccountId>("reciever", id, SEED),
+                amount: One::one(),
+            });
+        }
+
+        let proposal_details = ProposalDetails::FundingRequest(funding_requests);
     }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
     verify {
         create_proposal_verify::<T>(account_id, member_id, proposal_details);

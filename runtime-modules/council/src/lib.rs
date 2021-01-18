@@ -51,11 +51,11 @@ use frame_support::dispatch::DispatchResult;
 use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::{CouncilOriginValidator, MemberOriginValidator};
-use common::StakingAccountValidator;
+use common::{FundingRequestParameters, StakingAccountValidator};
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
@@ -717,22 +717,31 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn funding_request(
             origin,
-            amount: Balance::<T>,
-            account: T::AccountId,
+            funding_requests: Vec<FundingRequestParameters<Balance<T>, T::AccountId>>
         ) {
             // Checks
             ensure_root(origin)?;
+            let funding_total: Balance<T> =
+                funding_requests.iter().fold(
+                    Zero::zero(),
+                    |accumulated, funding_request| accumulated + funding_request.amount,
+                );
             let current_budget = Self::budget();
-            ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
+            ensure!(funding_total <= current_budget, Error::<T>::InsufficientFundsForFundingRequest);
 
 
             //
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(&(current_budget - amount));
-            let  _ = balances::Module::<T>::deposit_creating(&account, amount);
-            Self::deposit_event(RawEvent::RequestFunded(account, amount));
+            for funding_request in funding_requests {
+                let amount = funding_request.amount;
+                let account = funding_request.account;
+                let current_budget = Self::budget();
+                Mutations::<T>::set_budget(&(current_budget - amount));
+                let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+                Self::deposit_event(RawEvent::RequestFunded(account, amount));
+            }
         }
     }
 }

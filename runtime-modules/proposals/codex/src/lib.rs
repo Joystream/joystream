@@ -62,6 +62,7 @@ use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 pub use crate::types::{
@@ -82,6 +83,8 @@ use common::working_group::WorkingGroup;
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
 // Max validator count for the 'Set Max Validator Count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
+// Max number of account that a fund request accept
+const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
 
 /// Proposal codex WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -309,6 +312,12 @@ decl_error! {
 
         /// Insufficient funds for 'Update Working Group Budget' proposal execution
         InsufficientFundsForBudgetUpdate,
+
+        /// Invalid number of accounts recieving funding request for 'Funding Request' proposal.
+        InvalidFundingRequestProposalNumberOfAccount,
+
+        /// Repeated account in 'Funding Request' proposal.
+        InvalidFundingRequestProposalRepeatedAccount,
     }
 }
 
@@ -558,16 +567,40 @@ impl<T: Trait> Module<T> {
             ProposalDetails::RuntimeUpgrade(ref blob) => {
                 ensure!(!blob.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
             }
-            ProposalDetails::FundingRequest(ref amount, _) => {
+            ProposalDetails::FundingRequest(ref funding_requests) => {
                 ensure!(
-                    *amount != BalanceOf::<T>::zero(),
-                    Error::<T>::InvalidFundingRequestProposalBalance
+                    funding_requests.len() != 0,
+                    Error::<T>::InvalidFundingRequestProposalNumberOfAccount
                 );
 
                 ensure!(
-                    *amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
-                    Error::<T>::InvalidFundingRequestProposalBalance
+                    funding_requests.len() <= MAX_FUNDING_REQUEST_ACCOUNTS,
+                    Error::<T>::InvalidFundingRequestProposalNumberOfAccount
                 );
+
+                // Ideally we would use hashset but it's not available in substrate
+                let mut visited_accounts = BTreeSet::new();
+
+                for funding_request in funding_requests {
+                    let account = &funding_request.account;
+
+                    ensure!(
+                        !visited_accounts.contains(&account),
+                        Error::<T>::InvalidFundingRequestProposalRepeatedAccount
+                    );
+
+                    ensure!(
+                        funding_request.amount != Zero::zero(),
+                        Error::<T>::InvalidFundingRequestProposalBalance
+                    );
+
+                    ensure!(
+                        funding_request.amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
+                        Error::<T>::InvalidFundingRequestProposalBalance
+                    );
+
+                    visited_accounts.insert(account);
+                }
             }
             ProposalDetails::SetMaxValidatorCount(ref new_validator_count) => {
                 // Since `set_validator_count` doesn't check that `new_validator_count`

@@ -1489,7 +1489,38 @@ fn test_funding_request_fails_insufficient_fundings() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Root;
         Mocks::set_budget(origin.clone(), 0, Ok(()));
-        Mocks::funding_request(origin, 1, 0, Err(Error::InsufficientFundsForFundingRequest));
+        Mocks::funding_request(
+            origin,
+            vec![common::FundingRequestParameters {
+                account: 0,
+                amount: 100,
+            }],
+            Err(Error::InsufficientFundsForFundingRequest),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_insufficient_fundings_in_multiple_accounts() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    account: 0,
+                    amount: 50,
+                },
+                common::FundingRequestParameters {
+                    account: 1,
+                    amount: 51,
+                },
+            ],
+            Err(Error::InsufficientFundsForFundingRequest),
+        );
     });
 }
 
@@ -1527,7 +1558,14 @@ fn test_funding_request_fails_permission() {
 
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Signed(0);
-        Mocks::funding_request(origin.into(), 1, 0, Err(Error::BadOrigin));
+        Mocks::funding_request(
+            origin.into(),
+            vec![common::FundingRequestParameters {
+                amount: 100,
+                account: 0,
+            }],
+            Err(Error::BadOrigin),
+        );
     });
 }
 
@@ -1620,9 +1658,20 @@ fn test_funding_request_succeeds() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Root;
         let initial_budget = 100;
-        let funding_amount = 5;
-        let recieving_account = 0;
         Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
-        Mocks::funding_request(origin, funding_amount, recieving_account, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    amount: 5,
+                    account: 0,
+                },
+                common::FundingRequestParameters {
+                    amount: 10,
+                    account: 1,
+                },
+            ],
+            Ok(()),
+        );
     });
 }

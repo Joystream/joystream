@@ -60,6 +60,17 @@ pub struct BlockAndTime<BlockNumber, Moment> {
     pub time: Moment,
 }
 
+/// Parameters for the 'Funding Request' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct FundingRequestParameters<Balance, AccountId> {
+    /// Single reciever account of funding request
+    pub account: AccountId,
+
+    /// Amount of funds the account will recieve
+    pub amount: Balance,
+}
+
 /// Gathers current block and time information for the runtime.
 /// If this function is used inside a config() at genesis the timestamp will be 0
 /// because the timestamp is actually produced by validators.
