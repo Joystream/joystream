@@ -804,7 +804,7 @@ fn setup_council(start_id: u64) {
     let candidates: Vec<_> = (start_id..start_id + candidates_number).collect();
     let council: Vec<_> = (start_id..start_id + council_size).collect();
     let voters: Vec<_> =
-        (council.last().unwrap() + 1..council.last().unwrap() + 1 + council_size).collect();
+        (candidates.last().unwrap() + 1..candidates.last().unwrap() + 1 + council_size).collect();
     for id in candidates {
         increase_total_balance_issuance_using_account_id(id, BalanceOf::<Test>::max_value());
         council::Module::<Test>::announce_candidacy(
@@ -821,7 +821,12 @@ fn setup_council(start_id: u64) {
     run_to_block(current_block + <Test as council::Trait>::AnnouncingPeriodDuration::get());
 
     for (i, voter_id) in voters.iter().enumerate() {
+        assert_eq!(Balances::free_balance(*voter_id), 0);
         increase_total_balance_issuance_using_account_id(*voter_id, BalanceOf::<Test>::max_value());
+        assert_eq!(
+            Balances::free_balance(*voter_id),
+            BalanceOf::<Test>::max_value()
+        );
         let commitment = referendum::Module::<Test, ReferendumInstance>::calculate_commitment(
             voter_id,
             &[0u8],

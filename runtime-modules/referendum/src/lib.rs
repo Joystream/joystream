@@ -35,9 +35,7 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::traits::{
-    Currency, EnsureOrigin, Get, LockIdentifier, LockableCurrency, WithdrawReason,
-};
+use frame_support::traits::{EnsureOrigin, Get, WithdrawReason};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
@@ -49,6 +47,8 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
 use sp_std::vec;
 use sp_std::vec::Vec;
+
+use staking_handler::StakingHandler;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -135,10 +135,9 @@ pub struct CastVote<Hash, Currency, MemberId> {
 // short names aliasing existing structs and enums
 
 // types simplifying access to common structs and enums
-pub type Balance<T, I> =
-    <<T as Trait<I>>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-pub type CastVoteOf<T, I> =
-    CastVote<<T as frame_system::Trait>::Hash, Balance<T, I>, <T as common::Trait>::MemberId>;
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type CastVoteOf<T> =
+    CastVote<<T as frame_system::Trait>::Hash, BalanceOf<T>, <T as common::Trait>::MemberId>;
 pub type ReferendumStageVotingOf<T> =
     ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
 pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
@@ -153,7 +152,7 @@ pub type OptionResultOf<T, I> =
 pub type CanRevealResult<T, I> = (
     ReferendumStageRevealingOf<T, I>,
     <T as frame_system::Trait>::AccountId,
-    CastVoteOf<T, I>,
+    CastVoteOf<T>,
 );
 
 /////////////////// Traits, Storage, Errors, and Events /////////////////////////
@@ -171,6 +170,8 @@ pub trait WeightInfo {
     fn release_vote_stake() -> Weight;
 }
 
+type ReferendumWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
+
 /// Trait that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
@@ -182,9 +183,6 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Currency for referendum staking.
-    type Currency: LockableCurrency<AccountId>;
 
     /// Start a new referendum.
     fn start_referendum(
@@ -210,7 +208,9 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Trait {
+pub trait Trait<I: Instance = DefaultInstance>:
+    frame_system::Trait + common::Trait + balances::Trait
+{
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -218,11 +218,8 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
 
-    /// Currency for referendum staking.
-    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-
-    /// Identifier for currency locks used for staking.
-    type LockId: Get<LockIdentifier>;
+    /// Stakes and balance locks handler.
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, Self::MemberId>;
 
     /// Origin from which the referendum can be started.
     type ManagerOrigin: EnsureOrigin<Self::Origin>;
@@ -243,7 +240,7 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     type RevealStageDuration: Get<Self::BlockNumber>;
 
     /// Minimum stake needed for voting
-    type MinimumStake: Get<Balance<Self, I>>;
+    type MinimumStake: Get<BalanceOf<Self>>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -254,13 +251,12 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &Balance<Self, I>,
+        stake: &BalanceOf<Self>,
     ) -> <Self as Trait<I>>::VotePower;
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self, I>, Self::MemberId>)
-        -> bool;
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, BalanceOf<Self>, Self::MemberId>) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(winners: &[OptionResult<Self::MemberId, Self::VotePower>]);
@@ -290,14 +286,14 @@ decl_storage! {
         /// stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat)
-                                          T::AccountId => CastVoteOf<T, I>;
+                                          T::AccountId => CastVoteOf<T>;
     }
 }
 
 decl_event! {
     pub enum Event<T, I = DefaultInstance>
     where
-        Balance = Balance<T, I>,
+        Balance = BalanceOf<T>,
         <T as frame_system::Trait>::Hash,
         <T as frame_system::Trait>::AccountId,
         <T as Trait<I>>::VotePower,
@@ -338,8 +334,11 @@ decl_error! {
         /// Revealing stage is not in progress right now
         RevealingNotInProgress,
 
-        /// Account can't stake enough currency (now)
-        InsufficientBalanceToStakeCurrency,
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
+
+        /// Account Insufficient Free Balance (now)
+        InsufficientBalanceToStake,
 
         /// Insufficient stake provided to cast a vote
         InsufficientStake,
@@ -393,14 +392,12 @@ decl_module! {
         /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
         /// e.g. std::u64::MAX.
         const MaxSaltLength: u64 = T::MaxSaltLength::get();
-        /// Identifier for currency locks used for staking.
-        const LockId: LockIdentifier = T::LockId::get();
         /// Duration of voting stage (number of blocks)
         const VoteStageDuration: T::BlockNumber = T::VoteStageDuration::get();
         /// Duration of revealing stage (number of blocks)
         const RevealStageDuration: T::BlockNumber = T::RevealStageDuration::get();
         /// Minimum stake needed for voting
-        const MinimumStake: Balance<T, I> = T::MinimumStake::get();
+        const MinimumStake: BalanceOf<T> = T::MinimumStake::get();
 
         /////////////////// Lifetime ///////////////////////////////////////////
 
@@ -408,8 +405,8 @@ decl_module! {
         fn on_initialize() -> Weight {
             Self::try_progress_stage(frame_system::Module::<T>::block_number());
 
-            T::WeightInfo::on_initialize_voting()
-                .max(T::WeightInfo::on_initialize_revealing(
+            ReferendumWeightInfo::<T, I>::on_initialize_voting()
+                .max(ReferendumWeightInfo::<T, I>::on_initialize_revealing(
                         T::MaxWinnerTargetCount::get().saturated_into()
                 ))
         }
@@ -425,8 +422,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::vote()]
-        pub fn vote(origin, commitment: T::Hash, stake: Balance<T, I>) -> Result<(), Error<T, I>> {
+        #[weight = ReferendumWeightInfo::<T, I>::vote()]
+        pub fn vote(origin, commitment: T::Hash, stake: BalanceOf<T>) -> Result<(), Error<T, I>> {
             // ensure action can be started
             let (current_cycle_id, account_id) = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
 
@@ -486,7 +483,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::release_vote_stake()]
+        #[weight = ReferendumWeightInfo::<T, I>::release_vote_stake()]
         pub fn release_vote_stake(origin) -> Result<(), Error<T, I>> {
             let account_id = EnsureChecks::<T, I>::can_release_vote_stake(origin)?;
 
@@ -510,17 +507,19 @@ decl_module! {
 impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Calculate reveal_vote weight
     fn calculate_reveal_vote_weight(number_of_winners: u32) -> Weight {
-        T::WeightInfo::reveal_vote_space_for_new_winner(number_of_winners)
-            .max(T::WeightInfo::reveal_vote_space_not_in_winners(
-                number_of_winners,
-            ))
-            .max(T::WeightInfo::reveal_vote_space_replace_last_winner(
-                number_of_winners,
-            ))
-            .max(T::WeightInfo::reveal_vote_space_replace_last_winner(
-                number_of_winners,
-            ))
-            .max(T::WeightInfo::reveal_vote_already_existing(
+        ReferendumWeightInfo::<T, I>::reveal_vote_space_for_new_winner(number_of_winners)
+            .max(ReferendumWeightInfo::<T, I>::reveal_vote_space_not_in_winners(number_of_winners))
+            .max(
+                ReferendumWeightInfo::<T, I>::reveal_vote_space_replace_last_winner(
+                    number_of_winners,
+                ),
+            )
+            .max(
+                ReferendumWeightInfo::<T, I>::reveal_vote_space_replace_last_winner(
+                    number_of_winners,
+                ),
+            )
+            .max(ReferendumWeightInfo::<T, I>::reveal_vote_already_existing(
                 number_of_winners,
             ))
     }
@@ -570,7 +569,6 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
     for Module<T, I>
 {
     type VotePower = T::VotePower;
-    type Currency = T::Currency;
 
     // Start new referendum run.
     fn start_referendum(
@@ -690,16 +688,11 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn vote(
         account_id: &<T as frame_system::Trait>::AccountId,
         commitment: &T::Hash,
-        stake: &Balance<T, I>,
+        stake: &BalanceOf<T>,
         current_cycle_id: &u64,
     ) -> Result<(), Error<T, I>> {
-        // lock stake amount
-        T::Currency::set_lock(
-            T::LockId::get(),
-            account_id,
-            *stake,
-            WithdrawReason::Transfer.into(),
-        );
+        // Should call after `can_vote`
+        T::StakingHandler::lock_with_reasons(account_id, *stake, WithdrawReason::Transfer.into());
 
         // store vote
         Votes::<T, I>::insert(
@@ -720,7 +713,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         stage_data: ReferendumStageRevealingOf<T, I>,
         account_id: &<T as frame_system::Trait>::AccountId,
         option_id: &<T as common::Trait>::MemberId,
-        cast_vote: CastVoteOf<T, I>,
+        cast_vote: CastVoteOf<T>,
     ) -> Result<(), Error<T, I>> {
         // prepare new values
         let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
@@ -753,8 +746,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     // Release stake associated to the user's last vote.
     fn release_vote_stake(account_id: &<T as frame_system::Trait>::AccountId) {
-        // lock stake amount
-        T::Currency::remove_lock(T::LockId::get(), account_id);
+        // unlock stake amount
+        T::StakingHandler::unlock(account_id);
 
         // remove vote record
         Votes::<T, I>::remove(account_id);
@@ -880,7 +873,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_vote(
         origin: T::Origin,
-        stake: &Balance<T, I>,
+        stake: &BalanceOf<T>,
     ) -> Result<(u64, T::AccountId), Error<T, I>> {
         fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
             cycle_id: &u64,
@@ -913,14 +906,19 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         prevent_repeated_vote::<T, I>(&current_cycle_id, &account_id)?;
 
         // ensure stake is enough for voting
-        if stake < &T::MinimumStake::get() {
-            return Err(Error::InsufficientStake);
-        }
+        ensure!(stake >= &T::MinimumStake::get(), Error::InsufficientStake);
 
-        // ensure account can lock the stake
-        if T::Currency::total_balance(&account_id) < *stake {
-            return Err(Error::InsufficientBalanceToStakeCurrency);
-        }
+        // Ensure account doesn't have conflicting stakes
+        ensure!(
+            T::StakingHandler::is_account_free_of_conflicting_stakes(&account_id),
+            Error::ConflictStakesOnAccount
+        );
+
+        // ensure stake is enough for voting
+        ensure!(
+            T::StakingHandler::is_enough_balance_for_stake(&account_id, *stake),
+            Error::InsufficientStake
+        );
 
         Ok((current_cycle_id, account_id))
     }
@@ -984,7 +982,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<CastVoteOf<T, I>, Error<T, I>> {
+    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<CastVoteOf<T>, Error<T, I>> {
         // ensure there is some vote with locked stake
         if !Votes::<T, I>::contains_key(account_id) {
             return Err(Error::VoteNotExisting);

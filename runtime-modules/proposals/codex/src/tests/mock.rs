@@ -17,7 +17,6 @@ use staking_handler::{LockComparator, StakingManager};
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
-use referendum::Balance as BalanceReferendum;
 use sp_runtime::testing::TestXt;
 
 impl_outer_origin! {
@@ -546,9 +545,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = balances::Module<Self>;
-    type LockId = VotingLockId;
-
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
@@ -565,17 +562,13 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,
-        _: &BalanceReferendum<Self, ReferendumInstance>,
+        _: &Self::Balance,
     ) -> Self::VotePower {
         1
     }
 
     fn can_unlock_vote_stake(
-        _: &referendum::CastVote<
-            Self::Hash,
-            BalanceReferendum<Self, ReferendumInstance>,
-            Self::MemberId,
-        >,
+        _: &referendum::CastVote<Self::Hash, Self::Balance, Self::MemberId>,
     ) -> bool {
         true
     }

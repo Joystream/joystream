@@ -189,7 +189,7 @@ fn create_proposal<T: Trait + membership::Trait>(
     );
 
     assert_eq!(
-        T::StakingHandler::current_stake(&account_id),
+        <T as Trait>::StakingHandler::current_stake(&account_id),
         T::Balance::max_value()
     );
 
@@ -405,7 +405,7 @@ benchmarks! {
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            T::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
+            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
         }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
@@ -473,7 +473,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -551,7 +551,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -587,7 +587,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_ne!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've still stake locked"
             );
@@ -649,7 +649,7 @@ benchmarks! {
 
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
@@ -670,7 +670,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );

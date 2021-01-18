@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks, Zero};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
@@ -68,12 +68,7 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
-    <<T as Trait>::Referendum as ReferendumManager<
-        <T as frame_system::Trait>::Origin,
-        <T as frame_system::Trait>::AccountId,
-        <T as common::Trait>::MemberId,
-        <T as frame_system::Trait>::Hash,
-    >>::Currency::make_free_balance_be(&account_id, balance);
+    balances::Module::<T>::make_free_balance_be(&account_id, balance);
 }
 
 fn start_announcing_period<T: Trait>() {

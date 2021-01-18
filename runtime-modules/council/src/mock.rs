@@ -18,8 +18,7 @@ use frame_support::{
 use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
-    ReferendumStageRevealing,
+    CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -269,15 +268,13 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = balances::Module<Self>;
-    type LockId = VotingLockId;
-
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
     type VoteStageDuration = VoteStageDuration;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
@@ -287,7 +284,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance<Self>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -297,9 +294,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self>, Self::MemberId>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
