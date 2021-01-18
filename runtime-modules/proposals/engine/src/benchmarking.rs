@@ -745,7 +745,7 @@ benchmarks! {
 
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
