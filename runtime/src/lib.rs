@@ -55,7 +55,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::WorkingGroup;
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -791,12 +791,12 @@ parameter_types! {
 }
 
 macro_rules! call_wg {
-    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => working_group::Module::<$T, ContentDirectoryWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Storage => working_group::Module::<$T, StorageWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Forum => working_group::Module::<$T, ForumWorkingGroupInstance>::$function($($x,)*),
-            WorkingGroup::Membership => working_group::Module::<$T, MembershipWorkingGroupInstance>::$function($($x,)*),
+            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
         }
     }};
 }
@@ -832,10 +832,10 @@ impl proposals_codex::Trait for Runtime {
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
-        call_wg!(working_group<Runtime>, get_budget)
+        call_wg!(working_group, get_budget)
     }
     fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
-        call_wg!(working_group<Runtime>, put_budget, budget)
+        call_wg!(working_group, set_budget, budget)
     }
 }
 
