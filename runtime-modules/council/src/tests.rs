@@ -195,27 +195,6 @@ fn council_vote_for_winner_stakes_longer() {
     });
 }
 
-// Test that only valid members can candidate.
-#[test]
-#[ignore] // ignore until `StakeHandler::is_member_staking_account()` properly implemented
-fn council_candidacy_invalid_member() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let council_settings = CouncilSettings::<Runtime>::extract_settings();
-
-        let stake = council_settings.min_candidate_stake;
-        let candidate = MockUtils::generate_candidate(INVALID_USER_MEMBER, stake);
-
-        Mocks::announce_candidacy(
-            candidate.origin.clone(),
-            candidate.account_id.clone(),
-            candidate.candidate.stake.clone(),
-            Err(Error::MemberIdNotMatchAccount),
-        );
-    });
-}
-
 // Test that candidate can withdraw valid candidacy.
 #[test]
 fn council_candidacy_withdraw_candidacy() {
@@ -1344,9 +1323,6 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id,
         );
 
-        // TODO: uncomment this once StakingHandler's `is_member_staking_account` is properly
-        // implemented
-        /*
         // test that staking_account_id has to be associated with membership_id
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
@@ -1354,9 +1330,8 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id.clone(), // second candidate's account id
             candidate1.candidate.reward_account_id.clone(),
             candidate1.candidate.stake.clone(),
-            Err(Error::MembershipIdNotMatchAccount),
+            Err(Error::MemberIdNotMatchAccount),
         );
-        */
 
         // test that reward_account_id not associated with membership_id can be used
         Mocks::announce_candidacy_raw(
