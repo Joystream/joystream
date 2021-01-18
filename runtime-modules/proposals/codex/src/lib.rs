@@ -569,7 +569,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::FundingRequest(ref funding_requests) => {
                 ensure!(
-                    funding_requests.len() != 0,
+                    !funding_requests.is_empty(),
                     Error::<T>::InvalidFundingRequestProposalNumberOfAccount
                 );
 

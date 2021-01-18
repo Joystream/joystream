@@ -1501,6 +1501,60 @@ fn test_funding_request_fails_insufficient_fundings() {
 }
 
 #[test]
+fn test_funding_request_fails_no_accounts() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 0, Ok(()));
+        Mocks::funding_request(
+            origin,
+            Vec::<common::FundingRequestParameters<u64, u64>>::new(),
+            Err(Error::EmptyFundingRequests),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_repeated_account() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    account: 0,
+                    amount: 5,
+                };
+                2
+            ],
+            Err(Error::RepeatedFundRequestAccount),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_zero_balance() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![common::FundingRequestParameters {
+                account: 0,
+                amount: 0,
+            }],
+            Err(Error::ZeroBalanceFundRequest),
+        );
+    });
+}
+
+#[test]
 fn test_funding_request_fails_insufficient_fundings_in_multiple_accounts() {
     let config = default_genesis_config();
 

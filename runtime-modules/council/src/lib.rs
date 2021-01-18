@@ -429,6 +429,15 @@ decl_error! {
 
         /// Insufficent funds in council for executing 'Funding Request'
         InsufficientFundsForFundingRequest,
+
+        /// Fund request no balance
+        ZeroBalanceFundRequest,
+
+        /// The same account is recieving funds from the same request twice
+        RepeatedFundRequestAccount,
+
+        /// Funding requests without recieving accounts
+        EmptyFundingRequests
     }
 }
 
@@ -721,15 +730,37 @@ decl_module! {
         ) {
             // Checks
             ensure_root(origin)?;
+
             let funding_total: Balance<T> =
                 funding_requests.iter().fold(
                     Zero::zero(),
                     |accumulated, funding_request| accumulated + funding_request.amount,
                 );
+
             let current_budget = Self::budget();
-            ensure!(funding_total <= current_budget, Error::<T>::InsufficientFundsForFundingRequest);
 
+            ensure!(
+                funding_total <= current_budget,
+                Error::<T>::InsufficientFundsForFundingRequest
+            );
 
+            ensure!(!funding_requests.is_empty(), Error::<T>::EmptyFundingRequests);
+
+            let mut recieving_accounts = Vec::<&T::AccountId>::new();
+
+            for funding_request in &funding_requests {
+                ensure!(
+                    funding_request.amount != Zero::zero(),
+                    Error::<T>::ZeroBalanceFundRequest
+                );
+
+                ensure!(
+                    !recieving_accounts.contains(&&funding_request.account),
+                    Error::<T>::RepeatedFundRequestAccount
+                );
+
+                recieving_accounts.push(&funding_request.account);
+            }
             //
             // == MUTATION SAFE ==
             //
