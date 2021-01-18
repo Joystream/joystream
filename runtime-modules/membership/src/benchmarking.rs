@@ -2,8 +2,8 @@
 use super::*;
 // use crate::Module as Membership;
 use crate::{
-    BuyMembershipParameters, MemberIdsByControllerAccountId, MemberIdsByRootAccountId, Membership,
-    MembershipById, MembershipObject, Trait,
+    BuyMembershipParameters, MemberIdByHandleHash, MemberIdsByControllerAccountId,
+    MemberIdsByRootAccountId, Membership, MembershipById, MembershipObject, Trait,
 };
 use balances::Module as Balances;
 use core::convert::TryInto;
@@ -35,44 +35,45 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-// fn member_funded_account<T: Trait + balances::Trait>(
-//     name: &'static str,
-//     id: u32,
-// ) -> (T::AccountId, T::MemberId) {
-//     let account_id = account::<T::AccountId>("member", id, SEED);
-//     let handle = handle_from_id::<T>(id, 4);
+fn member_funded_account<T: Trait + balances::Trait>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
+    let account_id = account::<T::AccountId>("member", member_id, SEED);
 
-//     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    let handle = handle_from_id::<T>(id);
 
-//     let params = BuyMembershipParameters {
-//         root_account: account_id.clone(),
-//         controller_account: account_id.clone(),
-//         name: None,
-//         handle: Some(handle),
-//         avatar_uri: None,
-//         about: None,
-//         referrer_id: None,
-//     };
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-//     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+    let params = BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
 
-//     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-//     let member_id = T::MemberId::from(id.try_into().unwrap());
-//     Membership::<T>::add_staking_account_candidate(
-//         RawOrigin::Signed(account_id.clone()).into(),
-//         member_id.clone(),
-//     )
-//     .unwrap();
-//     Membership::<T>::confirm_staking_account(
-//         RawOrigin::Signed(account_id.clone()).into(),
-//         member_id.clone(),
-//         account_id.clone(),
-//     )
-//     .unwrap();
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-//     (account_id, member_id)
-// }
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
+
+    (account_id, member_id)
+}
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
@@ -108,7 +109,7 @@ benchmarks! {
 
         let free_balance = BalanceOf::<T>::max_value();
 
-        let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+        let _ = Balances::<T>::make_free_balance_be(&account_id, free_balance);
 
         let fee = Module::<T>::membership_price();
 
@@ -144,6 +145,8 @@ benchmarks! {
 
         assert_eq!(MemberIdsByControllerAccountId::<T>::get(account_id.clone()), vec![member_id]);
 
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
+
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
         assert_eq!(Module::<T>::handles(handle_hash), member_id);
@@ -175,11 +178,11 @@ benchmarks! {
             referrer_id: None,
         };
 
+        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone());
+
         let referral_cut: BalanceOf<T> = 1.into();
 
         Module::<T>::set_referral_cut(RawOrigin::Root.into(), referral_cut);
-
-        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone());
 
         let member_id = T::MemberId::from(member_id.try_into().unwrap());
 
@@ -198,7 +201,7 @@ benchmarks! {
         // Same account id gets reward for being referral.
         assert_eq!(Balances::<T>::free_balance(&account_id.clone()), free_balance - fee + referral_cut);
 
-        let handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
+        let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
             handle_hash: handle_hash.clone(),
@@ -215,11 +218,67 @@ benchmarks! {
 
         assert_eq!(MemberIdsByControllerAccountId::<T>::get(account_id.clone()), vec![member_id, second_member_id]);
 
+        assert_eq!(MemberIdByHandleHash::<T>::get(second_handle_hash), second_member_id);
+
         assert_eq!(MembershipById::<T>::get(second_member_id), membership);
 
         assert_eq!(Module::<T>::handles(handle_hash), second_member_id);
 
         assert_last_event::<T>(RawEvent::MemberRegistered(second_member_id).into());
+    }
+
+    update_profile{
+
+        let i in 0 .. MAX_BYTES;
+
+        let member_id = 0;
+
+        let account_id = account::<T::AccountId>("member", member_id, SEED);
+
+        let handle = handle_from_id::<T>(i);
+
+        let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+
+        let member_id = T::MemberId::from(member_id.try_into().unwrap());
+
+        let mut params = BuyMembershipParameters {
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            name: None,
+            handle: Some(handle.clone()),
+            avatar_uri: None,
+            about: None,
+            referrer_id: None,
+        };
+
+        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone());
+
+        let handle_updated = handle_from_id::<T>(i + 1);
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, None, Some(handle_updated), None, None)
+    verify {
+
+        assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one() + T::MemberId::one());
+
+        // Same account id gets reward for being referral.
+        assert_eq!(Balances::<T>::free_balance(&account_id.clone()), free_balance - fee + referral_cut);
+
+        let handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
+
+        let membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: false,
+            // Save the updated profile.
+            invites: 5,
+        };
+
+        assert!(!MemberIdByHandleHash::<T>::exists(handle));
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated), member_id);
+
+        assert_last_event::<T>(RawEvent::MemberProfileUpdated(member_id).into());
     }
 }
 
@@ -243,6 +302,16 @@ mod tests {
             run_to_block(starting_block);
 
             assert_ok!(test_benchmark_buy_membership_without_referrer::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_profile() {
+        build_test_externalities().execute_with(|| {
+            let starting_block = 1;
+            run_to_block(starting_block);
+
+            assert_ok!(test_benchmark_update_profile::<Test>());
         });
     }
 }
