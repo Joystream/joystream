@@ -37,7 +37,7 @@ fn get_account_membership(account: AccountId32, i: usize) -> u64 {
     let member_id = i as u64;
     if Membership::membership(member_id).controller_account != account {
         insert_member(account.clone());
-        set_staking_account(account, member_id);
+        set_staking_account(account.clone(), account, member_id);
     }
 
     member_id
@@ -173,17 +173,21 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     Membership::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 }
 
-pub(crate) fn set_staking_account(account_id: AccountId32, member_id: u64) {
+pub(crate) fn set_staking_account(
+    controller_account_id: AccountId32,
+    staking_account_id: AccountId32,
+    member_id: u64,
+) {
     membership::Module::<Runtime>::add_staking_account_candidate(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(staking_account_id.clone()).into(),
         member_id,
     )
     .unwrap();
 
     membership::Module::<Runtime>::confirm_staking_account(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(controller_account_id.clone()).into(),
         member_id,
-        account_id.clone(),
+        staking_account_id.clone(),
     )
     .unwrap();
 }

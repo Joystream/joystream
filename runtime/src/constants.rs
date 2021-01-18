@@ -50,100 +50,68 @@ parameter_types! {
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
 }
 
+// Staking lock ID used by nomination and validation in the staking pallet.
+// This is a copye because the current Substrate staking lock ID is not exported.
+const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
+
 lazy_static! {
     // pairs of allowed lock combinations
     pub static ref ALLOWED_LOCK_COMBINATIONS: BTreeSet<(LockIdentifier, LockIdentifier)> = [
         // format: `(lock_id, [all_compatible_lock_ids, ...])`
-        (ForumGroupLockId::get(), [
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
+        (InvitedMemberLockId::get(), [
+            VotingLockId::get(),
             CandidacyLockId::get(),
             CouncilorLockId::get(),
-            VotingLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
-        (ContentWorkingGroupLockId::get(), [
-            ForumGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
+            STAKING_LOCK_ID,
             ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            VotingLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
-        (StorageWorkingGroupLockId::get(), [
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            VotingLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
-        (ProposalsLockId::get(), [
             ForumGroupLockId::get(),
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            VotingLockId::get(),
             MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
-        (CandidacyLockId::get(), [
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CouncilorLockId::get(),
-            VotingLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
-        (CouncilorLockId::get(), [
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            VotingLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
+        ].to_vec()),
         (VotingLockId::get(), [
+            InvitedMemberLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            STAKING_LOCK_ID,
+            ProposalsLockId::get(),
             ForumGroupLockId::get(),
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
             MembershipWorkingGroupLockId::get(),
+        ].to_vec()),
+        (CandidacyLockId::get(), [
             InvitedMemberLockId::get(),
-        ]),
+            VotingLockId::get(),
+            CouncilorLockId::get(),
+        ].to_vec()),
+        (CouncilorLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+            CandidacyLockId::get(),
+        ].to_vec()),
+        // Proposals
+        (ProposalsLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+        ].to_vec()),
+        // Working Groups
+        (ForumGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+        ].to_vec()),
+        (ContentWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+        ].to_vec()),
+        (StorageWorkingGroupLockId::get(), [
+            InvitedMemberLockId::get(),
+            VotingLockId::get(),
+        ].to_vec()),
         (MembershipWorkingGroupLockId::get(), [
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            MembershipWorkingGroupLockId::get(),
             InvitedMemberLockId::get(),
-        ]),
-         (InvitedMemberLockId::get(), [
-            ForumGroupLockId::get(),
-            ContentWorkingGroupLockId::get(),
-            StorageWorkingGroupLockId::get(),
-            ProposalsLockId::get(),
-            CandidacyLockId::get(),
-            CouncilorLockId::get(),
-            MembershipWorkingGroupLockId::get(),
-            InvitedMemberLockId::get(),
-        ]),
+            VotingLockId::get(),
+        ].to_vec()),
     ]
     .iter()
     .fold(BTreeSet::new(), |mut acc, item| {
