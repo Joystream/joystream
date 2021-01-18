@@ -386,6 +386,52 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::ReferralCutUpdated(referral_cut).into());
     }
+
+    transfer_invites{
+
+        let first_member_id = 0;
+
+        let second_member_id = 1;
+
+        let first_handle = handle_from_id::<T>(first_member_id);
+        let (first_account_id, first_member_id) = member_funded_account::<T>("first_member", first_member_id);
+
+        let second_handle = handle_from_id::<T>(second_member_id);
+        let (second_account_id, second_member_id) = member_funded_account::<T>("second_member", second_member_id);
+
+        let number_of_invites = 5;
+
+    }: _(RawOrigin::Signed(first_account_id.clone()), first_member_id, second_member_id, number_of_invites)
+
+    verify {
+        let first_handle_hash = T::Hashing::hash(&first_handle).as_ref().to_vec();
+
+        let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
+
+        let first_membership: Membership<T> = MembershipObject {
+            handle_hash: first_handle_hash,
+            root_account: first_account_id.clone(),
+            controller_account: first_account_id.clone(),
+            verified: false,
+            // Save the updated profile.
+            invites: 0,
+        };
+
+        let second_membership: Membership<T> = MembershipObject {
+            handle_hash: second_handle_hash,
+            root_account: second_account_id.clone(),
+            controller_account: second_account_id.clone(),
+            verified: false,
+            // Save the updated profile.
+            invites: 10,
+        };
+
+        assert_eq!(MembershipById::<T>::get(first_member_id), first_membership);
+
+        assert_eq!(MembershipById::<T>::get(second_member_id), second_membership);
+
+        assert_last_event::<T>(RawEvent::InvitesTransferred(first_member_id, second_member_id, number_of_invites).into());
+    }
 }
 
 #[cfg(test)]
@@ -447,6 +493,13 @@ mod tests {
     fn set_referral_cut() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_set_referral_cut::<Test>());
+        });
+    }
+
+    #[test]
+    fn transfer_invites() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_transfer_invites::<Test>());
         });
     }
 }
