@@ -372,6 +372,20 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::MemberAccountsUpdated(member_id).into());
     }
+
+    set_referral_cut {
+        let member_id = 0;
+
+        let referral_cut: BalanceOf<T> = 1.into();
+
+    }: _(RawOrigin::Root, referral_cut)
+
+    verify {
+
+        assert_eq!(Module::<T>::referral_cut(), referral_cut);
+
+        assert_last_event::<T>(RawEvent::ReferralCutUpdated(referral_cut).into());
+    }
 }
 
 #[cfg(test)]
@@ -426,6 +440,13 @@ mod tests {
     fn update_accounts_both() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_update_accounts_both::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_referral_cut() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_referral_cut::<Test>());
         });
     }
 }
