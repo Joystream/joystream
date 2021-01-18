@@ -1561,8 +1561,12 @@ impl<T: Trait> Module<T> {
         // Get path from parent to root of category tree.
         let category_tree_path = Self::build_category_tree_path(&category_id);
 
-        if category_tree_path.len() == 0 {
-            debug_assert!(false, "Should not fail! {:?}");
+        if category_tree_path.is_empty() {
+            debug_assert!(
+                false,
+                "Should not fail! {:?}",
+                Error::<T>::PathLengthShouldBeGreaterThanZero
+            );
             Err(Error::<T>::PathLengthShouldBeGreaterThanZero)
         } else {
             Ok(category_tree_path)
