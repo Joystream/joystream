@@ -303,13 +303,18 @@ benchmarks_instance! {
         let mut worker_id = Zero::zero();
         for id in application_account_id {
             worker_id += One::one();
-            WorkingGroup::<T, _>::leave_role(RawOrigin::Signed(id).into(), worker_id).unwrap();
+            WorkingGroup::<T, _>::leave_role(
+                    RawOrigin::Signed(id).into(),
+                    worker_id,
+                    Some(vec![0u8]),
+                ).unwrap();
         }
 
         // Worst case scenario one of the leaving workers is the lead
         WorkingGroup::<T, _>::leave_role(
             RawOrigin::Signed(lead_id).into(),
-            lead_worker_id
+            lead_worker_id,
+            Some(vec![0u8]),
         ).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -694,11 +699,12 @@ benchmarks_instance! {
             Some(lead_id.clone())
         );
         let slashing_amount = One::one();
-        let penalty = Penalty {
-            slashing_text: vec![0u8; i.try_into().unwrap()],
-            slashing_amount,
-        };
-    }: _(RawOrigin::Signed(lead_id.clone()), worker_id, penalty)
+    }: _(
+        RawOrigin::Signed(lead_id.clone()),
+        worker_id,
+        slashing_amount,
+        Some(vec![0u8; i.try_into().unwrap()])
+    )
     verify {
         assert_last_event::<T, I>(RawEvent::StakeSlashed(worker_id, slashing_amount).into());
     }
@@ -717,11 +723,12 @@ benchmarks_instance! {
         // To be able to pay unpaid reward
         let current_budget = BalanceOf::<T>::max_value();
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
-        let penalty = Penalty {
-            slashing_text: vec![0u8; i.try_into().unwrap()],
-            slashing_amount: One::one(),
-        };
-    }: terminate_role(RawOrigin::Signed(lead_id.clone()), worker_id, Some(penalty))
+    }: terminate_role(
+            RawOrigin::Signed(lead_id.clone()),
+            worker_id,
+            Some(One::one()),
+            Some(vec![0u8; i.try_into().unwrap()])
+        )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(worker_id), "Worker not terminated");
         assert_last_event::<T, I>(RawEvent::TerminatedWorker(worker_id).into());
@@ -735,11 +742,12 @@ benchmarks_instance! {
         let current_budget = BalanceOf::<T>::max_value();
         // To be able to pay unpaid reward
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
-        let penalty = Penalty {
-            slashing_text: vec![0u8; i.try_into().unwrap()],
-            slashing_amount: One::one(),
-        };
-    }: terminate_role(RawOrigin::Root, lead_worker_id, Some(penalty))
+    }: terminate_role(
+            RawOrigin::Root,
+            lead_worker_id,
+            Some(One::one()),
+            Some(vec![0u8; i.try_into().unwrap()])
+        )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(lead_worker_id), "Worker not terminated");
         assert_last_event::<T, I>(RawEvent::TerminatedLeader(lead_worker_id).into());
@@ -901,6 +909,7 @@ benchmarks_instance! {
 
     // This is always worse than leave_role_immediatly
     leave_role_immediatly {
+        let i in 0 .. MAX_BYTES;
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
         // Also, workers without stake can leave immediatly
@@ -913,7 +922,11 @@ benchmarks_instance! {
             BalanceOf::<T>::max_value()
         ).unwrap();
 
-    }: leave_role(RawOrigin::Signed(caller_id), lead_worker_id)
+    }: leave_role(
+            RawOrigin::Signed(caller_id),
+            lead_worker_id,
+            Some(vec![0u8; i.try_into().unwrap()])
+        )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(lead_worker_id), "Worker hasn't left");
         assert_last_event::<T, I>(RawEvent::WorkerExited(lead_worker_id).into());
@@ -923,6 +936,7 @@ benchmarks_instance! {
     // but since it's so obviously a different branch I think it's a good idea
     // to leave this branch and use tha max between these 2
     leave_role_later {
+        let i in 0 .. MAX_BYTES;
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(
             StakingRole::WithStakes,
@@ -930,7 +944,11 @@ benchmarks_instance! {
             0,
             None
         );
-    }: leave_role(RawOrigin::Signed(caller_id), caller_worker_id)
+    }: leave_role(
+            RawOrigin::Signed(caller_id),
+            caller_worker_id,
+            Some(vec![0u8; i.try_into().unwrap()])
+        )
     verify {
         assert_eq!(
             WorkingGroup::<T, _>::worker_by_id(caller_worker_id).started_leaving_at,

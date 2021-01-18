@@ -7,7 +7,7 @@ use common::working_group::WorkingGroup;
 use frame_system::RawOrigin;
 use proposals_codex::AddOpeningParameters;
 use strum::IntoEnumIterator;
-use working_group::{Penalty, StakeParameters};
+use working_group::StakeParameters;
 
 use crate::primitives::{ActorId, MemberId};
 use crate::tests::run_to_block;
@@ -206,10 +206,7 @@ fn slash_stake(
             general_proposal_parameters,
             ProposalDetails::SlashWorkingGroupLeaderStake(
                 leader_worker_id,
-                Penalty {
-                    slashing_amount: stake_amount,
-                    slashing_text: Vec::new(),
-                },
+                stake_amount,
                 working_group,
             ),
         )
@@ -293,7 +290,7 @@ fn terminate_role(
     member_id: MemberId,
     account_id: [u8; 32],
     leader_worker_id: u64,
-    penalty: Option<Penalty<Balance>>,
+    penalty: Option<u128>,
     sequence_number: u32, // action sequence number to align with other actions
     working_group: WorkingGroup,
 ) {
@@ -314,7 +311,7 @@ fn terminate_role(
             ProposalDetails::TerminateWorkingGroupLeaderRole(
                 proposals_codex::TerminateRoleParameters {
                     worker_id: leader_worker_id,
-                    penalty: penalty.clone(),
+                    penalty,
                     working_group,
                 },
             ),
@@ -1161,10 +1158,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
             member_id,
             account_id,
             leader_worker_id.into(),
-            Some(Penalty {
-                slashing_amount: stake_amount.into(),
-                slashing_text: Vec::new(),
-            }),
+            Some(stake_amount),
             4,
             working_group,
         );

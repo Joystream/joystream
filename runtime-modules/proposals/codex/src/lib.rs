@@ -422,10 +422,7 @@ impl<T: Trait> Module<T> {
                 );
             }
             ProposalDetails::SlashWorkingGroupLeaderStake(_, ref penalty, _) => {
-                ensure!(
-                    penalty.slashing_amount != Zero::zero(),
-                    Error::<T>::SlashingStakeIsZero
-                );
+                ensure!(*penalty != Zero::zero(), Error::<T>::SlashingStakeIsZero);
             }
             ProposalDetails::SetWorkingGroupLeaderReward(..) => {
                 // Note: No checks for this proposal for now

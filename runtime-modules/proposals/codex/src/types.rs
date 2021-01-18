@@ -7,7 +7,7 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 
-use working_group::{Penalty, StakePolicy};
+use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -52,7 +52,7 @@ pub enum ProposalDetails<BlockNumber, AccountId, Balance, WorkerId> {
     DecreaseWorkingGroupLeaderStake(WorkerId, Balance, WorkingGroup),
 
     /// Slash the working group leader stake.
-    SlashWorkingGroupLeaderStake(WorkerId, Penalty<Balance>, WorkingGroup),
+    SlashWorkingGroupLeaderStake(WorkerId, Balance, WorkingGroup),
 
     /// Set working group leader reward balance.
     SetWorkingGroupLeaderReward(WorkerId, Option<Balance>, WorkingGroup),
@@ -100,7 +100,7 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
     pub worker_id: WorkerId,
 
     /// Terminate role slash penalty.
-    pub penalty: Option<Penalty<Balance>>,
+    pub penalty: Option<Balance>,
 
     /// Defines working group with the open position.
     pub working_group: WorkingGroup,
