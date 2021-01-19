@@ -334,7 +334,7 @@ benchmarks! {
 
     }: _(RawOrigin::Root, funding_requests.clone())
     verify {
-        assert_eq!(Council::<T>::budget(), Balance::<T>::max_value() - One::one());
+        assert_eq!(Council::<T>::budget(), Balance::<T>::max_value() - Balance::<T>::from(i));
 
         for fund_request in funding_requests {
 

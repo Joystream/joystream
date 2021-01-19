@@ -201,7 +201,7 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 pub trait WeightInfo {
     fn set_budget_increment() -> Weight;
     fn set_councilor_reward() -> Weight;
-    fn funding_request() -> Weight;
+    fn funding_request(i: u32) -> Weight;
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
     fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
@@ -751,11 +751,14 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (1)`
+        /// `O (F)` where:
+        /// `F` is the length of `funding_requests`
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = CouncilWeightInfo::<T>::funding_request()]
+        #[weight = CouncilWeightInfo::<T>::funding_request(
+            funding_requests.len().saturated_into()
+        )]
         pub fn funding_request(
             origin,
             funding_requests: Vec<FundingRequestParameters<Balance<T>, T::AccountId>>

@@ -170,7 +170,7 @@ impl WeightInfo for () {
     fn set_councilor_reward() -> Weight {
         0
     }
-    fn funding_request() -> Weight {
+    fn funding_request(_: u32) -> Weight {
         0
     }
 }
