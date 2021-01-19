@@ -37,7 +37,7 @@ fn setup_members(count: u8) {
         let account_id: [u8; 32] = [i; 32];
         let account_id_converted: AccountId32 = account_id.clone().into();
         insert_member(account_id_converted.clone());
-        set_staking_account(account_id_converted, i as u64);
+        set_staking_account(account_id_converted.clone(), account_id_converted, i as u64);
     }
 }
 
@@ -534,12 +534,24 @@ fn set_validator_count_proposal_execution_succeeds() {
         let new_validator_count = 8;
         assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
+        setup_members(15);
+        setup_council(0);
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
+
+        let staking_account_id: [u8; 32] = [225u8; 32];
+        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        set_staking_account(
+            account_id.into(),
+            staking_account_id.into(),
+            member_id as u64,
+        );
+
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
                 member_id: member_id.into(),
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
-                staking_account_id: Some(account_id.into()),
+                staking_account_id: Some(staking_account_id.into()),
                 exact_execution_block: None,
             };
 
@@ -548,7 +560,8 @@ fn set_validator_count_proposal_execution_succeeds() {
                 general_proposal_parameters,
                 ProposalDetails::SetValidatorCount(new_validator_count),
             )
-        });
+        })
+        .disable_setup_enviroment();
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         run_to_block(14410);
