@@ -27,11 +27,14 @@
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
+//! [reject_active_proposals](./struct.Module.html#method.reject_active_proposals) function and
 //! all active proposals got rejected and it also calls
-//! [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! [reactivate_pending_constitutionality_proposals](./struct.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
 //! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
+//! - On runtime upgrade the proposals code could be obsolete, so we cancel all active proposals
+//! with statuses: Active, PendingExecution, PendingConstitutionality using this function
+//! [cancel_active_and_pending_proposals](./struct.Module.html#method.cancel_active_and_pending_proposals).
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
@@ -41,7 +44,7 @@
 //! the council size
 //! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
 //! to create a proposal: they should be members of the Joystream.
-//! - [StakingHandler](./trait.StakingHandler.html) - defines an interface for the staking.
+//! - StakingHandler - defines an interface for the staking.
 //!
 //! A full list of the abstractions can be found [here](./trait.Trait.html).
 //!
@@ -54,12 +57,14 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using
 //! provided parameters
-//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
-//! - ensures that we can create the proposal
-//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) -
+//! ensures that we can create the proposal
+//! - [reject_active_proposals](./struct.Module.html#method.reject_active_proposals) - rejects all
 //! active proposals.
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
-//! - reactivate proposals with pending constitutionality.
+//! - [reactivate_pending_constitutionality_proposals](./struct.Module.html#method.reactivate_pending_constitutionality_proposals) -
+//! reactivate proposals with pending constitutionality.
+//! - [cancel_active_and_pending_proposals](./struct.Module.html#method.cancel_active_and_pending_proposals) -
+//! cancels all active proposals.
 //!
 //! ## Usage
 //!

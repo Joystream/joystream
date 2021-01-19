@@ -818,7 +818,7 @@ mod tests {
     #[test]
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(cancel_active_and_pending_proposals::<Test>());
+            assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
         });
     }
 }
