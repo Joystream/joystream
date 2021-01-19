@@ -144,7 +144,7 @@ impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
         0
     }
 
-    fn cancel_proposal(_: u32) -> Weight {
+    fn cancel_proposal() -> Weight {
         0
     }
 
@@ -169,6 +169,10 @@ impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
     }
 
     fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
         0
     }
 }

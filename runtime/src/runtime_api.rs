@@ -1,5 +1,5 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, Randomness};
+use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
@@ -17,8 +17,9 @@ use crate::{
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
-    RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
+use frame_support::weights::Weight;
 
 /// Struct that handles the conversion of Balance -> `u64`. This is used for staking's election
 /// calculation.
@@ -74,32 +75,31 @@ pub type BlockId = generic::BlockId<Block>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
-pub type Executive = frame_executive::Executive<
-    Runtime,
-    Block,
-    frame_system::ChainContext<Runtime>,
-    Runtime,
-    AllModules,
->;
-
-// /// Custom runtime upgrade handler.
-// pub struct CustomOnRuntimeUpgrade;
-// impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
-//     fn on_runtime_upgrade() -> Weight {
-//
-//         10_000_000 // TODO: adjust weight
-//     }
-// }
-//
-// /// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
 // pub type Executive = frame_executive::Executive<
 //     Runtime,
 //     Block,
 //     frame_system::ChainContext<Runtime>,
 //     Runtime,
 //     AllModules,
-//     CustomOnRuntimeUpgrade,
 // >;
+
+/// Custom runtime upgrade handler.
+pub struct CustomOnRuntimeUpgrade;
+impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+    fn on_runtime_upgrade() -> Weight {
+        ProposalsEngine::cancel_active_and_pending_proposals()
+    }
+}
+
+/// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
+pub type Executive = frame_executive::Executive<
+    Runtime,
+    Block,
+    frame_system::ChainContext<Runtime>,
+    Runtime,
+    AllModules,
+    CustomOnRuntimeUpgrade,
+>;
 
 /// Export of the private const generated within the macro.
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;

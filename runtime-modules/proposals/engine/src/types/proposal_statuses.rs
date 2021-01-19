@@ -68,6 +68,9 @@ pub enum ProposalDecision {
     /// Proposal was withdrawn by its proposer.
     Canceled,
 
+    /// Proposal was canceled by the runtime. No fee applied.
+    CanceledByRuntime,
+
     /// Proposal was vetoed by root.
     Vetoed,
 

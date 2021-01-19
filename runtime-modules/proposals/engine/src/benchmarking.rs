@@ -707,6 +707,50 @@ benchmarks! {
             "There should not be any proposal left active"
         );
     }
+
+    cancel_active_and_pending_proposals {
+        let i in 1 .. T::MaxActiveProposalLimit::get();
+
+        let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
+            i,
+            0,
+            VoteKind::Approve,
+            max(T::CouncilSize::get().try_into().unwrap(), 1),
+            10,
+        );
+    }: { ProposalsEngine::<T>::cancel_active_and_pending_proposals() }
+    verify {
+        for proposal_id in proposals.iter() {
+            assert!(
+                !Proposals::<T>::contains_key(proposal_id),
+                "Proposal should not be in store"
+            );
+
+            assert!(
+                !DispatchableCallCode::<T>::contains_key(proposal_id),
+                "Dispatchable should not be in store"
+            );
+
+            assert_in_events::<T>(
+                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::CanceledByRuntime)
+                    .into()
+            );
+        }
+
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            0,
+            "There should not be any proposal left active"
+        );
+
+        for proposer_account_id in proposers {
+            assert_eq!(
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                Zero::zero(),
+                "Shouldn't have any stake locked"
+            );
+        }
+    }
 }
 
 #[cfg(test)]
@@ -768,6 +812,13 @@ mod tests {
     fn test_on_initialize_slashed() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_on_initialize_slashed::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_cancel_active_and_pending_proposals() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
         });
     }
 }
