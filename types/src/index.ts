@@ -8,7 +8,6 @@ import stake from './stake'
 import mint from './mint'
 import recurringRewards from './recurring-rewards'
 import hiring from './hiring'
-import contentWorkingGroup from './content-working-group'
 import workingGroup from './working-group'
 import discovery from './discovery'
 import media from './media'
@@ -30,7 +29,6 @@ export {
   mint,
   recurringRewards,
   hiring,
-  contentWorkingGroup,
   workingGroup,
   discovery,
   media,
@@ -48,7 +46,6 @@ export const types: RegistryTypes = {
   ...mint,
   ...recurringRewards,
   ...hiring,
-  ...contentWorkingGroup,
   ...workingGroup,
   ...discovery,
   ...media,

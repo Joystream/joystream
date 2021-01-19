@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassOf, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, ClassId, ClassOf, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -206,86 +206,6 @@ declare module '@polkadot/api/types/storage' {
        * Worker exit rationale text length limits.
        **/
       workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-    };
-    contentWorkingGroup: {
-      channelAvatarConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      channelBannerConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to corresponding channel.
-       **/
-      channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>>;
-      /**
-       * Whether it is currently possible to create a channel via `create_channel` extrinsic.
-       **/
-      channelCreationEnabled: AugmentedQuery<ApiType, () => Observable<bool>>;
-      channelDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      channelHandleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps (unique) channel handle to the corresponding identifier for the channel.
-       * Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique
-       * at the time it is being proposed.
-       **/
-      channelIdByHandle: AugmentedQuery<ApiType, (arg: Bytes | string | Uint8Array) => Observable<ChannelId>>;
-      channelTitleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to curator application on opening.
-       **/
-      curatorApplicationById: AugmentedQuery<ApiType, (arg: CuratorApplicationId | AnyNumber | Uint8Array) => Observable<CuratorApplication>>;
-      curatorApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to corresponding curator.
-       **/
-      curatorById: AugmentedQuery<ApiType, (arg: CuratorId | AnyNumber | Uint8Array) => Observable<Curator>>;
-      curatorExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifeir to curator opening.
-       **/
-      curatorOpeningById: AugmentedQuery<ApiType, (arg: CuratorOpeningId | AnyNumber | Uint8Array) => Observable<CuratorOpening>>;
-      /**
-       * The current lead.
-       **/
-      currentLeadId: AugmentedQuery<ApiType, () => Observable<Option<LeadId>>>;
-      /**
-       * Maps identifier to corresponding lead.
-       **/
-      leadById: AugmentedQuery<ApiType, (arg: LeadId | AnyNumber | Uint8Array) => Observable<Lead>>;
-      /**
-       * The mint currently funding the rewards for this module.
-       **/
-      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
-      /**
-       * Identifier to be used by the next channel introduced.
-       **/
-      nextChannelId: AugmentedQuery<ApiType, () => Observable<ChannelId>>;
-      /**
-       * Next identifier value for new curator application.
-       **/
-      nextCuratorApplicationId: AugmentedQuery<ApiType, () => Observable<CuratorApplicationId>>;
-      /**
-       * Next identifier for new curator.
-       **/
-      nextCuratorId: AugmentedQuery<ApiType, () => Observable<CuratorId>>;
-      /**
-       * Next identifier valuefor new curator opening.
-       **/
-      nextCuratorOpeningId: AugmentedQuery<ApiType, () => Observable<CuratorOpeningId>>;
-      /**
-       * Next identifier for new current lead.
-       **/
-      nextLeadId: AugmentedQuery<ApiType, () => Observable<LeadId>>;
-      /**
-       * Next identifier for
-       **/
-      nextPrincipalId: AugmentedQuery<ApiType, () => Observable<PrincipalId>>;
-      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to principal.
-       **/
-      principalById: AugmentedQuery<ApiType, (arg: PrincipalId | AnyNumber | Uint8Array) => Observable<Principal>>;
-      /**
-       * Recover curator by the role stake which is currently unstaking.
-       **/
-      unstakerByStakeId: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<WorkingGroupUnstaker>>;
     };
     council: {
       activeCouncil: AugmentedQuery<ApiType, () => Observable<Seats>>;
@@ -1158,26 +1078,6 @@ declare module '@polkadot/api/types/storage' {
     transactionPayment: {
       nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<Multiplier>>;
       storageVersion: AugmentedQuery<ApiType, () => Observable<Releases>>;
-    };
-    versionedStore: {
-      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<Class>>;
-      classDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      classNameConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Entity>>;
-      nextClassId: AugmentedQuery<ApiType, () => Observable<ClassId>>;
-      nextEntityId: AugmentedQuery<ApiType, () => Observable<EntityId>>;
-      propertyDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      propertyNameConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-    };
-    versionedStorePermissions: {
-      /**
-       * ClassPermissions of corresponding Classes in the versioned store
-       **/
-      classPermissionsByClassId: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<ClassPermissionsType>>;
-      /**
-       * Owner of an entity in the versioned store. If it is None then it is owned by the system.
-       **/
-      entityMaintainerByEntityId: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Option<Credential>>>;
     };
   }
 
