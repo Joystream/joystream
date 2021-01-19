@@ -41,9 +41,6 @@ pub type Hash = sp_core::H256;
 /// Moment type
 pub type Moment = u64;
 
-/// Credential type
-pub type Credential = u64;
-
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
