@@ -30,12 +30,12 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig,
+    CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
@@ -136,10 +136,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -177,10 +174,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -223,10 +217,7 @@ pub fn testnet_genesis(
     cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
-    versioned_store_config: VersionedStoreConfig,
-    versioned_store_permissions_config: VersionedStorePermissionsConfig,
     data_directory_config: DataDirectoryConfig,
-    content_working_group_config: ContentWorkingGroupConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
@@ -338,9 +329,6 @@ pub fn testnet_genesis(
                 next_curator_group_id: 1,
             }
         }),
-        versioned_store: Some(versioned_store_config),
-        versioned_store_permissions: Some(versioned_store_permissions_config),
-        content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,
@@ -406,10 +394,7 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
@@ -443,10 +428,7 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
