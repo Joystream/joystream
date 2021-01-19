@@ -11,10 +11,9 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
-use crate::integration::content_directory::ContentDirectoryWorkingGroup;
 use crate::{
-    content_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
-    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
+    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
