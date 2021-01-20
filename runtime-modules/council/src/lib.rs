@@ -650,7 +650,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_budget(&balance);
+            Mutations::<T>::set_budget(balance);
 
             // emit event
             Self::deposit_event(RawEvent::BudgetBalanceSet(balance));
@@ -696,7 +696,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_budget_increment(&budget_increment);
+            Mutations::<T>::set_budget_increment(budget_increment);
 
             // emit event
             Self::deposit_event(RawEvent::BudgetIncrementUpdated(budget_increment));
@@ -715,7 +715,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_councilor_reward(&councilor_reward);
+            Mutations::<T>::set_councilor_reward(councilor_reward);
 
             // emit event
             Self::deposit_event(RawEvent::CouncilorRewardUpdated(councilor_reward));
@@ -765,7 +765,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(&(current_budget - funding_total));
+            Mutations::<T>::set_budget(current_budget - funding_total);
 
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
@@ -903,7 +903,7 @@ impl<T: Trait> Module<T> {
         let refill_amount = Self::budget_increment();
 
         // refill budget
-        Mutations::<T>::refill_budget(&refill_amount);
+        Mutations::<T>::refill_budget(refill_amount);
 
         // calculate next refill block number
         let refill_period = T::BudgetRefillPeriod::get();
@@ -1275,13 +1275,13 @@ impl<T: Trait> Mutations<T> {
     /////////////////// Budget-related /////////////////////////////////////////
 
     // Set budget balance
-    fn set_budget(balance: &Balance<T>) {
+    fn set_budget(balance: Balance<T>) {
         Budget::<T>::put(balance);
     }
 
     // Refill budget's balance.
-    fn refill_budget(refill_amount: &Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(*refill_amount));
+    fn refill_budget(refill_amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(refill_amount));
     }
 
     // Plan next budget refill.
@@ -1290,12 +1290,12 @@ impl<T: Trait> Mutations<T> {
     }
 
     // Set budget increment.
-    fn set_budget_increment(budget_increment: &Balance<T>) {
+    fn set_budget_increment(budget_increment: Balance<T>) {
         BudgetIncrement::<T>::put(budget_increment);
     }
 
     // Set councilor reward.
-    fn set_councilor_reward(councilor_reward: &Balance<T>) {
+    fn set_councilor_reward(councilor_reward: Balance<T>) {
         CouncilorReward::<T>::put(councilor_reward);
     }
 
