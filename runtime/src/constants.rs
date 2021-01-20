@@ -189,12 +189,35 @@ lazy_static! {
 pub mod currency {
     use super::Balance;
 
-    pub const DOTS: Balance = 1_000_000_000_000;
-    pub const DOLLARS: Balance = DOTS;
-    pub const CENTS: Balance = DOLLARS / 100;
-    pub const MILLICENTS: Balance = CENTS / 1_000;
+    pub const JOYS: Balance = 250_000_000;
+    pub const DOLLARS: Balance = JOYS / 12500; // 20_000
+    pub const CENTS: Balance = DOLLARS / 100; // 200
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
         items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::currency::CENTS;
+    use super::fees::WeightToFee;
+    use frame_support::weights::WeightToFeePolynomial;
+    use pallet_balances::WeightInfo;
+
+    /*
+     * TODO: Add a test for the maximum weight
+     */
+
+    #[test]
+    // This function tests that the fee for `pallet_balances::transfer` of weight is correct
+    fn extrinsic_base_fee_is_correct() {
+        // Transfer fee should be less than half a cent and should be non-zero (Initially ~30)
+        let transfer_weight = crate::weights::pallet_balances::WeightInfo::transfer();
+        println!("Transfer weight: {}", transfer_weight);
+        let transfer_fee = WeightToFee::calc(&transfer_weight);
+        println!("Transfer fee: {}", transfer_fee);
+        let expected_fee = CENTS / 2; // 100
+        assert!(0 < transfer_fee && transfer_fee < expected_fee);
     }
 }

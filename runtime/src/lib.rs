@@ -263,7 +263,7 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 10 * constants::currency::MILLICENTS;
+    pub const TransactionByteFee: Balance = 1;
 }
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
