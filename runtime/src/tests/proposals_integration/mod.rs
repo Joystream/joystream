@@ -561,7 +561,10 @@ fn funding_request_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::FundingRequest(funding, target_account_id.clone()),
+                ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                    amount: funding,
+                    account: target_account_id.clone(),
+                }]),
             )
         })
         .with_member_id(member_id as u64);

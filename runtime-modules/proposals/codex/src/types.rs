@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
+use common::FundingRequestParameters;
 
 use working_group::StakePolicy;
 
@@ -44,8 +45,8 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
     /// The wasm code for the `Runtime Upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
-    /// Balance and destination account for the `FundingRequest` proposal
-    FundingRequest(Balance, AccountId),
+    /// Vector of balance and destination accounts for the `FundingRequest` proposal
+    FundingRequest(Vec<FundingRequestParameters<Balance, AccountId>>),
 
     /// `Set Max Validator Count` proposal
     SetMaxValidatorCount(u32),

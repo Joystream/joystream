@@ -25,7 +25,7 @@ use sp_io;
 use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup, Zero},
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
@@ -1071,8 +1071,7 @@ where
 
     pub fn funding_request(
         origin: OriginType<T::AccountId>,
-        amount: Balance<T>,
-        reciever: T::AccountId,
+        funding_requests: Vec<common::FundingRequestParameters<Balance<T>, T::AccountId>>,
         expected_result: Result<(), Error<T>>,
     ) {
         let initial_budget = Module::<T>::budget();
@@ -1080,8 +1079,7 @@ where
         assert_eq!(
             Module::<T>::funding_request(
                 InstanceMockUtils::<T>::mock_origin(origin),
-                amount,
-                reciever.clone(),
+                funding_requests.clone(),
             )
             .is_ok(),
             expected_result.is_ok(),
@@ -1091,19 +1089,28 @@ where
             return;
         }
 
-        assert_eq!(
-            frame_system::Module::<Runtime>::events()
-                .last()
-                .unwrap()
-                .event,
-            TestEvent::event_mod(RawEvent::RequestFunded(
-                reciever.clone().into(),
-                amount.into()
-            )),
-        );
+        for funding_request in &funding_requests {
+            assert!(frame_system::Module::<Runtime>::events()
+                .iter()
+                .any(|ev| ev.event
+                    == TestEvent::event_mod(RawEvent::RequestFunded(
+                        funding_request.account.clone().into(),
+                        funding_request.amount.into(),
+                    ))));
 
-        assert_eq!(Module::<T>::budget(), initial_budget - amount);
-        assert_eq!(balances::Module::<T>::free_balance(reciever), amount);
+            assert_eq!(
+                balances::Module::<T>::free_balance(funding_request.account.clone()),
+                funding_request.amount
+            );
+        }
+
+        let spent_amount = funding_requests
+            .iter()
+            .fold(Balance::<T>::zero(), |acc, funding_request| {
+                acc + funding_request.amount
+            });
+
+        assert_eq!(Module::<T>::budget(), initial_budget - spent_amount);
     }
 
     pub fn plan_budget_refill(

@@ -36,8 +36,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Signal(signal) => {
                 Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(signal))
             }
-            ProposalDetails::FundingRequest(balance, destination) => {
-                Call::Council(council::Call::funding_request(balance, destination))
+            ProposalDetails::FundingRequest(params) => {
+                Call::Council(council::Call::funding_request(params))
             }
             ProposalDetails::SetMaxValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),

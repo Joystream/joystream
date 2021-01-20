@@ -51,11 +51,11 @@ use frame_support::dispatch::DispatchResult;
 use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::{CouncilOriginValidator, MemberOriginValidator};
-use common::StakingAccountValidator;
+use common::{FundingRequestParameters, StakingAccountValidator};
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
@@ -429,6 +429,15 @@ decl_error! {
 
         /// Insufficent funds in council for executing 'Funding Request'
         InsufficientFundsForFundingRequest,
+
+        /// Fund request no balance
+        ZeroBalanceFundRequest,
+
+        /// The same account is recieving funds from the same request twice
+        RepeatedFundRequestAccount,
+
+        /// Funding requests without recieving accounts
+        EmptyFundingRequests
     }
 }
 
@@ -641,7 +650,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_budget(&balance);
+            Mutations::<T>::set_budget(balance);
 
             // emit event
             Self::deposit_event(RawEvent::BudgetBalanceSet(balance));
@@ -687,7 +696,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_budget_increment(&budget_increment);
+            Mutations::<T>::set_budget_increment(budget_increment);
 
             // emit event
             Self::deposit_event(RawEvent::BudgetIncrementUpdated(budget_increment));
@@ -706,7 +715,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_councilor_reward(&councilor_reward);
+            Mutations::<T>::set_councilor_reward(councilor_reward);
 
             // emit event
             Self::deposit_event(RawEvent::CouncilorRewardUpdated(councilor_reward));
@@ -717,22 +726,53 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn funding_request(
             origin,
-            amount: Balance::<T>,
-            account: T::AccountId,
+            funding_requests: Vec<FundingRequestParameters<Balance<T>, T::AccountId>>
         ) {
             // Checks
             ensure_root(origin)?;
+
+            let funding_total: Balance<T> =
+                funding_requests.iter().fold(
+                    Zero::zero(),
+                    |accumulated, funding_request| accumulated + funding_request.amount,
+                );
+
             let current_budget = Self::budget();
-            ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForFundingRequest);
 
+            ensure!(
+                funding_total <= current_budget,
+                Error::<T>::InsufficientFundsForFundingRequest
+            );
 
+            ensure!(!funding_requests.is_empty(), Error::<T>::EmptyFundingRequests);
+
+            let mut recieving_accounts = Vec::<&T::AccountId>::new();
+
+            for funding_request in &funding_requests {
+                ensure!(
+                    funding_request.amount != Zero::zero(),
+                    Error::<T>::ZeroBalanceFundRequest
+                );
+
+                ensure!(
+                    !recieving_accounts.contains(&&funding_request.account),
+                    Error::<T>::RepeatedFundRequestAccount
+                );
+
+                recieving_accounts.push(&funding_request.account);
+            }
             //
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(&(current_budget - amount));
-            let  _ = balances::Module::<T>::deposit_creating(&account, amount);
-            Self::deposit_event(RawEvent::RequestFunded(account, amount));
+            Mutations::<T>::set_budget(current_budget - funding_total);
+
+            for funding_request in funding_requests {
+                let amount = funding_request.amount;
+                let account = funding_request.account;
+                let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+                Self::deposit_event(RawEvent::RequestFunded(account, amount));
+            }
         }
     }
 }
@@ -863,7 +903,7 @@ impl<T: Trait> Module<T> {
         let refill_amount = Self::budget_increment();
 
         // refill budget
-        Mutations::<T>::refill_budget(&refill_amount);
+        Mutations::<T>::refill_budget(refill_amount);
 
         // calculate next refill block number
         let refill_period = T::BudgetRefillPeriod::get();
@@ -1235,13 +1275,13 @@ impl<T: Trait> Mutations<T> {
     /////////////////// Budget-related /////////////////////////////////////////
 
     // Set budget balance
-    fn set_budget(balance: &Balance<T>) {
+    fn set_budget(balance: Balance<T>) {
         Budget::<T>::put(balance);
     }
 
     // Refill budget's balance.
-    fn refill_budget(refill_amount: &Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(*refill_amount));
+    fn refill_budget(refill_amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(refill_amount));
     }
 
     // Plan next budget refill.
@@ -1250,12 +1290,12 @@ impl<T: Trait> Mutations<T> {
     }
 
     // Set budget increment.
-    fn set_budget_increment(budget_increment: &Balance<T>) {
+    fn set_budget_increment(budget_increment: Balance<T>) {
         BudgetIncrement::<T>::put(budget_increment);
     }
 
     // Set councilor reward.
-    fn set_councilor_reward(councilor_reward: &Balance<T>) {
+    fn set_councilor_reward(councilor_reward: Balance<T>) {
         CouncilorReward::<T>::put(councilor_reward);
     }
 
