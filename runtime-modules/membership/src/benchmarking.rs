@@ -1,8 +1,8 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::{
-    BuyMembershipParameters, MemberIdByHandleHash, Membership, MembershipById, MembershipObject,
-    Trait,
+    BuyMembershipParameters, InviteMembershipParameters, MemberIdByHandleHash, Membership,
+    MembershipById, MembershipObject, Trait,
 };
 use balances::Module as Balances;
 use common::working_group::MembershipWorkingGroupHelper;
@@ -411,6 +411,61 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::InvitesTransferred(first_member_id, second_member_id, number_of_invites).into());
     }
 
+    invite_member {
+        let member_id = 0;
+
+        let i in 1 .. MAX_BYTES;
+
+        let member_id = 0;
+
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+
+        let handle = handle_from_id::<T>(i);
+
+        let invite_params = InviteMembershipParameters {
+            inviting_member_id: member_id,
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            name: None,
+            handle: Some(handle.clone()),
+            avatar_uri: None,
+            about: None,
+        };
+
+        let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+
+        T::WorkingGroup::set_budget(default_invitation_balance + default_invitation_balance);
+
+        let current_wg_budget = T::WorkingGroup::get_budget();
+
+    }: _(RawOrigin::Signed(account_id.clone()), invite_params)
+
+    verify {
+        let invited_member_id = member_id + T::MemberId::one();
+
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let invited_membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: false,
+            // Save the updated profile.
+            invites: 0,
+        };
+
+        let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
+
+        assert_eq!(T::WorkingGroup::get_budget(), new_wg_budget);
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
+
+        assert_eq!(MembershipById::<T>::get(invited_member_id), invited_membership);
+
+        assert_last_event::<T>(RawEvent::MemberRegistered(invited_member_id).into());
+
+    }
+
     set_membership_price {
         let membership_price: BalanceOf<T> = 1000.into();
 
@@ -524,6 +579,13 @@ mod tests {
     fn set_leader_invitation_quota() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_set_leader_invitation_quota::<Test>());
+        });
+    }
+
+    #[test]
+    fn invite_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_invite_member::<Test>());
         });
     }
 }
