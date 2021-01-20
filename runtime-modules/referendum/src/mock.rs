@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
+    BalanceOf, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
     WeightInfo,
 };
@@ -16,7 +16,6 @@ use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
-use pallet_balances;
 use rand::Rng;
 use sp_core::H256;
 use sp_runtime::traits::One;
@@ -29,6 +28,8 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
+
+use staking_handler::LockComparator;
 
 use crate::GenesisConfig;
 
@@ -53,6 +54,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 7;
     pub const MinimumStake: u64 = 10000;
     pub const LockId: LockIdentifier = *b"referend";
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 thread_local! {
@@ -63,14 +65,21 @@ thread_local! {
     pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait>::VotePower>::new());
 }
 
+impl LockComparator<u64> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Runtime>;
-    type LockId = LockId;
-
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
@@ -82,9 +91,11 @@ impl Trait for Runtime {
     type MinimumStake = MinimumStake;
     type WeightInfo = ();
 
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
+
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &Balance<Self, DefaultInstance>,
+        stake: &BalanceOf<Self>,
     ) -> <Self as Trait<DefaultInstance>>::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -95,7 +106,7 @@ impl Trait for Runtime {
     }
 
     fn can_unlock_vote_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, DefaultInstance>, Self::MemberId>,
+        _vote: &CastVote<Self::Hash, BalanceOf<Self>, Self::MemberId>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -163,6 +174,7 @@ impl WeightInfo for () {
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
 
 impl membership::Trait for Runtime {
@@ -170,6 +182,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
 impl pallet_timestamp::Trait for Runtime {
@@ -179,7 +192,17 @@ impl pallet_timestamp::Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
@@ -191,22 +214,7 @@ impl common::working_group::WorkingGroupIntegration<Runtime> for () {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
-        unimplemented!()
-    }
-
     fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
-        unimplemented!()
-    }
-
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
-        unimplemented!()
-    }
-
-    fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
-    ) -> bool {
         unimplemented!()
     }
 
@@ -232,7 +240,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl pallet_balances::Trait for Runtime {
+impl balances::Trait for Runtime {
     type Balance = u64;
     type Event = TestEvent;
     type DustRemoval = ();
@@ -268,7 +276,7 @@ mod event_mod {
 }
 
 mod tmp {
-    pub use pallet_balances::Event;
+    pub use balances::Event;
 }
 
 mod membership_mod {
@@ -314,7 +322,7 @@ impl frame_system::Trait for Runtime {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type PalletInfo = ();
-    type AccountData = pallet_balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -370,7 +378,7 @@ pub fn build_test_externalities(
 // topup currency to the account
 fn topup_account(account_id: u64, amount: u64) {
     let account_id = account_id;
-    let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount);
+    let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount);
 }
 
 pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
@@ -514,6 +522,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
     }
 
+    // checks that winning_target_count equals expected
+    // fails if used outisde of voting stage
+    pub fn check_winning_target_count(winning_target_count: u64) {
+        if let ReferendumStage::Voting(stage_data) = Stage::<Runtime, DefaultInstance>::get() {
+            assert_eq!(stage_data.winning_target_count, winning_target_count);
+        } else {
+            assert!(false);
+        }
+    }
+
     pub fn start_referendum_manager(
         winning_target_count: u64,
         cycle_id: u64,
@@ -538,6 +556,17 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         );
 
         Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
+    }
+
+    pub fn force_start(winning_target_count: u64, cycle_id: u64) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+
+        <Module<Runtime> as ReferendumManager<
+            <Runtime as frame_system::Trait>::Origin,
+            <Runtime as frame_system::Trait>::AccountId,
+            <Runtime as common::Trait>::MemberId,
+            <Runtime as frame_system::Trait>::Hash,
+        >>::force_start(extra_winning_target_count, cycle_id);
     }
 
     fn start_referendum_inner(
@@ -622,7 +651,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
         account_id: <Runtime as frame_system::Trait>::AccountId,
         commitment: <Runtime as frame_system::Trait>::Hash,
-        stake: Balance<Runtime, DefaultInstance>,
+        stake: BalanceOf<Runtime>,
         cycle_id: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {

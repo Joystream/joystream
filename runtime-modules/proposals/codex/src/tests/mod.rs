@@ -9,7 +9,6 @@ use frame_system::RawOrigin;
 use common::working_group::WorkingGroup;
 use proposals_engine::ProposalParameters;
 use referendum::ReferendumManager;
-use working_group::Penalty;
 
 use crate::*;
 use crate::{Error, ProposalDetails};
@@ -62,7 +61,7 @@ where
     fn check_call_for_insufficient_rights(&self) {
         assert_eq!(
             (self.insufficient_rights_call)(),
-            Err(DispatchError::Other("Bad origin"))
+            Err(DispatchError::BadOrigin)
         );
     }
 
@@ -741,23 +740,11 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let slash_lead_details = ProposalDetails::SlashWorkingGroupLeaderStake(
-            0,
-            Penalty {
-                slashing_amount: 10,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-        );
+        let slash_lead_details =
+            ProposalDetails::SlashWorkingGroupLeaderStake(0, 10, working_group);
 
-        let slash_lead_details_success = ProposalDetails::SlashWorkingGroupLeaderStake(
-            10,
-            Penalty {
-                slashing_amount: 10,
-                slashing_text: Vec::new(),
-            },
-            working_group,
-        );
+        let slash_lead_details_success =
+            ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -817,7 +804,7 @@ fn setup_council(start_id: u64) {
     let candidates: Vec<_> = (start_id..start_id + candidates_number).collect();
     let council: Vec<_> = (start_id..start_id + council_size).collect();
     let voters: Vec<_> =
-        (council.last().unwrap() + 1..council.last().unwrap() + 1 + council_size).collect();
+        (candidates.last().unwrap() + 1..candidates.last().unwrap() + 1 + council_size).collect();
     for id in candidates {
         increase_total_balance_issuance_using_account_id(id, BalanceOf::<Test>::max_value());
         council::Module::<Test>::announce_candidacy(
@@ -834,7 +821,12 @@ fn setup_council(start_id: u64) {
     run_to_block(current_block + <Test as council::Trait>::AnnouncingPeriodDuration::get());
 
     for (i, voter_id) in voters.iter().enumerate() {
+        assert_eq!(Balances::free_balance(*voter_id), 0);
         increase_total_balance_issuance_using_account_id(*voter_id, BalanceOf::<Test>::max_value());
+        assert_eq!(
+            Balances::free_balance(*voter_id),
+            BalanceOf::<Test>::max_value()
+        );
         let commitment = referendum::Module::<Test, ReferendumInstance>::calculate_commitment(
             voter_id,
             &[0u8],
@@ -897,14 +889,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::SlashWorkingGroupLeaderStake(
-                    10,
-                    Penalty {
-                        slashing_amount: 0,
-                        slashing_text: Vec::new()
-                    },
-                    working_group,
-                )
+                ProposalDetails::SlashWorkingGroupLeaderStake(10, 0, working_group)
             ),
             Err(Error::<Test>::SlashingStakeIsZero.into())
         );

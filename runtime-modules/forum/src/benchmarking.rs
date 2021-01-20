@@ -15,6 +15,29 @@ use working_group::{
     WorkerById,
 };
 
+// We create this trait because we need to be compatible with the runtime
+// in the mock for tests. In that case we need to be able to have `membership_id == account_id`
+// We can't create an account from an `u32` or from a memberhsip_dd,
+// so this trait allows us to get an account id from an u32, in the case of `64` which is what
+// the mock use we get the parameter as a return.
+// In the case of `AccountId32` we use the method provided by `frame_benchmarking` to get an
+// AccountId.
+pub trait CreateAccountId {
+    fn create_account_id(id: u32) -> Self;
+}
+
+impl CreateAccountId for u64 {
+    fn create_account_id(id: u32) -> Self {
+        id.into()
+    }
+}
+
+impl CreateAccountId for sp_core::crypto::AccountId32 {
+    fn create_account_id(id: u32) -> Self {
+        account::<Self>("default", id, SEED)
+    }
+}
+
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
@@ -40,10 +63,12 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
-    name: &'static str,
     id: u32,
-) -> (T::AccountId, T::MemberId) {
-    let account_id = account::<T::AccountId>(name, id, SEED);
+) -> (T::AccountId, T::MemberId)
+where
+    T::AccountId: CreateAccountId,
+{
+    let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
@@ -101,8 +126,11 @@ fn insert_a_worker<
 >(
     job_opening_type: OpeningType,
     id: u64,
-) -> T::AccountId {
-    let (caller_id, member_id) = member_funded_account::<T>("member", id as u32);
+) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+{
+    let (caller_id, member_id) = member_funded_account::<T>(id as u32);
 
     let add_worker_origin = match job_opening_type {
         OpeningType::Leader => RawOrigin::Root,
@@ -219,7 +247,7 @@ fn create_new_category<T: Trait>(
 
 fn create_new_thread<T: Trait>(
     account_id: T::AccountId,
-    forum_user_id: T::ForumUserId,
+    forum_user_id: crate::ForumUserId<T>,
     category_id: T::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
@@ -239,7 +267,7 @@ fn create_new_thread<T: Trait>(
 
 fn add_thread_post<T: Trait>(
     account_id: T::AccountId,
-    forum_user_id: T::ForumUserId,
+    forum_user_id: crate::ForumUserId<T>,
     category_id: T::CategoryId,
     thread_id: T::ThreadId,
     text: Vec<u8>,
@@ -334,7 +362,13 @@ pub fn generate_categories_tree<T: Trait>(
 }
 
 benchmarks! {
-    where_clause { where T: balances::Trait, T: membership::Trait, T: working_group::Trait<ForumWorkingGroupInstance> }
+    where_clause { where
+        T: balances::Trait,
+        T: membership::Trait,
+        T: working_group::Trait<ForumWorkingGroupInstance> ,
+        T::AccountId: CreateAccountId
+    }
+
     _{  }
 
     create_category{
@@ -668,7 +702,7 @@ benchmarks! {
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, title.clone(), text.clone(), poll.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll.clone())
     verify {
 
         // Ensure category num_direct_threads updated successfully.
@@ -679,7 +713,7 @@ benchmarks! {
         let new_thread = Thread {
             category_id,
             title_hash: T::calculate_hash(&title),
-            author_id: forum_user_id.into(),
+            author_id: forum_user_id.saturated_into(),
             archived: false,
             poll,
             // initial posts number
@@ -692,7 +726,7 @@ benchmarks! {
         let new_post = Post {
             thread_id: next_thread_id,
             text_hash: T::calculate_hash(&text),
-            author_id: forum_user_id.into(),
+            author_id: forum_user_id.saturated_into(),
         };
 
         assert_eq!(Module::<T>::post_by_id(next_thread_id, next_post_id), new_post);
@@ -716,14 +750,14 @@ benchmarks! {
 
         // Create thread
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), None
         );
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let text = vec![0u8].repeat(j as usize);
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, thread_id, text.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
     verify {
         thread.title_hash = T::calculate_hash(&text);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
@@ -743,7 +777,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.into(), category_id, text.clone(), text.clone(), None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
         let new_archival_status = true;
 
@@ -768,7 +802,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.into(), category_id, text.clone(), text.clone(), None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
         let new_archival_status = true;
 
@@ -810,14 +844,14 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
         let mut category = Module::<T>::category_by_id(category_id);
 
         for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
-            add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+            add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
         }
 
     }: delete_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id)
@@ -851,7 +885,7 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
@@ -865,7 +899,7 @@ benchmarks! {
         let mut category = Module::<T>::category_by_id(category_id);
 
         for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
-            add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+            add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
         }
 
     }: delete_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id)
@@ -915,7 +949,7 @@ benchmarks! {
         };
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.into(), category_id, text.clone(), text.clone(), None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let mut category = Module::<T>::category_by_id(category_id);
@@ -970,7 +1004,7 @@ benchmarks! {
         };
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.into(), category_id, text.clone(), text.clone(), None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
@@ -1022,13 +1056,13 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, thread_id, j - 1)
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, j - 1)
     verify {
         // Store new poll alternative statistics
         if let Some(ref mut poll) = thread.poll {
@@ -1075,14 +1109,14 @@ benchmarks! {
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).into(), category_id,
+            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
         let mut category = Module::<T>::category_by_id(category_id);
 
         for _ in 0..j {
-            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).into(), category_id, thread_id, text.clone());
+            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).saturated_into(), category_id, thread_id, text.clone());
         }
         let rationale = vec![0u8].repeat(k as usize);
 
@@ -1122,7 +1156,7 @@ benchmarks! {
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).into(), category_id,
+            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
@@ -1136,7 +1170,7 @@ benchmarks! {
         let mut category = Module::<T>::category_by_id(category_id);
 
         for _ in 0..j {
-            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).into(), category_id, thread_id, text.clone());
+            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).saturated_into(), category_id, thread_id, text.clone());
         }
         let rationale = vec![0u8].repeat(k as usize);
 
@@ -1170,13 +1204,13 @@ benchmarks! {
 
         // Create thread
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize), None
         );
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
         let post_id = Module::<T>::next_post_id();
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, thread_id, text.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
     verify {
         // Ensure thread posts counter updated successfully
         thread.num_direct_posts+=1;
@@ -1186,7 +1220,7 @@ benchmarks! {
         let new_post = Post {
             thread_id,
             text_hash: T::calculate_hash(&text),
-            author_id: forum_user_id.into(),
+            author_id: forum_user_id.saturated_into(),
         };
 
         assert_eq!(Module::<T>::post_by_id(thread_id, post_id), new_post);
@@ -1214,17 +1248,17 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
-        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
 
         let react = T::PostReactionId::one();
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, thread_id, post_id, react)
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, post_id, react)
     verify {
-        assert_last_event::<T>(RawEvent::PostReacted(forum_user_id.into(), post_id, react).into());
+        assert_last_event::<T>(RawEvent::PostReacted(forum_user_id.saturated_into(), post_id, react).into());
     }
 
     edit_post_text {
@@ -1247,17 +1281,17 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
 
-        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
 
         let mut post = Module::<T>::post_by_id(thread_id, post_id);
 
         let new_text = vec![0u8].repeat(j as usize);
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.into(), category_id, thread_id, post_id, new_text.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, post_id, new_text.clone())
     verify {
 
         // Ensure post text updated successfully.
@@ -1288,10 +1322,10 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
-        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
@@ -1327,10 +1361,10 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.into(), category_id,
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
-        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.into(), category_id, thread_id, text.clone());
+        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
@@ -1375,7 +1409,7 @@ benchmarks! {
         let stickied_ids: Vec<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
-                caller_id.clone(), forum_user_id.into(), category_id,
+                caller_id.clone(), forum_user_id.saturated_into(), category_id,
                 text.clone(), text.clone(), poll.clone()
             )).collect();
 
@@ -1412,7 +1446,7 @@ benchmarks! {
         let stickied_ids: Vec<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
-                caller_id.clone(), forum_user_id.into(), category_id,
+                caller_id.clone(), forum_user_id.saturated_into(), category_id,
                 text.clone(), text.clone(), poll.clone()
             )).collect();
 

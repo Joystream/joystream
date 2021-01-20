@@ -19,8 +19,8 @@ pub enum WorkingGroup {
     Membership,
 }
 
-/// Working group interface to use in the in the pallets with working groups.
-pub trait WorkingGroupIntegration<T: crate::Trait> {
+/// Working group interface to work with its members - workers and leaders.
+pub trait WorkingGroupAuthenticator<T: crate::Trait> {
     /// Validate origin for the worker.
     fn ensure_worker_origin(origin: T::Origin, worker_id: &T::ActorId) -> DispatchResult;
 
@@ -35,4 +35,18 @@ pub trait WorkingGroupIntegration<T: crate::Trait> {
 
     /// Verifies that given account ID and worker ID belong to the working group member.
     fn is_worker_account_id(account_id: &T::AccountId, worker_id: &T::ActorId) -> bool;
+}
+
+/// Working group interface to work with the its budget.
+pub trait WorkingGroupBudgetHandler<T: balances::Trait> {
+    /// Returns current working group balance.
+    fn get_budget() -> T::Balance;
+
+    /// Sets new working broup balance
+    fn set_budget(new_value: T::Balance);
+}
+
+pub trait MembershipWorkingGroupHelper<T: crate::Trait> {
+    /// Set membership working group lead
+    fn insert_a_lead(opening_id: u32, caller_id: T::AccountId, member_id: T::MemberId) -> T::ActorId;
 }

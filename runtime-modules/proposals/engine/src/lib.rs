@@ -11,7 +11,8 @@
 //! its [status](./enum.ProposalStatus.html).
 //!
 //! ## Proposal lifecycle
-//! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! When a proposal passes
+//! [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
 //! for its [parameters](./struct.ProposalParameters.html) -
 //! it can be [created](./struct.Module.html#method.create_proposal).
 //! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or
@@ -26,11 +27,14 @@
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
+//! [reject_active_proposals](./struct.Module.html#method.reject_active_proposals) function and
 //! all active proposals got rejected and it also calls
-//! [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! [reactivate_pending_constitutionality_proposals](./struct.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
 //! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
+//! - On runtime upgrade the proposals code could be obsolete, so we cancel all active proposals
+//! with statuses: Active, PendingExecution, PendingConstitutionality using this function
+//! [cancel_active_and_pending_proposals](./struct.Module.html#method.cancel_active_and_pending_proposals).
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
@@ -40,7 +44,7 @@
 //! the council size
 //! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
 //! to create a proposal: they should be members of the Joystream.
-//! - [StakingHandler](./trait.StakingHandler.html) - defines an interface for the staking.
+//! - StakingHandler - defines an interface for the staking.
 //!
 //! A full list of the abstractions can be found [here](./trait.Trait.html).
 //!
@@ -53,12 +57,14 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using
 //! provided parameters
-//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
-//! - ensures that we can create the proposal
-//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) -
+//! ensures that we can create the proposal
+//! - [reject_active_proposals](./struct.Module.html#method.reject_active_proposals) - rejects all
 //! active proposals.
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
-//! - reactivate proposals with pending constitutionality.
+//! - [reactivate_pending_constitutionality_proposals](./struct.Module.html#method.reactivate_pending_constitutionality_proposals) -
+//! reactivate proposals with pending constitutionality.
+//! - [cancel_active_and_pending_proposals](./struct.Module.html#method.cancel_active_and_pending_proposals) -
+//! cancels all active proposals.
 //!
 //! ## Usage
 //!
@@ -145,7 +151,7 @@ use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::MemberId;
 use staking_handler::StakingHandler;
 
@@ -153,13 +159,14 @@ use staking_handler::StakingHandler;
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn vote(i: u32) -> Weight;
-    fn cancel_proposal(i: u32) -> Weight;
+    fn cancel_proposal() -> Weight;
     fn veto_proposal() -> Weight;
     fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
     fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
     fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
+    fn cancel_active_and_pending_proposals(i: u32) -> Weight;
 }
 
 type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
@@ -172,14 +179,18 @@ pub trait Trait:
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
-    type ProposerOriginValidator: ActorOriginValidator<
+    type ProposerOriginValidator: MemberOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
     /// Validates voter id and origin combination
-    type VoterOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type CouncilOriginValidator: CouncilOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Provides data for voting. Defines maximum voters count for the proposal.
     type TotalVotersCounter: VotersParameters;
@@ -373,7 +384,8 @@ decl_module! {
         /// Exports const - the fee is applied when cancel the proposal. A fee would be slashed (burned).
         const CancellationFee: BalanceOf<T> = T::CancellationFee::get();
 
-        /// Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+        /// Exports const -  the fee is applied when the proposal gets rejected. A fee would
+        /// be slashed (burned).
         const RejectionFee: BalanceOf<T> = T::RejectionFee::get();
 
         /// Exports const -  max allowed proposal title length.
@@ -433,12 +445,15 @@ decl_module! {
             vote: VoteKind,
             _rationale: Vec<u8>, // we use it on the query node side.
         ) {
-            T::VoterOriginValidator::ensure_actor_origin(origin, voter_id)?;
+            T::CouncilOriginValidator::ensure_member_consulate(origin, voter_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
 
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
+            ensure!(
+                matches!(proposal.status, ProposalStatus::Active{..}),
+                Error::<T>::ProposalFinalized
+            );
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::contains_key(
                 proposal_id,
@@ -468,15 +483,18 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoEngine::<T>::cancel_proposal(T::MaxLocks::get())]
+        #[weight = WeightInfoEngine::<T>::cancel_proposal()]
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
+            T::ProposerOriginValidator::ensure_member_controller_account_origin(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
             ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
+            ensure!(
+                matches!(proposal.status, ProposalStatus::Active{..}),
+                Error::<T>::ProposalFinalized
+            );
             ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
             //
@@ -675,6 +693,31 @@ impl<T: Trait> Module<T> {
             });
     }
 
+    /// Cancels all active, pending execution and pending constitutionality proposals.
+    /// No fee applies.Possible application includes the runtime upgrade.
+    pub fn cancel_active_and_pending_proposals() -> Weight {
+        let active_proposal_count = Self::active_proposal_count();
+
+        // Filter active proposals and reject them.
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, proposal)| {
+                if proposal.status.is_active_or_pending_execution()
+                    || proposal.status.is_pending_constitutionality_proposal()
+                {
+                    return Some((proposal_id, proposal));
+                }
+
+                None
+            })
+            .for_each(|(proposal_id, proposal)| {
+                Self::finalize_proposal(proposal_id, proposal, ProposalDecision::CanceledByRuntime);
+            });
+
+        <WeightInfoEngine<T>>::cancel_active_and_pending_proposals(
+            active_proposal_count.saturated_into(),
+        )
+    }
+
     /// Reactivate proposals with pending constitutionality.
     /// Possible application includes new council elections.
     pub fn reactivate_pending_constitutionality_proposals() {
@@ -861,7 +904,9 @@ impl<T: Trait> Module<T> {
     ) -> BalanceOf<T> {
         match proposal_decision {
             ProposalDecision::Rejected | ProposalDecision::Expired => T::RejectionFee::get(),
-            ProposalDecision::Approved { .. } | ProposalDecision::Vetoed => BalanceOf::<T>::zero(),
+            ProposalDecision::Approved { .. }
+            | ProposalDecision::Vetoed
+            | ProposalDecision::CanceledByRuntime => BalanceOf::<T>::zero(),
             ProposalDecision::Canceled => T::CancellationFee::get(),
             ProposalDecision::Slashed => proposal_parameters
                 .required_stake

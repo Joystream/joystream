@@ -9,17 +9,16 @@ use crate::{
 };
 
 use balances;
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
-    ReferendumStageRevealing,
+    CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -43,8 +42,6 @@ pub const POWER_VOTE_STRENGTH: u64 = 10;
 pub const VOTER_BASE_ID: u64 = 4000;
 pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
 pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
-
-pub const INVALID_USER_MEMBER: u64 = 9999;
 
 // multiplies topup value so that candidate/voter can candidate/vote multiple times
 pub const TOPUP_MULTIPLIER: u64 = 10;
@@ -103,13 +100,6 @@ impl Trait for Runtime {
 
     type WeightInfo = ();
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership_id == account_id
-    }
-
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
         let is_ok = elected_members == CouncilMembers::<Runtime>::get();
 
@@ -117,11 +107,33 @@ impl Trait for Runtime {
             *value.borrow_mut() = (is_ok,);
         });
     }
+
+    type MemberOriginValidator = ();
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            member_id == account_id,
+            DispatchError::Other("Membership error")
+        );
+
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        member_id == account_id
+    }
 }
 
 impl common::StakingAccountValidator<Runtime> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(member_id: &u64, account_id: &u64) -> bool {
+        *member_id == *account_id
     }
 }
 
@@ -243,6 +255,8 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 mod balances_mod {
@@ -254,23 +268,23 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = balances::Module<Self>;
-    type LockId = VotingLockId;
-
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
     type VoteStageDuration = VoteStageDuration;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
     type WeightInfo = ReferendumWeightInfo;
 
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
+
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance<Self>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -280,9 +294,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self>, Self::MemberId>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -366,9 +378,20 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
@@ -441,6 +464,7 @@ pub struct CandidateInfo<T: Trait> {
     pub account_id: T::MemberId,
     pub membership_id: T::MemberId,
     pub candidate: CandidateOf<T>,
+    pub auto_topup_amount: Balance<T>,
 }
 
 #[derive(Clone)]
@@ -638,13 +662,16 @@ where
             note_hash: None,
         };
 
-        Self::topup_account(account_id.into(), stake * TOPUP_MULTIPLIER.into());
+        let auto_topup_amount = stake * TOPUP_MULTIPLIER.into();
+
+        Self::topup_account(account_id.into(), auto_topup_amount);
 
         CandidateInfo {
             origin,
             candidate,
             membership_id: account_id.into(),
             account_id: account_id.into(),
+            auto_topup_amount,
         }
     }
 
@@ -825,7 +852,14 @@ where
     }
 
     pub fn check_new_council_elected_hook() {
-        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0))
+        let result = LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
+
+        // clear election sign
+        LAST_COUNCIL_ELECTED_OK.with(|value| {
+            *value.borrow_mut() = (false,);
+        });
+
+        result
     }
 
     pub fn set_candidacy_note(
@@ -1264,3 +1298,5 @@ where
         params
     }
 }
+
+pub type Council = crate::Module<Runtime>;

@@ -1,12 +1,12 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, Randomness};
+use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Convert, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
@@ -16,9 +16,32 @@ use crate::{
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
-    RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
+    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
+use frame_support::weights::Weight;
+
+/// Struct that handles the conversion of Balance -> `u64`. This is used for staking's election
+/// calculation.
+pub struct CurrencyToVoteHandler;
+
+impl CurrencyToVoteHandler {
+    fn factor() -> Balance {
+        (Balances::total_issuance() / u64::max_value() as Balance).max(1)
+    }
+}
+
+impl Convert<Balance, u64> for CurrencyToVoteHandler {
+    fn convert(x: Balance) -> u64 {
+        (x / Self::factor()) as u64
+    }
+}
+
+impl Convert<u128, Balance> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> Balance {
+        x * Self::factor()
+    }
+}
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
@@ -52,32 +75,31 @@ pub type BlockId = generic::BlockId<Block>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
-pub type Executive = frame_executive::Executive<
-    Runtime,
-    Block,
-    frame_system::ChainContext<Runtime>,
-    Runtime,
-    AllModules,
->;
-
-// /// Custom runtime upgrade handler.
-// pub struct CustomOnRuntimeUpgrade;
-// impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
-//     fn on_runtime_upgrade() -> Weight {
-//
-//         10_000_000 // TODO: adjust weight
-//     }
-// }
-//
-// /// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
 // pub type Executive = frame_executive::Executive<
 //     Runtime,
 //     Block,
 //     frame_system::ChainContext<Runtime>,
 //     Runtime,
 //     AllModules,
-//     CustomOnRuntimeUpgrade,
 // >;
+
+/// Custom runtime upgrade handler.
+pub struct CustomOnRuntimeUpgrade;
+impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+    fn on_runtime_upgrade() -> Weight {
+        ProposalsEngine::cancel_active_and_pending_proposals()
+    }
+}
+
+/// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
+pub type Executive = frame_executive::Executive<
+    Runtime,
+    Block,
+    frame_system::ChainContext<Runtime>,
+    Runtime,
+    AllModules,
+    CustomOnRuntimeUpgrade,
+>;
 
 /// Export of the private const generated within the macro.
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;

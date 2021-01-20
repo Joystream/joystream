@@ -50,13 +50,13 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, Penalty, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
-use common::origin::ActorOriginValidator;
+use common::origin::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -108,7 +108,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination
-    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -377,7 +377,7 @@ decl_module! {
         #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
@@ -518,7 +518,7 @@ decl_module! {
             let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
 
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, worker.member_id)?;
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, worker.member_id)?;
 
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
@@ -549,6 +549,7 @@ decl_module! {
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
+            _rationale: Option<Vec<u8>>
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -579,11 +580,12 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&penalty)]
+        #[weight = Module::<T, I>::terminate_role_weight(&_rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
-            penalty: Option<Penalty<BalanceOf<T>>>,
+            penalty: Option<BalanceOf<T>>,
+            _rationale: Option<Vec<u8>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -605,7 +607,7 @@ decl_module! {
 
             if let Some(penalty) = penalty {
                 if let Some(staking_account_id) = worker.staking_account_id.clone() {
-                    Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount));
+                    Self::slash(worker_id, &staking_account_id, Some(penalty));
                 }
             }
 
@@ -630,8 +632,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::slash_stake(penalty.slashing_text.len().saturated_into())]
-        pub fn slash_stake(origin, worker_id: WorkerId<T>, penalty: Penalty<BalanceOf<T>>) {
+        #[weight = Module::<T, I>::slash_stake_weight(&_rationale)]
+        pub fn slash_stake(
+            origin,
+            worker_id: WorkerId<T>,
+            penalty: BalanceOf<T>,
+            _rationale: Option<Vec<u8>>
+        ) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
@@ -645,7 +652,7 @@ decl_module! {
             );
 
             ensure!(
-                penalty.slashing_amount != <BalanceOf<T>>::zero(),
+                penalty != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
@@ -654,7 +661,7 @@ decl_module! {
             //
 
             if let Some(staking_account_id) = worker.staking_account_id {
-                Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount))
+                Self::slash(worker_id, &staking_account_id, Some(penalty))
             }
         }
 
@@ -864,7 +871,7 @@ decl_module! {
             //
 
             // Update the budget.
-            <Budget::<T, I>>::put(new_budget);
+            Self::set_working_group_budget(new_budget);
 
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSet(new_budget));
@@ -1045,19 +1052,29 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Calculate weights for terminate_role
-    fn terminate_role_weight(penalty: &Option<Penalty<BalanceOf<T>>>) -> Weight {
+    fn terminate_role_weight(penalty: &Option<Vec<u8>>) -> Weight {
         WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
             penalty
                 .as_ref()
-                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         )
         .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
             penalty
                 .as_ref()
-                .map(|penalty| penalty.slashing_text.len().saturated_into())
+                .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         ))
+    }
+
+    // Calculates slash_stake weight
+    fn slash_stake_weight(rationale: &Option<Vec<u8>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::slash_stake(
+            rationale
+                .as_ref()
+                .map(|text| text.len().saturated_into())
+                .unwrap_or_default(),
+        )
     }
 
     // Wrapper-function over frame_system::block_number()
@@ -1331,6 +1348,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         false
     }
 
+    // Sets the working group budget.
+    fn set_working_group_budget(new_budget: BalanceOf<T>) {
+        <Budget<T, I>>::put(new_budget);
+    }
+
     /// Returns all existing worker id list.
     pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
         <WorkerById<T, I>>::iter()
@@ -1339,7 +1361,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T> for Module<T, I> {
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
+    for Module<T, I>
+{
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
@@ -1363,5 +1387,17 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupIntegration<T>
         checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
+    }
+}
+
+impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
+    for Module<T, I>
+{
+    fn get_budget() -> BalanceOf<T> {
+        Self::budget()
+    }
+
+    fn set_budget(new_value: BalanceOf<T>) {
+        Self::set_working_group_budget(new_value);
     }
 }

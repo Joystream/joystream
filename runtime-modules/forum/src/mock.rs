@@ -13,7 +13,7 @@ use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
-    Perbill,
+    DispatchError, Perbill,
 };
 
 impl_outer_origin! {
@@ -31,20 +31,6 @@ impl_outer_event! {
         balances<T>,
         membership<T>,
         working_group Instance1 <T>,
-    }
-}
-
-pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
-
-impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = frame_system::ensure_signed(origin)?;
-
-        if member_id > 10 {
-            return Err(ACTOR_ORIGIN_ERROR);
-        }
-
-        Ok(signed_account_id)
     }
 }
 
@@ -115,6 +101,7 @@ impl common::Trait for Runtime {
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
+    pub const InviteMemberLockId: [u8; 8] = [9; 8];
 }
 
 // The forum working group instance alias.
@@ -241,6 +228,7 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
 }
 
 parameter_types! {
@@ -267,7 +255,6 @@ impl StorageLimits for MapLimits {
 
 impl Trait for Runtime {
     type Event = TestEvent;
-    type ForumUserId = u64;
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
@@ -276,21 +263,40 @@ impl Trait for Runtime {
 
     type MapLimits = MapLimits;
     type WorkingGroup = ();
-    type WeightInfo = ();
-
-    fn is_forum_member(
-        account_id: &<Self as frame_system::Trait>::AccountId,
-        _forum_user_id: &Self::ForumUserId,
-    ) -> bool {
-        *account_id != NOT_FORUM_MEMBER_ORIGIN_ID
-    }
+    type MemberOriginValidator = ();
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
     }
+
+    type WeightInfo = ();
 }
 
-impl common::working_group::WorkingGroupIntegration<Runtime> for () {
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = ensure_signed(origin).unwrap();
+        ensure!(
+            Self::is_member_controller_account(&member_id, &account_id),
+            DispatchError::BadOrigin
+        );
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        let allowed_accounts = [
+            FORUM_LEAD_ORIGIN_ID,
+            NOT_FORUM_LEAD_ORIGIN_ID,
+            NOT_FORUM_LEAD_2_ORIGIN_ID,
+        ];
+
+        allowed_accounts.contains(account_id) && account_id == member_id
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::Trait>::ActorId,
@@ -539,7 +545,7 @@ pub fn create_category_mock(
 
 pub fn create_thread_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
@@ -572,7 +578,7 @@ pub fn create_thread_mock(
 
 pub fn edit_thread_title_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_title: Vec<u8>,
@@ -692,7 +698,7 @@ pub fn update_thread_archival_status_mock(
 
 pub fn create_post_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
@@ -721,7 +727,7 @@ pub fn create_post_mock(
 
 pub fn edit_post_text_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
@@ -792,7 +798,7 @@ pub fn update_category_membership_of_moderator_mock(
 
 pub fn vote_on_poll_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     index: u32,
@@ -962,7 +968,7 @@ pub fn set_stickied_threads_mock(
 
 pub fn react_post_mock(
     origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,

@@ -151,9 +151,9 @@ where
     // Generic call constructor for the working group 'slash stake'.
     fn create_slash_stake_call(
         worker_id: working_group::WorkerId<T>,
-        penalty: working_group::Penalty<working_group::BalanceOf<T>>,
+        penalty: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
-        working_group::Call::<T, I>::slash_stake(worker_id, penalty)
+        working_group::Call::<T, I>::slash_stake(worker_id, penalty, None)
     }
 
     // Generic call constructor for the working group 'update reward amount'.
@@ -174,6 +174,7 @@ where
         working_group::Call::<T, I>::terminate_role(
             terminate_role_params.worker_id,
             terminate_role_params.penalty,
+            None, // The rationale is given in the proposal description
         )
     }
 

@@ -47,12 +47,14 @@ use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
 use core::marker::PhantomData;
-use frame_system::{ensure_root, ensure_signed};
+use frame_support::dispatch::DispatchResult;
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::vec::Vec;
 
+use common::origin::{CouncilOriginValidator, MemberOriginValidator};
 use common::StakingAccountValidator;
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -168,12 +170,7 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
-    <T as frame_system::Trait>::Origin,
-    <T as frame_system::Trait>::AccountId,
-    <T as common::Trait>::MemberId,
-    <T as frame_system::Trait>::Hash,
->>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type Balance<T> = <T as balances::Trait>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
@@ -214,8 +211,10 @@ pub trait WeightInfo {
     fn plan_budget_refill() -> Weight;
 }
 
+type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
+
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + common::Trait + balances::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -256,14 +255,15 @@ pub trait Trait: frame_system::Trait + common::Trait {
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Checks that the user account is indeed associated with the member.
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool;
-
     /// Hook called right after the new council is elected.
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]);
+
+    /// Validates member id and origin combination
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::Origin,
+        common::MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the
@@ -412,6 +412,9 @@ decl_error! {
 
         /// Can't withdraw candidacy outside of the candidacy announcement period.
         CantWithdrawCandidacyNow,
+
+        /// The member is not a councilor.
+        NotCouncilor,
     }
 }
 
@@ -485,7 +488,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::announce_candidacy()]
+        #[weight = CouncilWeightInfo::<T>::announce_candidacy()]
         pub fn announce_candidacy(
                 origin,
                 membership_id: T::MemberId,
@@ -531,7 +534,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::release_candidacy_stake()]
+        #[weight = CouncilWeightInfo::<T>::release_candidacy_stake()]
         pub fn release_candidacy_stake(origin, membership_id: T::MemberId)
             -> Result<(), Error<T>> {
             let staking_account_id =
@@ -559,7 +562,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::withdraw_candidacy()]
+        #[weight = CouncilWeightInfo::<T>::withdraw_candidacy()]
         pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
@@ -587,7 +590,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::set_candidacy_note(note.len().saturated_into())]
+        #[weight = CouncilWeightInfo::<T>::set_candidacy_note(note.len().saturated_into())]
         pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
@@ -618,7 +621,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::set_budget()]
+        #[weight = CouncilWeightInfo::<T>::set_budget()]
         pub fn set_budget(origin, balance: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget(origin)?;
@@ -645,7 +648,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::plan_budget_refill()]
+        #[weight = CouncilWeightInfo::<T>::plan_budget_refill()]
         pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_plan_budget_refill(origin)?;
@@ -883,15 +886,17 @@ impl<T: Trait> Module<T> {
 
     fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
         // Minimum weight for progress stage
-        let weight = T::WeightInfo::try_progress_stage_idle()
-            .max(T::WeightInfo::try_progress_stage_announcing_restart());
+        let weight = CouncilWeightInfo::<T>::try_progress_stage_idle()
+            .max(CouncilWeightInfo::<T>::try_progress_stage_announcing_restart());
 
         let weight = if let Some(candidate_count) = mb_candidate_count {
             // We can use the candidate count to calculate the worst case
             // if we are in announcement period without an additional storage access
-            weight.max(T::WeightInfo::try_progress_stage_announcing_start_election(
-                candidate_count.saturated_into(),
-            ))
+            weight.max(
+                CouncilWeightInfo::<T>::try_progress_stage_announcing_start_election(
+                    candidate_count.saturated_into(),
+                ),
+            )
         } else {
             // If we don't have the candidate count we only take into account the weight
             // of the functions that doesn't depend on it
@@ -899,7 +904,7 @@ impl<T: Trait> Module<T> {
         };
 
         // Total weight = try progress weight + try process budget weight
-        T::WeightInfo::try_process_budget().saturating_add(weight)
+        CouncilWeightInfo::<T>::try_process_budget().saturating_add(weight)
     }
 }
 
@@ -1184,14 +1189,7 @@ impl<T: Trait> Mutations<T> {
         now: &T::BlockNumber,
     ) {
         // mint tokens into reward account
-        <<<T as Trait>::Referendum as ReferendumManager<
-            <T as frame_system::Trait>::Origin,
-            <T as frame_system::Trait>::AccountId,
-            <T as common::Trait>::MemberId,
-            <T as frame_system::Trait>::Hash,
-        >>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::deposit_creating(
-            account_id, *amount,
-        );
+        let _ = balances::Module::<T>::deposit_creating(account_id, *amount);
 
         // update elected council member
         CouncilMembers::<T>::mutate(|members| {
@@ -1224,12 +1222,11 @@ impl<T: Trait> EnsureChecks<T> {
         origin: T::Origin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
-        let account_id = ensure_signed(origin)?;
-
-        ensure!(
-            T::is_council_member_account(membership_id, &account_id),
-            Error::MemberIdNotMatchAccount,
-        );
+        let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+            origin,
+            *membership_id,
+        )
+        .map_err(|_| Error::MemberIdNotMatchAccount)?;
 
         Ok(account_id)
     }
@@ -1385,6 +1382,22 @@ impl<T: Trait> EnsureChecks<T> {
     // Ensures there is no problem in planning next budget refill.
     fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
+
+        Ok(())
+    }
+}
+
+impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId>
+    for Module<T>
+{
+    fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
+        EnsureChecks::<T>::ensure_user_membership(origin, &member_id)?;
+
+        let is_councilor = Self::council_members()
+            .iter()
+            .any(|council_member| council_member.member_id() == &member_id);
+
+        ensure!(is_councilor, Error::<T>::NotCouncilor);
 
         Ok(())
     }

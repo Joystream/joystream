@@ -5,7 +5,10 @@ use super::{
     Module, Trait,
 };
 use crate::mock::*;
+use common::origin::CouncilOriginValidator;
+use frame_support::traits::Currency;
 use frame_support::StorageValue;
+use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -189,27 +192,6 @@ fn council_vote_for_winner_stakes_longer() {
 
         // try to release vote stake
         Mocks::release_vote_stake(voter_for_winner.origin.clone(), Ok(()));
-    });
-}
-
-// Test that only valid members can candidate.
-#[test]
-#[ignore] // ignore until `StakeHandler::is_member_staking_account()` properly implemented
-fn council_candidacy_invalid_member() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let council_settings = CouncilSettings::<Runtime>::extract_settings();
-
-        let stake = council_settings.min_candidate_stake;
-        let candidate = MockUtils::generate_candidate(INVALID_USER_MEMBER, stake);
-
-        Mocks::announce_candidacy(
-            candidate.origin.clone(),
-            candidate.account_id.clone(),
-            candidate.candidate.stake.clone(),
-            Err(Error::MemberIdNotMatchAccount),
-        );
     });
 }
 
@@ -1341,9 +1323,6 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id,
         );
 
-        // TODO: uncomment this once StakingHandler's `is_member_staking_account` is properly
-        // implemented
-        /*
         // test that staking_account_id has to be associated with membership_id
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
@@ -1351,9 +1330,8 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id.clone(), // second candidate's account id
             candidate1.candidate.reward_account_id.clone(),
             candidate1.candidate.stake.clone(),
-            Err(Error::MembershipIdNotMatchAccount),
+            Err(Error::MemberIdNotMatchAccount),
         );
-        */
 
         // test that reward_account_id not associated with membership_id can be used
         Mocks::announce_candidacy_raw(
@@ -1367,6 +1345,7 @@ fn council_membership_checks() {
     });
 }
 
+// Test that the hook is properly called after a new council is elected.
 #[test]
 fn council_new_council_elected_hook() {
     let config = default_genesis_config();
@@ -1375,5 +1354,134 @@ fn council_new_council_elected_hook() {
         Mocks::run_full_council_cycle(0, &[], 0);
 
         Mocks::check_new_council_elected_hook();
+    });
+}
+
+#[test]
+fn council_origin_validator_fails_with_unregistered_member() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 10;
+        let origin = RawOrigin::Signed(account_id);
+        let member_id = 1;
+
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Runtime>::MemberIdNotMatchAccount.into())
+        );
+    });
+}
+
+#[test]
+fn council_origin_validator_succeeds() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let councilor1_member_id = 1u64;
+        let councilor1_account_id = 1u64;
+
+        let councilor1 = CouncilMemberOf::<Runtime> {
+            staking_account_id: councilor1_account_id,
+            reward_account_id: councilor1_account_id,
+            membership_id: councilor1_member_id,
+            stake: 0,
+            last_payment_block: 0,
+            unpaid_reward: 0,
+        };
+
+        CouncilMembers::<Runtime>::put(vec![councilor1]);
+
+        let origin = RawOrigin::Signed(councilor1_account_id.clone());
+
+        let validation_result =
+            Council::ensure_member_consulate(origin.into(), councilor1_member_id);
+
+        assert!(validation_result.is_ok());
+    });
+}
+
+#[test]
+fn council_origin_validator_fails_with_not_councilor() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Runtime>::NotCouncilor.into())
+        );
+    });
+}
+
+// Test that rewards for council members are paid as expected even after many council election cycles.
+#[test]
+fn council_many_cycle_rewards() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // quite high number of election cycles that will uncover any reward payment iregularities
+        let num_iterations = 100;
+
+        let mut council_members = vec![];
+        let mut auto_topup_amount = 0;
+
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), u64::MAX.into(), Ok(()));
+        for i in 0..num_iterations {
+            let tmp_params = Mocks::run_full_council_cycle(
+                i * council_settings.cycle_duration,
+                &council_members,
+                0,
+            );
+
+            auto_topup_amount = tmp_params.candidates_announcing[0].auto_topup_amount;
+            council_members = tmp_params.expected_final_council_members;
+
+            /*
+             *  Since we have enough budget to pay during idle period
+             *  we update the councilor last payment block during the idle period
+             *  that are not accounted in the `run_full_council_cycle` code expected final member
+             */
+
+            // This is the last paid block taking into account the last idle period
+            let last_payment_block = i * council_settings.cycle_duration
+                + council_settings.cycle_duration
+                - (council_settings.idle_stage_duration
+                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+
+            // Update the expected final council from `run_full_council_cycle` to use the current
+            // `last_payment_block`
+            council_members = council_members
+                .into_iter()
+                .map(|councilor| CouncilMemberOf::<Runtime> {
+                    last_payment_block,
+                    ..councilor
+                })
+                .collect();
+        }
+
+        // All blocks are paid except for the first iteration while the council is not elected
+        // that means discounting the idle stage duration. And the last blocks of the last idle
+        // period aren't paid until a full extra reward period passes.
+        let num_blocks_elected = num_iterations * council_settings.cycle_duration
+            - (council_settings.cycle_duration - council_settings.idle_stage_duration) // Unpaid blocks from first cycle
+            - (council_settings.idle_stage_duration // Unpaid blocks from last cycle
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+
+        assert_eq!(
+            balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
+            num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
+                + num_iterations * auto_topup_amount
+        );
     });
 }

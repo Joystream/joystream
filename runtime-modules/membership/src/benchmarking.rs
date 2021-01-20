@@ -1,11 +1,11 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-// use crate::Module as Membership;
 use crate::{
-    BuyMembershipParameters, MemberIdByHandleHash, MemberIdsByControllerAccountId,
-    MemberIdsByRootAccountId, Membership, MembershipById, MembershipObject, Trait,
+    BuyMembershipParameters, MemberIdByHandleHash, Membership, MembershipById, MembershipObject,
+    Trait,
 };
 use balances::Module as Balances;
+use common::working_group::MembershipWorkingGroupHelper;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
@@ -140,10 +140,6 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&account_id), vec![member_id]);
-
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&account_id), vec![member_id]);
-
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
@@ -210,10 +206,6 @@ benchmarks! {
         };
 
         let second_member_id = member_id + T::MemberId::one();
-
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&account_id), vec![member_id, second_member_id]);
-
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&account_id), vec![member_id, second_member_id]);
 
         assert_eq!(MemberIdByHandleHash::<T>::get(second_handle_hash), second_member_id);
 
@@ -294,10 +286,6 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&new_root_account_id), vec![member_id]);
-
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&account_id), vec![]);
-
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
         assert_last_event::<T>(RawEvent::MemberAccountsUpdated(member_id).into());
@@ -326,10 +314,6 @@ benchmarks! {
             // Save the updated profile.
             invites: 5,
         };
-
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&new_controller_account_id), vec![member_id]);
-
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&account_id), vec![]);
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
@@ -361,12 +345,6 @@ benchmarks! {
             // Save the updated profile.
             invites: 5,
         };
-
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&new_controller_account_id), vec![member_id]);
-        assert_eq!(MemberIdsByControllerAccountId::<T>::get(&account_id), vec![]);
-
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&new_root_account_id), vec![member_id]);
-        assert_eq!(MemberIdsByRootAccountId::<T>::get(&account_id), vec![]);
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
@@ -431,6 +409,38 @@ benchmarks! {
         assert_eq!(MembershipById::<T>::get(second_member_id), second_membership);
 
         assert_last_event::<T>(RawEvent::InvitesTransferred(first_member_id, second_member_id, number_of_invites).into());
+    }
+
+    set_membership_price {
+        let membership_price: BalanceOf<T> = 1000.into();
+
+    }: _(RawOrigin::Root, membership_price)
+    verify {
+        assert_eq!(Module::<T>::membership_price(), membership_price);
+
+        assert_last_event::<T>(RawEvent::MembershipPriceUpdated(membership_price).into());
+    }
+
+    set_leader_invitation_quota {
+        // Set leader member id
+
+        let member_id = 0;
+
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+
+        // Set leader member id
+        T::WorkingGroup::insert_a_lead(0, account_id, member_id);
+
+        let leader_member_id = T::WorkingGroup::get_leader_member_id();
+
+        let invitation_quota = 100;
+
+    }: _(RawOrigin::Root, invitation_quota)
+    verify {
+
+        assert_eq!(MembershipById::<T>::get(leader_member_id.unwrap()).invites, invitation_quota);
+
+        assert_last_event::<T>(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota).into());
     }
 }
 
@@ -500,6 +510,20 @@ mod tests {
     fn transfer_invites() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_transfer_invites::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_membership_price() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_membership_price::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_leader_invitation_quota() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_leader_invitation_quota::<Test>());
         });
     }
 }

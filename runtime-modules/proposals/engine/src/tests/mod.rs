@@ -365,7 +365,7 @@ fn vote_fails_with_insufficient_rights() {
                 VoteKind::Approve,
                 Vec::new()
             ),
-            Err(DispatchError::Other("Bad origin"))
+            Err(DispatchError::BadOrigin)
         );
     });
 }
@@ -898,6 +898,176 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 staking_account_id: None,
             }
         );
+    });
+}
+
+#[test]
+fn cancel_active_and_pending_execution_proposal_by_runtime() {
+    initial_test_ext().execute_with(|| {
+        // Events start only from 1 first block. No events on block zero.
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
+
+        // A proposal for pending execution check.
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let pending_execution_proposal_id =
+            dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // A proposal for active status check.
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let active_proposal_id = dummy_proposal.create_proposal_and_assert(Ok(2)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(pending_execution_proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block(3);
+
+        let pending_execution_proposal =
+            <crate::Proposals<Test>>::get(pending_execution_proposal_id);
+        let active_proposal = <crate::Proposals<Test>>::get(active_proposal_id);
+
+        // ensure proposal has pending execution status
+        assert_eq!(
+            pending_execution_proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalDecision::PendingExecution,
+                    starting_block + 1
+                ),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                nr_of_council_confirmations: 1,
+                staking_account_id: None,
+            }
+        );
+
+        // ensure proposal has active status
+        assert_eq!(
+            active_proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::Active,
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 0,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                nr_of_council_confirmations: 0,
+                staking_account_id: None,
+            }
+        );
+
+        ProposalsEngine::cancel_active_and_pending_proposals();
+
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, pending_execution_proposal_id),
+            RawEvent::ProposalCreated(1, active_proposal_id),
+            RawEvent::Voted(1, pending_execution_proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, pending_execution_proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, pending_execution_proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, pending_execution_proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                pending_execution_proposal_id,
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
+            ),
+            RawEvent::ProposalStatusUpdated(
+                pending_execution_proposal_id,
+                ProposalStatus::PendingExecution(starting_block + 1),
+            ),
+            RawEvent::ProposalDecisionMade(active_proposal_id, ProposalDecision::CanceledByRuntime),
+            RawEvent::ProposalDecisionMade(
+                pending_execution_proposal_id,
+                ProposalDecision::CanceledByRuntime,
+            ),
+        ]);
+
+        assert!(!<crate::Proposals<Test>>::contains_key(
+            pending_execution_proposal_id
+        ));
+        assert!(!<crate::Proposals<Test>>::contains_key(active_proposal_id));
+    });
+}
+
+#[test]
+fn cancel_pending_constitutionality_proposal_by_runtime() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        // ensure proposal has pending constitutionality status
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::PendingConstitutionality,
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                nr_of_council_confirmations: 1,
+                staking_account_id: None,
+            }
+        );
+
+        ProposalsEngine::cancel_active_and_pending_proposals();
+
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
+            ),
+            RawEvent::ProposalStatusUpdated(proposal_id, ProposalStatus::PendingConstitutionality),
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::CanceledByRuntime),
+        ]);
+
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
     });
 }
 

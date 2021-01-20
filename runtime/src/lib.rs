@@ -53,10 +53,10 @@ pub use primitives::*;
 pub use proposals_configuration::*;
 pub use runtime_api::*;
 
-use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use council::ReferendumConnection;
-use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
+use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
@@ -69,6 +69,7 @@ pub use content_directory::{
 pub use council;
 pub use forum;
 pub use membership;
+
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
@@ -355,7 +356,7 @@ parameter_types! {
 impl pallet_staking::Trait for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
+    type CurrencyToVote = CurrencyToVoteHandler;
     type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
     type Slash = (); // Where to send the slashed funds. Could be Treasury.
@@ -436,33 +437,24 @@ impl content_directory::Trait for Runtime {
     type Nonce = u64;
     type ClassId = u64;
     type EntityId = u64;
+    type CuratorGroupId = u64;
     type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
     type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
     type ClassNameLengthConstraint = ClassNameLengthConstraint;
     type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
     type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
-    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
     type VecMaxLengthConstraint = VecMaxLengthConstraint;
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
     type WorkingGroup = ContentDirectoryWorkingGroup;
-}
-
-impl content_directory::ActorAuthenticator for Runtime {
-    type CuratorGroupId = u64;
-
-    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            member_id, account_id,
-        )
-        .is_ok()
-    }
+    type MemberOriginValidator = Members;
 }
 
 // The referendum instance alias.
@@ -487,6 +479,7 @@ parameter_types! {
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 impl referendum::Trait<ReferendumInstance> for Runtime {
@@ -494,13 +487,12 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Self>;
-    type LockId = VotingLockId;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
-    type VotePower = BalanceReferendum<Self, ReferendumInstance>;
+    type VotePower = Balance;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -508,17 +500,16 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MinimumStake = MinimumVotingStake;
 
     type WeightInfo = weights::referendum::WeightInfo;
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance,
     ) -> Self::VotePower {
         *stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance, Self::MemberId>) -> bool {
         <CouncilModule as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
@@ -572,21 +563,12 @@ impl council::Trait for Runtime {
 
     type WeightInfo = weights::council::WeightInfo;
 
-    fn is_council_member_account(
-        membership_id: &Self::MemberId,
-        account_id: &<Self as frame_system::Trait>::AccountId,
-    ) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            membership_id,
-            account_id,
-        )
-        .is_ok()
-    }
-
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
         <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
+
+    type MemberOriginValidator = Members;
 }
 
 impl memo::Trait for Runtime {
@@ -609,7 +591,7 @@ impl storage::data_directory::Trait for Runtime {
     type ContentId = ContentId;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
@@ -627,8 +609,9 @@ impl common::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = MembershipWorkingGroup;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = InvitedMemberStakingManager;
+    type WorkingGroup = MembershipWorkingGroup;
 }
 
 parameter_types! {
@@ -657,7 +640,6 @@ impl forum::Trait for Runtime {
     type Event = Event;
     type ThreadId = ThreadId;
     type PostId = PostId;
-    type ForumUserId = ForumUserId;
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
@@ -665,19 +647,12 @@ impl forum::Trait for Runtime {
     type MapLimits = MapLimits;
     type WeightInfo = weights::forum::WeightInfo;
 
-    fn is_forum_member(_account_id: &Self::AccountId, _forum_user_id: &Self::ForumUserId) -> bool {
-        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
-            _forum_user_id,
-            _account_id,
-        )
-        .is_ok()
-    }
-
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
     }
 
     type WorkingGroup = ForumWorkingGroup;
+    type MemberOriginValidator = Members;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -718,13 +693,15 @@ pub type StorageWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, StorageWorkingGroupLockId>;
 pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
+pub type InvitedMemberStakingManager =
+    staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -735,7 +712,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -746,7 +723,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -757,7 +734,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
@@ -777,8 +754,8 @@ parameter_types! {
 
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
-    type ProposerOriginValidator = MembershipOriginValidator<Self>;
-    type VoterOriginValidator = CouncilManager<Self>;
+    type ProposerOriginValidator = Members;
+    type CouncilOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
     type StakingHandler = staking_handler::StakingManager<Self, ProposalsLockId>;
@@ -804,8 +781,8 @@ parameter_types! {
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type AuthorOriginValidator = MembershipOriginValidator<Self>;
-    type CouncilOriginValidator = CouncilManager<Self>;
+    type AuthorOriginValidator = Members;
+    type CouncilOriginValidator = Council;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
@@ -817,7 +794,7 @@ parameter_types! {
 }
 
 impl proposals_codex::Trait for Runtime {
-    type MembershipOriginValidator = MembershipOriginValidator<Self>;
+    type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
@@ -850,8 +827,7 @@ parameter_types! {
     pub const SurchargeReward: Balance = 0; // no reward
 }
 
-/// Forum identifiers for user, moderator and category
-pub type ForumUserId = u64;
+/// Forum identifier for category
 pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
