@@ -429,7 +429,7 @@ benchmarks! {
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
 
         // Set leader member id
-        T::WorkingGroup::insert_a_lead(0, account_id, member_id);
+        T::WorkingGroup::insert_a_lead(0, &account_id, member_id);
 
         let leader_member_id = T::WorkingGroup::get_leader_member_id();
 

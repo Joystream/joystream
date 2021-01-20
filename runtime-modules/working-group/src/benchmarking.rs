@@ -18,17 +18,21 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-impl<T: Trait<I> + membership::Trait, I: Instance> common::working_group::MembershipWorkingGroupHelper<T>
-    for Module<T, I>
+impl<T: Trait<I> + membership::Trait, I: Instance>
+    common::working_group::MembershipWorkingGroupHelper<T> for Module<T, I>
 {
-    fn insert_a_lead(opening_id: u32, caller_id: T::AccountId, member_id: T::MemberId) -> T::ActorId {
+    fn insert_a_lead(
+        opening_id: u32,
+        caller_id: &T::AccountId,
+        member_id: T::MemberId,
+    ) -> T::ActorId {
         complete_opening::<T, I>(
             StakingRole::WithStakes,
             OpeningType::Leader,
             opening_id,
             None,
-            caller_id,
-            member_id
+            &caller_id,
+            member_id,
         )
     }
 }
@@ -243,14 +247,16 @@ pub fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
 where
     WorkingGroup<T, I>: OnInitialize<T::BlockNumber>,
 {
-    let add_worker_origin = match job_opening_type {
-        OpeningType::Leader => RawOrigin::Root,
-        OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
-    };
-
     let (caller_id, member_id) = member_funded_account::<T, I>("member", id);
 
-    let worker_id = complete_opening::<T, I>(staking_role, job_opening_type, id, lead_id, &caller_id, &member_id);
+    let worker_id = complete_opening::<T, I>(
+        staking_role,
+        job_opening_type,
+        id,
+        lead_id,
+        &caller_id,
+        member_id,
+    );
 
     (caller_id, worker_id)
 }
@@ -261,14 +267,19 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
     id: u32,
     lead_id: Option<T::AccountId>,
     caller_id: &T::AccountId,
-    member_id:  &T::MemberId
+    member_id: T::MemberId,
 ) -> WorkerId<T> {
+    let add_worker_origin = match job_opening_type {
+        OpeningType::Leader => RawOrigin::Root,
+        OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
+    };
+
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         id,
         &T::Origin::from(add_worker_origin.clone()),
         &staking_role,
         caller_id,
-        member_id,
+        &member_id,
         &job_opening_type,
     );
 
