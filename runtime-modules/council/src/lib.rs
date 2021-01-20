@@ -1,5 +1,3 @@
-// TODO: adjust all extrinsic weights
-
 //! # Council module
 //! Council module for the the Joystream platform.
 //!

@@ -1,5 +1,3 @@
-// TODO: adjust all extrinsic weights
-
 //! # Referendum module
 //! General voting engine module for the the Joystream platform. Component of the council frame_system.
 //!
