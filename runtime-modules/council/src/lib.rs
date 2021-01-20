@@ -765,11 +765,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            Mutations::<T>::set_budget(&(current_budget - funding_total));
+
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
                 let account = funding_request.account;
-                let current_budget = Self::budget();
-                Mutations::<T>::set_budget(&(current_budget - amount));
                 let  _ = balances::Module::<T>::deposit_creating(&account, amount);
                 Self::deposit_event(RawEvent::RequestFunded(account, amount));
             }
