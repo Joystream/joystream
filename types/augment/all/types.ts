@@ -187,6 +187,21 @@ export interface Category extends Struct {
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
 
+/** @name Channel */
+export interface Channel extends Struct {}
+
+/** @name ChannelContentType */
+export interface ChannelContentType extends Struct {}
+
+/** @name ChannelCurationStatus */
+export interface ChannelCurationStatus extends Struct {}
+
+/** @name ChannelId */
+export interface ChannelId extends Struct {}
+
+/** @name ChannelPublicationStatus */
+export interface ChannelPublicationStatus extends Struct {}
+
 /** @name ChildPositionInParentCategory */
 export interface ChildPositionInParentCategory extends Struct {
   readonly parent_id: CategoryId;
@@ -248,6 +263,24 @@ export interface Credential extends u64 {}
 /** @name CredentialSet */
 export interface CredentialSet extends BTreeSet<Credential> {}
 
+/** @name CurationActor */
+export interface CurationActor extends Struct {}
+
+/** @name Curator */
+export interface Curator extends Struct {}
+
+/** @name CuratorApplication */
+export interface CuratorApplication extends Struct {}
+
+/** @name CuratorApplicationId */
+export interface CuratorApplicationId extends Struct {}
+
+/** @name CuratorApplicationIdSet */
+export interface CuratorApplicationIdSet extends Struct {}
+
+/** @name CuratorApplicationIdToCuratorIdMap */
+export interface CuratorApplicationIdToCuratorIdMap extends Struct {}
+
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
   readonly curators: Vec<CuratorId>;
@@ -260,6 +293,12 @@ export interface CuratorGroupId extends u64 {}
 
 /** @name CuratorId */
 export interface CuratorId extends u64 {}
+
+/** @name CuratorOpening */
+export interface CuratorOpening extends Struct {}
+
+/** @name CuratorOpeningId */
+export interface CuratorOpeningId extends Struct {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -488,6 +527,12 @@ export interface InputValue extends Enum {
 /** @name IPNSIdentity */
 export interface IPNSIdentity extends Text {}
 
+/** @name Lead */
+export interface Lead extends Struct {}
+
+/** @name LeadId */
+export interface LeadId extends Struct {}
+
 /** @name LiaisonJudgement */
 export interface LiaisonJudgement extends Enum {
   readonly isPending: boolean;
@@ -622,6 +667,9 @@ export interface OperationType extends Enum {
   readonly asAddSchemaSupportToEntity: AddSchemaSupportToEntityOperation;
 }
 
+/** @name OptionalText */
+export interface OptionalText extends Struct {}
+
 /** @name PaidMembershipTerms */
 export interface PaidMembershipTerms extends Struct {
   readonly fee: u128;
@@ -675,6 +723,12 @@ export interface PostTextChange extends Struct {
   readonly expired_at: BlockAndTime;
   readonly text: Text;
 }
+
+/** @name Principal */
+export interface Principal extends Struct {}
+
+/** @name PrincipalId */
+export interface PrincipalId extends Struct {}
 
 /** @name Property */
 export interface Property extends Struct {
@@ -1231,5 +1285,8 @@ export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
 }
+
+/** @name WorkingGroupUnstaker */
+export interface WorkingGroupUnstaker extends Struct {}
 
 export type PHANTOM_ALL = 'all';
