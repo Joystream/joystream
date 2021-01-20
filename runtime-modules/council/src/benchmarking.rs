@@ -44,7 +44,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
-    assert!(events.len() > 0, "There are no events in event queue");
+    assert!(!events.is_empty(), "There are no events in event queue");
 
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -55,7 +55,7 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
-    assert!(events.len() > 0, "There are no events in event queue");
+    assert!(!events.is_empty(), "There are no events in event queue");
 
     assert!(
         events.into_iter().any(|event| {
