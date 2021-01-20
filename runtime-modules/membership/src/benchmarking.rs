@@ -2,7 +2,8 @@
 use super::*;
 use crate::{
     BuyMembershipParameters, InviteMembershipParameters, MemberIdByHandleHash, Membership,
-    MembershipById, MembershipObject, StakingAccountMemberBinding, Trait,
+    MembershipById, MembershipObject, StakingAccountIdMemberStatus, StakingAccountMemberBinding,
+    Trait,
 };
 use balances::Module as Balances;
 use common::working_group::MembershipWorkingGroupHelper;
@@ -525,6 +526,46 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::StakingAccountAdded(account_id, member_id).into());
     }
+
+    confirm_staking_account {
+        let member_id = 0;
+
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+        Module::<T>::add_staking_account_candidate(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+        ).unwrap();
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, account_id.clone())
+
+    verify {
+        let staking_account_member_binding = StakingAccountMemberBinding {
+            member_id,
+            confirmed: true,
+        };
+
+        assert_eq!(Module::<T>::staking_account_id_member_status(account_id.clone()), staking_account_member_binding);
+
+        assert_last_event::<T>(RawEvent::StakingAccountConfirmed(account_id, member_id).into());
+    }
+
+    remove_staking_account {
+        let member_id = 0;
+
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+        Module::<T>::add_staking_account_candidate(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+        ).unwrap();
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id)
+
+    verify {
+
+        assert!(!StakingAccountIdMemberStatus::<T>::contains_key(account_id.clone()));
+
+        assert_last_event::<T>(RawEvent::StakingAccountRemoved(account_id, member_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -635,6 +676,20 @@ mod tests {
     fn add_staking_account_candidate() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_add_staking_account_candidate::<Test>());
+        });
+    }
+
+    #[test]
+    fn confirm_staking_account() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_confirm_staking_account::<Test>());
+        });
+    }
+
+    #[test]
+    fn remove_staking_account() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_remove_staking_account::<Test>());
         });
     }
 }
