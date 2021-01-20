@@ -794,4 +794,28 @@ mod tests {
             assert_ok!(test_benchmark_try_process_budget::<Runtime>());
         })
     }
+
+    #[test]
+    fn test_set_budget_increment() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_set_budget_increment::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_set_councilor_reward() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_set_councilor_reward::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_funding_request() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_funding_request::<Runtime>());
+        })
+    }
 }
