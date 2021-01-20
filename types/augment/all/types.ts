@@ -188,19 +188,19 @@ export interface Category extends Struct {
 export interface CategoryId extends u64 {}
 
 /** @name Channel */
-export interface Channel extends Struct {}
+export interface Channel extends Null {}
 
 /** @name ChannelContentType */
-export interface ChannelContentType extends Struct {}
+export interface ChannelContentType extends Null {}
 
 /** @name ChannelCurationStatus */
-export interface ChannelCurationStatus extends Struct {}
+export interface ChannelCurationStatus extends Null {}
 
 /** @name ChannelId */
-export interface ChannelId extends Struct {}
+export interface ChannelId extends Null {}
 
 /** @name ChannelPublicationStatus */
-export interface ChannelPublicationStatus extends Struct {}
+export interface ChannelPublicationStatus extends Null {}
 
 /** @name ChildPositionInParentCategory */
 export interface ChildPositionInParentCategory extends Struct {
@@ -264,22 +264,22 @@ export interface Credential extends u64 {}
 export interface CredentialSet extends BTreeSet<Credential> {}
 
 /** @name CurationActor */
-export interface CurationActor extends Struct {}
+export interface CurationActor extends Null {}
 
 /** @name Curator */
-export interface Curator extends Struct {}
+export interface Curator extends Null {}
 
 /** @name CuratorApplication */
-export interface CuratorApplication extends Struct {}
+export interface CuratorApplication extends Null {}
 
 /** @name CuratorApplicationId */
-export interface CuratorApplicationId extends Struct {}
+export interface CuratorApplicationId extends Null {}
 
 /** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends Struct {}
+export interface CuratorApplicationIdSet extends Null {}
 
 /** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends Struct {}
+export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
@@ -295,10 +295,10 @@ export interface CuratorGroupId extends u64 {}
 export interface CuratorId extends u64 {}
 
 /** @name CuratorOpening */
-export interface CuratorOpening extends Struct {}
+export interface CuratorOpening extends Null {}
 
 /** @name CuratorOpeningId */
-export interface CuratorOpeningId extends Struct {}
+export interface CuratorOpeningId extends Null {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -528,10 +528,10 @@ export interface InputValue extends Enum {
 export interface IPNSIdentity extends Text {}
 
 /** @name Lead */
-export interface Lead extends Struct {}
+export interface Lead extends Null {}
 
 /** @name LeadId */
-export interface LeadId extends Struct {}
+export interface LeadId extends Null {}
 
 /** @name LiaisonJudgement */
 export interface LiaisonJudgement extends Enum {
@@ -668,7 +668,7 @@ export interface OperationType extends Enum {
 }
 
 /** @name OptionalText */
-export interface OptionalText extends Struct {}
+export interface OptionalText extends Null {}
 
 /** @name PaidMembershipTerms */
 export interface PaidMembershipTerms extends Struct {
@@ -725,10 +725,10 @@ export interface PostTextChange extends Struct {
 }
 
 /** @name Principal */
-export interface Principal extends Struct {}
+export interface Principal extends Null {}
 
 /** @name PrincipalId */
-export interface PrincipalId extends Struct {}
+export interface PrincipalId extends Null {}
 
 /** @name Property */
 export interface Property extends Struct {
@@ -1287,6 +1287,6 @@ export interface WorkingGroup extends Enum {
 }
 
 /** @name WorkingGroupUnstaker */
-export interface WorkingGroupUnstaker extends Struct {}
+export interface WorkingGroupUnstaker extends Null {}
 
 export type PHANTOM_ALL = 'all';

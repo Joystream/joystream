@@ -13,27 +13,48 @@
 */
 
 import { RegistryTypes } from '@polkadot/types/types'
+import { Null } from '@polkadot/types'
+
+export class Channel extends Null {}
+export class ChannelContentType extends Null {}
+export class ChannelCurationStatus extends Null {}
+export class ChannelId extends Null {}
+export class ChannelPublicationStatus extends Null {}
+export class CurationActor extends Null {}
+export class Curator extends Null {}
+export class CuratorApplication extends Null {}
+export class CuratorApplicationId extends Null {}
+export class CuratorApplicationIdSet extends Null {}
+export class CuratorApplicationIdToCuratorIdMap extends Null {}
+export class CuratorOpening extends Null {}
+export class CuratorOpeningId extends Null {}
+export class Lead extends Null {}
+export class LeadId extends Null {}
+export class OptionalText extends Null {}
+export class Principal extends Null {}
+export class PrincipalId extends Null {}
+export class WorkingGroupUnstaker extends Null {}
 
 export const legacyTypes: RegistryTypes = {
-  Channel: '{}',
-  ChannelContentType: '{}',
-  ChannelCurationStatus: '{}',
-  ChannelId: '{}',
-  ChannelPublicationStatus: '{}',
-  CurationActor: '{}',
-  Curator: '{}',
-  CuratorApplication: '{}',
-  CuratorApplicationId: '{}',
-  CuratorApplicationIdSet: '{}',
-  CuratorApplicationIdToCuratorIdMap: '{}',
-  CuratorOpening: '{}',
-  CuratorOpeningId: '{}',
-  Lead: '{}',
-  LeadId: '{}',
-  OptionalText: '{}',
-  Principal: '{}',
-  PrincipalId: '{}',
-  WorkingGroupUnstaker: '{}',
+  Channel,
+  ChannelContentType,
+  ChannelCurationStatus,
+  ChannelId,
+  ChannelPublicationStatus,
+  CurationActor,
+  Curator,
+  CuratorApplication,
+  CuratorApplicationId,
+  CuratorApplicationIdSet,
+  CuratorApplicationIdToCuratorIdMap,
+  CuratorOpening,
+  CuratorOpeningId,
+  Lead,
+  LeadId,
+  OptionalText,
+  Principal,
+  PrincipalId,
+  WorkingGroupUnstaker,
 }
 
 export default legacyTypes
