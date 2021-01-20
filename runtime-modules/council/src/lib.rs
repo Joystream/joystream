@@ -199,9 +199,12 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 /// council WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
+    fn set_budget_increment() -> Weight;
+    fn set_councilor_reward() -> Weight;
+    fn funding_request(i: u32) -> Weight;
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election(i: u32) -> Weight; // Parameter discarded
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
     fn try_progress_stage_announcing_restart() -> Weight;
     fn announce_candidacy() -> Weight;
     fn release_candidacy_stake() -> Weight;
@@ -685,7 +688,16 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: Adjust weight
+        /// Sets the budget refill amount
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_budget_increment()]
         pub fn set_budget_increment(origin, budget_increment: Balance::<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget_increment(origin)?;
@@ -704,7 +716,17 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: Adjust weight
+
+        /// Sets the councilor reward per block
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_councilor_reward()]
         pub fn set_councilor_reward(origin, councilor_reward: Balance::<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_councilor_reward(origin)?;
@@ -723,7 +745,20 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+
+        /// Transfers funds from council budget to account
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (F)` where:
+        /// `F` is the length of `funding_requests`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::funding_request(
+            funding_requests.len().saturated_into()
+        )]
         pub fn funding_request(
             origin,
             funding_requests: Vec<FundingRequestParameters<Balance<T>, T::AccountId>>
@@ -761,6 +796,7 @@ decl_module! {
 
                 recieving_accounts.push(&funding_request.account);
             }
+
             //
             // == MUTATION SAFE ==
             //

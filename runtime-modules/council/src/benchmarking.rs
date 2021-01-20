@@ -44,7 +44,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
-    assert!(events.len() > 0, "There are no events in event queue");
+    assert!(!events.is_empty(), "There are no events in event queue");
 
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -52,20 +52,18 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
-    if !cfg!(test) {
-        let events = System::<T>::events();
-        let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
-        assert!(events.len() > 0, "There are no events in event queue");
+    assert!(!events.is_empty(), "There are no events in event queue");
 
-        assert!(
-            events.into_iter().any(|event| {
-                let EventRecord { event, .. } = event;
-                event == system_event
-            }),
-            "Event not in the event queue",
-        );
-    }
+    assert!(
+        events.into_iter().any(|event| {
+            let EventRecord { event, .. } = event;
+            event == system_event
+        }),
+        "Event not in the event queue",
+    );
 }
 
 fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
@@ -295,12 +293,61 @@ fn move_to_block_before_initialize_assert_stage<T: Trait>(
 const MAX_BYTES: u32 = 16384;
 const MAX_CANDIDATES: u64 = 100;
 const START_ID: u32 = 5000;
+const MAX_FUNDING_REQUESTS: u32 = 100;
 
 benchmarks! {
     where_clause {
         where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait
     }
     _ { }
+
+    set_budget_increment {
+    }: _(RawOrigin::Root, One::one())
+    verify {
+       assert_eq!(Council::<T>::budget_increment(), One::one());
+       assert_last_event::<T>(RawEvent::BudgetIncrementUpdated(One::one()).into());
+    }
+
+    set_councilor_reward {
+    }: _(RawOrigin::Root, One::one())
+    verify {
+       assert_eq!(Council::<T>::councilor_reward(), One::one());
+       assert_last_event::<T>(RawEvent::CouncilorRewardUpdated(One::one()).into());
+    }
+
+    funding_request {
+        let i in 1 .. MAX_FUNDING_REQUESTS;
+        Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
+        assert_eq!(Council::<T>::budget(), Balance::<T>::max_value());
+        let mut funding_requests = Vec::new();
+
+        for id in 0 .. i {
+            let account = T::AccountId::create_account_id(id);
+            assert_eq!(Balances::<T>::total_balance(&account), Zero::zero());
+            funding_requests.push(common::FundingRequestParameters {
+                amount: One::one(),
+                account
+            });
+        }
+
+        assert_eq!(funding_requests.len() as u32, i);
+
+    }: _(RawOrigin::Root, funding_requests.clone())
+    verify {
+        assert_eq!(Council::<T>::budget(), Balance::<T>::max_value() - Balance::<T>::from(i));
+
+        for fund_request in funding_requests {
+
+            assert_eq!(
+                Balances::<T>::total_balance(&fund_request.account),
+                fund_request.amount
+            );
+
+            assert_in_events::<T>(
+                RawEvent::RequestFunded(fund_request.account, fund_request.amount).into()
+            );
+        }
+    }
 
     // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
     try_process_budget {
@@ -745,6 +792,30 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(test_benchmark_try_process_budget::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_set_budget_increment() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_set_budget_increment::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_set_councilor_reward() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_set_councilor_reward::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_funding_request() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_funding_request::<Runtime>());
         })
     }
 }

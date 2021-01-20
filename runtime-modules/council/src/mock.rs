@@ -164,6 +164,15 @@ impl WeightInfo for () {
     fn plan_budget_refill() -> Weight {
         0
     }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
+        0
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
