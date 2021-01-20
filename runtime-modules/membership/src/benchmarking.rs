@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     BuyMembershipParameters, InviteMembershipParameters, MemberIdByHandleHash, Membership,
-    MembershipById, MembershipObject, Trait,
+    MembershipById, MembershipObject, StakingAccountMemberBinding, Trait,
 };
 use balances::Module as Balances;
 use common::working_group::MembershipWorkingGroupHelper;
@@ -59,17 +59,6 @@ fn member_funded_account<T: Trait + balances::Trait>(
     let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     let member_id = T::MemberId::from(id.try_into().unwrap());
-    Module::<T>::add_staking_account_candidate(
-        RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
-    )
-    .unwrap();
-    Module::<T>::confirm_staking_account(
-        RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
-        account_id.clone(),
-    )
-    .unwrap();
 
     (account_id, member_id)
 }
@@ -519,6 +508,23 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::InitialInvitationCountUpdated(initial_invitation_count).into());
     }
+
+    add_staking_account_candidate {
+        let member_id = 0;
+
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+    }: _(RawOrigin::Signed(account_id.clone()), member_id)
+
+    verify {
+        let staking_account_member_binding = StakingAccountMemberBinding {
+            member_id,
+            confirmed: false,
+        };
+
+        assert_eq!(Module::<T>::staking_account_id_member_status(account_id.clone()), staking_account_member_binding);
+
+        assert_last_event::<T>(RawEvent::StakingAccountAdded(account_id, member_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -622,6 +628,13 @@ mod tests {
     fn set_initial_invitation_count() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_set_initial_invitation_count::<Test>());
+        });
+    }
+
+    #[test]
+    fn add_staking_account_candidate() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_add_staking_account_candidate::<Test>());
         });
     }
 }

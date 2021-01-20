@@ -120,7 +120,7 @@ pub struct MembershipObject<AccountId: Ord> {
 }
 
 // Contain staking account to member binding and its confirmation.
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Debug, PartialEq)]
 pub struct StakingAccountMemberBinding<MemberId> {
     /// Member id that we bind account to.
     pub member_id: MemberId,
