@@ -497,6 +497,18 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota).into());
     }
+
+    set_initial_invitation_balance {
+        let invitation_balance: BalanceOf<T> = 1000.into();
+
+    }: _(RawOrigin::Root, invitation_balance)
+    verify {
+
+        assert_eq!(Module::<T>::initial_invitation_balance(), invitation_balance);
+
+        assert_last_event::<T>(RawEvent::InitialInvitationBalanceUpdated(invitation_balance).into());
+
+    }
 }
 
 #[cfg(test)]
@@ -586,6 +598,13 @@ mod tests {
     fn invite_member() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_invite_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_initial_invitation_balance() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_initial_invitation_balance::<Test>());
         });
     }
 }
