@@ -509,6 +509,16 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::InitialInvitationBalanceUpdated(invitation_balance).into());
 
     }
+
+    set_initial_invitation_count {
+        let initial_invitation_count = 10;
+
+    }: _(RawOrigin::Root, initial_invitation_count)
+    verify {
+        assert_eq!(Module::<T>::initial_invitation_count(), initial_invitation_count);
+
+        assert_last_event::<T>(RawEvent::InitialInvitationCountUpdated(initial_invitation_count).into());
+    }
 }
 
 #[cfg(test)]
@@ -605,6 +615,13 @@ mod tests {
     fn set_initial_invitation_balance() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_set_initial_invitation_balance::<Test>());
+        });
+    }
+
+    #[test]
+    fn set_initial_invitation_count() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_set_initial_invitation_count::<Test>());
         });
     }
 }
