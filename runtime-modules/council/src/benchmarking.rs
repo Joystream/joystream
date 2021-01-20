@@ -1,5 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
+use balances::Module as Balances;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
@@ -68,7 +69,7 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
-    balances::Module::<T>::make_free_balance_be(&account_id, balance);
+    Balances::<T>::make_free_balance_be(&account_id, balance);
 }
 
 fn start_announcing_period<T: Trait>() {
@@ -394,7 +395,7 @@ benchmarks! {
             .collect::<Vec<_>>();
     }: { Council::<T>::try_process_budget(target); }
     verify {
-        let reward_per_block: Balance<T> = T::ElectedMemberRewardPerBlock::get();
+        let reward_per_block: Balance<T> = Council::<T>::councilor_reward();
 
         let reward_per_councillor: Balance<T> =
             reward_period

@@ -165,6 +165,7 @@ runtime-benchmarks = [
     "pallet-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
+    "proposals-codex/runtime-benchmarks",
     "pallet_constitution/runtime-benchmarks",
     "working-group/runtime-benchmarks",
     "forum/runtime-benchmarks",

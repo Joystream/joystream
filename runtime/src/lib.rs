@@ -55,6 +55,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -474,9 +475,8 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 27;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
+    pub const DefaultBudgetIncrement: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -554,10 +554,8 @@ impl council::Trait for Runtime {
 
     type StakingAccountValidator = Members;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = weights::council::WeightInfo;
@@ -662,18 +660,6 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
     }
 }
 
-// The forum working group instance alias.
-pub type ForumWorkingGroupInstance = working_group::Instance1;
-
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
-
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const MinUnstakingPeriodLimit: u32 = 43200;
@@ -694,6 +680,18 @@ pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
@@ -792,26 +790,53 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
+macro_rules! call_wg {
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+        }
+    }};
+}
+
 impl proposals_codex::Trait for Runtime {
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
-    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
-    type TextProposalParameters = TextProposalParameters;
-    type SpendingProposalParameters = SpendingProposalParameters;
-    type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
-    type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupBudgetCapacityProposalParameters =
-        SetWorkingGroupBudgetCapacityProposalParameters;
-    type DecreaseWorkingGroupLeaderStakeProposalParameters =
-        DecreaseWorkingGroupLeaderStakeProposalParameters;
-    type SlashWorkingGroupLeaderStakeProposalParameters =
-        SlashWorkingGroupLeaderStakeProposalParameters;
-    type SetWorkingGroupLeaderRewardProposalParameters =
-        SetWorkingGroupLeaderRewardProposalParameters;
-    type TerminateWorkingGroupLeaderRoleProposalParameters =
-        TerminateWorkingGroupLeaderRoleProposalParameters;
+    type SignalProposalParameters = SignalProposalParameters;
+    type FundingRequestProposalParameters = FundingRequestProposalParameters;
+    type CreateWorkingGroupLeadOpeningProposalParameters =
+        CreateWorkingGroupLeadOpeningProposalParameters;
+    type FillWorkingGroupLeadOpeningProposalParameters =
+        FillWorkingGroupLeadOpeningProposalParameters;
+    type UpdateWorkingGroupBudgetProposalParameters = UpdateWorkingGroupBudgetProposalParameters;
+    type DecreaseWorkingGroupLeadStakeProposalParameters =
+        DecreaseWorkingGroupLeadStakeProposalParameters;
+    type SlashWorkingGroupLeadProposalParameters = SlashWorkingGroupLeadProposalParameters;
+    type SetWorkingGroupLeadRewardProposalParameters = SetWorkingGroupLeadRewardProposalParameters;
+    type TerminateWorkingGroupLeadProposalParameters = TerminateWorkingGroupLeadProposalParameters;
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
+    type CancelWorkingGroupLeadOpeningProposalParameters =
+        CancelWorkingGroupLeadOpeningProposalParameters;
+    type SetMembershipPriceProposalParameters = SetMembershipPriceProposalParameters;
+    type SetCouncilBudgetIncrementProposalParameters = SetCouncilBudgetIncrementProposalParameters;
+    type SetCouncilorRewardProposalParameters = SetCouncilorRewardProposalParameters;
+    type SetInitialInvitationBalanceProposalParameters =
+        SetInitialInvitationBalanceProposalParameters;
+    type SetInvitationCountProposalParameters = SetInvitationCountProposalParameters;
+    type SetMembershipLeadInvitationQuotaProposalParameters =
+        SetMembershipLeadInvitationQuotaProposalParameters;
+    type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
+    type WeightInfo = weights::proposals_codex::WeightInfo;
+    fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
+        call_wg!(working_group, get_budget)
+    }
+    fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
+        call_wg!(working_group, set_budget, budget)
+    }
 }
 
 impl pallet_constitution::Trait for Runtime {

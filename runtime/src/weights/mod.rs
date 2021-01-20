@@ -27,6 +27,7 @@ pub mod pallet_utility;
 pub mod council;
 pub mod forum;
 pub mod pallet_constitution;
+pub mod proposals_codex;
 pub mod proposals_discussion;
 pub mod proposals_engine;
 pub mod referendum;
