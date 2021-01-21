@@ -26,6 +26,9 @@
 //! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
 //! - [set_budget](./struct.Module.html#method.set_budget)
 //! - [plan_budget_refill](./struct.Module.html#method.plan_budget_refill)
+//! - [set_budget_increment](./struct.Module.html#method.set_budget_increment)
+//! - [set_councilor_reward](./struct.Module.html#method.set_councilor_reward)
+//! - [funding_request](./struct.Module.html#method.funding_request)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.

@@ -739,6 +739,8 @@ fn set_initial_invitation_count_proposal_succeeds() {
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+        run_to_block(86410);
+
         assert_eq!(
             Membership::initial_invitation_count(),
             new_default_invite_count
@@ -775,6 +777,8 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+        run_to_block(86410);
+
         assert_eq!(Membership::membership(lead_id).invites, new_invite_count);
     });
 }
@@ -804,6 +808,8 @@ fn set_referral_cut_proposal_succeeds() {
         .with_member_id(member_id as u64);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        run_to_block(86410);
 
         assert_eq!(Membership::referral_cut(), referral_cut);
     });
@@ -835,10 +841,15 @@ fn set_budget_increment_proposal_succeds() {
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+        run_to_block(86410);
+
         assert_eq!(Council::budget_increment(), budget_increment);
     });
 }
 
+// We ignore this test because running until the relevant block
+// take too long
+#[ignore]
 #[test]
 fn set_councilor_reward_proposal_succeds() {
     initial_test_ext().execute_with(|| {
@@ -864,6 +875,8 @@ fn set_councilor_reward_proposal_succeds() {
         .with_member_id(member_id as u64);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        run_to_block(202600);
 
         assert_eq!(Council::councilor_reward(), councilor_reward);
     });
