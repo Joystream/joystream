@@ -200,24 +200,40 @@ pub mod currency {
 
 #[cfg(test)]
 mod tests {
-    use super::currency::CENTS;
+    use super::currency::{CENTS, DOLLARS};
     use super::fees::WeightToFee;
+    use crate::{ExtrinsicBaseWeight, MaximumBlockWeight};
     use frame_support::weights::WeightToFeePolynomial;
     use pallet_balances::WeightInfo;
 
-    /*
-     * TODO: Add a test for the maximum weight
-     */
-
     #[test]
     // This function tests that the fee for `pallet_balances::transfer` of weight is correct
-    fn extrinsic_base_fee_is_correct() {
-        // Transfer fee should be less than half a cent and should be non-zero (Initially ~30)
+    fn extrinsic_transfer_fee_is_correct() {
+        // Transfer fee should be less than 100 tokens and should be non-zero (Initially ~30)
         let transfer_weight = crate::weights::pallet_balances::WeightInfo::transfer();
         println!("Transfer weight: {}", transfer_weight);
         let transfer_fee = WeightToFee::calc(&transfer_weight);
         println!("Transfer fee: {}", transfer_fee);
-        let expected_fee = CENTS / 2; // 100
-        assert!(0 < transfer_fee && transfer_fee < expected_fee);
+        assert!(0 < transfer_fee && transfer_fee < 100);
+    }
+
+    #[test]
+    // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
+    fn full_block_fee_is_correct() {
+        // A full block should cost 16 DOLLARS
+        println!("Base: {}", ExtrinsicBaseWeight::get());
+        let x = WeightToFee::calc(&MaximumBlockWeight::get());
+        let y = 16 * DOLLARS;
+        assert!(x.max(y) - x.min(y) < 1);
+    }
+
+    #[test]
+    // This function tests that the fee for `ExtrinsicBaseWeight` of weight is correct
+    fn extrinsic_base_fee_is_correct() {
+        // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
+        println!("Base: {}", ExtrinsicBaseWeight::get());
+        let x = WeightToFee::calc(&ExtrinsicBaseWeight::get());
+        let y = CENTS / 10;
+        assert!(x.max(y) - x.min(y) < 1);
     }
 }

@@ -4,6 +4,7 @@
 #[macro_use]
 
 mod proposals_integration;
+mod fee_tests;
 mod storage_integration;
 
 use crate::{BlockNumber, ReferendumInstance, Runtime};
