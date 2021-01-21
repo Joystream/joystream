@@ -15,6 +15,7 @@ members = [
 	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
 	"runtime-modules/content-directory",
+	"runtime-modules/content-directory-evm",
 	"runtime-modules/constitution",
 	"runtime-modules/staking-handler",
 	"node",

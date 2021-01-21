@@ -1,0 +1,42 @@
+[package]
+name = 'pallet-content-directory-evm'
+version = '3.0.0'
+authors = ['Joystream contributors']
+edition = '2018'
+
+[dependencies]
+content-directory = { package = 'pallet-content-directory', default-features = false, path = '../content-directory'}
+pallet-evm = { package = 'pallet-evm', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+
+codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+
+[dev-dependencies]
+pallet_balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+#frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+hex = "0.4.2"
+
+[features]
+default = ['std']
+std = [
+	'content-directory/std',
+    'pallet-evm/std',
+    'codec/std',
+    'serde/std',
+    'frame-support/std',
+    'sp-arithmetic/std',
+    'sp-runtime/std',
+    'frame-system/std',
+    'sp-core/std'
+
+    #'pallet_balances/std',
+    #'pallet-timestamp/std',
+]
