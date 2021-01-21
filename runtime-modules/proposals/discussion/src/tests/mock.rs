@@ -4,6 +4,7 @@ pub use frame_system;
 
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -16,7 +17,7 @@ use crate::MemberOriginValidator;
 use crate::WeightInfo;
 use frame_support::dispatch::DispatchError;
 
-use staking_handler::LockComparator;
+use staking_handler::{LockComparator, StakingManager};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -46,12 +47,23 @@ mod membership_mod {
     pub use membership::Event;
 }
 
+mod referendum_mod {
+    pub use referendum::Event;
+    pub use referendum::Instance1;
+}
+
+mod council_mod {
+    pub use council::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         discussion<T>,
         balances<T>,
         membership_mod<T>,
         frame_system<T>,
+        referendum_mod Instance1 <T>,
+        council_mod<T>,
     }
 }
 
@@ -168,16 +180,8 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
             return Ok(1);
         }
 
-        if actor_id == 1 {
-            return Ok(1);
-        }
-
-        if actor_id == 2 {
-            return Ok(2);
-        }
-
-        if actor_id == 11 {
-            return Ok(11);
+        if actor_id < 12 {
+            return Ok(actor_id);
         }
 
         if actor_id == 12 && frame_system::ensure_signed(origin).unwrap_or_default() == 12 {
@@ -189,6 +193,91 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
 
     fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
         unimplemented!()
+    }
+}
+
+parameter_types! {
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: u64 = 15;
+    pub const IdlePeriodDuration: u64 = 27;
+    pub const CouncilSize: u64 = 4;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const CandidacyLockId: LockIdentifier = *b"council1";
+    pub const CouncilorLockId: LockIdentifier = *b"council2";
+    pub const ElectedMemberRewardPeriod: u64 = 10;
+    pub const BudgetRefillAmount: u64 = 1000;
+    // intentionally high number that prevents side-effecting tests other than  budget refill tests
+    pub const BudgetRefillPeriod: u64 = 1000;
+}
+
+type ReferendumInstance = referendum::Instance1;
+
+impl council::Trait for Test {
+    type Event = TestEvent;
+
+    type Referendum = referendum::Module<Test, ReferendumInstance>;
+
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
+    type CouncilSize = CouncilSize;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = StakingManager<Self, CandidacyLockId>;
+    type CouncilorLock = StakingManager<Self, CouncilorLockId>;
+
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
+
+    type BudgetRefillPeriod = BudgetRefillPeriod;
+
+    type StakingAccountValidator = membership::Module<Test>;
+    type WeightInfo = CouncilWeightInfo;
+
+    fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
+
+    type MemberOriginValidator = ();
+}
+
+pub struct CouncilWeightInfo;
+impl council::WeightInfo for CouncilWeightInfo {
+    fn try_process_budget() -> Weight {
+        0
+    }
+    fn try_progress_stage_idle() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_restart() -> Weight {
+        0
+    }
+    fn announce_candidacy() -> Weight {
+        0
+    }
+    fn release_candidacy_stake() -> Weight {
+        0
+    }
+    fn set_candidacy_note(_: u32) -> Weight {
+        0
+    }
+    fn withdraw_candidacy() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
+        0
     }
 }
 
@@ -229,6 +318,100 @@ impl frame_system::Trait for Test {
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+}
+
+parameter_types! {
+    pub const VoteStageDuration: u64 = 19;
+    pub const RevealStageDuration: u64 = 23;
+    pub const MinimumVotingStake: u64 = 10000;
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
+    pub const VotingLockId: LockIdentifier = *b"referend";
+    pub const MaxWinnerTargetCount: u64 = 10;
+}
+
+impl referendum::Trait<ReferendumInstance> for Test {
+    type Event = TestEvent;
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = u64;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumVotingStake;
+
+    type WeightInfo = ReferendumWeightInfo;
+
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
+
+    fn calculate_vote_power(
+        _: &<Self as frame_system::Trait>::AccountId,
+        _: &Self::Balance,
+    ) -> Self::VotePower {
+        1
+    }
+
+    fn can_unlock_vote_stake(
+        _: &referendum::CastVote<Self::Hash, Self::Balance, Self::MemberId>,
+    ) -> bool {
+        true
+    }
+
+    fn process_results(winners: &[referendum::OptionResult<Self::MemberId, Self::VotePower>]) {
+        let tmp_winners: Vec<referendum::OptionResult<Self::MemberId, Self::VotePower>> = winners
+            .iter()
+            .map(|item| referendum::OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power.into(),
+            })
+            .collect();
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        );
+    }
+
+    fn is_valid_option_id(_: &u64) -> bool {
+        true
+    }
+
+    fn get_option_power(_: &u64) -> Self::VotePower {
+        1
+    }
+
+    fn increase_option_power(_: &u64, _: &Self::VotePower) {}
+}
+
+pub struct ReferendumWeightInfo;
+impl referendum::WeightInfo for ReferendumWeightInfo {
+    fn on_initialize_revealing(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_voting() -> Weight {
+        0
+    }
+    fn vote() -> Weight {
+        0
+    }
+    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
+        0
+    }
+    fn reveal_vote_already_existing(_: u32) -> Weight {
+        0
+    }
+    fn release_vote_stake() -> Weight {
+        0
+    }
 }
 
 impl pallet_timestamp::Trait for Test {

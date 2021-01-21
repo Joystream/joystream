@@ -122,7 +122,9 @@ parameter_types! {
 }
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
-// TODO: adjust weight
+// TODO: We need to adjust weight of this pallet
+// once we move to a newer version of substrate where parameters
+// are not discarded. See the comment in 'scripts/generate-weights.sh'
 impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
@@ -842,13 +844,6 @@ impl proposals_codex::Trait for Runtime {
 impl pallet_constitution::Trait for Runtime {
     type Event = Event;
     type WeightInfo = weights::pallet_constitution::WeightInfo;
-}
-
-parameter_types! {
-    pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
-    pub const RentByteFee: Balance = 1; // TODO: adjust fee
-    pub const RentDepositOffset: Balance = 0; // no rent deposit
-    pub const SurchargeReward: Balance = 0; // no reward
 }
 
 /// Forum identifier for category

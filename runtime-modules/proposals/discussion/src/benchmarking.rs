@@ -2,15 +2,20 @@
 use super::*;
 use crate::Module as ProposalsDiscussion;
 use balances::Module as Balances;
+use council::Module as Council;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
+use referendum::Module as Referendum;
+use referendum::ReferendumManager;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
+
+type ReferendumInstance = referendum::Instance1;
 
 const SEED: u32 = 0;
 
@@ -34,6 +39,27 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     }
 
     handle
+}
+
+fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance>>(
+    n: T::BlockNumber,
+) {
+    while System::<T>::block_number() < n {
+        let mut current_block_number = System::<T>::block_number();
+
+        System::<T>::on_finalize(current_block_number);
+        ProposalsDiscussion::<T>::on_finalize(current_block_number);
+        Council::<T>::on_finalize(current_block_number);
+        Referendum::<T, ReferendumInstance>::on_finalize(current_block_number);
+
+        current_block_number += 1.into();
+        System::<T>::set_block_number(current_block_number);
+
+        System::<T>::on_initialize(current_block_number);
+        ProposalsDiscussion::<T>::on_initialize(current_block_number);
+        Council::<T>::on_initialize(current_block_number);
+        Referendum::<T, ReferendumInstance>::on_initialize(current_block_number);
+    }
 }
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
@@ -71,13 +97,129 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+    )
+    .unwrap();
+
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        Membership::<T>::staking_account_id_member_status(account_id.clone()).member_id,
+        member_id
+    );
+    assert_eq!(
+        Membership::<T>::staking_account_id_member_status(account_id.clone()).confirmed,
+        true
+    );
+
+    (account_id, member_id)
+}
+
+fn elect_council<
+    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
+>(
+    start_id: u32,
+) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
+    let council_size = <T as council::Trait>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+
+    let councilor_stake = <T as council::Trait>::MinCandidateStake::get();
+
+    let mut voters = Vec::new();
+    let mut candidates = Vec::new();
+    let last_id = start_id as usize + (council_size + number_of_extra_candidates) as usize;
+
+    for i in start_id as usize..last_id {
+        let (account_id, member_id) = member_account::<T>("councilor", i.try_into().unwrap());
+        Council::<T>::announce_candidacy(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            account_id.clone(),
+            account_id.clone(),
+            councilor_stake,
+        )
+        .unwrap();
+
+        candidates.push((account_id, member_id));
+    }
+
+    for i in last_id..last_id + council_size as usize {
+        voters.push(member_account::<T>("voter", i.try_into().unwrap()));
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + <T as council::Trait>::AnnouncingPeriodDuration::get());
+
+    let voter_stake = <T as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+    let mut council = Vec::new();
+    for i in 0..council_size as usize {
+        council.push(candidates[i].clone());
+        let commitment = Referendum::<T, ReferendumInstance>::calculate_commitment(
+            &voters[i].0,
+            &[0u8],
+            &0,
+            &candidates[i].1,
+        );
+        Referendum::<T, ReferendumInstance>::vote(
+            RawOrigin::Signed(voters[i].0.clone()).into(),
+            commitment,
+            voter_stake,
+        )
+        .unwrap();
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(
+        current_block + <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+    );
+
+    for i in 0..council_size as usize {
+        Referendum::<T, ReferendumInstance>::reveal_vote(
+            RawOrigin::Signed(voters[i].0.clone()).into(),
+            vec![0u8],
+            candidates[i].1.clone(),
+        )
+        .unwrap();
+    }
+
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(
+        current_block + <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+    );
+
+    let council_members = Council::<T>::council_members();
+    assert_eq!(
+        council_members
+            .iter()
+            .map(|m| *m.member_id())
+            .collect::<Vec<_>>(),
+        council.iter().map(|c| c.1).collect::<Vec<_>>()
+    );
+
+    (
+        council,
+        (2 * (council_size + number_of_extra_candidates))
+            .try_into()
+            .unwrap(),
+    )
 }
 
 const MAX_BYTES: u32 = 16384;
 
 benchmarks! {
-    where_clause { where T: balances::Trait, T: membership::Trait }
+    where_clause {
+        where T: balances::Trait, T: membership::Trait, T: council::Trait,
+              T: referendum::Trait<ReferendumInstance>
+    }
     _ { }
 
     add_post {
@@ -98,6 +240,9 @@ benchmarks! {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
         }
+
+        // Worst case scenario there is a council
+        elect_council::<T>(i+1);
 
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
@@ -130,6 +275,9 @@ benchmarks! {
         let (_, _) = member_account::<T>("caller_member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
+        // Worst case scenario there is a council
+        elect_council::<T>(2);
+
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
             ThreadMode::Open
@@ -154,14 +302,6 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
     }
 
-    // TODO: Review this after changes to the governance/council are merged:
-    // this extrinsic uses `T::CouncilOriginValidator::ensure_member_controller_account_origin`
-    // this is a hook to the runtime. Since the pallet implementation shouldn't have any
-    // information on the runtime this hooks should be constant.
-    // However, the implementation in the runtime is linear in the number of council members.
-    // But since the size of the council should be completely filled over time we could
-    // always use the worst case scenario, still this would require to create an artificial
-    // dependency with the `governance` pallet to correctly benchmark this.
     change_thread_mode {
         let i in 1 .. T::MaxWhiteListSize::get();
 
@@ -185,6 +325,9 @@ benchmarks! {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
         }
+
+        // Worst case scenario there is a council
+        elect_council::<T>(i+1);
 
         let mode = ThreadMode::Closed(whitelisted_members);
     }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, mode.clone())
