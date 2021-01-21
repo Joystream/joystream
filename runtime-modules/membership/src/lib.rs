@@ -63,6 +63,9 @@ use common::origin::MemberOriginValidator;
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::MembershipWorkingGroupHelper;
+
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
 
@@ -102,8 +105,7 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-        + common::working_group::WorkingGroupBudgetHandler<Self>
-        + common::working_group::MembershipWorkingGroupHelper<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;

@@ -18,25 +18,6 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-impl<T: Trait<I> + membership::Trait, I: Instance>
-    common::working_group::MembershipWorkingGroupHelper<T> for Module<T, I>
-{
-    fn insert_a_lead(
-        opening_id: u32,
-        caller_id: &T::AccountId,
-        member_id: T::MemberId,
-    ) -> T::ActorId {
-        complete_opening::<T, I>(
-            StakingRole::WithStakes,
-            OpeningType::Leader,
-            opening_id,
-            None,
-            &caller_id,
-            member_id,
-        )
-    }
-}
-
 pub enum StakingRole {
     WithStakes,
     WithoutStakes,

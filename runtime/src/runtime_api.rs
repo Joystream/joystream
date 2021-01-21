@@ -317,6 +317,28 @@ impl_runtime_apis! {
                 }
             }
 
+            impl membership::MembershipWorkingGroupHelper<
+                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as common::Trait>::MemberId,
+                <Runtime as common::Trait>::ActorId,
+                    > for Runtime
+            {
+                fn insert_a_lead(
+                    opening_id: u32,
+                    caller_id: &<Runtime as frame_system::Trait>::AccountId,
+                    member_id: <Runtime as common::Trait>::MemberId,
+                ) -> <Runtime as common::Trait>::ActorId {
+                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
+                        working_group::benchmarking::StakingRole::WithStakes,
+                        working_group::OpeningType::Leader,
+                        opening_id,
+                        None,
+                        &caller_id,
+                        member_id,
+                    )
+                }
+            }
+
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
