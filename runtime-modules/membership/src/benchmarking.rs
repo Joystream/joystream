@@ -115,6 +115,7 @@ benchmarks! {
     }: buy_membership(RawOrigin::Signed(account_id.clone()), params)
     verify {
 
+        // Ensure membership for given member_id is successfully bought
         assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one());
 
         assert_eq!(Balances::<T>::free_balance(&account_id.clone()), free_balance - fee);
@@ -179,6 +180,7 @@ benchmarks! {
     }: buy_membership(RawOrigin::Signed(account_id.clone()), params)
     verify {
 
+        // Ensure membership for given member_id is successfully bought
         assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one() + T::MemberId::one());
 
         // Same account id gets reward for being referral.
@@ -235,6 +237,7 @@ benchmarks! {
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, None, Some(handle_updated.clone()), None, None)
     verify {
 
+        // Ensure membership profile is successfully updated
         let handle_hash = T::Hashing::hash(&handle_updated).as_ref().to_vec();
 
         assert!(!MemberIdByHandleHash::<T>::contains_key(handle));
@@ -265,6 +268,8 @@ benchmarks! {
     }: update_accounts(RawOrigin::Signed(account_id.clone()), member_id, Some(new_root_account_id.clone()), None)
 
     verify {
+
+        // Ensure root account is successfully updated
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
@@ -294,6 +299,8 @@ benchmarks! {
     }: update_accounts(RawOrigin::Signed(account_id.clone()), member_id, None, Some(new_controller_account_id.clone()))
 
     verify {
+        // Ensure controller account is successfully updated
+
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
@@ -325,6 +332,8 @@ benchmarks! {
     }: update_accounts(RawOrigin::Signed(account_id.clone()), member_id, Some(new_root_account_id.clone()), Some(new_controller_account_id.clone()))
 
     verify {
+
+        // Ensure both root and controller accounts are successfully updated
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
@@ -372,6 +381,8 @@ benchmarks! {
     }: _(RawOrigin::Signed(first_account_id.clone()), first_member_id, second_member_id, number_of_invites)
 
     verify {
+        // Ensure invites are successfully transfered
+
         let first_handle_hash = T::Hashing::hash(&first_handle).as_ref().to_vec();
 
         let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
@@ -429,6 +440,8 @@ benchmarks! {
     }: _(RawOrigin::Signed(account_id.clone()), invite_params)
 
     verify {
+
+        // Ensure member is successfully invited
         let invited_member_id = member_id + T::MemberId::one();
 
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
@@ -491,6 +504,7 @@ benchmarks! {
     }: _(RawOrigin::Signed(account_id.clone()), leader_id, member_id, is_verified)
 
     verify {
+        // Ensure profile verification status is successfully updated
 
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
@@ -535,6 +549,7 @@ benchmarks! {
 
     }: _(RawOrigin::Root, invitation_quota)
     verify {
+        // Ensure leader invitation quota is successfully updated
 
         assert_eq!(MembershipById::<T>::get(leader_member_id.unwrap()).invites, invitation_quota);
 
@@ -570,6 +585,8 @@ benchmarks! {
     }: _(RawOrigin::Signed(account_id.clone()), member_id)
 
     verify {
+
+        // Ensure staking account candidate is successfully added
         let staking_account_member_binding = StakingAccountMemberBinding {
             member_id,
             confirmed: false,
@@ -592,6 +609,8 @@ benchmarks! {
     }: _(RawOrigin::Signed(account_id.clone()), member_id, account_id.clone())
 
     verify {
+
+        // Ensure staking account candidate is successfully confirmed
         let staking_account_member_binding = StakingAccountMemberBinding {
             member_id,
             confirmed: true,
@@ -615,6 +634,7 @@ benchmarks! {
 
     verify {
 
+        // Ensure staking account candidate is successfully removed
         assert!(!StakingAccountIdMemberStatus::<T>::contains_key(account_id.clone()));
 
         assert_last_event::<T>(RawEvent::StakingAccountRemoved(account_id, member_id).into());
