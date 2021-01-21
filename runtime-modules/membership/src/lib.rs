@@ -51,6 +51,7 @@ mod tests;
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
+pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
@@ -63,6 +64,31 @@ use staking_handler::StakingHandler;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
+
+/// pallet_forum WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn buy_membership_without_referrer(i: u32) -> Weight;
+    fn buy_membership_with_referrer(i: u32) -> Weight;
+    fn update_profile(i: u32) -> Weight;
+    fn update_accounts_none() -> Weight;
+    fn update_accounts_root() -> Weight;
+    fn update_accounts_controller() -> Weight;
+    fn update_accounts_both() -> Weight;
+    fn set_referral_cut() -> Weight;
+    fn transfer_invites() -> Weight;
+    fn invite_member(i: u32) -> Weight;
+    fn set_membership_price() -> Weight;
+    fn update_profile_verification() -> Weight;
+    fn set_leader_invitation_quota() -> Weight;
+    fn set_initial_invitation_balance() -> Weight;
+    fn set_initial_invitation_count() -> Weight;
+    fn add_staking_account_candidate() -> Weight;
+    fn confirm_staking_account() -> Weight;
+    fn remove_staking_account() -> Weight;
+}
 
 pub trait Trait:
     frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
@@ -87,6 +113,9 @@ pub trait Trait:
         BalanceOf<Self>,
         Self::MemberId,
     >;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;

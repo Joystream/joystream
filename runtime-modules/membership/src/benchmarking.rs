@@ -13,7 +13,7 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
-use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::traits::One;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
 
@@ -161,11 +161,11 @@ benchmarks! {
             referrer_id: None,
         };
 
-        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone());
+        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone()).unwrap();
 
         let referral_cut: BalanceOf<T> = 1.into();
 
-        Module::<T>::set_referral_cut(RawOrigin::Root.into(), referral_cut);
+        Module::<T>::set_referral_cut(RawOrigin::Root.into(), referral_cut).unwrap();
 
         let member_id = T::MemberId::from(member_id.try_into().unwrap());
 
@@ -228,7 +228,7 @@ benchmarks! {
             referrer_id: None,
         };
 
-        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone());
+        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone()).unwrap();
 
         let handle_updated = handle_from_id::<T>(i + 1);
 
@@ -381,7 +381,6 @@ benchmarks! {
             root_account: first_account_id.clone(),
             controller_account: first_account_id.clone(),
             verified: false,
-            // Save the updated profile.
             invites: 0,
         };
 
@@ -390,7 +389,6 @@ benchmarks! {
             root_account: second_account_id.clone(),
             controller_account: second_account_id.clone(),
             verified: false,
-            // Save the updated profile.
             invites: 10,
         };
 
@@ -440,7 +438,6 @@ benchmarks! {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
-            // Save the updated profile.
             invites: 0,
         };
 
@@ -466,12 +463,68 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::MembershipPriceUpdated(membership_price).into());
     }
 
+    update_profile_verification {
+
+        let member_id = 0;
+
+        let handle = handle_from_id::<T>(member_id);
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+
+        Module::<T>::add_staking_account_candidate(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+        )
+        .unwrap();
+        Module::<T>::confirm_staking_account(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+            account_id.clone(),
+        )
+        .unwrap();
+
+        // Set leader member id
+        let leader_id = T::WorkingGroup::insert_a_lead(0, &account_id, member_id);
+
+        let is_verified = true;
+
+        let leader_member_id = T::WorkingGroup::get_leader_member_id();
+    }: _(RawOrigin::Signed(account_id.clone()), leader_id, member_id, is_verified)
+
+    verify {
+
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: is_verified,
+            invites: 5,
+        };
+
+        assert_eq!(MembershipById::<T>::get(member_id), membership);
+
+        assert_last_event::<T>(RawEvent::MemberVerificationStatusUpdated(member_id, is_verified).into());
+    }
+
     set_leader_invitation_quota {
         // Set leader member id
 
         let member_id = 0;
 
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+
+        Module::<T>::add_staking_account_candidate(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+        )
+        .unwrap();
+        Module::<T>::confirm_staking_account(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id.clone(),
+            account_id.clone(),
+        )
+        .unwrap();
 
         // Set leader member id
         T::WorkingGroup::insert_a_lead(0, &account_id, member_id);
@@ -690,6 +743,13 @@ mod tests {
     fn remove_staking_account() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_remove_staking_account::<Test>());
+        });
+    }
+
+    #[test]
+    fn update_profile_verification() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_update_profile_verification::<Test>());
         });
     }
 }

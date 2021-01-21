@@ -243,6 +243,65 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     }
 }
 
+// Weights info stub
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
 impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
@@ -294,6 +353,7 @@ impl membership::Trait for Test {
     type Event = MetaEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
@@ -304,6 +364,16 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     }
 
     fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::MembershipWorkingGroupHelper<Test> for () {
+    fn insert_a_lead(
+        _opening_id: u32,
+        _caller_id: &<Test as frame_system::Trait>::AccountId,
+        _member_id: <Test as common::Trait>::MemberId,
+    ) -> <Test as common::Trait>::ActorId {
         unimplemented!()
     }
 }

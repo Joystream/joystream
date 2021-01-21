@@ -612,6 +612,7 @@ impl membership::Trait for Runtime {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
     type WorkingGroup = MembershipWorkingGroup;
+    type WeightInfo = weights::membership::WeightInfo;
 }
 
 parameter_types! {

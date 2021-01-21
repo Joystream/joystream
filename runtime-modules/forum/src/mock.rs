@@ -7,6 +7,7 @@ use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -223,11 +224,87 @@ impl working_group::WeightInfo for Weights {
     }
 }
 
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
+pub const WORKING_GROUP_BUDGET: u64 = 100;
+
+thread_local! {
+    pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        WG_BUDGET.with(|val| *val.borrow())
+    }
+
+    fn set_budget(new_value: u64) {
+        WG_BUDGET.with(|val| {
+            *val.borrow_mut() = new_value;
+        });
+    }
+}
+
 impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type WorkingGroup = working_group::Module<Self, ForumWorkingGroupInstance>;
+    type WorkingGroup = ();
+    type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
 }
 
@@ -321,6 +398,16 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         _worker_id: &<Runtime as common::Trait>::ActorId,
     ) -> bool {
         *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+    }
+}
+
+impl common::working_group::MembershipWorkingGroupHelper<Runtime> for () {
+    fn insert_a_lead(
+        _opening_id: u32,
+        _caller_id: &<Runtime as frame_system::Trait>::AccountId,
+        _member_id: <Runtime as common::Trait>::MemberId,
+    ) -> <Runtime as common::Trait>::ActorId {
+        unimplemented!()
     }
 }
 
