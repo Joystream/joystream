@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use super::{
-    AnnouncementPeriodNr, Budget, CouncilMemberOf, CouncilMembers, CouncilStageAnnouncing, Error,
-    Module, Trait,
+    AnnouncementPeriodNr, Budget, BudgetIncrement, CouncilMemberOf, CouncilMembers,
+    CouncilStageAnnouncing, Error, Module, Trait,
 };
 use crate::mock::*;
 use common::origin::CouncilOriginValidator;
@@ -1112,7 +1112,73 @@ fn council_budget_refill_can_be_planned() {
 
         // check budget was increased
         Mocks::check_budget_refill(
-            <Runtime as Trait>::BudgetRefillAmount::get(),
+            BudgetIncrement::<Runtime>::get(),
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
+    })
+}
+
+// Test that budget increment can be set from external source.
+#[test]
+fn council_budget_increment_can_be_upddated() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let budget_increment = 1000;
+        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+
+        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - current_block - 1);
+
+        // Check budget currently is 0
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased with the expected increment
+        Mocks::check_budget_refill(
+            budget_increment,
+            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+        );
+    })
+}
+
+// Test that budget increment can be set from external source.
+#[test]
+fn council_budget_increment_can_be_updated() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let budget_increment = 1000;
+        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+
+        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+
+        let current_block = frame_system::Module::<Runtime>::block_number();
+
+        assert_eq!(current_block, 1);
+
+        // forward to one block before refill
+        MockUtils::increase_block_number(next_refill - current_block - 1);
+
+        // Check budget currently is 0
+        Mocks::check_budget_refill(0, next_refill);
+
+        // forward to after block refill
+        MockUtils::increase_block_number(1);
+
+        // check budget was increased with the expected increment
+        Mocks::check_budget_refill(
+            budget_increment,
             next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
         );
     })
@@ -1155,6 +1221,49 @@ fn council_rewards_are_paid() {
             &tmp_council_members.as_slice(),
             0,
         );
+    });
+}
+
+// Test that can set councilor reward correctly.
+#[test]
+fn councilor_reward_can_be_set() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+        let origin = OriginType::Root;
+
+        let sufficient_balance = 10000000;
+
+        Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
+        Mocks::set_councilor_reward(origin.clone(), 1, Ok(()));
+
+        // run 1st council cycle
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
+
+        // calculate council member last reward block
+        let last_payment_block = council_settings.cycle_duration
+            - (council_settings.idle_stage_duration
+                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+
+        let start_rewarding_block = council_settings.reveal_stage_duration
+            + council_settings.announcing_stage_duration
+            + council_settings.voting_stage_duration;
+
+        let councilor_initial_balance = council_settings.min_candidate_stake * TOPUP_MULTIPLIER;
+        let current_council_balance =
+            (last_payment_block - start_rewarding_block) + councilor_initial_balance;
+
+        // Check that reward was correctly paid out
+        params
+            .expected_final_council_members
+            .iter()
+            .for_each(|council_member| {
+                assert_eq!(
+                    balances::Module::<Runtime>::free_balance(council_member.reward_account_id),
+                    current_council_balance
+                )
+            });
     });
 }
 
@@ -1270,6 +1379,7 @@ fn council_budget_auto_refill() {
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
         let start_balance = Budget::<Runtime>::get();
+        let budget_increment = BudgetIncrement::<Runtime>::get();
 
         // forward before next refill
         // Note: initial block is 1 so current_block + budget_refill_period - 2 = budget_refill_period - 1
@@ -1284,17 +1394,14 @@ fn council_budget_auto_refill() {
         // forward to next filling
         MockUtils::increase_block_number(1);
 
-        assert_eq!(
-            Budget::<Runtime>::get(),
-            start_balance + council_settings.budget_refill_amount,
-        );
+        assert_eq!(Budget::<Runtime>::get(), start_balance + budget_increment,);
 
         // forward to next filling
         MockUtils::increase_block_number(council_settings.budget_refill_period);
 
         assert_eq!(
             Budget::<Runtime>::get(),
-            start_balance + 2 * council_settings.budget_refill_amount,
+            start_balance + 2 * budget_increment,
         );
     });
 }
@@ -1376,6 +1483,102 @@ fn council_origin_validator_fails_with_unregistered_member() {
 }
 
 #[test]
+fn test_funding_request_fails_insufficient_fundings() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 0, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![common::FundingRequestParameters {
+                account: 0,
+                amount: 100,
+            }],
+            Err(Error::InsufficientFundsForFundingRequest),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_no_accounts() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 0, Ok(()));
+        Mocks::funding_request(
+            origin,
+            Vec::<common::FundingRequestParameters<u64, u64>>::new(),
+            Err(Error::EmptyFundingRequests),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_repeated_account() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    account: 0,
+                    amount: 5,
+                };
+                2
+            ],
+            Err(Error::RepeatedFundRequestAccount),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_zero_balance() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![common::FundingRequestParameters {
+                account: 0,
+                amount: 0,
+            }],
+            Err(Error::ZeroBalanceFundRequest),
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_fails_insufficient_fundings_in_multiple_accounts() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        Mocks::set_budget(origin.clone(), 100, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    account: 0,
+                    amount: 50,
+                },
+                common::FundingRequestParameters {
+                    account: 1,
+                    amount: 51,
+                },
+            ],
+            Err(Error::InsufficientFundsForFundingRequest),
+        );
+    });
+}
+
+#[test]
 fn council_origin_validator_succeeds() {
     let config = default_genesis_config();
 
@@ -1400,6 +1603,23 @@ fn council_origin_validator_succeeds() {
             Council::ensure_member_consulate(origin.into(), councilor1_member_id);
 
         assert!(validation_result.is_ok());
+    });
+}
+
+#[test]
+fn test_funding_request_fails_permission() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Signed(0);
+        Mocks::funding_request(
+            origin.into(),
+            vec![common::FundingRequestParameters {
+                amount: 100,
+                account: 0,
+            }],
+            Err(Error::BadOrigin),
+        );
     });
 }
 
@@ -1480,8 +1700,32 @@ fn council_many_cycle_rewards() {
 
         assert_eq!(
             balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
-            num_blocks_elected * <Runtime as Trait>::ElectedMemberRewardPerBlock::get()
-                + num_iterations * auto_topup_amount
+            num_blocks_elected * Council::councilor_reward() + num_iterations * auto_topup_amount
+        );
+    });
+}
+
+#[test]
+fn test_funding_request_succeeds() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let initial_budget = 100;
+        Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
+        Mocks::funding_request(
+            origin,
+            vec![
+                common::FundingRequestParameters {
+                    amount: 5,
+                    account: 0,
+                },
+                common::FundingRequestParameters {
+                    amount: 10,
+                    account: 1,
+                },
+            ],
+            Ok(()),
         );
     });
 }

@@ -5,7 +5,7 @@
 mod working_group_proposals;
 
 use crate::tests::run_to_block;
-use crate::{ProposalCancellationFee, Runtime};
+use crate::{MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
@@ -18,6 +18,7 @@ use frame_support::traits::Currency;
 use frame_support::{StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
+use sp_std::collections::btree_set::BTreeSet;
 
 use super::{
     increase_total_balance_issuance_using_account_id, initial_test_ext, insert_member,
@@ -31,6 +32,9 @@ pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
+pub type Council = council::Module<Runtime>;
+pub type Membership = membership::Module<Runtime>;
+pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
 
 fn setup_members(count: u8) {
     for i in 0..count {
@@ -115,7 +119,7 @@ impl Default for DummyProposalFixture {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
         let dummy_proposal =
-            proposals_codex::Call::<Runtime>::execute_text_proposal(b"text".to_vec());
+            proposals_codex::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -390,6 +394,8 @@ where
     member_id: u64,
     setup_environment: bool,
     proposal_id: u32,
+    lead_id: u64,
+    set_member_lead: bool,
 }
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
@@ -402,6 +408,8 @@ where
             member_id: 1,
             setup_environment: true,
             proposal_id: 1,
+            lead_id: 11,
+            set_member_lead: false,
         }
     }
 
@@ -428,6 +436,47 @@ where
             ..self
         }
     }
+
+    fn with_lead_id(self, lead_id: u64) -> Self {
+        Self { lead_id, ..self }
+    }
+
+    fn with_set_member_lead(self, set_member_lead: bool) -> Self {
+        Self {
+            set_member_lead,
+            ..self
+        }
+    }
+}
+
+fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
+    MembershipWorkingGroup::add_opening(
+        RawOrigin::Root.into(),
+        vec![0u8],
+        working_group::OpeningType::Leader,
+        None,
+        None,
+    )
+    .unwrap();
+
+    let application = working_group::ApplyOnOpeningParameters::<Runtime> {
+        member_id: lead_id.clone().into(),
+        opening_id: 0,
+        role_account_id: lead_account_id.clone(),
+        reward_account_id: lead_account_id.clone(),
+        description: vec![0u8],
+        stake_parameters: None,
+    };
+
+    MembershipWorkingGroup::apply_on_opening(
+        RawOrigin::Signed(lead_account_id).into(),
+        application,
+    )
+    .unwrap();
+    let mut successful_application_ids = BTreeSet::new();
+    successful_application_ids.insert(0);
+    MembershipWorkingGroup::fill_opening(RawOrigin::Root.into(), 0, successful_application_ids)
+        .unwrap();
 }
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
@@ -440,6 +489,10 @@ where
         if self.setup_environment {
             setup_members(15);
             setup_council(0);
+            if self.set_member_lead {
+                let lead_account_id = [self.lead_id as u8; 32].into();
+                set_membership_leader(lead_account_id, self.lead_id);
+            }
 
             increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
         }
@@ -474,7 +527,7 @@ fn text_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::Text(b"text".to_vec()),
+                ProposalDetails::Signal(b"signal".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
@@ -483,18 +536,18 @@ fn text_proposal_execution_succeeds() {
     });
 }
 
-/* TODO: Test will be commented out until Spending proposal is changed with the new
- * FundingRequest
 #[test]
-fn spending_proposal_execution_succeeds() {
+fn funding_request_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;
         let account_id: [u8; 32] = [member_id; 32];
-        let new_balance = pallet_council::Balance::<Runtime>::from(5555u32);
+        let council_budget = 5_000_000;
+        let funding = 5000;
 
         let target_account_id: [u8; 32] = [12; 32];
+        let target_account_id: AccountId32 = target_account_id.clone().into();
 
-        assert!(Council::set_budget(RawOrigin::Root.into(), new_balance).is_ok());
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -508,22 +561,22 @@ fn spending_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::Spending(new_balance, target_account_id.clone().into()),
+                ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                    amount: funding,
+                    account: target_account_id.clone(),
+                }]),
             )
         })
         .with_member_id(member_id as u64);
 
-        let converted_account_id: AccountId32 = target_account_id.clone().into();
-        assert_eq!(Balances::free_balance(converted_account_id.clone()), 0);
+        assert_eq!(Balances::free_balance(target_account_id.clone()), 0);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        run_to_block(86410);
 
-        run_to_block(14410);
-
-        assert_eq!(Balances::free_balance(converted_account_id), new_balance);
+        assert_eq!(Balances::free_balance(target_account_id), funding);
     });
 }
-*/
 
 #[test]
 fn set_validator_count_proposal_execution_succeeds() {
@@ -558,7 +611,7 @@ fn set_validator_count_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::SetValidatorCount(new_validator_count),
+                ProposalDetails::SetMaxValidatorCount(new_validator_count),
             )
         })
         .disable_setup_enviroment();
@@ -594,6 +647,225 @@ fn amend_constitution_proposal_execution_succeeds() {
         .with_member_id(member_id as u64);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    });
+}
+
+#[test]
+fn set_membership_price_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let membership_price = 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetMembershipPrice(membership_price),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Membership::membership_price(), membership_price);
+    });
+}
+
+#[test]
+fn set_initial_invitation_balance_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let initial_invitation_balance = 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(
+            Membership::initial_invitation_balance(),
+            initial_invitation_balance
+        );
+    });
+}
+
+#[test]
+fn set_initial_invitation_count_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let new_default_invite_count = 50;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetInitialInvitationCount(new_default_invite_count),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(
+            Membership::initial_invitation_count(),
+            new_default_invite_count
+        );
+    });
+}
+
+#[test]
+fn set_membership_leader_invitation_quota_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let new_invite_count = 30;
+        let lead_id = 11;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count),
+            )
+        })
+        .with_member_id(member_id as u64)
+        .with_set_member_lead(true)
+        .with_lead_id(lead_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Membership::membership(lead_id).invites, new_invite_count);
+    });
+}
+
+#[test]
+fn set_referral_cut_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let referral_cut = 500;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetReferralCut(referral_cut),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Membership::referral_cut(), referral_cut);
+    });
+}
+
+#[test]
+fn set_budget_increment_proposal_succeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let budget_increment = 500;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Council::budget_increment(), budget_increment);
+    });
+}
+
+#[test]
+fn set_councilor_reward_proposal_succeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let councilor_reward = 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetCouncilorReward(councilor_reward),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(Council::councilor_reward(), councilor_reward);
     });
 }
 

@@ -3956,6 +3956,7 @@ dependencies = [
 name = "pallet-proposals-codex"
 version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

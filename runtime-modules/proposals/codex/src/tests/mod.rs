@@ -5,6 +5,7 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
+use sp_std::convert::TryInto;
 
 use common::working_group::WorkingGroup;
 use proposals_engine::ProposalParameters;
@@ -41,7 +42,7 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -93,7 +94,7 @@ where
 }
 
 #[test]
-fn create_text_proposal_common_checks_succeed() {
+fn create_signal_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
@@ -113,39 +114,39 @@ fn create_text_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let text_proposal_details = ProposalDetails::Text(b"text".to_vec());
+        let signal_proposal_details = ProposalDetails::Signal(b"text".to_vec());
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    text_proposal_details.clone(),
+                    signal_proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    text_proposal_details.clone(),
+                    signal_proposal_details.clone(),
                 )
             },
             successful_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_with_staking.clone(),
-                    text_proposal_details.clone(),
+                    signal_proposal_details.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Trait>::TextProposalParameters::get(),
-            proposal_details: text_proposal_details.clone(),
+            proposal_parameters: <Test as crate::Trait>::SignalProposalParameters::get(),
+            proposal_details: signal_proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
 }
 
 #[test]
-fn create_text_proposal_codex_call_fails_without_text() {
+fn create_signal_proposal_codex_call_fails_without_text() {
     initial_test_ext().execute_with(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -159,9 +160,9 @@ fn create_text_proposal_codex_call_fails_without_text() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::Text(Vec::new()),
+                ProposalDetails::Signal(Vec::new()),
             ),
-            Err(Error::<Test>::TextProposalIsEmpty.into())
+            Err(Error::<Test>::SignalProposalIsEmpty.into())
         );
     });
 }
@@ -241,9 +242,10 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
 }
 
 #[test]
-fn create_spending_proposal_common_checks_succeed() {
+fn create_funding_request_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        let total_balance_issuance = 500000;
+        increase_total_balance_issuance(total_balance_issuance);
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -261,40 +263,95 @@ fn create_spending_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let spending_proposal_details = ProposalDetails::Spending(20, 10);
-        let spending_proposal_details_succesful = ProposalDetails::Spending(100, 2);
+        let funding_request_proposal = ProposalDetails::FundingRequest(vec![
+            common::FundingRequestParameters {
+                amount: 100,
+                account: 2,
+            },
+            common::FundingRequestParameters {
+                amount: 50,
+                account: 3,
+            },
+        ]);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    spending_proposal_details.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
             empty_stake_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    spending_proposal_details.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
             successful_call: || {
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_with_staking.clone(),
-                    spending_proposal_details_succesful.clone(),
+                    funding_request_proposal.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Trait>::SpendingProposalParameters::get(),
-            proposal_details: spending_proposal_details_succesful.clone(),
+            proposal_parameters: <Test as crate::Trait>::FundingRequestProposalParameters::get(),
+            proposal_details: funding_request_proposal.clone(),
         };
         proposal_fixture.check_all();
     });
 }
 
 #[test]
-fn create_spending_proposal_call_fails_with_incorrect_balance() {
+fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(500000, 1);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let funding_request_proposal_zero_balance =
+            ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                amount: 0,
+                account: 2,
+            }]);
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                funding_request_proposal_zero_balance,
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
+        );
+
+        let exceeded_budget = MAX_SPENDING_PROPOSAL_VALUE + 1;
+
+        let funding_request_proposal_exceeded_balance =
+            ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                amount: exceeded_budget.into(),
+                account: 2,
+            }]);
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                funding_request_proposal_exceeded_balance,
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
+        );
+    });
+}
+
+#[test]
+fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(500000, 1);
 
@@ -310,24 +367,72 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::Spending(0, 2),
+                ProposalDetails::FundingRequest(
+                    Vec::<common::FundingRequestParameters<u64, u64>>::new()
+                ),
             ),
-            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
+            Err(Error::<Test>::InvalidFundingRequestProposalNumberOfAccount.into())
         );
+
+        let mut funding_request_proposal_exceeded_number_of_account =
+            Vec::<common::FundingRequestParameters<_, _>>::new();
+
+        for i in 0..=MAX_FUNDING_REQUEST_ACCOUNTS {
+            funding_request_proposal_exceeded_number_of_account.push(
+                common::FundingRequestParameters {
+                    amount: 100,
+                    account: i.try_into().unwrap(),
+                },
+            );
+        }
 
         assert_eq!(
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::Spending(5000001, 2),
+                ProposalDetails::FundingRequest(
+                    funding_request_proposal_exceeded_number_of_account
+                ),
             ),
-            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
+            Err(Error::<Test>::InvalidFundingRequestProposalNumberOfAccount.into())
         );
     });
 }
 
 #[test]
-fn create_set_validator_count_proposal_common_checks_succeed() {
+fn create_funding_request_proposal_call_fails_repeated_account() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(500000, 1);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let funding_request_proposal_details = vec![
+            common::FundingRequestParameters {
+                amount: 100,
+                account: 1u64,
+            };
+            2
+        ];
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::FundingRequest(funding_request_proposal_details),
+            ),
+            Err(Error::<Test>::InvalidFundingRequestProposalRepeatedAccount.into())
+        );
+    });
+}
+
+#[test]
+fn create_set_max_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -347,7 +452,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let validator_count_details = ProposalDetails::SetValidatorCount(4);
+        let validator_count_details = ProposalDetails::SetMaxValidatorCount(4);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -371,7 +476,8 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     validator_count_details.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Trait>::SetValidatorCountProposalParameters::get(),
+            proposal_parameters:
+                <Test as crate::Trait>::SetMaxValidatorCountProposalParameters::get(),
             proposal_details: validator_count_details.clone(),
         };
         proposal_fixture.check_all();
@@ -379,7 +485,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
 }
 
 #[test]
-fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
+fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
         staking::MinimumValidatorCount::put(10);
 
@@ -395,7 +501,16 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
-                ProposalDetails::SetValidatorCount(3),
+                ProposalDetails::SetMaxValidatorCount(3),
+            ),
+            Err(Error::<Test>::InvalidValidatorCount.into())
+        );
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT + 1),
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
         );
@@ -410,9 +525,7 @@ fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
     }
 }
 
-fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
-    working_group: WorkingGroup,
-) {
+fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(group: WorkingGroup) {
     initial_test_ext().execute_with(|| {
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -430,15 +543,15 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let add_opening_parameters = AddOpeningParameters {
+        let add_opening_parameters = CreateOpeningParameters {
             description: b"some text".to_vec(),
             stake_policy: None,
             reward_per_block: None,
-            working_group,
+            group,
         };
 
         let add_leader_details =
-            ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
+            ProposalDetails::CreateWorkingGroupLeadOpening(add_opening_parameters);
 
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -465,7 +578,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::AddWorkingGroupOpeningProposalParameters::get(),
+                <Test as crate::Trait>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
             proposal_details: add_leader_details.clone(),
         };
         proposal_fixture.check_all();
@@ -504,12 +617,12 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
 
         let fill_opening_parameters = FillOpeningParameters {
             opening_id,
-            successful_application_id: 1,
+            application_id: 1,
             working_group,
         };
 
         let fill_opening_details =
-            ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
+            ProposalDetails::FillWorkingGroupLeadOpening(fill_opening_parameters);
 
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -536,7 +649,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::FillWorkingGroupOpeningProposalParameters::get(),
+                <Test as crate::Trait>::FillWorkingGroupLeadOpeningProposalParameters::get(),
             proposal_details: fill_opening_details.clone(),
         };
         proposal_fixture.check_all();
@@ -544,50 +657,14 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
 }
 
 #[test]
-fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters(group);
-    }
-}
-
-fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters(
-    working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let general_proposal_parameters = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(1),
-            exact_execution_block: None,
-        };
-
-        assert_eq!(
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
-                ProposalDetails::SetWorkingGroupBudgetCapacity(
-                    (crate::WORKING_GROUP_BUDGET_CAPACITY_MAX_VALUE + 1) as u64,
-                    working_group,
-                ),
-            ),
-            Err(Error::<Test>::InvalidWorkingGroupBudgetCapacity.into())
-        );
-    });
-}
-
-#[test]
 fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
-        run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(group);
+        run_create_update_working_group_budget_proposal_common_checks_succeed(group);
     }
 }
 
-fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
+fn run_create_update_working_group_budget_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
@@ -610,9 +687,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
         };
 
         let budget_capacity_details =
-            ProposalDetails::SetWorkingGroupBudgetCapacity(0, working_group);
-        let budget_capacity_details_success =
-            ProposalDetails::SetWorkingGroupBudgetCapacity(0, working_group);
+            ProposalDetails::UpdateWorkingGroupBudget(0, working_group, BalanceKind::Positive);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -633,12 +708,12 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 ProposalCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_with_staking.clone(),
-                    budget_capacity_details_success.clone(),
+                    budget_capacity_details.clone(),
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::SetWorkingGroupBudgetCapacityProposalParameters::get(),
-            proposal_details: budget_capacity_details_success.clone(),
+                <Test as crate::Trait>::UpdateWorkingGroupBudgetProposalParameters::get(),
+            proposal_details: budget_capacity_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -675,10 +750,10 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
         };
 
         let decrease_lead_stake_details =
-            ProposalDetails::DecreaseWorkingGroupLeaderStake(0, 10, working_group);
+            ProposalDetails::DecreaseWorkingGroupLeadStake(0, 10, working_group);
 
         let decrease_lead_stake_details_success =
-            ProposalDetails::DecreaseWorkingGroupLeaderStake(10, 10, working_group);
+            ProposalDetails::DecreaseWorkingGroupLeadStake(10, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -703,7 +778,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::DecreaseWorkingGroupLeaderStakeProposalParameters::get(),
+                <Test as crate::Trait>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
             proposal_details: decrease_lead_stake_details_success.clone(),
         };
         proposal_fixture.check_all();
@@ -740,11 +815,10 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let slash_lead_details =
-            ProposalDetails::SlashWorkingGroupLeaderStake(0, 10, working_group);
+        let slash_lead_details = ProposalDetails::SlashWorkingGroupLead(0, 10, working_group);
 
         let slash_lead_details_success =
-            ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group);
+            ProposalDetails::SlashWorkingGroupLead(10, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -769,19 +843,11 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
+                <Test as crate::Trait>::SlashWorkingGroupLeadProposalParameters::get(),
             proposal_details: slash_lead_details_success.clone(),
         };
         proposal_fixture.check_all();
     });
-}
-
-#[test]
-fn slash_stake_with_zero_staking_balance_fails() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_slash_stake_with_zero_staking_balance_fails(group);
-    }
 }
 
 pub fn run_to_block(n: u64) {
@@ -871,31 +937,6 @@ fn setup_council(start_id: u64) {
     );
 }
 
-fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let general_proposal_parameters = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(1),
-            exact_execution_block: None,
-        };
-
-        setup_council(2);
-
-        assert_eq!(
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
-                ProposalDetails::SlashWorkingGroupLeaderStake(10, 0, working_group)
-            ),
-            Err(Error::<Test>::SlashingStakeIsZero.into())
-        );
-    });
-}
-
 #[test]
 fn decrease_stake_with_zero_staking_balance_fails() {
     // This uses strum crate for enum iteration
@@ -922,7 +963,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters,
-                ProposalDetails::DecreaseWorkingGroupLeaderStake(10, 0, working_group,)
+                ProposalDetails::DecreaseWorkingGroupLeadStake(10, 0, working_group,)
             ),
             Err(Error::<Test>::DecreasingStakeIsZero.into())
         );
@@ -958,10 +999,10 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
         };
 
         let set_lead_reward_details =
-            ProposalDetails::SetWorkingGroupLeaderReward(0, Some(10), working_group);
+            ProposalDetails::SetWorkingGroupLeadReward(0, Some(10), working_group);
 
         let set_lead_reward_details_success =
-            ProposalDetails::SetWorkingGroupLeaderReward(10, Some(10), working_group);
+            ProposalDetails::SetWorkingGroupLeadReward(10, Some(10), working_group);
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_proposal(
@@ -985,7 +1026,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
+                <Test as crate::Trait>::SlashWorkingGroupLeadProposalParameters::get(),
             proposal_details: set_lead_reward_details_success.clone(),
         };
         proposal_fixture.check_all();
@@ -1001,7 +1042,7 @@ fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
 }
 
 fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(
-    working_group: WorkingGroup,
+    group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
@@ -1024,12 +1065,12 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
 
         let terminate_role_parameters = TerminateRoleParameters {
             worker_id: 10,
-            penalty: None,
-            working_group,
+            slashing_amount: None,
+            group,
         };
 
         let terminate_lead_details =
-            ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);
+            ProposalDetails::TerminateWorkingGroupLead(terminate_role_parameters);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -1054,7 +1095,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::TerminateWorkingGroupLeaderRoleProposalParameters::get(),
+                <Test as crate::Trait>::TerminateWorkingGroupLeadProposalParameters::get(),
             proposal_details: terminate_lead_details.clone(),
         };
         proposal_fixture.check_all();
@@ -1109,6 +1150,388 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             },
             proposal_parameters: <Test as crate::Trait>::AmendConstitutionProposalParameters::get(),
             proposal_details: amend_constitution_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_council_budget_increment_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_council_budget_increment_details = ProposalDetails::SetCouncilBudgetIncrement(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_council_budget_increment_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_council_budget_increment_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_council_budget_increment_details.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::SetCouncilBudgetIncrementProposalParameters::get(),
+            proposal_details: set_council_budget_increment_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_cancel_working_group_leader_opening_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let opening_id = 0;
+        let cancel_opening_details =
+            ProposalDetails::CancelWorkingGroupLeadOpening(opening_id, working_group);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    cancel_opening_details.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+            proposal_details: cancel_opening_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_councilor_reward_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let total_balance_issuance = 500000;
+        increase_total_balance_issuance(total_balance_issuance);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_councilor_reward_details = ProposalDetails::SetCouncilorReward(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_councilor_reward_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_councilor_reward_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_councilor_reward_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::SetCouncilorRewardProposalParameters::get(
+            ),
+            proposal_details: set_councilor_reward_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_initial_invitation_balance_details =
+            ProposalDetails::SetInitialInvitationBalance(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_initial_invitation_balance_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_initial_invitation_balance_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_initial_invitation_balance_details.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::SetInitialInvitationBalanceProposalParameters::get(),
+            proposal_details: set_initial_invitation_balance_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_initial_invitation_count_details = ProposalDetails::SetInitialInvitationCount(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_initial_invitation_count_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_initial_invitation_count_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_initial_invitation_count_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::SetInvitationCountProposalParameters::get(
+            ),
+            proposal_details: set_initial_invitation_count_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_membership_lead_invitation_quota =
+            ProposalDetails::SetMembershipLeadInvitationQuota(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_membership_lead_invitation_quota.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_membership_lead_invitation_quota.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_membership_lead_invitation_quota.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get(),
+            proposal_details: set_membership_lead_invitation_quota.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_referral_cut_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let set_referral_cut_proposal_details = ProposalDetails::SetReferralCut(100);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_referral_cut_proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    set_referral_cut_proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    set_referral_cut_proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::SetReferralCutProposalParameters::get(),
+            proposal_details: set_referral_cut_proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });

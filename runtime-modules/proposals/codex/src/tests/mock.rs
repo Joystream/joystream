@@ -14,7 +14,9 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
+use crate::BalanceOf;
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
@@ -315,11 +317,17 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -422,6 +430,28 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type WeightInfo = WorkingGroupWeightInfo;
 }
 
+impl working_group::Trait<ForumWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
+impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingAccountValidator = membership::Module<Test>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = WorkingGroupWeightInfo;
+}
+
 pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
@@ -503,21 +533,56 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
     }
 }
 
+macro_rules! call_wg {
+    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content =>
+                <working_group::Module::<$T, ContentDirectoryWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+
+            WorkingGroup::Storage =>
+                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+
+            WorkingGroup::Forum =>
+                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+
+            WorkingGroup::Membership =>
+                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+        }
+    }};
+}
+
 impl crate::Trait for Test {
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
-    type SetValidatorCountProposalParameters = DefaultProposalParameters;
+    type WeightInfo = ();
+    type SetMaxValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
-    type TextProposalParameters = DefaultProposalParameters;
-    type SpendingProposalParameters = DefaultProposalParameters;
-    type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type FillWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
-    type SetWorkingGroupBudgetCapacityProposalParameters = DefaultProposalParameters;
-    type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
-    type SlashWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
-    type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
-    type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
+    type SignalProposalParameters = DefaultProposalParameters;
+    type FundingRequestProposalParameters = DefaultProposalParameters;
+    type CreateWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type FillWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type UpdateWorkingGroupBudgetProposalParameters = DefaultProposalParameters;
+    type DecreaseWorkingGroupLeadStakeProposalParameters = DefaultProposalParameters;
+    type SlashWorkingGroupLeadProposalParameters = DefaultProposalParameters;
+    type SetWorkingGroupLeadRewardProposalParameters = DefaultProposalParameters;
+    type TerminateWorkingGroupLeadProposalParameters = DefaultProposalParameters;
     type AmendConstitutionProposalParameters = DefaultProposalParameters;
+    type CancelWorkingGroupLeadOpeningProposalParameters = DefaultProposalParameters;
+    type SetMembershipPriceProposalParameters = DefaultProposalParameters;
+    type SetCouncilBudgetIncrementProposalParameters = DefaultProposalParameters;
+    type SetCouncilorRewardProposalParameters = DefaultProposalParameters;
+    type SetInitialInvitationBalanceProposalParameters = DefaultProposalParameters;
+    type SetInvitationCountProposalParameters = DefaultProposalParameters;
+    type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
+    type SetReferralCutProposalParameters = DefaultProposalParameters;
+
+    fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
+        call_wg!(working_group<Test>, get_budget)
+    }
+
+    fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
+        call_wg!(working_group<Test>, set_budget, budget)
+    }
 }
 
 parameter_types! {
@@ -528,7 +593,6 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
@@ -551,10 +615,8 @@ impl council::Trait for Test {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = ();
@@ -601,6 +663,15 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
         0
     }
 }
@@ -701,6 +772,96 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
         0
     }
     fn release_vote_stake() -> Weight {
+        0
+    }
+}
+
+impl crate::WeightInfo for () {
+    fn execute_signal_proposal(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_signal(_: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_runtime_upgrade(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_funding_request() -> Weight {
+        0
+    }
+    fn create_proposal_set_max_validator_count() -> Weight {
+        0
+    }
+    fn create_proposal_create_working_group_lead_opening(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_fill_working_group_lead_opening() -> Weight {
+        0
+    }
+    fn create_proposal_update_working_group_budget(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_decrease_working_group_lead_stake(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_slash_working_group_lead() -> Weight {
+        0
+    }
+    fn create_proposal_set_working_group_lead_reward(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_terminate_working_group_lead(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_amend_constitution(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_cancel_working_group_lead_opening(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_membership_price(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_council_budget_increment(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_councilor_reward(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_initial_invitation_balance(_: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_initial_invitation_count(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_set_membership_lead_invitation_quota() -> Weight {
+        0
+    }
+    fn create_proposal_set_referral_cut(_: u32) -> Weight {
+        0
+    }
+    fn update_working_group_budget_positive_forum() -> Weight {
+        0
+    }
+    fn update_working_group_budget_negative_forum() -> Weight {
+        0
+    }
+    fn update_working_group_budget_positive_storage() -> Weight {
+        0
+    }
+    fn update_working_group_budget_negative_storage() -> Weight {
+        0
+    }
+    fn update_working_group_budget_positive_content() -> Weight {
+        0
+    }
+    fn update_working_group_budget_negative_content() -> Weight {
+        0
+    }
+    fn update_working_group_budget_positive_membership() -> Weight {
+        0
+    }
+    fn update_working_group_budget_negative_membership() -> Weight {
         0
     }
 }

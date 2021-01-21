@@ -2,10 +2,10 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
-    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
-    ReferendumConnection, Stage, Trait, WeightInfo,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
+    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
+    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
@@ -25,7 +25,7 @@ use sp_io;
 use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup, Zero},
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
@@ -64,9 +64,7 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
 }
@@ -90,12 +88,10 @@ impl Trait for Runtime {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
     type StakingAccountValidator = ();
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = ();
@@ -166,6 +162,15 @@ impl WeightInfo for () {
         0
     }
     fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
         0
     }
 }
@@ -557,7 +562,6 @@ pub struct CouncilSettings<T: Trait> {
     pub idle_stage_duration: T::BlockNumber,
     pub election_duration: T::BlockNumber,
     pub cycle_duration: T::BlockNumber,
-    pub budget_refill_amount: Balance<T>,
     pub budget_refill_period: T::BlockNumber,
 }
 
@@ -592,7 +596,6 @@ where
                 + voting_stage_duration
                 + idle_stage_duration,
 
-            budget_refill_amount: <T as Trait>::BudgetRefillAmount::get(),
             budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
         }
     }
@@ -657,6 +660,8 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         budget: 0,
         next_reward_payments: 0,
         next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
     }
 }
 
@@ -1142,6 +1147,50 @@ where
         );
     }
 
+    pub fn funding_request(
+        origin: OriginType<T::AccountId>,
+        funding_requests: Vec<common::FundingRequestParameters<Balance<T>, T::AccountId>>,
+        expected_result: Result<(), Error<T>>,
+    ) {
+        let initial_budget = Module::<T>::budget();
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::funding_request(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                funding_requests.clone(),
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        for funding_request in &funding_requests {
+            assert!(frame_system::Module::<Runtime>::events()
+                .iter()
+                .any(|ev| ev.event
+                    == TestEvent::event_mod(RawEvent::RequestFunded(
+                        funding_request.account.clone().into(),
+                        funding_request.amount.into(),
+                    ))));
+
+            assert_eq!(
+                balances::Module::<T>::free_balance(funding_request.account.clone()),
+                funding_request.amount
+            );
+        }
+
+        let spent_amount = funding_requests
+            .iter()
+            .fold(Balance::<T>::zero(), |acc, funding_request| {
+                acc + funding_request.amount
+            });
+
+        assert_eq!(Module::<T>::budget(), initial_budget - spent_amount);
+    }
+
     pub fn plan_budget_refill(
         origin: OriginType<T::AccountId>,
         next_refill: T::BlockNumber,
@@ -1169,6 +1218,66 @@ where
                 .unwrap()
                 .event,
             TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+        );
+    }
+
+    pub fn set_councilor_reward(
+        origin: OriginType<T::AccountId>,
+        councilor_reward: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_councilor_reward(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                councilor_reward,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(CouncilorReward::<T>::get(), councilor_reward);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+        );
+    }
+
+    pub fn set_budget_increment(
+        origin: OriginType<T::AccountId>,
+        budget_increment: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_budget_increment(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                budget_increment,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(BudgetIncrement::<T>::get(), budget_increment,);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 

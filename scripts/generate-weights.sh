@@ -45,11 +45,12 @@ benchmark() {
 # benchmark pallet_im_online
 
 # Joystrem benchmarks
-# benchmark proposals_discussion
-# benchmark proposals_engine
-# benchmark pallet_constitution
-# benchmark working_group
-# benchmark council
-# benchmark referendum
-# benchmark forum
+benchmark proposals_discussion
+benchmark proposals_engine
+benchmark proposals_codex
+benchmark pallet_constitution
+benchmark working_group
+benchmark council
+benchmark referendum
+benchmark forum
 benchmark membership

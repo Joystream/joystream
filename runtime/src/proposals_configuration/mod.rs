@@ -22,35 +22,62 @@ mod tests;
 /////////// Proposal parameters definition
 
 parameter_types! {
-    pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_validator_count_proposal;
+    pub SetMaxValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_max_validator_count_proposal;
     pub RuntimeUpgradeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.runtime_upgrade_proposal;
-    pub TextProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.text_proposal;
-    pub SpendingProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.spending_proposal;
-    pub AddWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.add_working_group_opening_proposal;
-    pub FillWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_opening_proposal;
-    pub SetWorkingGroupBudgetCapacityProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_budget_capacity_proposal;
-    pub DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.decrease_working_group_leader_stake_proposal;
-    pub SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.slash_working_group_leader_stake_proposal;
-    pub SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_leader_reward_proposal;
-    pub TerminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.terminate_working_group_leader_role_proposal;
+    pub SignalProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.signal_proposal;
+    pub FundingRequestProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.funding_request_proposal;
+    pub CreateWorkingGroupLeadOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.create_working_group_lead_opening_proposal;
+    pub FillWorkingGroupLeadOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_lead_opening_proposal;
+    pub UpdateWorkingGroupBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.update_working_group_budget_proposal;
+    pub DecreaseWorkingGroupLeadStakeProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.decrease_working_group_lead_stake_proposal;
+    pub SlashWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.slash_working_group_lead_proposal;
+    pub SetWorkingGroupLeadRewardProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_lead_reward_proposal;
+    pub TerminateWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.terminate_working_group_lead_proposal;
     pub AmendConstitutionProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.amend_constitution_proposal;
+    pub CancelWorkingGroupLeadOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.cancel_working_group_lead_opening_proposal;
+    pub SetMembershipPriceProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_membership_price_proposal;
+    pub SetCouncilBudgetIncrementProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_council_budget_increment_proposal;
+    pub SetCouncilorRewardProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_councilor_reward_proposal;
+    pub SetInitialInvitationBalanceProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_initial_invitation_balance_proposal;
+    pub SetMembershipLeadInvitationQuotaProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_membership_lead_invitation_quota_proposal;
+    pub SetReferralCutProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_referral_cut_proposal;
+    pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.set_invitation_count_proposal;
 }
 
 ///////////
 
 struct AllProposalsParameters {
-    pub set_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_max_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
     pub runtime_upgrade_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub text_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub spending_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub add_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub fill_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub set_working_group_budget_capacity_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub decrease_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub slash_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub set_working_group_leader_reward_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub terminate_working_group_leader_role_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub signal_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub funding_request_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub create_working_group_lead_opening_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub fill_working_group_lead_opening_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub update_working_group_budget_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub decrease_working_group_lead_stake_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub slash_working_group_lead_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_working_group_lead_reward_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub terminate_working_group_lead_proposal: ProposalParameters<BlockNumber, Balance>,
     pub amend_constitution_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub cancel_working_group_lead_opening_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_membership_price_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_council_budget_increment_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_councilor_reward_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_initial_invitation_balance_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_membership_lead_invitation_quota_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_referral_cut_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub set_invitation_count_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -103,38 +130,50 @@ fn convert_json_object_to_proposal_parameters(
     let mut params = default_parameters();
 
     if let lite_json::JsonValue::Object(jo) = json {
-        init_proposal_parameter_object!(params, jo.clone(), set_validator_count_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_max_validator_count_proposal);
         init_proposal_parameter_object!(params, jo.clone(), runtime_upgrade_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), text_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), spending_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), add_working_group_opening_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), fill_working_group_opening_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), signal_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), funding_request_proposal);
         init_proposal_parameter_object!(
             params,
             jo.clone(),
-            set_working_group_budget_capacity_proposal
+            create_working_group_lead_opening_proposal
         );
         init_proposal_parameter_object!(
             params,
             jo.clone(),
-            decrease_working_group_leader_stake_proposal
+            fill_working_group_lead_opening_proposal
+        );
+        init_proposal_parameter_object!(params, jo.clone(), update_working_group_budget_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            decrease_working_group_lead_stake_proposal
+        );
+        init_proposal_parameter_object!(params, jo.clone(), slash_working_group_lead_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_working_group_lead_reward_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), terminate_working_group_lead_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), amend_constitution_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            cancel_working_group_lead_opening_proposal
+        );
+        init_proposal_parameter_object!(params, jo.clone(), set_membership_price_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_council_budget_increment_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_councilor_reward_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            set_initial_invitation_balance_proposal
         );
         init_proposal_parameter_object!(
             params,
             jo.clone(),
-            slash_working_group_leader_stake_proposal
+            set_membership_lead_invitation_quota_proposal
         );
-        init_proposal_parameter_object!(
-            params,
-            jo.clone(),
-            set_working_group_leader_reward_proposal
-        );
-        init_proposal_parameter_object!(
-            params,
-            jo.clone(),
-            terminate_working_group_leader_role_proposal
-        );
-        init_proposal_parameter_object!(params, jo, amend_constitution_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_referral_cut_proposal);
+        init_proposal_parameter_object!(params, jo, set_invitation_count_proposal);
     }
 
     params
@@ -239,22 +278,31 @@ fn extract_numeric_parameter(
 // Returns all default proposal parameters.
 fn default_parameters() -> AllProposalsParameters {
     AllProposalsParameters {
-        set_validator_count_proposal: defaults::set_validator_count_proposal(),
+        set_max_validator_count_proposal: defaults::set_max_validator_count_proposal(),
         runtime_upgrade_proposal: defaults::runtime_upgrade_proposal(),
-        text_proposal: defaults::text_proposal(),
-        spending_proposal: defaults::spending_proposal(),
-        add_working_group_opening_proposal: defaults::add_working_group_opening_proposal(),
-        fill_working_group_opening_proposal: defaults::fill_working_group_opening_proposal(),
-        set_working_group_budget_capacity_proposal:
-            defaults::set_working_group_budget_capacity_proposal(),
-        decrease_working_group_leader_stake_proposal:
-            defaults::decrease_working_group_leader_stake_proposal(),
-        slash_working_group_leader_stake_proposal:
-            defaults::slash_working_group_leader_stake_proposal(),
-        set_working_group_leader_reward_proposal:
-            defaults::set_working_group_leader_reward_proposal(),
-        terminate_working_group_leader_role_proposal:
-            defaults::terminate_working_group_leader_role_proposal(),
+        signal_proposal: defaults::signal_proposal(),
+        funding_request_proposal: defaults::funding_request_proposal(),
+        create_working_group_lead_opening_proposal:
+            defaults::create_working_group_lead_opening_proposal(),
+        fill_working_group_lead_opening_proposal:
+            defaults::fill_working_group_lead_opening_proposal(),
+        update_working_group_budget_proposal: defaults::update_working_group_budget_proposal(),
+        decrease_working_group_lead_stake_proposal:
+            defaults::decrease_working_group_lead_stake_proposal(),
+        slash_working_group_lead_proposal: defaults::slash_working_group_lead_proposal(),
+        set_working_group_lead_reward_proposal: defaults::set_working_group_lead_reward_proposal(),
+        terminate_working_group_lead_proposal: defaults::terminate_working_group_lead_proposal(),
         amend_constitution_proposal: defaults::amend_constitution_proposal(),
+        cancel_working_group_lead_opening_proposal:
+            defaults::cancel_working_group_lead_opening_proposal(),
+        set_membership_price_proposal: defaults::set_membership_price_proposal(),
+        set_council_budget_increment_proposal: defaults::set_council_budget_increment_proposal(),
+        set_councilor_reward_proposal: defaults::set_councilor_reward_proposal(),
+        set_initial_invitation_balance_proposal: defaults::set_initial_invitation_balance_proposal(
+        ),
+        set_membership_lead_invitation_quota_proposal:
+            defaults::set_membership_lead_invitation_quota_proposal(),
+        set_referral_cut_proposal: defaults::set_referral_cut_proposal(),
+        set_invitation_count_proposal: defaults::set_invitation_count_proposal(),
     }
 }
