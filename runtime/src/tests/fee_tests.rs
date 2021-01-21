@@ -2,8 +2,6 @@ use super::initial_test_ext;
 use crate::constants::currency::{CENTS, DOLLARS};
 use crate::MaximumBlockWeight;
 use crate::Runtime;
-use frame_support::weights::WeightToFeePolynomial;
-use pallet_balances::WeightInfo;
 use pallet_transaction_payment::Module as TransactionPayment;
 
 #[test]
