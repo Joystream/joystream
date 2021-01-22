@@ -12,6 +12,7 @@ serde = { version = "1.0.101", optional = true, features = ["derive"] }
 lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
 lite-json = { version = '0.1.3', default-features = false}
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
+smallvec = "1.6.0"
 
 # Substrate primitives
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}

@@ -26,7 +26,9 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::traits::{KeyOwnerProofSystem, LockIdentifier};
+use frame_support::traits::{
+    Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
+};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
@@ -263,15 +265,39 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
+    pub const TransactionByteFee: Balance = 1;
+}
+
+type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+
+pub struct Author;
+impl OnUnbalanced<NegativeImbalance> for Author {
+    fn on_nonzero_unbalanced(amount: NegativeImbalance) {
+        Balances::resolve_creating(&Authorship::author(), amount);
+    }
+}
+
+pub struct DealWithFees;
+impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
+        if let Some(fees) = fees_then_tips.next() {
+            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
+            let mut split = fees.ration(80, 20);
+            if let Some(tips) = fees_then_tips.next() {
+                // For tips %100 are for the author
+                tips.ration_merge_into(0, 100, &mut split);
+            }
+            Author::on_unbalanced(split.1);
+        }
+    }
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
-    type OnTransactionPayment = ();
+    type OnTransactionPayment = DealWithFees;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = integration::transactions::NoWeights; // TODO: adjust weight
-    type FeeMultiplierUpdate = (); // TODO: adjust fee
+    type WeightToFee = constants::fees::WeightToFee;
+    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Trait for Runtime {

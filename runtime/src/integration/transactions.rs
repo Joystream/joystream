@@ -1,26 +1,11 @@
 use codec::Encode;
 use frame_support::debug;
-use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
 use sp_runtime::generic;
 use sp_runtime::generic::SignedPayload;
 use sp_runtime::SaturatedConversion;
 
-use crate::{AccountId, Balance, BlockHashCount, Index, SignedExtra, UncheckedExtrinsic};
+use crate::{AccountId, BlockHashCount, Index, SignedExtra, UncheckedExtrinsic};
 use crate::{Call, Runtime, System};
-
-/// Stub for zero transaction weights.
-pub struct NoWeights;
-impl WeightToFeePolynomial for NoWeights {
-    type Balance = Balance;
-
-    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-        Default::default()
-    }
-
-    fn calc(_weight: &u64) -> Self::Balance {
-        Default::default()
-    }
-}
 
 /// 'Create transaction' default implementation.
 pub(crate) fn create_transaction<
