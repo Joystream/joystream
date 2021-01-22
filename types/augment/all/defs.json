@@ -1,4 +1,23 @@
 {
+    "Channel": "Null",
+    "ChannelContentType": "Null",
+    "ChannelCurationStatus": "Null",
+    "ChannelId": "Null",
+    "ChannelPublicationStatus": "Null",
+    "CurationActor": "Null",
+    "Curator": "Null",
+    "CuratorApplication": "Null",
+    "CuratorApplicationId": "Null",
+    "CuratorApplicationIdSet": "Null",
+    "CuratorApplicationIdToCuratorIdMap": "Null",
+    "CuratorOpening": "Null",
+    "CuratorOpeningId": "Null",
+    "Lead": "Null",
+    "LeadId": "Null",
+    "OptionalText": "Null",
+    "Principal": "Null",
+    "PrincipalId": "Null",
+    "WorkingGroupUnstaker": "Null",
     "Credential": "u64",
     "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
@@ -353,145 +372,6 @@
             "Exact"
         ]
     },
-    "ChannelId": "u64",
-    "CuratorId": "u64",
-    "CuratorOpeningId": "u64",
-    "CuratorApplicationId": "u64",
-    "LeadId": "u64",
-    "PrincipalId": "u64",
-    "OptionalText": "Option<Text>",
-    "Channel": {
-        "verified": "bool",
-        "handle": "Text",
-        "title": "OptionalText",
-        "description": "OptionalText",
-        "avatar": "OptionalText",
-        "banner": "OptionalText",
-        "content": "ChannelContentType",
-        "owner": "MemberId",
-        "role_account": "GenericAccountId",
-        "publication_status": "ChannelPublicationStatus",
-        "curation_status": "ChannelCurationStatus",
-        "created": "u32",
-        "principal_id": "PrincipalId"
-    },
-    "ChannelContentType": {
-        "_enum": [
-            "Video",
-            "Music",
-            "Ebook"
-        ]
-    },
-    "ChannelCurationStatus": {
-        "_enum": [
-            "Normal",
-            "Censored"
-        ]
-    },
-    "ChannelPublicationStatus": {
-        "_enum": [
-            "Public",
-            "Unlisted"
-        ]
-    },
-    "CurationActor": {
-        "_enum": {
-            "Lead": "Null",
-            "Curator": "CuratorId"
-        }
-    },
-    "Curator": {
-        "role_account": "GenericAccountId",
-        "reward_relationship": "Option<RewardRelationshipId>",
-        "role_stake_profile": "Option<CuratorRoleStakeProfile>",
-        "stage": "CuratorRoleStage",
-        "induction": "CuratorInduction",
-        "principal_id": "PrincipalId"
-    },
-    "CuratorApplication": {
-        "role_account": "GenericAccountId",
-        "curator_opening_id": "CuratorOpeningId",
-        "member_id": "MemberId",
-        "application_id": "ApplicationId"
-    },
-    "CuratorOpening": {
-        "opening_id": "OpeningId",
-        "curator_applications": "Vec<CuratorApplicationId>",
-        "policy_commitment": "OpeningPolicyCommitment"
-    },
-    "Lead": {
-        "member_id": "MemberId",
-        "role_account": "GenericAccountId",
-        "reward_relationship": "Option<RewardRelationshipId>",
-        "inducted": "u32",
-        "stage": "LeadRoleState"
-    },
-    "OpeningPolicyCommitment": {
-        "application_rationing_policy": "Option<ApplicationRationingPolicy>",
-        "max_review_period_length": "u32",
-        "application_staking_policy": "Option<StakingPolicy>",
-        "role_staking_policy": "Option<StakingPolicy>",
-        "role_slashing_terms": "SlashingTerms",
-        "fill_opening_successful_applicant_application_stake_unstaking_period": "Option<u32>",
-        "fill_opening_failed_applicant_application_stake_unstaking_period": "Option<u32>",
-        "fill_opening_failed_applicant_role_stake_unstaking_period": "Option<u32>",
-        "terminate_curator_application_stake_unstaking_period": "Option<u32>",
-        "terminate_curator_role_stake_unstaking_period": "Option<u32>",
-        "exit_curator_role_application_stake_unstaking_period": "Option<u32>",
-        "exit_curator_role_stake_unstaking_period": "Option<u32>"
-    },
-    "Principal": {
-        "_enum": {
-            "Lead": "Null",
-            "Curator": "CuratorId",
-            "ChannelOwner": "ChannelId"
-        }
-    },
-    "WorkingGroupUnstaker": {
-        "_enum": {
-            "Lead": "LeadId",
-            "Curator": "CuratorId"
-        }
-    },
-    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<ApplicationId,CuratorId>",
-    "CuratorApplicationIdSet": "BTreeSet<CuratorApplicationId>",
-    "CuratorRoleStakeProfile": {
-        "stake_id": "StakeId",
-        "termination_unstaking_period": "Option<u32>",
-        "exit_unstaking_period": "Option<u32>"
-    },
-    "CuratorRoleStage": {
-        "_enum": {
-            "Active": "Null",
-            "Unstaking": "CuratorExitSummary",
-            "Exited": "CuratorExitSummary"
-        }
-    },
-    "CuratorExitSummary": {
-        "origin": "CuratorExitInitiationOrigin",
-        "initiated_at_block_number": "u32",
-        "rationale_text": "Text"
-    },
-    "CuratorExitInitiationOrigin": {
-        "_enum": [
-            "Lead",
-            "Curator"
-        ]
-    },
-    "LeadRoleState": {
-        "_enum": {
-            "Active": "Null",
-            "Exited": "ExitedLeadRole"
-        }
-    },
-    "ExitedLeadRole": {
-        "initiated_at_block_number": "u32"
-    },
-    "CuratorInduction": {
-        "lead": "LeadId",
-        "curator_application_id": "CuratorApplicationId",
-        "at_block": "u32"
-    },
     "RationaleText": "Bytes",
     "ApplicationOf": {
         "role_account_id": "GenericAccountId",
@@ -511,7 +391,7 @@
     "OpeningOf": {
         "hiring_opening_id": "OpeningId",
         "applications": "Vec<ApplicationId>",
-        "policy_commitment": "WorkingGroupOpeningPolicyCommitment",
+        "policy_commitment": "OpeningPolicyCommitment",
         "opening_type": "OpeningType"
     },
     "StorageProviderId": "u64",
@@ -527,7 +407,7 @@
         "next_payment_at_block": "u32",
         "payout_interval": "Option<u32>"
     },
-    "WorkingGroupOpeningPolicyCommitment": {
+    "OpeningPolicyCommitment": {
         "application_rationing_policy": "Option<ApplicationRationingPolicy>",
         "max_review_period_length": "u32",
         "application_staking_policy": "Option<StakingPolicy>",
@@ -681,7 +561,7 @@
     },
     "AddOpeningParameters": {
         "activate_at": "ActivateOpeningAt",
-        "commitment": "WorkingGroupOpeningPolicyCommitment",
+        "commitment": "OpeningPolicyCommitment",
         "human_readable_text": "Bytes",
         "working_group": "WorkingGroup"
     },
@@ -729,6 +609,7 @@
     },
     "SetLeadParams": "(MemberId,GenericAccountId)",
     "Nonce": "u64",
+    "CuratorId": "u64",
     "EntityId": "u64",
     "ClassId": "u64",
     "CuratorGroupId": "u64",
@@ -873,7 +754,7 @@
         "reference_counter": "InboundReferenceCounter"
     },
     "CuratorGroup": {
-        "curators": "Vec<u64>",
+        "curators": "Vec<CuratorId>",
         "active": "bool",
         "number_of_classes_maintained": "u32"
     },
@@ -883,7 +764,7 @@
     },
     "Actor": {
         "_enum": {
-            "Curator": "(CuratorGroupId,u64)",
+            "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
             "Lead": "Null"
         }

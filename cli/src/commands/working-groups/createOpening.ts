@@ -79,7 +79,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   createTxParams(wgOpeningJson: WGOpeningJson, hrtJson: HRTJson) {
     return [
       wgOpeningJson.activateAt,
-      createType('WorkingGroupOpeningPolicyCommitment', {
+      createType('OpeningPolicyCommitment', {
         max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
         application_rationing_policy: wgOpeningJson.maxActiveApplicants
           ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }

@@ -47,7 +47,7 @@ export interface ActiveStake extends Struct {
 /** @name Actor */
 export interface Actor extends Enum {
   readonly isCurator: boolean;
-  readonly asCurator: ITuple<[CuratorGroupId, u64]>;
+  readonly asCurator: ITuple<[CuratorGroupId, CuratorId]>;
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isLead: boolean;
@@ -59,7 +59,7 @@ export interface ActorId extends u64 {}
 /** @name AddOpeningParameters */
 export interface AddOpeningParameters extends Struct {
   readonly activate_at: ActivateOpeningAt;
-  readonly commitment: WorkingGroupOpeningPolicyCommitment;
+  readonly commitment: OpeningPolicyCommitment;
   readonly human_readable_text: Bytes;
   readonly working_group: WorkingGroup;
 }
@@ -188,43 +188,19 @@ export interface Category extends Struct {
 export interface CategoryId extends u64 {}
 
 /** @name Channel */
-export interface Channel extends Struct {
-  readonly verified: bool;
-  readonly handle: Text;
-  readonly title: OptionalText;
-  readonly description: OptionalText;
-  readonly avatar: OptionalText;
-  readonly banner: OptionalText;
-  readonly content: ChannelContentType;
-  readonly owner: MemberId;
-  readonly role_account: GenericAccountId;
-  readonly publication_status: ChannelPublicationStatus;
-  readonly curation_status: ChannelCurationStatus;
-  readonly created: u32;
-  readonly principal_id: PrincipalId;
-}
+export interface Channel extends Null {}
 
 /** @name ChannelContentType */
-export interface ChannelContentType extends Enum {
-  readonly isVideo: boolean;
-  readonly isMusic: boolean;
-  readonly isEbook: boolean;
-}
+export interface ChannelContentType extends Null {}
 
 /** @name ChannelCurationStatus */
-export interface ChannelCurationStatus extends Enum {
-  readonly isNormal: boolean;
-  readonly isCensored: boolean;
-}
+export interface ChannelCurationStatus extends Null {}
 
 /** @name ChannelId */
-export interface ChannelId extends u64 {}
+export interface ChannelId extends Null {}
 
 /** @name ChannelPublicationStatus */
-export interface ChannelPublicationStatus extends Enum {
-  readonly isPublic: boolean;
-  readonly isUnlisted: boolean;
-}
+export interface ChannelPublicationStatus extends Null {}
 
 /** @name ChildPositionInParentCategory */
 export interface ChildPositionInParentCategory extends Struct {
@@ -288,55 +264,26 @@ export interface Credential extends u64 {}
 export interface CredentialSet extends BTreeSet<Credential> {}
 
 /** @name CurationActor */
-export interface CurationActor extends Enum {
-  readonly isLead: boolean;
-  readonly isCurator: boolean;
-  readonly asCurator: CuratorId;
-}
+export interface CurationActor extends Null {}
 
 /** @name Curator */
-export interface Curator extends Struct {
-  readonly role_account: GenericAccountId;
-  readonly reward_relationship: Option<RewardRelationshipId>;
-  readonly role_stake_profile: Option<CuratorRoleStakeProfile>;
-  readonly stage: CuratorRoleStage;
-  readonly induction: CuratorInduction;
-  readonly principal_id: PrincipalId;
-}
+export interface Curator extends Null {}
 
 /** @name CuratorApplication */
-export interface CuratorApplication extends Struct {
-  readonly role_account: GenericAccountId;
-  readonly curator_opening_id: CuratorOpeningId;
-  readonly member_id: MemberId;
-  readonly application_id: ApplicationId;
-}
+export interface CuratorApplication extends Null {}
 
 /** @name CuratorApplicationId */
-export interface CuratorApplicationId extends u64 {}
+export interface CuratorApplicationId extends Null {}
 
 /** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends BTreeSet<CuratorApplicationId> {}
+export interface CuratorApplicationIdSet extends Null {}
 
 /** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, CuratorId> {}
-
-/** @name CuratorExitInitiationOrigin */
-export interface CuratorExitInitiationOrigin extends Enum {
-  readonly isLead: boolean;
-  readonly isCurator: boolean;
-}
-
-/** @name CuratorExitSummary */
-export interface CuratorExitSummary extends Struct {
-  readonly origin: CuratorExitInitiationOrigin;
-  readonly initiated_at_block_number: u32;
-  readonly rationale_text: Text;
-}
+export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: Vec<u64>;
+  readonly curators: Vec<CuratorId>;
   readonly active: bool;
   readonly number_of_classes_maintained: u32;
 }
@@ -347,38 +294,11 @@ export interface CuratorGroupId extends u64 {}
 /** @name CuratorId */
 export interface CuratorId extends u64 {}
 
-/** @name CuratorInduction */
-export interface CuratorInduction extends Struct {
-  readonly lead: LeadId;
-  readonly curator_application_id: CuratorApplicationId;
-  readonly at_block: u32;
-}
-
 /** @name CuratorOpening */
-export interface CuratorOpening extends Struct {
-  readonly opening_id: OpeningId;
-  readonly curator_applications: Vec<CuratorApplicationId>;
-  readonly policy_commitment: OpeningPolicyCommitment;
-}
+export interface CuratorOpening extends Null {}
 
 /** @name CuratorOpeningId */
-export interface CuratorOpeningId extends u64 {}
-
-/** @name CuratorRoleStage */
-export interface CuratorRoleStage extends Enum {
-  readonly isActive: boolean;
-  readonly isUnstaking: boolean;
-  readonly asUnstaking: CuratorExitSummary;
-  readonly isExited: boolean;
-  readonly asExited: CuratorExitSummary;
-}
-
-/** @name CuratorRoleStakeProfile */
-export interface CuratorRoleStakeProfile extends Struct {
-  readonly stake_id: StakeId;
-  readonly termination_unstaking_period: Option<u32>;
-  readonly exit_unstaking_period: Option<u32>;
-}
+export interface CuratorOpeningId extends Null {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -525,11 +445,6 @@ export interface ExecutionFailed extends Struct {
   readonly error: Text;
 }
 
-/** @name ExitedLeadRole */
-export interface ExitedLeadRole extends Struct {
-  readonly initiated_at_block_number: u32;
-}
-
 /** @name FailedAt */
 export interface FailedAt extends u32 {}
 
@@ -613,23 +528,10 @@ export interface InputValue extends Enum {
 export interface IPNSIdentity extends Text {}
 
 /** @name Lead */
-export interface Lead extends Struct {
-  readonly member_id: MemberId;
-  readonly role_account: GenericAccountId;
-  readonly reward_relationship: Option<RewardRelationshipId>;
-  readonly inducted: u32;
-  readonly stage: LeadRoleState;
-}
+export interface Lead extends Null {}
 
 /** @name LeadId */
-export interface LeadId extends u64 {}
-
-/** @name LeadRoleState */
-export interface LeadRoleState extends Enum {
-  readonly isActive: boolean;
-  readonly isExited: boolean;
-  readonly asExited: ExitedLeadRole;
-}
+export interface LeadId extends Null {}
 
 /** @name LiaisonJudgement */
 export interface LiaisonJudgement extends Enum {
@@ -718,7 +620,7 @@ export interface OpeningId extends u64 {}
 export interface OpeningOf extends Struct {
   readonly hiring_opening_id: OpeningId;
   readonly applications: Vec<ApplicationId>;
-  readonly policy_commitment: WorkingGroupOpeningPolicyCommitment;
+  readonly policy_commitment: OpeningPolicyCommitment;
   readonly opening_type: OpeningType;
 }
 
@@ -732,10 +634,10 @@ export interface OpeningPolicyCommitment extends Struct {
   readonly fill_opening_successful_applicant_application_stake_unstaking_period: Option<u32>;
   readonly fill_opening_failed_applicant_application_stake_unstaking_period: Option<u32>;
   readonly fill_opening_failed_applicant_role_stake_unstaking_period: Option<u32>;
-  readonly terminate_curator_application_stake_unstaking_period: Option<u32>;
-  readonly terminate_curator_role_stake_unstaking_period: Option<u32>;
-  readonly exit_curator_role_application_stake_unstaking_period: Option<u32>;
-  readonly exit_curator_role_stake_unstaking_period: Option<u32>;
+  readonly terminate_application_stake_unstaking_period: Option<u32>;
+  readonly terminate_role_stake_unstaking_period: Option<u32>;
+  readonly exit_role_application_stake_unstaking_period: Option<u32>;
+  readonly exit_role_stake_unstaking_period: Option<u32>;
 }
 
 /** @name OpeningStage */
@@ -766,7 +668,7 @@ export interface OperationType extends Enum {
 }
 
 /** @name OptionalText */
-export interface OptionalText extends Option<Text> {}
+export interface OptionalText extends Null {}
 
 /** @name PaidMembershipTerms */
 export interface PaidMembershipTerms extends Struct {
@@ -823,16 +725,10 @@ export interface PostTextChange extends Struct {
 }
 
 /** @name Principal */
-export interface Principal extends Enum {
-  readonly isLead: boolean;
-  readonly isCurator: boolean;
-  readonly asCurator: CuratorId;
-  readonly isChannelOwner: boolean;
-  readonly asChannelOwner: ChannelId;
-}
+export interface Principal extends Null {}
 
 /** @name PrincipalId */
-export interface PrincipalId extends u64 {}
+export interface PrincipalId extends Null {}
 
 /** @name Property */
 export interface Property extends Struct {
@@ -1390,28 +1286,7 @@ export interface WorkingGroup extends Enum {
   readonly isContent: boolean;
 }
 
-/** @name WorkingGroupOpeningPolicyCommitment */
-export interface WorkingGroupOpeningPolicyCommitment extends Struct {
-  readonly application_rationing_policy: Option<ApplicationRationingPolicy>;
-  readonly max_review_period_length: u32;
-  readonly application_staking_policy: Option<StakingPolicy>;
-  readonly role_staking_policy: Option<StakingPolicy>;
-  readonly role_slashing_terms: SlashingTerms;
-  readonly fill_opening_successful_applicant_application_stake_unstaking_period: Option<u32>;
-  readonly fill_opening_failed_applicant_application_stake_unstaking_period: Option<u32>;
-  readonly fill_opening_failed_applicant_role_stake_unstaking_period: Option<u32>;
-  readonly terminate_application_stake_unstaking_period: Option<u32>;
-  readonly terminate_role_stake_unstaking_period: Option<u32>;
-  readonly exit_role_application_stake_unstaking_period: Option<u32>;
-  readonly exit_role_stake_unstaking_period: Option<u32>;
-}
-
 /** @name WorkingGroupUnstaker */
-export interface WorkingGroupUnstaker extends Enum {
-  readonly isLead: boolean;
-  readonly asLead: LeadId;
-  readonly isCurator: boolean;
-  readonly asCurator: CuratorId;
-}
+export interface WorkingGroupUnstaker extends Null {}
 
 export type PHANTOM_ALL = 'all';

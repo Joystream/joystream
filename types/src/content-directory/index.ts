@@ -275,6 +275,7 @@ export class FailedAt extends u32 {}
 
 export const contentDirectoryTypes = {
   Nonce,
+  CuratorId,
   EntityId,
   ClassId,
   CuratorGroupId,

@@ -15,7 +15,7 @@ import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role
 import { Dropdown, Grid, Message, Checkbox } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
-import { IWorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group';
+import { IOpeningPolicyCommitment } from '@joystream/types/working-group';
 import { IAddOpeningParameters } from '@joystream/types/proposals';
 import { WorkingGroupKey, InputValidationLengthConstraint } from '@joystream/types/common';
 import { BlockNumber } from '@polkadot/types/interfaces';
@@ -145,7 +145,7 @@ const StakeFields: React.FunctionComponent<StakeFieldsProps> = ({
 };
 
 const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<IAddOpeningParameters> => {
-  const commitment: SimplifiedTypeInterface<IWorkingGroupOpeningPolicyCommitment> = {
+  const commitment: SimplifiedTypeInterface<IOpeningPolicyCommitment> = {
     max_review_period_length: parseInt(values.maxReviewPeriodLength)
   };
 

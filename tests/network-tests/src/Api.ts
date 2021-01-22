@@ -9,7 +9,7 @@ import {
   ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
-  WorkingGroupOpeningPolicyCommitment,
+  OpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
@@ -274,7 +274,7 @@ export class Api {
   }
 
   public estimateAddOpeningFee(module: WorkingGroups): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
@@ -409,7 +409,7 @@ export class Api {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
@@ -955,7 +955,7 @@ export class Api {
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
     )
 
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: openingParameters.maxActiveApplicants as u32,
       }),
@@ -1047,7 +1047,7 @@ export class Api {
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
     )
 
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: openingParameters.maxActiveApplicants as u32,
       }),
@@ -1132,7 +1132,7 @@ export class Api {
     text: string
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: leaderOpening.maxActiveApplicants as u32,
       }),
@@ -1365,7 +1365,7 @@ export class Api {
 
   private createAddOpeningTransaction(
     actiavteAt: ActivateOpeningAt,
-    commitment: WorkingGroupOpeningPolicyCommitment,
+    commitment: OpeningPolicyCommitment,
     text: string,
     type: string,
     module: WorkingGroups
