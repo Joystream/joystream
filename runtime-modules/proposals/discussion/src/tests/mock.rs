@@ -80,10 +80,10 @@ parameter_types! {
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -107,7 +107,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32) -> Weight {
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {

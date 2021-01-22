@@ -74,8 +74,8 @@ type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn buy_membership_without_referrer(i: u32) -> Weight;
-    fn buy_membership_with_referrer(i: u32) -> Weight;
+    fn buy_membership_without_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
+    fn buy_membership_with_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
     fn update_profile(i: u32) -> Weight;
     fn update_accounts_none() -> Weight;
     fn update_accounts_root() -> Weight;
@@ -83,7 +83,7 @@ pub trait WeightInfo {
     fn update_accounts_both() -> Weight;
     fn set_referral_cut() -> Weight;
     fn transfer_invites() -> Weight;
-    fn invite_member(i: u32) -> Weight;
+    fn invite_member(i: u32, j: u32, k: u32, z: u32) -> Weight;
     fn set_membership_price() -> Weight;
     fn update_profile_verification() -> Weight;
     fn set_leader_invitation_quota() -> Weight;
@@ -352,10 +352,13 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the handle length
+        /// `O (W + V + X + Y)` where:
+        /// - `W` is the member name
+        /// - `V` is the member handle
+        /// - `X` is the member avatar uri
+        /// - `Y` is the member about
         /// - DB:
-        ///    - O(W)
+        ///    - O(V)
         /// # </weight>
         #[weight = Module::<T>::calculate_weight_for_buy_membership(params)]
         pub fn buy_membership(
@@ -619,17 +622,20 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the handle length
+        /// `O (W + V + X + Y)` where:
+        /// - `W` is the member name
+        /// - `V` is the member handle
+        /// - `X` is the member avatar uri
+        /// - `Y` is the member about
         /// - DB:
-        ///    - O(W)
+        ///    - O(V)
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::invite_member(
-            params.handle.as_ref()
-                .map(|handle| handle.len().saturated_into())
-                .unwrap_or_default()
-            )
-        ]
+            Module::<T>::text_length_unwrap_or_default(&params.name),
+            Module::<T>::text_length_unwrap_or_default(&params.handle),
+            Module::<T>::text_length_unwrap_or_default(&params.avatar_uri),
+            Module::<T>::text_length_unwrap_or_default(&params.about),
+        )]
         pub fn invite_member(
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
@@ -900,7 +906,8 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    pub fn calculate_weight_for_update_account(
+    // Helper for update_account extrinsic weight calculation
+    fn calculate_weight_for_update_account(
         new_root_account: &Option<T::AccountId>,
         new_controller_account: &Option<T::AccountId>,
     ) -> Weight {
@@ -912,26 +919,31 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn calculate_weight_for_buy_membership(
+    // Helper for buy_membership extrinsic weight calculation
+    fn calculate_weight_for_buy_membership(
         params: &BuyMembershipParameters<T::AccountId, T::MemberId>,
     ) -> Weight {
         if params.referrer_id.is_some() {
             WeightInfoMembership::<T>::buy_membership_with_referrer(
-                params
-                    .handle
-                    .as_ref()
-                    .map(|handle| handle.len().saturated_into())
-                    .unwrap_or_default(),
+                Self::text_length_unwrap_or_default(&params.name),
+                Self::text_length_unwrap_or_default(&params.handle),
+                Self::text_length_unwrap_or_default(&params.avatar_uri),
+                Self::text_length_unwrap_or_default(&params.about),
             )
         } else {
             WeightInfoMembership::<T>::buy_membership_without_referrer(
-                params
-                    .handle
-                    .as_ref()
-                    .map(|handle| handle.len().saturated_into())
-                    .unwrap_or_default(),
+                Self::text_length_unwrap_or_default(&params.name),
+                Self::text_length_unwrap_or_default(&params.handle),
+                Self::text_length_unwrap_or_default(&params.avatar_uri),
+                Self::text_length_unwrap_or_default(&params.about),
             )
         }
+    }
+
+    fn text_length_unwrap_or_default(text: &Option<Vec<u8>>) -> u32 {
+        text.as_ref()
+            .map(|handle| handle.len().saturated_into())
+            .unwrap_or_default()
     }
 
     /// Provided that the member_id exists return its membership. Returns error otherwise.
