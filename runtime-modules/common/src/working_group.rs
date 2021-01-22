@@ -45,12 +45,3 @@ pub trait WorkingGroupBudgetHandler<T: balances::Trait> {
     /// Sets new working broup balance
     fn set_budget(new_value: T::Balance);
 }
-
-pub trait MembershipWorkingGroupHelper<T: crate::Trait> {
-    /// Set membership working group lead
-    fn insert_a_lead(
-        opening_id: u32,
-        caller_id: &T::AccountId,
-        member_id: T::MemberId,
-    ) -> T::ActorId;
-}

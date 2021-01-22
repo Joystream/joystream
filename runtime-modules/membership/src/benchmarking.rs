@@ -6,7 +6,6 @@ use crate::{
     Trait,
 };
 use balances::Module as Balances;
-use common::working_group::MembershipWorkingGroupHelper;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
@@ -19,6 +18,11 @@ use sp_std::prelude::*;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+pub trait MembershipWorkingGroupHelper<AccountId, MemberId, ActorId> {
+    /// Set membership working group lead
+    fn insert_a_lead(opening_id: u32, caller_id: &AccountId, member_id: MemberId) -> ActorId;
+}
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
@@ -81,7 +85,8 @@ fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
 }
 
 benchmarks! {
-    where_clause { where T: balances::Trait, T: Trait }
+    where_clause { where T: balances::Trait, T: Trait, T: MembershipWorkingGroupHelper<<T as
+        frame_system::Trait>::AccountId, <T as common::Trait>::MemberId, <T as common::Trait>::ActorId> }
     _{  }
 
     buy_membership_without_referrer{
@@ -500,7 +505,7 @@ benchmarks! {
         .unwrap();
 
         // Set leader member id
-        let leader_id = T::WorkingGroup::insert_a_lead(0, &account_id, member_id);
+        let leader_id = T::insert_a_lead(0, &account_id, member_id);
 
         let is_verified = true;
 
@@ -545,7 +550,7 @@ benchmarks! {
         .unwrap();
 
         // Set leader member id
-        T::WorkingGroup::insert_a_lead(0, &account_id, member_id);
+        T::insert_a_lead(0, &account_id, member_id);
 
         let leader_member_id = T::WorkingGroup::get_leader_member_id();
 
