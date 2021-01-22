@@ -287,6 +287,7 @@ impl_runtime_apis! {
             use crate::ProposalsCodex;
             use crate::Constitution;
             use crate::Forum;
+            use crate::Members;
             use crate::ContentDirectoryWorkingGroup;
             use crate::Utility;
             use crate::Timestamp;
@@ -313,6 +314,28 @@ impl_runtime_apis! {
                         should've enough
                         free balance to stake the minimum for a council candidate."
                     );
+                }
+            }
+
+            impl membership::MembershipWorkingGroupHelper<
+                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as common::Trait>::MemberId,
+                <Runtime as common::Trait>::ActorId,
+                    > for Runtime
+            {
+                fn insert_a_lead(
+                    opening_id: u32,
+                    caller_id: &<Runtime as frame_system::Trait>::AccountId,
+                    member_id: <Runtime as common::Trait>::MemberId,
+                ) -> <Runtime as common::Trait>::ActorId {
+                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
+                        working_group::benchmarking::StakingRole::WithStakes,
+                        working_group::OpeningType::Leader,
+                        opening_id,
+                        None,
+                        &caller_id,
+                        member_id,
+                    )
                 }
             }
 
@@ -354,6 +377,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
             add_benchmark!(params, batches, proposals_codex, ProposalsCodex);
             add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, membership, Members);
             add_benchmark!(params, batches, forum, Forum);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);

@@ -4,8 +4,8 @@ pub(crate) mod fixtures;
 pub(crate) mod mock;
 
 use crate::{Error, Event};
-use fixtures::*;
-use mock::*;
+pub use fixtures::*;
+pub use mock::*;
 
 use common::origin::MemberOriginValidator;
 use common::working_group::WorkingGroupBudgetHandler;

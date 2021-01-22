@@ -52,3 +52,5 @@ benchmark pallet_constitution
 benchmark working_group
 benchmark council
 benchmark referendum
+benchmark forum
+benchmark membership

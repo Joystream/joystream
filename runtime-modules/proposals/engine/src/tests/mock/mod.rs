@@ -188,10 +188,70 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
+// Weights info stub
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }

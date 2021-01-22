@@ -18,7 +18,7 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-enum StakingRole {
+pub enum StakingRole {
     WithStakes,
     WithoutStakes,
 }
@@ -219,7 +219,7 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     WorkingGroup::<T, _>::on_initialize(curr_block_number);
 }
 
-fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
+pub fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
     staking_role: StakingRole,
     job_opening_type: OpeningType,
     id: u32,
@@ -228,18 +228,38 @@ fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
 where
     WorkingGroup<T, I>: OnInitialize<T::BlockNumber>,
 {
+    let (caller_id, member_id) = member_funded_account::<T, I>("member", id);
+
+    let worker_id = complete_opening::<T, I>(
+        staking_role,
+        job_opening_type,
+        id,
+        lead_id,
+        &caller_id,
+        member_id,
+    );
+
+    (caller_id, worker_id)
+}
+
+pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
+    staking_role: StakingRole,
+    job_opening_type: OpeningType,
+    id: u32,
+    lead_id: Option<T::AccountId>,
+    caller_id: &T::AccountId,
+    member_id: T::MemberId,
+) -> WorkerId<T> {
     let add_worker_origin = match job_opening_type {
         OpeningType::Leader => RawOrigin::Root,
         OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
     };
 
-    let (caller_id, member_id) = member_funded_account::<T, I>("member", id);
-
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         id,
         &T::Origin::from(add_worker_origin.clone()),
         &staking_role,
-        &caller_id,
+        caller_id,
         &member_id,
         &job_opening_type,
     );
@@ -261,7 +281,7 @@ where
 
     assert!(WorkerById::<T, I>::contains_key(worker_id));
 
-    (caller_id, worker_id)
+    worker_id
 }
 
 benchmarks_instance! {

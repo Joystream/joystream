@@ -3886,8 +3886,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

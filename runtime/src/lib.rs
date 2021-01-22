@@ -72,6 +72,7 @@ pub use content_directory::{
 pub use council;
 pub use forum;
 pub use membership;
+
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
@@ -634,9 +635,10 @@ impl common::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = MembershipWorkingGroup;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
+    type WorkingGroup = MembershipWorkingGroup;
+    type WeightInfo = weights::membership::WeightInfo;
 }
 
 parameter_types! {

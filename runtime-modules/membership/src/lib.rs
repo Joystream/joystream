@@ -43,24 +43,56 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod benchmarking;
+
 pub mod genesis;
 mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
+pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
+use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
 use common::origin::MemberOriginValidator;
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::MembershipWorkingGroupHelper;
+
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
+
+/// pallet_forum WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn buy_membership_without_referrer(i: u32) -> Weight;
+    fn buy_membership_with_referrer(i: u32) -> Weight;
+    fn update_profile(i: u32) -> Weight;
+    fn update_accounts_none() -> Weight;
+    fn update_accounts_root() -> Weight;
+    fn update_accounts_controller() -> Weight;
+    fn update_accounts_both() -> Weight;
+    fn set_referral_cut() -> Weight;
+    fn transfer_invites() -> Weight;
+    fn invite_member(i: u32) -> Weight;
+    fn set_membership_price() -> Weight;
+    fn update_profile_verification() -> Weight;
+    fn set_leader_invitation_quota() -> Weight;
+    fn set_initial_invitation_balance() -> Weight;
+    fn set_initial_invitation_count() -> Weight;
+    fn add_staking_account_candidate() -> Weight;
+    fn confirm_staking_account() -> Weight;
+    fn remove_staking_account() -> Weight;
+}
 
 pub trait Trait:
     frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
@@ -84,6 +116,9 @@ pub trait Trait:
         BalanceOf<Self>,
         Self::MemberId,
     >;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
@@ -91,7 +126,7 @@ pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, PartialEq, Decode, Debug, Default)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.
@@ -117,7 +152,7 @@ pub struct MembershipObject<AccountId: Ord> {
 }
 
 // Contain staking account to member binding and its confirmation.
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Debug, PartialEq)]
 pub struct StakingAccountMemberBinding<MemberId> {
     /// Member id that we bind account to.
     pub member_id: MemberId,
@@ -313,7 +348,16 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Non-members can buy membership.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the handle length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = Module::<T>::calculate_weight_for_buy_membership(params)]
         pub fn buy_membership(
             origin,
             params: BuyMembershipParameters<T::AccountId, T::MemberId>
@@ -371,7 +415,20 @@ decl_module! {
 
         /// Update member's all or some of name, handle, avatar and about text.
         /// No effect if no changed fields.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the handle length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::update_profile(
+            handle.as_ref()
+                .map(|handle| handle.len().saturated_into())
+                .unwrap_or_default())
+        ]
         pub fn update_profile(
             origin,
             member_id: T::MemberId,
@@ -412,7 +469,17 @@ decl_module! {
         }
 
         /// Updates member root or controller accounts. No effect if both new accounts are empty.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::calculate_weight_for_update_account(new_root_account, new_controller_account)]
         pub fn update_accounts(
             origin,
             member_id: T::MemberId,
@@ -446,7 +513,15 @@ decl_module! {
         }
 
         /// Updates member profile verification status. Requires working group member origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::update_profile_verification()]
         pub fn update_profile_verification(
             origin,
             worker_id: T::ActorId,
@@ -471,7 +546,15 @@ decl_module! {
         }
 
         /// Updates membership referral cut. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::set_referral_cut()]
         pub fn set_referral_cut(origin, value: BalanceOf<T>) {
             ensure_root(origin)?;
 
@@ -485,7 +568,15 @@ decl_module! {
         }
 
         /// Transfers invites from one member to another.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::transfer_invites()]
         pub fn transfer_invites(
             origin,
             source_member_id: T::MemberId,
@@ -524,7 +615,21 @@ decl_module! {
         }
 
         /// Invite a new member.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the handle length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::invite_member(
+            params.handle.as_ref()
+                .map(|handle| handle.len().saturated_into())
+                .unwrap_or_default()
+            )
+        ]
         pub fn invite_member(
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
@@ -586,7 +691,15 @@ decl_module! {
         }
 
         /// Updates membership price. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::set_membership_price()]
         pub fn set_membership_price(origin, new_price: BalanceOf<T>) {
             ensure_root(origin)?;
 
@@ -600,7 +713,15 @@ decl_module! {
         }
 
         /// Updates leader invitation quota. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::set_leader_invitation_quota()]
         pub fn set_leader_invitation_quota(origin, invitation_quota: u32) {
             ensure_root(origin)?;
 
@@ -626,7 +747,15 @@ decl_module! {
         }
 
         /// Updates initial invitation balance for a invited member. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::set_initial_invitation_balance()]
         pub fn set_initial_invitation_balance(origin, new_initial_balance: BalanceOf<T>) {
             ensure_root(origin)?;
 
@@ -640,7 +769,15 @@ decl_module! {
         }
 
         /// Updates initial invitation count for a member. Requires root origin.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::set_initial_invitation_count()]
         pub fn set_initial_invitation_count(origin, new_invitation_count: u32) {
             ensure_root(origin)?;
 
@@ -655,7 +792,15 @@ decl_module! {
 
         /// Add staking account candidate for a member.
         /// The membership must be confirmed before usage.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::add_staking_account_candidate()]
         pub fn add_staking_account_candidate(origin, member_id: T::MemberId) {
             let staking_account_id = ensure_signed(origin)?;
 
@@ -682,7 +827,15 @@ decl_module! {
         }
 
         /// Remove staking account for a member.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::remove_staking_account()]
         pub fn remove_staking_account(origin, member_id: T::MemberId) {
             let staking_account_id = ensure_signed(origin)?;
 
@@ -703,7 +856,15 @@ decl_module! {
         }
 
         /// Confirm staking account candidate for a member.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::confirm_staking_account()]
         pub fn confirm_staking_account(
             origin,
             member_id: T::MemberId,
@@ -739,6 +900,40 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn calculate_weight_for_update_account(
+        new_root_account: &Option<T::AccountId>,
+        new_controller_account: &Option<T::AccountId>,
+    ) -> Weight {
+        match (new_root_account.is_some(), new_controller_account.is_some()) {
+            (true, true) => WeightInfoMembership::<T>::update_accounts_both(),
+            (false, true) => WeightInfoMembership::<T>::update_accounts_root(),
+            (true, false) => WeightInfoMembership::<T>::update_accounts_controller(),
+            _ => WeightInfoMembership::<T>::update_accounts_both(),
+        }
+    }
+
+    pub fn calculate_weight_for_buy_membership(
+        params: &BuyMembershipParameters<T::AccountId, T::MemberId>,
+    ) -> Weight {
+        if params.referrer_id.is_some() {
+            WeightInfoMembership::<T>::buy_membership_with_referrer(
+                params
+                    .handle
+                    .as_ref()
+                    .map(|handle| handle.len().saturated_into())
+                    .unwrap_or_default(),
+            )
+        } else {
+            WeightInfoMembership::<T>::buy_membership_without_referrer(
+                params
+                    .handle
+                    .as_ref()
+                    .map(|handle| handle.len().saturated_into())
+                    .unwrap_or_default(),
+            )
+        }
+    }
+
     /// Provided that the member_id exists return its membership. Returns error otherwise.
     fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)
