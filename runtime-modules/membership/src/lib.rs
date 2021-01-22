@@ -355,19 +355,7 @@ decl_module! {
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = if params.referrer_id.is_some() {
-            WeightInfoMembership::<T>::buy_membership_with_referrer(
-                params.handle.as_ref()
-                    .map(|handle| handle.len().saturated_into())
-                    .unwrap_or_default(),
-            )
-        } else {
-            WeightInfoMembership::<T>::buy_membership_without_referrer(
-                params.handle.as_ref()
-                    .map(|handle| handle.len().saturated_into())
-                    .unwrap_or_default(),
-            )
-        }]
+        #[weight = Module::<T>::calculate_weight_for_buy_membership(params)]
         pub fn buy_membership(
             origin,
             params: BuyMembershipParameters<T::AccountId, T::MemberId>
@@ -489,12 +477,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = match (new_root_account.is_some(), new_controller_account.is_some()) {
-            (true, true) => WeightInfoMembership::<T>::update_accounts_both(),
-            (false, true) => WeightInfoMembership::<T>::update_accounts_root(),
-            (true, false) => WeightInfoMembership::<T>::update_accounts_controller(),
-            _ => WeightInfoMembership::<T>::update_accounts_both(),
-        }]
+        #[weight = Module::<T>::calculate_weight_for_update_account(new_root_account, new_controller_account)]
         pub fn update_accounts(
             origin,
             member_id: T::MemberId,
@@ -915,6 +898,40 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn calculate_weight_for_update_account(
+        new_root_account: &Option<T::AccountId>,
+        new_controller_account: &Option<T::AccountId>,
+    ) -> Weight {
+        match (new_root_account.is_some(), new_controller_account.is_some()) {
+            (true, true) => WeightInfoMembership::<T>::update_accounts_both(),
+            (false, true) => WeightInfoMembership::<T>::update_accounts_root(),
+            (true, false) => WeightInfoMembership::<T>::update_accounts_controller(),
+            _ => WeightInfoMembership::<T>::update_accounts_both(),
+        }
+    }
+
+    pub fn calculate_weight_for_buy_membership(
+        params: &BuyMembershipParameters<T::AccountId, T::MemberId>,
+    ) -> Weight {
+        if params.referrer_id.is_some() {
+            WeightInfoMembership::<T>::buy_membership_with_referrer(
+                params
+                    .handle
+                    .as_ref()
+                    .map(|handle| handle.len().saturated_into())
+                    .unwrap_or_default(),
+            )
+        } else {
+            WeightInfoMembership::<T>::buy_membership_without_referrer(
+                params
+                    .handle
+                    .as_ref()
+                    .map(|handle| handle.len().saturated_into())
+                    .unwrap_or_default(),
+            )
+        }
+    }
+
     /// Provided that the member_id exists return its membership. Returns error otherwise.
     fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)

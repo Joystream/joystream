@@ -34,8 +34,8 @@ benchmark() {
 # So uncomment this when we move to a version that contains that PR.
 # See issue: #1979
 # benchmark frame_system
-benchmark pallet_utility
-benchmark pallet_session
+# benchmark pallet_utility
+# benchmark pallet_session
 # benchmark pallet_timestamp
 
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
@@ -45,12 +45,12 @@ benchmark pallet_session
 # benchmark pallet_im_online
 
 # Joystrem benchmarks
-benchmark proposals_discussion
-benchmark proposals_engine
-benchmark proposals_codex
-benchmark pallet_constitution
-benchmark working_group
-benchmark council
-benchmark referendum
-benchmark forum
+# benchmark proposals_discussion
+# benchmark proposals_engine
+# benchmark proposals_codex
+# benchmark pallet_constitution
+# benchmark working_group
+# benchmark council
+# benchmark referendum
+# benchmark forum
 benchmark membership

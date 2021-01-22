@@ -88,6 +88,8 @@ benchmarks! {
 
         let i in 0 .. MAX_BYTES;
 
+        let j in 0 .. MAX_BYTES;
+
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
@@ -102,10 +104,12 @@ benchmarks! {
 
         let fee = Module::<T>::membership_price();
 
+        let name = vec![0u8].repeat(j as usize);
+
         let params = BuyMembershipParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            name: None,
+            name: Some(name),
             handle: Some(handle.clone()),
             avatar_uri: None,
             about: None,
