@@ -95,6 +95,10 @@ benchmarks! {
 
         let j in 0 .. MAX_BYTES;
 
+        let k in 0 .. MAX_BYTES;
+
+        let z in 0 .. MAX_BYTES;
+
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
@@ -109,15 +113,19 @@ benchmarks! {
 
         let fee = Module::<T>::membership_price();
 
-        let name = vec![0u8].repeat(j as usize);
+        let name = Some(vec![0u8].repeat(j as usize));
+
+        let avatar_uri = Some(vec![0u8].repeat(k as usize));
+
+        let about = Some(vec![0u8].repeat(z as usize));
 
         let params = BuyMembershipParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            name: Some(name),
+            name,
             handle: Some(handle.clone()),
-            avatar_uri: None,
-            about: None,
+            avatar_uri,
+            about,
             referrer_id: None,
         };
 
@@ -151,6 +159,12 @@ benchmarks! {
 
         let i in 0 .. MAX_BYTES;
 
+        let j in 0 .. MAX_BYTES;
+
+        let k in 0 .. MAX_BYTES;
+
+        let z in 0 .. MAX_BYTES;
+
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
@@ -159,15 +173,21 @@ benchmarks! {
 
         let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
+        let name = Some(vec![0u8].repeat(j as usize));
+
+        let avatar_uri = Some(vec![0u8].repeat(k as usize));
+
+        let about = Some(vec![0u8].repeat(z as usize));
+
         let fee = Module::<T>::membership_price();
 
         let mut params = BuyMembershipParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            name: None,
+            name,
             handle: Some(handle.clone()),
-            avatar_uri: None,
-            about: None,
+            avatar_uri,
+            about,
             referrer_id: None,
         };
 
@@ -424,20 +444,32 @@ benchmarks! {
 
         let i in 1 .. MAX_BYTES;
 
+        let j in 0 .. MAX_BYTES;
+
+        let k in 0 .. MAX_BYTES;
+
+        let z in 0 .. MAX_BYTES;
+
         let member_id = 0;
 
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
 
         let handle = handle_from_id::<T>(i);
 
+        let name = Some(vec![0u8].repeat(j as usize));
+
+        let avatar_uri = Some(vec![0u8].repeat(k as usize));
+
+        let about = Some(vec![0u8].repeat(z as usize));
+
         let invite_params = InviteMembershipParameters {
             inviting_member_id: member_id,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            name: None,
+            name,
             handle: Some(handle.clone()),
-            avatar_uri: None,
-            about: None,
+            avatar_uri,
+            about,
         };
 
         let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
