@@ -167,16 +167,6 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     }
 }
 
-impl common::working_group::MembershipWorkingGroupHelper<Test> for () {
-    fn insert_a_lead(
-        _opening_id: u32,
-        _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::Trait>::MemberId,
-    ) -> <Test as common::Trait>::ActorId {
-        unimplemented!()
-    }
-}
-
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,

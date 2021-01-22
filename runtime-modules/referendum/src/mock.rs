@@ -252,16 +252,6 @@ impl pallet_timestamp::Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl common::working_group::MembershipWorkingGroupHelper<Runtime> for () {
-    fn insert_a_lead(
-        _opening_id: u32,
-        _caller_id: &<Runtime as frame_system::Trait>::AccountId,
-        _member_id: <Runtime as common::Trait>::MemberId,
-    ) -> <Runtime as common::Trait>::ActorId {
-        unimplemented!()
-    }
-}
-
 impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     fn get_budget() -> u64 {
         unimplemented!()

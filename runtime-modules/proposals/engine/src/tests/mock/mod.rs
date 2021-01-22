@@ -188,16 +188,6 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
-impl common::working_group::MembershipWorkingGroupHelper<Test> for () {
-    fn insert_a_lead(
-        _opening_id: u32,
-        _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::Trait>::MemberId,
-    ) -> <Test as common::Trait>::ActorId {
-        unimplemented!()
-    }
-}
-
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {

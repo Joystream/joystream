@@ -363,7 +363,14 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 }
 
-impl common::working_group::MembershipWorkingGroupHelper<Test> for () {
+#[cfg(feature = "runtime-benchmarks")]
+impl
+    crate::MembershipWorkingGroupHelper<
+        <Test as frame_system::Trait>::AccountId,
+        <Test as common::Trait>::MemberId,
+        <Test as common::Trait>::ActorId,
+    > for Test
+{
     fn insert_a_lead(
         _opening_id: u32,
         _caller_id: &<Test as frame_system::Trait>::AccountId,

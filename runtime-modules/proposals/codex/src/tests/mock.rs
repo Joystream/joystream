@@ -119,16 +119,6 @@ impl membership::Trait for Test {
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
-impl common::working_group::MembershipWorkingGroupHelper<Test> for () {
-    fn insert_a_lead(
-        _opening_id: u32,
-        _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::Trait>::MemberId,
-    ) -> <Test as common::Trait>::ActorId {
-        unimplemented!()
-    }
-}
-
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn get_budget() -> u64 {
         unimplemented!()

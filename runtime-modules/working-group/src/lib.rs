@@ -1401,16 +1401,3 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
         Self::set_working_group_budget(new_value);
     }
 }
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-impl<T: Trait<I>, I: Instance> common::working_group::MembershipWorkingGroupHelper<T>
-    for Module<T, I>
-{
-    fn insert_a_lead(
-        _opening_id: u32,
-        _caller_id: &T::AccountId,
-        _member_id: T::MemberId,
-    ) -> T::ActorId {
-        unimplemented!()
-    }
-}
