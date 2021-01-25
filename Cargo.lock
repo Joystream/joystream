@@ -3735,6 +3735,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bounty"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-common"
 version = "4.0.0"
 dependencies = [
