@@ -1,6 +1,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+pub(crate) mod tests;
+
 use frame_support::{decl_event, decl_module, decl_storage, Parameter};
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::Zero;
@@ -88,9 +91,6 @@ decl_module! {
         fn create_bounty(origin, params: BountyCreationParameters<T::AccountId, BalanceOf<T>, T::BlockNumber>) {
             ensure_signed(origin)?;
 
-            // ensure!(!<balances::Module<T>>::total_balance(&sender).is_zero(), "account must have a balance");
-            // ensure!(memo.len() as u32 <= Self::max_memo_length(), "memo too long");
-
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
@@ -103,7 +103,9 @@ decl_module! {
             //
 
             <Bounties<T>>::insert(bounty_id, bounty);
-            BountyCount::mutate(|count| *count + 1);
+            BountyCount::mutate(|count| {
+                *count = *count + 1
+            });
             Self::deposit_event(RawEvent::BountyCreated(bounty_id));
         }
     }
