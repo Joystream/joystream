@@ -10,8 +10,6 @@
 //!
 //! The blog module provides functions for:
 //!
-//! - Blogs creation
-//! - Blogs locking and unlocking
 //! - Creation and editing of posts, associated with given blog
 //! - Posts locking/unlocking
 //! - Creation and editing of replies, associated with given post
@@ -19,41 +17,25 @@
 //!
 //! ### Terminology
 //!
-//! - **Lock:** A forbiddance of mutation of any associated information related to a given blog or post.
+//! - **Lock:** A forbiddance of mutation of any associated information related to a given post.
 //!
 //! - **Reaction:** A user can react to a post in N different ways, where N is an integer parameter configured through runtime.
 //! For each way, the reader can simply react and unreact to a given post. Think of reactions as being things like, unlike,
 //! laugh, etc. The semantics of each reaction is not present in the runtime.
 //!
 //! ## Interface
+//! You need to provide an `EnsureOrigin` for `BlogOwnerEnsureOrigin` so that
+//! there are a number of origins that can create posts
 //!
-//! ### Dispatchable Functions
+//! ## Supported extrinsics
 //!
-//! - `create_post` - Blog owner can create posts, related to a given blog.
-//! - `lock_post` - Blog owner can lock post to forbid mutations of any associated information related to a given post.
-//! The origin of this call must be a blog owner.
-//! - `unlock_post` - Reverse to lock post.
-//! - `edit_post` - Edit post with a new title/or body. The origin of this call must be a blog owner.
-//! - `create_reply` - Create either root post reply or direct reply to reply.
-//! - `edit_reply` - Edit reply with a new text. The origin of this call must be a reply owner
-//! - `react` - Submit either post reaction or reply reaction.
-//! - In case, when you resubmit reaction, it`s status will be changed to an opposite one
-//!
-//! ### Public functions
-//!
-//! - `create_blog` - Creates new blog with unique identifier via an extrinsic where access is gated
-//! by a dedicated EnsureOrigin runtime trait.
-//! - `lock_blog` - Locks blog to forbid mutations of any associated information related to a given blog.
-//! - `unlock_blog` - Reverse to lock_blog
-//!
-//! ## Usage
-//!
-//! The following example shows how to use the Blog module in your custom module.
-//!
-//! ### Prerequisites
-//!
-//! Import the Blog module into your custom module and derive the module configuration
-//! trait from the blog trait.
+//! - [create_post](./struct.Module.html#method.create_post)
+//! - [lock_post](./struct.Module.html#method.lock_post)
+//! - [unlock_post](./struct.Module.html#method.unlock_post)
+//! - [edit_post](./struct.Module.html#method.edit_post)
+//! - [create_reply](./struct.Module.html#method.create_reply)
+//! - [edit_reply](./struct.Module.html#method.create_reply)
+//! - [react](./struct.Module.html#method.create_reply)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -300,13 +282,13 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
 
-        // Initializing events
+        /// Setup events
         fn deposit_event() = default;
 
-        // Predefined Errors
+        /// Predefined errors
         type Error = Error<T, I>;
 
-        // Blog owner can create posts, related to a given blog, if related blog is unlocked
+        /// Blog owner can create posts, related to a given blog, if related blog is unlocked
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(origin, title: Vec<u8>, body: Vec<u8>) -> DispatchResult  {
 
@@ -569,9 +551,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(T::ParticipantEnsureOrigin::ensure_origin(origin)?)
     }
 
-    /// Flip reaction status under given index and returns the result of that flip.
-    /// If there is no reactions under this AccountId entry yet,
-    /// initialize a new reactions array and set reaction under given index
+    // Flip reaction status under given index and returns the result of that flip.
+    // If there is no reactions under this AccountId entry yet,
+    // initialize a new reactions array and set reaction under given index
     fn mutate_reactions(reactions: &mut [bool], index: ReactionsNumber) -> bool {
         reactions[index as usize] ^= true;
         reactions[index as usize]
@@ -687,14 +669,31 @@ decl_event!(
         ReactionIndex = ReactionsNumber,
         Status = bool,
     {
+        /// A post was created
         PostCreated(PostId),
+
+        /// A post was locked
         PostLocked(PostId),
+
+        /// A post was unlocked
         PostUnlocked(PostId),
+
+        /// A post was edited
         PostEdited(PostId),
+
+        /// A reply to a post was created
         ReplyCreated(ParticipantId, PostId, ReplyId),
+
+        /// A reply to a reply was created
         DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId),
+
+        /// A reply was edited
         ReplyEdited(PostId, ReplyId),
+
+        /// A post reaction was created or changed
         PostReactionsUpdated(ParticipantId, PostId, ReactionIndex, Status),
+
+        /// A reply creation was created or changed
         ReplyReactionsUpdated(ParticipantId, PostId, ReplyId, ReactionIndex, Status),
     }
 );
