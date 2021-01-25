@@ -1,4 +1,4 @@
-name: content-directory-schemas
+name: content-metadata
 on: [pull_request, push]
 
 jobs:
@@ -17,4 +17,5 @@ jobs:
     - name: validate
       run: |
         yarn install --frozen-lockfile
-        yarn workspace @joystream/cd-schemas checks --quiet
+        yarn workspace @joystream/content-metadata checks --quiet
+        yarn workspace @joystream/content-metadata test

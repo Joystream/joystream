@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+message ChannelMetadata {
+    optional string title = 1;
+    optional string description = 2;
+    optional bool is_public = 3;
+    optional int32 language = 4;
+}
