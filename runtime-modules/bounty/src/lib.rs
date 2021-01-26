@@ -1,3 +1,11 @@
+//! This pallet works with crowd funded bounties which allows a member, or the council, to crowd
+//! fund work on projects with a public benefit.
+//!
+//! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
+//!
+//! ### Supported extrinsics:
+//! - [create_bounty](./struct.Module.html#create_bounty.vote) - creates a bounty
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
