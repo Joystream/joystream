@@ -1,11 +1,14 @@
 syntax = "proto2";
 
+// Publication status before joystream
 message PublishedBeforeJoystream {
+    // Was video published before joystream platform
     optional bool is_published = 1;
+    // Unix timestamp in milli-seconds
     optional uint32 timestamp = 2;
 }
 
-// Joystream Specific License type
+// License types defined by Joystream
 message License {
     // License code defined by Joystream. [reference](../src/KnownLicenses.json)
     optional int32 code = 1;
@@ -17,20 +20,18 @@ message License {
 
 // Codec, Container, MIME media-type information
 message MediaType {
-    // string name field from FFmpeg libavcodec/codec_desc.c
+    // Codec corresponding to `name` field from [FFmpeg](https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/codec_desc.c)
     optional string codec_name = 1;
 
-    // Video container format, eg. 'MP4', 'WebM', 'Ogg'
-    // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs
+    // Video container format, eg. 'MP4', 'WebM', 'Ogg' [ref](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs)
     optional string container = 2;
 
-    // MIME Media Type, eg. 'video/mp4'
-    // https://www.iana.org/assignments/media-types/media-types.xhtml#video
+    // MIME Media Type, eg. 'video/mp4' [ref](https://www.iana.org/assignments/media-types/media-types.xhtml#video)
     optional string mime_media_type = 3;
 }
 
 message VideoMetadata {
-    // Title Text
+    // Video Title
     optional string title = 1;
 
     // Video Description
@@ -39,10 +40,10 @@ message VideoMetadata {
     // Lengths of video in seconds
     optional int32 duration = 3;
 
-    // Resolution of the video
+    // Resolution of the video (Height)
     optional int32 media_pixel_height = 4;
     
-    // Resolution of the video
+    // Resolution of the video (Width)
     optional int32 media_pixel_width = 5;
 
     // Encoding and Container format used
@@ -54,7 +55,7 @@ message VideoMetadata {
     // License type for the media
     optional License license = 8;
 
-    // Date of publication of it was published before joystream
+    // Date of publication
     optional PublishedBeforeJoystream published_before_joystream = 9;
 
     // Does video have marketing or advertising in the stream

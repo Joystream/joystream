@@ -60,7 +60,7 @@
 <a name=".License"></a>
 
 ### License
-Joystream Specific License type
+License types defined by Joystream
 
 
 | Field | Type | Label | Description |
@@ -82,9 +82,9 @@ Codec, Container, MIME media-type information
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| codec_name | [string](#string) | optional | string name field from FFmpeg libavcodec/codec_desc.c |
-| container | [string](#string) | optional | Video container format, eg. &#39;MP4&#39;, &#39;WebM&#39;, &#39;Ogg&#39; https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs |
-| mime_media_type | [string](#string) | optional | MIME Media Type, eg. &#39;video/mp4&#39; https://www.iana.org/assignments/media-types/media-types.xhtml#video |
+| codec_name | [string](#string) | optional | Codec corresponding to `name` field from [FFmpeg](https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/codec_desc.c) |
+| container | [string](#string) | optional | Video container format, eg. &#39;MP4&#39;, &#39;WebM&#39;, &#39;Ogg&#39; [ref](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs) |
+| mime_media_type | [string](#string) | optional | MIME Media Type, eg. &#39;video/mp4&#39; [ref](https://www.iana.org/assignments/media-types/media-types.xhtml#video) |
 
 
 
@@ -94,13 +94,13 @@ Codec, Container, MIME media-type information
 <a name=".PublishedBeforeJoystream"></a>
 
 ### PublishedBeforeJoystream
-
+Publication status before joystream
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| is_published | [bool](#bool) | optional |  |
-| timestamp | [uint32](#uint32) | optional |  |
+| is_published | [bool](#bool) | optional | Was video published before joystream platform |
+| timestamp | [uint32](#uint32) | optional | Unix timestamp in milli-seconds |
 
 
 
@@ -115,15 +115,15 @@ Codec, Container, MIME media-type information
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional | Title Text |
+| title | [string](#string) | optional | Video Title |
 | description | [string](#string) | optional | Video Description |
 | duration | [int32](#int32) | optional | Lengths of video in seconds |
-| media_pixel_height | [int32](#int32) | optional | Resolution of the video |
-| media_pixel_width | [int32](#int32) | optional | Resolution of the video |
+| media_pixel_height | [int32](#int32) | optional | Resolution of the video (Height) |
+| media_pixel_width | [int32](#int32) | optional | Resolution of the video (Width) |
 | media_type | [MediaType](#MediaType) | optional | Encoding and Container format used |
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | license | [License](#License) | optional | License type for the media |
-| published_before_joystream | [PublishedBeforeJoystream](#PublishedBeforeJoystream) | optional | Date of publication of it was published before joystream |
+| published_before_joystream | [PublishedBeforeJoystream](#PublishedBeforeJoystream) | optional | Date of publication |
 | has_marketing | [bool](#bool) | optional | Does video have marketing or advertising in the stream |
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
