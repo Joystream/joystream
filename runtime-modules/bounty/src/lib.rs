@@ -12,6 +12,12 @@
 #[cfg(test)]
 pub(crate) mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+// TODO: add max entries limit
+// TODO: benchmark all bounty creation parameters
+
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
 use frame_system::ensure_root;
 use sp_std::vec::Vec;

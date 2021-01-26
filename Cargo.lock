@@ -2275,7 +2275,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "4.0.2"
+version = "4.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2336,7 +2336,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "8.0.1"
+version = "8.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2351,6 +2351,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
+ "pallet-bounty",
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
@@ -3736,8 +3737,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-bounty"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
