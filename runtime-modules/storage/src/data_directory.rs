@@ -96,16 +96,16 @@ decl_error! {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-enum WorkinGroupType {
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum WorkinGroupType {
     Builders,
     Marketers,
     Membership,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-enum AbstractStorageObjectOwner {
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum AbstractStorageObjectOwner {
     Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
     DAO(DAOId),         // acts through upcoming `content_finance` module
     Council,            // acts through proposal system
@@ -114,8 +114,8 @@ enum AbstractStorageObjectOwner {
 
 // New owner type for storage object struct
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-enum StorageObjectOwner<MemberId> {
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum StorageObjectOwner<MemberId> {
     Member(MemberId),
     AbstractStorageObjectOwner(AbstractStorageObjectOwner),
 }
@@ -193,7 +193,7 @@ decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
         <T as Trait>::ContentId,
-        StorageObjectOwner = StorageObjectOwner<T::MemberId>,
+        StorageObjectOwner = StorageObjectOwner<MemberId<T>>,
         StorageProviderId = StorageProviderId<T>
     {
         /// Emits on adding of the content.
@@ -256,7 +256,7 @@ decl_module! {
                 type_id,
                 size,
                 added_at: common::current_block_time::<T>(),
-                owner,
+                owner: owner.clone(),
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id,
@@ -301,7 +301,7 @@ decl_module! {
                 type_id,
                 size,
                 added_at: common::current_block_time::<T>(),
-                owner,
+                owner: owner.clone(),
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id,
