@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{Module, Trait};
+use frame_support::dispatch::DispatchError;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -8,6 +8,8 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+
+use crate::{Module, Trait};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -66,6 +68,27 @@ impl frame_system::Trait for Test {
 impl Trait for Test {
     type Event = TestEvent;
     type BountyId = u64;
+    type MemberOriginValidator = ();
+}
+
+impl common::Trait for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _account_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(signed_account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        true
+    }
 }
 
 parameter_types! {

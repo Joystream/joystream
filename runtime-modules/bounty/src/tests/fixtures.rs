@@ -40,17 +40,27 @@ impl EventFixture {
 pub struct CreateBountyFixture {
     origin: RawOrigin<u64>,
     metadata: Vec<u8>,
+    creator_member_id: Option<u64>,
 }
 
 impl CreateBountyFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Root,
             metadata: Vec::new(),
+            creator_member_id: None,
         }
     }
+
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_creator_member_id(self, member_id: u64) -> Self {
+        Self {
+            creator_member_id: Some(member_id),
+            ..self
+        }
     }
 
     pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
@@ -58,9 +68,10 @@ impl CreateBountyFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let params = BountyCreationParameters {
+        let params = BountyCreationParameters::<Test> {
             metadata: self.metadata.clone(),
-            ..BountyCreationParameters::default()
+            creator_member_id: self.creator_member_id.clone(),
+            ..Default::default()
         };
 
         let next_bounty_count_value = Bounty::bounty_count() + 1;

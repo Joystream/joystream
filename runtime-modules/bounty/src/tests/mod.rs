@@ -30,7 +30,15 @@ fn create_bounty_succeeds() {
 #[test]
 fn create_bounty_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        let create_bounty_fixture = CreateBountyFixture::default().with_origin(RawOrigin::None);
+        // For a council bounty.
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_origin(RawOrigin::Signed(1));
+        create_bounty_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+
+        // For a member bounty.
+        let create_bounty_fixture = CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_creator_member_id(1);
         create_bounty_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
