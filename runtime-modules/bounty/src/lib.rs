@@ -18,8 +18,18 @@ mod benchmarking;
 // TODO: add max entries limit
 // TODO: benchmark all bounty creation parameters
 
+/// pallet_bounty WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn create_bounty(i: u32) -> Weight;
+}
+
+type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
+
+use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
 use frame_system::ensure_root;
+use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
 use common::origin::MemberOriginValidator;
@@ -40,6 +50,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Validates member ID and origin combination.
     type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 /// Alias type for the BountyParameters.
@@ -178,7 +191,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoBounty::<T>::create_bounty(params.metadata.len().saturated_into())]
         fn create_bounty(origin, params: BountyCreationParameters<T>) {
             Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
 
@@ -203,6 +216,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Validates parameters for a bounty creation.
     fn ensure_create_bounty_parameters_valid(
         origin: &T::Origin,
         params: &BountyCreationParameters<T>,

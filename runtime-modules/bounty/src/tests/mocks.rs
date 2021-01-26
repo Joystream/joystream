@@ -69,6 +69,13 @@ impl Trait for Test {
     type Event = TestEvent;
     type BountyId = u64;
     type MemberOriginValidator = ();
+    type WeightInfo = ();
+}
+
+impl crate::WeightInfo for () {
+    fn create_bounty(_: u32) -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

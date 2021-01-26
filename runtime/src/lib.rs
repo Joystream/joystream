@@ -878,7 +878,7 @@ impl bounty::Trait for Runtime {
     type Event = Event;
     type BountyId = u64;
     type MemberOriginValidator = Members;
-//    type WeightInfo = weights::pallet_constitution::WeightInfo;
+    type WeightInfo = weights::bounty::WeightInfo;
 }
 
 /// Forum identifier for category

@@ -7,7 +7,7 @@ use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-use crate::{Call, Event, Module, Trait, BountyCreationParameters, Bounty};
+use crate::{Bounty, BountyCreationParameters, Call, Event, Module, Trait};
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
