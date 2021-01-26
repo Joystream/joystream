@@ -1,3 +1,6 @@
+// Helper methods to handle joystream defined licence types
+// This should be factored out into a separate package
+
 import LICENSES from './KnownLicenses.json'
 import { License } from '../compiled/proto/Video_pb'
 
