@@ -1,7 +1,8 @@
 import LICENSES from './KnownLicenses.json'
-import { License } from '../proto/Video_pb'
+import { License } from '../compiled/proto/Video_pb'
 
 export type LicenseCode = number
+export const CUSTOM_LICENSE_CODE: LicenseCode = 1000
 
 type KnownLicense = {
   code: LicenseCode
@@ -17,8 +18,6 @@ export const KnownLicenses = new Map<LicenseCode, KnownLicense>()
 LICENSES.forEach((license: KnownLicense) => {
   KnownLicenses.set(license.code, license)
 })
-
-export const CUSTOM_LICENSE_CODE: LicenseCode = 1000
 
 export function getLicenseCodeByName(name: string): LicenseCode | undefined {
   for (const [code, license] of KnownLicenses) {
@@ -51,7 +50,7 @@ export function createKnownLicenseFromCode(code: LicenseCode, attribution?: stri
   return license
 }
 
-export function createCustomLicense(customText: string): License {
+export function createCustomKnownLicense(customText: string): License {
   const license = new License()
 
   license.setCode(CUSTOM_LICENSE_CODE)
@@ -62,7 +61,7 @@ export function createCustomLicense(customText: string): License {
 export default {
   CUSTOM_LICENSE_CODE,
   KnownLicenses,
-  createCustomLicense,
+  createCustomKnownLicense,
   createKnownLicenseFromCode,
   getLicenseCodeByName,
 }

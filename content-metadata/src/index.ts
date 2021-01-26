@@ -3,5 +3,5 @@ import licences from './licenses'
 export { licences }
 
 // protobuf message constructors
-export * from '../proto/Video_pb'
-export * from '../proto/Channel_pb'
+export * from '../compiled/proto/Video_pb'
+export * from '../compiled/proto/Channel_pb'

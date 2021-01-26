@@ -1,8 +1,8 @@
-import { VideoMetadata, PublishedBeforeJoystream } from '../proto/Video_pb'
+import { VideoMetadata, PublishedBeforeJoystream, MediaType, License } from '../src'
 import { assert, expect } from 'chai'
 
 describe('Video Metadata', () => {
-  it('Create Video Metadata', () => {
+  it('Message', () => {
     const meta = new VideoMetadata()
 
     const title = 'Video Title'
@@ -12,35 +12,97 @@ describe('Video Metadata', () => {
     meta.setTitle(title)
     meta.setDescription(description)
     meta.setDuration(duration)
-
-    // Test optional field
-    expect(meta.hasPublishedBeforeJoystream()).equals(false, 'PublishedBeforeJoystream field should NOT be set')
-
-    // Set published before joystream field
-    const published = new PublishedBeforeJoystream()
-    const isPublished = true
-    const timestamp = 10000
-    published.setIsPublished(isPublished)
-    published.setTimestamp(timestamp)
-    meta.setPublishedBeforeJoystream(published)
-    // Field show now be set
-    expect(meta.hasPublishedBeforeJoystream()).equals(true, 'PublishedBeforeJoystream field should be set')
-
-    assert.deepEqual(VideoMetadata.deserializeBinary(meta.serializeBinary()), meta)
+    meta.setMediaPixelHeight(1)
+    meta.setMediaPixelWidth(2)
+    meta.setMediaType(new MediaType())
+    meta.setLanguage('en')
+    meta.setLicense(new License())
+    meta.setPublishedBeforeJoystream(new PublishedBeforeJoystream())
+    meta.setHasMarketing(true)
+    meta.setIsPublic(true)
+    meta.setIsExplicit(false)
 
     assert.deepEqual(meta.toObject(), {
       title,
       description,
       duration,
-      mediaPixelHeight: undefined,
-      mediaPixelWidth: undefined,
-      mediaType: undefined,
-      language: undefined,
-      license: undefined,
-      publishedBeforeJoystream: { isPublished, timestamp },
-      hasMarketing: undefined,
-      isPublic: undefined,
-      isExplicit: undefined,
+      mediaPixelHeight: 1,
+      mediaPixelWidth: 2,
+      mediaType: {
+        codecName: undefined,
+        container: undefined,
+        mimeMediaType: undefined,
+      },
+      language: 'en',
+      license: {
+        code: undefined,
+        attribution: undefined,
+        customText: undefined,
+      },
+      publishedBeforeJoystream: { isPublished: undefined, timestamp: undefined },
+      hasMarketing: true,
+      isPublic: true,
+      isExplicit: false,
+    })
+
+    // sanity check - encoding / decoding works
+    assert.deepEqual(VideoMetadata.deserializeBinary(meta.serializeBinary()), meta)
+  })
+
+  it('Message: PublishedBeforeJoystream', () => {
+    const meta = new VideoMetadata()
+
+    expect(meta.hasPublishedBeforeJoystream()).equals(false, 'PublishedBeforeJoystream field should NOT be set')
+
+    const published = new PublishedBeforeJoystream()
+    const isPublished = true
+    const timestamp = 10000
+    published.setIsPublished(isPublished)
+    published.setTimestamp(timestamp)
+
+    meta.setPublishedBeforeJoystream(published)
+
+    // Field should now be set
+    expect(meta.hasPublishedBeforeJoystream()).equals(true, 'PublishedBeforeJoystream field should be set')
+
+    assert.deepEqual(published.toObject(), {
+      isPublished,
+      timestamp,
+    })
+  })
+
+  it('Message: Licence', () => {
+    const license = new License()
+
+    const code = 1000
+    const attribution = 'Attribution Text'
+    const customText = 'Custom License Details'
+    license.setCode(code)
+    license.setAttribution(attribution)
+    license.setCustomText(customText)
+
+    assert.deepEqual(license.toObject(), {
+      code,
+      attribution,
+      customText,
+    })
+  })
+
+  it('Message: MediaType', () => {
+    const mediaType = new MediaType()
+
+    const codecName = 'mpeg4'
+    const container = 'avi'
+    const mimeMediaType = 'videp/mp4'
+
+    mediaType.setCodecName(codecName)
+    mediaType.setContainer(container)
+    mediaType.setMimeMediaType(mimeMediaType)
+
+    assert.deepEqual(mediaType.toObject(), {
+      codecName,
+      container,
+      mimeMediaType,
     })
   })
 })

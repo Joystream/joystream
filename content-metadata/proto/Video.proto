@@ -1,8 +1,3 @@
-// required/optional feilds are deprecated in proto v3
-// https://www.ben-morris.com/handling-protocol-buffers-backwards-compatibility-between-versions-2-and-3-using-c/
-// For our usecase we wish to re-use same message to create and update 
-// subset of fields. For this reason we need the explicit information
-// about wether a field has been set or not and this is only possible with proto v2.
 syntax = "proto2";
 
 message PublishedBeforeJoystream {
@@ -12,7 +7,7 @@ message PublishedBeforeJoystream {
 
 // Joystream Specific License type
 message License {
-    // License code defined by Joystream
+    // License code defined by Joystream. [reference](../src/KnownLicenses.json)
     optional int32 code = 1;
     // Text for licenses that require an attribution
     optional string attribution = 2;
@@ -20,55 +15,54 @@ message License {
     optional string custom_text = 3;
 }
 
-// Rich format description of video media type
+// Codec, Container, MIME media-type information
 message MediaType {
-    // enum AVCodecID from FFmpeg: libavcodec/codec_id.h
-    // optional int32 codec_id = 1;
-
     // string name field from FFmpeg libavcodec/codec_desc.c
     optional string codec_name = 1;
 
-    // Video container format (eg. 'MP4', 'WebM', 'Ogg' ...)
+    // Video container format, eg. 'MP4', 'WebM', 'Ogg'
     // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs
     optional string container = 2;
 
-    // MIME Media Type
+    // MIME Media Type, eg. 'video/mp4'
     // https://www.iana.org/assignments/media-types/media-types.xhtml#video
-    // eg. 'video/mp4'
     optional string mime_media_type = 3;
 }
 
 message VideoMetadata {
+    // Title Text
     optional string title = 1;
 
+    // Video Description
     optional string description = 2;
 
-    // Duration in seconds of the video
+    // Lengths of video in seconds
     optional int32 duration = 3;
 
     // Resolution of the video
     optional int32 media_pixel_height = 4;
+    
+    // Resolution of the video
     optional int32 media_pixel_width = 5;
 
-    // Rich media type information about the media format
+    // Encoding and Container format used
     optional MediaType media_type = 6;
 
-    // ISO_639-1 code: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-    // useful: npm package https://www.npmjs.com/package/iso-639-1
+    // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
     optional string language = 7;
 
     // License type for the media
     optional License license = 8;
 
+    // Date of publication of it was published before joystream
     optional PublishedBeforeJoystream published_before_joystream = 9;
 
-    // Set to true if video has marketing/adverts in the stream
+    // Does video have marketing or advertising in the stream
     optional bool has_marketing = 10;
 
-    // Set to true if it should be visiable to public
+    // Should video be publicy visible yet
     optional bool is_public = 11;
 
-    // Set to true if video has explicit language or scenes
-    // Should this be a curator managed property instead?
+    // Does Video have explicit language or scenes
     optional bool is_explicit = 12;
 }

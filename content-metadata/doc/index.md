@@ -31,10 +31,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| description | [string](#string) | optional |  |
-| is_public | [bool](#bool) | optional |  |
-| language | [int32](#int32) | optional |  |
+| title | [string](#string) | optional | Channel Title |
+| description | [string](#string) | optional | Channel Description |
+| is_public | [bool](#bool) | optional | Wether to display channel to the public |
+| language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 
 
 
@@ -65,7 +65,7 @@ Joystream Specific License type
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int32](#int32) | optional | License code defined by Joystream |
+| code | [int32](#int32) | optional | License code defined by Joystream. [reference](../src/KnownLicenses.json) |
 | attribution | [string](#string) | optional | Text for licenses that require an attribution |
 | custom_text | [string](#string) | optional | Text for custom license type |
 
@@ -77,17 +77,14 @@ Joystream Specific License type
 <a name=".MediaType"></a>
 
 ### MediaType
-Rich format description of video media type
-
-enum AVCodecID from FFmpeg: libavcodec/codec_id.h
-optional int32 codec_id = 1;
+Codec, Container, MIME media-type information
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | codec_name | [string](#string) | optional | string name field from FFmpeg libavcodec/codec_desc.c |
-| container | [string](#string) | optional | Video container format (eg. &#39;MP4&#39;, &#39;WebM&#39;, &#39;Ogg&#39; ...) https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs |
-| mime_media_type | [string](#string) | optional | MIME Media Type https://www.iana.org/assignments/media-types/media-types.xhtml#video eg. &#39;video/mp4&#39; |
+| container | [string](#string) | optional | Video container format, eg. &#39;MP4&#39;, &#39;WebM&#39;, &#39;Ogg&#39; https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs |
+| mime_media_type | [string](#string) | optional | MIME Media Type, eg. &#39;video/mp4&#39; https://www.iana.org/assignments/media-types/media-types.xhtml#video |
 
 
 
@@ -118,18 +115,18 @@ optional int32 codec_id = 1;
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| description | [string](#string) | optional |  |
-| duration | [int32](#int32) | optional | Duration in seconds of the video |
+| title | [string](#string) | optional | Title Text |
+| description | [string](#string) | optional | Video Description |
+| duration | [int32](#int32) | optional | Lengths of video in seconds |
 | media_pixel_height | [int32](#int32) | optional | Resolution of the video |
-| media_pixel_width | [int32](#int32) | optional |  |
-| media_type | [MediaType](#MediaType) | optional | Rich media type information about the media format |
-| language | [string](#string) | optional | ISO_639-1 code: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes useful: npm package https://www.npmjs.com/package/iso-639-1 |
+| media_pixel_width | [int32](#int32) | optional | Resolution of the video |
+| media_type | [MediaType](#MediaType) | optional | Encoding and Container format used |
+| language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | license | [License](#License) | optional | License type for the media |
-| published_before_joystream | [PublishedBeforeJoystream](#PublishedBeforeJoystream) | optional |  |
-| has_marketing | [bool](#bool) | optional | Set to true if video has marketing/adverts in the stream |
-| is_public | [bool](#bool) | optional | Set to true if it should be visiable to public |
-| is_explicit | [bool](#bool) | optional | Set to true if video has explicit language or scenes Should this be a curator managed property instead? |
+| published_before_joystream | [PublishedBeforeJoystream](#PublishedBeforeJoystream) | optional | Date of publication of it was published before joystream |
+| has_marketing | [bool](#bool) | optional | Does video have marketing or advertising in the stream |
+| is_public | [bool](#bool) | optional | Should video be publicy visible yet |
+| is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 
 
 
