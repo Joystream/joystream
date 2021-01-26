@@ -14,8 +14,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: validate
+    - name: test protobuf
       run: |
         yarn install --frozen-lockfile
-        yarn workspace @joystream/content-metadata checks --quiet
-        yarn workspace @joystream/content-metadata test
+        yarn workspace @joystream/content-metadata-protobuf checks --quiet
+        yarn workspace @joystream/content-metadata-protobuf test

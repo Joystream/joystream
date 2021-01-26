@@ -1,5 +1,5 @@
 {
-  "name": "@joystream/content-metadata",
+  "name": "@joystream/content-metadata-protobuf",
   "version": "1.0.0",
   "description": "Joystream Content Metadata Protobuf Library ",
   "main": "lib/index.js",

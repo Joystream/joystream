@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+message SeriesMetadata {
+    optional string title = 1;
+    optional string description = 2;
+}
+
+message SeasonMetadata {
+    optional string title = 1;
+    optional string description = 2; 
+}

@@ -6,6 +6,16 @@
 - [proto/Channel.proto](#proto/Channel.proto)
     - [ChannelMetadata](#.ChannelMetadata)
   
+- [proto/Person.proto](#proto/Person.proto)
+    - [PersonMetadata](#.PersonMetadata)
+  
+- [proto/Playlist.proto](#proto/Playlist.proto)
+    - [PlaylistMetadata](#.PlaylistMetadata)
+  
+- [proto/Series.proto](#proto/Series.proto)
+    - [SeasonMetadata](#.SeasonMetadata)
+    - [SeriesMetadata](#.SeriesMetadata)
+  
 - [proto/Video.proto](#proto/Video.proto)
     - [License](#.License)
     - [MediaType](#.MediaType)
@@ -35,6 +45,119 @@
 | description | [string](#string) | optional | Channel Description |
 | is_public | [bool](#bool) | optional | Wether to display channel to the public |
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Person.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Person.proto
+
+
+
+<a name=".PersonMetadata"></a>
+
+### PersonMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| first_name | [string](#string) | optional |  |
+| middle_name | [string](#string) | optional |  |
+| last_name | [string](#string) | optional |  |
+| about | [string](#string) | optional |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Playlist.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Playlist.proto
+
+
+
+<a name=".PlaylistMetadata"></a>
+
+### PlaylistMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Series.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Series.proto
+
+
+
+<a name=".SeasonMetadata"></a>
+
+### SeasonMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional |  |
+| description | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name=".SeriesMetadata"></a>
+
+### SeriesMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional |  |
+| description | [string](#string) | optional |  |
 
 
 
