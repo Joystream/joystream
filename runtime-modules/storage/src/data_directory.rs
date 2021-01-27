@@ -315,7 +315,7 @@ decl_module! {
         /// Adds the multiple content to the system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
-        fn multi_add_content_as_member(
+        pub fn multi_add_content_as_member(
             origin,
             member_id: MemberId<T>,
             multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
@@ -344,7 +344,7 @@ decl_module! {
         /// Adds the multiple content to the system. Requires root privileges. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
-        fn multi_add_content(
+        pub fn multi_add_content(
             origin,
             abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
             multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
