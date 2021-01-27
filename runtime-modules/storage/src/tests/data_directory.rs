@@ -52,6 +52,62 @@ fn add_content_fails_with_invalid_origin() {
 }
 
 #[test]
+fn succeed_adding_multi_content() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+        let member_id = 1u64;
+
+        let first_content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        let second_content_parameters = ContentParameters {
+            content_id: 2,
+            type_id: 2,
+            size: 20,
+            ipfs_content_id: vec![1, 2, 7, 9],
+        };
+
+        let multi_content = vec![first_content_parameters, second_content_parameters];
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+        let res = TestDataDirectory::multi_add_content_as_member(
+            Origin::signed(sender),
+            member_id,
+            multi_content,
+        );
+        assert!(res.is_ok());
+    });
+}
+
+#[test]
+fn add_multi_content_fails_with_invalid_origin() {
+    with_default_mock_builder(|| {
+        let member_id = 1u64;
+
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        let multi_content = vec![content_parameters];
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+        let res = TestDataDirectory::multi_add_content_as_member(
+            RawOrigin::Root.into(),
+            member_id,
+            multi_content,
+        );
+        assert_eq!(res, Err(DispatchError::Other("Bad origin")));
+    });
+}
+
+#[test]
 fn accept_and_reject_content_fail_with_invalid_storage_provider() {
     with_default_mock_builder(|| {
         /*

@@ -253,7 +253,7 @@ decl_module! {
         /// Maximum objects allowed per inject_data_objects() transaction
         const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
-        /// Adds the content to the system. Member id should match its origin. The created DataObject
+        /// Adds the content to the system. Requires root privileges. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
@@ -312,6 +312,8 @@ decl_module! {
             Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
         }
 
+        /// Adds the multiple content to the system. Member id should match its origin. The created DataObject
+        /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         fn multi_add_content_as_member(
             origin,
@@ -339,19 +341,19 @@ decl_module! {
             Self::deposit_event(RawEvent::ContentMultiAdded(owner, multi_content));
         }
 
-        /// Adds the multiple content to the system. The created DataObject
+        /// Adds the multiple content to the system. Requires root privileges. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         fn multi_add_content(
             origin,
-            member_id: MemberId<T>,
+            abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
             multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
         ) {
             ensure_root(origin)?;
 
             Self::ensure_multi_content_is_valid(&multi_content)?;
 
-            let owner = StorageObjectOwner::Member(member_id);
+            let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
