@@ -73,7 +73,10 @@ impl Trait for Test {
 }
 
 impl crate::WeightInfo for () {
-    fn create_bounty(_: u32) -> u64 {
+    fn create_bounty() -> u64 {
+        0
+    }
+    fn cancel_bounty() -> u64 {
         0
     }
 }

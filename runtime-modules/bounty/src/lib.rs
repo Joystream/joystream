@@ -4,7 +4,8 @@
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
 //! ### Supported extrinsics:
-//! - [create_bounty](./struct.Module.html#create_bounty.vote) - creates a bounty
+//! - [create_bounty](./struct.Module.html#method.create_bounty) - creates a bounty
+//! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -21,22 +22,23 @@ mod benchmarking;
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_bounty(i: u32) -> Weight;
+    fn create_bounty() -> Weight;
+    fn cancel_bounty() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
-use sp_runtime::SaturatedConversion;
+use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 
 use common::origin::MemberOriginValidator;
 use common::MemberId;
 
 use codec::{Decode, Encode};
-use frame_support::dispatch::DispatchResult;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -171,6 +173,9 @@ decl_event! {
     {
         /// A bounty was created.
         BountyCreated(BountyId),
+
+        /// A bounty was canceled.
+        BountyCanceled(BountyId),
     }
 }
 
@@ -179,21 +184,40 @@ decl_error! {
     pub enum Error for Module<T: Trait> {
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
+
+        /// Bounty doesnt exist.
+        BountyDoesntExist,
+
+        /// Operation can be performed only by a bounty creator.
+        NotBountyCreator,
+
+        /// Work period cannot be zero.
+        WorkPeriodCannotBeZero,
+
+        /// Judging period cannot be zero.
+        JudgingPeriodCannotBeZero,
     }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error<T>;
+
+        /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
-        #[weight = WeightInfoBounty::<T>::create_bounty(_metadata.len().saturated_into())]
-        fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
+        #[weight = WeightInfoBounty::<T>::create_bounty()]
+        pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
             Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            // TODO: add creation block
+            // TODO: slash cherry from the balance
 
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
@@ -207,6 +231,21 @@ decl_module! {
                 *count += 1
             });
             Self::deposit_event(RawEvent::BountyCreated(bounty_id));
+        }
+
+        /// Cancels a bounty.
+        #[weight = WeightInfoBounty::<T>::cancel_bounty()]
+        pub fn cancel_bounty(origin, creator_member_id: Option<MemberId<T>>, bounty_id: T::BountyId) {
+            Self::ensure_cancel_bounty_parameters_valid(&origin, creator_member_id, bounty_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // TODO: make payments for submitted work.
+
+            <Bounties<T>>::remove(bounty_id);
+            Self::deposit_event(RawEvent::BountyCanceled(bounty_id));
         }
     }
 }
@@ -228,9 +267,57 @@ impl<T: Trait> Module<T> {
         }
 
         ensure!(
+            params.work_period != Zero::zero(),
+            Error::<T>::WorkPeriodCannotBeZero
+        );
+
+        ensure!(
+            params.judging_period != Zero::zero(),
+            Error::<T>::JudgingPeriodCannotBeZero
+        );
+
+        ensure!(
             params.min_amount <= params.max_amount,
             Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
         );
+
+        Ok(())
+    }
+
+    // Validates parameters for a bounty cancellation.
+    fn ensure_cancel_bounty_parameters_valid(
+        origin: &T::Origin,
+        creator_member_id: Option<MemberId<T>>,
+        bounty_id: T::BountyId,
+    ) -> DispatchResult {
+        ensure!(
+            <Bounties<T>>::contains_key(bounty_id),
+            Error::<T>::BountyDoesntExist
+        );
+
+        let bounty = <Bounties<T>>::get(bounty_id);
+
+        // Validate origin.
+        if let Some(member_id) = creator_member_id {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin.clone(),
+                member_id,
+            )?;
+
+            ensure!(
+                bounty.creation_params.creator_member_id == creator_member_id,
+                Error::<T>::NotBountyCreator,
+            );
+        } else {
+            ensure_root(origin.clone())?;
+
+            ensure!(
+                bounty.creation_params.creator_member_id.is_none(),
+                Error::<T>::NotBountyCreator,
+            );
+        }
+
+        // TODO: check bounty stage
 
         Ok(())
     }

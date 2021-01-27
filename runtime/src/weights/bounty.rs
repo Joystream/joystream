@@ -7,10 +7,15 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 pub struct WeightInfo;
 impl bounty::WeightInfo for WeightInfo {
-    fn create_bounty(i: u32) -> Weight {
-        (71_128_000 as Weight)
-            .saturating_add((125_000 as Weight).saturating_mul(i as Weight))
+    // WARNING! Some components were not used: ["i"]
+    fn create_bounty() -> Weight {
+        (147_346_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
+    }
+    fn cancel_bounty() -> Weight {
+        (191_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(1 as Weight))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
     }
 }

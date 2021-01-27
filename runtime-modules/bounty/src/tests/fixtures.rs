@@ -42,6 +42,8 @@ pub struct CreateBountyFixture {
     metadata: Vec<u8>,
     creator_member_id: Option<u64>,
     min_amount: u64,
+    work_period: u64,
+    judging_period: u64,
 }
 
 impl CreateBountyFixture {
@@ -51,6 +53,8 @@ impl CreateBountyFixture {
             metadata: Vec::new(),
             creator_member_id: None,
             min_amount: 0,
+            work_period: 1,
+            judging_period: 1,
         }
     }
 
@@ -68,14 +72,31 @@ impl CreateBountyFixture {
     pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
         Self { metadata, ..self }
     }
+
     pub fn with_min_amount(self, min_amount: u64) -> Self {
         Self { min_amount, ..self }
+    }
+
+    pub fn with_work_period(self, work_period: u64) -> Self {
+        Self {
+            work_period,
+            ..self
+        }
+    }
+
+    pub fn with_judging_period(self, judging_period: u64) -> Self {
+        Self {
+            judging_period,
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BountyCreationParameters::<Test> {
             creator_member_id: self.creator_member_id.clone(),
             min_amount: self.min_amount.clone(),
+            work_period: self.work_period.clone(),
+            judging_period: self.judging_period.clone(),
             ..Default::default()
         };
 
@@ -93,6 +114,51 @@ impl CreateBountyFixture {
         } else {
             assert_eq!(next_bounty_count_value - 1, Bounty::bounty_count());
             assert!(!<crate::Bounties<Test>>::contains_key(&bounty_id));
+        }
+    }
+}
+
+pub struct CancelBountyFixture {
+    origin: RawOrigin<u64>,
+    creator_member_id: Option<u64>,
+    bounty_id: u64,
+}
+
+impl CancelBountyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            creator_member_id: None,
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_creator_member_id(self, member_id: u64) -> Self {
+        Self {
+            creator_member_id: Some(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::cancel_bounty(
+            self.origin.clone().into(),
+            self.creator_member_id.clone(),
+            self.bounty_id.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
         }
     }
 }
