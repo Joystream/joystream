@@ -41,6 +41,7 @@ pub struct CreateBountyFixture {
     origin: RawOrigin<u64>,
     metadata: Vec<u8>,
     creator_member_id: Option<u64>,
+    min_amount: u64,
 }
 
 impl CreateBountyFixture {
@@ -49,6 +50,7 @@ impl CreateBountyFixture {
             origin: RawOrigin::Root,
             metadata: Vec::new(),
             creator_member_id: None,
+            min_amount: 0,
         }
     }
 
@@ -66,18 +68,22 @@ impl CreateBountyFixture {
     pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
         Self { metadata, ..self }
     }
+    pub fn with_min_amount(self, min_amount: u64) -> Self {
+        Self { min_amount, ..self }
+    }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BountyCreationParameters::<Test> {
-            metadata: self.metadata.clone(),
             creator_member_id: self.creator_member_id.clone(),
+            min_amount: self.min_amount.clone(),
             ..Default::default()
         };
 
         let next_bounty_count_value = Bounty::bounty_count() + 1;
         let bounty_id: u64 = next_bounty_count_value.into();
 
-        let actual_result = Bounty::create_bounty(self.origin.clone().into(), params);
+        let actual_result =
+            Bounty::create_bounty(self.origin.clone().into(), params, self.metadata.clone());
 
         assert_eq!(actual_result, expected_result);
 

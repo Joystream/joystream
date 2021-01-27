@@ -6,9 +6,9 @@ pub(crate) mod mocks;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
-use crate::RawEvent;
+use crate::{Error, RawEvent};
 use fixtures::{run_to_block, CreateBountyFixture, EventFixture};
-use mocks::build_test_externalities;
+use mocks::{build_test_externalities, Test};
 
 #[test]
 fn create_bounty_succeeds() {
@@ -40,5 +40,15 @@ fn create_bounty_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Root)
             .with_creator_member_id(1);
         create_bounty_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_invalid_min_max_amounts() {
+    build_test_externalities().execute_with(|| {
+        let create_bounty_fixture = CreateBountyFixture::default().with_min_amount(100);
+        create_bounty_fixture.call_and_assert(Err(
+            Error::<Test>::MinFundingAmountCannotBeGreaterThanMaxAmount.into(),
+        ));
     });
 }

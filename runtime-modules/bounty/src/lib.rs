@@ -27,7 +27,7 @@ pub trait WeightInfo {
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
@@ -135,11 +135,6 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
 
     /// Number of block from end of work period until oracle can no longer decide winners.
     pub judging_period: BlockNumber,
-
-    /// A standardised structure document describing user facing information,
-    /// for example a title, amount requested, deliverable, discovery metadata, link to forum etc.
-    /// Is not stored in storage, chain only sees raw extrinsic payload blob, like rationales before.
-    pub metadata: Vec<u8>,
 }
 
 /// Alias type for the Bounty.
@@ -182,8 +177,8 @@ decl_event! {
 decl_error! {
     /// Bounty pallet predefined errors
     pub enum Error for Module<T: Trait> {
-        /// Incorrect origin provided.
-        BadOrigin,
+        /// Min funding amount cannot be greater than max amount.
+        MinFundingAmountCannotBeGreaterThanMaxAmount,
     }
 }
 
@@ -191,8 +186,9 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        #[weight = WeightInfoBounty::<T>::create_bounty(params.metadata.len().saturated_into())]
-        fn create_bounty(origin, params: BountyCreationParameters<T>) {
+        /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
+        #[weight = WeightInfoBounty::<T>::create_bounty(_metadata.len().saturated_into())]
+        fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
             Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
 
             //
@@ -230,6 +226,11 @@ impl<T: Trait> Module<T> {
         } else {
             ensure_root(origin.clone())?;
         }
+
+        ensure!(
+            params.min_amount <= params.max_amount,
+            Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
+        );
 
         Ok(())
     }

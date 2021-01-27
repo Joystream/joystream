@@ -26,12 +26,9 @@ benchmarks! {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
 
-        let params = BountyCreationParameters::<T>{
-            metadata,
-            ..Default::default()
-        };
+        let params = BountyCreationParameters::<T>::default();
 
-    }: _ (RawOrigin::Root, params.clone())
+    }: _ (RawOrigin::Root, params.clone(), metadata)
     verify {
         let bounty = Bounty::<T>{
             creation_params: params,
