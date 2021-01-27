@@ -98,14 +98,14 @@ decl_error! {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum WorkinGroupType {
+    ContentDirectory,
     Builders,
-    Marketers,
-    Membership,
+    StorageProviders,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum AbstractStorageObjectOwner {
+pub enum AbstractStorageObjectOwner<ChannelId, DAOId> {
     Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
     DAO(DAOId),         // acts through upcoming `content_finance` module
     Council,            // acts through proposal system
@@ -115,9 +115,9 @@ pub enum AbstractStorageObjectOwner {
 // New owner type for storage object struct
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum StorageObjectOwner<MemberId> {
+pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
     Member(MemberId),
-    AbstractStorageObjectOwner(AbstractStorageObjectOwner),
+    AbstractStorageObjectOwner(AbstractStorageObjectOwner<ChannelId, DAOId>),
 }
 
 /// The decision of the storage provider when it acts as liaison.
@@ -143,6 +143,8 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
+    ChannelId,
+    DAOId,
     <T as system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
@@ -152,9 +154,17 @@ pub type DataObject<T> = DataObjectInternal<
 /// Manages content ids, type and storage provider decision about it.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, StorageProviderId> {
+pub struct DataObjectInternal<
+    MemberId,
+    ChannelId,
+    DAOId,
+    BlockNumber,
+    Moment,
+    DataObjectTypeId,
+    StorageProviderId,
+> {
     /// Content owner.
-    pub owner: StorageObjectOwner<MemberId>,
+    pub owner: StorageObjectOwner<MemberId, ChannelId, DAOId>,
 
     /// Content added at.
     pub added_at: BlockAndTime<BlockNumber, Moment>,
@@ -193,7 +203,7 @@ decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
         <T as Trait>::ContentId,
-        StorageObjectOwner = StorageObjectOwner<MemberId<T>>,
+        StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
         StorageProviderId = StorageProviderId<T>
     {
         /// Emits on adding of the content.
@@ -233,7 +243,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
-            abstract_owner: AbstractStorageObjectOwner,
+            abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
             content_id: T::ContentId,
             type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
             size: u64,
