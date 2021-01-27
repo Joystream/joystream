@@ -11,6 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
+pub use crate::data_directory::StorageObjectOwner;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
@@ -74,7 +75,7 @@ impl ContentIdExists<Test> for MockContent {
                     block: 10,
                     time: 1024,
                 },
-                owner: 1,
+                owner: StorageObjectOwner::Member(1),
                 liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],

@@ -12,7 +12,7 @@ fn succeed_adding_content() {
         let sender = 1u64;
         let member_id = 1u64;
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             1,
@@ -29,7 +29,7 @@ fn add_content_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
         let member_id = 1u64;
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             RawOrigin::Root.into(),
             member_id,
             1,
@@ -54,7 +54,7 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
         let sender = 1u64;
         let member_id = 1u64;
 
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             1,
@@ -64,12 +64,11 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
         );
         assert!(res.is_ok());
 
-        let (content_id, _) = match System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
-                content_id,
-                creator,
-            )) => (content_id, creator),
-            _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
+        let content_id = match System::events().last().unwrap().event {
+            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, _)) => {
+                content_id
+            }
+            _ => 0u64,
         };
 
         //  invalid data
@@ -104,7 +103,7 @@ fn accept_content_as_liaison() {
         let sender = 1u64;
         let member_id = 1u64;
 
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             1,
@@ -115,15 +114,15 @@ fn accept_content_as_liaison() {
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
-        let (content_id, creator) = match System::events().last().unwrap().event {
+        let (content_id, creator) = match &System::events().last().unwrap().event {
             MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
-            )) => (content_id, creator),
-            _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
+            )) => (*content_id, creator.clone()),
+            _ => (0u64, StorageObjectOwner::Member(0xdeadbeefu64)), // invalid value, unlikely to match
         };
-        assert_ne!(creator, 0xdeadbeefu64);
-        assert_eq!(creator, sender);
+        assert_ne!(creator, StorageObjectOwner::Member(0xdeadbeefu64));
+        assert_eq!(creator, StorageObjectOwner::Member(sender));
 
         let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
 
@@ -155,7 +154,7 @@ fn reject_content_as_liaison() {
         let sender = 1u64;
         let member_id = 1u64;
 
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             1,
@@ -166,15 +165,15 @@ fn reject_content_as_liaison() {
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
-        let (content_id, creator) = match System::events().last().unwrap().event {
+        let (content_id, creator) = match &System::events().last().unwrap().event {
             MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
-            )) => (content_id, creator),
-            _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
+            )) => (*content_id, creator.clone()),
+            _ => (0u64, StorageObjectOwner::Member(0xdeadbeefu64)), // invalid value, unlikely to match
         };
-        assert_ne!(creator, 0xdeadbeefu64);
-        assert_eq!(creator, sender);
+        assert_ne!(creator, StorageObjectOwner::Member(0xdeadbeefu64));
+        assert_eq!(creator, StorageObjectOwner::Member(sender));
 
         let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
 
@@ -209,7 +208,7 @@ fn data_object_injection_works() {
                 block: 10,
                 time: 1024,
             },
-            owner: 1,
+            owner: StorageObjectOwner::Member(1),
             liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
             liaison_judgement: data_directory::LiaisonJudgement::Pending,
             ipfs_content_id: vec![],
@@ -251,7 +250,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
 
         // Start with some existing objects in directory which will be
         // overwritten
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             content_id_1,
@@ -260,7 +259,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
             vec![8, 8, 8, 8],
         );
         assert!(res.is_ok());
-        let res = TestDataDirectory::add_content(
+        let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
             content_id_2,
@@ -279,7 +278,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
                 block: 10,
                 time: 1000,
             },
-            owner: 5,
+            owner: StorageObjectOwner::Member(5),
             liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
             liaison_judgement: data_directory::LiaisonJudgement::Pending,
             ipfs_content_id: vec![5, 6, 7],
@@ -292,7 +291,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
                 block: 20,
                 time: 2000,
             },
-            owner: 6,
+            owner: StorageObjectOwner::Member(6),
             liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
             liaison_judgement: data_directory::LiaisonJudgement::Pending,
             ipfs_content_id: vec![5, 6, 7],

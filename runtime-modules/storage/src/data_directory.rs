@@ -40,6 +40,12 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
 
+// Temporary representation.
+type ChannelId = u64;
+
+// Temporary representation.
+type DAOId = u64;
+
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
@@ -89,6 +95,31 @@ decl_error! {
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum WorkinGroupType {
+    ContentDirectory,
+    Builders,
+    StorageProviders,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum AbstractStorageObjectOwner<ChannelId, DAOId> {
+    Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
+    DAO(DAOId),         // acts through upcoming `content_finance` module
+    Council,            // acts through proposal system
+    WorkingGroup(WorkinGroupType), // acts through new extrinsic in working group
+}
+
+// New owner type for storage object struct
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
+    Member(MemberId),
+    AbstractStorageObjectOwner(AbstractStorageObjectOwner<ChannelId, DAOId>),
+}
+
 /// The decision of the storage provider when it acts as liaison.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
@@ -112,6 +143,8 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
+    ChannelId,
+    DAOId,
     <T as system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
@@ -121,9 +154,17 @@ pub type DataObject<T> = DataObjectInternal<
 /// Manages content ids, type and storage provider decision about it.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, StorageProviderId> {
+pub struct DataObjectInternal<
+    MemberId,
+    ChannelId,
+    DAOId,
+    BlockNumber,
+    Moment,
+    DataObjectTypeId,
+    StorageProviderId,
+> {
     /// Content owner.
-    pub owner: MemberId,
+    pub owner: StorageObjectOwner<MemberId, ChannelId, DAOId>,
 
     /// Content added at.
     pub added_at: BlockAndTime<BlockNumber, Moment>,
@@ -162,14 +203,14 @@ decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
         <T as Trait>::ContentId,
-        MemberId = MemberId<T>,
+        StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
         StorageProviderId = StorageProviderId<T>
     {
         /// Emits on adding of the content.
         /// Params:
         /// - Id of the relationship.
         /// - Id of the member.
-        ContentAdded(ContentId, MemberId),
+        ContentAdded(ContentId, StorageObjectOwner),
 
         /// Emits when the storage provider accepts a content.
         /// Params:
@@ -202,6 +243,48 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
+            abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
+            content_id: T::ContentId,
+            type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
+            size: u64,
+            ipfs_content_id: Vec<u8>
+        ) {
+            ensure_root(origin)?;
+
+            ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
+                Error::<T>::DataObjectTypeMustBeActive);
+
+            ensure!(!<DataObjectByContentId<T>>::contains_key(content_id),
+                Error::<T>::DataObjectAlreadyAdded);
+
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+            let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
+
+            // Let's create the entry then
+            let data: DataObject<T> = DataObjectInternal {
+                type_id,
+                size,
+                added_at: common::current_block_time::<T>(),
+                owner: owner.clone(),
+                liaison,
+                liaison_judgement: LiaisonJudgement::Pending,
+                ipfs_content_id,
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <DataObjectByContentId<T>>::insert(&content_id, data);
+            Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
+        }
+
+        /// Adds the content to the system. Member id should match its origin. The created DataObject
+        /// awaits liaison to accept or reject it.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn add_content_as_member(
+            origin,
             member_id: MemberId<T>,
             content_id: T::ContentId,
             type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
@@ -221,12 +304,14 @@ decl_module! {
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
+            let owner = StorageObjectOwner::Member(member_id);
+
             // Let's create the entry then
             let data: DataObject<T> = DataObjectInternal {
                 type_id,
                 size,
                 added_at: common::current_block_time::<T>(),
-                owner: member_id,
+                owner: owner.clone(),
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id,
@@ -237,7 +322,7 @@ decl_module! {
             //
 
             <DataObjectByContentId<T>>::insert(&content_id, data);
-            Self::deposit_event(RawEvent::ContentAdded(content_id, member_id));
+            Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
