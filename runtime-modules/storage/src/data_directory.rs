@@ -185,6 +185,14 @@ pub struct DataObjectInternal<
     pub ipfs_content_id: Vec<u8>,
 }
 
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
+pub struct ContentParameters<ContentId, DataObjectTypeId> {
+    pub content_id: ContentId,
+    pub type_id: DataObjectTypeId,
+    pub size: u64,
+    pub ipfs_content_id: Vec<u8>,
+}
+
 /// A map collection of unique DataObjects keyed by the ContentId
 pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 
@@ -204,13 +212,20 @@ decl_event! {
     pub enum Event<T> where
         <T as Trait>::ContentId,
         StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
-        StorageProviderId = StorageProviderId<T>
+        StorageProviderId = StorageProviderId<T>,
+        MultiContent = Vec<ContentParameters<<T as Trait>::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>,
     {
         /// Emits on adding of the content.
         /// Params:
         /// - Id of the relationship.
-        /// - Id of the member.
+        /// - StorageObjectOwner enum.
         ContentAdded(ContentId, StorageObjectOwner),
+
+        /// Emits on atomic adding of the content.
+        /// Params:
+        /// - StorageObjectOwner enum.
+        /// - MultiContent parameters representation.
+        ContentMultiAdded(StorageObjectOwner, MultiContent),
 
         /// Emits when the storage provider accepts a content.
         /// Params:
@@ -244,39 +259,25 @@ decl_module! {
         pub fn add_content(
             origin,
             abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
-            content_id: T::ContentId,
-            type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
-            size: u64,
-            ipfs_content_id: Vec<u8>
+            content: ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>,
         ) {
             ensure_root(origin)?;
 
-            ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
-                Error::<T>::DataObjectTypeMustBeActive);
-
-            ensure!(!<DataObjectByContentId<T>>::contains_key(content_id),
-                Error::<T>::DataObjectAlreadyAdded);
-
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+            Self::ensure_content_is_valid(&content)?;
 
             let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
 
-            // Let's create the entry then
-            let data: DataObject<T> = DataObjectInternal {
-                type_id,
-                size,
-                added_at: common::current_block_time::<T>(),
-                owner: owner.clone(),
-                liaison,
-                liaison_judgement: LiaisonJudgement::Pending,
-                ipfs_content_id,
-            };
+            let content_id = content.content_id;
+
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <DataObjectByContentId<T>>::insert(&content_id, data);
+            // Let's create the entry then
+            Self::upload_content(liaison, content, owner.clone());
+
             Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
         }
 
@@ -286,43 +287,82 @@ decl_module! {
         pub fn add_content_as_member(
             origin,
             member_id: MemberId<T>,
-            content_id: T::ContentId,
-            type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
-            size: u64,
-            ipfs_content_id: Vec<u8>
+            content: ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>,
         ) {
             T::MemberOriginValidator::ensure_actor_origin(
                 origin,
                 member_id,
             )?;
 
-            ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
-                Error::<T>::DataObjectTypeMustBeActive);
-
-            ensure!(!<DataObjectByContentId<T>>::contains_key(content_id),
-                Error::<T>::DataObjectAlreadyAdded);
-
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+            Self::ensure_content_is_valid(&content)?;
 
             let owner = StorageObjectOwner::Member(member_id);
 
-            // Let's create the entry then
-            let data: DataObject<T> = DataObjectInternal {
-                type_id,
-                size,
-                added_at: common::current_block_time::<T>(),
-                owner: owner.clone(),
-                liaison,
-                liaison_judgement: LiaisonJudgement::Pending,
-                ipfs_content_id,
-            };
+            let content_id = content.content_id;
+
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <DataObjectByContentId<T>>::insert(&content_id, data);
+            // Let's create the entry then
+            Self::upload_content(liaison, content, owner.clone());
+
             Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn multi_add_content_as_member(
+            origin,
+            member_id: MemberId<T>,
+            multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
+        ) {
+            T::MemberOriginValidator::ensure_actor_origin(
+                origin,
+                member_id,
+            )?;
+
+            Self::ensure_multi_content_is_valid(&multi_content)?;
+
+            let owner = StorageObjectOwner::Member(member_id);
+
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Let's create the entry then
+            Self::upload_multi_content(liaison, multi_content.clone(), owner.clone());
+
+            Self::deposit_event(RawEvent::ContentMultiAdded(owner, multi_content));
+        }
+
+        /// Adds the multiple content to the system. The created DataObject
+        /// awaits liaison to accept or reject it.
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn multi_add_content(
+            origin,
+            member_id: MemberId<T>,
+            multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
+        ) {
+            ensure_root(origin)?;
+
+            Self::ensure_multi_content_is_valid(&multi_content)?;
+
+            let owner = StorageObjectOwner::Member(member_id);
+
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Let's create the entry then
+            Self::upload_multi_content(liaison, multi_content.clone(), owner.clone());
+
+            Self::deposit_event(RawEvent::ContentMultiAdded(owner, multi_content));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -405,6 +445,72 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    fn upload_multi_content(
+        liaison: StorageProviderId<T>,
+        multi_content: Vec<
+            ContentParameters<
+                T::ContentId,
+                <T as data_object_type_registry::Trait>::DataObjectTypeId,
+            >,
+        >,
+        owner: StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
+    ) {
+        for content in multi_content {
+            Self::upload_content(liaison, content, owner.clone());
+        }
+    }
+
+    fn upload_content(
+        liaison: StorageProviderId<T>,
+        content: ContentParameters<
+            T::ContentId,
+            <T as data_object_type_registry::Trait>::DataObjectTypeId,
+        >,
+        owner: StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
+    ) {
+        let data: DataObject<T> = DataObjectInternal {
+            type_id: content.type_id,
+            size: content.size,
+            added_at: common::current_block_time::<T>(),
+            owner,
+            liaison,
+            liaison_judgement: LiaisonJudgement::Pending,
+            ipfs_content_id: content.ipfs_content_id,
+        };
+
+        <DataObjectByContentId<T>>::insert(content.content_id, data);
+    }
+
+    fn ensure_multi_content_is_valid(
+        multi_content: &[ContentParameters<
+            T::ContentId,
+            <T as data_object_type_registry::Trait>::DataObjectTypeId,
+        >],
+    ) -> DispatchResult {
+        for content in multi_content {
+            Self::ensure_content_is_valid(content)?;
+        }
+        Ok(())
+    }
+
+    fn ensure_content_is_valid(
+        content: &ContentParameters<
+            T::ContentId,
+            <T as data_object_type_registry::Trait>::DataObjectTypeId,
+        >,
+    ) -> DispatchResult {
+        ensure!(
+            T::IsActiveDataObjectType::is_active_data_object_type(&content.type_id),
+            Error::<T>::DataObjectTypeMustBeActive
+        );
+
+        ensure!(
+            !<DataObjectByContentId<T>>::contains_key(&content.content_id),
+            Error::<T>::DataObjectAlreadyAdded
+        );
+        Ok(())
+    }
+
     fn update_content_judgement(
         storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,

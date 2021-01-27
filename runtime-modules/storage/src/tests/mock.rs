@@ -11,7 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-pub use crate::data_directory::StorageObjectOwner;
+pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
