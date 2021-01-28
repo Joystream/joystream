@@ -1572,3 +1572,13 @@ impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T:
         Ok(())
     }
 }
+
+impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
+    fn get_budget() -> Balance<T> {
+        Self::budget()
+    }
+
+    fn set_budget(budget: Balance<T>) {
+        Mutations::<T>::set_budget(budget);
+    }
+}

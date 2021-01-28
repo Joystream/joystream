@@ -10,6 +10,7 @@ use sp_runtime::{
 };
 
 use crate::{Module, Trait};
+use frame_support::traits::Currency;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -70,6 +71,31 @@ impl Trait for Test {
     type BountyId = u64;
     type MemberOriginValidator = ();
     type WeightInfo = ();
+    type CouncilBudgetManager = CouncilBudgetManager;
+}
+
+const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub struct CouncilBudgetManager;
+impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+    fn get_budget() -> u64 {
+        balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+    }
+
+    fn set_budget(budget: u64) {
+        let old_budget = Self::get_budget();
+
+        if budget > old_budget {
+            let _ = balances::Module::<Test>::deposit_creating(
+                &COUNCIL_BUDGET_ACCOUNT_ID,
+                budget - old_budget,
+            );
+        }
+
+        if budget < old_budget {
+            let _ =
+                balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
+        }
+    }
 }
 
 impl crate::WeightInfo for () {
@@ -125,3 +151,4 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
 pub type System = frame_system::Module<Test>;
 pub type Bounty = Module<Test>;
+pub type Balances = balances::Module<Test>;

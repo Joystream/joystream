@@ -3,11 +3,16 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
+use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
-use crate::{Error, RawEvent};
-use fixtures::{run_to_block, CancelBountyFixture, CreateBountyFixture, EventFixture};
+use crate::{BountyStage, Error, RawEvent};
+use common::council::CouncilBudgetManager;
+use fixtures::{
+    increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
+    CreateBountyFixture, EventFixture,
+};
 use mocks::{build_test_externalities, Test};
 
 #[test]
@@ -25,6 +30,50 @@ fn create_bounty_succeeds() {
         let bounty_id = 1u64;
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCreated(bounty_id));
+    });
+}
+
+#[test]
+fn create_bounty_slashes_the_member_balance_correctly() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+        let cherry = 100;
+        let initial_balance = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        // Insufficient member controller account balance.
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id),
+            initial_balance - cherry
+        );
+    });
+}
+
+#[test]
+fn create_bounty_slashes_the_council_balance_correctly() {
+    build_test_externalities().execute_with(|| {
+        let cherry = 100;
+        let initial_balance = 200;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        // Insufficient member controller account balance.
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget(),
+            initial_balance - cherry
+        );
     });
 }
 
@@ -65,6 +114,27 @@ fn create_bounty_fails_with_invalid_periods() {
         CreateBountyFixture::default()
             .with_judging_period(0)
             .call_and_assert(Err(Error::<Test>::JudgingPeriodCannotBeZero.into()));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_insufficient_balances() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+        let cherry = 100;
+
+        // Insufficient council budget.
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBountyCherry.into()));
+
+        // Insufficient member controller account balance.
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_cherry(cherry)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBountyCherry.into()));
     });
 }
 
@@ -154,5 +224,22 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+    });
+}
+
+#[test]
+fn cancel_bounty_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
+            bounty.stage = BountyStage::Canceled;
+        });
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });
 }

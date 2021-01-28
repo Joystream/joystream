@@ -18,6 +18,7 @@ mod benchmarking;
 
 // TODO: add max entries limit
 // TODO: benchmark all bounty creation parameters
+// TODO: add assertion for the created bounty object content
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -29,12 +30,15 @@ pub trait WeightInfo {
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 use frame_support::dispatch::DispatchResult;
+use frame_support::traits::Currency;
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
+use sp_arithmetic::traits::Saturating;
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 
+use common::council::CouncilBudgetManager;
 use common::origin::MemberOriginValidator;
 use common::MemberId;
 
@@ -55,6 +59,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 }
 
 /// Alias type for the BountyParameters.
@@ -139,6 +146,23 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     pub judging_period: BlockNumber,
 }
 
+/// Defines current bounty stage.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum BountyStage<BlockNumber> {
+    /// Bounty founding stage with starting block number.
+    Funding(BlockNumber),
+
+    /// A bounty was canceled.
+    Canceled,
+}
+
+impl<BlockNumber: Default> Default for BountyStage<BlockNumber> {
+    fn default() -> Self {
+        BountyStage::Funding(Default::default())
+    }
+}
+
 /// Alias type for the Bounty.
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
@@ -150,7 +174,14 @@ pub type Bounty<T> = BountyRecord<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct BountyRecord<Balance, BlockNumber, MemberId> {
+    /// Bounty creation parameters.
     pub creation_params: BountyParameters<Balance, BlockNumber, MemberId>,
+
+    /// The current bounty stage.
+    pub stage: BountyStage<BlockNumber>,
+
+    /// The current unspent "cherry" balance.
+    pub cherry_pot: Balance,
 }
 
 /// Balance alias for `balances` module.
@@ -196,6 +227,12 @@ decl_error! {
 
         /// Judging period cannot be zero.
         JudgingPeriodCannotBeZero,
+
+        /// Invalid bounty stage for the operation.
+        InvalidBountyStage,
+
+        /// Insufficient balance for a bounty cherry.
+        InsufficientBalanceForBountyCherry,
     }
 }
 
@@ -216,14 +253,16 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // TODO: add creation block
-            // TODO: slash cherry from the balance
+            // Shouldn't fail because the origin and balance was checked previously.
+            Self::slash_cherry_balance(origin, &params)?;
 
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
             let bounty = Bounty::<T> {
+                cherry_pot: params.cherry,
                 creation_params: params,
+                stage: BountyStage::Funding(Self::current_block()),
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -242,7 +281,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // TODO: make payments for submitted work.
+            // TODO: make payments for submitted work. Change stage to Canceled.
 
             <Bounties<T>>::remove(bounty_id);
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id));
@@ -251,6 +290,11 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Wrapper-function over System::block_number()
+    fn current_block() -> T::BlockNumber {
+        <frame_system::Module<T>>::block_number()
+    }
+
     // Validates parameters for a bounty creation.
     fn ensure_create_bounty_parameters_valid(
         origin: &T::Origin,
@@ -258,12 +302,22 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         // Validate origin.
         if let Some(member_id) = params.creator_member_id {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
                 member_id,
             )?;
+
+            ensure!(
+                balances::Module::<T>::usable_balance(&account_id) >= params.cherry,
+                Error::<T>::InsufficientBalanceForBountyCherry
+            );
         } else {
             ensure_root(origin.clone())?;
+
+            ensure!(
+                T::CouncilBudgetManager::get_budget() >= params.cherry,
+                Error::<T>::InsufficientBalanceForBountyCherry
+            );
         }
 
         ensure!(
@@ -317,7 +371,31 @@ impl<T: Trait> Module<T> {
             );
         }
 
-        // TODO: check bounty stage
+        ensure!(
+            matches!(bounty.stage, BountyStage::Funding(_)),
+            Error::<T>::InvalidBountyStage,
+        );
+
+        Ok(())
+    }
+
+    // Slash a cherry for the bounty creation.
+    fn slash_cherry_balance(
+        origin: T::Origin,
+        params: &BountyCreationParameters<T>,
+    ) -> DispatchResult {
+        if let Some(member_id) = params.creator_member_id {
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin, member_id,
+            )?;
+
+            let _ = balances::Module::<T>::slash(&account_id, params.cherry);
+        } else {
+            let budget = T::CouncilBudgetManager::get_budget();
+            let new_budget = budget.saturating_sub(params.cherry);
+
+            T::CouncilBudgetManager::set_budget(new_budget);
+        }
 
         Ok(())
     }

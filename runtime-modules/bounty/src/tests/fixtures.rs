@@ -1,9 +1,9 @@
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
-use super::mocks::{Bounty, System, Test, TestEvent};
+use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{BountyCreationParameters, RawEvent};
 
 // Recommendation from Parity on testing on_finalize
@@ -16,6 +16,14 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Bounty as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = Balances::deposit_creating(&account_id, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
 
 pub struct EventFixture;
@@ -44,6 +52,7 @@ pub struct CreateBountyFixture {
     min_amount: u64,
     work_period: u64,
     judging_period: u64,
+    cherry: u64,
 }
 
 impl CreateBountyFixture {
@@ -55,6 +64,7 @@ impl CreateBountyFixture {
             min_amount: 0,
             work_period: 1,
             judging_period: 1,
+            cherry: 0,
         }
     }
 
@@ -91,12 +101,17 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_cherry(self, cherry: u64) -> Self {
+        Self { cherry, ..self }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BountyCreationParameters::<Test> {
             creator_member_id: self.creator_member_id.clone(),
             min_amount: self.min_amount.clone(),
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
+            cherry: self.cherry,
             ..Default::default()
         };
 
