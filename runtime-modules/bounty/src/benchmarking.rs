@@ -9,7 +9,7 @@ use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-use crate::{Bounties, Bounty, BountyCreationParameters, Call, Event, Module, Trait};
+use crate::{Bounties, BountyCreationParameters, Call, Event, Module, Trait};
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -24,7 +24,7 @@ const MAX_BYTES: u32 = 50000;
 benchmarks! {
     _{ }
 
-    create_bounty{
+    create_bounty {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
 
@@ -36,17 +36,13 @@ benchmarks! {
 
     }: _ (RawOrigin::Root, params.clone(), metadata)
     verify {
-        let bounty = Bounty::<T>{
-            creation_params: params,
-        };
-
         let bounty_id: T::BountyId = 1u32.into();
 
-        assert_eq!(Module::<T>::bounties(bounty_id), bounty);
+        assert!(Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
     }
 
-    cancel_bounty{
+    cancel_bounty {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
@@ -61,6 +57,23 @@ benchmarks! {
     verify {
         assert!(!<Bounties<T>>::contains_key(&bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
+    }
+
+    veto_bounty {
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            ..Default::default()
+        };
+
+        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+
+    }: _ (RawOrigin::Root, bounty_id)
+    verify {
+        assert!(!<Bounties<T>>::contains_key(&bounty_id));
+        assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 }
 
@@ -81,6 +94,13 @@ mod tests {
     fn cancel_bounty() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_cancel_bounty::<Test>());
+        });
+    }
+
+    #[test]
+    fn veto_bounty() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_veto_bounty::<Test>());
         });
     }
 }

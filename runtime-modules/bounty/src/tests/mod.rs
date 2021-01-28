@@ -11,7 +11,7 @@ use crate::{BountyStage, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
-    CreateBountyFixture, EventFixture,
+    CreateBountyFixture, EventFixture, VetoBountyFixture,
 };
 use mocks::{build_test_externalities, Test};
 
@@ -239,6 +239,70 @@ fn cancel_bounty_fails_with_invalid_stage() {
         });
 
         CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
+fn veto_bounty_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        VetoBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyVetoed(bounty_id));
+    });
+}
+
+#[test]
+fn veto_bounty_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bounty_id = 11u64;
+
+        VetoBountyFixture::default()
+            .with_bounty_id(invalid_bounty_id)
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn veto_bounty_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        VetoBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn veto_bounty_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
+            bounty.stage = BountyStage::Canceled;
+        });
+
+        VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });

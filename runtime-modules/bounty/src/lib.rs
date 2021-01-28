@@ -6,6 +6,7 @@
 //! ### Supported extrinsics:
 //! - [create_bounty](./struct.Module.html#method.create_bounty) - creates a bounty
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
+//! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -23,8 +24,9 @@ mod benchmarking;
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_bounty() -> Weight;
+    fn create_bounty(i: u32) -> Weight;
     fn cancel_bounty() -> Weight;
+    fn veto_bounty() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -36,6 +38,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, P
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Saturating;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
@@ -207,6 +210,9 @@ decl_event! {
 
         /// A bounty was canceled.
         BountyCanceled(BountyId),
+
+        /// A bounty was vetoed.
+        BountyVetoed(BountyId),
     }
 }
 
@@ -245,7 +251,15 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
-        #[weight = WeightInfoBounty::<T>::create_bounty()]
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the _metadata length.
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::create_bounty(_metadata.len().saturated_into())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
             Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
 
@@ -273,6 +287,13 @@ decl_module! {
         }
 
         /// Cancels a bounty.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoBounty::<T>::cancel_bounty()]
         pub fn cancel_bounty(origin, creator_member_id: Option<MemberId<T>>, bounty_id: T::BountyId) {
             Self::ensure_cancel_bounty_parameters_valid(&origin, creator_member_id, bounty_id)?;
@@ -285,6 +306,40 @@ decl_module! {
 
             <Bounties<T>>::remove(bounty_id);
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id));
+        }
+
+        /// Vetoes a bounty.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::veto_bounty()]
+        pub fn veto_bounty(origin, bounty_id: T::BountyId) {
+            ensure_root(origin)?;
+
+            ensure!(
+                <Bounties<T>>::contains_key(bounty_id),
+                Error::<T>::BountyDoesntExist
+            );
+
+            let bounty = <Bounties<T>>::get(bounty_id);
+
+            ensure!(
+                matches!(bounty.stage, BountyStage::Funding(_)),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // TODO: make payments for submitted work. Change stage to vetoed.
+
+            <Bounties<T>>::remove(bounty_id);
+            Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
         }
     }
 }
@@ -385,12 +440,14 @@ impl<T: Trait> Module<T> {
         params: &BountyCreationParameters<T>,
     ) -> DispatchResult {
         if let Some(member_id) = params.creator_member_id {
+            // Slash a balance from the member controller account.
             let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin, member_id,
             )?;
 
             let _ = balances::Module::<T>::slash(&account_id, params.cherry);
         } else {
+            // Remove a balance from the council budget.
             let budget = T::CouncilBudgetManager::get_budget();
             let new_budget = budget.saturating_sub(params.cherry);
 
