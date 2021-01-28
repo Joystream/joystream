@@ -213,19 +213,13 @@ decl_event! {
         <T as Trait>::ContentId,
         StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
         StorageProviderId = StorageProviderId<T>,
-        MultiContent = Vec<ContentParameters<<T as Trait>::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>,
+        Content = Vec<ContentParameters<<T as Trait>::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>,
     {
         /// Emits on adding of the content.
         /// Params:
-        /// - Id of the relationship.
+        /// - Content parameters representation.
         /// - StorageObjectOwner enum.
-        ContentAdded(ContentId, StorageObjectOwner),
-
-        /// Emits on atomic adding of the content.
-        /// Params:
-        /// - StorageObjectOwner enum.
-        /// - MultiContent parameters representation.
-        ContentMultiAdded(StorageObjectOwner, MultiContent),
+        ContentAdded(Content, StorageObjectOwner),
 
         /// Emits when the storage provider accepts a content.
         /// Params:
@@ -253,41 +247,13 @@ decl_module! {
         /// Maximum objects allowed per inject_data_objects() transaction
         const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
-        /// Adds the content to the system. Requires root privileges. The created DataObject
-        /// awaits liaison to accept or reject it.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_content(
-            origin,
-            abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
-            content: ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>,
-        ) {
-            ensure_root(origin)?;
-
-            Self::ensure_content_is_valid(&content)?;
-
-            let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
-
-            let content_id = content.content_id;
-
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Let's create the entry then
-            Self::upload_content(liaison, content, owner.clone());
-
-            Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
-        }
-
         /// Adds the content to the system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content_as_member(
             origin,
             member_id: MemberId<T>,
-            content: ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>,
+            content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
         ) {
             T::MemberOriginValidator::ensure_actor_origin(
                 origin,
@@ -298,8 +264,6 @@ decl_module! {
 
             let owner = StorageObjectOwner::Member(member_id);
 
-            let content_id = content.content_id;
-
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
@@ -307,51 +271,22 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(liaison, content, owner.clone());
+            Self::upload_content(liaison, content.clone(), owner.clone());
 
-            Self::deposit_event(RawEvent::ContentAdded(content_id, owner));
+            Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
 
-        /// Adds the multiple content to the system. Member id should match its origin. The created DataObject
+        /// Adds the content to the system. Requires root privileges. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn multi_add_content_as_member(
-            origin,
-            member_id: MemberId<T>,
-            multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
-        ) {
-            T::MemberOriginValidator::ensure_actor_origin(
-                origin,
-                member_id,
-            )?;
-
-            Self::ensure_multi_content_is_valid(&multi_content)?;
-
-            let owner = StorageObjectOwner::Member(member_id);
-
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Let's create the entry then
-            Self::upload_multi_content(liaison, multi_content.clone(), owner.clone());
-
-            Self::deposit_event(RawEvent::ContentMultiAdded(owner, multi_content));
-        }
-
-        /// Adds the multiple content to the system. Requires root privileges. The created DataObject
-        /// awaits liaison to accept or reject it.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn multi_add_content(
+        pub fn add_content(
             origin,
             abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
-            multi_content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
+            content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
         ) {
             ensure_root(origin)?;
 
-            Self::ensure_multi_content_is_valid(&multi_content)?;
+            Self::ensure_content_is_valid(&content)?;
 
             let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
 
@@ -362,9 +297,9 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_multi_content(liaison, multi_content.clone(), owner.clone());
+            Self::upload_content(liaison, content.clone(), owner.clone());
 
-            Self::deposit_event(RawEvent::ContentMultiAdded(owner, multi_content));
+            Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -447,7 +382,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn upload_multi_content(
+    fn upload_content(
         liaison: StorageProviderId<T>,
         multi_content: Vec<
             ContentParameters<
@@ -458,58 +393,37 @@ impl<T: Trait> Module<T> {
         owner: StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
     ) {
         for content in multi_content {
-            Self::upload_content(liaison, content, owner.clone());
+            let data: DataObject<T> = DataObjectInternal {
+                type_id: content.type_id,
+                size: content.size,
+                added_at: common::current_block_time::<T>(),
+                owner: owner.clone(),
+                liaison,
+                liaison_judgement: LiaisonJudgement::Pending,
+                ipfs_content_id: content.ipfs_content_id,
+            };
+
+            <DataObjectByContentId<T>>::insert(content.content_id, data);
         }
     }
 
-    fn upload_content(
-        liaison: StorageProviderId<T>,
-        content: ContentParameters<
-            T::ContentId,
-            <T as data_object_type_registry::Trait>::DataObjectTypeId,
-        >,
-        owner: StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
-    ) {
-        let data: DataObject<T> = DataObjectInternal {
-            type_id: content.type_id,
-            size: content.size,
-            added_at: common::current_block_time::<T>(),
-            owner,
-            liaison,
-            liaison_judgement: LiaisonJudgement::Pending,
-            ipfs_content_id: content.ipfs_content_id,
-        };
-
-        <DataObjectByContentId<T>>::insert(content.content_id, data);
-    }
-
-    fn ensure_multi_content_is_valid(
+    fn ensure_content_is_valid(
         multi_content: &[ContentParameters<
             T::ContentId,
             <T as data_object_type_registry::Trait>::DataObjectTypeId,
         >],
     ) -> DispatchResult {
         for content in multi_content {
-            Self::ensure_content_is_valid(content)?;
+            ensure!(
+                T::IsActiveDataObjectType::is_active_data_object_type(&content.type_id),
+                Error::<T>::DataObjectTypeMustBeActive
+            );
+
+            ensure!(
+                !<DataObjectByContentId<T>>::contains_key(&content.content_id),
+                Error::<T>::DataObjectAlreadyAdded
+            );
         }
-        Ok(())
-    }
-
-    fn ensure_content_is_valid(
-        content: &ContentParameters<
-            T::ContentId,
-            <T as data_object_type_registry::Trait>::DataObjectTypeId,
-        >,
-    ) -> DispatchResult {
-        ensure!(
-            T::IsActiveDataObjectType::is_active_data_object_type(&content.type_id),
-            Error::<T>::DataObjectTypeMustBeActive
-        );
-
-        ensure!(
-            !<DataObjectByContentId<T>>::contains_key(&content.content_id),
-            Error::<T>::DataObjectAlreadyAdded
-        );
         Ok(())
     }
 
