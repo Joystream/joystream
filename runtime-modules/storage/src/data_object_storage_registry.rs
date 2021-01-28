@@ -30,7 +30,7 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::*;
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
@@ -79,7 +79,7 @@ decl_error! {
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     /// Content id.
-    pub content_id: <T as data_directory::Trait>::ContentId,
+    pub content_id: <T as common::Trait>::ContentId,
 
     /// Storge provider id.
     pub storage_provider_id: StorageProviderId<T>,
@@ -111,7 +111,7 @@ decl_storage! {
 decl_event! {
     /// _Data object storage registry_ events
     pub enum Event<T> where
-        <T as data_directory::Trait>::ContentId,
+        <T as common::Trait>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         StorageProviderId = StorageProviderId<T>
     {

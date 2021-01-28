@@ -24,8 +24,7 @@
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 use system::ensure_root;
@@ -34,17 +33,12 @@ use system::ensure_root;
 use serde::{Deserialize, Serialize};
 
 use common::origin::ActorOriginValidator;
+pub use common::storage::{AbstractStorageObjectOwner, ContentParameters, StorageObjectOwner};
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
-
-// Temporary representation.
-type ChannelId = u64;
-
-// Temporary representation.
-type DAOId = u64;
+use crate::*;
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
@@ -53,12 +47,10 @@ pub trait Trait:
     + data_object_type_registry::Trait
     + membership::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
+    + common::Trait
 {
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    /// Content id.
-    type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
 
     /// Provides random storage provider id.
     type StorageProviderHelper: StorageProviderHelper<Self>;
@@ -95,31 +87,6 @@ decl_error! {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum WorkinGroupType {
-    ContentDirectory,
-    Builders,
-    StorageProviders,
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum AbstractStorageObjectOwner<ChannelId, DAOId> {
-    Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
-    DAO(DAOId),         // acts through upcoming `content_finance` module
-    Council,            // acts through proposal system
-    WorkingGroup(WorkinGroupType), // acts through new extrinsic in working group
-}
-
-// New owner type for storage object struct
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
-    Member(MemberId),
-    AbstractStorageObjectOwner(AbstractStorageObjectOwner<ChannelId, DAOId>),
-}
-
 /// The decision of the storage provider when it acts as liaison.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
@@ -143,11 +110,11 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
-    ChannelId,
-    DAOId,
+    ChannelId<T>,
+    DAOId<T>,
     <T as system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
-    <T as data_object_type_registry::Trait>::DataObjectTypeId,
+    DataObjectTypeId<T>,
     StorageProviderId<T>,
 >;
 
@@ -185,21 +152,13 @@ pub struct DataObjectInternal<
     pub ipfs_content_id: Vec<u8>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub struct ContentParameters<ContentId, DataObjectTypeId> {
-    pub content_id: ContentId,
-    pub type_id: DataObjectTypeId,
-    pub size: u64,
-    pub ipfs_content_id: Vec<u8>,
-}
-
 /// A map collection of unique DataObjects keyed by the ContentId
-pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
+pub type DataObjectsMap<T> = BTreeMap<ContentId<T>, DataObject<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         /// List of ids known to the system.
-        pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
+        pub KnownContentIds get(fn known_content_ids) config(): Vec<ContentId<T>> = Vec::new();
 
         /// Maps data objects by their content id.
         pub DataObjectByContentId get(fn data_object_by_content_id) config():
@@ -210,10 +169,10 @@ decl_storage! {
 decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
-        <T as Trait>::ContentId,
-        StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
+        StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         StorageProviderId = StorageProviderId<T>,
-        Content = Vec<ContentParameters<<T as Trait>::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>,
+        Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
+        ContentId = ContentId<T>,
     {
         /// Emits on adding of the content.
         /// Params:
@@ -253,16 +212,16 @@ decl_module! {
         pub fn add_content_as_member(
             origin,
             member_id: MemberId<T>,
-            content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
+            content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>
         ) {
             T::MemberOriginValidator::ensure_actor_origin(
                 origin,
                 member_id,
             )?;
 
-            Self::ensure_content_is_valid(&content)?;
-
             let owner = StorageObjectOwner::Member(member_id);
+
+            Self::ensure_content_is_valid(&content)?;
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -281,8 +240,8 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
-            abstract_owner: AbstractStorageObjectOwner<ChannelId, DAOId>,
-            content: Vec<ContentParameters<T::ContentId, <T as data_object_type_registry::Trait>::DataObjectTypeId>>
+            abstract_owner: AbstractStorageObjectOwner<ChannelId<T>, DAOId<T>>,
+            content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
             ensure_root(origin)?;
 
@@ -384,13 +343,8 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn upload_content(
         liaison: StorageProviderId<T>,
-        multi_content: Vec<
-            ContentParameters<
-                T::ContentId,
-                <T as data_object_type_registry::Trait>::DataObjectTypeId,
-            >,
-        >,
-        owner: StorageObjectOwner<MemberId<T>, ChannelId, DAOId>,
+        multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
+        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
     ) {
         for content in multi_content {
             let data: DataObject<T> = DataObjectInternal {
@@ -408,10 +362,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_content_is_valid(
-        multi_content: &[ContentParameters<
-            T::ContentId,
-            <T as data_object_type_registry::Trait>::DataObjectTypeId,
-        >],
+        multi_content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
     ) -> DispatchResult {
         for content in multi_content {
             ensure!(
@@ -473,5 +424,19 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
             Some(data) => Ok(data),
             None => Err(Error::<T>::LiaisonRequired.into()),
         }
+    }
+}
+
+impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
+    fn atomically_add_content(
+        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
+    ) -> DispatchResult {
+        Self::ensure_content_is_valid(&content)?;
+
+        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+        Self::upload_content(liaison, content, owner);
+        Ok(())
     }
 }
