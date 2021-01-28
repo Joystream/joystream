@@ -12,8 +12,14 @@ type Block @entity {
   network: Network!
 }
 
+enum EntryMethod {
+  PAID
+  SCREENING
+  GENESIS
+}
+
 "Stored information about a registered user"
-type Member @entity {
+type Membership @entity {
   "MemberId: runtime identifier for a user"
   id: ID!
 
@@ -27,15 +33,25 @@ type Member @entity {
   about: String
 
   "Blocknumber when member was registered"
-  registeredAtBlock: Int!
+  registeredAtBlock: Block!
 
   "Member's controller account id"
-  controllerAccount: Bytes!
+  controllerAccount: String!
 
   "Member's root account id"
-  rootAccount: Bytes!
+  rootAccount: String!
 
-  happenedIn: Block!
+  "Timestamp when member was registered"
+  registeredAtTime: DateTime!
+
+  "How the member was registered"
+  entry: EntryMethod!
+
+  "Whether the member is suspended or not."
+  suspended: Boolean!
+
+  "The type of subscription the member has purchased if any."
+  subscription: BigInt
 }
 
 """
