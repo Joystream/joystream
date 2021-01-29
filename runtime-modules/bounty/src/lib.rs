@@ -148,6 +148,9 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
 
     /// Number of block from end of work period until oracle can no longer decide winners.
     pub judging_period: BlockNumber,
+
+    /// Funds provided by a bounty creator.
+    pub creator_funding: Balance,
 }
 
 /// Defines current bounty stage.
@@ -186,6 +189,9 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
 
     /// The current unspent "cherry" balance.
     pub cherry_pot: Balance,
+
+    /// The current unspent funding balance.
+    pub current_funding: Balance,
 }
 
 /// Balance alias for `balances` module.
@@ -239,7 +245,7 @@ decl_error! {
         InvalidBountyStage,
 
         /// Insufficient balance for a bounty cherry.
-        InsufficientBalanceForBountyCherry,
+        InsufficientBalanceForBounty,
     }
 }
 
@@ -270,13 +276,14 @@ decl_module! {
             //
 
             // Shouldn't fail because the origin and balance was checked previously.
-            Self::slash_cherry_balance(origin, &params)?;
+            Self::slash_balance(origin, &params)?;
 
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
             let bounty = Bounty::<T> {
                 cherry_pot: params.cherry,
+                current_funding: params.creator_funding,
                 creation_params: params,
                 stage: BountyStage::Funding(Self::current_block()),
             };
@@ -358,6 +365,8 @@ impl<T: Trait> Module<T> {
         origin: &T::Origin,
         params: &BountyCreationParameters<T>,
     ) -> DispatchResult {
+        let required_balance_for_bounty = params.cherry + params.creator_funding;
+
         // Validate origin.
         if let Some(member_id) = params.creator_member_id {
             let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
@@ -366,15 +375,15 @@ impl<T: Trait> Module<T> {
             )?;
 
             ensure!(
-                balances::Module::<T>::usable_balance(&account_id) >= params.cherry,
-                Error::<T>::InsufficientBalanceForBountyCherry
+                balances::Module::<T>::usable_balance(&account_id) >= required_balance_for_bounty,
+                Error::<T>::InsufficientBalanceForBounty
             );
         } else {
             ensure_root(origin.clone())?;
 
             ensure!(
-                T::CouncilBudgetManager::get_budget() >= params.cherry,
-                Error::<T>::InsufficientBalanceForBountyCherry
+                T::CouncilBudgetManager::get_budget() >= required_balance_for_bounty,
+                Error::<T>::InsufficientBalanceForBounty
             );
         }
 
@@ -437,22 +446,24 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Slash a cherry for the bounty creation.
-    fn slash_cherry_balance(
+    // Slash a balance for the bounty creation.
+    fn slash_balance(
         origin: T::Origin,
         params: &BountyCreationParameters<T>,
     ) -> DispatchResult {
+        let required_balance_for_bounty = params.cherry + params.creator_funding;
+
         if let Some(member_id) = params.creator_member_id {
             // Slash a balance from the member controller account.
             let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin, member_id,
             )?;
 
-            let _ = balances::Module::<T>::slash(&account_id, params.cherry);
+            let _ = balances::Module::<T>::slash(&account_id, required_balance_for_bounty);
         } else {
             // Remove a balance from the council budget.
             let budget = T::CouncilBudgetManager::get_budget();
-            let new_budget = budget.saturating_sub(params.cherry);
+            let new_budget = budget.saturating_sub(required_balance_for_bounty);
 
             T::CouncilBudgetManager::set_budget(new_budget);
         }

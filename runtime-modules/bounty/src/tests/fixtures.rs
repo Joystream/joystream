@@ -53,6 +53,7 @@ pub struct CreateBountyFixture {
     work_period: u64,
     judging_period: u64,
     cherry: u64,
+    creator_funding: u64,
 }
 
 impl CreateBountyFixture {
@@ -65,6 +66,7 @@ impl CreateBountyFixture {
             work_period: 1,
             judging_period: 1,
             cherry: 0,
+            creator_funding: 0,
         }
     }
 
@@ -105,6 +107,13 @@ impl CreateBountyFixture {
         Self { cherry, ..self }
     }
 
+    pub fn with_creator_funding(self, creator_funding: u64) -> Self {
+        Self {
+            creator_funding,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BountyCreationParameters::<Test> {
             creator_member_id: self.creator_member_id.clone(),
@@ -112,6 +121,7 @@ impl CreateBountyFixture {
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
             cherry: self.cherry,
+            creator_funding: self.creator_funding,
             ..Default::default()
         };
 

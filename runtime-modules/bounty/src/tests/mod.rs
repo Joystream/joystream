@@ -39,7 +39,8 @@ fn create_bounty_slashes_the_member_balance_correctly() {
         let member_id = 1;
         let account_id = 1;
         let cherry = 100;
-        let initial_balance = 200;
+        let initial_balance = 500;
+        let creator_funding = 200;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
 
@@ -48,11 +49,12 @@ fn create_bounty_slashes_the_member_balance_correctly() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
+            .with_creator_funding(creator_funding)
             .call_and_assert(Ok(()));
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance - cherry
+            initial_balance - cherry - creator_funding
         );
     });
 }
@@ -61,18 +63,20 @@ fn create_bounty_slashes_the_member_balance_correctly() {
 fn create_bounty_slashes_the_council_balance_correctly() {
     build_test_externalities().execute_with(|| {
         let cherry = 100;
-        let initial_balance = 200;
+        let initial_balance = 500;
+        let creator_funding = 200;
 
         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
 
         // Insufficient member controller account balance.
         CreateBountyFixture::default()
             .with_cherry(cherry)
+            .with_creator_funding(creator_funding)
             .call_and_assert(Ok(()));
 
         assert_eq!(
             <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget(),
-            initial_balance - cherry
+            initial_balance - cherry - creator_funding
         );
     });
 }
@@ -127,14 +131,14 @@ fn create_bounty_fails_with_insufficient_balances() {
         // Insufficient council budget.
         CreateBountyFixture::default()
             .with_cherry(cherry)
-            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBountyCherry.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
 
         // Insufficient member controller account balance.
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
-            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBountyCherry.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
     });
 }
 
