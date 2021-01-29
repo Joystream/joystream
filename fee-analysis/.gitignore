@@ -1,0 +1,4 @@
+.ipynb_checkpoints/
+.vim/
+__pycache__/
+.venv/
