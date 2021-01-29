@@ -1,5 +1,5 @@
 [package]
-name = "blog-module"
+name = "pallet-blog"
 version = "3.0.0"
 authors = ["iorveth"]
 edition = "2018"
