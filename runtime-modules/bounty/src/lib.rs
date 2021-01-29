@@ -33,7 +33,7 @@ pub trait WeightInfo {
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Currency;
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
@@ -269,14 +269,20 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
               .max(WeightInfoBounty::<T>::create_bounty_by_council())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
-            Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
+            let bounty_creator = BountyCreator::<T>::get_bounty_creator(
+                origin,
+                params.creator_member_id
+            )?;
+
+            bounty_creator.validate_balance_sufficiency(params.cherry, params.creator_funding)?;
+
+            Self::ensure_create_bounty_parameters_valid(&params)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Shouldn't fail because the origin and balance was checked previously.
-            Self::slash_balance(origin, &params)?;
+            bounty_creator.slash_balance(params.cherry, params.creator_funding);
 
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
@@ -306,7 +312,24 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
               .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
         pub fn cancel_bounty(origin, creator_member_id: Option<MemberId<T>>, bounty_id: T::BountyId) {
-            Self::ensure_cancel_bounty_parameters_valid(&origin, creator_member_id, bounty_id)?;
+            let bounty_creator = BountyCreator::<T>::get_bounty_creator(
+                origin,
+                creator_member_id
+            )?;
+
+            ensure!(
+                <Bounties<T>>::contains_key(bounty_id),
+                Error::<T>::BountyDoesntExist
+            );
+
+            let bounty = <Bounties<T>>::get(bounty_id);
+
+            bounty_creator.validate_creator(&bounty.creation_params.creator_member_id)?;
+
+            ensure!(
+                matches!(bounty.stage, BountyStage::Funding(_)),
+                Error::<T>::InvalidBountyStage,
+            );
 
             //
             // == MUTATION SAFE ==
@@ -362,31 +385,8 @@ impl<T: Trait> Module<T> {
 
     // Validates parameters for a bounty creation.
     fn ensure_create_bounty_parameters_valid(
-        origin: &T::Origin,
         params: &BountyCreationParameters<T>,
     ) -> DispatchResult {
-        let required_balance_for_bounty = params.cherry + params.creator_funding;
-
-        // Validate origin.
-        if let Some(member_id) = params.creator_member_id {
-            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin.clone(),
-                member_id,
-            )?;
-
-            ensure!(
-                balances::Module::<T>::usable_balance(&account_id) >= required_balance_for_bounty,
-                Error::<T>::InsufficientBalanceForBounty
-            );
-        } else {
-            ensure_root(origin.clone())?;
-
-            ensure!(
-                T::CouncilBudgetManager::get_budget() >= required_balance_for_bounty,
-                Error::<T>::InsufficientBalanceForBounty
-            );
-        }
-
         ensure!(
             params.work_period != Zero::zero(),
             Error::<T>::WorkPeriodCannotBeZero
@@ -404,70 +404,121 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+}
 
-    // Validates parameters for a bounty cancellation.
-    fn ensure_cancel_bounty_parameters_valid(
-        origin: &T::Origin,
+// Helper enum for the bounty management.
+enum BountyCreator<T: Trait> {
+    // Bounty was created by a council.
+    Council,
+
+    // Bounty was created by a member.
+    Member(T::AccountId, MemberId<T>),
+}
+
+impl<T: Trait> BountyCreator<T> {
+    // Construct BountyCreator by extrinsic origin and optional member_id.
+    fn get_bounty_creator(
+        origin: T::Origin,
         creator_member_id: Option<MemberId<T>>,
-        bounty_id: T::BountyId,
-    ) -> DispatchResult {
-        ensure!(
-            <Bounties<T>>::contains_key(bounty_id),
-            Error::<T>::BountyDoesntExist
-        );
-
-        let bounty = <Bounties<T>>::get(bounty_id);
-
-        // Validate origin.
+    ) -> Result<BountyCreator<T>, DispatchError> {
         if let Some(member_id) = creator_member_id {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin.clone(),
-                member_id,
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin, member_id,
             )?;
 
-            ensure!(
-                bounty.creation_params.creator_member_id == creator_member_id,
-                Error::<T>::NotBountyCreator,
-            );
+            Ok(BountyCreator::Member(account_id, member_id))
         } else {
-            ensure_root(origin.clone())?;
+            ensure_root(origin)?;
 
-            ensure!(
-                bounty.creation_params.creator_member_id.is_none(),
-                Error::<T>::NotBountyCreator,
-            );
+            Ok(BountyCreator::Council)
         }
+    }
+
+    // Validate balance is sufficient for the bounty
+    fn validate_balance_sufficiency(
+        &self,
+        cherry: BalanceOf<T>,
+        creator_funding: BalanceOf<T>,
+    ) -> DispatchResult {
+        let required_balance = cherry + creator_funding;
+
+        let balance_is_sufficient = match self {
+            BountyCreator::Council => BountyCreator::<T>::check_council_budget(required_balance),
+            BountyCreator::Member(account_id, _) => {
+                BountyCreator::<T>::check_balance_for_member(required_balance, account_id)
+            }
+        };
 
         ensure!(
-            matches!(bounty.stage, BountyStage::Funding(_)),
-            Error::<T>::InvalidBountyStage,
+            balance_is_sufficient,
+            Error::<T>::InsufficientBalanceForBounty
         );
 
         Ok(())
     }
 
-    // Slash a balance for the bounty creation.
-    fn slash_balance(
-        origin: T::Origin,
-        params: &BountyCreationParameters<T>,
-    ) -> DispatchResult {
-        let required_balance_for_bounty = params.cherry + params.creator_funding;
+    // Verifies that council budget is sufficient for a bounty.
+    fn check_council_budget(amount: BalanceOf<T>) -> bool {
+        T::CouncilBudgetManager::get_budget() >= amount
+    }
 
-        if let Some(member_id) = params.creator_member_id {
-            // Slash a balance from the member controller account.
-            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin, member_id,
-            )?;
+    // Verifies that member balance is sufficient for a bounty.
+    fn check_balance_for_member(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
+        balances::Module::<T>::usable_balance(account_id) >= amount
+    }
 
-            let _ = balances::Module::<T>::slash(&account_id, required_balance_for_bounty);
-        } else {
-            // Remove a balance from the council budget.
-            let budget = T::CouncilBudgetManager::get_budget();
-            let new_budget = budget.saturating_sub(required_balance_for_bounty);
+    // Validate that provided creator_member_id relates to the initial BountyCreator.
+    // Eg.: It could test saved bounty creator_member_id with the extrinsic's origin and optional
+    // creator_member_id.
+    fn validate_creator(&self, creator_member_id: &Option<MemberId<T>>) -> DispatchResult {
+        let creator_validated = match self {
+            BountyCreator::Council => BountyCreator::<T>::created_by_council(creator_member_id),
+            BountyCreator::Member(_, member_id) => {
+                BountyCreator::<T>::created_by_member(*member_id, creator_member_id)
+            }
+        };
 
-            T::CouncilBudgetManager::set_budget(new_budget);
-        }
+        ensure!(creator_validated, Error::<T>::NotBountyCreator);
 
         Ok(())
+    }
+
+    // Verifies that provided creator_member_id is correct for the bounty created by a council.
+    fn created_by_council(creator_member_id: &Option<MemberId<T>>) -> bool {
+        creator_member_id.is_none()
+    }
+
+    // Verifies that provided creator_member_id relates to the bounty creator member ID..
+    fn created_by_member(member_id: MemberId<T>, creator_member_id: &Option<MemberId<T>>) -> bool {
+        creator_member_id
+            .map(|creator_member_id| member_id == creator_member_id)
+            .unwrap_or(false)
+    }
+
+    // Slash a balance for the bounty creation.
+    fn slash_balance(&self, cherry: BalanceOf<T>, creator_funding: BalanceOf<T>) {
+        let required_balance = cherry + creator_funding;
+
+        match self {
+            BountyCreator::Council => {
+                BountyCreator::<T>::remove_balance_from_council_budget(required_balance);
+            }
+            BountyCreator::Member(account_id, _) => {
+                BountyCreator::<T>::slash_balance_for_member(required_balance, account_id);
+            }
+        }
+    }
+
+    // Slash a balance from the member controller account.
+    fn slash_balance_for_member(amount: BalanceOf<T>, account_id: &T::AccountId) {
+        let _ = balances::Module::<T>::slash(account_id, amount);
+    }
+
+    // Remove a balance from the council budget.
+    fn remove_balance_from_council_budget(amount: BalanceOf<T>) {
+        let budget = T::CouncilBudgetManager::get_budget();
+        let new_budget = budget.saturating_sub(amount);
+
+        T::CouncilBudgetManager::set_budget(new_budget);
     }
 }
