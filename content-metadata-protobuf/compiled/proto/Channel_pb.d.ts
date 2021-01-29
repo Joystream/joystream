@@ -24,6 +24,16 @@ export class ChannelMetadata extends jspb.Message {
   getLanguage(): string | undefined;
   setLanguage(value: string): void;
 
+  hasCoverPhoto(): boolean;
+  clearCoverPhoto(): void;
+  getCoverPhoto(): number | undefined;
+  setCoverPhoto(value: number): void;
+
+  hasAvatarPhoto(): boolean;
+  clearAvatarPhoto(): void;
+  getAvatarPhoto(): number | undefined;
+  setAvatarPhoto(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ChannelMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: ChannelMetadata): ChannelMetadata.AsObject;
@@ -40,6 +50,8 @@ export namespace ChannelMetadata {
     description?: string,
     isPublic?: boolean,
     language?: string,
+    coverPhoto?: number,
+    avatarPhoto?: number,
   }
 }
 

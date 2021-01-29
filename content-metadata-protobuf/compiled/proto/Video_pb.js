@@ -370,7 +370,7 @@ proto.License.deserializeBinaryFromReader = function(msg, reader) {
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setCode(value);
       break;
     case 2:
@@ -412,7 +412,7 @@ proto.License.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
   f = /** @type {number} */ (jspb.Message.getField(message, 1));
   if (f != null) {
-    writer.writeInt32(
+    writer.writeUint32(
       1,
       f
     );
@@ -435,7 +435,7 @@ proto.License.serializeBinaryToWriter = function(message, writer) {
 
 
 /**
- * optional int32 code = 1;
+ * optional uint32 code = 1;
  * @return {number}
  */
 proto.License.prototype.getCode = function() {
@@ -820,16 +820,18 @@ proto.VideoMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
-    duration: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
-    mediaPixelHeight: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
-    mediaPixelWidth: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
+    video: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
+    thumbnailPhoto: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
+    duration: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
+    mediaPixelHeight: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f,
+    mediaPixelWidth: (f = jspb.Message.getField(msg, 7)) == null ? undefined : f,
     mediaType: (f = msg.getMediaType()) && proto.MediaType.toObject(includeInstance, f),
-    language: (f = jspb.Message.getField(msg, 7)) == null ? undefined : f,
+    language: (f = jspb.Message.getField(msg, 9)) == null ? undefined : f,
     license: (f = msg.getLicense()) && proto.License.toObject(includeInstance, f),
     publishedBeforeJoystream: (f = msg.getPublishedBeforeJoystream()) && proto.PublishedBeforeJoystream.toObject(includeInstance, f),
-    hasMarketing: (f = jspb.Message.getBooleanField(msg, 10)) == null ? undefined : f,
-    isPublic: (f = jspb.Message.getBooleanField(msg, 11)) == null ? undefined : f,
-    isExplicit: (f = jspb.Message.getBooleanField(msg, 12)) == null ? undefined : f
+    hasMarketing: (f = jspb.Message.getBooleanField(msg, 12)) == null ? undefined : f,
+    isPublic: (f = jspb.Message.getBooleanField(msg, 13)) == null ? undefined : f,
+    isExplicit: (f = jspb.Message.getBooleanField(msg, 14)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -875,45 +877,53 @@ proto.VideoMetadata.deserializeBinaryFromReader = function(msg, reader) {
       msg.setDescription(value);
       break;
     case 3:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setDuration(value);
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setVideo(value);
       break;
     case 4:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setMediaPixelHeight(value);
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setThumbnailPhoto(value);
       break;
     case 5:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setMediaPixelWidth(value);
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setDuration(value);
       break;
     case 6:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setMediaPixelHeight(value);
+      break;
+    case 7:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setMediaPixelWidth(value);
+      break;
+    case 8:
       var value = new proto.MediaType;
       reader.readMessage(value,proto.MediaType.deserializeBinaryFromReader);
       msg.setMediaType(value);
       break;
-    case 7:
+    case 9:
       var value = /** @type {string} */ (reader.readString());
       msg.setLanguage(value);
       break;
-    case 8:
+    case 10:
       var value = new proto.License;
       reader.readMessage(value,proto.License.deserializeBinaryFromReader);
       msg.setLicense(value);
       break;
-    case 9:
+    case 11:
       var value = new proto.PublishedBeforeJoystream;
       reader.readMessage(value,proto.PublishedBeforeJoystream.deserializeBinaryFromReader);
       msg.setPublishedBeforeJoystream(value);
       break;
-    case 10:
+    case 12:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setHasMarketing(value);
       break;
-    case 11:
+    case 13:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setIsPublic(value);
       break;
-    case 12:
+    case 14:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setIsExplicit(value);
       break;
@@ -962,44 +972,58 @@ proto.VideoMetadata.serializeBinaryToWriter = function(message, writer) {
   }
   f = /** @type {number} */ (jspb.Message.getField(message, 3));
   if (f != null) {
-    writer.writeInt32(
+    writer.writeUint32(
       3,
       f
     );
   }
   f = /** @type {number} */ (jspb.Message.getField(message, 4));
   if (f != null) {
-    writer.writeInt32(
+    writer.writeUint32(
       4,
       f
     );
   }
   f = /** @type {number} */ (jspb.Message.getField(message, 5));
   if (f != null) {
-    writer.writeInt32(
+    writer.writeUint32(
       5,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 6));
+  if (f != null) {
+    writer.writeUint32(
+      6,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 7));
+  if (f != null) {
+    writer.writeUint32(
+      7,
       f
     );
   }
   f = message.getMediaType();
   if (f != null) {
     writer.writeMessage(
-      6,
+      8,
       f,
       proto.MediaType.serializeBinaryToWriter
     );
   }
-  f = /** @type {string} */ (jspb.Message.getField(message, 7));
+  f = /** @type {string} */ (jspb.Message.getField(message, 9));
   if (f != null) {
     writer.writeString(
-      7,
+      9,
       f
     );
   }
   f = message.getLicense();
   if (f != null) {
     writer.writeMessage(
-      8,
+      10,
       f,
       proto.License.serializeBinaryToWriter
     );
@@ -1007,29 +1031,29 @@ proto.VideoMetadata.serializeBinaryToWriter = function(message, writer) {
   f = message.getPublishedBeforeJoystream();
   if (f != null) {
     writer.writeMessage(
-      9,
+      11,
       f,
       proto.PublishedBeforeJoystream.serializeBinaryToWriter
-    );
-  }
-  f = /** @type {boolean} */ (jspb.Message.getField(message, 10));
-  if (f != null) {
-    writer.writeBool(
-      10,
-      f
-    );
-  }
-  f = /** @type {boolean} */ (jspb.Message.getField(message, 11));
-  if (f != null) {
-    writer.writeBool(
-      11,
-      f
     );
   }
   f = /** @type {boolean} */ (jspb.Message.getField(message, 12));
   if (f != null) {
     writer.writeBool(
       12,
+      f
+    );
+  }
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 13));
+  if (f != null) {
+    writer.writeBool(
+      13,
+      f
+    );
+  }
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 14));
+  if (f != null) {
+    writer.writeBool(
+      14,
       f
     );
   }
@@ -1109,10 +1133,10 @@ proto.VideoMetadata.prototype.hasDescription = function() {
 
 
 /**
- * optional int32 duration = 3;
+ * optional uint32 video = 3;
  * @return {number}
  */
-proto.VideoMetadata.prototype.getDuration = function() {
+proto.VideoMetadata.prototype.getVideo = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
 };
 
@@ -1121,7 +1145,7 @@ proto.VideoMetadata.prototype.getDuration = function() {
  * @param {number} value
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.setDuration = function(value) {
+proto.VideoMetadata.prototype.setVideo = function(value) {
   return jspb.Message.setField(this, 3, value);
 };
 
@@ -1130,7 +1154,7 @@ proto.VideoMetadata.prototype.setDuration = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.clearDuration = function() {
+proto.VideoMetadata.prototype.clearVideo = function() {
   return jspb.Message.setField(this, 3, undefined);
 };
 
@@ -1139,16 +1163,16 @@ proto.VideoMetadata.prototype.clearDuration = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.VideoMetadata.prototype.hasDuration = function() {
+proto.VideoMetadata.prototype.hasVideo = function() {
   return jspb.Message.getField(this, 3) != null;
 };
 
 
 /**
- * optional int32 media_pixel_height = 4;
+ * optional uint32 thumbnail_photo = 4;
  * @return {number}
  */
-proto.VideoMetadata.prototype.getMediaPixelHeight = function() {
+proto.VideoMetadata.prototype.getThumbnailPhoto = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
 };
 
@@ -1157,7 +1181,7 @@ proto.VideoMetadata.prototype.getMediaPixelHeight = function() {
  * @param {number} value
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.setMediaPixelHeight = function(value) {
+proto.VideoMetadata.prototype.setThumbnailPhoto = function(value) {
   return jspb.Message.setField(this, 4, value);
 };
 
@@ -1166,7 +1190,7 @@ proto.VideoMetadata.prototype.setMediaPixelHeight = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.clearMediaPixelHeight = function() {
+proto.VideoMetadata.prototype.clearThumbnailPhoto = function() {
   return jspb.Message.setField(this, 4, undefined);
 };
 
@@ -1175,16 +1199,16 @@ proto.VideoMetadata.prototype.clearMediaPixelHeight = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.VideoMetadata.prototype.hasMediaPixelHeight = function() {
+proto.VideoMetadata.prototype.hasThumbnailPhoto = function() {
   return jspb.Message.getField(this, 4) != null;
 };
 
 
 /**
- * optional int32 media_pixel_width = 5;
+ * optional uint32 duration = 5;
  * @return {number}
  */
-proto.VideoMetadata.prototype.getMediaPixelWidth = function() {
+proto.VideoMetadata.prototype.getDuration = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 5, 0));
 };
 
@@ -1193,7 +1217,7 @@ proto.VideoMetadata.prototype.getMediaPixelWidth = function() {
  * @param {number} value
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.setMediaPixelWidth = function(value) {
+proto.VideoMetadata.prototype.setDuration = function(value) {
   return jspb.Message.setField(this, 5, value);
 };
 
@@ -1202,7 +1226,7 @@ proto.VideoMetadata.prototype.setMediaPixelWidth = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.clearMediaPixelWidth = function() {
+proto.VideoMetadata.prototype.clearDuration = function() {
   return jspb.Message.setField(this, 5, undefined);
 };
 
@@ -1211,18 +1235,90 @@ proto.VideoMetadata.prototype.clearMediaPixelWidth = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.VideoMetadata.prototype.hasMediaPixelWidth = function() {
+proto.VideoMetadata.prototype.hasDuration = function() {
   return jspb.Message.getField(this, 5) != null;
 };
 
 
 /**
- * optional MediaType media_type = 6;
+ * optional uint32 media_pixel_height = 6;
+ * @return {number}
+ */
+proto.VideoMetadata.prototype.getMediaPixelHeight = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setMediaPixelHeight = function(value) {
+  return jspb.Message.setField(this, 6, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearMediaPixelHeight = function() {
+  return jspb.Message.setField(this, 6, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.hasMediaPixelHeight = function() {
+  return jspb.Message.getField(this, 6) != null;
+};
+
+
+/**
+ * optional uint32 media_pixel_width = 7;
+ * @return {number}
+ */
+proto.VideoMetadata.prototype.getMediaPixelWidth = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setMediaPixelWidth = function(value) {
+  return jspb.Message.setField(this, 7, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearMediaPixelWidth = function() {
+  return jspb.Message.setField(this, 7, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.hasMediaPixelWidth = function() {
+  return jspb.Message.getField(this, 7) != null;
+};
+
+
+/**
+ * optional MediaType media_type = 8;
  * @return {?proto.MediaType}
  */
 proto.VideoMetadata.prototype.getMediaType = function() {
   return /** @type{?proto.MediaType} */ (
-    jspb.Message.getWrapperField(this, proto.MediaType, 6));
+    jspb.Message.getWrapperField(this, proto.MediaType, 8));
 };
 
 
@@ -1231,7 +1327,7 @@ proto.VideoMetadata.prototype.getMediaType = function() {
  * @return {!proto.VideoMetadata} returns this
 */
 proto.VideoMetadata.prototype.setMediaType = function(value) {
-  return jspb.Message.setWrapperField(this, 6, value);
+  return jspb.Message.setWrapperField(this, 8, value);
 };
 
 
@@ -1249,16 +1345,16 @@ proto.VideoMetadata.prototype.clearMediaType = function() {
  * @return {boolean}
  */
 proto.VideoMetadata.prototype.hasMediaType = function() {
-  return jspb.Message.getField(this, 6) != null;
+  return jspb.Message.getField(this, 8) != null;
 };
 
 
 /**
- * optional string language = 7;
+ * optional string language = 9;
  * @return {string}
  */
 proto.VideoMetadata.prototype.getLanguage = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 7, ""));
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 9, ""));
 };
 
 
@@ -1267,7 +1363,7 @@ proto.VideoMetadata.prototype.getLanguage = function() {
  * @return {!proto.VideoMetadata} returns this
  */
 proto.VideoMetadata.prototype.setLanguage = function(value) {
-  return jspb.Message.setField(this, 7, value);
+  return jspb.Message.setField(this, 9, value);
 };
 
 
@@ -1276,7 +1372,7 @@ proto.VideoMetadata.prototype.setLanguage = function(value) {
  * @return {!proto.VideoMetadata} returns this
  */
 proto.VideoMetadata.prototype.clearLanguage = function() {
-  return jspb.Message.setField(this, 7, undefined);
+  return jspb.Message.setField(this, 9, undefined);
 };
 
 
@@ -1285,17 +1381,17 @@ proto.VideoMetadata.prototype.clearLanguage = function() {
  * @return {boolean}
  */
 proto.VideoMetadata.prototype.hasLanguage = function() {
-  return jspb.Message.getField(this, 7) != null;
+  return jspb.Message.getField(this, 9) != null;
 };
 
 
 /**
- * optional License license = 8;
+ * optional License license = 10;
  * @return {?proto.License}
  */
 proto.VideoMetadata.prototype.getLicense = function() {
   return /** @type{?proto.License} */ (
-    jspb.Message.getWrapperField(this, proto.License, 8));
+    jspb.Message.getWrapperField(this, proto.License, 10));
 };
 
 
@@ -1304,7 +1400,7 @@ proto.VideoMetadata.prototype.getLicense = function() {
  * @return {!proto.VideoMetadata} returns this
 */
 proto.VideoMetadata.prototype.setLicense = function(value) {
-  return jspb.Message.setWrapperField(this, 8, value);
+  return jspb.Message.setWrapperField(this, 10, value);
 };
 
 
@@ -1322,17 +1418,17 @@ proto.VideoMetadata.prototype.clearLicense = function() {
  * @return {boolean}
  */
 proto.VideoMetadata.prototype.hasLicense = function() {
-  return jspb.Message.getField(this, 8) != null;
+  return jspb.Message.getField(this, 10) != null;
 };
 
 
 /**
- * optional PublishedBeforeJoystream published_before_joystream = 9;
+ * optional PublishedBeforeJoystream published_before_joystream = 11;
  * @return {?proto.PublishedBeforeJoystream}
  */
 proto.VideoMetadata.prototype.getPublishedBeforeJoystream = function() {
   return /** @type{?proto.PublishedBeforeJoystream} */ (
-    jspb.Message.getWrapperField(this, proto.PublishedBeforeJoystream, 9));
+    jspb.Message.getWrapperField(this, proto.PublishedBeforeJoystream, 11));
 };
 
 
@@ -1341,7 +1437,7 @@ proto.VideoMetadata.prototype.getPublishedBeforeJoystream = function() {
  * @return {!proto.VideoMetadata} returns this
 */
 proto.VideoMetadata.prototype.setPublishedBeforeJoystream = function(value) {
-  return jspb.Message.setWrapperField(this, 9, value);
+  return jspb.Message.setWrapperField(this, 11, value);
 };
 
 
@@ -1359,87 +1455,15 @@ proto.VideoMetadata.prototype.clearPublishedBeforeJoystream = function() {
  * @return {boolean}
  */
 proto.VideoMetadata.prototype.hasPublishedBeforeJoystream = function() {
-  return jspb.Message.getField(this, 9) != null;
-};
-
-
-/**
- * optional bool has_marketing = 10;
- * @return {boolean}
- */
-proto.VideoMetadata.prototype.getHasMarketing = function() {
-  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 10, false));
-};
-
-
-/**
- * @param {boolean} value
- * @return {!proto.VideoMetadata} returns this
- */
-proto.VideoMetadata.prototype.setHasMarketing = function(value) {
-  return jspb.Message.setField(this, 10, value);
-};
-
-
-/**
- * Clears the field making it undefined.
- * @return {!proto.VideoMetadata} returns this
- */
-proto.VideoMetadata.prototype.clearHasMarketing = function() {
-  return jspb.Message.setField(this, 10, undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.VideoMetadata.prototype.hasHasMarketing = function() {
-  return jspb.Message.getField(this, 10) != null;
-};
-
-
-/**
- * optional bool is_public = 11;
- * @return {boolean}
- */
-proto.VideoMetadata.prototype.getIsPublic = function() {
-  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 11, false));
-};
-
-
-/**
- * @param {boolean} value
- * @return {!proto.VideoMetadata} returns this
- */
-proto.VideoMetadata.prototype.setIsPublic = function(value) {
-  return jspb.Message.setField(this, 11, value);
-};
-
-
-/**
- * Clears the field making it undefined.
- * @return {!proto.VideoMetadata} returns this
- */
-proto.VideoMetadata.prototype.clearIsPublic = function() {
-  return jspb.Message.setField(this, 11, undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.VideoMetadata.prototype.hasIsPublic = function() {
   return jspb.Message.getField(this, 11) != null;
 };
 
 
 /**
- * optional bool is_explicit = 12;
+ * optional bool has_marketing = 12;
  * @return {boolean}
  */
-proto.VideoMetadata.prototype.getIsExplicit = function() {
+proto.VideoMetadata.prototype.getHasMarketing = function() {
   return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 12, false));
 };
 
@@ -1448,7 +1472,7 @@ proto.VideoMetadata.prototype.getIsExplicit = function() {
  * @param {boolean} value
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.setIsExplicit = function(value) {
+proto.VideoMetadata.prototype.setHasMarketing = function(value) {
   return jspb.Message.setField(this, 12, value);
 };
 
@@ -1457,7 +1481,7 @@ proto.VideoMetadata.prototype.setIsExplicit = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.clearIsExplicit = function() {
+proto.VideoMetadata.prototype.clearHasMarketing = function() {
   return jspb.Message.setField(this, 12, undefined);
 };
 
@@ -1466,8 +1490,80 @@ proto.VideoMetadata.prototype.clearIsExplicit = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.VideoMetadata.prototype.hasIsExplicit = function() {
+proto.VideoMetadata.prototype.hasHasMarketing = function() {
   return jspb.Message.getField(this, 12) != null;
+};
+
+
+/**
+ * optional bool is_public = 13;
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.getIsPublic = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 13, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setIsPublic = function(value) {
+  return jspb.Message.setField(this, 13, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearIsPublic = function() {
+  return jspb.Message.setField(this, 13, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.hasIsPublic = function() {
+  return jspb.Message.getField(this, 13) != null;
+};
+
+
+/**
+ * optional bool is_explicit = 14;
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.getIsExplicit = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 14, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setIsExplicit = function(value) {
+  return jspb.Message.setField(this, 14, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearIsExplicit = function() {
+  return jspb.Message.setField(this, 14, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.hasIsExplicit = function() {
+  return jspb.Message.getField(this, 14) != null;
 };
 
 

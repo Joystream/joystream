@@ -3,6 +3,8 @@ syntax = "proto2";
 message SeriesMetadata {
     optional string title = 1;
     optional string description = 2;
+    // index into OOB array
+    optional uint32 cover_photo = 3;
 }
 
 message SeasonMetadata {

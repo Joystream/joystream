@@ -24,6 +24,16 @@ export class PersonMetadata extends jspb.Message {
   getAbout(): string | undefined;
   setAbout(value: string): void;
 
+  hasCoverPhoto(): boolean;
+  clearCoverPhoto(): void;
+  getCoverPhoto(): number | undefined;
+  setCoverPhoto(value: number): void;
+
+  hasAvatarPhoto(): boolean;
+  clearAvatarPhoto(): void;
+  getAvatarPhoto(): number | undefined;
+  setAvatarPhoto(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PersonMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: PersonMetadata): PersonMetadata.AsObject;
@@ -40,6 +50,8 @@ export namespace PersonMetadata {
     middleName?: string,
     lastName?: string,
     about?: string,
+    coverPhoto?: number,
+    avatarPhoto?: number,
   }
 }
 

@@ -110,6 +110,16 @@ export class VideoMetadata extends jspb.Message {
   getDescription(): string | undefined;
   setDescription(value: string): void;
 
+  hasVideo(): boolean;
+  clearVideo(): void;
+  getVideo(): number | undefined;
+  setVideo(value: number): void;
+
+  hasThumbnailPhoto(): boolean;
+  clearThumbnailPhoto(): void;
+  getThumbnailPhoto(): number | undefined;
+  setThumbnailPhoto(value: number): void;
+
   hasDuration(): boolean;
   clearDuration(): void;
   getDuration(): number | undefined;
@@ -174,6 +184,8 @@ export namespace VideoMetadata {
   export type AsObject = {
     title?: string,
     description?: string,
+    video?: number,
+    thumbnailPhoto?: number,
     duration?: number,
     mediaPixelHeight?: number,
     mediaPixelWidth?: number,

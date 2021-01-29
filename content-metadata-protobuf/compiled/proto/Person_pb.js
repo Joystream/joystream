@@ -71,7 +71,9 @@ proto.PersonMetadata.toObject = function(includeInstance, msg) {
     firstName: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     middleName: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
     lastName: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
-    about: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f
+    about: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
+    coverPhoto: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
+    avatarPhoto: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -123,6 +125,14 @@ proto.PersonMetadata.deserializeBinaryFromReader = function(msg, reader) {
     case 4:
       var value = /** @type {string} */ (reader.readString());
       msg.setAbout(value);
+      break;
+    case 5:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setCoverPhoto(value);
+      break;
+    case 6:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setAvatarPhoto(value);
       break;
     default:
       reader.skipField();
@@ -178,6 +188,20 @@ proto.PersonMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeString(
       4,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 5));
+  if (f != null) {
+    writer.writeUint32(
+      5,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 6));
+  if (f != null) {
+    writer.writeUint32(
+      6,
       f
     );
   }
@@ -325,6 +349,78 @@ proto.PersonMetadata.prototype.clearAbout = function() {
  */
 proto.PersonMetadata.prototype.hasAbout = function() {
   return jspb.Message.getField(this, 4) != null;
+};
+
+
+/**
+ * optional uint32 cover_photo = 5;
+ * @return {number}
+ */
+proto.PersonMetadata.prototype.getCoverPhoto = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 5, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.PersonMetadata} returns this
+ */
+proto.PersonMetadata.prototype.setCoverPhoto = function(value) {
+  return jspb.Message.setField(this, 5, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.PersonMetadata} returns this
+ */
+proto.PersonMetadata.prototype.clearCoverPhoto = function() {
+  return jspb.Message.setField(this, 5, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.PersonMetadata.prototype.hasCoverPhoto = function() {
+  return jspb.Message.getField(this, 5) != null;
+};
+
+
+/**
+ * optional uint32 avatar_photo = 6;
+ * @return {number}
+ */
+proto.PersonMetadata.prototype.getAvatarPhoto = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.PersonMetadata} returns this
+ */
+proto.PersonMetadata.prototype.setAvatarPhoto = function(value) {
+  return jspb.Message.setField(this, 6, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.PersonMetadata} returns this
+ */
+proto.PersonMetadata.prototype.clearAvatarPhoto = function() {
+  return jspb.Message.setField(this, 6, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.PersonMetadata.prototype.hasAvatarPhoto = function() {
+  return jspb.Message.getField(this, 6) != null;
 };
 
 

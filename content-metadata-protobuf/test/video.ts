@@ -21,6 +21,8 @@ describe('Video Metadata', () => {
     meta.setHasMarketing(true)
     meta.setIsPublic(true)
     meta.setIsExplicit(false)
+    meta.setVideo(0)
+    meta.setThumbnailPhoto(1)
 
     assert.deepEqual(meta.toObject(), {
       title,
@@ -43,6 +45,8 @@ describe('Video Metadata', () => {
       hasMarketing: true,
       isPublic: true,
       isExplicit: false,
+      thumbnailPhoto: 1,
+      video: 0,
     })
 
     // sanity check - encoding / decoding works

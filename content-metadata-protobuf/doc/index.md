@@ -45,6 +45,8 @@
 | description | [string](#string) | optional | Channel Description |
 | is_public | [bool](#bool) | optional | Wether to display channel to the public |
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| cover_photo | [uint32](#uint32) | optional | index into OOB array |
+| avatar_photo | [uint32](#uint32) | optional | index into OOB array |
 
 
 
@@ -79,6 +81,8 @@
 | middle_name | [string](#string) | optional |  |
 | last_name | [string](#string) | optional |  |
 | about | [string](#string) | optional |  |
+| cover_photo | [uint32](#uint32) | optional | index into OOB array |
+| avatar_photo | [uint32](#uint32) | optional | index into OOB array |
 
 
 
@@ -158,6 +162,7 @@
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
+| cover_photo | [uint32](#uint32) | optional | index into OOB array |
 
 
 
@@ -188,7 +193,7 @@ License types defined by Joystream
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int32](#int32) | optional | License code defined by Joystream. [reference](../src/KnownLicenses.json) |
+| code | [uint32](#uint32) | optional | License code defined by Joystream. [reference](../src/KnownLicenses.json) |
 | attribution | [string](#string) | optional | Text for licenses that require an attribution |
 | custom_text | [string](#string) | optional | Text for custom license type |
 
@@ -240,9 +245,11 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional | Video Title |
 | description | [string](#string) | optional | Video Description |
-| duration | [int32](#int32) | optional | Lengths of video in seconds |
-| media_pixel_height | [int32](#int32) | optional | Resolution of the video (Height) |
-| media_pixel_width | [int32](#int32) | optional | Resolution of the video (Width) |
+| video | [uint32](#uint32) | optional | Index into OOB array |
+| thumbnail_photo | [uint32](#uint32) | optional | Index into OOB array |
+| duration | [uint32](#uint32) | optional | Lengths of video in seconds |
+| media_pixel_height | [uint32](#uint32) | optional | Resolution of the video (Height) |
+| media_pixel_width | [uint32](#uint32) | optional | Resolution of the video (Width) |
 | media_type | [MediaType](#MediaType) | optional | Encoding and Container format used |
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | license | [License](#License) | optional | License type for the media |

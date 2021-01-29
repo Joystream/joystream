@@ -11,7 +11,7 @@ message PublishedBeforeJoystream {
 // License types defined by Joystream
 message License {
     // License code defined by Joystream. [reference](../src/KnownLicenses.json)
-    optional int32 code = 1;
+    optional uint32 code = 1;
     // Text for licenses that require an attribution
     optional string attribution = 2;
     // Text for custom license type
@@ -37,33 +37,41 @@ message VideoMetadata {
     // Video Description
     optional string description = 2;
 
+    // Assets
+    
+    // Index into OOB array
+    optional uint32 video = 3;
+
+    // Index into OOB array
+    optional uint32 thumbnail_photo = 4;
+
     // Lengths of video in seconds
-    optional int32 duration = 3;
+    optional uint32 duration = 5;
 
     // Resolution of the video (Height)
-    optional int32 media_pixel_height = 4;
+    optional uint32 media_pixel_height = 6;
     
     // Resolution of the video (Width)
-    optional int32 media_pixel_width = 5;
+    optional uint32 media_pixel_width = 7;
 
     // Encoding and Container format used
-    optional MediaType media_type = 6;
+    optional MediaType media_type = 8;
 
     // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
-    optional string language = 7;
+    optional string language = 9;
 
     // License type for the media
-    optional License license = 8;
+    optional License license = 10;
 
     // Date of publication
-    optional PublishedBeforeJoystream published_before_joystream = 9;
+    optional PublishedBeforeJoystream published_before_joystream = 11;
 
     // Does video have marketing or advertising in the stream
-    optional bool has_marketing = 10;
+    optional bool has_marketing = 12;
 
     // Should video be publicy visible yet
-    optional bool is_public = 11;
+    optional bool is_public = 13;
 
     // Does Video have explicit language or scenes
-    optional bool is_explicit = 12;
+    optional bool is_explicit = 14;
 }

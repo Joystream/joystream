@@ -14,12 +14,16 @@ describe('Channel Metadata', () => {
     channel.setDescription(description)
     channel.setIsPublic(isPublic)
     channel.setLanguage(language)
+    channel.setAvatarPhoto(0)
+    channel.setCoverPhoto(1)
 
     assert.deepEqual(channel.toObject(), {
       title,
       description,
       isPublic,
       language,
+      avatarPhoto: 0,
+      coverPhoto: 1,
     })
 
     assert.deepEqual(ChannelMetadata.deserializeBinary(channel.serializeBinary()), channel)
