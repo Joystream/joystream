@@ -9,7 +9,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "tsc",
+    "build": "./compile.sh && tsc",
     "compile": "./compile.sh",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
@@ -19,7 +19,9 @@
   "files": [
     "lib/**/*",
     "doc/**",
-    "proto/**"
+    "proto/**",
+    "compiled/**/*",
+    "README.md"
   ],
   "dependencies": {
     "google-protobuf": "^3.14.0"

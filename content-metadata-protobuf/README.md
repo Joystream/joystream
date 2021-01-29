@@ -25,25 +25,23 @@ Best place to look at are the [tests specs](./test)
 We use simple [ISO_639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) code representation for Language.
 useful npm package https://www.npmjs.com/package/iso-639-1
 
-### Compiling `.proto` files:
+### Building the package
 
-pre-requisists:
+Building will compile the protofiles and build the library from source.
+
+- pre-requisists for compiling protofiles:
     - [protoc](https://github.com/protocolbuffers/protobuf/releases)
+
+- pre-requisists for generating documentation:
     - [golang](https://golang.org/)
     - [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc) to generate docs
-
-```
-yarn compile
-```
-
-### Build
-After compiling proto files
 
 ```
 yarn build
 ```
 
-### Test
+### Tests
+
 ```
 yarn test
 ```
