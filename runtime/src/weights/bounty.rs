@@ -7,19 +7,30 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 pub struct WeightInfo;
 impl bounty::WeightInfo for WeightInfo {
-    fn create_bounty(i: u32) -> Weight {
-        (199_304_000 as Weight)
-            .saturating_add((1_000 as Weight).saturating_mul(i as Weight))
+    // WARNING! Some components were not used: ["i"]
+    fn create_bounty_by_council() -> Weight {
+        (203_102_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
-    fn cancel_bounty() -> Weight {
-        (196_000_000 as Weight)
+    // WARNING! Some components were not used: ["i"]
+    fn create_bounty_by_member() -> Weight {
+        (461_209_000 as Weight)
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
+    }
+    fn cancel_bounty_by_council() -> Weight {
+        (183_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
+    fn cancel_bounty_by_member() -> Weight {
+        (275_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(2 as Weight))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
     fn veto_bounty() -> Weight {
-        (212_000_000 as Weight)
+        (173_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }

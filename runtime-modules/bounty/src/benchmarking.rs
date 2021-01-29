@@ -1,15 +1,22 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::benchmarks;
+use frame_benchmarking::{account, benchmarks};
+use frame_support::sp_runtime::traits::Bounded;
 use frame_support::storage::StorageMap;
+use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-use crate::{Bounties, BountyCreationParameters, Call, Event, Module, Trait};
+use balances::Module as Balances;
+use common::council::CouncilBudgetManager;
+use membership::Module as Membership;
+
+use crate::{BalanceOf, Bounties, BountyCreationParameters, Call, Event, Module, Trait};
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -19,22 +26,75 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
+fn get_byte(num: u32, byte_number: u8) -> u8 {
+    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+}
+
+// Method to generate a distintic valid handle
+// for a membership. For each index.
+fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+    let mut handle = vec![];
+
+    for i in 0..4 {
+        handle.push(get_byte(id, i));
+    }
+
+    handle
+}
+
+fn member_funded_account<T: Trait + membership::Trait>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
+    let account_id = account::<T::AccountId>(name, id, SEED);
+    let handle = handle_from_id::<T>(id);
+
+    // Give balance for buying membership
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+
+    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
+    (account_id, T::MemberId::from(id.saturated_into()))
+}
+
 const MAX_BYTES: u32 = 50000;
+const SEED: u32 = 0;
 
 benchmarks! {
+    where_clause {
+        where T: council::Trait,
+              T: balances::Trait,
+              T: membership::Trait,
+    }
     _{ }
 
-    create_bounty {
+    create_bounty_by_council {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
+            cherry,
             ..Default::default()
         };
 
-    }: _ (RawOrigin::Root, params.clone(), metadata)
+    }: create_bounty (RawOrigin::Root, params.clone(), metadata)
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
@@ -42,10 +102,40 @@ benchmarks! {
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
     }
 
-    cancel_bounty {
+    create_bounty_by_member {
+        let i in 1 .. MAX_BYTES;
+        let metadata = vec![0u8].repeat(i as usize);
+        let cherry: BalanceOf<T> = 100.into();
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        T::CouncilBudgetManager::set_budget(cherry);
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
+            cherry,
+            creator_member_id: Some(member_id),
+            ..Default::default()
+        };
+
+    }: create_bounty (RawOrigin::Signed(account_id), params.clone(), metadata)
+    verify {
+        let bounty_id: T::BountyId = 1u32.into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
+    }
+
+    cancel_bounty_by_council {
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            cherry,
             ..Default::default()
         };
 
@@ -53,7 +143,35 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
-    }: _ (RawOrigin::Root, None, bounty_id)
+    }: cancel_bounty(RawOrigin::Root, None, bounty_id)
+    verify {
+        assert!(!<Bounties<T>>::contains_key(&bounty_id));
+        assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
+    }
+
+    cancel_bounty_by_member {
+        let cherry: BalanceOf<T> = 100.into();
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        T::CouncilBudgetManager::set_budget(cherry);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            cherry,
+            creator_member_id: Some(member_id),
+            ..Default::default()
+        };
+
+        Module::<T>::create_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            params,
+            Vec::new()
+        ).unwrap();
+
+        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+
+    }: cancel_bounty(RawOrigin::Signed(account_id), Some(member_id), bounty_id)
     verify {
         assert!(!<Bounties<T>>::contains_key(&bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
@@ -84,16 +202,30 @@ mod tests {
     use frame_support::assert_ok;
 
     #[test]
-    fn create_bounty() {
+    fn create_bounty_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_bounty::<Test>());
+            assert_ok!(test_benchmark_create_bounty_by_council::<Test>());
         });
     }
 
     #[test]
-    fn cancel_bounty() {
+    fn create_bounty_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_bounty::<Test>());
+            assert_ok!(test_benchmark_create_bounty_by_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn cancel_bounty_by_council() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_bounty_by_council::<Test>());
+        });
+    }
+
+    #[test]
+    fn cancel_bounty_by_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_bounty_by_member::<Test>());
         });
     }
 

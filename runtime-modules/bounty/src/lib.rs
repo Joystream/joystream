@@ -1,4 +1,4 @@
-//! This pallet works with crowd funded bounties which allows a member, or the council, to crowd
+//! This pallet works with crowd funded bounties that allows a member, or the council, to crowd
 //! fund work on projects with a public benefit.
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
@@ -24,8 +24,10 @@ mod benchmarking;
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_bounty(i: u32) -> Weight;
-    fn cancel_bounty() -> Weight;
+    fn create_bounty_by_council() -> Weight;
+    fn create_bounty_by_member() -> Weight;
+    fn cancel_bounty_by_member() -> Weight;
+    fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
 }
 
@@ -38,7 +40,6 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, P
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Saturating;
 use sp_arithmetic::traits::Zero;
-use sp_runtime::traits::SaturatedConversion;
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
@@ -259,7 +260,8 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::create_bounty(_metadata.len().saturated_into())]
+        #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
+              .max(WeightInfoBounty::<T>::create_bounty_by_council())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
             Self::ensure_create_bounty_parameters_valid(&origin, &params)?;
 
@@ -294,7 +296,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::cancel_bounty()]
+        #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
+              .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
         pub fn cancel_bounty(origin, creator_member_id: Option<MemberId<T>>, bounty_id: T::BountyId) {
             Self::ensure_cancel_bounty_parameters_valid(&origin, creator_member_id, bounty_id)?;
 
