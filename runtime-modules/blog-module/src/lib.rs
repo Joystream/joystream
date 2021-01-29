@@ -54,8 +54,6 @@ mod errors;
 mod mock;
 mod tests;
 
-type MaxLength = u64;
-
 type MaxNumber = u64;
 
 /// Type, representing reactions number
@@ -74,17 +72,6 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
 
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
-
-    /// Security/configuration constraints
-
-    /// The maximum length of each post`s title.
-    type PostTitleMaxLength: Get<MaxLength>;
-
-    /// The maximum length of each post`s body.
-    type PostBodyMaxLength: Get<MaxLength>;
-
-    /// The maximum length of each reply.
-    type ReplyMaxLength: Get<MaxLength>;
 
     /// The maximum number of posts in a blog.
     type PostsMaxNumber: Get<MaxNumber>;
@@ -297,11 +284,6 @@ decl_module! {
 
             // Check security/configuration constraints
 
-            // Ensure post title length is valid
-            Self::ensure_post_title_is_valid(&title)?;
-
-            // Ensure post body length is valid
-            Self::ensure_post_body_is_valid(&body)?;
             let posts_count = Self::ensure_posts_limit_not_reached()?;
 
             //
@@ -385,19 +367,6 @@ decl_module! {
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
 
-            // Check security/configuration constraints
-
-            // Ensure post title length is valid
-            if let Some(ref new_title) = new_title {
-                Self::ensure_post_title_is_valid(&new_title)?;
-            }
-
-            // Ensure post body length is valid
-            if let Some(ref new_body) = new_body {
-                Self::ensure_post_body_is_valid(&new_body)?;
-            }
-
-            //
             // == MUTATION SAFE ==
             //
 
@@ -425,9 +394,6 @@ decl_module! {
 
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
-
-            // Ensure reply text length is valid
-            Self::ensure_reply_text_is_valid(&text)?;
 
             // Ensure root replies limit not reached
             Self::ensure_replies_limit_not_reached(&post)?;
@@ -485,9 +451,6 @@ decl_module! {
             // Ensure reply -> owner relation exists
             Self::ensure_reply_ownership(&reply, &reply_owner)?;
 
-            // Check security/configuration constraint
-            Self::ensure_reply_text_is_valid(&new_text)?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -530,16 +493,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Update reply`s reactions
-            <Reactions<T, I>>::mutate((post_id, reply_id), owner, |inner_reactions| {
-                let reaction_status = Self::mutate_reactions(inner_reactions, index);
-                // Trigger event
-                if let Some(reply_id) = reply_id {
-                    Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, post_id, reply_id, index, reaction_status));
-                } else {
-                    Self::deposit_event(RawEvent::PostReactionsUpdated(owner, post_id, index, reaction_status));
-                }
-            });
+            // Trigger event
+            if let Some(reply_id) = reply_id {
+                Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, post_id, reply_id, index));
+            } else {
+                Self::deposit_event(RawEvent::PostReactionsUpdated(owner, post_id, index));
+            }
         }
 
     }
@@ -549,14 +508,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Get participant id from origin
     fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, &'static str> {
         Ok(T::ParticipantEnsureOrigin::ensure_origin(origin)?)
-    }
-
-    // Flip reaction status under given index and returns the result of that flip.
-    // If there is no reactions under this AccountId entry yet,
-    // initialize a new reactions array and set reaction under given index
-    fn mutate_reactions(reactions: &mut [bool], index: ReactionsNumber) -> bool {
-        reactions[index as usize] ^= true;
-        reactions[index as usize]
     }
 
     fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T, I>, DispatchError> {
@@ -603,22 +554,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_post_title_is_valid(title: &[u8]) -> Result<(), DispatchError> {
-        ensure!(
-            title.len() <= T::PostTitleMaxLength::get() as usize,
-            Error::<T, I>::PostTitleTooLong
-        );
-        Ok(())
-    }
-
-    fn ensure_post_body_is_valid(body: &[u8]) -> Result<(), DispatchError> {
-        ensure!(
-            body.len() <= T::PostBodyMaxLength::get() as usize,
-            Error::<T, I>::PostBodyTooLong
-        );
-        Ok(())
-    }
-
     fn ensure_posts_limit_not_reached() -> Result<T::PostId, DispatchError> {
         // Get posts count, associated with given blog
         let posts_count = Self::post_count();
@@ -643,14 +578,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_reply_text_is_valid(reply_text: &[u8]) -> Result<(), DispatchError> {
-        ensure!(
-            reply_text.len() <= T::ReplyMaxLength::get() as usize,
-            Error::<T, I>::ReplyTextTooLong
-        );
-        Ok(())
-    }
-
     fn ensure_reaction_index_is_valid(index: ReactionsNumber) -> Result<(), DispatchError> {
         ensure!(
             index < REACTIONS_MAX_NUMBER,
@@ -667,7 +594,6 @@ decl_event!(
         PostId = <T as Trait<I>>::PostId,
         ReplyId = <T as Trait<I>>::ReplyId,
         ReactionIndex = ReactionsNumber,
-        Status = bool,
     {
         /// A post was created
         PostCreated(PostId),
@@ -691,9 +617,9 @@ decl_event!(
         ReplyEdited(PostId, ReplyId),
 
         /// A post reaction was created or changed
-        PostReactionsUpdated(ParticipantId, PostId, ReactionIndex, Status),
+        PostReactionsUpdated(ParticipantId, PostId, ReactionIndex),
 
         /// A reply creation was created or changed
-        ReplyReactionsUpdated(ParticipantId, PostId, ReplyId, ReactionIndex, Status),
+        ReplyReactionsUpdated(ParticipantId, PostId, ReplyId, ReactionIndex),
     }
 );

@@ -19,15 +19,6 @@ decl_error! {
         /// A non-owner of a reply is trying to do a privileged action.
         ReplyOwnershipError,
 
-        /// Post title exceeds limitations.
-        PostTitleTooLong,
-
-        /// Post body exceeds limitations.
-        PostBodyTooLong,
-
-        /// Reply text exceeds limitations.
-        ReplyTextTooLong,
-
         /// Number of posts exceeds limits.
         PostLimitReached,
 

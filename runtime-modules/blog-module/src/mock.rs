@@ -69,19 +69,12 @@ ord_parameter_types! {
 }
 
 parameter_types! {
-    pub const PostTitleMaxLength: u64 = 200;
-    pub const PostBodyMaxLength: u64 = 10_000;
-    pub const ReplyMaxLength: u64 = 2_000;
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
 }
 
 impl Trait for Runtime {
     type Event = TestEvent;
-
-    type PostTitleMaxLength = PostTitleMaxLength;
-    type PostBodyMaxLength = PostBodyMaxLength;
-    type ReplyMaxLength = ReplyMaxLength;
 
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
@@ -127,17 +120,6 @@ impl ExtBuilder {
 pub type System = frame_system::Module<Runtime>;
 pub type TestBlogModule = Module<Runtime>;
 
-pub enum PostType {
-    Valid,
-    PostTitleInvalid,
-    PostBodyInvalid,
-}
-
-pub enum ReplyType {
-    Valid,
-    Invalid,
-}
-
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
@@ -147,7 +129,6 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
     ReactionsNumber,
-    bool,
     DefaultInstance,
 >;
 
@@ -167,31 +148,9 @@ pub fn post_by_id(post_id: <Runtime as Trait>::PostId) -> Option<Post<Runtime, D
     }
 }
 
-pub fn get_post(
-    post_type: PostType,
-    editing: bool,
-    locked: bool,
-) -> Post<Runtime, DefaultInstance> {
-    let (title, body);
-    match post_type {
-        // Make them different
-        PostType::Valid if editing => {
-            title = generate_text((PostTitleMaxLength::get() - 1) as usize);
-            body = generate_text((PostBodyMaxLength::get() - 1) as usize);
-        }
-        PostType::Valid => {
-            title = generate_text(PostTitleMaxLength::get() as usize);
-            body = generate_text(PostBodyMaxLength::get() as usize);
-        }
-        PostType::PostTitleInvalid => {
-            title = generate_text((PostTitleMaxLength::get() + 1) as usize);
-            body = generate_text(PostBodyMaxLength::get() as usize);
-        }
-        PostType::PostBodyInvalid => {
-            title = generate_text(PostTitleMaxLength::get() as usize);
-            body = generate_text((PostBodyMaxLength::get() + 1) as usize);
-        }
-    }
+pub fn get_post(locked: bool) -> Post<Runtime, DefaultInstance> {
+    let title = generate_text(10);
+    let body = generate_text(100);
     let mut post = Post::new(title, body);
     if locked {
         post.lock()
@@ -199,8 +158,8 @@ pub fn get_post(
     post
 }
 
-pub fn create_post(origin_id: u64, post_type: PostType) -> DispatchResult {
-    let post = get_post(post_type, false, false);
+pub fn create_post(origin_id: u64) -> DispatchResult {
+    let post = get_post(false);
     TestBlogModule::create_post(Origin::signed(origin_id), post.title, post.body)
 }
 
@@ -212,12 +171,8 @@ pub fn unlock_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> Dispa
     TestBlogModule::unlock_post(Origin::signed(origin_id), post_id)
 }
 
-pub fn edit_post(
-    origin_id: u64,
-    post_id: <Runtime as Trait>::PostId,
-    post_type: PostType,
-) -> DispatchResult {
-    let post = get_post(post_type, true, false);
+pub fn edit_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+    let post = get_post(false);
     TestBlogModule::edit_post(
         Origin::signed(origin_id),
         post_id,
@@ -237,21 +192,15 @@ pub fn reply_by_id(
     }
 }
 
-pub fn get_reply_text(reply_type: ReplyType, editing: bool) -> Vec<u8> {
-    match reply_type {
-        ReplyType::Valid if editing => generate_text(ReplyMaxLength::get() as usize),
-        ReplyType::Valid => generate_text(ReplyMaxLength::get() as usize),
-        ReplyType::Invalid => generate_text((ReplyMaxLength::get() + 1) as usize),
-    }
+pub fn get_reply_text() -> Vec<u8> {
+    generate_text(100)
 }
 
 pub fn get_reply(
-    reply_type: ReplyType,
     owner: <Runtime as frame_system::Trait>::AccountId,
     parent_id: ParentId<Runtime, DefaultInstance>,
-    editing: bool,
 ) -> Reply<Runtime, DefaultInstance> {
-    let reply_text = get_reply_text(reply_type, editing);
+    let reply_text = get_reply_text();
     Reply::new(reply_text, owner, parent_id)
 }
 
@@ -259,9 +208,8 @@ pub fn create_reply(
     origin_id: u64,
     post_id: <Runtime as Trait>::PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
-    reply_type: ReplyType,
 ) -> DispatchResult {
-    let reply = get_reply_text(reply_type, false);
+    let reply = get_reply_text();
     TestBlogModule::create_reply(Origin::signed(origin_id), post_id, reply_id, reply)
 }
 
@@ -269,9 +217,8 @@ pub fn edit_reply(
     origin_id: u64,
     post_id: <Runtime as Trait>::PostId,
     reply_id: <Runtime as Trait>::ReplyId,
-    reply_type: ReplyType,
 ) -> DispatchResult {
-    let reply = get_reply_text(reply_type, true);
+    let reply = get_reply_text();
     TestBlogModule::edit_reply(Origin::signed(origin_id), post_id, reply_id, reply)
 }
 
@@ -284,16 +231,4 @@ pub fn react(
     reply_id: Option<<Runtime as Trait>::ReplyId>,
 ) -> DispatchResult {
     TestBlogModule::react(Origin::signed(origin_id), index, post_id, reply_id)
-}
-
-pub fn get_reactions(
-    post_id: <Runtime as Trait>::PostId,
-    reply_id: Option<<Runtime as Trait>::ReplyId>,
-    owner: <Runtime as Trait>::ParticipantId,
-) -> Option<[bool; REACTIONS_MAX_NUMBER as usize]> {
-    if Reactions::<Runtime>::contains_key((post_id, reply_id), owner) {
-        Some(TestBlogModule::reactions((post_id, reply_id), owner))
-    } else {
-        None
-    }
 }
