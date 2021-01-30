@@ -9,6 +9,6 @@
 * `source .venv/bin/activate`
 * `pip install -r requirements.txt`
 * `jupyter notebook`
-
-A browser tab should launch with the information on how to proceed
-
+* a browser tab should launch with the files in this directory
+* open `main_notebook.ipynb`
+* The notebook has the information on how to proceed
