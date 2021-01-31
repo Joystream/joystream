@@ -11,6 +11,11 @@ events:
 calls:
   - members.buyMembership
   - members.addScreenedMember
+  - members.changeMemberAboutText
+  - members.changeMemberAvatar
+  - members.changeMemberHandle
+  - members.setRootAccount
+  - members.setControllerAccount
 outDir: ./generated/types
 customTypes:
   lib: '@joystream/types/augment/all/types'
