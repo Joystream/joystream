@@ -41,6 +41,30 @@ pub type Hash = sp_core::H256;
 /// Moment type
 pub type Moment = u64;
 
+/// Content Directory Channel identifier.
+pub type ChannelId = u64;
+
+/// Content Directory Channel Category identifier.
+pub type ChannelCategoryId = u64;
+
+/// Content Directory Video identifier.
+pub type VideoId = u64;
+
+/// Content Directory Video Category identifier.
+pub type VideoCategoryId = u64;
+
+/// Content Directory Playlist identifier.
+pub type PlaylistId = u64;
+
+/// Content Directory Person identifier.
+pub type PersonId = u64;
+
+/// Content Directory Series identifier.
+pub type SeriesId = u64;
+
+/// Content Directory Channel transfer request identifier.
+pub type ChannelTransferRequestId = u64;
+
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and

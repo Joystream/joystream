@@ -15,10 +15,11 @@
 import { RegistryTypes } from '@polkadot/types/types'
 import { Null } from '@polkadot/types'
 
-export class Channel extends Null {}
+// from: versioned-store, versioned-store permissions, content-working-group
+export class Channel extends Null {} // in new content module
 export class ChannelContentType extends Null {}
 export class ChannelCurationStatus extends Null {}
-export class ChannelId extends Null {}
+export class ChannelId extends Null {} // in new content module
 export class ChannelPublicationStatus extends Null {}
 export class CurationActor extends Null {}
 export class Curator extends Null {}
@@ -35,11 +36,62 @@ export class Principal extends Null {}
 export class PrincipalId extends Null {}
 export class WorkingGroupUnstaker extends Null {}
 
+// from: old content-directory
+export class CuratorId extends Null {} // in new content module
+export class CuratorGroupId extends Null {} // in new content module
+export class Nonce extends Null {}
+export class EntityId extends Null {}
+export class ClassId extends Null {}
+export class VecMaxLength extends Null {}
+export class TextMaxLength extends Null {}
+export class HashedTextMaxLength extends Null {}
+export class PropertyId extends Null {}
+export class SchemaId extends Null {}
+export class SameController extends Null {}
+export class ClassPermissions extends Null {}
+export class PropertyTypeSingle extends Null {}
+export class PropertyTypeVector extends Null {}
+export class PropertyType extends Null {}
+export class PropertyLockingPolicy extends Null {}
+export class Property extends Null {}
+export class Schema extends Null {}
+export class Class extends Null {}
+export class EntityController extends Null {}
+export class EntityPermissions extends Null {}
+export class StoredValue extends Null {}
+export class VecStoredValue extends Null {}
+export class VecStoredPropertyValue extends Null {}
+export class StoredPropertyValue extends Null {}
+export class InboundReferenceCounter extends Null {}
+export class Entity extends Null {}
+export class EntityCreationVoucher extends Null {}
+export class EntityReferenceCounterSideEffect extends Null {}
+export class ReferenceCounterSideEffects extends Null {}
+export class SideEffects extends Null {}
+export class SideEffect extends Null {}
+export class Status extends Null {}
+export class InputValue extends Null {}
+export class VecInputValue extends Null {}
+export class InputPropertyValue extends Null {}
+export class ParameterizedEntity extends Null {}
+export class ParametrizedPropertyValue extends Null {}
+export class ParametrizedClassPropertyValue extends Null {}
+export class CreateEntityOperation extends Null {}
+export class UpdatePropertyValuesOperation extends Null {}
+export class AddSchemaSupportToEntityOperation extends Null {}
+export class OperationType extends Null {}
+export class ClassPermissionsType extends Null {}
+export class ClassPropertyValue extends Null {}
+export class Operation extends Null {}
+export class ReferenceConstraint extends Null {}
+export class InputEntityValuesMap extends Null {}
+export class FailedAt extends Null {}
+
 export const legacyTypes: RegistryTypes = {
-  Channel,
+  Channel, // in new content module
   ChannelContentType,
   ChannelCurationStatus,
-  ChannelId,
+  ChannelId, // in new content module
   ChannelPublicationStatus,
   CurationActor,
   Curator,
@@ -55,6 +107,60 @@ export const legacyTypes: RegistryTypes = {
   Principal,
   PrincipalId,
   WorkingGroupUnstaker,
+
+  Nonce,
+  CuratorId,
+  EntityId,
+  ClassId,
+  CuratorGroupId,
+  VecMaxLength,
+  TextMaxLength,
+  HashedTextMaxLength,
+  PropertyId,
+  SchemaId,
+  SameController,
+  ClassPermissions,
+  PropertyTypeSingle,
+  PropertyTypeVector,
+  PropertyType,
+  PropertyLockingPolicy,
+  Property,
+  Schema,
+  Class,
+  ClassOf: Class,
+  EntityController,
+  EntityPermissions,
+  StoredValue,
+  VecStoredValue,
+  VecStoredPropertyValue,
+  StoredPropertyValue,
+  InboundReferenceCounter,
+  Entity,
+  EntityOf: Entity,
+  // CuratorGroup, // in new content module
+  EntityCreationVoucher,
+  // Actor, // in new content module
+  EntityReferenceCounterSideEffect,
+  ReferenceCounterSideEffects,
+  SideEffects,
+  SideEffect,
+  Status,
+  InputValue,
+  VecInputValue,
+  InputPropertyValue,
+  ParameterizedEntity,
+  ParametrizedPropertyValue,
+  ParametrizedClassPropertyValue,
+  CreateEntityOperation,
+  UpdatePropertyValuesOperation,
+  AddSchemaSupportToEntityOperation,
+  OperationType,
+  InputEntityValuesMap,
+  ClassPermissionsType,
+  ClassPropertyValue,
+  Operation,
+  ReferenceConstraint,
+  FailedAt,
 }
 
 export default legacyTypes

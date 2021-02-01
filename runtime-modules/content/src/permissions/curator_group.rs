@@ -10,8 +10,8 @@ pub struct CuratorGroup<T: Trait> {
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
 
-    /// Used to count the number of `Class`(es), given curator group maintains
-    number_of_classes_maintained: u32,
+    /// Used to count the number of Channels, given curator group owns
+    number_of_channels_owned: u32,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -20,7 +20,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
             curators: BTreeSet::new(),
             // default curator group status right after creation
             active: false,
-            number_of_classes_maintained: 0,
+            number_of_channels_owned: 0,
         }
     }
 }
@@ -36,8 +36,8 @@ impl<T: Trait> CuratorGroup<T> {
         self.active
     }
 
-    pub fn get_number_of_classes_maintained(&self) -> u32 {
-        self.number_of_classes_maintained
+    pub fn get_number_of_channels_owned(&self) -> u32 {
+        self.number_of_channels_owned
     }
 
     /// Set `CuratorGroup` status as provided
@@ -56,19 +56,19 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Increment number of classes `CuratorGroup` maintains
-    pub fn increment_number_of_classes_maintained_count(&mut self) {
-        self.number_of_classes_maintained += 1;
+    pub fn increment_number_of_channels_owned_count(&mut self) {
+        self.number_of_channels_owned += 1;
     }
 
     /// Decrement number of classes `CuratorGroup` maintains
-    pub fn decrement_number_of_classes_maintained_count(&mut self) {
-        self.number_of_classes_maintained -= 1;
+    pub fn decrement_number_of_channels_owned_count(&mut self) {
+        self.number_of_channels_owned -= 1;
     }
 
     /// Ensure curator group does not maintain any `Class`
     pub fn ensure_curator_group_maintains_no_classes(&self) -> Result<(), Error<T>> {
         ensure!(
-            self.number_of_classes_maintained == 0,
+            self.number_of_channels_owned == 0,
             Error::<T>::CuratorGroupRemovalForbidden
         );
         Ok(())

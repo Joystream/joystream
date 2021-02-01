@@ -2067,7 +2067,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-common",
- "pallet-content-directory",
+ "pallet-content",
  "pallet-finality-tracker",
  "pallet-forum",
  "pallet-governance",
@@ -3304,7 +3304,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-content-directory"
+name = "pallet-content"
 version = "3.0.0"
 dependencies = [
  "frame-support",

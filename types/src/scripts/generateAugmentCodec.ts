@@ -19,9 +19,9 @@ import recurringRewards from '../recurring-rewards'
 import hiring from '../hiring'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
-import media from '../media'
+import storage from '../storage'
 import proposals from '../proposals'
-import contentDirectory from '../content-directory'
+import contentDirectory from '../content'
 import legacy from '../legacy'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
@@ -42,9 +42,9 @@ const typesByModule = {
   'hiring': hiring,
   'working-group': workingGroup,
   'discovery': discovery,
-  'media': media,
+  'storage': storage,
   'proposals': proposals,
-  'content-directory': contentDirectory,
+  'content': contentDirectory,
 }
 
 type Imports = { [moduleName: string]: string[] }
