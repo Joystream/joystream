@@ -4,10 +4,10 @@
 pub mod constraints;
 pub mod currency;
 pub mod origin;
-pub mod working_group;
 pub mod storage;
+pub mod working_group;
 
-use codec::{Decode, Codec, Encode};
+use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -66,12 +66,13 @@ pub trait Trait: system::Trait {
         + MaybeSerialize
         + Ord
         + PartialEq;
-        
+
     /// Content id.
     type ContentId: Parameter
         + Member
         + BaseArithmetic
         + Codec
+        + From<u32>
         + Default
         + Copy
         + MaybeSerialize

@@ -1,7 +1,7 @@
-use sp_runtime::DispatchResult;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_runtime::DispatchResult;
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub struct ContentParameters<ContentId, DataObjectTypeId> {
@@ -38,11 +38,13 @@ pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
 
 // To be implemented by current storage data_directory runtime module.
 // Defined in 'common' package
-pub trait StorageSystem<T: crate::Trait>  {
-
+pub trait StorageSystem<T: crate::Trait> {
     // Should hook into call on storage system,
     // but requires rich error (with reasons)  types.
     // caller already knows the `ContentId`s as they are part of
     // the ContentUploadParameters
-    fn atomically_add_content(owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>, content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>) -> DispatchResult;
+    fn atomically_add_content(
+        owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
+    ) -> DispatchResult;
 }

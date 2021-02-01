@@ -55,13 +55,16 @@ pub trait Trait:
     /// Provides random storage provider id.
     type StorageProviderHelper: StorageProviderHelper<Self>;
 
-    ///Active data object type validator.
+    /// Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     type MaxObjectsPerInjection: Get<u32>;
+
+    /// Deafult content quota limit for all actors.
+    type DefaultQuotaLimit: Get<ContentId<Self>>;
 }
 
 decl_error! {
@@ -83,7 +86,10 @@ decl_error! {
         RequireRootOrigin,
 
         /// DataObject Injection Failed. Too Many DataObjects.
-        DataObjectsInjectionExceededLimit
+        DataObjectsInjectionExceededLimit,
+
+        /// Contant uploading failed. Actor quota limit exceeded.
+        QuotaLimitExceeded,
     }
 }
 
@@ -163,6 +169,9 @@ decl_storage! {
         /// Maps data objects by their content id.
         pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
+
+        pub QuotaLimits get(fn quota_limits) config():
+            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => T::ContentId;
     }
 }
 
@@ -223,6 +232,8 @@ decl_module! {
 
             Self::ensure_content_is_valid(&content)?;
 
+            let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
@@ -230,7 +241,7 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(liaison, content.clone(), owner.clone());
+            Self::upload_content(new_quota, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -249,6 +260,8 @@ decl_module! {
 
             let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
 
+            let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
@@ -256,7 +269,7 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(liaison, content.clone(), owner.clone());
+            Self::upload_content(new_quota, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -341,7 +354,24 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Ensures quota limit constraint satisfied, returns delta.
+    fn ensure_quota_limit_constraint_satisfied(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
+    ) -> Result<ContentId<T>, Error<T>> {
+        let quota = if <QuotaLimits<T>>::contains_key(owner) {
+            Self::quota_limits(owner)
+        } else {
+            T::DefaultQuotaLimit::get()
+        };
+
+        let content_length: ContentId<T> = (content.len() as u32).into();
+        ensure!(quota >= content_length, Error::<T>::QuotaLimitExceeded);
+        Ok(quota - content_length)
+    }
+
     fn upload_content(
+        new_quota: ContentId<T>,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -359,6 +389,9 @@ impl<T: Trait> Module<T> {
 
             <DataObjectByContentId<T>>::insert(content.content_id, data);
         }
+
+        // Upgrade owner quota.
+        <QuotaLimits<T>>::insert(owner, new_quota);
     }
 
     fn ensure_content_is_valid(
@@ -436,7 +469,9 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
 
         let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
-        Self::upload_content(liaison, content, owner);
+        let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+
+        Self::upload_content(new_quota, liaison, content, owner);
         Ok(())
     }
 }
