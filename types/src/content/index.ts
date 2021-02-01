@@ -20,7 +20,7 @@ export class CuratorGroup extends JoyStructDecorated({
   number_of_channels_owned: u32,
 }) {}
 
-export class Actor extends JoyEnum({
+export class ContentActor extends JoyEnum({
   Curator: Tuple.with([CuratorGroupId, CuratorId]),
   Member: MemberId,
   Lead: Null,
@@ -30,7 +30,7 @@ export const contentDirectoryTypes = {
   CuratorId,
   CuratorGroupId,
   CuratorGroup,
-  Actor,
+  ContentActor,
   ChannelId,
   ChannelCategoryId,
   VideoId,

@@ -13,7 +13,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Model of authentication manager.
-pub trait ActorAuthenticator: system::Trait {
+pub trait ContentActorAuthenticator: system::Trait {
     /// Curator identifier
     type CuratorId: Parameter
         + Member

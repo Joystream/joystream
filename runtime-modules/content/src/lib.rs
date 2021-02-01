@@ -53,7 +53,7 @@ pub trait NumericIdentifier:
 impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + ActorAuthenticator + Clone {
+pub trait Trait: system::Trait + ContentActorAuthenticator + Clone {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -91,7 +91,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Clone {
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     // Type that handles asset uploads to storage system
-    // type StorageSysten = StorageSystemTrait;
+    // type StorageSystem: StorageSystem;
 }
 
 // How new assets are to be added on creating and updating
@@ -650,8 +650,8 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
-        CuratorGroupId = <T as ActorAuthenticator>::CuratorGroupId,
-        CuratorId = <T as ActorAuthenticator>::CuratorId,
+        CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
+        CuratorId = <T as ContentActorAuthenticator>::CuratorId,
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
