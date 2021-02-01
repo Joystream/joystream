@@ -130,8 +130,10 @@ impl crate::WeightInfo for () {
     fn cancel_bounty_by_council() -> u64 {
         0
     }
-
     fn veto_bounty() -> u64 {
+        0
+    }
+    fn fund_bounty() -> u64 {
         0
     }
 }

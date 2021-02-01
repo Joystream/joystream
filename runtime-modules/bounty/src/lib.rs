@@ -29,6 +29,7 @@ pub trait WeightInfo {
     fn cancel_bounty_by_member() -> Weight;
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
+    fn fund_bounty() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -162,6 +163,12 @@ pub enum BountyStage<BlockNumber> {
 
     /// A bounty was canceled.
     Canceled,
+
+    /// A bounty was vetoed.
+    Vetoed,
+
+    /// A bounty funding was successful.
+    FundingSuccessful,
 }
 
 impl<BlockNumber: Default> Default for BountyStage<BlockNumber> {
@@ -211,6 +218,7 @@ decl_event! {
     pub enum Event<T>
     where
         <T as Trait>::BountyId,
+        Balance = BalanceOf<T>,
     {
         /// A bounty was created.
         BountyCreated(BountyId),
@@ -220,6 +228,9 @@ decl_event! {
 
         /// A bounty was vetoed.
         BountyVetoed(BountyId),
+
+        /// A bounty was vetoed.
+        BountyFunded(BountyId, Balance),
     }
 }
 
@@ -374,6 +385,53 @@ decl_module! {
             <Bounties<T>>::remove(bounty_id);
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
         }
+
+        /// Provides bounty funding.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::fund_bounty()]
+        pub fn fund_bounty(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+            amount: BalanceOf<T>
+        ) {
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin, member_id,
+            )?;
+
+            ensure!(
+                <Bounties<T>>::contains_key(bounty_id),
+                Error::<T>::BountyDoesntExist
+            );
+
+            let mut bounty = <Bounties<T>>::get(bounty_id);
+
+            ensure!(
+                Self::check_balance_for_account(amount, &account_id),
+                Error::<T>::InsufficientBalanceForBounty
+            );
+
+            //TODO: check for funding period
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::slash_balance_from_account(amount, &account_id);
+
+            bounty.current_funding = bounty.current_funding.saturating_add(amount);
+            <Bounties<T>>::insert(bounty_id, bounty);
+
+            // TODO: set FundingSuccessful stage if needed
+
+            Self::deposit_event(RawEvent::BountyFunded(bounty_id, amount));
+        }
     }
 }
 
@@ -445,7 +503,7 @@ impl<T: Trait> BountyCreator<T> {
         let balance_is_sufficient = match self {
             BountyCreator::Council => BountyCreator::<T>::check_council_budget(required_balance),
             BountyCreator::Member(account_id, _) => {
-                BountyCreator::<T>::check_balance_for_member(required_balance, account_id)
+                Module::<T>::check_balance_for_account(required_balance, account_id)
             }
         };
 
@@ -460,11 +518,6 @@ impl<T: Trait> BountyCreator<T> {
     // Verifies that council budget is sufficient for a bounty.
     fn check_council_budget(amount: BalanceOf<T>) -> bool {
         T::CouncilBudgetManager::get_budget() >= amount
-    }
-
-    // Verifies that member balance is sufficient for a bounty.
-    fn check_balance_for_member(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
-        balances::Module::<T>::usable_balance(account_id) >= amount
     }
 
     // Validate that provided creator_member_id relates to the initial BountyCreator.
@@ -504,14 +557,9 @@ impl<T: Trait> BountyCreator<T> {
                 BountyCreator::<T>::remove_balance_from_council_budget(required_balance);
             }
             BountyCreator::Member(account_id, _) => {
-                BountyCreator::<T>::slash_balance_for_member(required_balance, account_id);
+                Module::<T>::slash_balance_from_account(required_balance, account_id);
             }
         }
-    }
-
-    // Slash a balance from the member controller account.
-    fn slash_balance_for_member(amount: BalanceOf<T>, account_id: &T::AccountId) {
-        let _ = balances::Module::<T>::slash(account_id, amount);
     }
 
     // Remove a balance from the council budget.
@@ -520,5 +568,17 @@ impl<T: Trait> BountyCreator<T> {
         let new_budget = budget.saturating_sub(amount);
 
         T::CouncilBudgetManager::set_budget(new_budget);
+    }
+}
+
+impl<T: Trait> Module<T> {
+    // Verifies that member balance is sufficient for a bounty.
+    fn check_balance_for_account(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
+        balances::Module::<T>::usable_balance(account_id) >= amount
+    }
+
+    // Slash a balance from the member controller account.
+    fn slash_balance_from_account(amount: BalanceOf<T>, account_id: &T::AccountId) {
+        let _ = balances::Module::<T>::slash(account_id, amount);
     }
 }

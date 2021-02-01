@@ -193,6 +193,27 @@ benchmarks! {
         assert!(!<Bounties<T>>::contains_key(&bounty_id));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
+
+    fund_bounty {
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            ..Default::default()
+        };
+
+        let amount: BalanceOf<T> = 100.into();
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
+    verify {
+        assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
+        assert_last_event::<T>(Event::<T>::BountyFunded(bounty_id, amount).into());
+    }
 }
 
 #[cfg(test)]
@@ -233,6 +254,13 @@ mod tests {
     fn veto_bounty() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_veto_bounty::<Test>());
+        });
+    }
+
+    #[test]
+    fn fund_bounty() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_fund_bounty::<Test>());
         });
     }
 }

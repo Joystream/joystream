@@ -28,7 +28,7 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64>) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -50,6 +50,7 @@ pub struct CreateBountyFixture {
     metadata: Vec<u8>,
     creator_member_id: Option<u64>,
     min_amount: u64,
+    max_amount: u64,
     work_period: u64,
     judging_period: u64,
     cherry: u64,
@@ -63,6 +64,7 @@ impl CreateBountyFixture {
             metadata: Vec::new(),
             creator_member_id: None,
             min_amount: 0,
+            max_amount: 0,
             work_period: 1,
             judging_period: 1,
             cherry: 0,
@@ -87,6 +89,9 @@ impl CreateBountyFixture {
 
     pub fn with_min_amount(self, min_amount: u64) -> Self {
         Self { min_amount, ..self }
+    }
+    pub fn with_max_amount(self, max_amount: u64) -> Self {
+        Self { max_amount, ..self }
     }
 
     pub fn with_work_period(self, work_period: u64) -> Self {
@@ -118,6 +123,7 @@ impl CreateBountyFixture {
         let params = BountyCreationParameters::<Test> {
             creator_member_id: self.creator_member_id.clone(),
             min_amount: self.min_amount.clone(),
+            max_amount: self.max_amount.clone(),
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
             cherry: self.cherry,
@@ -217,5 +223,50 @@ impl VetoBountyFixture {
         if actual_result.is_ok() {
             assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
         }
+    }
+}
+
+pub struct FundBountyFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    bounty_id: u64,
+    amount: u64,
+}
+
+impl FundBountyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            member_id: 1,
+            bounty_id: 1,
+            amount: 100,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::fund_bounty(
+            self.origin.clone().into(),
+            self.member_id.clone(),
+            self.bounty_id.clone(),
+            self.amount.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }

@@ -11,7 +11,7 @@ use crate::{BountyStage, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
-    CreateBountyFixture, EventFixture, VetoBountyFixture,
+    CreateBountyFixture, EventFixture, FundBountyFixture, VetoBountyFixture,
 };
 use mocks::{build_test_externalities, Test};
 
@@ -102,6 +102,7 @@ fn create_bounty_fails_with_invalid_min_max_amounts() {
     build_test_externalities().execute_with(|| {
         CreateBountyFixture::default()
             .with_min_amount(100)
+            .with_max_amount(0)
             .call_and_assert(Err(
                 Error::<Test>::MinFundingAmountCannotBeGreaterThanMaxAmount.into(),
             ));
@@ -309,5 +310,84 @@ fn veto_bounty_fails_with_invalid_stage() {
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
+fn fund_bounty_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id),
+            initial_balance - amount
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, amount));
+    });
+}
+
+#[test]
+fn fund_bounty_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bounty_id = 11u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(invalid_bounty_id)
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn fund_bounty_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn fund_bounty_fails_with_insufficient_balance() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+        let amount = 100;
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
     });
 }
