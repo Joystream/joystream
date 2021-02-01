@@ -20,6 +20,7 @@ jobs:
         sudo apt-get install -y protobuf-compiler
         protoc --version
         # Install documentation plugin
+        sudo apt-get install -y golang-go
         go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
         yarn install --frozen-lockfile
         yarn workspace @joystream/content-metadata-protobuf build
