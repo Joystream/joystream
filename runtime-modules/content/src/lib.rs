@@ -14,7 +14,7 @@ pub use permissions::*;
 use core::hash::Hash;
 
 use codec::Codec;
-// use codedc::{Decode, Encode};
+use codec::{Decode, Encode};
 // use frame_support::storage::IterableStorageMap;
 
 use frame_support::{
@@ -22,11 +22,11 @@ use frame_support::{
 };
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One /*, Zero */};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 // use sp_std::vec;
-// use sp_std::vec::Vec;
+use sp_std::vec::Vec;
 use system::ensure_signed;
 
 /// Type, used in diffrent numeric constraints representations
@@ -46,6 +46,7 @@ pub trait NumericIdentifier:
     + Eq
     + PartialEq
     + Ord
+    + Zero
 {
 }
 
@@ -93,8 +94,287 @@ pub trait Trait: system::Trait + ActorAuthenticator + Clone {
     // type StorageSysten = StorageSystemTrait;
 }
 
+// How new assets are to be added on creating and updating
+// Channels,Videos,Series and Person
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum NewAsset<ContentParameters> {
+    Upload(ContentParameters),
+    Uri(Vec<u8>),
+}
+
+// === Channels
+
+// Must be convertible into new type StorageObjectOwner in storage system
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum ChannelOwner<MemberId, CuratorGroupId> {
+    Member(MemberId),
+    CuratorGroup(CuratorGroupId),
+    // Native DAO
+    // Dao(DaoId),
+    // EVM smart contract DAO
+    // SmartContract(EthAddress)
+}
+
+impl<MemberId: Zero, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
+    fn default() -> Self {
+        ChannelOwner::Member(MemberId::zero())
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelCategory {
+    number_of_channels_in: u32,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelCategoryCreationParameters {
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelCategoryUpdateParameters {
+    new_meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Channel<MemberId: Zero, CuratorGroupId, ChannelCategoryId> {
+    owner: ChannelOwner<MemberId, CuratorGroupId>,
+    in_category: ChannelCategoryId,
+    number_of_videos: u32,
+    number_of_playlists: u32,
+    number_of_series: u32,
+    // Only curator can update..
+    is_curated: bool,
+    // Balance of earnerned revenue yet to be withdrawn
+    revenue: u128,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelOwnershipTransferRequest<ChannelId, MemberId: Zero, CuratorGroupId> {
+    channel_id: ChannelId,
+    new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    payment: u128,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelCreationParameters<ChannelCategoryId> {
+    in_category: ChannelCategoryId,
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChannelUpdateParameters<ChannelCategoryId> {
+    new_in_category: Option<ChannelCategoryId>,
+    new_meta: Option<Vec<u8>>,
+}
+
+// === Videos
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct VideoCategory {
+    meta: Vec<u8>,
+    number_of_videos_in_category: u32,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct VideoCategoryCreationParameters {
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct VideoCategoryUpdateParameters {
+    new_meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct VideoCreationParameters<VideoCategoryId> {
+    in_category: VideoCategoryId,
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct VideoUpdateParameters<VideoCategoryId> {
+    new_in_category: Option<VideoCategoryId>,
+    new_meta: Option<Vec<u8>>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Video<ChannelId, SeriesId, PlaylistId> {
+    in_channel: ChannelId,
+    // keep track of which seasons and playlists which reference the video
+    // - prevent removing a video if it is in a season (because order is important)
+    // - remove from playlist on deletion
+    in_series: Option<Vec<SeriesId>>,
+    in_playlists: Option<Vec<PlaylistId>>,
+
+    // Only curator can update..
+    is_curated: bool,
+    is_featured: bool,
+}
+
+// === Playlists
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PlaylistCreationParameters<VideoId> {
+    videos: Vec<VideoId>,
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PlaylistUpdateParameters<VideoId> {
+    // replace playlist with new collection
+    new_videos: Option<Vec<VideoId>>,
+    new_meta: Option<Vec<u8>>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Playlist<ChannelId, VideoId> {
+    in_channel: ChannelId,
+    // collection of videos that make up the playlist
+    videos: Vec<VideoId>,
+}
+
+// === Series
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum EpisodeCreationParameters<VideoCategoryId, VideoId> {
+    NewVideo(VideoCreationParameters<VideoCategoryId>),
+    ExistingVideo(VideoId),
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum EpisodeUpdateParemters<VideoCategoryId, VideoId> {
+    UpdateVideo(VideoUpdateParameters<VideoCategoryId>),
+    ChangeExistingVideo(VideoId),
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct SeasonCreationParameters<VideoCategoryId, VideoId> {
+    episodes: Vec<EpisodeCreationParameters<VideoCategoryId, VideoId>>,
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct SeasonUpdateParameters<VideoCategoryId, VideoId> {
+    new_episodes: Option<Vec<Option<EpisodeUpdateParemters<VideoCategoryId, VideoId>>>>,
+    new_meta: Option<Vec<u8>>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Season<VideoId> {
+    episodes: Vec<VideoId>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct SeriesCreationParameters<VideoCategoryId, VideoId> {
+    seasons: Vec<SeasonCreationParameters<VideoCategoryId, VideoId>>,
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct SeriesUpdateParameters<VideoCategoryId, VideoId> {
+    seasons: Option<Vec<Option<SeasonUpdateParameters<VideoCategoryId, VideoId>>>>,
+    new_meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Series<ChannelId, VideoId> {
+    in_channel: ChannelId,
+    seasons: Vec<Season<VideoId>>,
+}
+
+// The authenticated origin for Person creation and updating calls
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum PersonActor<MemberId, CuratorId> {
+    Member(MemberId),
+    Curator(CuratorId),
+}
+
+impl<MemberId: Zero, CuratorId> Default for PersonActor<MemberId, CuratorId> {
+    fn default() -> Self {
+        PersonActor::Member(MemberId::zero())
+    }
+}
+
+// The authorized origin that may update or delete a Person
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum PersonController<MemberId> {
+    Member(MemberId),
+    Curators,
+}
+
+impl<MemberId: Zero> Default for PersonController<MemberId> {
+    fn default() -> Self {
+        PersonController::Member(MemberId::zero())
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PersonCreationParameters {
+    meta: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PersonUpdateParameters {
+    new_meta: Option<Vec<u8>>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Person<MemberId: Zero> {
+    controlled_by: PersonController<MemberId>,
+    number_of_videos_person_involed_in: u32,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
+        pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T::MemberId, T::CuratorGroupId, T::ChannelCategoryId>;
+
+        pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
+
+        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T::ChannelId, T::SeriesId, T::PlaylistId>;
+
+        pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
+
+        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId, T::VideoId>;
+
+        pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
+
+        pub PersonById get(fn person_by_id): map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
+
+        // pub PersonInVideo get(fn person_in_video): double_map hasher(blake2_128_concat) (T::VideoId, T::PersonId), hasher(blake2_128_concat) T::Hash => ();
+
+        pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
+            map hasher(blake2_128_concat) T::ChannelTransferRequestId => ChannelOwnershipTransferRequest<T::ChannelId, T::MemberId, T::CuratorGroupId>;
 
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
@@ -112,10 +392,10 @@ decl_storage! {
 
         pub NextChannelTransferRequestId get(fn next_channel_transfer_request_id) config(): T::ChannelTransferRequestId;
 
-        /// Map, representing  CuratorGroupId -> CuratorGroup relation
-        pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
-
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
+
+        /// Map, representing  CuratorGroupId -> CuratorGroup relation
+        pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
     }
 }
 
@@ -362,6 +642,7 @@ impl<T: Trait> Module<T> {
         <NextChannelId<T>>::put(T::ChannelId::one());
         <NextPlaylistId<T>>::put(T::PlaylistId::one());
         <NextSeriesId<T>>::put(T::SeriesId::one());
+        <NextPersonId<T>>::put(T::PersonId::one());
         <NextChannelTransferRequestId<T>>::put(T::ChannelTransferRequestId::one());
     }
 }

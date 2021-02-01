@@ -320,7 +320,6 @@ pub fn testnet_genesis(
         }),
         content: Some({
             ContentConfig {
-                curator_group_by_id: vec![],
                 next_curator_group_id: 1,
                 next_channel_category_id: 1,
                 next_channel_id: 1,
