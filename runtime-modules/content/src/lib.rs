@@ -29,6 +29,9 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 use system::ensure_signed;
 
+/// Remove this - import type defined in common trait
+pub type ContentParameters = u32;
+
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
@@ -85,7 +88,7 @@ pub trait Trait: system::Trait + ContentActorAuthenticator + Clone {
     type SeriesId: NumericIdentifier;
 
     /// Type of identifier for Channel transfer requests
-    type ChannelTransferRequestId: NumericIdentifier;
+    type ChannelOwnershipTransferRequestId: NumericIdentifier;
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
@@ -114,12 +117,13 @@ pub enum ChannelOwner<MemberId, CuratorGroupId> {
     // Native DAO
     // Dao(DaoId),
     // EVM smart contract DAO
-    // SmartContract(EthAddress)
+    // SmartContract(EthAddress),
+    System,
 }
 
-impl<MemberId: Zero, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
+impl<MemberId, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
     fn default() -> Self {
-        ChannelOwner::Member(MemberId::zero())
+        ChannelOwner::System
     }
 }
 
@@ -143,7 +147,7 @@ pub struct ChannelCategoryUpdateParameters {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Channel<MemberId: Zero, CuratorGroupId, ChannelCategoryId> {
+pub struct Channel<MemberId, CuratorGroupId, ChannelCategoryId> {
     owner: ChannelOwner<MemberId, CuratorGroupId>,
     in_category: ChannelCategoryId,
     number_of_videos: u32,
@@ -157,7 +161,7 @@ pub struct Channel<MemberId: Zero, CuratorGroupId, ChannelCategoryId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ChannelOwnershipTransferRequest<ChannelId, MemberId: Zero, CuratorGroupId> {
+pub struct ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId> {
     channel_id: ChannelId,
     new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     payment: u128,
@@ -316,23 +320,18 @@ pub enum PersonActor<MemberId, CuratorId> {
     Curator(CuratorId),
 }
 
-impl<MemberId: Zero, CuratorId> Default for PersonActor<MemberId, CuratorId> {
-    fn default() -> Self {
-        PersonActor::Member(MemberId::zero())
-    }
-}
-
 // The authorized origin that may update or delete a Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum PersonController<MemberId> {
     Member(MemberId),
     Curators,
+    System,
 }
 
-impl<MemberId: Zero> Default for PersonController<MemberId> {
+impl<MemberId> Default for PersonController<MemberId> {
     fn default() -> Self {
-        PersonController::Member(MemberId::zero())
+        PersonController::System
     }
 }
 
@@ -350,7 +349,7 @@ pub struct PersonUpdateParameters {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Person<MemberId: Zero> {
+pub struct Person<MemberId> {
     controlled_by: PersonController<MemberId>,
     number_of_videos_person_involed_in: u32,
 }
@@ -374,7 +373,7 @@ decl_storage! {
         // pub PersonInVideo get(fn person_in_video): double_map hasher(blake2_128_concat) (T::VideoId, T::PersonId), hasher(blake2_128_concat) T::Hash => ();
 
         pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
-            map hasher(blake2_128_concat) T::ChannelTransferRequestId => ChannelOwnershipTransferRequest<T::ChannelId, T::MemberId, T::CuratorGroupId>;
+            map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T::ChannelId, T::MemberId, T::CuratorGroupId>;
 
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
@@ -390,7 +389,7 @@ decl_storage! {
 
         pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
 
-        pub NextChannelTransferRequestId get(fn next_channel_transfer_request_id) config(): T::ChannelTransferRequestId;
+        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config(): T::ChannelOwnershipTransferRequestId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -436,7 +435,7 @@ decl_module! {
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupAdded(curator_group_id));
+            Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
             Ok(())
         }
 
@@ -465,7 +464,7 @@ decl_module! {
             <CuratorGroupById<T>>::remove(curator_group_id);
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupRemoved(curator_group_id));
+            Self::deposit_event(RawEvent::CuratorGroupDeleted(curator_group_id));
             Ok(())
         }
 
@@ -566,6 +565,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // TODO: make this private again after used in module
     /// Increment number of classes, maintained by each curator group
     pub fn increment_number_of_channels_owned_by_curator_groups(
         curator_group_ids: BTreeSet<T::CuratorGroupId>,
@@ -575,6 +575,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
+    // TODO: make this private again after used in module
     /// Decrement number of classes, maintained by each curator group
     pub fn decrement_number_of_channels_owned_by_curator_groups(
         curator_group_ids: BTreeSet<T::CuratorGroupId>,
@@ -584,6 +585,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
+    // TODO: make this private again after used in module
     /// Increment number of classes, maintained by curator group
     pub fn increment_number_of_channels_owned_by_curator_group(
         curator_group_id: T::CuratorGroupId,
@@ -593,6 +595,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
+    // TODO: make this private again after used in module
     /// Decrement number of classes, maintained by curator group
     pub fn decrement_number_of_channels_owned_by_curator_group(
         curator_group_id: T::CuratorGroupId,
@@ -643,7 +646,7 @@ impl<T: Trait> Module<T> {
         <NextPlaylistId<T>>::put(T::PlaylistId::one());
         <NextSeriesId<T>>::put(T::SeriesId::one());
         <NextPersonId<T>>::put(T::PersonId::one());
-        <NextChannelTransferRequestId<T>>::put(T::ChannelTransferRequestId::one());
+        <NextChannelOwnershipTransferRequestId<T>>::put(T::ChannelOwnershipTransferRequestId::one());
     }
 }
 
@@ -652,11 +655,97 @@ decl_event!(
     where
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
+        VideoId = <T as Trait>::VideoId,
+        VideoCategoryId = <T as Trait>::VideoCategoryId,
+        ChannelId = <T as Trait>::ChannelId,
+        MemberId = <T as ContentActorAuthenticator>::MemberId,
+        NewAsset = NewAsset<ContentParameters>,
+        ChannelCategoryId = <T as Trait>::ChannelCategoryId,
+        ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
+        PlaylistId = <T as Trait>::PlaylistId,
+        SeriesId = <T as Trait>::SeriesId,
+        PersonId = <T as Trait>::PersonId,
     {
-        CuratorGroupAdded(CuratorGroupId),
-        CuratorGroupRemoved(CuratorGroupId),
-        CuratorGroupStatusSet(CuratorGroupId, bool),
+        // Curators
+        CuratorGroupCreated(CuratorGroupId),
+        CuratorGroupDeleted(CuratorGroupId),
+        CuratorGroupStatusSet(CuratorGroupId, bool /*status*/),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
+
+        // Channels
+        ChannelCreated(
+            ChannelId,
+            ChannelOwner<MemberId, CuratorGroupId>,
+            Vec<NewAsset>,
+            ChannelCreationParameters<ChannelCategoryId>,
+        ),
+        ChannelUpdated(
+            ChannelId,
+            Vec<NewAsset>,
+            ChannelUpdateParameters<ChannelCategoryId>,
+        ),
+        ChannelDeleted(ChannelId),
+
+        // Channel Ownership Transfers
+        ChannelOwnershipTransferRequested(
+            ChannelOwnershipTransferRequestId,
+            ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId>,
+        ),
+        ChannelOwnershipTransferRequestWithdrawn(ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),
+
+        // Channel Categories
+        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
+        ChannelCategoryUpdated(ChannelCategoryUpdateParameters),
+        ChannelCategoryDeleted(ChannelCategoryId),
+
+        // Videos
+        VideoCategoryCreated(VideoCategoryId, VideoCategoryCreationParameters),
+        VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
+        VideoCategoryDeleted(VideoCategoryId),
+
+        VideoCreated(
+            VideoId,
+            Vec<NewAsset>,
+            VideoCreationParameters<VideoCategoryId>,
+        ),
+        VideoUpdated(
+            VideoId,
+            Vec<NewAsset>,
+            VideoUpdateParameters<VideoCategoryId>,
+        ),
+        VideoDeleted(VideoId),
+
+        VideoCurated(VideoId, Vec<u8> /* rationale */),
+        VideoUncurated(VideoId, Vec<u8> /* rationale */),
+
+        // Featured Videos
+        FeaturedVideosSet(Vec<VideoId>),
+
+        // Video Playlists
+        PlaylistCreated(PlaylistId, PlaylistCreationParameters<VideoId>),
+        PlaylistUpdated(PlaylistId, PlaylistUpdateParameters<VideoId>),
+        PlaylistDeleted(PlaylistId),
+
+        // Series
+        SeriesCreated(
+            SeriesId,
+            Vec<NewAsset>,
+            SeriesCreationParameters<VideoCategoryId, VideoId>,
+        ),
+        SeriesUpdated(
+            SeriesId,
+            Vec<NewAsset>,
+            SeriesUpdateParameters<VideoCategoryId, VideoId>,
+        ),
+        SeriesDeleted(SeriesId),
+
+        // Persons
+        PersonCreated(PersonId, Vec<NewAsset>, PersonCreationParameters),
+        PersonUpdated(PersonId, Vec<NewAsset>, PersonUpdateParameters),
+        PersonDeleted(PersonId),
+        PersonAddedToVideo(PersonId, VideoId),
+        PersonRemovedFromVideo(PersonId, VideoId),
     }
 );

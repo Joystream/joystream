@@ -63,7 +63,7 @@ pub type PersonId = u64;
 pub type SeriesId = u64;
 
 /// Content Directory Channel transfer request identifier.
-pub type ChannelTransferRequestId = u64;
+pub type ChannelOwnershipTransferRequestId = u64;
 
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///

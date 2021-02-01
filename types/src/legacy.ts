@@ -3,13 +3,16 @@
     - version-store
     - versioned-store-permissions
     - content-working-group
+    - old 'content-directory' which is now being replaced by new 'content' module
 
   We only add them here to make it possible for this version of the types library to be usable
   against babylon runtime without expectation of using these deprecated runtime modules and their
-  types, to perform a runtime upgrade of babylon for example.
-  
+  types, primarily to perform a runtime upgrade of babylon for example.
+
   Important Note: When new modules are added and happen to use type names that match the ones defined here
   make sure to remove them from this file!
+
+  In the following runtime upgrade (after "Sumer" release), remove these types entierly.
 */
 
 import { RegistryTypes } from '@polkadot/types/types'
@@ -37,8 +40,7 @@ export class PrincipalId extends Null {}
 export class WorkingGroupUnstaker extends Null {}
 
 // from: old content-directory
-export class CuratorId extends Null {} // in new content module
-export class CuratorGroupId extends Null {} // in new content module
+export class Actor extends Null {}
 export class Nonce extends Null {}
 export class EntityId extends Null {}
 export class ClassId extends Null {}
@@ -88,10 +90,8 @@ export class InputEntityValuesMap extends Null {}
 export class FailedAt extends Null {}
 
 export const legacyTypes: RegistryTypes = {
-  Channel, // in new content module
   ChannelContentType,
   ChannelCurationStatus,
-  ChannelId, // in new content module
   ChannelPublicationStatus,
   CurationActor,
   Curator,
@@ -109,10 +109,8 @@ export const legacyTypes: RegistryTypes = {
   WorkingGroupUnstaker,
 
   Nonce,
-  CuratorId,
   EntityId,
   ClassId,
-  CuratorGroupId,
   VecMaxLength,
   TextMaxLength,
   HashedTextMaxLength,
@@ -137,9 +135,8 @@ export const legacyTypes: RegistryTypes = {
   InboundReferenceCounter,
   Entity,
   EntityOf: Entity,
-  // CuratorGroup, // in new content module
   EntityCreationVoucher,
-  // Actor, // in new content module
+  Actor,
   EntityReferenceCounterSideEffect,
   ReferenceCounterSideEffects,
   SideEffects,
