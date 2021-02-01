@@ -456,10 +456,10 @@ impl common::MembershipTypes for Runtime {
 }
 
 impl common::StorageOwnership for Runtime {
-    type ChannelId = u64;
-    type DAOId = u64;
-    type ContentId = u64;
-    type DataObjectTypeId = u64;
+    type ChannelId = ChannelId;
+    type DAOId = DAOId;
+    type ContentId = ContentId;
+    type DataObjectTypeId = DataObjectTypeId;
 }
 
 impl governance::election::Trait for Runtime {
