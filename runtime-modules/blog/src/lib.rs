@@ -47,9 +47,10 @@ use frame_support::{
     decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, MaybeSerializeDeserialize, Member};
 use sp_std::prelude::*;
 
+mod benchmarking;
 mod errors;
 mod mock;
 mod tests;
@@ -114,24 +115,35 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
 }
 
 /// Type, representing blog related post structure
-#[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Clone)]
 pub struct Post<T: Trait<I>, I: Instance> {
     /// Locking status
     locked: bool,
-    title: Vec<u8>,
-    body: Vec<u8>,
+    title_hash: T::Hash,
+    body_hash: T::Hash,
     /// Overall replies counter, associated with post
     replies_count: T::ReplyId,
 }
 
+// Note: we derive it by hand because the derive wasn't working
+impl<T: Trait<I>, I: Instance> PartialEq for Post<T, I> {
+    fn eq(&self, other: &Post<T, I>) -> bool {
+        self.locked == other.locked
+            && self.title_hash == other.title_hash
+            && self.body_hash == other.body_hash
+            && self.replies_count == other.replies_count
+    }
+}
+
 /// Default Post
+// Note: We implement it by hand because it couldn't automatically derive it
 impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
     fn default() -> Self {
         Post {
             locked: Default::default(),
-            title: Default::default(),
-            body: Default::default(),
+            title_hash: Default::default(),
+            body_hash: Default::default(),
             replies_count: Default::default(),
         }
     }
@@ -143,8 +155,8 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
         Self {
             // Post default locking status
             locked: false,
-            title,
-            body,
+            title_hash: T::Hashing::hash(&title),
+            body_hash: T::Hashing::hash(&body),
             // Set replies count of newly created post to zero
             replies_count: T::ReplyId::default(),
         }
@@ -178,10 +190,10 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
     /// Update post title and body, if Option::Some(_)
     fn update(&mut self, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) {
         if let Some(new_title) = new_title {
-            self.title = new_title
+            self.title_hash = T::Hashing::hash(&new_title)
         }
         if let Some(new_body) = new_body {
-            self.body = new_body
+            self.body_hash = T::Hashing::hash(&new_body)
         }
     }
 }
@@ -189,35 +201,44 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
 /// Enum variant, representing either reply or post id
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum ParentId<T: Trait<I>, I: Instance> {
-    Reply(T::ReplyId),
-    Post(T::PostId),
+pub enum ParentId<ReplyId, PostId: Default> {
+    Reply(ReplyId),
+    Post(PostId),
 }
 
 /// Default parent representation
-impl<T: Trait<I>, I: Instance> Default for ParentId<T, I> {
+impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
     fn default() -> Self {
-        ParentId::Post(T::PostId::default())
+        ParentId::Post(PostId::default())
     }
 }
 
 /// Type, representing either root post reply or direct reply to reply
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Encode, Decode, Clone)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Reply<T: Trait<I>, I: Instance> {
-    /// Reply text content
-    text: Vec<u8>,
+    /// Reply text hash
+    text_hash: T::Hash,
     /// Participant id, associated with a reply owner
     owner: T::ParticipantId,
     /// Reply`s parent id
-    parent_id: ParentId<T, I>,
+    parent_id: ParentId<T::ReplyId, T::PostId>,
+}
+
+/// Reply comparator
+impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
+    fn eq(&self, other: &Reply<T, I>) -> bool {
+        self.text_hash == other.text_hash
+            && self.owner == other.owner
+            && self.parent_id == other.parent_id
+    }
 }
 
 /// Default Reply
 impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
     fn default() -> Self {
         Reply {
-            text: Default::default(),
+            text_hash: Default::default(),
             owner: Default::default(),
             parent_id: Default::default(),
         }
@@ -226,9 +247,13 @@ impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
 
 impl<T: Trait<I>, I: Instance> Reply<T, I> {
     /// Create new reply with given text and owner id
-    fn new(text: Vec<u8>, owner: T::ParticipantId, parent_id: ParentId<T, I>) -> Self {
+    fn new(
+        text: Vec<u8>,
+        owner: T::ParticipantId,
+        parent_id: ParentId<T::ReplyId, T::PostId>,
+    ) -> Self {
         Self {
-            text,
+            text_hash: T::Hashing::hash(&text),
             owner,
             parent_id,
         }
@@ -241,7 +266,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
 
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
-        self.text = new_text
+        self.text_hash = T::Hashing::hash(&new_text)
     }
 }
 
@@ -506,7 +531,7 @@ decl_module! {
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Get participant id from origin
-    fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, &'static str> {
+    fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, DispatchError> {
         Ok(T::ParticipantEnsureOrigin::ensure_origin(origin)?)
     }
 

@@ -2351,6 +2351,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
+ "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
@@ -3738,6 +3739,7 @@ dependencies = [
 name = "pallet-blog"
 version = "3.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

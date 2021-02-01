@@ -40,7 +40,7 @@ fn assert_failure(
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime, DefaultInstance>>,
     reply_owner_id: <Runtime as frame_system::Trait>::AccountId,
-    parent: ParentId<Runtime, DefaultInstance>,
+    parent: ParentId<<Runtime as Trait>::ReplyId, <Runtime as Trait>::PostId>,
 ) {
     // Ensure  stored reply is equal to expected one
     assert!(matches!(

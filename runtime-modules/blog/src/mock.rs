@@ -11,7 +11,7 @@ use sp_runtime::{
     DispatchResult, Perbill,
 };
 
-pub(crate) const FIRST_OWNER_ORIGIN: u64 = 1;
+pub(crate) const FIRST_OWNER_ORIGIN: u64 = 0;
 pub(crate) const SECOND_OWNER_ORIGIN: u64 = 2;
 
 impl_outer_origin! {
@@ -158,9 +158,13 @@ pub fn get_post(locked: bool) -> Post<Runtime, DefaultInstance> {
     post
 }
 
+fn generate_post() -> (Vec<u8>, Vec<u8>) {
+    (generate_text(10), generate_text(100))
+}
+
 pub fn create_post(origin_id: u64) -> DispatchResult {
-    let post = get_post(false);
-    TestBlogModule::create_post(Origin::signed(origin_id), post.title, post.body)
+    let (title, body) = generate_post();
+    TestBlogModule::create_post(Origin::signed(origin_id), title, body)
 }
 
 pub fn lock_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
@@ -172,13 +176,8 @@ pub fn unlock_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> Dispa
 }
 
 pub fn edit_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
-    let post = get_post(false);
-    TestBlogModule::edit_post(
-        Origin::signed(origin_id),
-        post_id,
-        Some(post.title),
-        Some(post.body),
-    )
+    let (title, body) = generate_post();
+    TestBlogModule::edit_post(Origin::signed(origin_id), post_id, Some(title), Some(body))
 }
 
 // Replies
@@ -198,7 +197,7 @@ pub fn get_reply_text() -> Vec<u8> {
 
 pub fn get_reply(
     owner: <Runtime as frame_system::Trait>::AccountId,
-    parent_id: ParentId<Runtime, DefaultInstance>,
+    parent_id: ParentId<<Runtime as Trait>::ReplyId, <Runtime as Trait>::PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
     Reply::new(reply_text, owner, parent_id)
