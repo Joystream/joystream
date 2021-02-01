@@ -1,8 +1,6 @@
 {
-    "Channel": "Null",
     "ChannelContentType": "Null",
     "ChannelCurationStatus": "Null",
-    "ChannelId": "Null",
     "ChannelPublicationStatus": "Null",
     "CurationActor": "Null",
     "Curator": "Null",
@@ -18,6 +16,56 @@
     "Principal": "Null",
     "PrincipalId": "Null",
     "WorkingGroupUnstaker": "Null",
+    "Nonce": "Null",
+    "EntityId": "Null",
+    "ClassId": "Null",
+    "VecMaxLength": "Null",
+    "TextMaxLength": "Null",
+    "HashedTextMaxLength": "Null",
+    "PropertyId": "Null",
+    "SchemaId": "Null",
+    "SameController": "Null",
+    "ClassPermissions": "Null",
+    "PropertyTypeSingle": "Null",
+    "PropertyTypeVector": "Null",
+    "PropertyType": "Null",
+    "PropertyLockingPolicy": "Null",
+    "Property": "Null",
+    "Schema": "Null",
+    "Class": "Null",
+    "ClassOf": "Null",
+    "EntityController": "Null",
+    "EntityPermissions": "Null",
+    "StoredValue": "Null",
+    "VecStoredValue": "Null",
+    "VecStoredPropertyValue": "Null",
+    "StoredPropertyValue": "Null",
+    "InboundReferenceCounter": "Null",
+    "Entity": "Null",
+    "EntityOf": "Null",
+    "EntityCreationVoucher": "Null",
+    "Actor": "Null",
+    "EntityReferenceCounterSideEffect": "Null",
+    "ReferenceCounterSideEffects": "Null",
+    "SideEffects": "Null",
+    "SideEffect": "Null",
+    "Status": "Null",
+    "InputValue": "Null",
+    "VecInputValue": "Null",
+    "InputPropertyValue": "Null",
+    "ParameterizedEntity": "Null",
+    "ParametrizedPropertyValue": "Null",
+    "ParametrizedClassPropertyValue": "Null",
+    "CreateEntityOperation": "Null",
+    "UpdatePropertyValuesOperation": "Null",
+    "AddSchemaSupportToEntityOperation": "Null",
+    "OperationType": "Null",
+    "InputEntityValuesMap": "Null",
+    "ClassPermissionsType": "Null",
+    "ClassPropertyValue": "Null",
+    "Operation": "Null",
+    "ReferenceConstraint": "Null",
+    "FailedAt": "Null",
     "Credential": "u64",
     "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
@@ -608,249 +656,26 @@
         }
     },
     "SetLeadParams": "(MemberId,GenericAccountId)",
-    "Nonce": "u64",
     "CuratorId": "u64",
-    "EntityId": "u64",
-    "ClassId": "u64",
     "CuratorGroupId": "u64",
-    "VecMaxLength": "u16",
-    "TextMaxLength": "u16",
-    "HashedTextMaxLength": "Option<u16>",
-    "PropertyId": "u16",
-    "SchemaId": "u16",
-    "SameController": "bool",
-    "ClassPermissions": {
-        "any_member": "bool",
-        "entity_creation_blocked": "bool",
-        "all_entity_property_values_locked": "bool",
-        "maintainers": "Vec<CuratorGroupId>"
-    },
-    "PropertyTypeSingle": {
-        "_enum": {
-            "Bool": "Null",
-            "Uint16": "Null",
-            "Uint32": "Null",
-            "Uint64": "Null",
-            "Int16": "Null",
-            "Int32": "Null",
-            "Int64": "Null",
-            "Text": "TextMaxLength",
-            "Hash": "HashedTextMaxLength",
-            "Reference": "(ClassId,SameController)"
-        }
-    },
-    "PropertyTypeVector": {
-        "vec_type": "PropertyTypeSingle",
-        "max_length": "VecMaxLength"
-    },
-    "PropertyType": {
-        "_enum": {
-            "Single": "PropertyTypeSingle",
-            "Vector": "PropertyTypeVector"
-        }
-    },
-    "PropertyLockingPolicy": {
-        "is_locked_from_maintainer": "bool",
-        "is_locked_from_controller": "bool"
-    },
-    "Property": {
-        "property_type": "PropertyType",
-        "required": "bool",
-        "unique": "bool",
-        "name": "Text",
-        "description": "Text",
-        "locking_policy": "PropertyLockingPolicy"
-    },
-    "Schema": {
-        "properties": "Vec<PropertyId>",
-        "is_active": "bool"
-    },
-    "Class": {
-        "class_permissions": "ClassPermissions",
-        "properties": "Vec<Property>",
-        "schemas": "Vec<Schema>",
-        "name": "Text",
-        "description": "Text",
-        "maximum_entities_count": "EntityId",
-        "current_number_of_entities": "EntityId",
-        "default_entity_creation_voucher_upper_bound": "EntityId"
-    },
-    "ClassOf": {
-        "class_permissions": "ClassPermissions",
-        "properties": "Vec<Property>",
-        "schemas": "Vec<Schema>",
-        "name": "Text",
-        "description": "Text",
-        "maximum_entities_count": "EntityId",
-        "current_number_of_entities": "EntityId",
-        "default_entity_creation_voucher_upper_bound": "EntityId"
-    },
-    "EntityController": {
-        "_enum": {
-            "Maintainers": "Null",
-            "Member": "MemberId",
-            "Lead": "Null"
-        }
-    },
-    "EntityPermissions": {
-        "controller": "EntityController",
-        "frozen": "bool",
-        "referenceable": "bool"
-    },
-    "StoredValue": {
-        "_enum": {
-            "Bool": "bool",
-            "Uint16": "u16",
-            "Uint32": "u32",
-            "Uint64": "u64",
-            "Int16": "i16",
-            "Int32": "i32",
-            "Int64": "i64",
-            "Text": "Text",
-            "Hash": "Hash",
-            "Reference": "EntityId"
-        }
-    },
-    "VecStoredValue": {
-        "_enum": {
-            "Bool": "Vec<bool>",
-            "Uint16": "Vec<u16>",
-            "Uint32": "Vec<u32>",
-            "Uint64": "Vec<u64>",
-            "Int16": "Vec<i16>",
-            "Int32": "Vec<i32>",
-            "Int64": "Vec<i64>",
-            "Hash": "Vec<Hash>",
-            "Text": "Vec<Text>",
-            "Reference": "Vec<EntityId>"
-        }
-    },
-    "VecStoredPropertyValue": {
-        "vec_value": "VecStoredValue",
-        "nonce": "Nonce"
-    },
-    "StoredPropertyValue": {
-        "_enum": {
-            "Single": "StoredValue",
-            "Vector": "VecStoredPropertyValue"
-        }
-    },
-    "InboundReferenceCounter": {
-        "total": "u32",
-        "same_owner": "u32"
-    },
-    "Entity": {
-        "entity_permissions": "EntityPermissions",
-        "class_id": "ClassId",
-        "supported_schemas": "Vec<SchemaId>",
-        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
-        "reference_counter": "InboundReferenceCounter"
-    },
-    "EntityOf": {
-        "entity_permissions": "EntityPermissions",
-        "class_id": "ClassId",
-        "supported_schemas": "Vec<SchemaId>",
-        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
-        "reference_counter": "InboundReferenceCounter"
-    },
     "CuratorGroup": {
         "curators": "Vec<CuratorId>",
         "active": "bool",
-        "number_of_classes_maintained": "u32"
+        "number_of_channels_owned": "u32"
     },
-    "EntityCreationVoucher": {
-        "maximum_entities_count": "EntityId",
-        "entities_created": "EntityId"
-    },
-    "Actor": {
+    "ContentActor": {
         "_enum": {
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
             "Lead": "Null"
         }
     },
-    "EntityReferenceCounterSideEffect": {
-        "total": "i32",
-        "same_owner": "i32"
-    },
-    "ReferenceCounterSideEffects": "BTreeMap<EntityId,EntityReferenceCounterSideEffect>",
-    "SideEffects": "Option<ReferenceCounterSideEffects>",
-    "SideEffect": "Option<(EntityId,EntityReferenceCounterSideEffect)>",
-    "Status": "bool",
-    "InputValue": {
-        "_enum": {
-            "Bool": "bool",
-            "Uint16": "u16",
-            "Uint32": "u32",
-            "Uint64": "u64",
-            "Int16": "i16",
-            "Int32": "i32",
-            "Int64": "i64",
-            "Text": "Text",
-            "TextToHash": "Text",
-            "Reference": "EntityId"
-        }
-    },
-    "VecInputValue": {
-        "_enum": {
-            "Bool": "Vec<bool>",
-            "Uint16": "Vec<u16>",
-            "Uint32": "Vec<u32>",
-            "Uint64": "Vec<u64>",
-            "Int16": "Vec<i16>",
-            "Int32": "Vec<i32>",
-            "Int64": "Vec<i64>",
-            "TextToHash": "Vec<Text>",
-            "Text": "Vec<Text>",
-            "Reference": "Vec<EntityId>"
-        }
-    },
-    "InputPropertyValue": {
-        "_enum": {
-            "Single": "InputValue",
-            "Vector": "VecInputValue"
-        }
-    },
-    "ParameterizedEntity": {
-        "_enum": {
-            "InternalEntityJustAdded": "u32",
-            "ExistingEntity": "EntityId"
-        }
-    },
-    "ParametrizedPropertyValue": {
-        "_enum": {
-            "InputPropertyValue": "InputPropertyValue",
-            "InternalEntityJustAdded": "u32",
-            "InternalEntityVec": "Vec<ParameterizedEntity>"
-        }
-    },
-    "ParametrizedClassPropertyValue": {
-        "in_class_index": "PropertyId",
-        "value": "ParametrizedPropertyValue"
-    },
-    "CreateEntityOperation": {
-        "class_id": "ClassId"
-    },
-    "UpdatePropertyValuesOperation": {
-        "entity_id": "ParameterizedEntity",
-        "new_parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "AddSchemaSupportToEntityOperation": {
-        "entity_id": "ParameterizedEntity",
-        "schema_id": "SchemaId",
-        "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "OperationType": {
-        "_enum": {
-            "CreateEntity": "CreateEntityOperation",
-            "UpdatePropertyValues": "UpdatePropertyValuesOperation",
-            "AddSchemaSupportToEntity": "AddSchemaSupportToEntityOperation"
-        }
-    },
-    "InputEntityValuesMap": "BTreeMap<PropertyId,InputPropertyValue>",
-    "ClassPermissionsType": "Null",
-    "ClassPropertyValue": "Null",
-    "Operation": "Null",
-    "ReferenceConstraint": "Null",
-    "FailedAt": "u32"
+    "ChannelId": "u64",
+    "ChannelCategoryId": "u64",
+    "VideoId": "u64",
+    "VideoCategoryId": "u64",
+    "PlaylistId": "u64",
+    "PersonId": "u64",
+    "SeriesId": "u64",
+    "ChannelTransferRequestId": "u64"
 }

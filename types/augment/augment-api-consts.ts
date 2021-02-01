@@ -31,6 +31,12 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       existentialDeposit: AugmentedConst<Balance>;
     };
+    content: {
+      /**
+       * Exports const -  max number of curators per group
+       **/
+      maxNumberOfCuratorsPerGroup: AugmentedConst<MaxNumber>;
+    };
     contentDirectoryWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.

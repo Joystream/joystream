@@ -26,6 +26,30 @@ export class ContentActor extends JoyEnum({
   Lead: Null,
 }) {}
 
+/* 
+// from new content module
+ChannelOwner
+ChannelCreationParameters
+ChannelUpdateParameters
+ChannelOwnershipTransferRequestId
+ChannelOwnershipTransferRequest
+ChannelCategoryCreationParameters
+ChannelCategoryUpdateParameters
+VideoCategoryCreationParameters
+VideoCategoryUpdateParameters
+VideoCreationParameters
+VideoUpdateParameters
+PlaylistCreationParameters
+PlaylistUpdateParameters
+SeriesCreationParameters
+SeriesUpdateParameters
+PersonCreationParameters
+PersonUpdateParameters
+
+// from data_directory changes
+StorageObjectOwner
+*/
+
 export const contentDirectoryTypes = {
   CuratorId,
   CuratorGroupId,
