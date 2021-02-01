@@ -355,7 +355,7 @@ impl<T: Trait> Module<T> {
 
 // Some initial config for the module on runtime upgrade
 impl<T: Trait> Module<T> {
-    pub fn set_initial_ids_to_one() {
+    pub fn on_runtime_upgrade() {
         <NextChannelCategoryId<T>>::put(T::ChannelCategoryId::one());
         <NextVideoCategoryId<T>>::put(T::VideoCategoryId::one());
         <NextVideoId<T>>::put(T::VideoId::one());
