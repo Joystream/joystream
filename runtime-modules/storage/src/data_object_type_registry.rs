@@ -35,7 +35,10 @@ const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
 
 /// The _Data object type registry_ main _Trait_.
 pub trait Trait:
-    system::Trait + working_group::Trait<StorageWorkingGroupInstance> + common::Trait
+    system::Trait
+    + working_group::Trait<StorageWorkingGroupInstance>
+    + common::MembershipTypes
+    + common::StorageOwnership
 {
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

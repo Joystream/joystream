@@ -47,7 +47,8 @@ pub trait Trait:
     + data_object_type_registry::Trait
     + membership::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
-    + common::Trait
+    + common::MembershipTypes
+    + common::StorageOwnership
 {
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

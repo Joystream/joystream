@@ -2,6 +2,7 @@ use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchResult;
+use sp_std::vec::Vec;
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub struct ContentParameters<ContentId, DataObjectTypeId> {
@@ -38,7 +39,7 @@ pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
 
 // To be implemented by current storage data_directory runtime module.
 // Defined in 'common' package
-pub trait StorageSystem<T: crate::Trait> {
+pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
     // Should hook into call on storage system,
     // but requires rich error (with reasons)  types.
     // caller already knows the `ContentId`s as they are part of
