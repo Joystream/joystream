@@ -11,9 +11,10 @@ mkdir -p ${OUT_DIR}
 OUT_DIR_DOC="./doc"
 mkdir -p ${OUT_DIR_DOC}
 
+# Compile proto files and also generate html docs
 protoc \
     --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" \
     --js_out="import_style=commonjs,binary:${OUT_DIR}" \
     --ts_out="${OUT_DIR}" \
-    --doc_out="${OUT_DIR_DOC}" --doc_opt=markdown,index.md \
+    --doc_out="${OUT_DIR_DOC}" \
     proto/*.proto
