@@ -118,12 +118,13 @@ pub enum ChannelOwner<MemberId, CuratorGroupId> {
     // Dao(DaoId),
     // EVM smart contract DAO
     // SmartContract(EthAddress),
-    System,
+    /// Do not use - Default value representing empty value
+    Nobody,
 }
 
 impl<MemberId, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
     fn default() -> Self {
-        ChannelOwner::System
+        ChannelOwner::Nobody
     }
 }
 
@@ -326,12 +327,13 @@ pub enum PersonActor<MemberId, CuratorId> {
 pub enum PersonController<MemberId> {
     Member(MemberId),
     Curators,
-    System,
+    /// Do not use - Default value representing empty value
+    Nobody,
 }
 
 impl<MemberId> Default for PersonController<MemberId> {
     fn default() -> Self {
-        PersonController::System
+        PersonController::Nobody
     }
 }
 
