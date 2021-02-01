@@ -79,7 +79,7 @@ decl_error! {
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     /// Content id.
-    pub content_id: <T as common::Trait>::ContentId,
+    pub content_id: <T as common::StorageOwnership>::ContentId,
 
     /// Storge provider id.
     pub storage_provider_id: StorageProviderId<T>,
@@ -111,7 +111,7 @@ decl_storage! {
 decl_event! {
     /// _Data object storage registry_ events
     pub enum Event<T> where
-        <T as common::Trait>::ContentId,
+        <T as common::StorageOwnership>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         StorageProviderId = StorageProviderId<T>
     {

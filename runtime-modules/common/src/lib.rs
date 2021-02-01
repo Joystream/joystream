@@ -4,10 +4,10 @@
 pub mod constraints;
 pub mod currency;
 pub mod origin;
-pub mod working_group;
 pub mod storage;
+pub mod working_group;
 
-use codec::{Decode, Codec, Encode};
+use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -16,13 +16,13 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 
 /// Member id type alias
-pub type MemberId<T> = <T as Trait>::MemberId;
+pub type MemberId<T> = <T as MembershipTypes>::MemberId;
 
 /// Actor id type alias
-pub type ActorId<T> = <T as Trait>::ActorId;
+pub type ActorId<T> = <T as MembershipTypes>::ActorId;
 
 /// Generic trait for membership dependent pallets.
-pub trait Trait: system::Trait {
+pub trait MembershipTypes: system::Trait {
     /// Describes the common type for the members.
     type MemberId: Parameter
         + Member
@@ -44,8 +44,11 @@ pub trait Trait: system::Trait {
         + MaybeSerialize
         + Ord
         + PartialEq;
+}
 
-    /// Channel id representation
+/// Generic trait for strorage ownership dependent pallets.
+pub trait StorageOwnership {
+    /// Channel id representation.
     type ChannelId: Parameter
         + Member
         + BaseArithmetic
@@ -56,7 +59,7 @@ pub trait Trait: system::Trait {
         + Ord
         + PartialEq;
 
-    /// DAO id.
+    /// DAO id representation.
     type DAOId: Parameter
         + Member
         + BaseArithmetic
@@ -66,8 +69,8 @@ pub trait Trait: system::Trait {
         + MaybeSerialize
         + Ord
         + PartialEq;
-        
-    /// Content id.
+
+    /// Content id representation.
     type ContentId: Parameter
         + Member
         + BaseArithmetic
@@ -78,7 +81,7 @@ pub trait Trait: system::Trait {
         + Ord
         + PartialEq;
 
-    /// DAO object type id.
+    /// Data object type id.
     type DataObjectTypeId: Parameter
         + Member
         + BaseArithmetic

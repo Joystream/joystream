@@ -131,9 +131,12 @@ impl pallet_timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-impl common::Trait for Test {
+impl common::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl common::StorageOwnership for Test {
     type ChannelId = u64;
     type DAOId = u64;
     type ContentId = u64;
