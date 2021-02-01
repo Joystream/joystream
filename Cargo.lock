@@ -3300,6 +3300,7 @@ dependencies = [
  "serde",
  "sp-arithmetic 2.0.0",
  "sp-runtime",
+ "sp-std 2.0.0-rc4",
  "strum 0.19.2",
  "strum_macros 0.19.2",
 ]

@@ -451,8 +451,8 @@ impl common::currency::GovernanceCurrency for Runtime {
 }
 
 impl common::MembershipTypes for Runtime {
-    type MemberId = u64;
-    type ActorId = u64;
+    type MemberId = MemberId;
+    type ActorId = ActorId;
 }
 
 impl common::StorageOwnership for Runtime {
@@ -482,7 +482,6 @@ parameter_types! {
 
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
-    type DataObjectTypeId = u64;
 }
 
 impl storage::data_directory::Trait for Runtime {
