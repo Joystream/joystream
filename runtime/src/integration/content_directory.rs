@@ -4,7 +4,7 @@ use crate::{AccountId, ContentDirectoryWorkingGroupInstance, MemberId, Runtime};
 pub(crate) type ContentDirectoryWorkingGroup<T> =
     working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
 
-impl content::ActorAuthenticator for Runtime {
+impl content::ContentActorAuthenticator for Runtime {
     type CuratorId = u64;
     type MemberId = MemberId;
     type CuratorGroupId = u64;
