@@ -75,3 +75,8 @@ message VideoMetadata {
     // Does Video have explicit language or scenes
     optional bool is_explicit = 14;
 }
+
+message VideoCategoryMetadata {
+    // Category name
+    optional string name = 1;
+}

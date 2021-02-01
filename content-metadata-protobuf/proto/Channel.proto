@@ -18,3 +18,8 @@ message ChannelMetadata {
     // index into OOB array
     optional uint32 avatar_photo  = 6;
 }
+
+message ChannelCategoryMetadata {
+    // Category Name
+    optional string name = 1;
+}

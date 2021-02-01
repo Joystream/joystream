@@ -4,6 +4,7 @@
 ## Table of Contents
 
 - [proto/Channel.proto](#proto/Channel.proto)
+    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
   
 - [proto/Person.proto](#proto/Person.proto)
@@ -20,6 +21,7 @@
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
+    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [Scalar Value Types](#scalar-value-types)
@@ -30,6 +32,21 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## proto/Channel.proto
+
+
+
+<a name=".ChannelCategoryMetadata"></a>
+
+### ChannelCategoryMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | optional | Category Name |
+
+
+
 
 
 
@@ -229,6 +246,21 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | is_published | [bool](#bool) | optional | Was video published before joystream platform |
 | timestamp | [uint32](#uint32) | optional | Unix timestamp in milli-seconds |
+
+
+
+
+
+
+<a name=".VideoCategoryMetadata"></a>
+
+### VideoCategoryMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | optional | Category name |
 
 
 

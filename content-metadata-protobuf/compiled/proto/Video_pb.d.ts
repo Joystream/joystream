@@ -199,3 +199,25 @@ export namespace VideoMetadata {
   }
 }
 
+export class VideoCategoryMetadata extends jspb.Message {
+  hasName(): boolean;
+  clearName(): void;
+  getName(): string | undefined;
+  setName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): VideoCategoryMetadata.AsObject;
+  static toObject(includeInstance: boolean, msg: VideoCategoryMetadata): VideoCategoryMetadata.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: VideoCategoryMetadata, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): VideoCategoryMetadata;
+  static deserializeBinaryFromReader(message: VideoCategoryMetadata, reader: jspb.BinaryReader): VideoCategoryMetadata;
+}
+
+export namespace VideoCategoryMetadata {
+  export type AsObject = {
+    name?: string,
+  }
+}
+

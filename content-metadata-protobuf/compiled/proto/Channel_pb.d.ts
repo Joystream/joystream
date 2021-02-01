@@ -55,3 +55,25 @@ export namespace ChannelMetadata {
   }
 }
 
+export class ChannelCategoryMetadata extends jspb.Message {
+  hasName(): boolean;
+  clearName(): void;
+  getName(): string | undefined;
+  setName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ChannelCategoryMetadata.AsObject;
+  static toObject(includeInstance: boolean, msg: ChannelCategoryMetadata): ChannelCategoryMetadata.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ChannelCategoryMetadata, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ChannelCategoryMetadata;
+  static deserializeBinaryFromReader(message: ChannelCategoryMetadata, reader: jspb.BinaryReader): ChannelCategoryMetadata;
+}
+
+export namespace ChannelCategoryMetadata {
+  export type AsObject = {
+    name?: string,
+  }
+}
+
