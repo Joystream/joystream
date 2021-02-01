@@ -59,13 +59,13 @@ pub trait Trait:
     /// Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
-    /// Validates member id and origin combination.
+    /// Validates member id and origin combination.DefaultQuotaLimit
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     type MaxObjectsPerInjection: Get<u32>;
 
     /// Deafult content quota limit for all actors.
-    type DefaultQuotaLimit: Get<ContentId<Self>>;
+    type DefaultQuotaLimit: Get<u32>;
 }
 
 decl_error! {
@@ -366,7 +366,7 @@ impl<T: Trait> Module<T> {
             T::DefaultQuotaLimit::get()
         };
 
-        let content_length: ContentId<T> = (content.len() as u32).into();
+        let content_length = content.len() as u32;
         ensure!(quota >= content_length, Error::<T>::QuotaLimitExceeded);
         Ok(quota - content_length)
     }

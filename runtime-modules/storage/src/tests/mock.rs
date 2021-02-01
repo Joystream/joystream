@@ -96,6 +96,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
+    pub const DefaultQuotaLimit: u32 = 50;
 }
 
 impl system::Trait for Test {
@@ -179,6 +180,7 @@ impl data_directory::Trait for Test {
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
+    type DefaultQuotaLimit = DefaultQuotaLimit;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {

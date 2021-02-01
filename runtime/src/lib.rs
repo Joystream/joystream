@@ -478,6 +478,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
+    pub const DefaultQuotaLimit: u32 = 50;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -490,6 +491,7 @@ impl storage::data_directory::Trait for Runtime {
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
+    type DefaultQuotaLimit = DefaultQuotaLimit;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {
