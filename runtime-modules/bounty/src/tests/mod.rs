@@ -391,3 +391,55 @@ fn fund_bounty_fails_with_insufficient_balance() {
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForBounty.into()));
     });
 }
+
+#[test]
+fn fund_bounty_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
+            bounty.stage = BountyStage::Canceled;
+        });
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
+fn fund_bounty_fails_with_expired_funding_period() {
+    build_test_externalities().execute_with(|| {
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+        let funding_period = 10;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 1);
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test>::FundingPeriodExpired.into()));
+    });
+}

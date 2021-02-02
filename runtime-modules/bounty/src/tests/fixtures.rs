@@ -49,6 +49,7 @@ pub struct CreateBountyFixture {
     origin: RawOrigin<u64>,
     metadata: Vec<u8>,
     creator_member_id: Option<u64>,
+    funding_period: Option<u64>,
     min_amount: u64,
     max_amount: u64,
     work_period: u64,
@@ -63,6 +64,7 @@ impl CreateBountyFixture {
             origin: RawOrigin::Root,
             metadata: Vec::new(),
             creator_member_id: None,
+            funding_period: None,
             min_amount: 0,
             max_amount: 0,
             work_period: 1,
@@ -101,6 +103,13 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_funding_period(self, funding_period: u64) -> Self {
+        Self {
+            funding_period: Some(funding_period),
+            ..self
+        }
+    }
+
     pub fn with_judging_period(self, judging_period: u64) -> Self {
         Self {
             judging_period,
@@ -126,6 +135,7 @@ impl CreateBountyFixture {
             max_amount: self.max_amount.clone(),
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
+            funding_period: self.funding_period.clone(),
             cherry: self.cherry,
             creator_funding: self.creator_funding,
             ..Default::default()

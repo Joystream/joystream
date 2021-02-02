@@ -257,6 +257,9 @@ decl_error! {
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
+
+        /// Funding period expired for the bounty.
+        FundingPeriodExpired,
     }
 }
 
@@ -417,7 +420,16 @@ decl_module! {
                 Error::<T>::InsufficientBalanceForBounty
             );
 
-            //TODO: check for funding period
+            if let BountyStage::Funding(created_at) = bounty.stage{
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    ensure!(
+                        created_at + funding_period >= Self::current_block(),
+                        Error::<T>::FundingPeriodExpired,
+                    );
+            }
+            } else {
+                return Err(Error::<T>::InvalidBountyStage.into())
+            }
 
             //
             // == MUTATION SAFE ==
