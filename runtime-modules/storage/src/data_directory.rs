@@ -162,6 +162,27 @@ pub struct DataObjectInternal<
     pub ipfs_content_id: Vec<u8>,
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug, Default)]
+pub struct Quota {
+    pub limit: u32,
+    pub used: u32,
+}
+
+impl Quota {
+    pub fn calculate_delta(&self) -> u32 {
+        self.limit - self.used
+    }
+
+    pub fn set_new_quota_limit(&mut self, new_quota_limit: u32) {
+        self.limit = new_quota_limit;
+    }
+
+    pub fn update_quota(&mut self, new_quota: u32) {
+        self.used = new_quota;
+    }
+}
+
 /// A map collection of unique DataObjects keyed by the ContentId
 pub type DataObjectsMap<T> = BTreeMap<ContentId<T>, DataObject<T>>;
 
@@ -174,8 +195,8 @@ decl_storage! {
         pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
 
-        pub QuotaLimits get(fn quota_limits) config():
-            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => u32;
+        pub Quotas get(fn quotas) config():
+            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Quota;
 
         pub QuotaLimitUpperBound get(fn quota_limit_upper_bound) config(): u32;
     }
@@ -288,13 +309,15 @@ decl_module! {
             new_quota_limit: u32
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_limit <= quota_limit_upper_bound, Error::<T>::QuotaLimitUpperBoundExceeded);
+            ensure!(new_quota_limit <= Self::quota_limit_upper_bound(), Error::<T>::QuotaLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
             //
 
-            <QuotaLimitUpperBound<T>>::insert(abstract_owner, new_quota_limit);
+            <Quotas<T>>::mutate(abstract_owner, |quota| {
+                quota.set_new_quota_limit(new_quota_limit);
+            });
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -381,20 +404,23 @@ impl<T: Trait> Module<T> {
     fn ensure_quota_limit_constraint_satisfied(
         owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<ContentId<T>, Error<T>> {
-        let quota = if <QuotaLimits<T>>::contains_key(owner) {
-            Self::quota_limits(owner)
+    ) -> Result<u32, Error<T>> {
+        let available_quota = if <Quotas<T>>::contains_key(owner) {
+            Self::quotas(owner).calculate_delta()
         } else {
             T::DefaultQuotaLimit::get()
         };
 
         let content_length = content.len() as u32;
-        ensure!(quota >= content_length, Error::<T>::QuotaLimitExceeded);
-        Ok(quota - content_length)
+        ensure!(
+            available_quota >= content_length,
+            Error::<T>::QuotaLimitExceeded
+        );
+        Ok(available_quota - content_length)
     }
 
     fn upload_content(
-        new_quota: ContentId<T>,
+        new_quota: u32,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -413,8 +439,10 @@ impl<T: Trait> Module<T> {
             <DataObjectByContentId<T>>::insert(content.content_id, data);
         }
 
-        // Upgrade owner quota.
-        <QuotaLimits<T>>::insert(owner, new_quota);
+        // Updade owner quota.
+        <Quotas<T>>::mutate(owner, |quota| {
+            quota.update_quota(new_quota);
+        });
     }
 
     fn ensure_content_is_valid(
@@ -499,10 +527,11 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     }
 
     fn can_add_content(
-        _owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> bool {
         Self::ensure_content_is_valid(&content).is_ok()
+            && Self::ensure_quota_limit_constraint_satisfied(&owner, &content).is_ok()
             && T::StorageProviderHelper::get_random_storage_provider().is_ok()
     }
 }
