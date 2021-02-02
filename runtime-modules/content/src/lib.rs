@@ -29,8 +29,12 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 use system::ensure_signed;
 
-/// Remove this - import type defined in common trait
-pub type ContentParameters = u32;
+pub use common::storage::{ContentParameters, StorageSystem};
+pub use common::{MembershipTypes, StorageOwnership};
+
+pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
+
+pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -56,7 +60,9 @@ pub trait NumericIdentifier:
 impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + ContentActorAuthenticator + Clone {
+pub trait Trait:
+    system::Trait + ContentActorAuthenticator + Clone + StorageOwnership + MembershipTypes
+{
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -69,8 +75,9 @@ pub trait Trait: system::Trait + ContentActorAuthenticator + Clone {
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
-    /// Type of identifier for Channels
-    type ChannelId: NumericIdentifier;
+    // Type already defined in StorageOwnership
+    // Type of identifier for Channels
+    // type ChannelId: NumericIdentifier;
 
     /// Type of identifier for Video Categories
     type VideoCategoryId: NumericIdentifier;
@@ -94,7 +101,7 @@ pub trait Trait: system::Trait + ContentActorAuthenticator + Clone {
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     // Type that handles asset uploads to storage system
-    // type StorageSystem: StorageSystem;
+    type StorageSystem: StorageSystem<Self>;
 }
 
 // How new assets are to be added on creating and updating
@@ -111,18 +118,18 @@ pub enum NewAsset<ContentParameters> {
 // Must be convertible into new type StorageObjectOwner in storage system
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub enum ChannelOwner<MemberId, CuratorGroupId> {
-    Member(MemberId),
-    CuratorGroup(CuratorGroupId),
-    // Native DAO
-    // Dao(DaoId),
-    // EVM smart contract DAO
-    // SmartContract(EthAddress),
+pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     /// Do not use - Default value representing empty value
     Nobody,
+    /// A Member owns the channel
+    Member(MemberId),
+    /// A specific curation group owns the channel
+    CuratorGroup(CuratorGroupId),
+    // Native DAO owns the channel
+    Dao(DAOId),
 }
 
-impl<MemberId, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
+impl<MemberId, CuratorGroupId, DAOId> Default for ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     fn default() -> Self {
         ChannelOwner::Nobody
     }
@@ -148,8 +155,8 @@ pub struct ChannelCategoryUpdateParameters {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Channel<MemberId, CuratorGroupId, ChannelCategoryId> {
-    owner: ChannelOwner<MemberId, CuratorGroupId>,
+pub struct Channel<MemberId, CuratorGroupId, ChannelCategoryId, DAOId> {
+    owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     in_category: ChannelCategoryId,
     number_of_videos: u32,
     number_of_playlists: u32,
@@ -162,9 +169,9 @@ pub struct Channel<MemberId, CuratorGroupId, ChannelCategoryId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId> {
+pub struct ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId, DAOId> {
     channel_id: ChannelId,
-    new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     payment: u128,
 }
 
@@ -358,7 +365,7 @@ pub struct Person<MemberId> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
-        pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T::MemberId, T::CuratorGroupId, T::ChannelCategoryId>;
+        pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T::MemberId, T::CuratorGroupId, T::ChannelCategoryId, T::DAOId>;
 
         pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
@@ -375,7 +382,7 @@ decl_storage! {
         // pub PersonInVideo get(fn person_in_video): double_map hasher(blake2_128_concat) (T::VideoId, T::PersonId), hasher(blake2_128_concat) T::Hash => ();
 
         pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
-            map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T::ChannelId, T::MemberId, T::CuratorGroupId>;
+            map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T::ChannelId, T::MemberId, T::CuratorGroupId, T::DAOId>;
 
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
@@ -659,14 +666,15 @@ decl_event!(
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
-        ChannelId = <T as Trait>::ChannelId,
-        MemberId = <T as ContentActorAuthenticator>::MemberId,
-        NewAsset = NewAsset<ContentParameters>,
+        ChannelId = <T as StorageOwnership>::ChannelId,
+        MemberId = <T as MembershipTypes>::MemberId,
+        NewAsset = NewAsset<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
         SeriesId = <T as Trait>::SeriesId,
         PersonId = <T as Trait>::PersonId,
+        DAOId = <T as StorageOwnership>::DAOId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -678,7 +686,7 @@ decl_event!(
         // Channels
         ChannelCreated(
             ChannelId,
-            ChannelOwner<MemberId, CuratorGroupId>,
+            ChannelOwner<MemberId, CuratorGroupId, DAOId>,
             Vec<NewAsset>,
             ChannelCreationParameters<ChannelCategoryId>,
         ),
@@ -692,7 +700,7 @@ decl_event!(
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
             ChannelOwnershipTransferRequestId,
-            ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId>,
+            ChannelOwnershipTransferRequest<ChannelId, MemberId, CuratorGroupId, DAOId>,
         ),
         ChannelOwnershipTransferRequestWithdrawn(ChannelOwnershipTransferRequestId),
         ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),

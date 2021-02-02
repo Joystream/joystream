@@ -376,7 +376,6 @@ impl content::Trait for Runtime {
     type Event = Event;
     type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
     type ChannelRevenueTreasuryId = ChannelRevenueTreasuryId;
-    type ChannelId = ChannelId;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type VideoCategoryId = VideoCategoryId;
@@ -385,6 +384,7 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+    type StorageSystem = data_directory::Module<Self>;
 }
 
 impl hiring::Trait for Runtime {

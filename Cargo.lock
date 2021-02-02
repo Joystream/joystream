@@ -3311,6 +3311,7 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-common",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic 2.0.0-rc4",

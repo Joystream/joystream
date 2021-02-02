@@ -5,6 +5,7 @@ pub use curator_group::*;
 pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
+pub use common::MembershipTypes;
 use core::fmt::Debug;
 use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]
@@ -13,22 +14,9 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: system::Trait {
+pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
     /// Curator identifier
     type CuratorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// Member identifier
-    type MemberId: Parameter
         + Member
         + BaseArithmetic
         + Codec

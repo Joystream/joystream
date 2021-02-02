@@ -15,9 +15,6 @@ pub type TransactionPriority = u64;
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
 
-/// Alias for ChannelId, used in various places.
-pub type ChannelId = u64;
-
 /// Alias for DAOId, used in various places.
 pub type DAOId = u64;
 
