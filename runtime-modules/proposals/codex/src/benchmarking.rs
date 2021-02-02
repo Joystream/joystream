@@ -159,17 +159,6 @@ fn create_proposal_verify<T: Trait>(
         thread_id,
         "Proposal and thread ID doesn't match"
     );
-
-    assert!(
-        ProposalDetailsByProposalId::<T>::contains_key(proposal_id),
-        "Proposal details not stored"
-    );
-
-    assert_eq!(
-        ProposalDetailsByProposalId::<T>::get(proposal_id),
-        proposal_details,
-        "Proposal details doesn't match"
-    );
 }
 
 fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
