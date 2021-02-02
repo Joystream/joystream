@@ -26,7 +26,9 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::traits::{KeyOwnerProofSystem, LockIdentifier};
+use frame_support::traits::{
+    Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
+};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
@@ -55,8 +57,9 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
-use referendum::{Balance as BalanceReferendum, CastVote, OptionResult};
+use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
 
@@ -69,6 +72,7 @@ pub use content_directory::{
 pub use council;
 pub use forum;
 pub use membership;
+
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
@@ -93,7 +97,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 8,
     spec_version: 0,
-    impl_version: 0,
+    impl_version: 1,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
 };
@@ -121,7 +125,9 @@ parameter_types! {
 }
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
-// TODO: adjust weight
+// TODO: We need to adjust weight of this pallet
+// once we move to a newer version of substrate where parameters
+// are not discarded. See the comment in 'scripts/generate-weights.sh'
 impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
@@ -260,15 +266,39 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
+    pub const TransactionByteFee: Balance = 1;
+}
+
+type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+
+pub struct Author;
+impl OnUnbalanced<NegativeImbalance> for Author {
+    fn on_nonzero_unbalanced(amount: NegativeImbalance) {
+        Balances::resolve_creating(&Authorship::author(), amount);
+    }
+}
+
+pub struct DealWithFees;
+impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
+        if let Some(fees) = fees_then_tips.next() {
+            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
+            let mut split = fees.ration(80, 20);
+            if let Some(tips) = fees_then_tips.next() {
+                // For tips %100 are for the author
+                tips.ration_merge_into(0, 100, &mut split);
+            }
+            Author::on_unbalanced(split.1);
+        }
+    }
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
-    type OnTransactionPayment = ();
+    type OnTransactionPayment = DealWithFees;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = integration::transactions::NoWeights; // TODO: adjust weight
-    type FeeMultiplierUpdate = (); // TODO: adjust fee
+    type WeightToFee = constants::fees::WeightToFee;
+    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Trait for Runtime {
@@ -355,7 +385,7 @@ parameter_types! {
 impl pallet_staking::Trait for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
+    type CurrencyToVote = CurrencyToVoteHandler;
     type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
     type Slash = (); // Where to send the slashed funds. Could be Treasury.
@@ -474,10 +504,10 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 27;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
+    pub const DefaultBudgetIncrement: u64 = 1000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 impl referendum::Trait<ReferendumInstance> for Runtime {
@@ -485,13 +515,12 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Self>;
-    type LockId = VotingLockId;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
-    type VotePower = BalanceReferendum<Self, ReferendumInstance>;
+    type VotePower = Balance;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -499,17 +528,16 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MinimumStake = MinimumVotingStake;
 
     type WeightInfo = weights::referendum::WeightInfo;
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         _account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance,
     ) -> Self::VotePower {
         *stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance, Self::MemberId>) -> bool {
         <CouncilModule as ReferendumConnection<Runtime>>::can_unlock_vote_stake(vote).is_ok()
     }
 
@@ -555,10 +583,8 @@ impl council::Trait for Runtime {
 
     type StakingAccountValidator = Members;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = weights::council::WeightInfo;
@@ -609,9 +635,10 @@ impl common::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = MembershipWorkingGroup;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
+    type WorkingGroup = MembershipWorkingGroup;
+    type WeightInfo = weights::membership::WeightInfo;
 }
 
 parameter_types! {
@@ -663,18 +690,6 @@ impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
     }
 }
 
-// The forum working group instance alias.
-pub type ForumWorkingGroupInstance = working_group::Instance1;
-
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
-
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const MinUnstakingPeriodLimit: u32 = 43200;
@@ -695,6 +710,18 @@ pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
@@ -793,38 +820,58 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
+macro_rules! call_wg {
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+        }
+    }};
+}
+
 impl proposals_codex::Trait for Runtime {
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
-    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
-    type TextProposalParameters = TextProposalParameters;
-    type SpendingProposalParameters = SpendingProposalParameters;
-    type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
-    type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
-    type SetWorkingGroupBudgetCapacityProposalParameters =
-        SetWorkingGroupBudgetCapacityProposalParameters;
-    type DecreaseWorkingGroupLeaderStakeProposalParameters =
-        DecreaseWorkingGroupLeaderStakeProposalParameters;
-    type SlashWorkingGroupLeaderStakeProposalParameters =
-        SlashWorkingGroupLeaderStakeProposalParameters;
-    type SetWorkingGroupLeaderRewardProposalParameters =
-        SetWorkingGroupLeaderRewardProposalParameters;
-    type TerminateWorkingGroupLeaderRoleProposalParameters =
-        TerminateWorkingGroupLeaderRoleProposalParameters;
+    type SignalProposalParameters = SignalProposalParameters;
+    type FundingRequestProposalParameters = FundingRequestProposalParameters;
+    type CreateWorkingGroupLeadOpeningProposalParameters =
+        CreateWorkingGroupLeadOpeningProposalParameters;
+    type FillWorkingGroupLeadOpeningProposalParameters =
+        FillWorkingGroupLeadOpeningProposalParameters;
+    type UpdateWorkingGroupBudgetProposalParameters = UpdateWorkingGroupBudgetProposalParameters;
+    type DecreaseWorkingGroupLeadStakeProposalParameters =
+        DecreaseWorkingGroupLeadStakeProposalParameters;
+    type SlashWorkingGroupLeadProposalParameters = SlashWorkingGroupLeadProposalParameters;
+    type SetWorkingGroupLeadRewardProposalParameters = SetWorkingGroupLeadRewardProposalParameters;
+    type TerminateWorkingGroupLeadProposalParameters = TerminateWorkingGroupLeadProposalParameters;
     type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
+    type CancelWorkingGroupLeadOpeningProposalParameters =
+        CancelWorkingGroupLeadOpeningProposalParameters;
+    type SetMembershipPriceProposalParameters = SetMembershipPriceProposalParameters;
+    type SetCouncilBudgetIncrementProposalParameters = SetCouncilBudgetIncrementProposalParameters;
+    type SetCouncilorRewardProposalParameters = SetCouncilorRewardProposalParameters;
+    type SetInitialInvitationBalanceProposalParameters =
+        SetInitialInvitationBalanceProposalParameters;
+    type SetInvitationCountProposalParameters = SetInvitationCountProposalParameters;
+    type SetMembershipLeadInvitationQuotaProposalParameters =
+        SetMembershipLeadInvitationQuotaProposalParameters;
+    type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
+    type WeightInfo = weights::proposals_codex::WeightInfo;
+    fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
+        call_wg!(working_group, get_budget)
+    }
+    fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
+        call_wg!(working_group, set_budget, budget)
+    }
 }
 
 impl pallet_constitution::Trait for Runtime {
     type Event = Event;
     type WeightInfo = weights::pallet_constitution::WeightInfo;
-}
-
-parameter_types! {
-    pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
-    pub const RentByteFee: Balance = 1; // TODO: adjust fee
-    pub const RentDepositOffset: Balance = 0; // no rent deposit
-    pub const SurchargeReward: Balance = 0; // no reward
 }
 
 /// Forum identifier for category

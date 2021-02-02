@@ -2,7 +2,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod constraints;
-pub mod currency;
 pub mod origin;
 pub mod working_group;
 
@@ -59,6 +58,17 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 
     /// Defines time
     pub time: Moment,
+}
+
+/// Parameters for the 'Funding Request' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct FundingRequestParameters<Balance, AccountId> {
+    /// Single reciever account of funding request
+    pub account: AccountId,
+
+    /// Amount of funds the account will recieve
+    pub amount: Balance,
 }
 
 /// Gathers current block and time information for the runtime.

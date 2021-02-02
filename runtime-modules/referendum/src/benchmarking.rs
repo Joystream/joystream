@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
@@ -29,8 +29,6 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-const MAX_WINNERS: u32 = 50;
-
 fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     Referendum::<T, I>::force_start(winning_target_count.into(), 0);
     assert_eq!(
@@ -46,7 +44,7 @@ fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
 
 fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
     let account_id = account::<T::AccountId>(name, id, SEED);
-    T::Currency::make_free_balance_be(&account_id, Balance::<T, I>::max_value());
+    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     account_id
 }
@@ -97,7 +95,7 @@ fn vote_for<
     voter_id: u32,
     member_option: T::MemberId,
     cycle_id: u32,
-    extra_stake: Balance<T, I>,
+    extra_stake: BalanceOf<T>,
 ) -> (T::AccountId, T::MemberId, T::Hash) {
     let account_id = funded_account::<T, I>(name, voter_id);
     let stake = T::MinimumStake::get() + One::one() + extra_stake;
@@ -145,7 +143,7 @@ fn create_account_and_vote<
     voter_id: u32,
     option: u32,
     cycle_id: u32,
-    extra_stake: Balance<T, I>,
+    extra_stake: BalanceOf<T>,
 ) -> (T::AccountId, T::MemberId, T::Hash) {
     let (account_option, member_option) = member_funded_account::<T, I>(option.into());
     T::create_option(account_option, member_option);
@@ -231,7 +229,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    T::Currency::make_free_balance_be(&account_id, Balance::<T, I>::max_value());
+    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -258,7 +256,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     target_winners: u32,
     number_of_voters: u32,
     extra_vote_option: u32,
-    extra_stake: Balance<T, I>,
+    extra_stake: BalanceOf<T>,
 ) -> (
     Vec<OptionResult<T::MemberId, T::VotePower>>,
     T::AccountId,
@@ -334,7 +332,7 @@ benchmarks_instance! {
     _ { }
 
     on_initialize_revealing {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let cycle_id = 0;
         let salt = vec![0u8];
@@ -447,7 +445,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_for_new_winner {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -499,7 +497,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_not_in_winners {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -543,7 +541,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_replace_last_winner {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -594,7 +592,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_already_existing {
-        let i in 0 .. MAX_WINNERS;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
         let salt = vec![0u8];
         let vote_option = i;

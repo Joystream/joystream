@@ -264,8 +264,6 @@ impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
 type CategoryTreePath<CategoryId, ThreadId, Hash> =
     Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>;
 
-// TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
-// temporary type for functions argument
 type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
     [(CategoryId, Category<CategoryId, ThreadId, Hash>)];
 
@@ -367,6 +365,9 @@ decl_error! {
 
         /// Maximum size of storage map exceeded
         MapSizeLimit,
+
+        /// Category path len should be greater than zero
+        PathLengthShouldBeGreaterThanZero,
     }
 }
 
@@ -1559,9 +1560,16 @@ impl<T: Trait> Module<T> {
         // Get path from parent to root of category tree.
         let category_tree_path = Self::build_category_tree_path(&category_id);
 
-        assert!(!category_tree_path.len() > 0);
-
-        Ok(category_tree_path)
+        if category_tree_path.is_empty() {
+            debug_assert!(
+                false,
+                "Should not fail! {:?}",
+                Error::<T>::PathLengthShouldBeGreaterThanZero
+            );
+            Err(Error::<T>::PathLengthShouldBeGreaterThanZero)
+        } else {
+            Ok(category_tree_path)
+        }
     }
 
     /// Builds path and populates in `path`.
@@ -1663,8 +1671,6 @@ impl<T: Trait> Module<T> {
             Err(Error::<T>::ModeratorCantUpdateCategory)
         }
 
-        // TODO: test if this line can possibly create panic! It calls assert internaly
-        // Get path from category to root + ensure category exists
         let category_tree_path =
             Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 

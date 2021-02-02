@@ -189,7 +189,7 @@ fn create_proposal<T: Trait + membership::Trait>(
     );
 
     assert_eq!(
-        T::StakingHandler::current_stake(&account_id),
+        <T as Trait>::StakingHandler::current_stake(&account_id),
         T::Balance::max_value()
     );
 
@@ -405,7 +405,7 @@ benchmarks! {
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            T::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
+            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
         }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
@@ -473,7 +473,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -497,14 +497,12 @@ benchmarks! {
             );
         }
 
-        if cfg!(test) {
-            for proposal_id in proposals.iter() {
-                assert_in_events::<T>(
-                    RawEvent::ProposalExecuted(
-                        proposal_id.clone(),
-                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-                );
-            }
+        for proposal_id in proposals.iter() {
+            assert_in_events::<T>(
+                RawEvent::ProposalExecuted(
+                    proposal_id.clone(),
+                    ExecutionStatus::failed_execution("Decoding error")).into()
+            );
         }
     }
 
@@ -553,7 +551,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -565,14 +563,12 @@ benchmarks! {
             assert!(!DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable code should've been removed");
         }
 
-        if cfg!(test) {
-            for proposal_id in proposals.iter() {
-                assert_in_events::<T>(
-                    RawEvent::ProposalExecuted(
-                        proposal_id.clone(),
-                        ExecutionStatus::failed_execution("Not enough data to fill buffer")).into()
-                );
-            }
+        for proposal_id in proposals.iter() {
+            assert_in_events::<T>(
+                RawEvent::ProposalExecuted(
+                    proposal_id.clone(),
+                    ExecutionStatus::failed_execution("Decoding error")).into()
+            );
         }
     }
 
@@ -591,7 +587,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_ne!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've still stake locked"
             );
@@ -653,7 +649,7 @@ benchmarks! {
 
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
@@ -674,7 +670,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                T::StakingHandler::current_stake(&proposer_account_id),
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
@@ -710,6 +706,50 @@ benchmarks! {
             0,
             "There should not be any proposal left active"
         );
+    }
+
+    cancel_active_and_pending_proposals {
+        let i in 1 .. T::MaxActiveProposalLimit::get();
+
+        let (proposers, proposals) = create_multiple_finalized_proposals::<T>(
+            i,
+            0,
+            VoteKind::Approve,
+            max(T::CouncilSize::get().try_into().unwrap(), 1),
+            10,
+        );
+    }: { ProposalsEngine::<T>::cancel_active_and_pending_proposals() }
+    verify {
+        for proposal_id in proposals.iter() {
+            assert!(
+                !Proposals::<T>::contains_key(proposal_id),
+                "Proposal should not be in store"
+            );
+
+            assert!(
+                !DispatchableCallCode::<T>::contains_key(proposal_id),
+                "Dispatchable should not be in store"
+            );
+
+            assert_in_events::<T>(
+                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::CanceledByRuntime)
+                    .into()
+            );
+        }
+
+        assert_eq!(
+            ProposalsEngine::<T>::active_proposal_count(),
+            0,
+            "There should not be any proposal left active"
+        );
+
+        for proposer_account_id in proposers {
+            assert_eq!(
+                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                Zero::zero(),
+                "Shouldn't have any stake locked"
+            );
+        }
     }
 }
 
@@ -772,6 +812,13 @@ mod tests {
     fn test_on_initialize_slashed() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_on_initialize_slashed::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_cancel_active_and_pending_proposals() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
         });
     }
 }

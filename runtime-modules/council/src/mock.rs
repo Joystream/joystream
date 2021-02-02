@@ -2,10 +2,10 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, CandidateOf, Candidates, CouncilMemberOf,
-    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
-    CouncilStageUpdateOf, Error, GenesisConfig, Module, NextBudgetRefill, RawEvent,
-    ReferendumConnection, Stage, Trait, WeightInfo,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
+    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
+    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
 };
 
 use balances;
@@ -18,15 +18,14 @@ use frame_support::{
 use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
-    Balance as BalanceReferendum, CastVote, OptionResult, ReferendumManager, ReferendumStage,
-    ReferendumStageRevealing,
+    CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
 use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup, Zero},
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
@@ -43,8 +42,6 @@ pub const POWER_VOTE_STRENGTH: u64 = 10;
 pub const VOTER_BASE_ID: u64 = 4000;
 pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
 pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
-
-pub const INVALID_USER_MEMBER: u64 = 9999;
 
 // multiplies topup value so that candidate/voter can candidate/vote multiple times
 pub const TOPUP_MULTIPLIER: u64 = 10;
@@ -67,9 +64,7 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
-    pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
 }
@@ -93,12 +88,10 @@ impl Trait for Runtime {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
     type StakingAccountValidator = ();
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type WeightInfo = ();
@@ -135,8 +128,8 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
 }
 
 impl common::StakingAccountValidator<Runtime> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(member_id: &u64, account_id: &u64) -> bool {
+        *member_id == *account_id
     }
 }
 
@@ -169,6 +162,15 @@ impl WeightInfo for () {
         0
     }
     fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
         0
     }
 }
@@ -259,6 +261,7 @@ parameter_types! {
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 mod balances_mod {
@@ -270,23 +273,23 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = balances::Module<Self>;
-    type LockId = VotingLockId;
-
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
     type VoteStageDuration = VoteStageDuration;
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
-    type WeightInfo = ReferendumWeightInfo;
+    type WeightInfo = Weights;
+
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
         account_id: &<Self as frame_system::Trait>::AccountId,
-        stake: &BalanceReferendum<Self, ReferendumInstance>,
+        stake: &Balance<Self>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -296,9 +299,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         stake
     }
 
-    fn can_unlock_vote_stake(
-        vote: &CastVote<Self::Hash, BalanceReferendum<Self, ReferendumInstance>, Self::MemberId>,
-    ) -> bool {
+    fn can_unlock_vote_stake(vote: &CastVote<Self::Hash, Balance<Self>, Self::MemberId>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -339,8 +340,9 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 }
 
-pub struct ReferendumWeightInfo;
-impl referendum::WeightInfo for ReferendumWeightInfo {
+// Weights info stub
+pub struct Weights;
+impl referendum::WeightInfo for Weights {
     fn on_initialize_revealing(_: u32) -> Weight {
         0
     }
@@ -367,6 +369,63 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
     }
 }
 
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
 impl balances::Trait for Runtime {
     type Balance = u64;
     type Event = TestEvent;
@@ -381,6 +440,7 @@ impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
@@ -468,6 +528,7 @@ pub struct CandidateInfo<T: Trait> {
     pub account_id: T::MemberId,
     pub membership_id: T::MemberId,
     pub candidate: CandidateOf<T>,
+    pub auto_topup_amount: Balance<T>,
 }
 
 #[derive(Clone)]
@@ -491,7 +552,6 @@ pub struct CouncilSettings<T: Trait> {
     pub idle_stage_duration: T::BlockNumber,
     pub election_duration: T::BlockNumber,
     pub cycle_duration: T::BlockNumber,
-    pub budget_refill_amount: Balance<T>,
     pub budget_refill_period: T::BlockNumber,
 }
 
@@ -526,7 +586,6 @@ where
                 + voting_stage_duration
                 + idle_stage_duration,
 
-            budget_refill_amount: <T as Trait>::BudgetRefillAmount::get(),
             budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
         }
     }
@@ -591,6 +650,8 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         budget: 0,
         next_reward_payments: 0,
         next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
     }
 }
 
@@ -665,13 +726,16 @@ where
             note_hash: None,
         };
 
-        Self::topup_account(account_id.into(), stake * TOPUP_MULTIPLIER.into());
+        let auto_topup_amount = stake * TOPUP_MULTIPLIER.into();
+
+        Self::topup_account(account_id.into(), auto_topup_amount);
 
         CandidateInfo {
             origin,
             candidate,
             membership_id: account_id.into(),
             account_id: account_id.into(),
+            auto_topup_amount,
         }
     }
 
@@ -852,7 +916,14 @@ where
     }
 
     pub fn check_new_council_elected_hook() {
-        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0))
+        let result = LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
+
+        // clear election sign
+        LAST_COUNCIL_ELECTED_OK.with(|value| {
+            *value.borrow_mut() = (false,);
+        });
+
+        result
     }
 
     pub fn set_candidacy_note(
@@ -1066,6 +1137,50 @@ where
         );
     }
 
+    pub fn funding_request(
+        origin: OriginType<T::AccountId>,
+        funding_requests: Vec<common::FundingRequestParameters<Balance<T>, T::AccountId>>,
+        expected_result: Result<(), Error<T>>,
+    ) {
+        let initial_budget = Module::<T>::budget();
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::funding_request(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                funding_requests.clone(),
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        for funding_request in &funding_requests {
+            assert!(frame_system::Module::<Runtime>::events()
+                .iter()
+                .any(|ev| ev.event
+                    == TestEvent::event_mod(RawEvent::RequestFunded(
+                        funding_request.account.clone().into(),
+                        funding_request.amount.into(),
+                    ))));
+
+            assert_eq!(
+                balances::Module::<T>::free_balance(funding_request.account.clone()),
+                funding_request.amount
+            );
+        }
+
+        let spent_amount = funding_requests
+            .iter()
+            .fold(Balance::<T>::zero(), |acc, funding_request| {
+                acc + funding_request.amount
+            });
+
+        assert_eq!(Module::<T>::budget(), initial_budget - spent_amount);
+    }
+
     pub fn plan_budget_refill(
         origin: OriginType<T::AccountId>,
         next_refill: T::BlockNumber,
@@ -1093,6 +1208,66 @@ where
                 .unwrap()
                 .event,
             TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+        );
+    }
+
+    pub fn set_councilor_reward(
+        origin: OriginType<T::AccountId>,
+        councilor_reward: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_councilor_reward(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                councilor_reward,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(CouncilorReward::<T>::get(), councilor_reward);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+        );
+    }
+
+    pub fn set_budget_increment(
+        origin: OriginType<T::AccountId>,
+        budget_increment: T::Balance,
+        expected_result: Result<(), ()>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_budget_increment(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                budget_increment,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(BudgetIncrement::<T>::get(), budget_increment,);
+
+        assert_eq!(
+            frame_system::Module::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            TestEvent::event_mod(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 

@@ -13,11 +13,11 @@ use crate::tests::fixtures::{
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
-    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
-    STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
+    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
+    STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
-use crate::{DefaultInstance, Error, OpeningType, Penalty, RawEvent, StakePolicy, Worker};
+use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Worker};
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
@@ -913,7 +913,6 @@ fn apply_on_opening_fails_stake_amount_check() {
     });
 }
 
-#[ignore] // unlock after implementing members staking accounts
 #[test]
 fn apply_on_opening_fails_invalid_staking_check() {
     build_test_externalities().execute_with(|| {
@@ -925,13 +924,13 @@ fn apply_on_opening_fails_invalid_staking_check() {
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
         increase_total_balance_issuance_using_account_id(
-            STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+            STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
             total_balance,
         );
 
         let stake_parameters = StakeParameters {
             stake,
-            staking_account_id: STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+            staking_account_id: STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
         };
 
         let add_opening_fixture =
@@ -950,7 +949,6 @@ fn apply_on_opening_fails_invalid_staking_check() {
     });
 }
 
-#[ignore] // unlock after implementing conflicting stake
 #[test]
 fn apply_on_opening_fails_with_conflicting_stakes() {
     build_test_externalities().execute_with(|| {
@@ -977,6 +975,10 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
                 leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake_parameters(Some(stake_parameters.clone()));
+        apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_stake_parameters(Some(stake_parameters));
@@ -1134,11 +1136,6 @@ fn terminate_worker_with_slashing_succeeds() {
             leaving_unstaking_period: 10,
         });
 
-        let penalty = Penalty {
-            slashing_amount: stake,
-            slashing_text: Vec::new(),
-        };
-
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1148,8 +1145,7 @@ fn terminate_worker_with_slashing_succeeds() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
 
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
-                .with_penalty(Some(penalty));
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_penalty(Some(stake));
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1164,11 +1160,6 @@ fn terminate_worker_with_slashing_fails_with_no_staking_account() {
         let total_balance = 300;
         let stake = 200;
 
-        let penalty = Penalty {
-            slashing_amount: stake,
-            slashing_text: Vec::new(),
-        };
-
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HiringWorkflow::default()
@@ -1177,8 +1168,7 @@ fn terminate_worker_with_slashing_fails_with_no_staking_account() {
             .unwrap();
 
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
-                .with_penalty(Some(penalty));
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_penalty(Some(stake));
 
         terminate_worker_role_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
@@ -1199,17 +1189,12 @@ fn slash_worker_stake_succeeds() {
         let account_id = 1;
         let total_balance = 300;
         let stake = 200;
-        let slash_stake = 100;
+        let penalty = 100;
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
         });
-
-        let penalty = Penalty {
-            slashing_amount: slash_stake,
-            slashing_text: Vec::new(),
-        };
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
@@ -1222,7 +1207,7 @@ fn slash_worker_stake_succeeds() {
 
         slash_stake_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id, slash_stake));
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id, penalty));
     });
 }
 
@@ -1231,12 +1216,7 @@ fn slash_worker_stake_fails_with_no_staking_account() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
         let total_balance = 300;
-        let slash_stake = 100;
-
-        let penalty = Penalty {
-            slashing_amount: slash_stake,
-            slashing_text: Vec::new(),
-        };
+        let penalty = 100;
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
@@ -1266,17 +1246,12 @@ fn slash_leader_stake_succeeds() {
 
         let account_id = 1;
         let total_balance = 300;
-        let stake = 200;
+        let penalty = 200;
 
         let stake_policy = Some(StakePolicy {
-            stake_amount: stake,
+            stake_amount: penalty,
             leaving_unstaking_period: 10,
         });
-
-        let penalty = Penalty {
-            slashing_amount: stake,
-            slashing_text: Vec::new(),
-        };
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
         let leader_worker_id = HireLeadFixture::default()
@@ -1289,7 +1264,7 @@ fn slash_leader_stake_succeeds() {
 
         slash_stake_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id, stake));
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id, penalty));
     });
 }
 
@@ -1330,11 +1305,6 @@ fn slash_worker_stake_fails_with_zero_balance() {
             leaving_unstaking_period: 10,
         });
 
-        let penalty = Penalty {
-            slashing_amount: 0,
-            slashing_text: Vec::new(),
-        };
-
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1342,7 +1312,7 @@ fn slash_worker_stake_fails_with_zero_balance() {
             .hire();
 
         let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(0);
 
         slash_stake_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),

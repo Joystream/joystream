@@ -26,7 +26,9 @@ pub mod pallet_utility;
 // Joystream pallets
 pub mod council;
 pub mod forum;
+pub mod membership;
 pub mod pallet_constitution;
+pub mod proposals_codex;
 pub mod proposals_discussion;
 pub mod proposals_engine;
 pub mod referendum;

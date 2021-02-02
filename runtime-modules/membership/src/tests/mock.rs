@@ -1,12 +1,11 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Trait};
-
-use staking_handler::LockComparator;
+pub use crate::{GenesisConfig, Trait, Weight, WeightInfo};
 
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_std::cell::RefCell;
+use staking_handler::LockComparator;
 
 use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use frame_system;
@@ -226,6 +225,63 @@ impl working_group::WeightInfo for Weights {
     }
 }
 
+impl WeightInfo for () {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_profile(_: u32) -> Weight {
+        0
+    }
+    fn update_accounts_none() -> Weight {
+        0
+    }
+    fn update_accounts_root() -> Weight {
+        0
+    }
+    fn update_accounts_controller() -> Weight {
+        0
+    }
+    fn update_accounts_both() -> Weight {
+        0
+    }
+    fn set_referral_cut() -> Weight {
+        0
+    }
+    fn transfer_invites() -> Weight {
+        0
+    }
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_membership_price() -> Weight {
+        0
+    }
+    fn update_profile_verification() -> Weight {
+        0
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        0
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        0
+    }
+    fn set_initial_invitation_count() -> Weight {
+        0
+    }
+    fn add_staking_account_candidate() -> Weight {
+        0
+    }
+    fn confirm_staking_account() -> Weight {
+        0
+    }
+    fn remove_staking_account() -> Weight {
+        0
+    }
+}
+
 impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
@@ -247,6 +303,7 @@ impl Trait for Test {
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type WeightInfo = ();
 }
 
 pub const WORKING_GROUP_BUDGET: u64 = 100;
@@ -276,7 +333,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
             origin.into();
 
         if let RawOrigin::Signed(_) = raw_origin.unwrap() {
-            if *worker_id == 1 {
+            if *worker_id == 1 || *worker_id == 0 {
                 Ok(())
             } else {
                 Err(working_group::Error::<Test, MembershipWorkingGroupInstance>::WorkerDoesNotExist.into())
@@ -303,6 +360,23 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         _worker_id: &<Test as common::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl
+    crate::MembershipWorkingGroupHelper<
+        <Test as frame_system::Trait>::AccountId,
+        <Test as common::Trait>::MemberId,
+        <Test as common::Trait>::ActorId,
+    > for Test
+{
+    fn insert_a_lead(
+        _opening_id: u32,
+        _caller_id: &<Test as frame_system::Trait>::AccountId,
+        _member_id: <Test as common::Trait>::MemberId,
+    ) -> <Test as common::Trait>::ActorId {
+        ALICE_MEMBER_ID
     }
 }
 

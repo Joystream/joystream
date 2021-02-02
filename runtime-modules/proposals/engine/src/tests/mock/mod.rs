@@ -22,7 +22,6 @@ pub(crate) mod proposals;
 
 use crate::ProposalObserver;
 pub use proposals::*;
-use referendum::Balance as BalanceReferendum;
 use staking_handler::{LockComparator, StakingManager};
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -68,6 +67,7 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MinimumPeriod: u64 = 5;
+    pub const MaxWinnerTargetCount: u64 = 10;
 }
 
 impl referendum::Trait<ReferendumInstance> for Test {
@@ -75,9 +75,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = balances::Module<Self>;
-    type LockId = VotingLockId;
-
+    type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
@@ -90,19 +88,17 @@ impl referendum::Trait<ReferendumInstance> for Test {
 
     type WeightInfo = ReferendumWeightInfo;
 
+    type MaxWinnerTargetCount = MaxWinnerTargetCount;
+
     fn calculate_vote_power(
         _: &<Self as frame_system::Trait>::AccountId,
-        _: &BalanceReferendum<Self, ReferendumInstance>,
+        _: &Self::Balance,
     ) -> Self::VotePower {
         1
     }
 
     fn can_unlock_vote_stake(
-        _: &referendum::CastVote<
-            Self::Hash,
-            BalanceReferendum<Self, ReferendumInstance>,
-            Self::MemberId,
-        >,
+        _: &referendum::CastVote<Self::Hash, Self::Balance, Self::MemberId>,
     ) -> bool {
         true
     }
@@ -192,10 +188,70 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
+// Weights info stub
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
+    type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
@@ -260,7 +316,7 @@ impl crate::WeightInfo for () {
         0
     }
 
-    fn cancel_proposal(_: u32) -> Weight {
+    fn cancel_proposal() -> Weight {
         0
     }
 
@@ -285,6 +341,10 @@ impl crate::WeightInfo for () {
     }
 
     fn on_initialize_slashed(_: u32) -> Weight {
+        0
+    }
+
+    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
         0
     }
 }
@@ -380,7 +440,6 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
-    pub const ElectedMemberRewardPerBlock: u64 = 100;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
@@ -403,10 +462,8 @@ impl council::Trait for Test {
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
 
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 
-    type BudgetRefillAmount = BudgetRefillAmount;
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = membership::Module<Test>;
@@ -447,6 +504,15 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
         0
     }
 }

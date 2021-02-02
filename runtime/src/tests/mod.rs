@@ -4,6 +4,7 @@
 #[macro_use]
 
 mod proposals_integration;
+mod fee_tests;
 mod storage_integration;
 
 use crate::{BlockNumber, ReferendumInstance, Runtime};
@@ -37,7 +38,7 @@ fn get_account_membership(account: AccountId32, i: usize) -> u64 {
     let member_id = i as u64;
     if Membership::membership(member_id).controller_account != account {
         insert_member(account.clone());
-        set_staking_account(account, member_id);
+        set_staking_account(account.clone(), account, member_id);
     }
 
     member_id
@@ -66,7 +67,12 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             councilor_stake,
         )
         .unwrap();
-        voters.push([council.len() as u8 + extra_candidates as u8 + i as u8; 32].into());
+        // Make sure to use different voters in each election cycle to prevent problems with
+        // staking
+        voters.push(
+            [(council.len() as u8 + extra_candidates as u8) * (cycle_id as u8 + 1) + i as u8; 32]
+                .into(),
+        );
         council_member_ids.push(member_id);
     }
 
@@ -168,17 +174,21 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     Membership::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 }
 
-pub(crate) fn set_staking_account(account_id: AccountId32, member_id: u64) {
+pub(crate) fn set_staking_account(
+    controller_account_id: AccountId32,
+    staking_account_id: AccountId32,
+    member_id: u64,
+) {
     membership::Module::<Runtime>::add_staking_account_candidate(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(staking_account_id.clone()).into(),
         member_id,
     )
     .unwrap();
 
     membership::Module::<Runtime>::confirm_staking_account(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(controller_account_id.clone()).into(),
         member_id,
-        account_id.clone(),
+        staking_account_id.clone(),
     )
     .unwrap();
 }

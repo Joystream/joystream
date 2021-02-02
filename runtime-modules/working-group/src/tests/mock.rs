@@ -97,20 +97,77 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
+// Weights info stub
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
+    type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        existing_locks.to_vec().contains(new_lock)
     }
 }
 
@@ -136,8 +193,8 @@ impl Trait for Test {
 }
 
 impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
     }
 }
 
@@ -236,7 +293,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
 
 pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
-pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
 

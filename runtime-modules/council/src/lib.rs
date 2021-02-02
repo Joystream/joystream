@@ -1,5 +1,3 @@
-// TODO: adjust all extrinsic weights
-
 //! # Council module
 //! Council module for the the Joystream platform.
 //!
@@ -28,6 +26,9 @@
 //! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
 //! - [set_budget](./struct.Module.html#method.set_budget)
 //! - [plan_budget_refill](./struct.Module.html#method.plan_budget_refill)
+//! - [set_budget_increment](./struct.Module.html#method.set_budget_increment)
+//! - [set_councilor_reward](./struct.Module.html#method.set_councilor_reward)
+//! - [funding_request](./struct.Module.html#method.funding_request)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
@@ -51,11 +52,11 @@ use frame_support::dispatch::DispatchResult;
 use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::{CouncilOriginValidator, MemberOriginValidator};
-use common::StakingAccountValidator;
+use common::{FundingRequestParameters, StakingAccountValidator};
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
@@ -170,12 +171,7 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
-    <T as frame_system::Trait>::Origin,
-    <T as frame_system::Trait>::AccountId,
-    <T as common::Trait>::MemberId,
-    <T as frame_system::Trait>::Hash,
->>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type Balance<T> = <T as balances::Trait>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
@@ -204,9 +200,12 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>
 /// council WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
+    fn set_budget_increment() -> Weight;
+    fn set_councilor_reward() -> Weight;
+    fn funding_request(i: u32) -> Weight;
     fn try_process_budget() -> Weight;
     fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election(i: u32) -> Weight; // Parameter discarded
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
     fn try_progress_stage_announcing_restart() -> Weight;
     fn announce_candidacy() -> Weight;
     fn release_candidacy_stake() -> Weight;
@@ -216,8 +215,10 @@ pub trait WeightInfo {
     fn plan_budget_refill() -> Weight;
 }
 
+type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
+
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + common::Trait + balances::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -245,13 +246,9 @@ pub trait Trait: frame_system::Trait + common::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
-    /// The value elected members will be awarded each block of their reign.
-    type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
     /// Interval for automatic reward payments.
     type ElectedMemberRewardPeriod: Get<Self::BlockNumber>;
 
-    /// Amount that will be added to the budget balance on every refill.
-    type BudgetRefillAmount: Get<Balance<Self>>;
     /// Interval between automatic budget refills.
     type BudgetRefillPeriod: Get<Self::BlockNumber>;
 
@@ -317,6 +314,12 @@ decl_storage! {
 
         /// The next block in which the budget will be increased.
         pub NextBudgetRefill get(fn next_budget_refill) config(): T::BlockNumber;
+
+        /// Amount of balance to be refilled every budget period
+        pub BudgetIncrement get(fn budget_increment) config(): Balance::<T>;
+
+        /// Councilor reward per block
+        pub CouncilorReward get(fn councilor_reward) config(): Balance::<T>;
     }
 }
 
@@ -366,6 +369,15 @@ decl_event! {
 
         /// The next budget refill was planned.
         BudgetRefillPlanned(BlockNumber),
+
+        /// Budget increment has been updated.
+        BudgetIncrementUpdated(Balance),
+
+        /// Councilor reward has been updated.
+        CouncilorRewardUpdated(Balance),
+
+        /// Request has been funded
+        RequestFunded(AccountId, Balance),
     }
 }
 
@@ -418,6 +430,18 @@ decl_error! {
 
         /// The member is not a councilor.
         NotCouncilor,
+
+        /// Insufficent funds in council for executing 'Funding Request'
+        InsufficientFundsForFundingRequest,
+
+        /// Fund request no balance
+        ZeroBalanceFundRequest,
+
+        /// The same account is recieving funds from the same request twice
+        RepeatedFundRequestAccount,
+
+        /// Funding requests without recieving accounts
+        EmptyFundingRequests
     }
 }
 
@@ -454,12 +478,8 @@ decl_module! {
         const AnnouncingPeriodDuration: T::BlockNumber = T::AnnouncingPeriodDuration::get();
         /// Duration of idle period
         const IdlePeriodDuration: T::BlockNumber = T::IdlePeriodDuration::get();
-        /// The value elected members will be awarded each block of their reign.
-        const ElectedMemberRewardPerBlock: Balance<T> = T::ElectedMemberRewardPerBlock::get();
         /// Interval for automatic reward payments.
         const ElectedMemberRewardPeriod: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
-        /// Amount that will be added to the budget balance on every refill.
-        const BudgetRefillAmount: Balance<T> = T::BudgetRefillAmount::get();
         /// Interval between automatic budget refills.
         const BudgetRefillPeriod: T::BlockNumber = T::BudgetRefillPeriod::get();
 
@@ -491,7 +511,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::announce_candidacy()]
+        #[weight = CouncilWeightInfo::<T>::announce_candidacy()]
         pub fn announce_candidacy(
                 origin,
                 membership_id: T::MemberId,
@@ -537,7 +557,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::release_candidacy_stake()]
+        #[weight = CouncilWeightInfo::<T>::release_candidacy_stake()]
         pub fn release_candidacy_stake(origin, membership_id: T::MemberId)
             -> Result<(), Error<T>> {
             let staking_account_id =
@@ -565,7 +585,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::withdraw_candidacy()]
+        #[weight = CouncilWeightInfo::<T>::withdraw_candidacy()]
         pub fn withdraw_candidacy(origin, membership_id: T::MemberId) -> Result<(), Error<T>> {
             let staking_account_id =
                 EnsureChecks::<T>::can_withdraw_candidacy(origin, &membership_id)?;
@@ -593,7 +613,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::set_candidacy_note(note.len().saturated_into())]
+        #[weight = CouncilWeightInfo::<T>::set_candidacy_note(note.len().saturated_into())]
         pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
@@ -624,7 +644,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::set_budget()]
+        #[weight = CouncilWeightInfo::<T>::set_budget()]
         pub fn set_budget(origin, balance: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget(origin)?;
@@ -634,7 +654,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::set_budget(&balance);
+            Mutations::<T>::set_budget(balance);
 
             // emit event
             Self::deposit_event(RawEvent::BudgetBalanceSet(balance));
@@ -651,7 +671,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::plan_budget_refill()]
+        #[weight = CouncilWeightInfo::<T>::plan_budget_refill()]
         pub fn plan_budget_refill(origin, next_refill: T::BlockNumber) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_plan_budget_refill(origin)?;
@@ -667,6 +687,129 @@ decl_module! {
             Self::deposit_event(RawEvent::BudgetRefillPlanned(next_refill));
 
             Ok(())
+        }
+
+        /// Sets the budget refill amount
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_budget_increment()]
+        pub fn set_budget_increment(origin, budget_increment: Balance::<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_budget_increment(origin)?;
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_budget_increment(budget_increment);
+
+            // emit event
+            Self::deposit_event(RawEvent::BudgetIncrementUpdated(budget_increment));
+
+            Ok(())
+        }
+
+
+        /// Sets the councilor reward per block
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_councilor_reward()]
+        pub fn set_councilor_reward(origin, councilor_reward: Balance::<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_councilor_reward(origin)?;
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_councilor_reward(councilor_reward);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilorRewardUpdated(councilor_reward));
+
+            Ok(())
+        }
+
+
+        /// Transfers funds from council budget to account
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (F)` where:
+        /// `F` is the length of `funding_requests`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::funding_request(
+            funding_requests.len().saturated_into()
+        )]
+        pub fn funding_request(
+            origin,
+            funding_requests: Vec<FundingRequestParameters<Balance<T>, T::AccountId>>
+        ) {
+            // Checks
+            ensure_root(origin)?;
+
+            let funding_total: Balance<T> =
+                funding_requests.iter().fold(
+                    Zero::zero(),
+                    |accumulated, funding_request| accumulated + funding_request.amount,
+                );
+
+            let current_budget = Self::budget();
+
+            ensure!(
+                funding_total <= current_budget,
+                Error::<T>::InsufficientFundsForFundingRequest
+            );
+
+            ensure!(!funding_requests.is_empty(), Error::<T>::EmptyFundingRequests);
+
+            let mut recieving_accounts = Vec::<&T::AccountId>::new();
+
+            for funding_request in &funding_requests {
+                ensure!(
+                    funding_request.amount != Zero::zero(),
+                    Error::<T>::ZeroBalanceFundRequest
+                );
+
+                ensure!(
+                    !recieving_accounts.contains(&&funding_request.account),
+                    Error::<T>::RepeatedFundRequestAccount
+                );
+
+                recieving_accounts.push(&funding_request.account);
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Mutations::<T>::set_budget(current_budget - funding_total);
+
+            for funding_request in funding_requests {
+                let amount = funding_request.amount;
+                let account = funding_request.account;
+                let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+                Self::deposit_event(RawEvent::RequestFunded(account, amount));
+            }
         }
     }
 }
@@ -794,10 +937,10 @@ impl<T: Trait> Module<T> {
     // Refill (increase) the budget's balance.
     fn refill_budget(now: T::BlockNumber) {
         // get refill amount
-        let refill_amount = T::BudgetRefillAmount::get();
+        let refill_amount = Self::budget_increment();
 
         // refill budget
-        Mutations::<T>::refill_budget(&refill_amount);
+        Mutations::<T>::refill_budget(refill_amount);
 
         // calculate next refill block number
         let refill_period = T::BudgetRefillPeriod::get();
@@ -813,7 +956,7 @@ impl<T: Trait> Module<T> {
 
     // Pay rewards to elected council members.
     fn pay_elected_member_rewards(now: T::BlockNumber) {
-        let reward_per_block = T::ElectedMemberRewardPerBlock::get();
+        let reward_per_block = Self::councilor_reward();
         let starting_balance = Budget::<T>::get();
 
         // pay reward to all council members
@@ -889,15 +1032,17 @@ impl<T: Trait> Module<T> {
 
     fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
         // Minimum weight for progress stage
-        let weight = T::WeightInfo::try_progress_stage_idle()
-            .max(T::WeightInfo::try_progress_stage_announcing_restart());
+        let weight = CouncilWeightInfo::<T>::try_progress_stage_idle()
+            .max(CouncilWeightInfo::<T>::try_progress_stage_announcing_restart());
 
         let weight = if let Some(candidate_count) = mb_candidate_count {
             // We can use the candidate count to calculate the worst case
             // if we are in announcement period without an additional storage access
-            weight.max(T::WeightInfo::try_progress_stage_announcing_start_election(
-                candidate_count.saturated_into(),
-            ))
+            weight.max(
+                CouncilWeightInfo::<T>::try_progress_stage_announcing_start_election(
+                    candidate_count.saturated_into(),
+                ),
+            )
         } else {
             // If we don't have the candidate count we only take into account the weight
             // of the functions that doesn't depend on it
@@ -905,7 +1050,7 @@ impl<T: Trait> Module<T> {
         };
 
         // Total weight = try progress weight + try process budget weight
-        T::WeightInfo::try_process_budget().saturating_add(weight)
+        CouncilWeightInfo::<T>::try_process_budget().saturating_add(weight)
     }
 }
 
@@ -1167,18 +1312,28 @@ impl<T: Trait> Mutations<T> {
     /////////////////// Budget-related /////////////////////////////////////////
 
     // Set budget balance
-    fn set_budget(balance: &Balance<T>) {
+    fn set_budget(balance: Balance<T>) {
         Budget::<T>::put(balance);
     }
 
     // Refill budget's balance.
-    fn refill_budget(refill_amount: &Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(*refill_amount));
+    fn refill_budget(refill_amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(refill_amount));
     }
 
     // Plan next budget refill.
     fn plan_budget_refill(refill_at: &T::BlockNumber) {
         NextBudgetRefill::<T>::put(refill_at);
+    }
+
+    // Set budget increment.
+    fn set_budget_increment(budget_increment: Balance<T>) {
+        BudgetIncrement::<T>::put(budget_increment);
+    }
+
+    // Set councilor reward.
+    fn set_councilor_reward(councilor_reward: Balance<T>) {
+        CouncilorReward::<T>::put(councilor_reward);
     }
 
     // Pay reward to a single elected council member.
@@ -1190,14 +1345,7 @@ impl<T: Trait> Mutations<T> {
         now: &T::BlockNumber,
     ) {
         // mint tokens into reward account
-        <<<T as Trait>::Referendum as ReferendumManager<
-            <T as frame_system::Trait>::Origin,
-            <T as frame_system::Trait>::AccountId,
-            <T as common::Trait>::MemberId,
-            <T as frame_system::Trait>::Hash,
-        >>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::deposit_creating(
-            account_id, *amount,
-        );
+        let _ = balances::Module::<T>::deposit_creating(account_id, *amount);
 
         // update elected council member
         CouncilMembers::<T>::mutate(|members| {
@@ -1389,6 +1537,20 @@ impl<T: Trait> EnsureChecks<T> {
 
     // Ensures there is no problem in planning next budget refill.
     fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in setting the budget increment.
+    fn can_set_budget_increment(origin: T::Origin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in setting the councilor reward.
+    fn can_set_councilor_reward(origin: T::Origin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())

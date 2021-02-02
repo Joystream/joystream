@@ -1407,7 +1407,7 @@ dependencies = [
  "parity-scale-codec",
  "paste",
  "serde",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "sp-arithmetic",
  "sp-core",
  "sp-inherents",
@@ -2275,7 +2275,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "4.0.0"
+version = "4.0.2"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2336,7 +2336,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "8.0.0"
+version = "8.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2383,6 +2383,7 @@ dependencies = [
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
+ "smallvec 1.6.0",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -2565,7 +2566,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0315ef2f688e33844400b31f11c263f2b3dc21d8b9355c6891c5f185fae43f9a"
 dependencies = [
  "parity-util-mem",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
 ]
 
 [[package]]
@@ -2594,7 +2595,7 @@ dependencies = [
  "parking_lot 0.10.2",
  "regex",
  "rocksdb",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
 ]
 
 [[package]]
@@ -2686,7 +2687,7 @@ dependencies = [
  "parity-multiaddr",
  "parking_lot 0.10.2",
  "pin-project 0.4.27",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "wasm-timer",
 ]
 
@@ -2717,7 +2718,7 @@ dependencies = [
  "ring",
  "rw-stream-sink",
  "sha2 0.8.2",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "thiserror",
  "unsigned-varint 0.4.0",
  "void",
@@ -2770,7 +2771,7 @@ dependencies = [
  "prost",
  "prost-build",
  "rand 0.7.3",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
 ]
 
 [[package]]
@@ -2794,7 +2795,7 @@ dependencies = [
  "prost-build",
  "rand 0.7.3",
  "sha2 0.8.2",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "unsigned-varint 0.4.0",
  "wasm-timer",
 ]
@@ -2811,7 +2812,7 @@ dependencies = [
  "log",
  "prost",
  "prost-build",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "wasm-timer",
 ]
 
@@ -2835,7 +2836,7 @@ dependencies = [
  "prost-build",
  "rand 0.7.3",
  "sha2 0.8.2",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "uint",
  "unsigned-varint 0.4.0",
  "void",
@@ -2859,7 +2860,7 @@ dependencies = [
  "log",
  "net2",
  "rand 0.7.3",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "void",
  "wasm-timer",
 ]
@@ -2964,7 +2965,7 @@ dependencies = [
  "lru 0.6.1",
  "minicbor",
  "rand 0.7.3",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "unsigned-varint 0.5.1",
  "wasm-timer",
 ]
@@ -2980,7 +2981,7 @@ dependencies = [
  "libp2p-core",
  "log",
  "rand 0.7.3",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "void",
  "wasm-timer",
 ]
@@ -3446,7 +3447,7 @@ dependencies = [
  "futures 0.3.8",
  "log",
  "pin-project 1.0.2",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "unsigned-varint 0.5.1",
 ]
 
@@ -3821,7 +3822,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-forum"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3885,8 +3886,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -3953,8 +3955,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -3990,7 +3993,9 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-council",
  "pallet-membership",
+ "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -4229,7 +4234,7 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
  "serde",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -4285,7 +4290,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4398,7 +4403,7 @@ dependencies = [
  "parity-util-mem-derive",
  "parking_lot 0.10.2",
  "primitive-types",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "winapi 0.3.9",
 ]
 
@@ -4523,7 +4528,7 @@ dependencies = [
  "cloudabi 0.0.3",
  "libc",
  "redox_syscall",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "winapi 0.3.9",
 ]
 
@@ -4538,7 +4543,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "winapi 0.3.9",
 ]
 
@@ -6542,9 +6547,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acad6f34eb9e8a259d3283d1e8c1d34d7415943d4895f65cc73813c7396fc85"
+checksum = "1a55ca5f3b68e41c979bf8c46a6f1da892ca4db8f94023ce0bd32407573b1ac0"
 
 [[package]]
 name = "snow"
@@ -7087,7 +7092,7 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.10.2",
  "rand 0.7.3",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "sp-core",
  "sp-externalities",
  "sp-panic-handler",
@@ -8039,7 +8044,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sharded-slab",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
  "thread_local",
  "tracing",
  "tracing-core",
@@ -8057,7 +8062,7 @@ dependencies = [
  "hashbrown 0.8.2",
  "log",
  "rustc-hex",
- "smallvec 1.5.0",
+ "smallvec 1.6.0",
 ]
 
 [[package]]
