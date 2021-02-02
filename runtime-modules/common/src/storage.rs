@@ -48,4 +48,10 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
         owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
     ) -> DispatchResult;
+
+    // Checks if given owner can add provided content to the storage system
+    fn can_add_content(
+        owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
+    ) -> bool;
 }
