@@ -16,6 +16,8 @@
     "Principal": "Null",
     "PrincipalId": "Null",
     "WorkingGroupUnstaker": "Null",
+    "Credential": "Null",
+    "CredentialSet": "Null",
     "Nonce": "Null",
     "EntityId": "Null",
     "ClassId": "Null",
@@ -66,8 +68,6 @@
     "Operation": "Null",
     "ReferenceConstraint": "Null",
     "FailedAt": "Null",
-    "Credential": "u64",
-    "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"

@@ -7,16 +7,15 @@ import { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weig
 import { SessionIndex } from '@polkadot/types/interfaces/session';
 import { EraIndex } from '@polkadot/types/interfaces/staking';
 import { WeightToFeeCoefficient } from '@polkadot/types/interfaces/support';
-import { ApiTypes } from '@polkadot/api/types';
 
-declare module '@polkadot/api/types/consts' {
-  export interface AugmentedConsts<ApiType> {
+declare module '@polkadot/metadata/Decorated/consts/types' {
+  export interface Constants {
     babe: {
       /**
        * The number of **slots** that an epoch takes. We couple sessions to
        * epochs, i.e. we start a new session once the new epoch begins.
        **/
-      epochDuration: u64 & AugmentedConst<ApiType>;
+      epochDuration: AugmentedConst<u64>;
       /**
        * The expected average block time at which BABE should be creating
        * blocks. Since BABE is probabilistic it is not trivial to figure out
@@ -24,97 +23,97 @@ declare module '@polkadot/api/types/consts' {
        * duration and the security parameter `c` (where `1 - c` represents
        * the probability of a slot being empty).
        **/
-      expectedBlockTime: Moment & AugmentedConst<ApiType>;
+      expectedBlockTime: AugmentedConst<Moment>;
     };
     balances: {
       /**
        * The minimum amount required to keep an account open.
        **/
-      existentialDeposit: Balance & AugmentedConst<ApiType>;
+      existentialDeposit: AugmentedConst<Balance>;
     };
     content: {
       /**
        * Exports const -  max number of curators per group
        **/
-      maxNumberOfCuratorsPerGroup: MaxNumber & AugmentedConst<ApiType>;
+      maxNumberOfCuratorsPerGroup: AugmentedConst<MaxNumber>;
     };
     contentDirectoryWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/
-      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      maxWorkerNumberLimit: AugmentedConst<u32>;
     };
     dataDirectory: {
       /**
        * Maximum objects allowed per inject_data_objects() transaction
        **/
-      maxObjectsPerInjection: u32 & AugmentedConst<ApiType>;
+      maxObjectsPerInjection: AugmentedConst<u32>;
     };
     finalityTracker: {
       /**
        * The delay after which point things become suspicious. Default is 1000.
        **/
-      reportLatency: BlockNumber & AugmentedConst<ApiType>;
+      reportLatency: AugmentedConst<BlockNumber>;
       /**
        * The number of recent samples to keep from this chain. Default is 101.
        **/
-      windowSize: BlockNumber & AugmentedConst<ApiType>;
+      windowSize: AugmentedConst<BlockNumber>;
     };
     proposalsCodex: {
       /**
        * Exports max wasm code length of the runtime upgrade proposal const.
        **/
-      runtimeUpgradeWasmProposalMaxLength: u32 & AugmentedConst<ApiType>;
+      runtimeUpgradeWasmProposalMaxLength: AugmentedConst<u32>;
       /**
        * Exports max allowed text proposal length const.
        **/
-      textProposalMaxLength: u32 & AugmentedConst<ApiType>;
+      textProposalMaxLength: AugmentedConst<u32>;
     };
     proposalsDiscussion: {
       /**
        * Exports post edition number limit const.
        **/
-      maxPostEditionNumber: u32 & AugmentedConst<ApiType>;
+      maxPostEditionNumber: AugmentedConst<u32>;
       /**
        * Exports max thread by same author in a row number limit const.
        **/
-      maxThreadInARowNumber: u32 & AugmentedConst<ApiType>;
+      maxThreadInARowNumber: AugmentedConst<u32>;
       /**
        * Exports post length limit const.
        **/
-      postLengthLimit: u32 & AugmentedConst<ApiType>;
+      postLengthLimit: AugmentedConst<u32>;
       /**
        * Exports thread title length limit const.
        **/
-      threadTitleLengthLimit: u32 & AugmentedConst<ApiType>;
+      threadTitleLengthLimit: AugmentedConst<u32>;
     };
     proposalsEngine: {
       /**
        * Exports const - the fee is applied when cancel the proposal. A fee would be slashed (burned).
        **/
-      cancellationFee: BalanceOf & AugmentedConst<ApiType>;
+      cancellationFee: AugmentedConst<BalanceOf>;
       /**
        * Exports const -  max allowed proposal description length.
        **/
-      descriptionMaxLength: u32 & AugmentedConst<ApiType>;
+      descriptionMaxLength: AugmentedConst<u32>;
       /**
        * Exports const -  max simultaneous active proposals number.
        **/
-      maxActiveProposalLimit: u32 & AugmentedConst<ApiType>;
+      maxActiveProposalLimit: AugmentedConst<u32>;
       /**
        * Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
        **/
-      rejectionFee: BalanceOf & AugmentedConst<ApiType>;
+      rejectionFee: AugmentedConst<BalanceOf>;
       /**
        * Exports const -  max allowed proposal title length.
        **/
-      titleMaxLength: u32 & AugmentedConst<ApiType>;
+      titleMaxLength: AugmentedConst<u32>;
     };
     staking: {
       /**
        * Number of eras that staked funds must remain bonded for.
        **/
-      bondingDuration: EraIndex & AugmentedConst<ApiType>;
+      bondingDuration: AugmentedConst<EraIndex>;
       /**
        * The number of blocks before the end of the era from which election submissions are allowed.
        * 
@@ -124,28 +123,28 @@ declare module '@polkadot/api/types/consts' {
        * This is bounded by being within the last session. Hence, setting it to a value more than the
        * length of a session will be pointless.
        **/
-      electionLookahead: BlockNumber & AugmentedConst<ApiType>;
+      electionLookahead: AugmentedConst<BlockNumber>;
       /**
        * Maximum number of balancing iterations to run in the offchain submission.
        * 
        * If set to 0, balance_solution will not be executed at all.
        **/
-      maxIterations: u32 & AugmentedConst<ApiType>;
+      maxIterations: AugmentedConst<u32>;
       /**
        * The maximum number of nominators rewarded for each validator.
        * 
        * For each validator only the `$MaxNominatorRewardedPerValidator` biggest stakers can claim
        * their reward. This used to limit the i/o cost for the nominator payout.
        **/
-      maxNominatorRewardedPerValidator: u32 & AugmentedConst<ApiType>;
+      maxNominatorRewardedPerValidator: AugmentedConst<u32>;
       /**
        * The threshold of improvement that should be provided for a new solution to be accepted.
        **/
-      minSolutionScoreBump: Perbill & AugmentedConst<ApiType>;
+      minSolutionScoreBump: AugmentedConst<Perbill>;
       /**
        * Number of sessions per era.
        **/
-      sessionsPerEra: SessionIndex & AugmentedConst<ApiType>;
+      sessionsPerEra: AugmentedConst<SessionIndex>;
       /**
        * Number of eras that slashes are deferred by, after computation.
        * 
@@ -153,39 +152,39 @@ declare module '@polkadot/api/types/consts' {
        * Set to 0 if slashes should be applied immediately, without opportunity for
        * intervention.
        **/
-      slashDeferDuration: EraIndex & AugmentedConst<ApiType>;
+      slashDeferDuration: AugmentedConst<EraIndex>;
     };
     storageWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/
-      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      maxWorkerNumberLimit: AugmentedConst<u32>;
     };
     system: {
       /**
        * The base weight of executing a block, independent of the transactions in the block.
        **/
-      blockExecutionWeight: Weight & AugmentedConst<ApiType>;
+      blockExecutionWeight: AugmentedConst<Weight>;
       /**
        * The maximum number of blocks to allow in mortal eras.
        **/
-      blockHashCount: BlockNumber & AugmentedConst<ApiType>;
+      blockHashCount: AugmentedConst<BlockNumber>;
       /**
        * The weight of runtime database operations the runtime can invoke.
        **/
-      dbWeight: RuntimeDbWeight & AugmentedConst<ApiType>;
+      dbWeight: AugmentedConst<RuntimeDbWeight>;
       /**
        * The base weight of an Extrinsic in the block, independent of the of extrinsic being executed.
        **/
-      extrinsicBaseWeight: Weight & AugmentedConst<ApiType>;
+      extrinsicBaseWeight: AugmentedConst<Weight>;
       /**
        * The maximum length of a block (in bytes).
        **/
-      maximumBlockLength: u32 & AugmentedConst<ApiType>;
+      maximumBlockLength: AugmentedConst<u32>;
       /**
        * The maximum weight of a block.
        **/
-      maximumBlockWeight: Weight & AugmentedConst<ApiType>;
+      maximumBlockWeight: AugmentedConst<Weight>;
     };
     timestamp: {
       /**
@@ -194,20 +193,17 @@ declare module '@polkadot/api/types/consts' {
        * work with this to determine a sensible block time. e.g. For Aura, it will be double this
        * period on default settings.
        **/
-      minimumPeriod: Moment & AugmentedConst<ApiType>;
+      minimumPeriod: AugmentedConst<Moment>;
     };
     transactionPayment: {
       /**
        * The fee to be paid for making a transaction; the per-byte portion.
        **/
-      transactionByteFee: BalanceOf & AugmentedConst<ApiType>;
+      transactionByteFee: AugmentedConst<BalanceOf>;
       /**
        * The polynomial that is applied in order to derive fee from weight.
        **/
-      weightToFee: Vec<WeightToFeeCoefficient> & AugmentedConst<ApiType>;
+      weightToFee: AugmentedConst<Vec<WeightToFeeCoefficient>>;
     };
-  }
-
-  export interface QueryableConsts<ApiType extends ApiTypes> extends AugmentedConsts<ApiType> {
   }
 }

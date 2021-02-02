@@ -312,10 +312,10 @@ export interface ContentParameters extends Struct {
 export interface CreateEntityOperation extends Null {}
 
 /** @name Credential */
-export interface Credential extends u64 {}
+export interface Credential extends Null {}
 
 /** @name CredentialSet */
-export interface CredentialSet extends BTreeSet<Credential> {}
+export interface CredentialSet extends Null {}
 
 /** @name CurationActor */
 export interface CurationActor extends Null {}
