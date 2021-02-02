@@ -223,6 +223,7 @@ decl_event! {
         StorageProviderId = StorageProviderId<T>,
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
+        QuotaLimit = u32
     {
         /// Emits on adding of the content.
         /// Params:
@@ -241,6 +242,12 @@ decl_event! {
         /// - Id of the relationship.
         /// - Id of the storage provider.
         ContentRejected(ContentId, StorageProviderId),
+
+        /// Emits when the storage object owner quota limit update performed.
+        /// Params:
+        /// - StorageObjectOwner enum.
+        /// - quota limit.
+        StorageObjectOwnerQuotaLimitUpdated(StorageObjectOwner, QuotaLimit),
     }
 }
 
@@ -329,9 +336,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <Quotas<T>>::mutate(abstract_owner, |quota| {
-                quota.set_new_quota_limit(new_quota_limit);
-            });
+            if <Quotas<T>>::contains_key(&abstract_owner) {
+                <Quotas<T>>::mutate(&abstract_owner, |quota| {
+                    quota.set_new_quota_limit(new_quota_limit);
+                });
+            } else {
+                <Quotas<T>>::insert(&abstract_owner, Quota::new(new_quota_limit));
+            };
+
+            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaLimitUpdated(abstract_owner, new_quota_limit));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
