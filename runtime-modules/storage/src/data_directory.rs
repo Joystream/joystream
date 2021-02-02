@@ -170,16 +170,30 @@ pub struct Quota {
 }
 
 impl Quota {
+    pub fn new(limit: u32) -> Self {
+        Self { limit, used: 0 }
+    }
+
     pub fn calculate_delta(&self) -> u32 {
         self.limit - self.used
     }
 
-    pub fn set_new_quota_limit(&mut self, new_quota_limit: u32) {
-        self.limit = new_quota_limit;
+    pub fn fill_quota(self, delta: u32) -> Self {
+        Self {
+            used: self.used + delta,
+            ..self
+        }
     }
 
-    pub fn update_quota(&mut self, new_quota: u32) {
-        self.used = new_quota;
+    pub fn release_quota(self, delta: u32) -> Self {
+        Self {
+            used: self.used - delta,
+            ..self
+        }
+    }
+
+    pub fn set_new_quota_limit(&mut self, new_quota_limit: u32) {
+        self.limit = new_quota_limit;
     }
 }
 
@@ -404,23 +418,24 @@ impl<T: Trait> Module<T> {
     fn ensure_quota_limit_constraint_satisfied(
         owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<u32, Error<T>> {
-        let available_quota = if <Quotas<T>>::contains_key(owner) {
-            Self::quotas(owner).calculate_delta()
+    ) -> Result<Quota, Error<T>> {
+        let quota = if <Quotas<T>>::contains_key(owner) {
+            Self::quotas(owner)
         } else {
-            T::DefaultQuotaLimit::get()
+            Quota::new(T::DefaultQuotaLimit::get())
         };
 
         let content_length = content.len() as u32;
         ensure!(
-            available_quota >= content_length,
+            quota.calculate_delta() >= content_length,
             Error::<T>::QuotaLimitExceeded
         );
-        Ok(available_quota - content_length)
+
+        Ok(quota.fill_quota(content_length))
     }
 
     fn upload_content(
-        new_quota: u32,
+        new_quota: Quota,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -439,10 +454,9 @@ impl<T: Trait> Module<T> {
             <DataObjectByContentId<T>>::insert(content.content_id, data);
         }
 
-        // Updade owner quota.
-        <Quotas<T>>::mutate(owner, |quota| {
-            quota.update_quota(new_quota);
-        });
+        // Updade or create new owner quota.
+
+        <Quotas<T>>::insert(owner, new_quota);
     }
 
     fn ensure_content_is_valid(
