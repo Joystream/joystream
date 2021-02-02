@@ -19,10 +19,8 @@ import { RegistryTypes } from '@polkadot/types/types'
 import { Null } from '@polkadot/types'
 
 // from: versioned-store, versioned-store permissions, content-working-group
-export class Channel extends Null {} // in new content module
 export class ChannelContentType extends Null {}
 export class ChannelCurationStatus extends Null {}
-export class ChannelId extends Null {} // in new content module
 export class ChannelPublicationStatus extends Null {}
 export class CurationActor extends Null {}
 export class Curator extends Null {}
@@ -38,6 +36,8 @@ export class OptionalText extends Null {}
 export class Principal extends Null {}
 export class PrincipalId extends Null {}
 export class WorkingGroupUnstaker extends Null {}
+export class Credential extends Null {}
+export class CredentialSet extends Null {}
 
 // from: old content-directory
 export class Actor extends Null {}
@@ -107,7 +107,8 @@ export const legacyTypes: RegistryTypes = {
   Principal,
   PrincipalId,
   WorkingGroupUnstaker,
-
+  Credential,
+  CredentialSet,
   Nonce,
   EntityId,
   ClassId,

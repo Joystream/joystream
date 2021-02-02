@@ -194,7 +194,6 @@ pub struct ChannelUpdateParameters<ChannelCategoryId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct VideoCategory {
-    meta: Vec<u8>,
     number_of_videos_in_category: u32,
 }
 
@@ -231,8 +230,8 @@ pub struct Video<ChannelId, SeriesId, PlaylistId> {
     // keep track of which seasons and playlists which reference the video
     // - prevent removing a video if it is in a season (because order is important)
     // - remove from playlist on deletion
-    in_series: Option<Vec<SeriesId>>,
-    in_playlists: Option<Vec<PlaylistId>>,
+    in_series: Vec<SeriesId>,
+    in_playlists: Vec<PlaylistId>,
 
     // Only curator can update..
     is_curated: bool,
@@ -310,7 +309,7 @@ pub struct SeriesCreationParameters<VideoCategoryId, VideoId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct SeriesUpdateParameters<VideoCategoryId, VideoId> {
     seasons: Option<Vec<Option<SeasonUpdateParameters<VideoCategoryId, VideoId>>>>,
-    new_meta: Vec<u8>,
+    new_meta: Option<Vec<u8>>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -332,10 +331,12 @@ pub enum PersonActor<MemberId, CuratorId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum PersonController<MemberId> {
-    Member(MemberId),
-    Curators,
     /// Do not use - Default value representing empty value
     Nobody,
+    /// Member controls the person
+    Member(MemberId),
+    /// Any curator controls the person
+    Curators,
 }
 
 impl<MemberId> Default for PersonController<MemberId> {
@@ -353,7 +354,7 @@ pub struct PersonCreationParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PersonUpdateParameters {
-    new_meta: Option<Vec<u8>>,
+    new_meta: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]

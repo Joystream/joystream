@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, ChannelCategoryId, ChannelId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, PersonId, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VideoCategoryId, VideoId, VoteKind, WorkerId, WorkerOf } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, WorkerId, WorkerOf } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -130,7 +130,7 @@ declare module '@polkadot/api/types/storage' {
     content: {
       channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>>;
       channelCategoryById: AugmentedQuery<ApiType, (arg: ChannelCategoryId | AnyNumber | Uint8Array) => Observable<ChannelCategory>>;
-      channelOwnershipTransferRequestById: AugmentedQuery<ApiType, (arg: ChannelOwnershipTransferRequestId | null) => Observable<ChannelOwnershipTransferRequest>>;
+      channelOwnershipTransferRequestById: AugmentedQuery<ApiType, (arg: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => Observable<ChannelOwnershipTransferRequest>>;
       /**
        * Map, representing  CuratorGroupId -> CuratorGroup relation
        **/

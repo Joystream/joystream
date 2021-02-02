@@ -4,7 +4,7 @@
 import { AnyNumber } from '@polkadot/types/types';
 import { Compact, Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, ElectionParameters, FillOpeningParameters, MemberId, MemoText, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PostId, ProposalId, RewardPolicy, StorageProviderId, TerminateRoleParameters, ThreadId, Url, VoteKind, WorkerId, WorkingGroup } from './all';
+import { AbstractStorageObjectOwner, ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, ElectionParameters, FillOpeningParameters, MemberId, MemoText, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PostId, ProposalId, RewardPolicy, StorageProviderId, TerminateRoleParameters, ThreadId, Url, VoteKind, WorkerId, WorkingGroup } from './all';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
 import { Heartbeat } from '@polkadot/types/interfaces/imOnline';
@@ -257,15 +257,15 @@ declare module '@polkadot/api/types/submittable' {
        **/
       acceptContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Adds the content to the system. Member id should match its origin. The created DataObject
+       * Adds the content to the system. Requires root privileges. The created DataObject
        * awaits liaison to accept or reject it.
        **/
-      addContent: AugmentedSubmittable<(abstractOwner: AbstractStorageObjectOwner | null, contentId: ContentId | string | Uint8Array, typeId: DataObjectTypeId | AnyNumber | Uint8Array, size: u64 | AnyNumber | Uint8Array, ipfsContentId: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addContent: AugmentedSubmittable<(abstractOwner: AbstractStorageObjectOwner | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Adds the content to the system. Member id should match its origin. The created DataObject
        * awaits liaison to accept or reject it.
        **/
-      addContentAsMember: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array, typeId: DataObjectTypeId | AnyNumber | Uint8Array, size: u64 | AnyNumber | Uint8Array, ipfsContentId: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addContentAsMember: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Injects a set of data objects and their corresponding content id into the directory.
        * The operation is "silent" - no events will be emitted as objects are added.
@@ -596,7 +596,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Bonded, Payee, [Origin Account], Locks, Ledger
        * # </weight>
        **/
-      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | 'Staked'|'Stash'|'Controller' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      bond: AugmentedSubmittable<(controller: LookupSource | string | Uint8Array, value: Compact<BalanceOf> | AnyNumber | Uint8Array, payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
@@ -891,7 +891,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Write: Payee
        * # </weight>
        **/
-      setPayee: AugmentedSubmittable<(payee: RewardDestination | 'Staked'|'Stash'|'Controller' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Sets the ideal number of validators.
        * 

@@ -670,12 +670,180 @@
             "Lead": "Null"
         }
     },
+    "DAOId": "u64",
+    "ContentParameters": {
+        "content_id": "ContentId",
+        "type_id": "DataObjectTypeId",
+        "size": "u64",
+        "ipfs_content_id": "Bytes"
+    },
+    "StorageObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "AbstractStorageObjectOwner": "AbstractStorageObjectOwner"
+        }
+    },
+    "AbstractStorageObjectOwner": {
+        "_enum": {
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroupType"
+        }
+    },
+    "WorkingGroupType": {
+        "_enum": [
+            "ContentDirectory",
+            "Builders",
+            "StorageProviders"
+        ]
+    },
+    "NewAsset": {
+        "_enum": {
+            "Upload": "ContentParameters",
+            "Uri": "Text"
+        }
+    },
+    "Channel": {
+        "owner": "ChannelOwner",
+        "in_category": "ChannelCategoryId",
+        "number_of_videos": "u32",
+        "number_of_playlists": "u32",
+        "number_of_series": "u32",
+        "is_curated": "bool",
+        "revenue": "u128"
+    },
+    "ChannelOwner": {
+        "_enum": {
+            "Nobody": "Null",
+            "Member": "MemberId",
+            "Curators": "CuratorGroupId",
+            "Dao": "DAOId"
+        }
+    },
     "ChannelId": "u64",
     "ChannelCategoryId": "u64",
+    "ChannelCategory": {
+        "number_of_channels_in": "u32"
+    },
+    "ChannelCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "ChannelCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "ChannelCreationParameters": {
+        "in_category": "ChannelCategoryId",
+        "meta": "Bytes"
+    },
+    "ChannelUpdateParameters": {
+        "new_in_category": "Option<ChannelCategoryId>",
+        "new_meta": "Bytes"
+    },
+    "ChannelOwnershipTransferRequestId": "u64",
+    "ChannelOwnershipTransferRequest": {
+        "channel_id": "ChannelId",
+        "new_owner": "ChannelOwner",
+        "payment": "u128"
+    },
+    "Video": {
+        "in_channel": "ChannelId",
+        "in_series": "Vec<SeriesId>",
+        "in_playlists": "Vec<PlaylistId>",
+        "is_curated": "bool",
+        "is_featured": "bool"
+    },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
-    "PlaylistId": "u64",
+    "VideoCategory": {
+        "number_of_videos_in_category": "u32"
+    },
+    "VideoCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "VideoCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "VideoCreationParameters": {
+        "in_category": "VideoCategoryId",
+        "meta": "Bytes"
+    },
+    "VideoUpdateParameters": {
+        "new_in_category": "Option<VideoCategoryId>",
+        "new_meta": "Option<Bytes>"
+    },
+    "Person": {
+        "controlled_by": "PersonController",
+        "number_of_videos_person_involed_in": "u32"
+    },
     "PersonId": "u64",
+    "PersonController": {
+        "_enum": {
+            "Nobody": "Null",
+            "Member": "MemberId",
+            "Curators": "Null"
+        }
+    },
+    "PersonActor": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curator": "CuratorId"
+        }
+    },
+    "PersonCreationParameters": {
+        "meta": "Bytes"
+    },
+    "PersonUpdateParameters": {
+        "meta": "Bytes"
+    },
+    "Playlist": {
+        "in_channel": "ChannelId",
+        "videos": "Vec<VideoId>"
+    },
+    "PlaylistId": "u64",
+    "PlaylistCreationParameters": {
+        "videos": "Vec<VideoId>",
+        "meta": "Bytes"
+    },
+    "PlaylistUpdateParameters": {
+        "new_videos": "Option<Vec<VideoId>>",
+        "new_meta": "Option<Bytes>"
+    },
     "SeriesId": "u64",
-    "ChannelTransferRequestId": "u64"
+    "Series": {
+        "in_channel": "ChannelId",
+        "seasons": "Vec<Season>"
+    },
+    "Season": {
+        "episodes": "Vec<VideoId>"
+    },
+    "SeriesCreationParameters": {
+        "seasons": "Vec<SeasonCreationParameters>",
+        "meta": "Bytes"
+    },
+    "SeriesUpdateParameters": {
+        "new_seasons": "Option<Vec<Option<SeasonUpdateParameters>>>",
+        "new_meta": "Option<Bytes>"
+    },
+    "SeasonCreationParameters": {
+        "episodes": "Vec<EpisodeCreationParameters>",
+        "meta": "Bytes"
+    },
+    "SeasonUpdateParameters": {
+        "new_episodes": "Option<Vec<Option<EpisodeUpdateParemters>>>",
+        "new_meta": "Option<Bytes>"
+    },
+    "EpisodeCreationParameters": {
+        "_enum": {
+            "NewVideo": "VideoCreationParameters",
+            "ExistingVideo": "VideoId"
+        }
+    },
+    "EpisodeUpdateParemters": {
+        "_enum": {
+            "UpdateVideo": "VideoUpdateParameters",
+            "ChangeExistingVideo": "VideoId"
+        }
+    },
+    "Content": "Vec<ContentParameters>"
 }

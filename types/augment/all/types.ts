@@ -7,6 +7,17 @@ import { GenericAccountId } from '@polkadot/types/generic';
 import { Bytes, Null, Text, bool, u128, u16, u32, u64 } from '@polkadot/types/primitive';
 import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
+/** @name AbstractStorageObjectOwner */
+export interface AbstractStorageObjectOwner extends Enum {
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroupType;
+}
+
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {
   readonly started_accepting_applicants_at_block: u32;
@@ -177,11 +188,43 @@ export interface Category extends Struct {
 /** @name CategoryId */
 export interface CategoryId extends u64 {}
 
+/** @name Channel */
+export interface Channel extends Struct {
+  readonly owner: ChannelOwner;
+  readonly in_category: ChannelCategoryId;
+  readonly number_of_videos: u32;
+  readonly number_of_playlists: u32;
+  readonly number_of_series: u32;
+  readonly is_curated: bool;
+  readonly revenue: u128;
+}
+
+/** @name ChannelCategory */
+export interface ChannelCategory extends Struct {
+  readonly number_of_channels_in: u32;
+}
+
+/** @name ChannelCategoryCreationParameters */
+export interface ChannelCategoryCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
 /** @name ChannelCategoryId */
 export interface ChannelCategoryId extends u64 {}
 
+/** @name ChannelCategoryUpdateParameters */
+export interface ChannelCategoryUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
+}
+
 /** @name ChannelContentType */
 export interface ChannelContentType extends Null {}
+
+/** @name ChannelCreationParameters */
+export interface ChannelCreationParameters extends Struct {
+  readonly in_category: ChannelCategoryId;
+  readonly meta: Bytes;
+}
 
 /** @name ChannelCurationStatus */
 export interface ChannelCurationStatus extends Null {}
@@ -189,11 +232,35 @@ export interface ChannelCurationStatus extends Null {}
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
 
+/** @name ChannelOwner */
+export interface ChannelOwner extends Enum {
+  readonly isNobody: boolean;
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+  readonly asCurators: CuratorGroupId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+}
+
+/** @name ChannelOwnershipTransferRequest */
+export interface ChannelOwnershipTransferRequest extends Struct {
+  readonly channel_id: ChannelId;
+  readonly new_owner: ChannelOwner;
+  readonly payment: u128;
+}
+
+/** @name ChannelOwnershipTransferRequestId */
+export interface ChannelOwnershipTransferRequestId extends u64 {}
+
 /** @name ChannelPublicationStatus */
 export interface ChannelPublicationStatus extends Null {}
 
-/** @name ChannelTransferRequestId */
-export interface ChannelTransferRequestId extends u64 {}
+/** @name ChannelUpdateParameters */
+export interface ChannelUpdateParameters extends Struct {
+  readonly new_in_category: Option<ChannelCategoryId>;
+  readonly new_meta: Bytes;
+}
 
 /** @name ChildPositionInParentCategory */
 export interface ChildPositionInParentCategory extends Struct {
@@ -219,6 +286,9 @@ export interface ClassPermissionsType extends Null {}
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
 
+/** @name Content */
+export interface Content extends Vec<ContentParameters> {}
+
 /** @name ContentActor */
 export interface ContentActor extends Enum {
   readonly isCurator: boolean;
@@ -230,6 +300,13 @@ export interface ContentActor extends Enum {
 
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
+
+/** @name ContentParameters */
+export interface ContentParameters extends Struct {
+  readonly content_id: ContentId;
+  readonly type_id: DataObjectTypeId;
+  readonly ipfs_content_id: Bytes;
+}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Null {}
@@ -276,6 +353,9 @@ export interface CuratorOpening extends Null {}
 
 /** @name CuratorOpeningId */
 export interface CuratorOpeningId extends Null {}
+
+/** @name DAOId */
+export interface DAOId extends u64 {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
@@ -390,6 +470,22 @@ export interface EntryMethod extends Enum {
   readonly isScreening: boolean;
   readonly asScreening: AccountId;
   readonly isGenesis: boolean;
+}
+
+/** @name EpisodeCreationParameters */
+export interface EpisodeCreationParameters extends Enum {
+  readonly isNewVideo: boolean;
+  readonly asNewVideo: VideoCreationParameters;
+  readonly isExistingVideo: boolean;
+  readonly asExistingVideo: VideoId;
+}
+
+/** @name EpisodeUpdateParemters */
+export interface EpisodeUpdateParemters extends Enum {
+  readonly isUpdateVideo: boolean;
+  readonly asUpdateVideo: VideoUpdateParameters;
+  readonly isChangeExistingVideo: boolean;
+  readonly asChangeExistingVideo: VideoId;
 }
 
 /** @name ExecutionFailed */
@@ -507,6 +603,14 @@ export interface ModerationAction extends Struct {
   readonly rationale: Text;
 }
 
+/** @name NewAsset */
+export interface NewAsset extends Enum {
+  readonly isUpload: boolean;
+  readonly asUpload: ContentParameters;
+  readonly isUri: boolean;
+  readonly asUri: Text;
+}
+
 /** @name NextAdjustment */
 export interface NextAdjustment extends Struct {
   readonly adjustment: AdjustOnInterval;
@@ -604,11 +708,61 @@ export interface ParametrizedClassPropertyValue extends Null {}
 /** @name ParametrizedPropertyValue */
 export interface ParametrizedPropertyValue extends Null {}
 
+/** @name Person */
+export interface Person extends Struct {
+  readonly controlled_by: PersonController;
+  readonly number_of_videos_person_involed_in: u32;
+}
+
+/** @name PersonActor */
+export interface PersonActor extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurator: boolean;
+  readonly asCurator: CuratorId;
+}
+
+/** @name PersonController */
+export interface PersonController extends Enum {
+  readonly isNobody: boolean;
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isCurators: boolean;
+}
+
+/** @name PersonCreationParameters */
+export interface PersonCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
 /** @name PersonId */
 export interface PersonId extends u64 {}
 
+/** @name PersonUpdateParameters */
+export interface PersonUpdateParameters extends Struct {
+  readonly meta: Bytes;
+}
+
+/** @name Playlist */
+export interface Playlist extends Struct {
+  readonly in_channel: ChannelId;
+  readonly videos: Vec<VideoId>;
+}
+
+/** @name PlaylistCreationParameters */
+export interface PlaylistCreationParameters extends Struct {
+  readonly videos: Vec<VideoId>;
+  readonly meta: Bytes;
+}
+
 /** @name PlaylistId */
 export interface PlaylistId extends u64 {}
+
+/** @name PlaylistUpdateParameters */
+export interface PlaylistUpdateParameters extends Struct {
+  readonly new_videos: Option<Vec<VideoId>>;
+  readonly new_meta: Option<Bytes>;
+}
 
 /** @name Post */
 export interface Post extends Struct {
@@ -870,6 +1024,23 @@ export interface SealedVote extends Struct {
   readonly vote: Option<GenericAccountId>;
 }
 
+/** @name Season */
+export interface Season extends Struct {
+  readonly episodes: Vec<VideoId>;
+}
+
+/** @name SeasonCreationParameters */
+export interface SeasonCreationParameters extends Struct {
+  readonly episodes: Vec<EpisodeCreationParameters>;
+  readonly meta: Bytes;
+}
+
+/** @name SeasonUpdateParameters */
+export interface SeasonUpdateParameters extends Struct {
+  readonly new_episodes: Option<Vec<Option<EpisodeUpdateParemters>>>;
+  readonly new_meta: Option<Bytes>;
+}
+
 /** @name Seat */
 export interface Seat extends Struct {
   readonly member: GenericAccountId;
@@ -880,8 +1051,26 @@ export interface Seat extends Struct {
 /** @name Seats */
 export interface Seats extends Vec<Seat> {}
 
+/** @name Series */
+export interface Series extends Struct {
+  readonly in_channel: ChannelId;
+  readonly seasons: Vec<Season>;
+}
+
+/** @name SeriesCreationParameters */
+export interface SeriesCreationParameters extends Struct {
+  readonly seasons: Vec<SeasonCreationParameters>;
+  readonly meta: Bytes;
+}
+
 /** @name SeriesId */
 export interface SeriesId extends u64 {}
+
+/** @name SeriesUpdateParameters */
+export interface SeriesUpdateParameters extends Struct {
+  readonly new_seasons: Option<Vec<Option<SeasonUpdateParameters>>>;
+  readonly new_meta: Option<Bytes>;
+}
 
 /** @name ServiceProviderRecord */
 export interface ServiceProviderRecord extends Struct {
@@ -967,6 +1156,14 @@ export interface StakingStatus extends Enum {
 /** @name Status */
 export interface Status extends Null {}
 
+/** @name StorageObjectOwner */
+export interface StorageObjectOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isAbstractStorageObjectOwner: boolean;
+  readonly asAbstractStorageObjectOwner: AbstractStorageObjectOwner;
+}
+
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
 
@@ -1049,11 +1246,47 @@ export interface VecStoredPropertyValue extends Null {}
 /** @name VecStoredValue */
 export interface VecStoredValue extends Null {}
 
+/** @name Video */
+export interface Video extends Struct {
+  readonly in_channel: ChannelId;
+  readonly in_series: Vec<SeriesId>;
+  readonly in_playlists: Vec<PlaylistId>;
+  readonly is_curated: bool;
+  readonly is_featured: bool;
+}
+
+/** @name VideoCategory */
+export interface VideoCategory extends Struct {
+  readonly number_of_videos_in_category: u32;
+}
+
+/** @name VideoCategoryCreationParameters */
+export interface VideoCategoryCreationParameters extends Struct {
+  readonly meta: Bytes;
+}
+
 /** @name VideoCategoryId */
 export interface VideoCategoryId extends u64 {}
 
+/** @name VideoCategoryUpdateParameters */
+export interface VideoCategoryUpdateParameters extends Struct {
+  readonly new_meta: Bytes;
+}
+
+/** @name VideoCreationParameters */
+export interface VideoCreationParameters extends Struct {
+  readonly in_category: VideoCategoryId;
+  readonly meta: Bytes;
+}
+
 /** @name VideoId */
 export interface VideoId extends u64 {}
+
+/** @name VideoUpdateParameters */
+export interface VideoUpdateParameters extends Struct {
+  readonly new_in_category: Option<VideoCategoryId>;
+  readonly new_meta: Option<Bytes>;
+}
 
 /** @name VoteKind */
 export interface VoteKind extends Enum {
@@ -1091,6 +1324,13 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
+}
+
+/** @name WorkingGroupType */
+export interface WorkingGroupType extends Enum {
+  readonly isContentDirectory: boolean;
+  readonly isBuilders: boolean;
+  readonly isStorageProviders: boolean;
 }
 
 /** @name WorkingGroupUnstaker */
