@@ -19,6 +19,7 @@ async function main() {
       await api.isReady
       break
     } catch (err) {
+      // Exceptions are not being caught!?
       // failed to connect to node
     }
 

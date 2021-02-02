@@ -37,6 +37,7 @@ async function main() {
       break
     } catch (err) {
       // failed to connect to node
+      // Exceptions are not being caught!?
     }
 
     if (retry-- === 0) {
