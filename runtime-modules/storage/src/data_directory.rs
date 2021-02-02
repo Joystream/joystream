@@ -59,12 +59,12 @@ pub trait Trait:
     /// Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
-    /// Validates member id and origin combination.DefaultQuotaLimit
+    /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     type MaxObjectsPerInjection: Get<u32>;
 
-    /// Deafult content quota limit for all actors.
+    /// Default content quota limit for all actors.
     type DefaultQuotaLimit: Get<u32>;
 }
 
@@ -91,6 +91,9 @@ decl_error! {
 
         /// Contant uploading failed. Actor quota limit exceeded.
         QuotaLimitExceeded,
+
+        /// Quota limit upper bound exceeded
+        QuotaLimitUpperBoundExceeded
     }
 }
 
@@ -172,7 +175,9 @@ decl_storage! {
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
 
         pub QuotaLimits get(fn quota_limits) config():
-            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => T::ContentId;
+            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => u32;
+
+        pub QuotaLimitUpperBound get(fn quota_limit_upper_bound) config(): u32;
     }
 }
 
@@ -273,6 +278,23 @@ decl_module! {
             Self::upload_content(new_quota, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
+        }
+
+        /// Updates storage object owner quota limit. Requires leader privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_object_owner_quota_limit(
+            origin, 
+            abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            new_quota_limit: u32
+        ) {
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure!(new_quota_limit <= quota_limit_upper_bound, Error::<T>::QuotaLimitUpperBoundExceeded);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <QuotaLimitUpperBound<T>>::insert(abstract_owner, new_quota_limit);
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
