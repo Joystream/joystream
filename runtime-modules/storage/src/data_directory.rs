@@ -283,7 +283,7 @@ decl_module! {
         /// Updates storage object owner quota limit. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_object_owner_quota_limit(
-            origin, 
+            origin,
             abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
             new_quota_limit: u32
         ) {
