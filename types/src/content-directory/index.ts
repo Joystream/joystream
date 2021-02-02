@@ -1,7 +1,6 @@
 import { BTreeMap, Option, Tuple, Text, Vec } from '@polkadot/types'
 import { bool, u64, u32, u16, i16, i32, i64, Null } from '@polkadot/types/primitive'
-import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, Hash, JoyBTreeSet } from '../common'
+import { MemberId, JoyStructDecorated, JoyEnum, Hash, JoyBTreeSet } from '../common'
 
 export class Nonce extends u64 {}
 export class EntityId extends u64 {}
@@ -263,12 +262,6 @@ export class OperationType extends JoyEnum({
   AddSchemaSupportToEntity: AddSchemaSupportToEntityOperation,
 }) {}
 
-// Versioned store relicts - to be removed:
-export class ClassPermissionsType extends Null {}
-export class ClassPropertyValue extends Null {}
-export class Operation extends Null {}
-export class ReferenceConstraint extends Null {}
-
 export class InputEntityValuesMap extends BTreeMap.with(PropertyId, InputPropertyValue) {}
 
 export class FailedAt extends u32 {}
@@ -277,6 +270,7 @@ export const contentDirectoryTypes = {
   Nonce,
   EntityId,
   ClassId,
+  CuratorId,
   CuratorGroupId,
   VecMaxLength,
   TextMaxLength,
@@ -321,11 +315,6 @@ export const contentDirectoryTypes = {
   AddSchemaSupportToEntityOperation,
   OperationType,
   InputEntityValuesMap,
-  // Versioned store relicts - to be removed:
-  ClassPermissionsType,
-  ClassPropertyValue,
-  Operation,
-  ReferenceConstraint,
   FailedAt,
 }
 
