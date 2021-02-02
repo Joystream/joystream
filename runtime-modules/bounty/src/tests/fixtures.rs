@@ -4,7 +4,7 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{BountyCreationParameters, RawEvent};
+use crate::{BountyCreationParameters, BountyStage, RawEvent};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -28,7 +28,7 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64>) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -199,7 +199,9 @@ impl CancelBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
+            let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
+
+            assert!(matches!(bounty.stage, BountyStage::Canceled))
         }
     }
 }
@@ -231,7 +233,9 @@ impl VetoBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
+            let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
+
+            assert!(matches!(bounty.stage, BountyStage::Vetoed))
         }
     }
 }

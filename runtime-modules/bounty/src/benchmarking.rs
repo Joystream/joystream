@@ -16,7 +16,9 @@ use balances::Module as Balances;
 use common::council::CouncilBudgetManager;
 use membership::Module as Membership;
 
-use crate::{BalanceOf, Bounties, BountyCreationParameters, Call, Event, Module, Trait};
+use crate::{
+    BalanceOf, Bounties, BountyCreationParameters, BountyStage, Call, Event, Module, Trait,
+};
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -145,7 +147,9 @@ benchmarks! {
 
     }: cancel_bounty(RawOrigin::Root, None, bounty_id)
     verify {
-        assert!(!<Bounties<T>>::contains_key(&bounty_id));
+        let bounty = <crate::Bounties<T>>::get(bounty_id);
+
+        assert!(matches!(bounty.stage, BountyStage::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
     }
 
@@ -173,7 +177,9 @@ benchmarks! {
 
     }: cancel_bounty(RawOrigin::Signed(account_id), Some(member_id), bounty_id)
     verify {
-        assert!(!<Bounties<T>>::contains_key(&bounty_id));
+        let bounty = <crate::Bounties<T>>::get(bounty_id);
+
+        assert!(matches!(bounty.stage, BountyStage::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
     }
 
@@ -190,7 +196,9 @@ benchmarks! {
 
     }: _ (RawOrigin::Root, bounty_id)
     verify {
-        assert!(!<Bounties<T>>::contains_key(&bounty_id));
+        let bounty = <crate::Bounties<T>>::get(bounty_id);
+
+        assert!(matches!(bounty.stage, BountyStage::Vetoed));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
@@ -200,7 +208,7 @@ benchmarks! {
             judging_period: One::one(),
             ..Default::default()
         };
-
+        // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100.into();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
@@ -212,7 +220,7 @@ benchmarks! {
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
-        assert_last_event::<T>(Event::<T>::BountyFunded(bounty_id, amount).into());
+        assert_last_event::<T>(Event::<T>::MaxFundingReached(bounty_id).into());
     }
 }
 

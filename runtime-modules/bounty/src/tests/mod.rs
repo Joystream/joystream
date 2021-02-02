@@ -345,7 +345,12 @@ fn fund_bounty_succeeds() {
             initial_balance - amount
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, amount));
+        assert_eq!(
+            crate::Module::<Test>::funding_by_bounty_by_member(bounty_id, member_id),
+            amount
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
     });
 }
 

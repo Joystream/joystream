@@ -7,6 +7,7 @@
 //! - [create_bounty](./struct.Module.html#method.create_bounty) - creates a bounty
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
+//! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -168,7 +169,7 @@ pub enum BountyStage<BlockNumber> {
     Vetoed,
 
     /// A bounty funding was successful on the provided block.
-    /// It is optional stage and is set when the funding exceeded max funding amount.
+    /// The stage is set when the funding exceeded max funding amount.
     MaxFundingReached(BlockNumber),
 }
 
@@ -210,6 +211,10 @@ decl_storage! {
         /// Bounty storage
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
+        /// Double map for bounty funding. It stores member funding for bounties.
+        pub Funding get(fn funding_by_bounty_by_member): double_map hasher(blake2_128_concat)
+            T::BountyId, hasher(blake2_128_concat) MemberId<T> => BalanceOf<T>;
+
         /// Count of all bounties that have been created.
         pub BountyCount get(fn bounty_count): u32;
     }
@@ -220,6 +225,7 @@ decl_event! {
     where
         <T as Trait>::BountyId,
         Balance = BalanceOf<T>,
+        MemberId = MemberId<T>,
     {
         /// A bounty was created.
         BountyCreated(BountyId),
@@ -230,8 +236,8 @@ decl_event! {
         /// A bounty was vetoed.
         BountyVetoed(BountyId),
 
-        /// A bounty was vetoed.
-        BountyFunded(BountyId, Balance),
+        /// A bounty was funded by a member.
+        BountyFunded(BountyId, MemberId, Balance),
 
         /// A bounty has reached its maximum funding amount.
         MaxFundingReached(BountyId),
@@ -340,7 +346,7 @@ decl_module! {
                 Error::<T>::BountyDoesntExist
             );
 
-            let bounty = <Bounties<T>>::get(bounty_id);
+            let mut bounty = <Bounties<T>>::get(bounty_id);
 
             bounty_creator.validate_creator(&bounty.creation_params.creator_member_id)?;
 
@@ -353,9 +359,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // TODO: make payments for submitted work. Change stage to Canceled.
+            bounty.stage = BountyStage::Canceled;
+            <Bounties<T>>::insert(bounty_id, bounty);
 
-            <Bounties<T>>::remove(bounty_id);
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id));
         }
 
@@ -376,7 +382,7 @@ decl_module! {
                 Error::<T>::BountyDoesntExist
             );
 
-            let bounty = <Bounties<T>>::get(bounty_id);
+            let mut bounty = <Bounties<T>>::get(bounty_id);
 
             ensure!(
                 matches!(bounty.stage, BountyStage::Funding(_)),
@@ -387,9 +393,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // TODO: make payments for submitted work. Change stage to vetoed.
+            bounty.stage = BountyStage::Vetoed;
+            <Bounties<T>>::insert(bounty_id, bounty);
 
-            <Bounties<T>>::remove(bounty_id);
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
         }
 
@@ -451,7 +457,12 @@ decl_module! {
 
             <Bounties<T>>::insert(bounty_id, bounty);
 
-            Self::deposit_event(RawEvent::BountyFunded(bounty_id, amount));
+            // Previous funding by member.
+            let funds_so_far = Self::funding_by_bounty_by_member(bounty_id, member_id);
+            let total_funding = funds_so_far.saturating_add(amount);
+            <Funding<T>>::insert(bounty_id, member_id, total_funding);
+
+            Self::deposit_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
             if  maximum_funding_reached{
                 Self::deposit_event(RawEvent::MaxFundingReached(bounty_id));
             }
