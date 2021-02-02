@@ -319,6 +319,7 @@ fn fund_bounty_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let max_amount = 500;
         let amount = 100;
         let account_id = 1;
         let member_id = 1;
@@ -326,7 +327,9 @@ fn fund_bounty_succeeds() {
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
 
-        CreateBountyFixture::default().call_and_assert(Ok(()));
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
@@ -343,6 +346,45 @@ fn fund_bounty_succeeds() {
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, amount));
+    });
+}
+
+#[test]
+fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 50;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id),
+            initial_balance - amount
+        );
+
+        let bounty = <crate::Bounties<Test>>::get(&bounty_id);
+        assert_eq!(bounty.stage, BountyStage::MaxFundingReached(starting_block));
+
+        EventFixture::assert_last_crate_event(RawEvent::MaxFundingReached(bounty_id));
     });
 }
 

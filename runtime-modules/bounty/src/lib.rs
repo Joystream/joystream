@@ -167,8 +167,9 @@ pub enum BountyStage<BlockNumber> {
     /// A bounty was vetoed.
     Vetoed,
 
-    /// A bounty funding was successful.
-    FundingSuccessful,
+    /// A bounty funding was successful on the provided block.
+    /// It is optional stage and is set when the funding exceeded max funding amount.
+    MaxFundingReached(BlockNumber),
 }
 
 impl<BlockNumber: Default> Default for BountyStage<BlockNumber> {
@@ -231,6 +232,9 @@ decl_event! {
 
         /// A bounty was vetoed.
         BountyFunded(BountyId, Balance),
+
+        /// A bounty has reached its maximum funding amount.
+        MaxFundingReached(BountyId),
     }
 }
 
@@ -438,11 +442,19 @@ decl_module! {
             Self::slash_balance_from_account(amount, &account_id);
 
             bounty.current_funding = bounty.current_funding.saturating_add(amount);
+
+            let maximum_funding_reached =
+                bounty.current_funding >= bounty.creation_params.max_amount;
+            if  maximum_funding_reached{
+                bounty.stage = BountyStage::MaxFundingReached(Self::current_block());
+            }
+
             <Bounties<T>>::insert(bounty_id, bounty);
 
-            // TODO: set FundingSuccessful stage if needed
-
             Self::deposit_event(RawEvent::BountyFunded(bounty_id, amount));
+            if  maximum_funding_reached{
+                Self::deposit_event(RawEvent::MaxFundingReached(bounty_id));
+            }
         }
     }
 }
