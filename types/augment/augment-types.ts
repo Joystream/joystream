@@ -3,7 +3,7 @@
 
 import { Compact, Option, Raw, Vec } from '@polkadot/types/codec';
 import { BitVec, Bytes, Data, DoNotConstruct, Null, StorageKey, Text, Type, U256, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types/primitive';
-import { AbstractStorageObjectOwner, AcceptingApplications, ActivateOpeningAt, ActiveOpeningStage, ActiveOpeningStageVariant, ActiveStake, Actor, ActorId, AddOpeningParameters, AddSchemaSupportToEntityOperation, AdjustCapacityBy, AdjustOnInterval, Application, ApplicationDeactivationCause, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationOf, ApplicationRationingPolicy, ApplicationStage, Approved, Backer, Backers, BalanceOfMint, BlockAndTime, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelContentType, ChannelCreationParameters, ChannelCurationStatus, ChannelId, ChannelOwner, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelPublicationStatus, ChannelUpdateParameters, ChildPositionInParentCategory, Class, ClassId, ClassOf, ClassPermissions, ClassPermissionsType, ClassPropertyValue, Content, ContentActor, ContentId, ContentParameters, CreateEntityOperation, Credential, CredentialSet, CurationActor, Curator, CuratorApplication, CuratorApplicationId, CuratorApplicationIdSet, CuratorApplicationIdToCuratorIdMap, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DAOId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, Deactivated, DiscussionPost, DiscussionThread, ElectionParameters, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, EntryMethod, EpisodeCreationParameters, EpisodeUpdateParemters, ExecutionFailed, FailedAt, FillOpeningParameters, Finalized, HashedTextMaxLength, HiringApplicationId, IPNSIdentity, InactiveApplicationStage, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, Lead, LeadId, LiaisonJudgement, MemberId, Membership, MemoText, Mint, MintBalanceOf, MintId, ModerationAction, NewAsset, NextAdjustment, Nonce, Opening, OpeningDeactivationCause, OpeningId, OpeningOf, OpeningPolicyCommitment, OpeningStage, OpeningType, Operation, OperationType, OptionalText, PaidMembershipTerms, PaidTermId, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, Person, PersonActor, PersonController, PersonCreationParameters, PersonId, PersonUpdateParameters, Playlist, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Post, PostId, PostTextChange, Principal, PrincipalId, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecisionStatus, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, RationaleText, Recipient, RecipientId, ReferenceConstraint, ReferenceCounterSideEffects, Reply, ReplyId, ReviewPeriod, RewardPolicy, RewardRelationship, RewardRelationshipId, RoleParameters, RoleStakeProfile, SameController, Schema, SchemaId, SealedVote, Season, SeasonCreationParameters, SeasonUpdateParameters, Seat, Seats, Series, SeriesCreationParameters, SeriesId, SeriesUpdateParameters, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, Slash, SlashableTerms, SlashingTerms, Stake, StakeId, Staked, StakedStatus, StakingAmountLimitMode, StakingPolicy, StakingStatus, Status, StorageObjectOwner, StorageProviderId, StoredPropertyValue, StoredValue, SubscriptionId, TerminateRoleParameters, TextMaxLength, Thread, ThreadCounter, ThreadId, TransferableStake, Unstaking, UnstakingApplicationStage, UpdatePropertyValuesOperation, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, Video, VideoCategory, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VotingResults, WaitingToBeingOpeningStageVariant, WorkerId, WorkerOf, WorkingGroup, WorkingGroupType, WorkingGroupUnstaker } from './all';
+import { AbstractStorageObjectOwner, AcceptingApplications, ActivateOpeningAt, ActiveOpeningStage, ActiveOpeningStageVariant, ActiveStake, Actor, ActorId, AddOpeningParameters, AddSchemaSupportToEntityOperation, AdjustCapacityBy, AdjustOnInterval, Application, ApplicationDeactivationCause, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationOf, ApplicationRationingPolicy, ApplicationStage, Approved, Backer, Backers, BalanceOfMint, BlockAndTime, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelContentType, ChannelCreationParameters, ChannelCurationStatus, ChannelId, ChannelOwner, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelPublicationStatus, ChannelUpdateParameters, ChildPositionInParentCategory, Class, ClassId, ClassOf, ClassPermissions, ClassPermissionsType, ClassPropertyValue, Content, ContentActor, ContentId, ContentParameters, CreateEntityOperation, Credential, CredentialSet, CurationActor, Curator, CuratorApplication, CuratorApplicationId, CuratorApplicationIdSet, CuratorApplicationIdToCuratorIdMap, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DAOId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, Deactivated, DiscussionPost, DiscussionThread, ElectionParameters, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, EntryMethod, EpisodeCreationParameters, EpisodeUpdateParemters, ExecutionFailed, FailedAt, FillOpeningParameters, Finalized, HashedTextMaxLength, HiringApplicationId, IPNSIdentity, InactiveApplicationStage, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, Lead, LeadId, LiaisonJudgement, MaxNumber, MemberId, Membership, MemoText, Mint, MintBalanceOf, MintId, ModerationAction, NewAsset, NextAdjustment, Nonce, Opening, OpeningDeactivationCause, OpeningId, OpeningOf, OpeningPolicyCommitment, OpeningStage, OpeningType, Operation, OperationType, OptionalText, PaidMembershipTerms, PaidTermId, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, Person, PersonActor, PersonController, PersonCreationParameters, PersonId, PersonUpdateParameters, Playlist, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Post, PostId, PostTextChange, Principal, PrincipalId, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecisionStatus, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, RationaleText, Recipient, RecipientId, ReferenceConstraint, ReferenceCounterSideEffects, Reply, ReplyId, ReviewPeriod, RewardPolicy, RewardRelationship, RewardRelationshipId, RoleParameters, RoleStakeProfile, SameController, Schema, SchemaId, SealedVote, Season, SeasonCreationParameters, SeasonUpdateParameters, Seat, Seats, Series, SeriesCreationParameters, SeriesId, SeriesUpdateParameters, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, Slash, SlashableTerms, SlashingTerms, Stake, StakeId, Staked, StakedStatus, StakingAmountLimitMode, StakingPolicy, StakingStatus, Status, StorageObjectOwner, StorageProviderId, StoredPropertyValue, StoredValue, SubscriptionId, TerminateRoleParameters, TextMaxLength, Thread, ThreadCounter, ThreadId, TransferableStake, Unstaking, UnstakingApplicationStage, UpdatePropertyValuesOperation, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, Video, VideoCategory, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VotingResults, WaitingToBeingOpeningStageVariant, WorkerId, WorkerOf, WorkingGroup, WorkingGroupType, WorkingGroupUnstaker } from './all';
 import { BlockAttestations, IncludedBlocks, MoreAttestations } from '@polkadot/types/interfaces/attestations';
 import { RawAuraPreDigest } from '@polkadot/types/interfaces/aura';
 import { ExtrinsicOrHash, ExtrinsicStatus } from '@polkadot/types/interfaces/author';
@@ -2086,6 +2086,14 @@ declare module '@polkadot/types/types/registry' {
     MemoText: MemoText;
     'Option<MemoText>': Option<MemoText>;
     'Vec<MemoText>': Vec<MemoText>;
+    ChannelId: ChannelId;
+    'Compact<ChannelId>': Compact<ChannelId>;
+    'Option<ChannelId>': Option<ChannelId>;
+    'Vec<ChannelId>': Vec<ChannelId>;
+    DAOId: DAOId;
+    'Compact<DAOId>': Compact<DAOId>;
+    'Option<DAOId>': Option<DAOId>;
+    'Vec<DAOId>': Vec<DAOId>;
     EntryMethod: EntryMethod;
     'Option<EntryMethod>': Option<EntryMethod>;
     'Vec<EntryMethod>': Vec<EntryMethod>;
@@ -2369,6 +2377,21 @@ declare module '@polkadot/types/types/registry' {
     DataObjectsMap: DataObjectsMap;
     'Option<DataObjectsMap>': Option<DataObjectsMap>;
     'Vec<DataObjectsMap>': Vec<DataObjectsMap>;
+    ContentParameters: ContentParameters;
+    'Option<ContentParameters>': Option<ContentParameters>;
+    'Vec<ContentParameters>': Vec<ContentParameters>;
+    StorageObjectOwner: StorageObjectOwner;
+    'Option<StorageObjectOwner>': Option<StorageObjectOwner>;
+    'Vec<StorageObjectOwner>': Vec<StorageObjectOwner>;
+    AbstractStorageObjectOwner: AbstractStorageObjectOwner;
+    'Option<AbstractStorageObjectOwner>': Option<AbstractStorageObjectOwner>;
+    'Vec<AbstractStorageObjectOwner>': Vec<AbstractStorageObjectOwner>;
+    WorkingGroupType: WorkingGroupType;
+    'Option<WorkingGroupType>': Option<WorkingGroupType>;
+    'Vec<WorkingGroupType>': Vec<WorkingGroupType>;
+    Content: Content;
+    'Option<Content>': Option<Content>;
+    'Vec<Content>': Vec<Content>;
     ProposalId: ProposalId;
     'Compact<ProposalId>': Compact<ProposalId>;
     'Option<ProposalId>': Option<ProposalId>;
@@ -2444,22 +2467,6 @@ declare module '@polkadot/types/types/registry' {
     ContentActor: ContentActor;
     'Option<ContentActor>': Option<ContentActor>;
     'Vec<ContentActor>': Vec<ContentActor>;
-    DAOId: DAOId;
-    'Compact<DAOId>': Compact<DAOId>;
-    'Option<DAOId>': Option<DAOId>;
-    'Vec<DAOId>': Vec<DAOId>;
-    ContentParameters: ContentParameters;
-    'Option<ContentParameters>': Option<ContentParameters>;
-    'Vec<ContentParameters>': Vec<ContentParameters>;
-    StorageObjectOwner: StorageObjectOwner;
-    'Option<StorageObjectOwner>': Option<StorageObjectOwner>;
-    'Vec<StorageObjectOwner>': Vec<StorageObjectOwner>;
-    AbstractStorageObjectOwner: AbstractStorageObjectOwner;
-    'Option<AbstractStorageObjectOwner>': Option<AbstractStorageObjectOwner>;
-    'Vec<AbstractStorageObjectOwner>': Vec<AbstractStorageObjectOwner>;
-    WorkingGroupType: WorkingGroupType;
-    'Option<WorkingGroupType>': Option<WorkingGroupType>;
-    'Vec<WorkingGroupType>': Vec<WorkingGroupType>;
     NewAsset: NewAsset;
     'Option<NewAsset>': Option<NewAsset>;
     'Vec<NewAsset>': Vec<NewAsset>;
@@ -2469,10 +2476,6 @@ declare module '@polkadot/types/types/registry' {
     ChannelOwner: ChannelOwner;
     'Option<ChannelOwner>': Option<ChannelOwner>;
     'Vec<ChannelOwner>': Vec<ChannelOwner>;
-    ChannelId: ChannelId;
-    'Compact<ChannelId>': Compact<ChannelId>;
-    'Option<ChannelId>': Option<ChannelId>;
-    'Vec<ChannelId>': Vec<ChannelId>;
     ChannelCategoryId: ChannelCategoryId;
     'Compact<ChannelCategoryId>': Compact<ChannelCategoryId>;
     'Option<ChannelCategoryId>': Option<ChannelCategoryId>;
@@ -2585,8 +2588,9 @@ declare module '@polkadot/types/types/registry' {
     EpisodeUpdateParemters: EpisodeUpdateParemters;
     'Option<EpisodeUpdateParemters>': Option<EpisodeUpdateParemters>;
     'Vec<EpisodeUpdateParemters>': Vec<EpisodeUpdateParemters>;
-    Content: Content;
-    'Option<Content>': Option<Content>;
-    'Vec<Content>': Vec<Content>;
+    MaxNumber: MaxNumber;
+    'Compact<MaxNumber>': Compact<MaxNumber>;
+    'Option<MaxNumber>': Option<MaxNumber>;
+    'Vec<MaxNumber>': Vec<MaxNumber>;
   }
 }

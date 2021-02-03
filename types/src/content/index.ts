@@ -1,12 +1,11 @@
 import { Text, Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, /* Hash, */ JoyBTreeSet } from '../common'
-import { ContentId, DataObjectTypeId } from '../storage'
+import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId } from '../common'
+import { ContentParameters } from '../storage'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
-export class ChannelId extends u64 {}
 export class ChannelCategoryId extends u64 {}
 export class VideoId extends u64 {}
 export class VideoCategoryId extends u64 {}
@@ -14,7 +13,7 @@ export class PlaylistId extends u64 {}
 export class PersonId extends u64 {}
 export class SeriesId extends u64 {}
 export class ChannelOwnershipTransferRequestId extends u64 {}
-export class DAOId extends u64 {}
+export class MaxNumber extends u32 {}
 
 export class CuratorGroup extends JoyStructDecorated({
   curators: JoyBTreeSet(CuratorId),
@@ -181,53 +180,19 @@ export class PersonActor extends JoyEnum({
   Curator: CuratorId,
 }) {}
 
-export class ContentParameters extends JoyStructDecorated({
-  content_id: ContentId,
-  type_id: DataObjectTypeId,
-  size: u64,
-  ipfs_content_id: Bytes,
-}) {}
-
 export class NewAsset extends JoyEnum({
   Upload: ContentParameters,
   Uri: Text,
 }) {}
-
-// mis-spelled in runtime
-export class WorkingGroupType extends JoyEnum({
-  ContentDirectory: Null,
-  Builders: Null,
-  StorageProviders: Null,
-}) {}
-
-export class AbstractStorageObjectOwner extends JoyEnum({
-  Channel: ChannelId,
-  DAO: DAOId,
-  Council: Null,
-  WorkingGroup: WorkingGroupType,
-}) {}
-
-export class StorageObjectOwner extends JoyEnum({
-  Member: MemberId,
-  AbstractStorageObjectOwner: AbstractStorageObjectOwner,
-}) {}
-
-export class Content extends Vec.with(ContentParameters) {}
 
 export const contentDirectoryTypes = {
   CuratorId,
   CuratorGroupId,
   CuratorGroup,
   ContentActor,
-  DAOId,
-  ContentParameters,
-  StorageObjectOwner,
-  AbstractStorageObjectOwner,
-  WorkingGroupType,
   NewAsset,
   Channel,
   ChannelOwner,
-  ChannelId,
   ChannelCategoryId,
   ChannelCategory,
   ChannelCategoryCreationParameters,
@@ -263,8 +228,7 @@ export const contentDirectoryTypes = {
   SeasonUpdateParameters,
   EpisodeCreationParameters,
   EpisodeUpdateParemters,
-  // type used in data_directory Events
-  Content,
+  MaxNumber,
 }
 
 export default contentDirectoryTypes

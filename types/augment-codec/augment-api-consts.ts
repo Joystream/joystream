@@ -3,6 +3,7 @@
 
 import { Vec } from '@polkadot/types/codec';
 import { u32, u64 } from '@polkadot/types/primitive';
+import { MaxNumber } from './all';
 import { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
 import { SessionIndex } from '@polkadot/types/interfaces/session';
 import { EraIndex } from '@polkadot/types/interfaces/staking';

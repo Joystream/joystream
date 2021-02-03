@@ -97,6 +97,8 @@
     "MemoText": "Text",
     "Address": "AccountId",
     "LookupSource": "AccountId",
+    "ChannelId": "u64",
+    "DAOId": "u64",
     "EntryMethod": {
         "_enum": {
             "Paid": "u64",
@@ -489,7 +491,7 @@
         ]
     },
     "DataObject": {
-        "owner": "MemberId",
+        "owner": "StorageObjectOwner",
         "added_at": "BlockAndTime",
         "type_id": "DataObjectTypeId",
         "size": "u64",
@@ -509,6 +511,34 @@
         "active": "bool"
     },
     "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "ContentParameters": {
+        "content_id": "ContentId",
+        "type_id": "DataObjectTypeId",
+        "size": "u64",
+        "ipfs_content_id": "Bytes"
+    },
+    "StorageObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "AbstractStorageObjectOwner": "AbstractStorageObjectOwner"
+        }
+    },
+    "AbstractStorageObjectOwner": {
+        "_enum": {
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroupType"
+        }
+    },
+    "WorkingGroupType": {
+        "_enum": [
+            "ContentDirectory",
+            "Builders",
+            "StorageProviders"
+        ]
+    },
+    "Content": "Vec<ContentParameters>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -670,34 +700,6 @@
             "Lead": "Null"
         }
     },
-    "DAOId": "u64",
-    "ContentParameters": {
-        "content_id": "ContentId",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "ipfs_content_id": "Bytes"
-    },
-    "StorageObjectOwner": {
-        "_enum": {
-            "Member": "MemberId",
-            "AbstractStorageObjectOwner": "AbstractStorageObjectOwner"
-        }
-    },
-    "AbstractStorageObjectOwner": {
-        "_enum": {
-            "Channel": "ChannelId",
-            "DAO": "DAOId",
-            "Council": "Null",
-            "WorkingGroup": "WorkingGroupType"
-        }
-    },
-    "WorkingGroupType": {
-        "_enum": [
-            "ContentDirectory",
-            "Builders",
-            "StorageProviders"
-        ]
-    },
     "NewAsset": {
         "_enum": {
             "Upload": "ContentParameters",
@@ -721,7 +723,6 @@
             "Dao": "DAOId"
         }
     },
-    "ChannelId": "u64",
     "ChannelCategoryId": "u64",
     "ChannelCategory": {
         "number_of_channels_in": "u32"
@@ -845,5 +846,5 @@
             "ChangeExistingVideo": "VideoId"
         }
     },
-    "Content": "Vec<ContentParameters>"
+    "MaxNumber": "u32"
 }

@@ -359,7 +359,7 @@ export interface DAOId extends u64 {}
 
 /** @name DataObject */
 export interface DataObject extends Struct {
-  readonly owner: MemberId;
+  readonly owner: StorageObjectOwner;
   readonly added_at: BlockAndTime;
   readonly type_id: DataObjectTypeId;
   readonly liaison: StorageProviderId;
@@ -561,6 +561,9 @@ export interface LiaisonJudgement extends Enum {
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
+
+/** @name MaxNumber */
+export interface MaxNumber extends u32 {}
 
 /** @name MemberId */
 export interface MemberId extends u64 {}
