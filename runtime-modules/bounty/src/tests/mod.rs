@@ -429,7 +429,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
             BountyMilestone::MaxFundingReached(starting_block)
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::MaxFundingReached(bounty_id));
+        EventFixture::assert_last_crate_event(RawEvent::BountyMaxFundingReached(bounty_id));
     });
 }
 

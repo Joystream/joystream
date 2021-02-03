@@ -134,7 +134,7 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     /// available for people to work on.
     pub min_amount: Balance,
 
-    /// Maximumm funding accepted, if this limit is reached, funding automatically is over.
+    /// Maximum funding accepted, if this limit is reached, funding automatically is over.
     pub max_amount: Balance,
 
     /// Amount of stake required, possibly 0, to enter bounty as entrant.
@@ -201,7 +201,7 @@ pub enum BountyMilestone<BlockNumber> {
 
     /// A bounty funding was successful on the provided block.
     /// The stage is set when the funding exceeded max funding amount.
-    MaxFundingReached(BlockNumber),
+    BountyMaxFundingReached(BlockNumber),
 }
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
@@ -271,7 +271,10 @@ decl_event! {
         BountyFunded(BountyId, MemberId, Balance),
 
         /// A bounty has reached its maximum funding amount.
-        MaxFundingReached(BountyId),
+        BountyMaxFundingReached(BountyId),
+
+        /// A member has withdrew the funding.
+        BountyMemberFundingWithdrawal(BountyId, MemberId),
     }
 }
 
@@ -298,6 +301,12 @@ decl_error! {
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
+
+        /// Funding period is not expired for the bounty.
+        FundingPeriodNotExpired,
+
+        /// A member is not a bounty funder.
+        NotBountyFunder,
     }
 }
 
@@ -474,8 +483,57 @@ decl_module! {
 
             Self::deposit_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
             if  maximum_funding_reached{
-                Self::deposit_event(RawEvent::MaxFundingReached(bounty_id));
+                Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
+        }
+
+        /// Withdraw funding.
+        #[weight = 10000000] //TODO: adjust weight
+        pub fn withdraw_member_funding(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+        ) {
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin, member_id,
+            )?;
+
+            ensure!(
+                <Bounties<T>>::contains_key(bounty_id),
+                Error::<T>::BountyDoesntExist
+            );
+
+            let mut bounty = <Bounties<T>>::get(bounty_id);
+
+            if let BountyStage::Funding(created_at) = bounty.stage{
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    ensure!(
+                        created_at + funding_period < Self::current_block(),
+                        Error::<T>::FundingPeriodNotExpired,
+                    );
+            }
+            } else {
+                return Err(Error::<T>::InvalidBountyStage.into())
+            }
+
+            ensure!(
+                <Funding<T>>::contains_key(bounty_id, member_id),
+                Error::<T>::NotBountyFunder,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let funding_amount = <Funding<T>>::get(bounty_id, member_id);
+
+            // Self::slash_balance_from_account(amount, &account_id);
+
+            bounty.current_funding = bounty.current_funding.saturating_sub(funding_amount);
+
+            <Bounties<T>>::insert(bounty_id, bounty);
+
+            Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
         }
     }
 }

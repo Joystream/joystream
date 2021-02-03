@@ -231,7 +231,7 @@ benchmarks! {
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
-        assert_last_event::<T>(Event::<T>::MaxFundingReached(bounty_id).into());
+        assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
 }
 
