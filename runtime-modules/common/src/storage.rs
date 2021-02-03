@@ -1,9 +1,9 @@
+use crate::working_group::WorkingGroup;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchResult;
 use sp_std::vec::Vec;
-use crate::working_group::WorkingGroup;
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub struct ContentParameters<ContentId, DataObjectTypeId> {
