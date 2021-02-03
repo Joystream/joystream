@@ -444,8 +444,8 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     fn can_add_content(
         _owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
-    ) -> bool {
-        Self::ensure_content_is_valid(&content).is_ok()
-            && T::StorageProviderHelper::get_random_storage_provider().is_ok()
+    ) -> DispatchResult {
+        T::StorageProviderHelper::get_random_storage_provider()?;
+        Self::ensure_content_is_valid(&content)
     }
 }
