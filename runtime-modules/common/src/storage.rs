@@ -1,3 +1,4 @@
+use crate::working_group::WorkingGroup;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -14,19 +15,11 @@ pub struct ContentParameters<ContentId, DataObjectTypeId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum WorkinGroupType {
-    ContentDirectory,
-    Builders,
-    StorageProviders,
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum AbstractStorageObjectOwner<ChannelId, DAOId> {
     Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
     DAO(DAOId),         // acts through upcoming `content_finance` module
     Council,            // acts through proposal system
-    WorkingGroup(WorkinGroupType), // acts through new extrinsic in working group
+    WorkingGroup(WorkingGroup), // acts through new extrinsic in working group
 }
 
 // New owner type for storage object struct
@@ -53,5 +46,5 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
     fn can_add_content(
         owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
-    ) -> bool;
+    ) -> DispatchResult;
 }
