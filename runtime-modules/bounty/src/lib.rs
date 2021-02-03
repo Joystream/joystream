@@ -320,7 +320,7 @@ decl_module! {
 
             <Bounties<T>>::insert(bounty_id, bounty);
             BountyCount::mutate(|count| {
-                *count += 1
+                *count = next_bounty_count_value
             });
             Self::deposit_event(RawEvent::BountyCreated(bounty_id));
         }

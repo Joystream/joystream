@@ -101,6 +101,7 @@ benchmarks! {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
     }
 
@@ -126,6 +127,7 @@ benchmarks! {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
     }
 
@@ -145,6 +147,7 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
+        assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Root, None, bounty_id)
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
@@ -175,6 +178,7 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
+        assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Signed(account_id), Some(member_id), bounty_id)
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
@@ -194,6 +198,7 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
+        assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Root, bounty_id)
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
@@ -217,6 +222,7 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
+        assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
