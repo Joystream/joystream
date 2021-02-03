@@ -61,7 +61,7 @@ pub trait NumericIdentifier:
 
 impl NumericIdentifier for u64 {}
 
-/// Module configuration trait for this Substrate module.
+/// Module configuration trait for Content Directory Module
 pub trait Trait:
     system::Trait
     + ContentActorAuthenticator
@@ -73,7 +73,7 @@ pub trait Trait:
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// EscrowAccountId seed for ModuleId to compute deterministic AccountId
+    /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
 
     /// ChannelRevenueTreasury seed for ModuleId to compute deterministic AccountId
@@ -81,10 +81,6 @@ pub trait Trait:
 
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
-
-    // Type already defined in StorageOwnership
-    // Type of identifier for Channels
-    // type ChannelId: NumericIdentifier;
 
     /// Type of identifier for Video Categories
     type VideoCategoryId: NumericIdentifier;
@@ -111,18 +107,19 @@ pub trait Trait:
     type StorageSystem: StorageSystem<Self>;
 }
 
-// How new assets are to be added on creating and updating
-// Channels,Videos,Series and Person
+/// Specifies how a new asset will be provided on creating and updating
+/// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NewAsset<ContentParameters> {
+    /// Upload to the storage system
     Upload(ContentParameters),
+    /// A url string pointing at an asset
     Uri(Vec<u8>),
 }
 
-// === Channels
-
-// Must be convertible into new type StorageObjectOwner in storage system
+/// The owner of a channel, is the authorized "actor" that can update
+/// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
@@ -136,46 +133,64 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     Dao(DAOId),
 }
 
-// See if there is a way to get rid of the need for ChannelOwner enum to implement Default trait!
+// Default trait implemented only because its used in a Channel which needs to implement a Default trait
+// since it is a StorageValue.
 impl<MemberId, CuratorGroupId, DAOId> Default for ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     fn default() -> Self {
         ChannelOwner::Nobody
     }
 }
 
+/// A category which channels can belong to. The category will not be deleted if it contains any channels.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategory {
+    /// The number of channels in this category.
     number_of_channels_in: u32,
 }
 
+/// Information on the category being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategoryCreationParameters {
+    /// Metadata for the category.
     meta: Vec<u8>,
 }
 
+/// Information on the category being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategoryUpdateParameters {
+    // as this is the only field it is not an Option
+    /// Metadata update for the category.
     new_meta: Vec<u8>,
 }
 
+/// Type representing an owned channel which videos, playlists, and series can belong to.
+/// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelType<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
+pub struct ChannelInternal<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
+    /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    /// The category the channel belongs to
     in_category: ChannelCategoryId,
+    /// The number of videos under this channel
     number_of_videos: u32,
+    /// The number of playlists under this channel
     number_of_playlists: u32,
+    /// The number of series under this channel
     number_of_series: u32,
-    // Only curator can update..
+    /// If curators have curated this channel or not
     is_curated: bool,
-    // Balance of earnerned revenue yet to be withdrawn
+    /// Earned revenue yet to be withdrawn by channel owner
     revenue: Balance,
+    // TODO: I think we need to add these instead of the counters!
+    // videos: Vec<VideoId>, playlists: Vec<PlaylistId>, series: Vec<SeriesId>
 }
 
-pub type Channel<T> = ChannelType<
+// Channel alias type for simplification.
+pub type Channel<T> = ChannelInternal<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as Trait>::ChannelCategoryId,
@@ -183,6 +198,7 @@ pub type Channel<T> = ChannelType<
     BalanceOf<T>,
 >;
 
+/// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelOwnershipTransferRequestType<ChannelId, MemberId, CuratorGroupId, DAOId, Balance>
@@ -192,6 +208,7 @@ pub struct ChannelOwnershipTransferRequestType<ChannelId, MemberId, CuratorGroup
     payment: Balance,
 }
 
+// ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestType<
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
@@ -200,54 +217,71 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestTyp
     BalanceOf<T>,
 >;
 
+/// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParameters<ChannelCategoryId> {
+    /// ChannelCategory to enter the channel into.
     in_category: ChannelCategoryId,
+    /// Metadata about the channel.
     meta: Vec<u8>,
 }
 
+/// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParameters<ChannelCategoryId> {
+    /// If set, the new channel category to move the channel into.
     new_in_category: Option<ChannelCategoryId>,
+    /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
 }
 
-// === Videos
-
+/// A category that videos can belong to. A category will not be deleted if it contains any videos.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategory {
+    /// The number of videos in this category.
     number_of_videos_in_category: u32,
 }
 
+/// Information about the video category being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategoryCreationParameters {
+    /// Metadata about the video category.
     meta: Vec<u8>,
 }
 
+/// Information about the video category being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategoryUpdateParameters {
+    // Because it is the only field it is not an Option
+    /// Metadata update for the video category.
     new_meta: Vec<u8>,
 }
 
+/// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCreationParameters<VideoCategoryId> {
+    /// The video category the video belongs to.
     in_category: VideoCategoryId,
+    /// Metadata for the video.
     meta: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoUpdateParameters<VideoCategoryId> {
+    /// If set, the new category the video should be moved into.
     new_in_category: Option<VideoCategoryId>,
+    /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
 }
 
+/// A video which belongs in a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Video<ChannelId, SeriesId, PlaylistId> {
@@ -258,41 +292,49 @@ pub struct Video<ChannelId, SeriesId, PlaylistId> {
     in_series: Vec<SeriesId>,
     in_playlists: Vec<PlaylistId>,
 
-    // Only curator can update..
+    /// Whether the curators have curated the video or not.
     is_curated: bool,
+    /// Whether the curators have chosen to feature the video or not.
     is_featured: bool,
 }
 
-// === Playlists
+/// Information about plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistCreationParameters<VideoId> {
+    /// The full list of videos that make up the playlist.
     videos: Vec<VideoId>,
+    /// Metadata about the playlist.
     meta: Vec<u8>,
 }
 
+/// Information about the playlist being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistUpdateParameters<VideoId> {
-    // replace playlist with new collection
+    /// If set, the new full list of videos that make up the playlist.
     new_videos: Option<Vec<VideoId>>,
+    /// If set, metadata update for the playlist.
     new_meta: Option<Vec<u8>>,
 }
 
+/// A playlist is an ordered collection of videos.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Playlist<ChannelId, VideoId> {
+    /// The channel the playlist belongs to.
     in_channel: ChannelId,
-    // collection of videos that make up the playlist
+    /// The videos that make up the playlist.
     videos: Vec<VideoId>,
 }
 
-// === Series
-
+/// Information about an episode that is being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum EpisodeCreationParameters<VideoCategoryId, VideoId> {
+    /// A new video is being added as the episode.
     NewVideo(VideoCreationParameters<VideoCategoryId>),
+    /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
 
@@ -352,7 +394,7 @@ pub enum PersonActor<MemberId, CuratorId> {
     Curator(CuratorId),
 }
 
-// The authorized origin that may update or delete a Person
+/// The authorized "actor" that may update or delete a Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonController<MemberId> {
@@ -364,7 +406,8 @@ pub enum PersonController<MemberId> {
     Curators,
 }
 
-// See if there is a way to get rid of the need for PersonController enum to implement Default trait!
+// Default trait implemented only because its used in Person which needs to implement a Default trait
+// since it is a StorageValue.
 impl<MemberId> Default for PersonController<MemberId> {
     fn default() -> Self {
         PersonController::Nobody
