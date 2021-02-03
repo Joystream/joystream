@@ -13,7 +13,6 @@ pub struct ContentParameters<ContentId, DataObjectTypeId> {
     pub ipfs_content_id: Vec<u8>,
 }
 
-// TODO Reuse enum in ../working_group.rs
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum AbstractStorageObjectOwner<ChannelId, DAOId> {

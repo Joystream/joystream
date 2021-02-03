@@ -1,8 +1,8 @@
 use super::*;
 
 /// A group, that consists of `curators` set
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CuratorGroup<T: Trait> {
     /// Curators set, associated with a iven curator group
     curators: BTreeSet<T::CuratorId>,

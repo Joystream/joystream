@@ -113,8 +113,8 @@ pub trait Trait:
 
 // How new assets are to be added on creating and updating
 // Channels,Videos,Series and Person
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NewAsset<ContentParameters> {
     Upload(ContentParameters),
     Uri(Vec<u8>),
@@ -123,8 +123,8 @@ pub enum NewAsset<ContentParameters> {
 // === Channels
 
 // Must be convertible into new type StorageObjectOwner in storage system
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     /// Do not use - Default value representing empty value
     Nobody,
@@ -143,26 +143,26 @@ impl<MemberId, CuratorGroupId, DAOId> Default for ChannelOwner<MemberId, Curator
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategory {
     number_of_channels_in: u32,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategoryCreationParameters {
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategoryUpdateParameters {
     new_meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelType<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     in_category: ChannelCategoryId,
@@ -183,8 +183,8 @@ pub type Channel<T> = ChannelType<
     BalanceOf<T>,
 >;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelOwnershipTransferRequestType<ChannelId, MemberId, CuratorGroupId, DAOId, Balance>
 {
     channel_id: ChannelId,
@@ -200,15 +200,15 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestTyp
     BalanceOf<T>,
 >;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParameters<ChannelCategoryId> {
     in_category: ChannelCategoryId,
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParameters<ChannelCategoryId> {
     new_in_category: Option<ChannelCategoryId>,
     new_meta: Option<Vec<u8>>,
@@ -216,40 +216,40 @@ pub struct ChannelUpdateParameters<ChannelCategoryId> {
 
 // === Videos
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategory {
     number_of_videos_in_category: u32,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategoryCreationParameters {
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategoryUpdateParameters {
     new_meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCreationParameters<VideoCategoryId> {
     in_category: VideoCategoryId,
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoUpdateParameters<VideoCategoryId> {
     new_in_category: Option<VideoCategoryId>,
     new_meta: Option<Vec<u8>>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Video<ChannelId, SeriesId, PlaylistId> {
     in_channel: ChannelId,
     // keep track of which seasons and playlists which reference the video
@@ -264,23 +264,23 @@ pub struct Video<ChannelId, SeriesId, PlaylistId> {
 }
 
 // === Playlists
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistCreationParameters<VideoId> {
     videos: Vec<VideoId>,
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistUpdateParameters<VideoId> {
     // replace playlist with new collection
     new_videos: Option<Vec<VideoId>>,
     new_meta: Option<Vec<u8>>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Playlist<ChannelId, VideoId> {
     in_channel: ChannelId,
     // collection of videos that make up the playlist
@@ -289,72 +289,72 @@ pub struct Playlist<ChannelId, VideoId> {
 
 // === Series
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum EpisodeCreationParameters<VideoCategoryId, VideoId> {
     NewVideo(VideoCreationParameters<VideoCategoryId>),
     ExistingVideo(VideoId),
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum EpisodeUpdateParemters<VideoCategoryId, VideoId> {
     UpdateVideo(VideoUpdateParameters<VideoCategoryId>),
     ChangeExistingVideo(VideoId),
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeasonCreationParameters<VideoCategoryId, VideoId> {
     episodes: Vec<EpisodeCreationParameters<VideoCategoryId, VideoId>>,
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeasonUpdateParameters<VideoCategoryId, VideoId> {
     new_episodes: Option<Vec<Option<EpisodeUpdateParemters<VideoCategoryId, VideoId>>>>,
     new_meta: Option<Vec<u8>>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Season<VideoId> {
     episodes: Vec<VideoId>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeriesCreationParameters<VideoCategoryId, VideoId> {
     seasons: Vec<SeasonCreationParameters<VideoCategoryId, VideoId>>,
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeriesUpdateParameters<VideoCategoryId, VideoId> {
     seasons: Option<Vec<Option<SeasonUpdateParameters<VideoCategoryId, VideoId>>>>,
     new_meta: Option<Vec<u8>>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Series<ChannelId, VideoId> {
     in_channel: ChannelId,
     seasons: Vec<Season<VideoId>>,
 }
 
 // The authenticated origin for Person creation and updating calls
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonActor<MemberId, CuratorId> {
     Member(MemberId),
     Curator(CuratorId),
 }
 
 // The authorized origin that may update or delete a Person
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonController<MemberId> {
     /// Do not use - Default value representing empty value
     Nobody,
@@ -371,20 +371,20 @@ impl<MemberId> Default for PersonController<MemberId> {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PersonCreationParameters {
     meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PersonUpdateParameters {
     new_meta: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Person<MemberId> {
     controlled_by: PersonController<MemberId>,
     number_of_videos_person_involed_in: u32,
