@@ -42,7 +42,6 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -80,10 +79,6 @@ where
         let proposal = ProposalsEngine::proposals(proposal_id);
         // check for correct proposal parameters
         assert_eq!(proposal.parameters, self.proposal_parameters);
-
-        // proposal details was set
-        let details = <crate::ProposalDetailsByProposalId<Test>>::get(proposal_id);
-        assert_eq!(details, self.proposal_details);
     }
 
     pub fn check_all(&self) {
@@ -139,7 +134,6 @@ fn create_signal_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::SignalProposalParameters::get(),
-            proposal_details: signal_proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -213,7 +207,6 @@ fn create_runtime_upgrade_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::RuntimeUpgradeProposalParameters::get(),
-            proposal_details: proposal_details_upgrade.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -297,7 +290,6 @@ fn create_funding_request_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::FundingRequestProposalParameters::get(),
-            proposal_details: funding_request_proposal.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -478,7 +470,6 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
             },
             proposal_parameters:
                 <Test as crate::Trait>::SetMaxValidatorCountProposalParameters::get(),
-            proposal_details: validator_count_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -579,7 +570,6 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
             },
             proposal_parameters:
                 <Test as crate::Trait>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
-            proposal_details: add_leader_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -650,7 +640,6 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             },
             proposal_parameters:
                 <Test as crate::Trait>::FillWorkingGroupLeadOpeningProposalParameters::get(),
-            proposal_details: fill_opening_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -713,7 +702,6 @@ fn run_create_update_working_group_budget_proposal_common_checks_succeed(
             },
             proposal_parameters:
                 <Test as crate::Trait>::UpdateWorkingGroupBudgetProposalParameters::get(),
-            proposal_details: budget_capacity_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -779,7 +767,6 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             },
             proposal_parameters:
                 <Test as crate::Trait>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
-            proposal_details: decrease_lead_stake_details_success.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -844,7 +831,6 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             },
             proposal_parameters:
                 <Test as crate::Trait>::SlashWorkingGroupLeadProposalParameters::get(),
-            proposal_details: slash_lead_details_success.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1027,7 +1013,6 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             },
             proposal_parameters:
                 <Test as crate::Trait>::SlashWorkingGroupLeadProposalParameters::get(),
-            proposal_details: set_lead_reward_details_success.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1096,7 +1081,6 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             },
             proposal_parameters:
                 <Test as crate::Trait>::TerminateWorkingGroupLeadProposalParameters::get(),
-            proposal_details: terminate_lead_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1149,7 +1133,6 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::AmendConstitutionProposalParameters::get(),
-            proposal_details: amend_constitution_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1202,7 +1185,6 @@ fn create_set_council_budget_increment_common_checks_succeed() {
             },
             proposal_parameters:
                 <Test as crate::Trait>::SetCouncilBudgetIncrementProposalParameters::get(),
-            proposal_details: set_council_budget_increment_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1264,7 +1246,6 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
             },
             proposal_parameters:
                 <Test as crate::Trait>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
-            proposal_details: cancel_opening_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1318,7 +1299,6 @@ fn create_set_councilor_reward_proposal_common_checks_succeed() {
             },
             proposal_parameters: <Test as crate::Trait>::SetCouncilorRewardProposalParameters::get(
             ),
-            proposal_details: set_councilor_reward_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1372,7 +1352,6 @@ fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
             },
             proposal_parameters:
                 <Test as crate::Trait>::SetInitialInvitationBalanceProposalParameters::get(),
-            proposal_details: set_initial_invitation_balance_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1425,7 +1404,6 @@ fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
             },
             proposal_parameters: <Test as crate::Trait>::SetInvitationCountProposalParameters::get(
             ),
-            proposal_details: set_initial_invitation_count_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1479,7 +1457,6 @@ fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
             },
             proposal_parameters:
                 <Test as crate::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get(),
-            proposal_details: set_membership_lead_invitation_quota.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -1531,7 +1508,6 @@ fn create_set_referral_cut_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::SetReferralCutProposalParameters::get(),
-            proposal_details: set_referral_cut_proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
