@@ -21,6 +21,8 @@ mod benchmarking;
 // TODO: add max entries limit
 // TODO: benchmark all bounty creation parameters
 // TODO: add assertion for the created bounty object content
+// TODO: use Bounty instead of Module in benchmarking
+// TODO: add more fine-grained errors.
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -381,8 +383,13 @@ decl_module! {
 
             bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
+            // TODO: ensure no funding
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             // TODO: ensure no funding
+            ensure!(
+                !Self::bounty_funding_started(&bounty_id),
+                Error::<T>::InvalidBountyStage,
+            );
 
             ensure!(
                 matches!(current_bounty_stage, BountyStage::Funding),
@@ -414,8 +421,13 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
+            // TODO: ensure no funding
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             // TODO: ensure no funding
+            ensure!(
+                !Self::bounty_funding_started(&bounty_id),
+                Error::<T>::InvalidBountyStage,
+            );
 
             ensure!(
                 matches!(current_bounty_stage, BountyStage::Funding),
@@ -773,5 +785,13 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    // Verifies that bounty has some funding.
+    fn bounty_funding_started(bounty_id: &T::BountyId) -> bool {
+        <Funding<T>>::iter_prefix_values(bounty_id)
+            .peekable()
+            .peek()
+            .is_some()
     }
 }

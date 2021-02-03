@@ -273,12 +273,39 @@ fn cancel_bounty_fails_with_invalid_origin() {
 #[test]
 fn cancel_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        // Test already cancelled bounty.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+
+        // Test bounty that was funded.
+        let max_amount = 500;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 2u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Ok(()));
 
         CancelBountyFixture::default()
@@ -337,12 +364,39 @@ fn veto_bounty_fails_with_invalid_origin() {
 #[test]
 fn veto_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        // Test already vetoed bounty.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+
+        // Test bounty that was funded.
+        let max_amount = 500;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 2u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Ok(()));
 
         VetoBountyFixture::default()
@@ -581,11 +635,14 @@ fn withdraw_member_funding_succeeds() {
         let account_id = 1;
         let member_id = 1;
         let initial_balance = 500;
+        let funding_period = 10;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -595,6 +652,8 @@ fn withdraw_member_funding_succeeds() {
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + starting_block + 1);
 
         WithdrawMemberFundingFixture::default()
             .with_bounty_id(bounty_id)
