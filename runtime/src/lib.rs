@@ -450,6 +450,18 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
 
+impl common::MembershipTypes for Runtime {
+    type MemberId = MemberId;
+    type ActorId = ActorId;
+}
+
+impl common::StorageOwnership for Runtime {
+    type ChannelId = ChannelId;
+    type DAOId = DAOId;
+    type ContentId = ContentId;
+    type DataObjectTypeId = DataObjectTypeId;
+}
+
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
@@ -470,12 +482,10 @@ parameter_types! {
 
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
-    type DataObjectTypeId = u64;
 }
 
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
-    type ContentId = ContentId;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;

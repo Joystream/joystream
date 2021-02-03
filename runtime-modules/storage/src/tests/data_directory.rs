@@ -11,14 +11,28 @@ fn succeed_adding_content() {
     with_default_mock_builder(|| {
         let sender = 1u64;
         let member_id = 1u64;
+
+        let first_content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        let second_content_parameters = ContentParameters {
+            content_id: 2,
+            type_id: 2,
+            size: 20,
+            ipfs_content_id: vec![1, 2, 7, 9],
+        };
+
+        let multi_content = vec![first_content_parameters, second_content_parameters];
+
         // Register a content with 1234 bytes of type 1, which should be recognized.
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            1,
-            1234,
-            0,
-            vec![1, 3, 3, 7],
+            multi_content,
         );
         assert!(res.is_ok());
     });
@@ -28,14 +42,19 @@ fn succeed_adding_content() {
 fn add_content_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
         let member_id = 1u64;
+
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
         // Register a content with 1234 bytes of type 1, which should be recognized.
         let res = TestDataDirectory::add_content_as_member(
             RawOrigin::Root.into(),
             member_id,
-            1,
-            1234,
-            0,
-            vec![1, 3, 3, 7],
+            vec![content_parameters],
         );
         assert_eq!(res, Err(DispatchError::Other("Bad origin")));
     });
@@ -54,19 +73,23 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
         let sender = 1u64;
         let member_id = 1u64;
 
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            1,
-            1234,
-            0,
-            vec![1, 2, 3, 4],
+            vec![content_parameters],
         );
         assert!(res.is_ok());
 
-        let content_id = match System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, _)) => {
-                content_id
+        let content_id = match &System::events().last().unwrap().event {
+            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content, _)) => {
+                content[0].content_id
             }
             _ => 0u64,
         };
@@ -103,22 +126,25 @@ fn accept_content_as_liaison() {
         let sender = 1u64;
         let member_id = 1u64;
 
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            1,
-            1234,
-            0,
-            vec![1, 2, 3, 4],
+            vec![content_parameters],
         );
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
         let (content_id, creator) = match &System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
-                content_id,
-                creator,
-            )) => (*content_id, creator.clone()),
+            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content, creator)) => {
+                (content[0].content_id, creator.clone())
+            }
             _ => (0u64, StorageObjectOwner::Member(0xdeadbeefu64)), // invalid value, unlikely to match
         };
         assert_ne!(creator, StorageObjectOwner::Member(0xdeadbeefu64));
@@ -154,22 +180,25 @@ fn reject_content_as_liaison() {
         let sender = 1u64;
         let member_id = 1u64;
 
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: 0,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            1,
-            1234,
-            0,
-            vec![1, 2, 3, 4],
+            vec![content_parameters],
         );
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
         let (content_id, creator) = match &System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
-                content_id,
-                creator,
-            )) => (*content_id, creator.clone()),
+            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content, creator)) => {
+                (content[0].content_id, creator.clone())
+            }
             _ => (0u64, StorageObjectOwner::Member(0xdeadbeefu64)), // invalid value, unlikely to match
         };
         assert_ne!(creator, StorageObjectOwner::Member(0xdeadbeefu64));
@@ -248,24 +277,32 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
         let content_id_1 = 1;
         let content_id_2 = 2;
 
+        let content_parameters_first = ContentParameters {
+            content_id: content_id_1,
+            type_id: 1,
+            size: 10,
+            ipfs_content_id: vec![8, 8, 8, 8],
+        };
+
+        let content_parameters_second = ContentParameters {
+            content_id: content_id_2,
+            type_id: 2,
+            size: 20,
+            ipfs_content_id: vec![9, 9, 9, 9],
+        };
+
         // Start with some existing objects in directory which will be
         // overwritten
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            content_id_1,
-            1,
-            10,
-            vec![8, 8, 8, 8],
+            vec![content_parameters_first],
         );
         assert!(res.is_ok());
         let res = TestDataDirectory::add_content_as_member(
             Origin::signed(sender),
             member_id,
-            content_id_2,
-            2,
-            20,
-            vec![9, 9, 9, 9],
+            vec![content_parameters_second],
         );
         assert!(res.is_ok());
 

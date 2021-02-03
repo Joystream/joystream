@@ -11,8 +11,9 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-pub use crate::data_directory::StorageObjectOwner;
+pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
+use crate::ContentId;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use common::currency::GovernanceCurrency;
@@ -60,12 +61,12 @@ impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataO
 
 pub struct MockContent {}
 impl ContentIdExists<Test> for MockContent {
-    fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
+    fn has_content(which: &ContentId<Test>) -> bool {
         *which == TEST_MOCK_EXISTING_CID
     }
 
     fn get_data_object(
-        which: &<Test as data_directory::Trait>::ContentId,
+        which: &ContentId<Test>,
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
@@ -130,6 +131,18 @@ impl pallet_timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+impl common::StorageOwnership for Test {
+    type ChannelId = u64;
+    type DAOId = u64;
+    type ContentId = u64;
+    type DataObjectTypeId = u64;
+}
+
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const StakePoolId: [u8; 8] = *b"joystake";
@@ -158,12 +171,10 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
 
 impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
-    type DataObjectTypeId = u64;
 }
 
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
-    type ContentId = u64;
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
