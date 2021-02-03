@@ -5,8 +5,8 @@ decl_error! {
     /// Content directory errors
     pub enum Error for Module<T: Trait> {
 
-        /// Curator Management Errors
-        /// --------------------------------------
+        // Curator Management Errors
+        // -------------------------
 
         /// Curator group can`t be removed
         CuratorGroupRemovalForbidden,
@@ -20,6 +20,18 @@ decl_error! {
         /// Given curator group does not exist
         CuratorGroupDoesNotExist,
 
+        /// Max number of curators per group limit reached
+        CuratorsPerGroupLimitReached,
+
+        /// Curator group is not active
+        CuratorGroupIsNotActive,
+
+        // Authentication Errors
+        // ---------------------
+
+        /// Origin cannot be made into raw origin
+        OriginCanNotBeMadeIntoRawOrigin,
+
         /// Lead authentication failed
         LeadAuthFailed,
 
@@ -31,14 +43,5 @@ decl_error! {
 
         /// Expected root or signed origin
         BadOrigin,
-
-        /// Max number of curators per group limit reached
-        CuratorsPerGroupLimitReached,
-
-        /// Curator group is not active
-        CuratorGroupIsNotActive,
-
-        /// Origin cannot be made into raw origin
-        OriginCanNotBeMadeIntoRawOrigin,
     }
 }
