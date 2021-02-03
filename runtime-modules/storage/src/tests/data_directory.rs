@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use common::storage::StorageObjectOwner;
 use frame_support::dispatch::DispatchError;
 use sp_std::collections::btree_map::BTreeMap;
 use system::RawOrigin;
@@ -10,7 +11,7 @@ use super::mock::*;
 fn succeed_adding_content() {
     with_default_mock_builder(|| {
         let sender = 1u64;
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
 
         let first_content_parameters = ContentParameters {
             content_id: 1,
@@ -29,11 +30,7 @@ fn succeed_adding_content() {
         let multi_content = vec![first_content_parameters, second_content_parameters];
 
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        let res = TestDataDirectory::add_content_as_member(
-            Origin::signed(sender),
-            member_id,
-            multi_content,
-        );
+        let res = TestDataDirectory::add_content(Origin::signed(sender), owner, multi_content);
         assert!(res.is_ok());
     });
 }
@@ -41,7 +38,7 @@ fn succeed_adding_content() {
 #[test]
 fn add_content_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
 
         let content_parameters = ContentParameters {
             content_id: 1,
@@ -51,11 +48,8 @@ fn add_content_fails_with_invalid_origin() {
         };
 
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        let res = TestDataDirectory::add_content_as_member(
-            RawOrigin::Root.into(),
-            member_id,
-            vec![content_parameters],
-        );
+        let res =
+            TestDataDirectory::add_content(RawOrigin::Root.into(), owner, vec![content_parameters]);
         assert_eq!(res, Err(DispatchError::Other("Bad origin")));
     });
 }
@@ -71,7 +65,7 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
         run_to_block(1);
 
         let sender = 1u64;
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
 
         let content_parameters = ContentParameters {
             content_id: 1,
@@ -80,11 +74,8 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
-        let res = TestDataDirectory::add_content_as_member(
-            Origin::signed(sender),
-            member_id,
-            vec![content_parameters],
-        );
+        let res =
+            TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
         assert!(res.is_ok());
 
         let content_id = match &System::events().last().unwrap().event {
@@ -124,7 +115,7 @@ fn accept_content_as_liaison() {
         run_to_block(1);
 
         let sender = 1u64;
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
 
         let content_parameters = ContentParameters {
             content_id: 1,
@@ -133,11 +124,8 @@ fn accept_content_as_liaison() {
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
-        let res = TestDataDirectory::add_content_as_member(
-            Origin::signed(sender),
-            member_id,
-            vec![content_parameters],
-        );
+        let res =
+            TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
@@ -178,7 +166,7 @@ fn reject_content_as_liaison() {
         run_to_block(1);
 
         let sender = 1u64;
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
 
         let content_parameters = ContentParameters {
             content_id: 1,
@@ -187,11 +175,8 @@ fn reject_content_as_liaison() {
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
-        let res = TestDataDirectory::add_content_as_member(
-            Origin::signed(sender),
-            member_id,
-            vec![content_parameters],
-        );
+        let res =
+            TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
@@ -273,7 +258,7 @@ fn data_object_injection_works() {
 fn data_object_injection_overwrites_and_removes_duplicate_ids() {
     with_default_mock_builder(|| {
         let sender = 1u64;
-        let member_id = 1u64;
+        let owner = StorageObjectOwner::Member(1u64);
         let content_id_1 = 1;
         let content_id_2 = 2;
 
@@ -293,15 +278,15 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
 
         // Start with some existing objects in directory which will be
         // overwritten
-        let res = TestDataDirectory::add_content_as_member(
+        let res = TestDataDirectory::add_content(
             Origin::signed(sender),
-            member_id,
+            owner,
             vec![content_parameters_first],
         );
         assert!(res.is_ok());
-        let res = TestDataDirectory::add_content_as_member(
+        let res = TestDataDirectory::add_content(
             Origin::signed(sender),
-            member_id,
+            owner,
             vec![content_parameters_second],
         );
         assert!(res.is_ok());

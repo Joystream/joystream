@@ -33,7 +33,7 @@ use system::ensure_root;
 use serde::{Deserialize, Serialize};
 
 use common::origin::ActorOriginValidator;
-pub use common::storage::{AbstractStorageObjectOwner, ContentParameters, StorageObjectOwner};
+pub use common::storage::{ContentParameters, StorageObjectOwner};
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
@@ -263,50 +263,24 @@ decl_module! {
         /// Maximum objects allowed per inject_data_objects() transaction
         const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
-        /// Adds the content to the system. Member id should match its origin. The created DataObject
-        /// awaits liaison to accept or reject it.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_content_as_member(
-            origin,
-            member_id: MemberId<T>,
-            content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>
-        ) {
-            T::MemberOriginValidator::ensure_actor_origin(
-                origin,
-                member_id,
-            )?;
-
-            let owner = StorageObjectOwner::Member(member_id);
-
-            Self::ensure_content_is_valid(&content)?;
-
-            let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
-
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Let's create the entry then
-            Self::upload_content(new_quota, liaison, content.clone(), owner.clone());
-
-            Self::deposit_event(RawEvent::ContentAdded(content, owner));
-        }
-
-        /// Adds the content to the system. Requires root privileges. The created DataObject
+        /// Adds the content to the system. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
-            abstract_owner: AbstractStorageObjectOwner<ChannelId<T>, DAOId<T>>,
+            owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
             content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
-            ensure_root(origin)?;
+            if let StorageObjectOwner::Member(member_id) = owner {
+                T::MemberOriginValidator::ensure_actor_origin(
+                    origin,
+                    member_id,
+                )?;
+            } else {
+                ensure_root(origin)?;
+            };
 
             Self::ensure_content_is_valid(&content)?;
-
-            let owner = StorageObjectOwner::AbstractStorageObjectOwner(abstract_owner);
 
             let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
 
