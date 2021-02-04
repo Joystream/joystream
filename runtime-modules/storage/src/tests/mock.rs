@@ -11,6 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
+use crate::data_directory::Quota;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
@@ -96,7 +97,12 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
-    pub const DefaultQuotaLimit: u32 = 50;
+    pub const DefaultQuota: Quota = Quota {
+        size_limit: 5000,
+        objects_limit: 500,
+        size_used: 0,
+        objects_used: 0
+    };
 }
 
 impl system::Trait for Test {
@@ -180,7 +186,7 @@ impl data_directory::Trait for Test {
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
-    type DefaultQuotaLimit = DefaultQuotaLimit;
+    type DefaultQuota = DefaultQuota;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
