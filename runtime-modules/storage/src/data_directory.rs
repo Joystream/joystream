@@ -193,6 +193,16 @@ pub struct Quota {
 }
 
 impl Quota {
+    /// Create new quota with provided size & objects limits
+    pub const fn new(size_limit: u64, objects_limit: u64) -> Self {
+        Self {
+            size_limit,
+            objects_limit,
+            size_used: 0,
+            objects_used: 0,
+        }
+    }
+
     /// Calculate free quota
     pub fn calculate_delta(&self) -> Delta {
         Delta {

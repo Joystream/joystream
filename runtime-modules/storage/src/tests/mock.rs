@@ -97,12 +97,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
-    pub const DefaultQuota: Quota = Quota {
-        size_limit: 5000,
-        objects_limit: 50,
-        size_used: 0,
-        objects_used: 0
-    };
+    pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
 impl system::Trait for Test {
@@ -258,12 +253,7 @@ impl Default for ExtBuilder {
         Self {
             quota_objects_limit_upper_bound: 200,
             quota_size_limit_upper_bound: 20000,
-            global_quota: Quota {
-                size_limit: 2000000,
-                objects_limit: 2000,
-                size_used: 0,
-                objects_used: 0,
-            },
+            global_quota: Quota::new(2000000, 2000),
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
