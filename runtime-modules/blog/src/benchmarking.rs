@@ -1,12 +1,17 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use frame_benchmarking::{benchmarks_instance, Zero};
+use balances::Module as Balances;
+use frame_benchmarking::{account, benchmarks_instance, Zero};
+use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
+use membership::Module as Membership;
+use sp_runtime::traits::Bounded;
 use sp_std::convert::TryInto;
 use Module as Blog;
 
 const MAX_BYTES: u32 = 16384;
+const SEED: u32 = 0;
 
 fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
     let events = System::<T>::events();
@@ -19,20 +24,72 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-fn get_blog_owner<T: Trait<I>, I: Instance>() -> T::AccountId {
-    T::AccountId::default()
+fn get_byte(num: u32, byte_number: u8) -> u8 {
+    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
 
-fn generate_post<T: Trait<I>, I: Instance>() -> (T::AccountId, T::PostId) {
-    let caller_id = get_blog_owner::<T, I>();
-    assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
+fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: Instance>(
+    name: &'static str,
+    id: u32,
+) -> (T::AccountId, T::MemberId) {
+    let account_id = account::<T::AccountId>(name, id, SEED);
+    let handle = handle_from_id::<T>(id);
 
-    Blog::<T, I>::create_post(
-        RawOrigin::Signed(caller_id.clone()).into(),
-        vec![0u8],
-        vec![0u8],
+    let _ = Balances::<T>::make_free_balance_be(
+        &account_id,
+        <T as balances::Trait>::Balance::max_value(),
+    );
+
+    let params = membership::BuyMembershipParameters {
+        root_account: account_id.clone(),
+        controller_account: account_id.clone(),
+        name: None,
+        handle: Some(handle),
+        avatar_uri: None,
+        about: None,
+        referrer_id: None,
+    };
+
+    Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
+
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
     )
     .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
+
+    (account_id, member_id)
+}
+
+// Method to generate a distintic valid handle
+// for a membership. For each index.
+fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+    let min_handle_length = 1;
+
+    let mut handle = vec![];
+
+    for i in 0..4 {
+        handle.push(get_byte(id, i));
+    }
+
+    while handle.len() < (min_handle_length as usize) {
+        handle.push(0u8);
+    }
+
+    handle
+}
+
+fn generate_post<T: Trait<I>, I: Instance>() -> T::PostId {
+    assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
+
+    Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
 
     let post_id = T::PostId::zero();
 
@@ -40,16 +97,23 @@ fn generate_post<T: Trait<I>, I: Instance>() -> (T::AccountId, T::PostId) {
 
     assert!(Blog::<T, I>::post_by_id(post_id) == Post::<T, I>::new(vec![0u8], vec![0u8]));
 
-    (caller_id, post_id)
+    post_id
 }
 
 fn generate_reply<T: Trait<I>, I: Instance>(
     creator_id: T::AccountId,
+    participant_id: ParticipantId<T>,
     post_id: T::PostId,
 ) -> T::ReplyId {
     let creator_origin = RawOrigin::Signed(creator_id);
-    let participant_id = Blog::<T, I>::get_participant(creator_origin.clone().into()).unwrap();
-    Blog::<T, I>::create_reply(creator_origin.clone().into(), post_id, None, vec![0u8]).unwrap();
+    Blog::<T, I>::create_reply(
+        creator_origin.clone().into(),
+        participant_id,
+        post_id,
+        None,
+        vec![0u8],
+    )
+    .unwrap();
 
     assert!(
         Blog::<T, I>::reply_by_id(post_id, T::ReplyId::zero())
@@ -60,14 +124,16 @@ fn generate_reply<T: Trait<I>, I: Instance>(
 }
 
 benchmarks_instance! {
+    where_clause { where T: balances::Trait, T: membership::Trait }
+
     _ {}
+
     create_post {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
-        let caller_id = get_blog_owner::<T, I>();
         assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
 
-    }:_(RawOrigin::Signed(caller_id), vec![0u8; t.try_into().unwrap()], vec![0u8; b.try_into().unwrap()])
+    }:_(RawOrigin::Root, vec![0u8; t.try_into().unwrap()], vec![0u8; b.try_into().unwrap()])
     verify {
         assert_eq!(Blog::<T, I>::post_count(), One::one());
 
@@ -80,18 +146,18 @@ benchmarks_instance! {
     }
 
     lock_post {
-        let (creator_id, post_id) = generate_post::<T, I>();
-    }: _(RawOrigin::Signed(creator_id), post_id)
+        let post_id = generate_post::<T, I>();
+    }: _(RawOrigin::Root, post_id)
     verify {
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
         assert_last_event::<T, I>(RawEvent::PostLocked(post_id).into());
     }
 
     unlock_post {
-        let (creator_id, post_id) = generate_post::<T, I>();
-        Blog::<T, I>::lock_post(RawOrigin::Signed(creator_id.clone()).into(), post_id).unwrap();
+        let post_id = generate_post::<T, I>();
+        Blog::<T, I>::lock_post(RawOrigin::Root.into(), post_id).unwrap();
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
-    }: _(RawOrigin::Signed(creator_id), post_id)
+    }: _(RawOrigin::Root, post_id)
     verify {
         assert!(!Blog::<T, I>::post_by_id(post_id).is_locked());
         assert_last_event::<T, I>(RawEvent::PostUnlocked(post_id).into());
@@ -101,9 +167,9 @@ benchmarks_instance! {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
 
-        let (creator_id, post_id) = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>();
     }: _(
-        RawOrigin::Signed(creator_id),
+        RawOrigin::Root,
         post_id,
         Some(vec![1u8; t.try_into().unwrap()]),
         Some(vec![1u8; b.try_into().unwrap()])
@@ -114,23 +180,23 @@ benchmarks_instance! {
             Post::<T, I>::new(vec![1u8; t.try_into().unwrap()], vec![1u8; b.try_into().unwrap()])
         );
         assert_last_event::<T, I>(RawEvent::PostEdited(post_id).into());
-
     }
 
     create_reply_to_post {
         let t in 0 .. MAX_BYTES;
 
-        let (creator_id, post_id) = generate_post::<T, I>();
-        let creator_origin = RawOrigin::Signed(creator_id);
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let origin = RawOrigin::Signed(account_id);
     }: create_reply(
-        creator_origin.clone(),
+        origin.clone(),
+        participant_id,
         post_id,
         None,
         vec![0u8; t.try_into().unwrap()]
     )
     verify {
         let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
-        let participant_id = Blog::<T, I>::get_participant(creator_origin.into()).unwrap();
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
         assert!(
@@ -148,22 +214,21 @@ benchmarks_instance! {
     create_reply_to_reply {
         let t in 0 .. MAX_BYTES;
 
-        let (creator_id, post_id) = generate_post::<T, I>();
-        let reply_id = generate_reply::<T, I>(creator_id.clone(), post_id.clone());
-        let creator_origin = RawOrigin::Signed(creator_id);
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let origin = RawOrigin::Signed(account_id);
         let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
     }: create_reply(
-        creator_origin.clone(),
+        origin.clone(),
+        participant_id,
         post_id,
         Some(reply_id),
         vec![0u8; t.try_into().unwrap()]
     )
     verify {
-        let participant_id = Blog::<T, I>::get_participant(
-            creator_origin.clone().into()
-        ).unwrap();
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
         assert!(
@@ -183,19 +248,18 @@ benchmarks_instance! {
     edit_reply {
         let t in 0 .. MAX_BYTES;
 
-        let (creator_id, post_id) = generate_post::<T, I>();
-        let reply_id = generate_reply::<T, I>(creator_id.clone(), post_id.clone());
-        let creator_origin = RawOrigin::Signed(creator_id);
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let origin = RawOrigin::Signed(account_id);
     }: _(
-        creator_origin.clone(),
+        origin.clone(),
+        participant_id,
         post_id,
         reply_id,
         vec![1u8; t.try_into().unwrap()]
     )
     verify {
-        let participant_id = Blog::<T, I>::get_participant(
-            creator_origin.clone().into()
-        ).unwrap();
         assert_eq!(
             Blog::<T, I>::reply_by_id(post_id, reply_id).text_hash,
             T::Hashing::hash(&vec![1u8; t.try_into().unwrap()])
@@ -213,37 +277,37 @@ benchmarks_instance! {
     }
 
     react_to_post {
-        let (creator_id, post_id) = generate_post::<T, I>();
-        let creator_origin = RawOrigin::Signed(creator_id);
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let origin = RawOrigin::Signed(account_id);
     }: react(
-        creator_origin.clone(),
+        origin.clone(),
+        participant_id,
         0,
         post_id,
         None
         )
     verify {
-        let owner = Blog::<T, I>::get_participant(
-            creator_origin.clone().into()
-        ).unwrap();
-        assert_last_event::<T, I>(RawEvent::PostReactionsUpdated(owner, post_id, 0).into());
+        assert_last_event::<T, I>(
+            RawEvent::PostReactionsUpdated(participant_id, post_id, 0).into()
+        );
     }
 
     react_to_reply {
-        let (creator_id, post_id) = generate_post::<T, I>();
-        let reply_id = generate_reply::<T, I>(creator_id.clone(), post_id.clone());
-        let creator_origin = RawOrigin::Signed(creator_id);
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let origin = RawOrigin::Signed(account_id);
     }: react(
-        creator_origin.clone(),
+        origin.clone(),
+        participant_id,
         0,
         post_id,
         Some(reply_id)
     )
     verify {
-        let owner = Blog::<T, I>::get_participant(
-            creator_origin.clone().into()
-        ).unwrap();
         assert_last_event::<T, I>(
-            RawEvent::ReplyReactionsUpdated(owner, post_id, reply_id, 0).into()
+            RawEvent::ReplyReactionsUpdated(participant_id, post_id, reply_id, 0).into()
         );
     }
 }

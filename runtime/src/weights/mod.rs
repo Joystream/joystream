@@ -24,6 +24,7 @@ pub mod pallet_timestamp;
 pub mod pallet_utility;
 
 // Joystream pallets
+pub mod blog;
 pub mod council;
 pub mod forum;
 pub mod membership;

@@ -65,7 +65,7 @@ fn post_creation_success() {
         let number_of_events_before_call = System::events().len();
 
         // Create post
-        assert_ok!(create_post(FIRST_OWNER_ORIGIN));
+        assert_ok!(create_post(Origin::root()));
 
         // Check related state after extrinsic performed
 
@@ -89,7 +89,7 @@ fn post_creation_blog_ownership_error() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let create_result = create_post(SECOND_OWNER_ORIGIN);
+        let create_result = create_post(Origin::signed(SECOND_OWNER_ORIGIN));
 
         // Check if related runtime storage left unchanged
         // assert!(post_storage_unchanged(FIRST_ID, FIRST_ID));
@@ -110,7 +110,7 @@ fn post_creation_limit_reached() {
             // Events number before tested call
             let number_of_events_before_call = System::events().len();
 
-            if let Err(create_post_err) = create_post(FIRST_OWNER_ORIGIN) {
+            if let Err(create_post_err) = create_post(Origin::root()) {
                 // Post counter & post max number contraint equality checked
                 assert_eq!(post_count(), PostsMaxNumber::get());
 
@@ -129,7 +129,7 @@ fn post_creation_limit_reached() {
 #[test]
 fn post_locking_success() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let post = post_by_id(FIRST_ID).unwrap();
 
@@ -139,7 +139,7 @@ fn post_locking_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        assert_ok!(lock_post(FIRST_OWNER_ORIGIN, FIRST_ID));
+        assert_ok!(lock_post(Origin::root(), FIRST_ID));
 
         // Check related state after extrinsic performed
 
@@ -160,7 +160,7 @@ fn post_locking_post_not_found() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let lock_result = lock_post(FIRST_OWNER_ORIGIN, FIRST_ID);
+        let lock_result = lock_post(Origin::root(), FIRST_ID);
 
         // Failure checked
         assert_failure(
@@ -174,12 +174,12 @@ fn post_locking_post_not_found() {
 #[test]
 fn post_locking_ownership_error() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let lock_result = lock_post(SECOND_OWNER_ORIGIN, FIRST_ID);
+        let lock_result = lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
 
         // Check related state after extrinsic performed
 
@@ -200,10 +200,10 @@ fn post_locking_ownership_error() {
 #[test]
 fn post_unlocking_success() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock post firstly
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Check related state before extrinsic performed
         let post = post_by_id(FIRST_ID).unwrap();
@@ -213,7 +213,7 @@ fn post_unlocking_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        assert_ok!(unlock_post(FIRST_OWNER_ORIGIN, FIRST_ID));
+        assert_ok!(unlock_post(Origin::root(), FIRST_ID));
 
         // Check related state after extrinsic performed
         let post = post_by_id(FIRST_ID).unwrap();
@@ -230,15 +230,15 @@ fn post_unlocking_success() {
 #[test]
 fn post_unlocking_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock post firstly
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let unlock_result = unlock_post(SECOND_OWNER_ORIGIN, FIRST_ID);
+        let unlock_result = unlock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
 
         // Check related state after extrinsic performed
         let post = post_by_id(FIRST_ID).unwrap();
@@ -262,7 +262,7 @@ fn post_unlocking_post_not_found() {
         let number_of_events_before_call = System::events().len();
 
         // Try to unlock not existing post
-        let unlock_result = unlock_post(FIRST_OWNER_ORIGIN, FIRST_ID);
+        let unlock_result = unlock_post(Origin::root(), FIRST_ID);
 
         // Failure checked
         assert_failure(
@@ -276,15 +276,15 @@ fn post_unlocking_post_not_found() {
 #[test]
 fn post_unlocking_ownership_error() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock post firstly
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let unlock_result = unlock_post(SECOND_OWNER_ORIGIN, FIRST_ID);
+        let unlock_result = unlock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
 
         // Check related state after extrinsic performed
         let post = post_by_id(FIRST_ID).unwrap();
@@ -305,12 +305,12 @@ fn post_unlocking_ownership_error() {
 fn post_editing_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        assert_ok!(edit_post(FIRST_OWNER_ORIGIN, FIRST_ID));
+        assert_ok!(edit_post(Origin::root(), FIRST_ID));
 
         // Post after editing checked
         let post_after_editing = post_by_id(FIRST_ID);
@@ -327,12 +327,12 @@ fn post_editing_success() {
 #[test]
 fn post_editing_ownership_error() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FIRST_ID);
+        let edit_result = edit_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
 
         // Remain unedited
         let post = post_by_id(FIRST_ID);
@@ -356,7 +356,7 @@ fn post_editing_post_not_found() {
         let number_of_events_before_call = System::events().len();
 
         // Try to unlock not existing post
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FIRST_ID);
+        let edit_result = edit_post(Origin::root(), FIRST_ID);
 
         // Failure checked
         assert_failure(
@@ -370,15 +370,15 @@ fn post_editing_post_not_found() {
 #[test]
 fn post_editing_post_locked_error() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock post to make all related data immutable
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FIRST_ID);
+        let edit_result = edit_post(Origin::root(), FIRST_ID);
 
         // Remain unedited
         let post = post_by_id(FIRST_ID);
@@ -400,14 +400,19 @@ fn post_editing_post_locked_error() {
 fn reply_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        assert_ok!(create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None));
+        assert_ok!(create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None
+        ));
 
         // Check reply related state after extrinsic performed
 
@@ -435,16 +440,26 @@ fn reply_creation_success() {
 fn direct_reply_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
         let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
-        assert_ok!(create_reply(FIRST_OWNER_ORIGIN, FIRST_ID, None));
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None
+        ));
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
         // Create reply for direct replying
-        assert_ok!(create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, Some(FIRST_ID)));
+        assert_ok!(create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            Some(FIRST_ID)
+        ));
 
         // Check reply related state after extrinsic performed
 
@@ -470,15 +485,20 @@ fn direct_reply_creation_success() {
 #[test]
 fn reply_creation_post_locked_error() {
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock post to make all related data immutable
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None);
+        let reply_creation_result = create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        );
 
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(FIRST_ID, FIRST_ID));
@@ -498,7 +518,12 @@ fn reply_creation_post_not_found() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None);
+        let reply_creation_result = create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        );
 
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(FIRST_ID, FIRST_ID));
@@ -516,11 +541,16 @@ fn reply_creation_post_not_found() {
 fn reply_creation_limit_reached() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
         loop {
             // Events number before tested call
             let number_of_events_before_call = System::events().len();
-            if let Err(create_reply_err) = create_reply(FIRST_OWNER_ORIGIN, FIRST_ID, None) {
+            if let Err(create_reply_err) = create_reply(
+                FIRST_OWNER_ORIGIN,
+                FIRST_OWNER_PARTICIPANT_ID,
+                FIRST_ID,
+                None,
+            ) {
                 let post = post_by_id(FIRST_ID).unwrap();
 
                 // Root post replies counter & reply root max number contraint equality checked
@@ -542,13 +572,18 @@ fn reply_creation_limit_reached() {
 fn direct_reply_creation_reply_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
         // Attempt to create direct reply for nonexistent reply
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, Some(FIRST_ID));
+        let reply_creation_result = create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            Some(FIRST_ID),
+        );
 
         // Check if related runtime storage left unchanged
         assert!(replies_storage_unchanged(FIRST_ID, SECOND_ID));
@@ -566,16 +601,28 @@ fn direct_reply_creation_reply_not_found() {
 fn reply_editing_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
-        create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None).unwrap();
+        create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        )
+        .unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        edit_reply(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID).unwrap();
+        edit_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        )
+        .unwrap();
 
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
@@ -592,19 +639,30 @@ fn reply_editing_success() {
 fn reply_editing_post_locked_error() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
-        create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None).unwrap();
+        create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        )
+        .unwrap();
 
         // Lock blog to make all related data immutable
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let reply_editing_result = edit_reply(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID);
+        let reply_editing_result = edit_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        );
 
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
@@ -625,12 +683,17 @@ fn reply_editing_post_locked_error() {
 fn reply_editing_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let reply_editing_result = edit_reply(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID);
+        let reply_editing_result = edit_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        );
 
         // Failure checked
         assert_failure(
@@ -645,16 +708,27 @@ fn reply_editing_not_found() {
 fn reply_editing_ownership_error() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
-        create_reply(SECOND_OWNER_ORIGIN, FIRST_ID, None).unwrap();
+        create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        )
+        .unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let reply_editing_result = edit_reply(FIRST_OWNER_ORIGIN, FIRST_ID, FIRST_ID);
+        let reply_editing_result = edit_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        );
 
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
@@ -672,12 +746,68 @@ fn reply_editing_ownership_error() {
 }
 
 #[test]
+fn reply_participant_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        let number_of_events_before_call = System::events().len();
+
+        let reply_result = create_reply(SECOND_OWNER_ORIGIN, BAD_MEMBER_ID, FIRST_ID, None);
+
+        // Failure checked
+        assert_failure(
+            reply_result,
+            Error::MembershipError,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reply_editing_participant_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        )
+        .unwrap();
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let reply_editing_result =
+            edit_reply(FIRST_OWNER_ORIGIN, BAD_MEMBER_ID, FIRST_ID, FIRST_ID);
+
+        // Reply after editing checked
+        let reply = reply_by_id(FIRST_ID, FIRST_ID);
+
+        // Compare with default unedited reply
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+
+        // Failure checked
+        assert_failure(
+            reply_editing_result,
+            Error::MembershipError,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
 fn reaction_success() {
     const REACTION_INDEX: ReactionsNumber = 4;
 
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
@@ -685,7 +815,13 @@ fn reaction_success() {
         let number_of_events_before_call = System::events().len();
 
         // React to a post
-        assert_ok!(react(SECOND_OWNER_ORIGIN, REACTION_INDEX, FIRST_ID, None,));
+        assert_ok!(react(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            REACTION_INDEX,
+            FIRST_ID,
+            None,
+        ));
 
         // Event checked
         let post_reactions_updated_event = get_test_event(RawEvent::PostReactionsUpdated(
@@ -699,7 +835,13 @@ fn reaction_success() {
             number_of_events_before_call + 1,
         );
 
-        create_reply(FIRST_OWNER_ORIGIN, FIRST_ID, None).unwrap();
+        create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+        )
+        .unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -708,6 +850,7 @@ fn reaction_success() {
         for _ in 0..2 {
             assert_ok!(react(
                 SECOND_OWNER_ORIGIN,
+                SECOND_OWNER_PARTICIPANT_ID,
                 REACTION_INDEX,
                 FIRST_ID,
                 Some(FIRST_ID),
@@ -733,19 +876,54 @@ fn reaction_invalid_index() {
     const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
 
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
         // React to a post
         // Should fail, as last index in configured reactions array is less by one than array length
-        let react_result = react(SECOND_OWNER_ORIGIN, REACTIONS_MAX_NUMBER, FIRST_ID, None);
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            REACTIONS_MAX_NUMBER,
+            FIRST_ID,
+            None,
+        );
 
         // Failure checked
         assert_failure(
             react_result,
             Error::InvalidReactionIndex,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_participant_error() {
+    const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
+
+    ExtBuilder::default().build().execute_with(|| {
+        create_post(Origin::root()).unwrap();
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        // Should fail, as last index in configured reactions array is less by one than array length
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            BAD_MEMBER_ID,
+            REACTIONS_MAX_NUMBER,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            Error::MembershipError,
             number_of_events_before_call,
         );
     })
@@ -760,7 +938,13 @@ fn reaction_post_not_found() {
         let number_of_events_before_call = System::events().len();
 
         // React to a post
-        let react_result = react(SECOND_OWNER_ORIGIN, REACTION_INDEX, FIRST_ID, None);
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            REACTION_INDEX,
+            FIRST_ID,
+            None,
+        );
 
         // Failure checked
         assert_failure(
@@ -776,7 +960,7 @@ fn reaction_reply_not_found() {
     const REACTION_INDEX: ReactionsNumber = 4;
 
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -784,6 +968,7 @@ fn reaction_reply_not_found() {
         // React to a reply
         let react_result = react(
             SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
             REACTION_INDEX,
             FIRST_ID,
             Some(FIRST_ID),
@@ -803,16 +988,22 @@ fn reaction_post_locked_error() {
     const REACTION_INDEX: ReactionsNumber = 4;
 
     ExtBuilder::default().build().execute_with(|| {
-        create_post(FIRST_OWNER_ORIGIN).unwrap();
+        create_post(Origin::root()).unwrap();
 
         // Lock block to forbid mutations
-        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID).unwrap();
+        lock_post(Origin::root(), FIRST_ID).unwrap();
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
         // React to a post
-        let react_result = react(SECOND_OWNER_ORIGIN, REACTION_INDEX, FIRST_ID, None);
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            REACTION_INDEX,
+            FIRST_ID,
+            None,
+        );
 
         // Failure checked
         assert_failure(

@@ -874,6 +874,24 @@ impl pallet_constitution::Trait for Runtime {
     type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
+parameter_types! {
+    pub const PostsMaxNumber: u64 = 20;
+    pub const RepliesMaxNumber: u64 = 100;
+}
+
+pub type BlogInstance = blog::Instance1;
+impl blog::Trait<BlogInstance> for Runtime {
+    type Event = Event;
+
+    type PostsMaxNumber = PostsMaxNumber;
+    type RepliesMaxNumber = RepliesMaxNumber;
+    type ParticipantEnsureOrigin = Members;
+    type WeightInfo = weights::blog::WeightInfo;
+
+    type PostId = u64;
+    type ReplyId = u64;
+}
+
 /// Forum identifier for category
 pub type CategoryId = u64;
 
@@ -926,6 +944,7 @@ construct_runtime!(
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
+        Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

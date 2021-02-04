@@ -7,6 +7,9 @@ decl_error! {
         /// A non-owner is trying to do a privilegeded action.
         BlogOwnershipError,
 
+        /// A non-member is trying to participate
+        MembershipError,
+
         /// Post do not exists.
         PostNotFound,
 

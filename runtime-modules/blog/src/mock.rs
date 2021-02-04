@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use crate::*;
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, ord_parameter_types, parameter_types};
 use sp_core::H256;
 use sp_io::TestExternalities;
@@ -12,7 +13,10 @@ use sp_runtime::{
 };
 
 pub(crate) const FIRST_OWNER_ORIGIN: u64 = 0;
+pub(crate) const FIRST_OWNER_PARTICIPANT_ID: u64 = 0;
 pub(crate) const SECOND_OWNER_ORIGIN: u64 = 2;
+pub(crate) const SECOND_OWNER_PARTICIPANT_ID: u64 = 2;
+pub(crate) const BAD_MEMBER_ID: u64 = 100000;
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -20,6 +24,20 @@ impl_outer_origin! {
 
 #[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct Runtime;
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+}
+
+impl balances::Trait for Runtime {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -61,6 +79,136 @@ impl_outer_event! {
     pub enum TestEvent for Runtime {
         crate DefaultInstance <T>,
         frame_system<T>,
+        balances<T>,
+        membership<T>,
+    }
+}
+
+parameter_types! {
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InviteMemberLockId: [u8; 8] = [9; 8];
+    pub const MinimumPeriod: u64 = 5;
+}
+
+impl membership::Trait for Runtime {
+    type Event = TestEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type WorkingGroup = ();
+    type WeightInfo = Weights;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+}
+
+impl pallet_timestamp::Trait for Runtime {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl staking_handler::LockComparator<u64> for Runtime {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+    fn get_budget() -> u64 {
+        unimplemented!();
+    }
+
+    fn set_budget(_: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+    fn ensure_worker_origin(
+        _origin: <Runtime as frame_system::Trait>::Origin,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!();
+    }
+
+    fn is_worker_account_id(
+        _: &<Runtime as frame_system::Trait>::AccountId,
+        _worker_id: &<Runtime as common::Trait>::ActorId,
+    ) -> bool {
+        unimplemented!();
+    }
+}
+
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
     }
 }
 
@@ -78,14 +226,69 @@ impl Trait for Runtime {
 
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
-
-    type BlogOwnerEnsureOrigin = frame_system::EnsureSignedBy<CorrectOwner, Self::AccountId>;
-
-    type ParticipantEnsureOrigin = frame_system::EnsureSigned<Self::ParticipantId>;
-    type ParticipantId = u64;
+    type ParticipantEnsureOrigin = MockEnsureParticipant;
+    type WeightInfo = ();
 
     type PostId = u64;
     type ReplyId = u64;
+}
+
+impl WeightInfo for () {
+    fn create_post(_: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn lock_post() -> Weight {
+        unimplemented!()
+    }
+    fn unlock_post() -> Weight {
+        unimplemented!()
+    }
+    fn edit_post(_: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn create_reply_to_post(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn create_reply_to_reply(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn edit_reply(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn react_to_post() -> Weight {
+        unimplemented!()
+    }
+    fn react_to_reply() -> Weight {
+        unimplemented!()
+    }
+}
+
+pub struct MockEnsureParticipant;
+impl
+    MemberOriginValidator<
+        Origin,
+        ParticipantId<Runtime>,
+        <Runtime as frame_system::Trait>::AccountId,
+    > for MockEnsureParticipant
+{
+    fn is_member_controller_account(
+        member_id: &ParticipantId<Runtime>,
+        _: &<Runtime as frame_system::Trait>::AccountId,
+    ) -> bool {
+        *member_id != BAD_MEMBER_ID
+    }
+
+    fn ensure_member_controller_account_origin(
+        _: Origin,
+        _: ParticipantId<Runtime>,
+    ) -> Result<<Runtime as frame_system::Trait>::AccountId, DispatchError> {
+        unimplemented!();
+    }
+}
+
+impl common::Trait for Runtime {
+    type MemberId = u64;
+    type ActorId = u64;
 }
 
 #[derive(Default)]
@@ -125,7 +328,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
 }
 
 type RawTestEvent = RawEvent<
-    <Runtime as Trait>::ParticipantId,
+    ParticipantId<Runtime>,
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
     ReactionsNumber,
@@ -162,22 +365,22 @@ fn generate_post() -> (Vec<u8>, Vec<u8>) {
     (generate_text(10), generate_text(100))
 }
 
-pub fn create_post(origin_id: u64) -> DispatchResult {
+pub fn create_post(origin: Origin) -> DispatchResult {
     let (title, body) = generate_post();
-    TestBlogModule::create_post(Origin::signed(origin_id), title, body)
+    TestBlogModule::create_post(origin, title, body)
 }
 
-pub fn lock_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
-    TestBlogModule::lock_post(Origin::signed(origin_id), post_id)
+pub fn lock_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+    TestBlogModule::lock_post(origin, post_id)
 }
 
-pub fn unlock_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
-    TestBlogModule::unlock_post(Origin::signed(origin_id), post_id)
+pub fn unlock_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+    TestBlogModule::unlock_post(origin, post_id)
 }
 
-pub fn edit_post(origin_id: u64, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+pub fn edit_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
     let (title, body) = generate_post();
-    TestBlogModule::edit_post(Origin::signed(origin_id), post_id, Some(title), Some(body))
+    TestBlogModule::edit_post(origin, post_id, Some(title), Some(body))
 }
 
 // Replies
@@ -205,29 +408,50 @@ pub fn get_reply(
 
 pub fn create_reply(
     origin_id: u64,
+    participant_id: u64,
     post_id: <Runtime as Trait>::PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
 ) -> DispatchResult {
     let reply = get_reply_text();
-    TestBlogModule::create_reply(Origin::signed(origin_id), post_id, reply_id, reply)
+    TestBlogModule::create_reply(
+        Origin::signed(origin_id),
+        participant_id,
+        post_id,
+        reply_id,
+        reply,
+    )
 }
 
 pub fn edit_reply(
     origin_id: u64,
+    participant_id: u64,
     post_id: <Runtime as Trait>::PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> DispatchResult {
     let reply = get_reply_text();
-    TestBlogModule::edit_reply(Origin::signed(origin_id), post_id, reply_id, reply)
+    TestBlogModule::edit_reply(
+        Origin::signed(origin_id),
+        participant_id,
+        post_id,
+        reply_id,
+        reply,
+    )
 }
 
 // Reactions
 
 pub fn react(
     origin_id: u64,
+    participant_id: u64,
     index: ReactionsNumber,
     post_id: <Runtime as Trait>::PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
 ) -> DispatchResult {
-    TestBlogModule::react(Origin::signed(origin_id), index, post_id, reply_id)
+    TestBlogModule::react(
+        Origin::signed(origin_id),
+        participant_id,
+        index,
+        post_id,
+        reply_id,
+    )
 }

@@ -40,14 +40,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
+use common::origin::MemberOriginValidator;
 use errors::Error;
 pub use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::EnsureOrigin;
+use frame_support::weights::Weight;
 use frame_support::{
     decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{Hash, MaybeSerialize, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 mod benchmarking;
@@ -63,13 +65,31 @@ type ReactionsNumber = u64;
 /// Number of reactions, presented in runtime
 pub const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
 
-// The pallet's configuration trait.
-pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
-    /// Origin from which blog owner must come.
-    type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+/// Blogger participant ID alias for the member of the system.
+pub type ParticipantId<T> = common::MemberId<T>;
 
+/// blog WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn create_post(t: u32, b: u32) -> Weight;
+    fn lock_post() -> Weight;
+    fn unlock_post() -> Weight;
+    fn edit_post(t: u32, b: u32) -> Weight;
+    fn create_reply_to_post(t: u32) -> Weight;
+    fn create_reply_to_reply(t: u32) -> Weight;
+    fn edit_reply(t: u32) -> Weight;
+    fn react_to_post() -> Weight;
+    fn react_to_reply() -> Weight;
+}
+
+// The pallet's configuration trait.
+pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Trait {
     /// Origin from which participant must come.
-    type ParticipantEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::ParticipantId>;
+    type ParticipantEnsureOrigin: MemberOriginValidator<
+        Self::Origin,
+        ParticipantId<Self>,
+        Self::AccountId,
+    >;
 
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -79,15 +99,6 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
 
     /// The maximum number of replies to a post.
     type RepliesMaxNumber: Get<MaxNumber>;
-
-    /// Type for the participant id.
-    type ParticipantId: Parameter
-        + Default
-        + Clone
-        + Copy
-        + Member
-        + MaybeSerializeDeserialize
-        + Ord;
 
     /// Type of identifier for blog posts.
     type PostId: Parameter
@@ -112,6 +123,9 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 /// Type, representing blog related post structure
@@ -220,7 +234,7 @@ pub struct Reply<T: Trait<I>, I: Instance> {
     /// Reply text hash
     text_hash: T::Hash,
     /// Participant id, associated with a reply owner
-    owner: T::ParticipantId,
+    owner: ParticipantId<T>,
     /// Reply`s parent id
     parent_id: ParentId<T::ReplyId, T::PostId>,
 }
@@ -249,7 +263,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
     /// Create new reply with given text and owner id
     fn new(
         text: Vec<u8>,
-        owner: T::ParticipantId,
+        owner: ParticipantId<T>,
         parent_id: ParentId<T::ReplyId, T::PostId>,
     ) -> Self {
         Self {
@@ -260,7 +274,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
     }
 
     /// Check if account_id is reply owner
-    fn is_owner(&self, account_id: &T::ParticipantId) -> bool {
+    fn is_owner(&self, account_id: &ParticipantId<T>) -> bool {
         self.owner == *account_id
     }
 
@@ -286,7 +300,7 @@ decl_storage! {
         ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T, I>;
 
         /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
-        pub Reactions get(fn reactions): double_map hasher(blake2_128_concat) (T::PostId, Option<T::ReplyId>), hasher(blake2_128_concat) T::ParticipantId => [bool; REACTIONS_MAX_NUMBER as usize];
+        pub Reactions get(fn reactions): double_map hasher(blake2_128_concat) (T::PostId, Option<T::ReplyId>), hasher(blake2_128_concat) ParticipantId<T> => [bool; REACTIONS_MAX_NUMBER as usize];
     }
 }
 
@@ -301,7 +315,10 @@ decl_module! {
         type Error = Error<T, I>;
 
         /// Blog owner can create posts, related to a given blog, if related blog is unlocked
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = T::WeightInfo::create_post(
+                title.len().saturated_into(),
+                body.len().saturated_into()
+            )]
         pub fn create_post(origin, title: Vec<u8>, body: Vec<u8>) -> DispatchResult  {
 
             // Ensure blog -> owner relation exists
@@ -330,7 +347,7 @@ decl_module! {
 
         /// Blog owner can lock posts, related to a given blog,
         /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = T::WeightInfo::lock_post()]
         pub fn lock_post(origin, post_id: T::PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
@@ -353,7 +370,7 @@ decl_module! {
 
         /// Blog owner can unlock posts, related to a given blog,
         /// making post accesible to previously forbidden actions
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = T::WeightInfo::unlock_post()]
         pub fn unlock_post(origin, post_id: T::PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
@@ -376,7 +393,7 @@ decl_module! {
 
         /// Blog owner can edit post, related to a given blog (if unlocked)
         /// with a new title and/or body
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T, I>::edit_post_weight(&new_title, &new_body)]
         pub fn edit_post(
             origin,
             post_id: T::PostId,
@@ -405,14 +422,15 @@ decl_module! {
 
         /// Create either root post reply or direct reply to reply
         /// (Only accessible, if related blog and post are unlocked)
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T, I>::create_reply_weight(text.len())]
         pub fn create_reply(
             origin,
+            participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>,
             text: Vec<u8>
         ) -> DispatchResult {
-            let reply_owner = Self::get_participant(origin)?;
+            Self::ensure_valid_participant(origin, participant_id)?;
 
             // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
@@ -427,9 +445,9 @@ decl_module! {
             let reply = if let Some(reply_id) = reply_id {
                 // Check parent reply existance in case of direct reply
                 Self::ensure_reply_exists(post_id, reply_id)?;
-                Reply::<T, I>::new(text, reply_owner, ParentId::Reply(reply_id))
+                Reply::<T, I>::new(text, participant_id, ParentId::Reply(reply_id))
             } else {
-                Reply::<T, I>::new(text, reply_owner, ParentId::Post(post_id))
+                Reply::<T, I>::new(text, participant_id, ParentId::Post(post_id))
             };
 
             //
@@ -445,24 +463,25 @@ decl_module! {
 
             if let Some(reply_id) = reply_id {
                 // Trigger event
-                Self::deposit_event(RawEvent::DirectReplyCreated(reply_owner, post_id, reply_id, post_replies_count));
+                Self::deposit_event(RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, post_replies_count));
             } else {
                 // Trigger event
-                Self::deposit_event(RawEvent::ReplyCreated(reply_owner, post_id, post_replies_count));
+                Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, post_replies_count));
             }
             Ok(())
         }
 
         /// Reply owner can edit reply with a new text
         /// (Only accessible, if related blog and post are unlocked)
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = T::WeightInfo::edit_reply(new_text.len().saturated_into())]
         pub fn edit_reply(
             origin,
+            participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reply_id: T::ReplyId,
             new_text: Vec<u8>
         ) -> DispatchResult {
-            let reply_owner = Self::get_participant(origin)?;
+            Self::ensure_valid_participant(origin, participant_id)?;
 
             // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
@@ -474,7 +493,7 @@ decl_module! {
             let reply = Self::ensure_reply_exists(post_id, reply_id)?;
 
             // Ensure reply -> owner relation exists
-            Self::ensure_reply_ownership(&reply, &reply_owner)?;
+            Self::ensure_reply_ownership(&reply, &participant_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -490,15 +509,16 @@ decl_module! {
 
         /// Submit either post reaction or reply reaction
         /// In case, when you resubmit reaction, it`s status will be changed to an opposite one
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T, I>::react_weight()]
         pub fn react(
             origin,
+            participant_id: ParticipantId<T>,
             // reaction index in array
             index: ReactionsNumber,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>
         ) {
-            let owner = Self::get_participant(origin)?;
+            Self::ensure_valid_participant(origin, participant_id)?;
 
             // Ensure index is valid & reaction under given index exists
             Self::ensure_reaction_index_is_valid(index)?;
@@ -520,9 +540,9 @@ decl_module! {
 
             // Trigger event
             if let Some(reply_id) = reply_id {
-                Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, post_id, reply_id, index));
+                Self::deposit_event(RawEvent::ReplyReactionsUpdated(participant_id, post_id, reply_id, index));
             } else {
-                Self::deposit_event(RawEvent::PostReactionsUpdated(owner, post_id, index));
+                Self::deposit_event(RawEvent::PostReactionsUpdated(participant_id, post_id, index));
             }
         }
 
@@ -530,9 +550,37 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    // edit_post_weight
+    fn edit_post_weight(title: &Option<Vec<u8>>, body: &Option<Vec<u8>>) -> Weight {
+        let title_len: u32 = title.as_ref().map_or(0, |t| t.len().saturated_into());
+        let body_len: u32 = body.as_ref().map_or(0, |b| b.len().saturated_into());
+
+        T::WeightInfo::edit_post(title_len, body_len)
+    }
+
+    // calculate react weight
+    fn react_weight() -> Weight {
+        T::WeightInfo::react_to_post().max(T::WeightInfo::react_to_reply())
+    }
+
+    // calculate create_reply weight
+    fn create_reply_weight(text_len: usize) -> Weight {
+        let text_len: u32 = text_len.saturated_into();
+        T::WeightInfo::create_reply_to_post(text_len)
+            .max(T::WeightInfo::create_reply_to_reply(text_len))
+    }
+
     // Get participant id from origin
-    fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, DispatchError> {
-        Ok(T::ParticipantEnsureOrigin::ensure_origin(origin)?)
+    fn ensure_valid_participant(
+        origin: T::Origin,
+        participant_id: ParticipantId<T>,
+    ) -> Result<(), DispatchError> {
+        let account_id = frame_system::ensure_signed(origin)?;
+        ensure!(
+            T::ParticipantEnsureOrigin::is_member_controller_account(&participant_id, &account_id),
+            Error::<T, I>::MembershipError
+        );
+        Ok(())
     }
 
     fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T, I>, DispatchError> {
@@ -556,7 +604,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_blog_ownership(blog_owner: T::Origin) -> Result<(), DispatchError> {
         ensure!(
-            T::BlogOwnerEnsureOrigin::ensure_origin(blog_owner).is_ok(),
+            frame_system::ensure_root(blog_owner).is_ok(),
             Error::<T, I>::BlogOwnershipError
         );
 
@@ -565,7 +613,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_reply_ownership(
         reply: &Reply<T, I>,
-        reply_owner: &T::ParticipantId,
+        reply_owner: &ParticipantId<T>,
     ) -> Result<(), DispatchError> {
         ensure!(
             reply.is_owner(reply_owner),
@@ -615,7 +663,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 decl_event!(
     pub enum Event<T, I = DefaultInstance>
     where
-        ParticipantId = <T as Trait<I>>::ParticipantId,
+        ParticipantId = ParticipantId<T>,
         PostId = <T as Trait<I>>::PostId,
         ReplyId = <T as Trait<I>>::ReplyId,
         ReactionIndex = ReactionsNumber,

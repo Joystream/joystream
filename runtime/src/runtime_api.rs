@@ -294,6 +294,7 @@ impl_runtime_apis! {
             use crate::ImOnline;
             use crate::Council;
             use crate::Referendum;
+            use crate::Blog;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -383,6 +384,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
+            add_benchmark!(params, batches, blog, Blog);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

@@ -54,3 +54,4 @@ benchmark council
 benchmark referendum
 benchmark forum
 benchmark membership
+benchmark blog
