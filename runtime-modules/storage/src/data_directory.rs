@@ -64,8 +64,8 @@ pub trait Trait:
 
     type MaxObjectsPerInjection: Get<u32>;
 
-    /// Default content quota limit for all actors.
-    type DefaultQuotaLimit: Get<u32>;
+    /// Default content quota for all actors.
+    type DefaultQuota: Get<Quota>;
 }
 
 decl_error! {
@@ -89,11 +89,23 @@ decl_error! {
         /// DataObject Injection Failed. Too Many DataObjects.
         DataObjectsInjectionExceededLimit,
 
-        /// Contant uploading failed. Actor quota limit exceeded.
-        QuotaLimitExceeded,
+        /// Contant uploading failed. Actor quota objects limit exceeded.
+        QuotaObjectsLimitExceeded,
 
-        /// Quota limit upper bound exceeded
-        QuotaLimitUpperBoundExceeded
+        /// Contant uploading failed. Actor quota size limit exceeded.
+        QuotaSizeLimitExceeded,
+
+        /// Quota size limit upper bound exceeded
+        QuotaSizeLimitUpperBoundExceeded,
+
+        /// Quota objects limit upper bound exceeded
+        QuotaObjectsLimitUpperBoundExceeded,
+
+        /// Contant uploading failed. Actor quota size limit exceeded.
+        GlobalQuotaSizeLimitExceeded,
+
+        /// Contant uploading failed. Actor quota objects limit exceeded.
+        GlobalQuotaObjectsLimitExceeded,
     }
 }
 
@@ -162,38 +174,65 @@ pub struct DataObjectInternal<
     pub ipfs_content_id: Vec<u8>,
 }
 
+#[derive(Clone, Copy)]
+pub struct Delta {
+    pub size: u64,
+    pub objects: u64,
+}
+
+/// Uploading quota for StorageObjectOwner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct Quota {
-    pub limit: u32,
-    pub used: u32,
+    // Total objects size limit per StorageObjectOwner
+    pub size_limit: u64,
+    // Total objects number limit per StorageObjectOwner
+    pub objects_limit: u64,
+    pub size_used: u64,
+    pub objects_used: u64,
 }
 
 impl Quota {
-    pub fn new(limit: u32) -> Self {
-        Self { limit, used: 0 }
-    }
-
-    pub fn calculate_delta(&self) -> u32 {
-        self.limit - self.used
-    }
-
-    pub fn fill_quota(self, delta: u32) -> Self {
+    /// Create new quota with provided size & objects limits
+    pub const fn new(size_limit: u64, objects_limit: u64) -> Self {
         Self {
-            used: self.used + delta,
+            size_limit,
+            objects_limit,
+            size_used: 0,
+            objects_used: 0,
+        }
+    }
+
+    /// Calculate free quota
+    pub fn calculate_delta(&self) -> Delta {
+        Delta {
+            size: self.size_limit - self.size_used,
+            objects: self.objects_limit - self.objects_used,
+        }
+    }
+
+    pub fn fill_quota(self, delta: Delta) -> Self {
+        Self {
+            size_used: self.size_used + delta.size,
+            objects_used: self.objects_used + delta.objects,
             ..self
         }
     }
 
-    pub fn release_quota(self, delta: u32) -> Self {
+    pub fn release_quota(self, delta: Delta) -> Self {
         Self {
-            used: self.used - delta,
+            size_used: self.size_used - delta.size,
+            objects_used: self.objects_used - delta.objects,
             ..self
         }
     }
 
-    pub fn set_new_quota_limit(&mut self, new_quota_limit: u32) {
-        self.limit = new_quota_limit;
+    pub fn set_new_size_limit(&mut self, new_size_limit: u64) {
+        self.size_limit = new_size_limit;
+    }
+
+    pub fn set_new_objects_limit(&mut self, new_objects_limit: u64) {
+        self.objects_limit = new_objects_limit;
     }
 }
 
@@ -209,10 +248,18 @@ decl_storage! {
         pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
 
+        /// Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
         pub Quotas get(fn quotas) config():
             map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Quota;
 
-        pub QuotaLimitUpperBound get(fn quota_limit_upper_bound) config(): u32;
+        /// Upper bound for the Quota size limit.
+        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64;
+
+        /// Upper bound for the Quota objects number limit.
+        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64;
+
+        /// Global quota.
+        pub GlobalQuota get(fn global_quota) config(): Quota;
     }
 }
 
@@ -223,7 +270,7 @@ decl_event! {
         StorageProviderId = StorageProviderId<T>,
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
-        QuotaLimit = u32
+        QuotaLimit = u64
     {
         /// Emits on adding of the content.
         /// Params:
@@ -243,11 +290,17 @@ decl_event! {
         /// - Id of the storage provider.
         ContentRejected(ContentId, StorageProviderId),
 
-        /// Emits when the storage object owner quota limit update performed.
+        /// Emits when the storage object owner quota size limit update performed.
         /// Params:
         /// - StorageObjectOwner enum.
-        /// - quota limit.
-        StorageObjectOwnerQuotaLimitUpdated(StorageObjectOwner, QuotaLimit),
+        /// - quota size limit.
+        StorageObjectOwnerQuotaSizeLimitUpdated(StorageObjectOwner, QuotaLimit),
+
+        /// Emits when the storage object owner quota objects limit update performed.
+        /// Params:
+        /// - StorageObjectOwner enum.
+        /// - quota objects limit.
+        StorageObjectOwnerQuotaObjectsLimitUpdated(StorageObjectOwner, QuotaLimit),
     }
 }
 
@@ -282,7 +335,14 @@ decl_module! {
 
             Self::ensure_content_is_valid(&content)?;
 
-            let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+            let owner_quota = Self::get_quota(&owner);
+
+            // Ensure owner quota constraints satisfied.
+            // Calculate upload delta
+            let upload_delta = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+
+            // Ensure global quota constraints satisfied.
+            Self::ensure_global_quota_constraints_satisfied(upload_delta)?;
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -291,20 +351,20 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(new_quota, liaison, content.clone(), owner.clone());
+            Self::upload_content(owner_quota, upload_delta, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
 
-        /// Updates storage object owner quota limit. Requires leader privileges.
+        /// Updates storage object owner quota objects limit. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_object_owner_quota_limit(
+        pub fn update_storage_object_owner_quota_objects_limit(
             origin,
             abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-            new_quota_limit: u32
+            new_quota_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_limit <= Self::quota_limit_upper_bound(), Error::<T>::QuotaLimitUpperBoundExceeded);
+            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
@@ -312,13 +372,42 @@ decl_module! {
 
             if <Quotas<T>>::contains_key(&abstract_owner) {
                 <Quotas<T>>::mutate(&abstract_owner, |quota| {
-                    quota.set_new_quota_limit(new_quota_limit);
+                    quota.set_new_objects_limit(new_quota_objects_limit);
                 });
             } else {
-                <Quotas<T>>::insert(&abstract_owner, Quota::new(new_quota_limit));
+                let mut quota = T::DefaultQuota::get();
+                quota.set_new_objects_limit(new_quota_objects_limit);
+                <Quotas<T>>::insert(&abstract_owner, quota);
             };
 
-            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaLimitUpdated(abstract_owner, new_quota_limit));
+            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaObjectsLimitUpdated(abstract_owner, new_quota_objects_limit));
+        }
+
+        /// Updates storage object owner quota size limit. Requires leader privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_object_owner_quota_size_limit(
+            origin,
+            abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            new_quota_size_limit: u64
+        ) {
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if <Quotas<T>>::contains_key(&abstract_owner) {
+                <Quotas<T>>::mutate(&abstract_owner, |quota| {
+                    quota.set_new_size_limit(new_quota_size_limit);
+                });
+            } else {
+                let mut quota = T::DefaultQuota::get();
+                quota.set_new_size_limit(new_quota_size_limit);
+                <Quotas<T>>::insert(&abstract_owner, quota);
+            };
+
+            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaSizeLimitUpdated(abstract_owner, new_quota_size_limit));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -401,28 +490,67 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // Ensures quota limit constraint satisfied, returns delta.
-    fn ensure_quota_limit_constraint_satisfied(
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<Quota, Error<T>> {
-        let quota = if <Quotas<T>>::contains_key(owner) {
+    // Get owner quota if exists, otherwise return default one.
+    fn get_quota(owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>) -> Quota {
+        if <Quotas<T>>::contains_key(owner) {
             Self::quotas(owner)
         } else {
-            Quota::new(T::DefaultQuotaLimit::get())
-        };
-
-        let content_length = content.len() as u32;
-        ensure!(
-            quota.calculate_delta() >= content_length,
-            Error::<T>::QuotaLimitExceeded
-        );
-
-        Ok(quota.fill_quota(content_length))
+            T::DefaultQuota::get()
+        }
     }
 
+    // Ensure owner quota constraints satisfied, returns total object length and total size delta for this upload.
+    fn ensure_owner_quota_constraints_satisfied(
+        owner_quota: Quota,
+        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
+    ) -> Result<Delta, Error<T>> {
+        let owner_quota_delta = owner_quota.calculate_delta();
+
+        // Ensure total content length is less or equal then available per given owner quota
+        let content_length = content.len() as u64;
+
+        ensure!(
+            owner_quota_delta.objects >= content_length,
+            Error::<T>::QuotaObjectsLimitExceeded
+        );
+
+        // Ensure total content size is less or equal then available per given owner quota
+        let content_size = content
+            .iter()
+            .fold(0, |total_size, content| total_size + content.size);
+
+        ensure!(
+            owner_quota_delta.size >= content_size,
+            Error::<T>::QuotaSizeLimitExceeded
+        );
+
+        Ok(Delta {
+            size: content_size,
+            objects: content_length,
+        })
+    }
+
+    // Ensures global quota constraints satisfied.
+    fn ensure_global_quota_constraints_satisfied(upload_delta: Delta) -> DispatchResult {
+        let global_quota_delta = Self::global_quota().calculate_delta();
+
+        ensure!(
+            global_quota_delta.objects >= upload_delta.objects,
+            Error::<T>::GlobalQuotaObjectsLimitExceeded
+        );
+
+        ensure!(
+            global_quota_delta.size >= upload_delta.size,
+            Error::<T>::GlobalQuotaSizeLimitExceeded
+        );
+
+        Ok(())
+    }
+
+    // Complete content upload, update quotas
     fn upload_content(
-        new_quota: Quota,
+        owner_quota: Quota,
+        upload_delta: Delta,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -441,9 +569,11 @@ impl<T: Trait> Module<T> {
             <DataObjectByContentId<T>>::insert(content.content_id, data);
         }
 
-        // Updade or create new owner quota.
+        // Updade or create owner quota.
+        <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_delta));
 
-        <Quotas<T>>::insert(owner, new_quota);
+        // Update global quota
+        <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_delta));
     }
 
     fn ensure_content_is_valid(
@@ -521,9 +651,10 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
 
         let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
-        let new_quota = Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+        let owner_quota = Self::get_quota(&owner);
+        let upload_delta = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
-        Self::upload_content(new_quota, liaison, content, owner);
+        Self::upload_content(owner_quota, upload_delta, liaison, content, owner);
         Ok(())
     }
 
@@ -532,7 +663,8 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> DispatchResult {
         T::StorageProviderHelper::get_random_storage_provider()?;
-        Self::ensure_quota_limit_constraint_satisfied(&owner, &content)?;
+        let owner_quota = Self::get_quota(&owner);
+        Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
         Self::ensure_content_is_valid(&content)
     }
 }

@@ -23,7 +23,9 @@ struct Content {
 struct ContentData {
     /// DataObject(s) and ContentId
     data_objects: Vec<Content>,
-    quota_limit_upper_bound: u32,
+    quota_size_limit_upper_bound: u64,
+    quota_objects_limit_upper_bound: u64,
+    global_quota: Quota,
 }
 
 #[derive(Deserialize)]
@@ -63,8 +65,12 @@ impl EncodedContent {
 struct EncodedContentData {
     /// EncodedContent
     data_objects: Vec<EncodedContent>,
-    /// hex encoded QuotaLimitUpperBound
-    quota_limit_upper_bound: String,
+    /// hex encoded QuotaSizeLimitUpperBound
+    quota_size_limit_upper_bound: String,
+    /// hex encoded QuotaObjectsLimitUpperBound
+    quota_objects_limit_upper_bound: String,
+    /// hex encoded GlobalQuota
+    global_quota: String,
 }
 
 fn parse_content_data(data_file: &Path) -> EncodedContentData {
@@ -80,12 +86,25 @@ impl EncodedContentData {
                 .iter()
                 .map(|data_objects| data_objects.decode())
                 .collect(),
-            quota_limit_upper_bound: {
-                let encoded_quota_limit_upper_bound =
-                    hex::decode(&self.quota_limit_upper_bound[2..].as_bytes())
+            quota_size_limit_upper_bound: {
+                let encoded_quota_size_limit_upper_bound =
+                    hex::decode(&self.quota_size_limit_upper_bound[2..].as_bytes())
                         .expect("failed to parse data_object hex string");
 
-                Decode::decode(&mut encoded_quota_limit_upper_bound.as_slice()).unwrap()
+                Decode::decode(&mut encoded_quota_size_limit_upper_bound.as_slice()).unwrap()
+            },
+            quota_objects_limit_upper_bound: {
+                let encoded_quota_objects_limit_upper_bound =
+                    hex::decode(&self.quota_objects_limit_upper_bound[2..].as_bytes())
+                        .expect("failed to parse data_object hex string");
+
+                Decode::decode(&mut encoded_quota_objects_limit_upper_bound.as_slice()).unwrap()
+            },
+            global_quota: {
+                let encoded_global_quota = hex::decode(&self.global_quota[2..].as_bytes())
+                    .expect("failed to parse data_object hex string");
+
+                Decode::decode(&mut encoded_global_quota.as_slice()).unwrap()
             },
         }
     }
@@ -97,7 +116,9 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
         data_object_by_content_id: vec![],
         known_content_ids: vec![],
         quotas: vec![],
-        quota_limit_upper_bound: 100,
+        quota_size_limit_upper_bound: 20000,
+        quota_objects_limit_upper_bound: 200,
+        global_quota: Quota::new(2000000, 2000),
     }
 }
 
@@ -123,6 +144,8 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
             .into_iter()
             .map(|object| object.content_id)
             .collect(),
-        quota_limit_upper_bound: content.quota_limit_upper_bound,
+        quota_size_limit_upper_bound: content.quota_size_limit_upper_bound,
+        quota_objects_limit_upper_bound: content.quota_objects_limit_upper_bound,
+        global_quota: content.global_quota,
     }
 }

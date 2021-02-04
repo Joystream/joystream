@@ -280,7 +280,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
         // overwritten
         let res = TestDataDirectory::add_content(
             Origin::signed(sender),
-            owner,
+            owner.clone(),
             vec![content_parameters_first],
         );
         assert!(res.is_ok());
