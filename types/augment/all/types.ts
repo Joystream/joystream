@@ -472,20 +472,12 @@ export interface EntryMethod extends Enum {
   readonly isGenesis: boolean;
 }
 
-/** @name EpisodeCreationParameters */
-export interface EpisodeCreationParameters extends Enum {
+/** @name EpisodeParemters */
+export interface EpisodeParemters extends Enum {
   readonly isNewVideo: boolean;
   readonly asNewVideo: VideoCreationParameters;
   readonly isExistingVideo: boolean;
   readonly asExistingVideo: VideoId;
-}
-
-/** @name EpisodeUpdateParemters */
-export interface EpisodeUpdateParemters extends Enum {
-  readonly isUpdateVideo: boolean;
-  readonly asUpdateVideo: VideoUpdateParameters;
-  readonly isChangeExistingVideo: boolean;
-  readonly asChangeExistingVideo: VideoId;
 }
 
 /** @name ExecutionFailed */
@@ -1032,16 +1024,10 @@ export interface Season extends Struct {
   readonly episodes: Vec<VideoId>;
 }
 
-/** @name SeasonCreationParameters */
-export interface SeasonCreationParameters extends Struct {
-  readonly episodes: Vec<EpisodeCreationParameters>;
-  readonly meta: Bytes;
-}
-
-/** @name SeasonUpdateParameters */
-export interface SeasonUpdateParameters extends Struct {
-  readonly new_episodes: Option<Vec<Option<EpisodeUpdateParemters>>>;
-  readonly new_meta: Option<Bytes>;
+/** @name SeasonParameters */
+export interface SeasonParameters extends Struct {
+  readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
+  readonly meta: Option<Bytes>;
 }
 
 /** @name Seat */
@@ -1060,19 +1046,13 @@ export interface Series extends Struct {
   readonly seasons: Vec<Season>;
 }
 
-/** @name SeriesCreationParameters */
-export interface SeriesCreationParameters extends Struct {
-  readonly seasons: Vec<SeasonCreationParameters>;
-  readonly meta: Bytes;
-}
-
 /** @name SeriesId */
 export interface SeriesId extends u64 {}
 
-/** @name SeriesUpdateParameters */
-export interface SeriesUpdateParameters extends Struct {
-  readonly new_seasons: Option<Vec<Option<SeasonUpdateParameters>>>;
-  readonly new_meta: Option<Bytes>;
+/** @name SeriesParameters */
+export interface SeriesParameters extends Struct {
+  readonly seasons: Option<Vec<Option<SeasonParameters>>>;
+  readonly meta: Option<Bytes>;
 }
 
 /** @name ServiceProviderRecord */

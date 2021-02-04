@@ -818,32 +818,18 @@
     "Season": {
         "episodes": "Vec<VideoId>"
     },
-    "SeriesCreationParameters": {
-        "seasons": "Vec<SeasonCreationParameters>",
-        "meta": "Bytes"
+    "SeriesParameters": {
+        "seasons": "Option<Vec<Option<SeasonParameters>>>",
+        "meta": "Option<Bytes>"
     },
-    "SeriesUpdateParameters": {
-        "new_seasons": "Option<Vec<Option<SeasonUpdateParameters>>>",
-        "new_meta": "Option<Bytes>"
+    "SeasonParameters": {
+        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
+        "meta": "Option<Bytes>"
     },
-    "SeasonCreationParameters": {
-        "episodes": "Vec<EpisodeCreationParameters>",
-        "meta": "Bytes"
-    },
-    "SeasonUpdateParameters": {
-        "new_episodes": "Option<Vec<Option<EpisodeUpdateParemters>>>",
-        "new_meta": "Option<Bytes>"
-    },
-    "EpisodeCreationParameters": {
+    "EpisodeParemters": {
         "_enum": {
             "NewVideo": "VideoCreationParameters",
             "ExistingVideo": "VideoId"
-        }
-    },
-    "EpisodeUpdateParemters": {
-        "_enum": {
-            "UpdateVideo": "VideoUpdateParameters",
-            "ChangeExistingVideo": "VideoId"
         }
     },
     "MaxNumber": "u32"

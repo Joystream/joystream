@@ -4,7 +4,7 @@
 import { AnyNumber } from '@polkadot/types/types';
 import { Compact, Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { AbstractStorageObjectOwner, ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, ElectionParameters, FillOpeningParameters, MemberId, MemoText, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PostId, ProposalId, RewardPolicy, StorageProviderId, TerminateRoleParameters, ThreadId, Url, VoteKind, WorkerId, WorkingGroup } from './all';
+import { AbstractStorageObjectOwner, ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwner, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, ElectionParameters, FillOpeningParameters, MemberId, MemoText, NewAsset, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, RewardPolicy, SeriesId, SeriesParameters, StorageProviderId, TerminateRoleParameters, ThreadId, Url, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
 import { Heartbeat } from '@polkadot/types/interfaces/imOnline';
@@ -99,26 +99,57 @@ declare module '@polkadot/api/types/submittable' {
       transferKeepAlive: AugmentedSubmittable<(dest: LookupSource | string | Uint8Array, value: Compact<Balance> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     content: {
-      /**
-       * Add new curator group to runtime storage
-       **/
-      addCuratorGroup: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
+      acceptChannelTransfer: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, requestId: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add curator to curator group under given `curator_group_id`
        **/
       addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addPersonToVideo: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      cancelChannelTransferRequest: AugmentedSubmittable<(requestId: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createChannel: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: ChannelCreationParameters | { in_category?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createChannelCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, params: ChannelCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Add new curator group to runtime storage
+       **/
+      createCuratorGroup: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>>;
+      createPerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: PersonCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createPlaylist: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: PlaylistCreationParameters | { videos?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createSeries: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: SeriesParameters | { seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createVideo: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: VideoCreationParameters | { in_category?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createVideoCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, params: VideoCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      curateChannel: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      curateVideo: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteChannel: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteChannelCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, category: ChannelCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Remove curator group under given `curator_group_id` from runtime storage
+       **/
+      deleteCuratorGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deletePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deletePlaylist: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteSeries: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, series: SeriesId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteVideo: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, video: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteVideoCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, category: VideoCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Remove curator from a given curator group
        **/
       removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Remove curator group under given `curator_group_id` from runtime storage
-       **/
-      removeCuratorGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      removePersonFromVideo: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      requestChannelTransfer: AugmentedSubmittable<(newOwner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, payment: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Set `is_active` status for curator group under given `curator_group_id`
        **/
       setCuratorGroupStatus: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, isActive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setFeaturedVideos: AugmentedSubmittable<(list: Vec<VideoId> | (VideoId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      uncurateChannel: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      uncurateVideo: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateChannel: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, newAssets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: ChannelUpdateParameters | { new_in_category?: any; new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateChannelCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, category: ChannelCategoryId | AnyNumber | Uint8Array, params: ChannelCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updatePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: PersonUpdateParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updatePlaylist: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: PlaylistUpdateParameters | { new_videos?: any; new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateSeries: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: SeriesParameters | { seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateVideo: AugmentedSubmittable<(owner: ChannelOwner | { Nobody: any } | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, video: VideoId | AnyNumber | Uint8Array, assets: Vec<NewAsset> | (NewAsset | { Upload: any } | { Uri: any } | string | Uint8Array)[], params: VideoUpdateParameters | { new_in_category?: any; new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateVideoCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, category: VideoCategoryId | AnyNumber | Uint8Array, params: VideoCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     contentDirectoryWorkingGroup: {
       /**

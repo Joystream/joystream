@@ -281,7 +281,7 @@ pub struct VideoUpdateParameters<VideoCategoryId> {
     new_meta: Option<Vec<u8>>,
 }
 
-/// A video which belongs in a channel. A video may be part of a series or playlist.
+/// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Video<ChannelId, SeriesId, PlaylistId> {
@@ -298,7 +298,7 @@ pub struct Video<ChannelId, SeriesId, PlaylistId> {
     is_featured: bool,
 }
 
-/// Information about plyalist being created.
+/// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistCreationParameters<VideoId> {
@@ -328,57 +328,50 @@ pub struct Playlist<ChannelId, VideoId> {
     videos: Vec<VideoId>,
 }
 
-/// Information about an episode that is being created.
+/// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeCreationParameters<VideoCategoryId, VideoId> {
+pub enum EpisodeParameters<VideoCategoryId, VideoId> {
     /// A new video is being added as the episode.
     NewVideo(VideoCreationParameters<VideoCategoryId>),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeUpdateParemters<VideoCategoryId, VideoId> {
-    UpdateVideo(VideoUpdateParameters<VideoCategoryId>),
-    ChangeExistingVideo(VideoId),
-}
-
+/// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonCreationParameters<VideoCategoryId, VideoId> {
-    episodes: Vec<EpisodeCreationParameters<VideoCategoryId, VideoId>>,
-    meta: Vec<u8>,
+pub struct SeasonParameters<VideoCategoryId, VideoId> {
+    // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
+    /// If set, updates the episodes of a season. Extends the number of episodes in a season
+    /// when length of new_episodes is greater than previously set. Last elements must all be
+    /// 'Some' in that case.
+    /// Will truncate existing season when length of new_episodes is less than previously set.
+    episodes: Option<Vec<Option<EpisodeParameters<VideoCategoryId, VideoId>>>>,
+    /// If set, Metadata update for season.
+    meta: Option<Vec<u8>>,
 }
 
+/// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonUpdateParameters<VideoCategoryId, VideoId> {
-    new_episodes: Option<Vec<Option<EpisodeUpdateParemters<VideoCategoryId, VideoId>>>>,
-    new_meta: Option<Vec<u8>>,
+pub struct SeriesParameters<VideoCategoryId, VideoId> {
+    // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
+    /// If set, updates the seasons of a series. Extend a series when length of seasons is
+    /// greater than previoulsy set. Last elements must all be 'Some' in that case.
+    /// Will truncate existing series when length of seasons is less than previously set.
+    seasons: Option<Vec<Option<SeasonParameters<VideoCategoryId, VideoId>>>>,
+    meta: Option<Vec<u8>>,
 }
 
+/// A season is an ordered list of videos (episodes).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Season<VideoId> {
     episodes: Vec<VideoId>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesCreationParameters<VideoCategoryId, VideoId> {
-    seasons: Vec<SeasonCreationParameters<VideoCategoryId, VideoId>>,
-    meta: Vec<u8>,
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesUpdateParameters<VideoCategoryId, VideoId> {
-    seasons: Option<Vec<Option<SeasonUpdateParameters<VideoCategoryId, VideoId>>>>,
-    new_meta: Option<Vec<u8>>,
-}
-
+/// A series is an ordered list of seasons that belongs to a channel.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Series<ChannelId, VideoId> {
@@ -386,7 +379,7 @@ pub struct Series<ChannelId, VideoId> {
     seasons: Vec<Season<VideoId>>,
 }
 
-// The authenticated origin for Person creation and updating calls
+// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonActor<MemberId, CuratorId> {
@@ -394,7 +387,7 @@ pub enum PersonActor<MemberId, CuratorId> {
     Curator(CuratorId),
 }
 
-/// The authorized "actor" that may update or delete a Person
+/// The authorized actor that may update or delete a Person.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonController<MemberId> {
@@ -414,22 +407,29 @@ impl<MemberId> Default for PersonController<MemberId> {
     }
 }
 
+/// Information for Person being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PersonCreationParameters {
+    /// Metadata for person.
     meta: Vec<u8>,
 }
 
+/// Information for Persion being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PersonUpdateParameters {
+    /// Metadata to update person.
     new_meta: Vec<u8>,
 }
 
+/// A Person represents a real person that may be associated with a video.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Person<MemberId> {
+    /// Who can update or delete this person.
     controlled_by: PersonController<MemberId>,
+    /// The number of videos this person appears in.
     number_of_videos_person_involed_in: u32,
 }
 
@@ -923,7 +923,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesCreationParameters<T::VideoCategoryId, T::VideoId>,
+            params: SeriesParameters<T::VideoCategoryId, T::VideoId>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -934,7 +934,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesUpdateParameters<T::VideoCategoryId, T::VideoId>,
+            params: SeriesParameters<T::VideoCategoryId, T::VideoId>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -1053,6 +1053,7 @@ decl_event!(
         PersonId = <T as Trait>::PersonId,
         DAOId = <T as StorageOwnership>::DAOId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
+        Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1120,12 +1121,14 @@ decl_event!(
         SeriesCreated(
             SeriesId,
             Vec<NewAsset>,
-            SeriesCreationParameters<VideoCategoryId, VideoId>,
+            SeriesParameters<VideoCategoryId, VideoId>,
+            Series,
         ),
         SeriesUpdated(
             SeriesId,
             Vec<NewAsset>,
-            SeriesUpdateParameters<VideoCategoryId, VideoId>,
+            SeriesParameters<VideoCategoryId, VideoId>,
+            Series,
         ),
         SeriesDeleted(SeriesId),
 

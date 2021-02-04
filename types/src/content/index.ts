@@ -117,28 +117,18 @@ export class PlaylistUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
 }) {}
 
-export class EpisodeCreationParameters extends JoyEnum({
+export class EpisodeParemters extends JoyEnum({
   NewVideo: VideoCreationParameters,
   ExistingVideo: VideoId,
-}) {}
-
-export class EpisodeUpdateParemters extends JoyEnum({
-  UpdateVideo: VideoUpdateParameters,
-  ChangeExistingVideo: VideoId,
 }) {}
 
 export class Season extends JoyStructDecorated({
   episodes: Vec.with(VideoId),
 }) {}
 
-export class SeasonCreationParameters extends JoyStructDecorated({
-  episodes: Vec.with(EpisodeCreationParameters),
-  meta: Bytes,
-}) {}
-
-export class SeasonUpdateParameters extends JoyStructDecorated({
-  new_episodes: Option.with(Vec.with(Option.with(EpisodeUpdateParemters))),
-  new_meta: Option.with(Bytes),
+export class SeasonParameters extends JoyStructDecorated({
+  episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
+  meta: Option.with(Bytes),
 }) {}
 
 export class Series extends JoyStructDecorated({
@@ -146,14 +136,9 @@ export class Series extends JoyStructDecorated({
   seasons: Vec.with(Season),
 }) {}
 
-export class SeriesCreationParameters extends JoyStructDecorated({
-  seasons: Vec.with(SeasonCreationParameters),
-  meta: Bytes,
-}) {}
-
-export class SeriesUpdateParameters extends JoyStructDecorated({
-  new_seasons: Option.with(Vec.with(Option.with(SeasonUpdateParameters))),
-  new_meta: Option.with(Bytes),
+export class SeriesParameters extends JoyStructDecorated({
+  seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
+  meta: Option.with(Bytes),
 }) {}
 
 export class PersonController extends JoyEnum({
@@ -222,12 +207,9 @@ export const contentDirectoryTypes = {
   SeriesId,
   Series,
   Season,
-  SeriesCreationParameters,
-  SeriesUpdateParameters,
-  SeasonCreationParameters,
-  SeasonUpdateParameters,
-  EpisodeCreationParameters,
-  EpisodeUpdateParemters,
+  SeriesParameters,
+  SeasonParameters,
+  EpisodeParemters,
   MaxNumber,
 }
 
