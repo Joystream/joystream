@@ -4,7 +4,7 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{BountyCreationParameters, BountyStage, RawEvent};
+use crate::{BountyCreationParameters, BountyCreator, BountyStateInfo, RawEvent};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -28,7 +28,7 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -48,7 +48,7 @@ impl EventFixture {
 pub struct CreateBountyFixture {
     origin: RawOrigin<u64>,
     metadata: Vec<u8>,
-    creator_member_id: Option<u64>,
+    creator: BountyCreator<u64>,
     funding_period: Option<u64>,
     min_amount: u64,
     max_amount: u64,
@@ -63,7 +63,7 @@ impl CreateBountyFixture {
         Self {
             origin: RawOrigin::Root,
             metadata: Vec::new(),
-            creator_member_id: None,
+            creator: BountyCreator::Council,
             funding_period: None,
             min_amount: 0,
             max_amount: 0,
@@ -80,7 +80,7 @@ impl CreateBountyFixture {
 
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
-            creator_member_id: Some(member_id),
+            creator: BountyCreator::Member(member_id),
             ..self
         }
     }
@@ -128,9 +128,9 @@ impl CreateBountyFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let params = BountyCreationParameters::<Test> {
-            creator_member_id: self.creator_member_id.clone(),
+    pub fn get_bounty_creation_parameters(&self) -> BountyCreationParameters<Test> {
+        BountyCreationParameters::<Test> {
+            creator: self.creator.clone(),
             min_amount: self.min_amount.clone(),
             max_amount: self.max_amount.clone(),
             work_period: self.work_period.clone(),
@@ -139,7 +139,11 @@ impl CreateBountyFixture {
             cherry: self.cherry,
             creator_funding: self.creator_funding,
             ..Default::default()
-        };
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = self.get_bounty_creation_parameters();
 
         let next_bounty_count_value = Bounty::bounty_count() + 1;
         let bounty_id: u64 = next_bounty_count_value.into();
@@ -161,7 +165,7 @@ impl CreateBountyFixture {
 
 pub struct CancelBountyFixture {
     origin: RawOrigin<u64>,
-    creator_member_id: Option<u64>,
+    creator: BountyCreator<u64>,
     bounty_id: u64,
 }
 
@@ -169,7 +173,7 @@ impl CancelBountyFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Root,
-            creator_member_id: None,
+            creator: BountyCreator::Council,
             bounty_id: 1,
         }
     }
@@ -180,7 +184,7 @@ impl CancelBountyFixture {
 
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
-            creator_member_id: Some(member_id),
+            creator: BountyCreator::Member(member_id),
             ..self
         }
     }
@@ -192,7 +196,7 @@ impl CancelBountyFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Bounty::cancel_bounty(
             self.origin.clone().into(),
-            self.creator_member_id.clone(),
+            self.creator.clone(),
             self.bounty_id.clone(),
         );
 
@@ -201,7 +205,7 @@ impl CancelBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.stage, BountyStage::Canceled))
+            assert!(matches!(bounty.state, BountyStateInfo::Canceled))
         }
     }
 }
@@ -235,7 +239,7 @@ impl VetoBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.stage, BountyStage::Vetoed))
+            assert!(matches!(bounty.state, BountyStateInfo::Canceled))
         }
     }
 }

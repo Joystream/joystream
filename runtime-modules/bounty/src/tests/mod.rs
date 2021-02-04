@@ -7,7 +7,7 @@ use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
-use crate::{BountyStage, Error, RawEvent};
+use crate::{BountyCreator, BountyStateInfo, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
@@ -23,13 +23,15 @@ fn create_bounty_succeeds() {
 
         let text = b"Bounty text".to_vec();
 
-        CreateBountyFixture::default()
-            .with_metadata(text)
-            .call_and_assert(Ok(()));
+        let create_bounty_fixture = CreateBountyFixture::default().with_metadata(text);
+        create_bounty_fixture.call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(bounty_id));
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+        ));
     });
 }
 
@@ -157,7 +159,42 @@ fn cancel_bounty_succeeds() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(bounty_id));
+        EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
+            bounty_id,
+            BountyCreator::Council,
+        ));
+    });
+}
+
+#[test]
+fn cancel_bounty_by_member_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let member_id = 1;
+        let account_id = 1;
+        let initial_balance = 500;
+
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        CancelBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
+            bounty_id,
+            BountyCreator::Member(member_id),
+        ));
     });
 }
 
@@ -239,9 +276,9 @@ fn cancel_bounty_fails_with_invalid_stage() {
 
         let bounty_id = 1u64;
 
-        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
-            bounty.stage = BountyStage::Canceled;
-        });
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -303,9 +340,9 @@ fn veto_bounty_fails_with_invalid_stage() {
 
         let bounty_id = 1u64;
 
-        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
-            bounty.stage = BountyStage::Canceled;
-        });
+        VetoBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -387,7 +424,10 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
         );
 
         let bounty = <crate::Bounties<Test>>::get(&bounty_id);
-        assert_eq!(bounty.stage, BountyStage::MaxFundingReached(starting_block));
+        assert_eq!(
+            bounty.state,
+            BountyStateInfo::MaxFundingReached(starting_block)
+        );
 
         EventFixture::assert_last_crate_event(RawEvent::MaxFundingReached(bounty_id));
     });
@@ -453,9 +493,9 @@ fn fund_bounty_fails_with_invalid_stage() {
 
         let bounty_id = 1u64;
 
-        <crate::Bounties<Test>>::mutate(&bounty_id, |bounty| {
-            bounty.stage = BountyStage::Canceled;
-        });
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
@@ -487,6 +527,6 @@ fn fund_bounty_fails_with_expired_funding_period() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
-            .call_and_assert(Err(Error::<Test>::FundingPeriodExpired.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });
 }

@@ -121,8 +121,8 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     /// Contract type defines who can submit the work.
     pub contract_type: AssuranceContractType<MemberId>,
 
-    /// Bounty creator member ID, should be None if created by a council.
-    pub creator_member_id: Option<MemberId>,
+    /// Bounty creator: could be a member or a council.
+    pub creator: BountyCreator<MemberId>,
 
     /// An mount of funding, possibly 0, provided by the creator which will be split among all other
     /// contributors should the min funding bound not be reached. If reached, cherry is returned to
@@ -155,27 +155,56 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     pub creator_funding: Balance,
 }
 
+// Helper enum for the bounty management.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum BountyCreator<MemberId> {
+    // Bounty was created by a council.
+    Council,
+
+    // Bounty was created by a member.
+    Member(MemberId),
+}
+
+impl<MemberId> Default for BountyCreator<MemberId> {
+    fn default() -> Self {
+        BountyCreator::Council
+    }
+}
+
 /// Defines current bounty stage.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum BountyStage<BlockNumber> {
+pub enum BountyStage {
     /// Bounty founding stage with starting block number.
-    Funding(BlockNumber),
+    Funding,
 
     /// A bounty was canceled.
     Canceled,
 
-    /// A bounty was vetoed.
-    Vetoed,
+    Withdrawal,
+
+    WorkSubmission,
+}
+
+/// Defines current bounty state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum BountyStateInfo<BlockNumber> {
+    /// Bounty was created at given block number.
+    Created(BlockNumber),
+
+    /// A bounty was canceled.
+    Canceled,
 
     /// A bounty funding was successful on the provided block.
     /// The stage is set when the funding exceeded max funding amount.
     MaxFundingReached(BlockNumber),
 }
 
-impl<BlockNumber: Default> Default for BountyStage<BlockNumber> {
+impl<BlockNumber: Default> Default for BountyStateInfo<BlockNumber> {
     fn default() -> Self {
-        BountyStage::Funding(Default::default())
+        BountyStateInfo::Created(Default::default())
     }
 }
 
@@ -193,14 +222,13 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
     /// Bounty creation parameters.
     pub creation_params: BountyParameters<Balance, BlockNumber, MemberId>,
 
-    /// The current bounty stage.
-    pub stage: BountyStage<BlockNumber>,
+    /// Total funding balance reached so far.
+    /// Includes initial funding by a creator and other members funding.
+    pub total_funding: Balance,
 
-    /// The current unspent "cherry" balance.
-    pub cherry_pot: Balance,
-
-    /// The current unspent funding balance.
-    pub current_funding: Balance,
+    /// Bounty current state. It represents fact known about the bounty, eg.:
+    /// it was canceled or max funding amount was reached.
+    pub state: BountyStateInfo<BlockNumber>,
 }
 
 /// Balance alias for `balances` module.
@@ -226,12 +254,13 @@ decl_event! {
         <T as Trait>::BountyId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
+        <T as frame_system::Trait>::BlockNumber,
     {
         /// A bounty was created.
-        BountyCreated(BountyId),
+        BountyCreated(BountyId, BountyParameters<Balance, BlockNumber, MemberId>),
 
         /// A bounty was canceled.
-        BountyCanceled(BountyId),
+        BountyCanceled(BountyId, BountyCreator<MemberId>),
 
         /// A bounty was vetoed.
         BountyVetoed(BountyId),
@@ -267,9 +296,6 @@ decl_error! {
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
-
-        /// Funding period expired for the bounty.
-        FundingPeriodExpired,
     }
 }
 
@@ -293,12 +319,12 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
               .max(WeightInfoBounty::<T>::create_bounty_by_council())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
-            let bounty_creator = BountyCreator::<T>::get_bounty_creator(
+            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
                 origin,
-                params.creator_member_id
+                params.creator.clone()
             )?;
 
-            bounty_creator.validate_balance_sufficiency(params.cherry, params.creator_funding)?;
+            bounty_creator_manager.validate_balance_sufficiency(params.cherry, params.creator_funding)?;
 
             Self::ensure_create_bounty_parameters_valid(&params)?;
 
@@ -306,23 +332,22 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty_creator.slash_balance(params.cherry, params.creator_funding);
+            bounty_creator_manager.slash_balance(params.cherry, params.creator_funding);
 
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
             let bounty = Bounty::<T> {
-                cherry_pot: params.cherry,
-                current_funding: params.creator_funding,
-                creation_params: params,
-                stage: BountyStage::Funding(Self::current_block()),
+                total_funding: params.creator_funding,
+                creation_params: params.clone(),
+                state: BountyStateInfo::Created(Self::current_block()),
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
             BountyCount::mutate(|count| {
                 *count = next_bounty_count_value
             });
-            Self::deposit_event(RawEvent::BountyCreated(bounty_id));
+            Self::deposit_event(RawEvent::BountyCreated(bounty_id, params));
         }
 
         /// Cancels a bounty.
@@ -335,10 +360,10 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
               .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
-        pub fn cancel_bounty(origin, creator_member_id: Option<MemberId<T>>, bounty_id: T::BountyId) {
-            let bounty_creator = BountyCreator::<T>::get_bounty_creator(
+        pub fn cancel_bounty(origin, creator: BountyCreator<MemberId<T>>, bounty_id: T::BountyId) {
+            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
                 origin,
-                creator_member_id
+                creator.clone(),
             )?;
 
             ensure!(
@@ -348,10 +373,11 @@ decl_module! {
 
             let mut bounty = <Bounties<T>>::get(bounty_id);
 
-            bounty_creator.validate_creator(&bounty.creation_params.creator_member_id)?;
+            bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(bounty.stage, BountyStage::Funding(_)),
+                matches!(current_bounty_stage, BountyStage::Funding),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -359,10 +385,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.stage = BountyStage::Canceled;
+            bounty.state = BountyStateInfo::Canceled;
             <Bounties<T>>::insert(bounty_id, bounty);
 
-            Self::deposit_event(RawEvent::BountyCanceled(bounty_id));
+            Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
         }
 
         /// Vetoes a bounty.
@@ -384,8 +410,9 @@ decl_module! {
 
             let mut bounty = <Bounties<T>>::get(bounty_id);
 
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(bounty.stage, BountyStage::Funding(_)),
+                matches!(current_bounty_stage, BountyStage::Funding),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -393,7 +420,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.stage = BountyStage::Vetoed;
+            bounty.state = BountyStateInfo::Canceled;
             <Bounties<T>>::insert(bounty_id, bounty);
 
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
@@ -430,16 +457,11 @@ decl_module! {
                 Error::<T>::InsufficientBalanceForBounty
             );
 
-            if let BountyStage::Funding(created_at) = bounty.stage{
-                if let Some(funding_period) = bounty.creation_params.funding_period {
-                    ensure!(
-                        created_at + funding_period >= Self::current_block(),
-                        Error::<T>::FundingPeriodExpired,
-                    );
-            }
-            } else {
-                return Err(Error::<T>::InvalidBountyStage.into())
-            }
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::Funding),
+                Error::<T>::InvalidBountyStage,
+            );
 
             //
             // == MUTATION SAFE ==
@@ -447,12 +469,12 @@ decl_module! {
 
             Self::slash_balance_from_account(amount, &account_id);
 
-            bounty.current_funding = bounty.current_funding.saturating_add(amount);
+            bounty.total_funding = bounty.total_funding.saturating_add(amount);
 
             let maximum_funding_reached =
-                bounty.current_funding >= bounty.creation_params.max_amount;
+                bounty.total_funding >= bounty.creation_params.max_amount;
             if  maximum_funding_reached{
-                bounty.stage = BountyStage::MaxFundingReached(Self::current_block());
+                bounty.state = BountyStateInfo::MaxFundingReached(Self::current_block());
             }
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -500,7 +522,7 @@ impl<T: Trait> Module<T> {
 }
 
 // Helper enum for the bounty management.
-enum BountyCreator<T: Trait> {
+enum BountyCreatorManager<T: Trait> {
     // Bounty was created by a council.
     Council,
 
@@ -508,22 +530,25 @@ enum BountyCreator<T: Trait> {
     Member(T::AccountId, MemberId<T>),
 }
 
-impl<T: Trait> BountyCreator<T> {
+impl<T: Trait> BountyCreatorManager<T> {
     // Construct BountyCreator by extrinsic origin and optional member_id.
     fn get_bounty_creator(
         origin: T::Origin,
-        creator_member_id: Option<MemberId<T>>,
-    ) -> Result<BountyCreator<T>, DispatchError> {
-        if let Some(member_id) = creator_member_id {
-            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin, member_id,
-            )?;
+        creator: BountyCreator<MemberId<T>>,
+    ) -> Result<BountyCreatorManager<T>, DispatchError> {
+        match creator {
+            BountyCreator::Member(member_id) => {
+                let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                    origin, member_id,
+                )?;
 
-            Ok(BountyCreator::Member(account_id, member_id))
-        } else {
-            ensure_root(origin)?;
+                Ok(BountyCreatorManager::Member(account_id, member_id))
+            }
+            BountyCreator::Council => {
+                ensure_root(origin)?;
 
-            Ok(BountyCreator::Council)
+                Ok(BountyCreatorManager::Council)
+            }
         }
     }
 
@@ -536,8 +561,10 @@ impl<T: Trait> BountyCreator<T> {
         let required_balance = cherry + creator_funding;
 
         let balance_is_sufficient = match self {
-            BountyCreator::Council => BountyCreator::<T>::check_council_budget(required_balance),
-            BountyCreator::Member(account_id, _) => {
+            BountyCreatorManager::Council => {
+                BountyCreatorManager::<T>::check_council_budget(required_balance)
+            }
+            BountyCreatorManager::Member(account_id, _) => {
                 Module::<T>::check_balance_for_account(required_balance, account_id)
             }
         };
@@ -555,32 +582,19 @@ impl<T: Trait> BountyCreator<T> {
         T::CouncilBudgetManager::get_budget() >= amount
     }
 
-    // Validate that provided creator_member_id relates to the initial BountyCreator.
-    // Eg.: It could test saved bounty creator_member_id with the extrinsic's origin and optional
-    // creator_member_id.
-    fn validate_creator(&self, creator_member_id: &Option<MemberId<T>>) -> DispatchResult {
-        let creator_validated = match self {
-            BountyCreator::Council => BountyCreator::<T>::created_by_council(creator_member_id),
-            BountyCreator::Member(_, member_id) => {
-                BountyCreator::<T>::created_by_member(*member_id, creator_member_id)
-            }
+    // Validate that provided creator relates to the initial BountyCreator.
+    fn validate_creator(&self, creator: &BountyCreator<MemberId<T>>) -> DispatchResult {
+        let initial_creator = match self {
+            BountyCreatorManager::Council => BountyCreator::Council,
+            BountyCreatorManager::Member(_, member_id) => BountyCreator::Member(*member_id),
         };
 
-        ensure!(creator_validated, Error::<T>::NotBountyCreator);
+        ensure!(
+            initial_creator == creator.clone(),
+            Error::<T>::NotBountyCreator
+        );
 
         Ok(())
-    }
-
-    // Verifies that provided creator_member_id is correct for the bounty created by a council.
-    fn created_by_council(creator_member_id: &Option<MemberId<T>>) -> bool {
-        creator_member_id.is_none()
-    }
-
-    // Verifies that provided creator_member_id relates to the bounty creator member ID..
-    fn created_by_member(member_id: MemberId<T>, creator_member_id: &Option<MemberId<T>>) -> bool {
-        creator_member_id
-            .map(|creator_member_id| member_id == creator_member_id)
-            .unwrap_or(false)
     }
 
     // Slash a balance for the bounty creation.
@@ -588,10 +602,10 @@ impl<T: Trait> BountyCreator<T> {
         let required_balance = cherry + creator_funding;
 
         match self {
-            BountyCreator::Council => {
-                BountyCreator::<T>::remove_balance_from_council_budget(required_balance);
+            BountyCreatorManager::Council => {
+                BountyCreatorManager::<T>::remove_balance_from_council_budget(required_balance);
             }
-            BountyCreator::Member(account_id, _) => {
+            BountyCreatorManager::Member(account_id, _) => {
                 Module::<T>::slash_balance_from_account(required_balance, account_id);
             }
         }
@@ -615,5 +629,46 @@ impl<T: Trait> Module<T> {
     // Slash a balance from the member controller account.
     fn slash_balance_from_account(amount: BalanceOf<T>, account_id: &T::AccountId) {
         let _ = balances::Module::<T>::slash(account_id, amount);
+    }
+
+    // Computes the stage of a bounty based on its creation parameters and the current state.
+    fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
+        let now = Self::current_block();
+
+        match bounty.state {
+            BountyStateInfo::Created(created_at) => {
+                // Limited funding period.
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    // Funding period is not over.
+                    if created_at + funding_period >= now {
+                        BountyStage::Funding
+                    } else {
+                        // Funding period expired.
+                        if bounty.total_funding >= bounty.creation_params.min_amount {
+                            // Minimum funding amount reached.
+                            BountyStage::WorkSubmission
+                        } else {
+                            // Funding failed.
+                            BountyStage::Withdrawal
+                        }
+                    }
+                } else {
+                    // Perpetual funding.
+                    BountyStage::Funding
+                }
+            }
+            // Bounty was canceled or vetoed.
+            BountyStateInfo::Canceled => BountyStage::Canceled,
+            BountyStateInfo::MaxFundingReached(funding_completed) => {
+                // Work period is not over.
+                if bounty.creation_params.work_period + funding_completed <= now {
+                    BountyStage::WorkSubmission
+                } else {
+                    // Work period is over.
+                    // TODO: change to judging stage when it will be introduced
+                    BountyStage::Withdrawal
+                }
+            }
+        }
     }
 }

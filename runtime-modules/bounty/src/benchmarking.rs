@@ -17,7 +17,8 @@ use common::council::CouncilBudgetManager;
 use membership::Module as Membership;
 
 use crate::{
-    BalanceOf, Bounties, BountyCreationParameters, BountyStage, Call, Event, Module, Trait,
+    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyStateInfo, Call, Event,
+    Module, Trait,
 };
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
@@ -102,7 +103,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
-        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
+        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
     }
 
     create_bounty_by_member {
@@ -118,7 +119,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
-            creator_member_id: Some(member_id),
+            creator: BountyCreator::Member(member_id),
             ..Default::default()
         };
 
@@ -128,7 +129,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
-        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id).into());
+        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
     }
 
     cancel_bounty_by_council {
@@ -136,10 +137,12 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
+        let creator = BountyCreator::Council;
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            creator: creator.clone(),
             ..Default::default()
         };
 
@@ -148,12 +151,12 @@ benchmarks! {
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-    }: cancel_bounty(RawOrigin::Root, None, bounty_id)
+    }: cancel_bounty(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.stage, BountyStage::Canceled));
-        assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
+        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
+        assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
     cancel_bounty_by_member {
@@ -162,11 +165,13 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
+        let creator = BountyCreator::Member(member_id);
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
-            creator_member_id: Some(member_id),
+            creator: creator.clone(),
             ..Default::default()
         };
 
@@ -179,12 +184,12 @@ benchmarks! {
         let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-    }: cancel_bounty(RawOrigin::Signed(account_id), Some(member_id), bounty_id)
+    }: cancel_bounty(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.stage, BountyStage::Canceled));
-        assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id).into());
+        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
+        assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
     veto_bounty {
@@ -203,7 +208,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.stage, BountyStage::Vetoed));
+        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
