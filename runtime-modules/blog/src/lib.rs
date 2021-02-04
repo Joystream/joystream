@@ -337,11 +337,11 @@ decl_module! {
             <PostCount<T, I>>::put(post_count + One::one());
 
             // New post creation
-            let post = Post::new(title, body);
+            let post = Post::new(title.clone(), body.clone());
             <PostById<T, I>>::insert(posts_count, post);
 
             // Trigger event
-            Self::deposit_event(RawEvent::PostCreated(posts_count));
+            Self::deposit_event(RawEvent::PostCreated(posts_count, title, body));
             Ok(())
         }
 
@@ -413,10 +413,13 @@ decl_module! {
             //
 
             // Update post with new text
-            <PostById<T, I>>::mutate(post_id, |inner_post| inner_post.update(new_title, new_body));
+            <PostById<T, I>>::mutate(
+                post_id,
+                |inner_post| inner_post.update(new_title.clone(), new_body.clone())
+            );
 
             // Trigger event
-            Self::deposit_event(RawEvent::PostEdited(post_id));
+            Self::deposit_event(RawEvent::PostEdited(post_id, new_title, new_body));
             Ok(())
         }
 
@@ -445,9 +448,9 @@ decl_module! {
             let reply = if let Some(reply_id) = reply_id {
                 // Check parent reply existance in case of direct reply
                 Self::ensure_reply_exists(post_id, reply_id)?;
-                Reply::<T, I>::new(text, participant_id, ParentId::Reply(reply_id))
+                Reply::<T, I>::new(text.clone(), participant_id, ParentId::Reply(reply_id))
             } else {
-                Reply::<T, I>::new(text, participant_id, ParentId::Post(post_id))
+                Reply::<T, I>::new(text.clone(), participant_id, ParentId::Post(post_id))
             };
 
             //
@@ -463,10 +466,10 @@ decl_module! {
 
             if let Some(reply_id) = reply_id {
                 // Trigger event
-                Self::deposit_event(RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, post_replies_count));
+                Self::deposit_event(RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, post_replies_count, text));
             } else {
                 // Trigger event
-                Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, post_replies_count));
+                Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, post_replies_count, text));
             }
             Ok(())
         }
@@ -500,10 +503,14 @@ decl_module! {
             //
 
             // Update reply with new text
-            <ReplyById<T, I>>::mutate(post_id, reply_id, |inner_reply| inner_reply.update(new_text));
+            <ReplyById<T, I>>::mutate(
+                post_id,
+                reply_id,
+                |inner_reply| inner_reply.update(new_text.clone())
+            );
 
             // Trigger event
-            Self::deposit_event(RawEvent::ReplyEdited(post_id, reply_id));
+            Self::deposit_event(RawEvent::ReplyEdited(participant_id, post_id, reply_id, new_text));
             Ok(())
         }
 
@@ -667,9 +674,13 @@ decl_event!(
         PostId = <T as Trait<I>>::PostId,
         ReplyId = <T as Trait<I>>::ReplyId,
         ReactionIndex = ReactionsNumber,
+        Title = Vec<u8>,
+        Text = Vec<u8>,
+        UpdatedTitle = Option<Vec<u8>>,
+        UpdatedBody = Option<Vec<u8>>,
     {
         /// A post was created
-        PostCreated(PostId),
+        PostCreated(PostId, Title, Text),
 
         /// A post was locked
         PostLocked(PostId),
@@ -678,16 +689,16 @@ decl_event!(
         PostUnlocked(PostId),
 
         /// A post was edited
-        PostEdited(PostId),
+        PostEdited(PostId, UpdatedTitle, UpdatedBody),
 
         /// A reply to a post was created
-        ReplyCreated(ParticipantId, PostId, ReplyId),
+        ReplyCreated(ParticipantId, PostId, ReplyId, Text),
 
         /// A reply to a reply was created
-        DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId),
+        DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId, Text),
 
         /// A reply was edited
-        ReplyEdited(PostId, ReplyId),
+        ReplyEdited(ParticipantId, PostId, ReplyId, Text),
 
         /// A post reaction was created or changed
         PostReactionsUpdated(ParticipantId, PostId, ReactionIndex),

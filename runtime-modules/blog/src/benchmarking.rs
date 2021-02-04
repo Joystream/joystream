@@ -132,17 +132,23 @@ benchmarks_instance! {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
         assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
+        let title = vec![0u8; t.try_into().unwrap()];
+        let body = vec![0u8; b.try_into().unwrap()];
 
-    }:_(RawOrigin::Root, vec![0u8; t.try_into().unwrap()], vec![0u8; b.try_into().unwrap()])
+    }:_(RawOrigin::Root, title.clone(), body.clone())
     verify {
         assert_eq!(Blog::<T, I>::post_count(), One::one());
 
         assert!(
             Blog::<T, I>::post_by_id(T::PostId::zero()) ==
-            Post::<T, I>::new(vec![0u8; t.try_into().unwrap()], vec![0u8; b.try_into().unwrap()])
+            Post::<T, I>::new(title.clone(), body.clone())
         );
 
-        assert_last_event::<T, I>(RawEvent::PostCreated(T::PostId::zero()).into());
+        assert_last_event::<T, I>(RawEvent::PostCreated(
+                T::PostId::zero(),
+                title,
+                body
+            ).into());
     }
 
     lock_post {
@@ -168,18 +174,20 @@ benchmarks_instance! {
         let b in 0 .. MAX_BYTES;
 
         let post_id = generate_post::<T, I>();
+        let title = Some(vec![1u8; t.try_into().unwrap()]);
+        let body = Some(vec![1u8; b.try_into().unwrap()]);
     }: _(
         RawOrigin::Root,
         post_id,
-        Some(vec![1u8; t.try_into().unwrap()]),
-        Some(vec![1u8; b.try_into().unwrap()])
+        title.clone(),
+        body.clone()
     )
     verify {
         assert!(
             Blog::<T, I>::post_by_id(post_id) ==
             Post::<T, I>::new(vec![1u8; t.try_into().unwrap()], vec![1u8; b.try_into().unwrap()])
         );
-        assert_last_event::<T, I>(RawEvent::PostEdited(post_id).into());
+        assert_last_event::<T, I>(RawEvent::PostEdited(post_id, title, body).into());
     }
 
     create_reply_to_post {
@@ -188,12 +196,13 @@ benchmarks_instance! {
         let post_id = generate_post::<T, I>();
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let origin = RawOrigin::Signed(account_id);
+        let text = vec![0u8; t.try_into().unwrap()];
     }: create_reply(
         origin.clone(),
         participant_id,
         post_id,
         None,
-        vec![0u8; t.try_into().unwrap()]
+        text.clone()
     )
     verify {
         let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
@@ -202,13 +211,13 @@ benchmarks_instance! {
         assert!(
             Blog::<T, I>::reply_by_id(post_id, T::ReplyId::zero()) ==
             Reply::<T, I>::new(
-                vec![0u8; t.try_into().unwrap()],
+                text.clone(),
                 participant_id,
                 ParentId::Post(post_id)
             )
         );
 
-        assert_last_event::<T, I>(RawEvent::ReplyCreated(participant_id, post_id, Zero::zero()).into());
+        assert_last_event::<T, I>(RawEvent::ReplyCreated(participant_id, post_id, Zero::zero(), text).into());
     }
 
     create_reply_to_reply {
@@ -221,12 +230,13 @@ benchmarks_instance! {
         let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
+        let text = vec![0u8; t.try_into().unwrap()];
     }: create_reply(
         origin.clone(),
         participant_id,
         post_id,
         Some(reply_id),
-        vec![0u8; t.try_into().unwrap()]
+        text.clone()
     )
     verify {
         expected_post.increment_replies_counter();
@@ -234,14 +244,14 @@ benchmarks_instance! {
         assert!(
             Blog::<T, I>::reply_by_id(post_id, T::ReplyId::one()) ==
             Reply::<T, I>::new(
-                vec![0u8; t.try_into().unwrap()],
+                text.clone(),
                 participant_id,
                 ParentId::Reply(reply_id)
             )
         );
 
         assert_last_event::<T, I>(
-            RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, One::one()).into()
+            RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, One::one(), text).into()
         );
     }
 
@@ -252,28 +262,34 @@ benchmarks_instance! {
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
+        let updated_text = vec![1u8; t.try_into().unwrap()];
     }: _(
         origin.clone(),
         participant_id,
         post_id,
         reply_id,
-        vec![1u8; t.try_into().unwrap()]
+        updated_text.clone()
     )
     verify {
         assert_eq!(
             Blog::<T, I>::reply_by_id(post_id, reply_id).text_hash,
-            T::Hashing::hash(&vec![1u8; t.try_into().unwrap()])
+            T::Hashing::hash(&updated_text)
         );
         assert!(
             Blog::<T, I>::reply_by_id(post_id, reply_id) ==
             Reply::<T, I>::new(
-                vec![1u8; t.try_into().unwrap()],
+                updated_text.clone(),
                 participant_id,
                 ParentId::Post(post_id)
             )
         );
 
-        assert_last_event::<T, I>(RawEvent::ReplyEdited(post_id, reply_id).into());
+        assert_last_event::<T, I>(RawEvent::ReplyEdited(
+                participant_id,
+                post_id,
+                reply_id,
+                updated_text
+            ).into());
     }
 
     react_to_post {

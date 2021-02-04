@@ -332,6 +332,10 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
     ReactionsNumber,
+    Vec<u8>,
+    Vec<u8>,
+    Option<Vec<u8>>,
+    Option<Vec<u8>>,
     DefaultInstance,
 >;
 
@@ -361,7 +365,7 @@ pub fn get_post(locked: bool) -> Post<Runtime, DefaultInstance> {
     post
 }
 
-fn generate_post() -> (Vec<u8>, Vec<u8>) {
+pub(crate) fn generate_post() -> (Vec<u8>, Vec<u8>) {
     (generate_text(10), generate_text(100))
 }
 

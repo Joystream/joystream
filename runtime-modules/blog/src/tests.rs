@@ -78,7 +78,11 @@ fn post_creation_success() {
         assert_eq!(post_count(), 1);
 
         // Event checked
-        let post_created_event = get_test_event(RawEvent::PostCreated(FIRST_ID));
+        let post_created_event = get_test_event(RawEvent::PostCreated(
+            FIRST_ID,
+            generate_post().0,
+            generate_post().1,
+        ));
         assert_event_success(post_created_event, number_of_events_before_call + 1)
     })
 }
@@ -317,7 +321,11 @@ fn post_editing_success() {
 
         ensure_posts_equality(post_after_editing, false);
 
-        let post_edited_event = TestEvent::crate_DefaultInstance(RawEvent::PostEdited(FIRST_ID));
+        let post_edited_event = TestEvent::crate_DefaultInstance(RawEvent::PostEdited(
+            FIRST_ID,
+            Some(generate_post().0),
+            Some(generate_post().1),
+        ));
 
         // Event checked
         assert_event_success(post_edited_event, number_of_events_before_call + 1)
@@ -430,8 +438,12 @@ fn reply_creation_success() {
         assert_eq!(post.replies_count(), 1);
 
         // Event checked
-        let reply_created_event =
-            get_test_event(RawEvent::ReplyCreated(reply_owner_id, FIRST_ID, FIRST_ID));
+        let reply_created_event = get_test_event(RawEvent::ReplyCreated(
+            reply_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            get_reply_text(),
+        ));
         assert_event_success(reply_created_event, number_of_events_before_call + 1)
     })
 }
@@ -477,6 +489,7 @@ fn direct_reply_creation_success() {
             FIRST_ID,
             FIRST_ID,
             SECOND_ID,
+            get_reply_text(),
         ));
         assert_event_success(reply_created_event, number_of_events_before_call + 1)
     })
@@ -630,7 +643,12 @@ fn reply_editing_success() {
         ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
 
         // Event checked
-        let reply_edited_event = get_test_event(RawEvent::ReplyEdited(FIRST_ID, FIRST_ID));
+        let reply_edited_event = get_test_event(RawEvent::ReplyEdited(
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+            get_reply_text(),
+        ));
         assert_event_success(reply_edited_event, number_of_events_before_call + 1)
     })
 }
