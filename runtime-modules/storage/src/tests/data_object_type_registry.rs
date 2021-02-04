@@ -313,7 +313,8 @@ fn activate_existing() {
         );
 
         // Retrieve, and ensure it's not active.
-        let mut data = TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id).unwrap();
+        let mut data =
+            TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id).unwrap();
         assert!(!data.active);
 
         // Now activate the data object type
