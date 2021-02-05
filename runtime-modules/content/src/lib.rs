@@ -170,7 +170,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelInternal<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
+pub struct ChannelRecord<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The category the channel belongs to
@@ -190,7 +190,7 @@ pub struct ChannelInternal<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, B
 }
 
 // Channel alias type for simplification.
-pub type Channel<T> = ChannelInternal<
+pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as Trait>::ChannelCategoryId,
@@ -201,15 +201,20 @@ pub type Channel<T> = ChannelInternal<
 /// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelOwnershipTransferRequestType<ChannelId, MemberId, CuratorGroupId, DAOId, Balance>
-{
+pub struct ChannelOwnershipTransferRequestRecord<
+    ChannelId,
+    MemberId,
+    CuratorGroupId,
+    DAOId,
+    Balance,
+> {
     channel_id: ChannelId,
     new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     payment: Balance,
 }
 
 // ChannelOwnershipTransferRequest type alias for simplification.
-pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestType<
+pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
