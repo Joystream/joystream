@@ -108,6 +108,12 @@ impl EncodedContentData {
 
                 Decode::decode(&mut encoded_global_quota.as_slice()).unwrap()
             },
+            uploading_blocked: {
+                let encoded_uploading_blocked = hex::decode(&self.uploading_blocked[2..].as_bytes())
+                .expect("failed to parse data_object hex string");
+
+                Decode::decode(&mut encoded_uploading_blocked.as_slice()).unwrap()
+            },
         }
     }
 }
