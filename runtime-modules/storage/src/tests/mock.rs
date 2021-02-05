@@ -295,6 +295,7 @@ impl ExtBuilder {
             data_object_by_content_id: vec![],
             known_content_ids: vec![],
             quotas: vec![],
+            uploading_blocked: false,
         }
         .assimilate_storage(&mut t)
         .unwrap();
