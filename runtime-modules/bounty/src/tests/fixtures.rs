@@ -4,7 +4,7 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{BountyCreationParameters, BountyCreator, BountyStateInfo, RawEvent};
+use crate::{BountyCreationParameters, BountyCreator, BountyMilestone, RawEvent};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -205,7 +205,7 @@ impl CancelBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.state, BountyStateInfo::Canceled))
+            assert!(matches!(bounty.state, BountyMilestone::Canceled))
         }
     }
 }
@@ -239,7 +239,7 @@ impl VetoBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.state, BountyStateInfo::Canceled))
+            assert!(matches!(bounty.state, BountyMilestone::Canceled))
         }
     }
 }

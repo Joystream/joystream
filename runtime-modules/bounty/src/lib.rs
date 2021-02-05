@@ -182,15 +182,17 @@ pub enum BountyStage {
     /// A bounty was canceled.
     Canceled,
 
+    /// Funding and cherry can be withdrawn.
     Withdrawal,
 
+    /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
 }
 
 /// Defines current bounty state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum BountyStateInfo<BlockNumber> {
+pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
     Created(BlockNumber),
 
@@ -202,9 +204,9 @@ pub enum BountyStateInfo<BlockNumber> {
     MaxFundingReached(BlockNumber),
 }
 
-impl<BlockNumber: Default> Default for BountyStateInfo<BlockNumber> {
+impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
     fn default() -> Self {
-        BountyStateInfo::Created(Default::default())
+        BountyMilestone::Created(Default::default())
     }
 }
 
@@ -228,7 +230,7 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
 
     /// Bounty current state. It represents fact known about the bounty, eg.:
     /// it was canceled or max funding amount was reached.
-    pub state: BountyStateInfo<BlockNumber>,
+    pub state: BountyMilestone<BlockNumber>,
 }
 
 /// Balance alias for `balances` module.
@@ -340,7 +342,7 @@ decl_module! {
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
-                state: BountyStateInfo::Created(Self::current_block()),
+                state: BountyMilestone::Created(Self::current_block()),
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -385,7 +387,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.state = BountyStateInfo::Canceled;
+            bounty.state = BountyMilestone::Canceled;
             <Bounties<T>>::insert(bounty_id, bounty);
 
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
@@ -420,7 +422,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.state = BountyStateInfo::Canceled;
+            bounty.state = BountyMilestone::Canceled;
             <Bounties<T>>::insert(bounty_id, bounty);
 
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
@@ -474,7 +476,7 @@ decl_module! {
             let maximum_funding_reached =
                 bounty.total_funding >= bounty.creation_params.max_amount;
             if  maximum_funding_reached{
-                bounty.state = BountyStateInfo::MaxFundingReached(Self::current_block());
+                bounty.state = BountyMilestone::MaxFundingReached(Self::current_block());
             }
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -636,7 +638,7 @@ impl<T: Trait> Module<T> {
         let now = Self::current_block();
 
         match bounty.state {
-            BountyStateInfo::Created(created_at) => {
+            BountyMilestone::Created(created_at) => {
                 // Limited funding period.
                 if let Some(funding_period) = bounty.creation_params.funding_period {
                     // Funding period is not over.
@@ -658,8 +660,8 @@ impl<T: Trait> Module<T> {
                 }
             }
             // Bounty was canceled or vetoed.
-            BountyStateInfo::Canceled => BountyStage::Canceled,
-            BountyStateInfo::MaxFundingReached(funding_completed) => {
+            BountyMilestone::Canceled => BountyStage::Canceled,
+            BountyMilestone::MaxFundingReached(funding_completed) => {
                 // Work period is not over.
                 if bounty.creation_params.work_period + funding_completed <= now {
                     BountyStage::WorkSubmission

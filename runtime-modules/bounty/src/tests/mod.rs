@@ -7,7 +7,7 @@ use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
-use crate::{BountyCreator, BountyStateInfo, Error, RawEvent};
+use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
@@ -426,7 +426,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
         let bounty = <crate::Bounties<Test>>::get(&bounty_id);
         assert_eq!(
             bounty.state,
-            BountyStateInfo::MaxFundingReached(starting_block)
+            BountyMilestone::MaxFundingReached(starting_block)
         );
 
         EventFixture::assert_last_crate_event(RawEvent::MaxFundingReached(bounty_id));

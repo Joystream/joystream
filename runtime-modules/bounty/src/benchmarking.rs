@@ -17,7 +17,7 @@ use common::council::CouncilBudgetManager;
 use membership::Module as Membership;
 
 use crate::{
-    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyStateInfo, Call, Event,
+    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, Call, Event,
     Module, Trait,
 };
 
@@ -155,7 +155,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
+        assert!(matches!(bounty.state, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -188,7 +188,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
+        assert!(matches!(bounty.state, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -208,7 +208,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyStateInfo::Canceled));
+        assert!(matches!(bounty.state, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
