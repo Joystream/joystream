@@ -335,7 +335,8 @@ proto.SeasonMetadata.prototype.toObject = function(opt_includeInstance) {
 proto.SeasonMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
-    description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f
+    description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
+    coverPhoto: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -380,6 +381,10 @@ proto.SeasonMetadata.deserializeBinaryFromReader = function(msg, reader) {
       var value = /** @type {string} */ (reader.readString());
       msg.setDescription(value);
       break;
+    case 3:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setCoverPhoto(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -420,6 +425,13 @@ proto.SeasonMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeString(
       2,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
+    writer.writeUint32(
+      3,
       f
     );
   }
@@ -495,6 +507,42 @@ proto.SeasonMetadata.prototype.clearDescription = function() {
  */
 proto.SeasonMetadata.prototype.hasDescription = function() {
   return jspb.Message.getField(this, 2) != null;
+};
+
+
+/**
+ * optional uint32 cover_photo = 3;
+ * @return {number}
+ */
+proto.SeasonMetadata.prototype.getCoverPhoto = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.SeasonMetadata} returns this
+ */
+proto.SeasonMetadata.prototype.setCoverPhoto = function(value) {
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.SeasonMetadata} returns this
+ */
+proto.SeasonMetadata.prototype.clearCoverPhoto = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.SeasonMetadata.prototype.hasCoverPhoto = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 

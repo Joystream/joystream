@@ -7,14 +7,9 @@ PROTOC_GEN_TS_PATH="./node_modules/.bin/protoc-gen-ts"
 OUT_DIR="./compiled"
 mkdir -p ${OUT_DIR}
 
-# Directory to write generated documentation to
-OUT_DIR_DOC="./doc"
-mkdir -p ${OUT_DIR_DOC}
-
 # Compile proto files and also generate html docs
 protoc \
     --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" \
     --js_out="import_style=commonjs,binary:${OUT_DIR}" \
     --ts_out="${OUT_DIR}" \
-    --doc_out="${OUT_DIR_DOC}" \
     proto/*.proto

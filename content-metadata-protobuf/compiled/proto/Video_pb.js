@@ -157,7 +157,7 @@ proto.PublishedBeforeJoystream.prototype.toObject = function(opt_includeInstance
 proto.PublishedBeforeJoystream.toObject = function(includeInstance, msg) {
   var f, obj = {
     isPublished: (f = jspb.Message.getBooleanField(msg, 1)) == null ? undefined : f,
-    timestamp: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f
+    date: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -199,8 +199,8 @@ proto.PublishedBeforeJoystream.deserializeBinaryFromReader = function(msg, reade
       msg.setIsPublished(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readUint32());
-      msg.setTimestamp(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setDate(value);
       break;
     default:
       reader.skipField();
@@ -238,9 +238,9 @@ proto.PublishedBeforeJoystream.serializeBinaryToWriter = function(message, write
       f
     );
   }
-  f = /** @type {number} */ (jspb.Message.getField(message, 2));
+  f = /** @type {string} */ (jspb.Message.getField(message, 2));
   if (f != null) {
-    writer.writeUint32(
+    writer.writeString(
       2,
       f
     );
@@ -285,19 +285,19 @@ proto.PublishedBeforeJoystream.prototype.hasIsPublished = function() {
 
 
 /**
- * optional uint32 timestamp = 2;
- * @return {number}
+ * optional string date = 2;
+ * @return {string}
  */
-proto.PublishedBeforeJoystream.prototype.getTimestamp = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+proto.PublishedBeforeJoystream.prototype.getDate = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
 /**
- * @param {number} value
+ * @param {string} value
  * @return {!proto.PublishedBeforeJoystream} returns this
  */
-proto.PublishedBeforeJoystream.prototype.setTimestamp = function(value) {
+proto.PublishedBeforeJoystream.prototype.setDate = function(value) {
   return jspb.Message.setField(this, 2, value);
 };
 
@@ -306,7 +306,7 @@ proto.PublishedBeforeJoystream.prototype.setTimestamp = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.PublishedBeforeJoystream} returns this
  */
-proto.PublishedBeforeJoystream.prototype.clearTimestamp = function() {
+proto.PublishedBeforeJoystream.prototype.clearDate = function() {
   return jspb.Message.setField(this, 2, undefined);
 };
 
@@ -315,7 +315,7 @@ proto.PublishedBeforeJoystream.prototype.clearTimestamp = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.PublishedBeforeJoystream.prototype.hasTimestamp = function() {
+proto.PublishedBeforeJoystream.prototype.hasDate = function() {
   return jspb.Message.getField(this, 2) != null;
 };
 

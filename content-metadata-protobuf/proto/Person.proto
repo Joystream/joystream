@@ -6,8 +6,8 @@ message PersonMetadata {
     optional string last_name = 3;
     optional string about = 4;
     
-    // index into OOB array
+    // index into external [assets array](#.Assets)
     optional uint32 cover_photo = 5;
-    // index into OOB array
+    // index into external [assets array](#.Assets)
     optional uint32 avatar_photo = 6;
 }

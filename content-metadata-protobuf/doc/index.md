@@ -62,8 +62,8 @@
 | description | [string](#string) | optional | Channel Description |
 | is_public | [bool](#bool) | optional | Wether to display channel to the public |
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
-| cover_photo | [uint32](#uint32) | optional | index into OOB array |
-| avatar_photo | [uint32](#uint32) | optional | index into OOB array |
+| cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 
 
 
@@ -98,8 +98,8 @@
 | middle_name | [string](#string) | optional |  |
 | last_name | [string](#string) | optional |  |
 | about | [string](#string) | optional |  |
-| cover_photo | [uint32](#uint32) | optional | index into OOB array |
-| avatar_photo | [uint32](#uint32) | optional | index into OOB array |
+| cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 
 
 
@@ -163,6 +163,7 @@
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
+| cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 
 
 
@@ -179,7 +180,7 @@
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
-| cover_photo | [uint32](#uint32) | optional | index into OOB array |
+| cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 
 
 
@@ -245,7 +246,7 @@ Publication status before joystream
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | is_published | [bool](#bool) | optional | Was video published before joystream platform |
-| timestamp | [uint32](#uint32) | optional | Unix timestamp in milli-seconds |
+| date | [string](#string) | optional | Date of publication: &#39;YYYY-MM-DD&#39; [ISO-8601](https://www.iso.org/iso-8601-date-and-time-format.html) |
 
 
 
@@ -277,8 +278,8 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional | Video Title |
 | description | [string](#string) | optional | Video Description |
-| video | [uint32](#uint32) | optional | Index into OOB array |
-| thumbnail_photo | [uint32](#uint32) | optional | Index into OOB array |
+| video | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | duration | [uint32](#uint32) | optional | Lengths of video in seconds |
 | media_pixel_height | [uint32](#uint32) | optional | Resolution of the video (Height) |
 | media_pixel_width | [uint32](#uint32) | optional | Resolution of the video (Width) |
@@ -324,3 +325,44 @@ Publication status before joystream
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
 
+<!-- 
+    This extra documentation will be appended to the generated docs.
+-->
+
+## Referencing Assets
+<a name=".Assets"></a>
+
+Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
+
+Example in context of query-node processing the runtime event `VideoCreated`
+
+```rust
+// Runtime event associated with creating a Video
+VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
+
+struct VideoCreationParameters {
+  in_category: VideoCategoryId,
+  // binary serialized VideoMetadata protobuf message
+  meta: Vec<u8>,
+}
+
+// suppose assets is a vector of two elements. Thi is the "out of band" array being referenced by the VideoMetadata message
+assets = [
+    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
+    NewAsset::Upload({
+       content_id,
+       ipfs_hash,
+       size,
+       ...
+    }),
+];
+
+metat = VideoMetadata {
+    ...
+    // refers to second element: assets[1] which is being uploaded to the storage system
+    video: 1,
+    // refers to the first element assets[0] which is being referneced by a url string.
+    thumbnail_photo: 0,
+    ...
+};
+```

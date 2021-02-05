@@ -41,7 +41,7 @@ describe('Video Metadata', () => {
         attribution: undefined,
         customText: undefined,
       },
-      publishedBeforeJoystream: { isPublished: undefined, timestamp: undefined },
+      publishedBeforeJoystream: { isPublished: undefined, date: undefined },
       hasMarketing: true,
       isPublic: true,
       isExplicit: false,
@@ -60,9 +60,9 @@ describe('Video Metadata', () => {
 
     const published = new PublishedBeforeJoystream()
     const isPublished = true
-    const timestamp = 10000
+    const date = '1950-12-24'
     published.setIsPublished(isPublished)
-    published.setTimestamp(timestamp)
+    published.setDate(date)
 
     meta.setPublishedBeforeJoystream(published)
 
@@ -71,7 +71,7 @@ describe('Video Metadata', () => {
 
     assert.deepEqual(published.toObject(), {
       isPublished,
-      timestamp,
+      date,
     })
   })
 

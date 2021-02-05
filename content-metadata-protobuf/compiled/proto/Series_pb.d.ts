@@ -48,6 +48,11 @@ export class SeasonMetadata extends jspb.Message {
   getDescription(): string | undefined;
   setDescription(value: string): void;
 
+  hasCoverPhoto(): boolean;
+  clearCoverPhoto(): void;
+  getCoverPhoto(): number | undefined;
+  setCoverPhoto(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SeasonMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: SeasonMetadata): SeasonMetadata.AsObject;
@@ -62,6 +67,7 @@ export namespace SeasonMetadata {
   export type AsObject = {
     title?: string,
     description?: string,
+    coverPhoto?: number,
   }
 }
 

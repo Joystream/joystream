@@ -9,10 +9,10 @@ export class PublishedBeforeJoystream extends jspb.Message {
   getIsPublished(): boolean | undefined;
   setIsPublished(value: boolean): void;
 
-  hasTimestamp(): boolean;
-  clearTimestamp(): void;
-  getTimestamp(): number | undefined;
-  setTimestamp(value: number): void;
+  hasDate(): boolean;
+  clearDate(): void;
+  getDate(): string | undefined;
+  setDate(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PublishedBeforeJoystream.AsObject;
@@ -27,7 +27,7 @@ export class PublishedBeforeJoystream extends jspb.Message {
 export namespace PublishedBeforeJoystream {
   export type AsObject = {
     isPublished?: boolean,
-    timestamp?: number,
+    date?: string,
   }
 }
 

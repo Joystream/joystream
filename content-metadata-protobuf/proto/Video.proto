@@ -4,8 +4,8 @@ syntax = "proto2";
 message PublishedBeforeJoystream {
     // Was video published before joystream platform
     optional bool is_published = 1;
-    // Unix timestamp in milli-seconds
-    optional uint32 timestamp = 2;
+    // Date of publication: 'YYYY-MM-DD' [ISO-8601](https://www.iso.org/iso-8601-date-and-time-format.html)
+    optional string date = 2;
 }
 
 // License types defined by Joystream
@@ -39,10 +39,10 @@ message VideoMetadata {
 
     // Assets
     
-    // Index into OOB array
+    // index into external [assets array](#.Assets)
     optional uint32 video = 3;
 
-    // Index into OOB array
+    // index into external [assets array](#.Assets)
     optional uint32 thumbnail_photo = 4;
 
     // Lengths of video in seconds
