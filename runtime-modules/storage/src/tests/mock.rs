@@ -11,6 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
+use crate::data_directory::Quota;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
@@ -96,6 +97,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
+    pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
 impl system::Trait for Test {
@@ -179,6 +181,7 @@ impl data_directory::Trait for Test {
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
+    type DefaultQuota = DefaultQuota;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
@@ -236,6 +239,9 @@ impl hiring::Trait for Test {
 }
 
 pub struct ExtBuilder {
+    quota_objects_limit_upper_bound: u64,
+    quota_size_limit_upper_bound: u64,
+    global_quota: Quota,
     first_data_object_type_id: u64,
     first_content_id: u64,
     first_relationship_id: u64,
@@ -245,6 +251,9 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
+            quota_objects_limit_upper_bound: 200,
+            quota_size_limit_upper_bound: 20000,
+            global_quota: Quota::new(2000000, 2000),
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
@@ -258,22 +267,37 @@ impl ExtBuilder {
         self.first_data_object_type_id = first_data_object_type_id;
         self
     }
+
     pub fn first_content_id(mut self, first_content_id: u64) -> Self {
         self.first_content_id = first_content_id;
         self
     }
+
     pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
         self.first_relationship_id = first_relationship_id;
         self
     }
+
     pub fn first_metadata_id(mut self, first_metadata_id: u64) -> Self {
         self.first_metadata_id = first_metadata_id;
         self
     }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
+
+        data_directory::GenesisConfig::<Test> {
+            quota_size_limit_upper_bound: self.quota_size_limit_upper_bound,
+            quota_objects_limit_upper_bound: self.quota_objects_limit_upper_bound,
+            global_quota: self.global_quota,
+            data_object_by_content_id: vec![],
+            known_content_ids: vec![],
+            quotas: vec![],
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         data_object_type_registry::GenesisConfig::<Test> {
             first_data_object_type_id: self.first_data_object_type_id,
