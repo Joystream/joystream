@@ -26,6 +26,7 @@ struct ContentData {
     quota_size_limit_upper_bound: u64,
     quota_objects_limit_upper_bound: u64,
     global_quota: Quota,
+    uploading_blocked: bool,
 }
 
 #[derive(Deserialize)]
@@ -71,6 +72,8 @@ struct EncodedContentData {
     quota_objects_limit_upper_bound: String,
     /// hex encoded GlobalQuota
     global_quota: String,
+    /// hex encoded UploadingBlocked flag
+    uploading_blocked: String
 }
 
 fn parse_content_data(data_file: &Path) -> EncodedContentData {
@@ -106,6 +109,12 @@ impl EncodedContentData {
 
                 Decode::decode(&mut encoded_global_quota.as_slice()).unwrap()
             },
+            uploading_blocked: {
+                let encoded_uploading_blocked = hex::decode(&self.uploading_blocked[2..].as_bytes())
+                .expect("failed to parse data_object hex string");
+
+                Decode::decode(&mut encoded_uploading_blocked.as_slice()).unwrap()
+            },
         }
     }
 }
@@ -119,6 +128,7 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
         quota_size_limit_upper_bound: 20000,
         quota_objects_limit_upper_bound: 200,
         global_quota: Quota::new(2000000, 2000),
+        uploading_blocked: false
     }
 }
 
@@ -147,5 +157,6 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
         quota_size_limit_upper_bound: content.quota_size_limit_upper_bound,
         quota_objects_limit_upper_bound: content.quota_objects_limit_upper_bound,
         global_quota: content.global_quota,
+        uploading_blocked: content.uploading_blocked
     }
 }
