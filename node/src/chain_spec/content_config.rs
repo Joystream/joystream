@@ -137,7 +137,7 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
         quotas: content
             .data_objects
             .iter()
-            .map(|object| (object.storage_object_owner.clone(), object.quota.clone()))
+            .map(|object| (object.storage_object_owner.clone(), object.quota))
             .collect(),
         known_content_ids: content
             .data_objects
