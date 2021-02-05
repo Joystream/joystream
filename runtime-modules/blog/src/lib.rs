@@ -158,12 +158,12 @@ impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
 
 impl<T: Trait<I>, I: Instance> Post<T, I> {
     /// Create a new post with given title and body
-    pub fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
+    pub fn new(title: &[u8], body: &[u8]) -> Self {
         Self {
             // Post default locking status
             locked: false,
-            title_hash: T::Hashing::hash(&title),
-            body_hash: T::Hashing::hash(&body),
+            title_hash: T::Hashing::hash(title),
+            body_hash: T::Hashing::hash(body),
             // Set replies count of newly created post to zero
             replies_count: T::ReplyId::default(),
         }
@@ -195,12 +195,12 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
     }
 
     /// Update post title and body, if Option::Some(_)
-    fn update(&mut self, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) {
-        if let Some(new_title) = new_title {
-            self.title_hash = T::Hashing::hash(&new_title)
+    fn update(&mut self, new_title: &Option<Vec<u8>>, new_body: &Option<Vec<u8>>) {
+        if let Some(ref new_title) = new_title {
+            self.title_hash = T::Hashing::hash(new_title)
         }
-        if let Some(new_body) = new_body {
-            self.body_hash = T::Hashing::hash(&new_body)
+        if let Some(ref new_body) = new_body {
+            self.body_hash = T::Hashing::hash(new_body)
         }
     }
 }
@@ -329,7 +329,7 @@ decl_module! {
             <PostCount<I>>::put(post_count + 1);
 
             // New post creation
-            let post = Post::new(title.clone(), body.clone());
+            let post = Post::new(&title, &body);
             <PostById<T, I>>::insert(posts_count, post);
 
             // Trigger event
@@ -407,7 +407,7 @@ decl_module! {
             // Update post with new text
             <PostById<T, I>>::mutate(
                 post_id,
-                |inner_post| inner_post.update(new_title.clone(), new_body.clone())
+                |inner_post| inner_post.update(&new_title, &new_body)
             );
 
             // Trigger event
@@ -631,7 +631,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let posts_count = Self::post_count();
 
         ensure!(
-            posts_count < T::PostsMaxNumber::get().into(),
+            posts_count < T::PostsMaxNumber::get(),
             Error::<T, I>::PostLimitReached
         );
 

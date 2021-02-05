@@ -95,7 +95,7 @@ fn generate_post<T: Trait<I>, I: Instance>() -> PostId {
 
     assert_eq!(Blog::<T, I>::post_count(), 1);
 
-    assert!(Blog::<T, I>::post_by_id(post_id) == Post::<T, I>::new(vec![0u8], vec![0u8]));
+    assert!(Blog::<T, I>::post_by_id(post_id) == Post::<T, I>::new(&vec![0u8], &vec![0u8]));
 
     post_id
 }
@@ -141,7 +141,7 @@ benchmarks_instance! {
 
         assert!(
             Blog::<T, I>::post_by_id(0) ==
-            Post::<T, I>::new(title.clone(), body.clone())
+            Post::<T, I>::new(&title, &body)
         );
 
         assert_last_event::<T, I>(RawEvent::PostCreated(
@@ -185,7 +185,7 @@ benchmarks_instance! {
     verify {
         assert!(
             Blog::<T, I>::post_by_id(post_id) ==
-            Post::<T, I>::new(vec![1u8; t.try_into().unwrap()], vec![1u8; b.try_into().unwrap()])
+            Post::<T, I>::new(&vec![1u8; t.try_into().unwrap()], &vec![1u8; b.try_into().unwrap()])
         );
         assert_last_event::<T, I>(RawEvent::PostEdited(post_id, title, body).into());
     }
@@ -205,7 +205,7 @@ benchmarks_instance! {
         text.clone()
     )
     verify {
-        let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
         assert!(
@@ -227,7 +227,7 @@ benchmarks_instance! {
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
-        let mut expected_post = Post::<T, I>::new(vec![0u8], vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
         expected_post.increment_replies_counter();
         assert!(Blog::<T, I>::post_by_id(post_id) == expected_post);
         let text = vec![0u8; t.try_into().unwrap()];

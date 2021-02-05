@@ -357,7 +357,7 @@ pub fn post_by_id(post_id: PostId) -> Option<Post<Runtime, DefaultInstance>> {
 pub fn get_post(locked: bool) -> Post<Runtime, DefaultInstance> {
     let title = generate_text(10);
     let body = generate_text(100);
-    let mut post = Post::new(title, body);
+    let mut post = Post::new(&title, &body);
     if locked {
         post.lock()
     }

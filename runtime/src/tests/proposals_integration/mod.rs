@@ -646,7 +646,7 @@ fn edit_blog_post_proposal_execution_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
         run_to_block(86410);
 
-        assert!(Blog::post_by_id(post_id) == blog::Post::new(vec![1u8], vec![0u8]));
+        assert!(Blog::post_by_id(post_id) == blog::Post::new(&vec![1u8], &vec![0u8]));
     });
 }
 

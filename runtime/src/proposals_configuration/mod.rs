@@ -189,7 +189,7 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), create_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), edit_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo, unlock_blog_post_proposal);
     }
 
     params
