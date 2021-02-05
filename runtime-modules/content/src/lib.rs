@@ -31,7 +31,7 @@ use system::ensure_signed;
 pub use common::storage::{ContentParameters, StorageSystem};
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
-    MembershipTypes, StorageOwnership,
+    MembershipTypes, StorageOwnership, Url,
 };
 
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
@@ -114,8 +114,8 @@ pub trait Trait:
 pub enum NewAsset<ContentParameters> {
     /// Upload to the storage system
     Upload(ContentParameters),
-    /// A url string pointing at an asset
-    Uri(Vec<u8>),
+    /// Multiple url strings pointing at an asset
+    Urls(Vec<Url>),
 }
 
 /// The owner of a channel, is the authorized "actor" that can update

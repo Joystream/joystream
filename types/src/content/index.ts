@@ -1,7 +1,7 @@
-import { Text, Vec, Option, Tuple } from '@polkadot/types'
+import { Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
 import { ContentParameters } from '../storage'
 
 export class CuratorId extends u64 {}
@@ -165,7 +165,7 @@ export class PersonActor extends JoyEnum({
 
 export class NewAsset extends JoyEnum({
   Upload: ContentParameters,
-  Uri: Text,
+  Urls: Vec.with(Url),
 }) {}
 
 export const contentDirectoryTypes = {

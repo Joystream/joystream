@@ -44,6 +44,8 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
   }
 }
 
+export class Url extends Text {}
+
 export class ChannelId extends u64 {}
 export class DAOId extends u64 {}
 
@@ -151,6 +153,7 @@ export const commonTypes: RegistryTypes = {
   LookupSource,
   ChannelId,
   DAOId,
+  Url,
 }
 
 export default commonTypes
