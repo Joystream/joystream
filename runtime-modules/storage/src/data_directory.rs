@@ -276,7 +276,8 @@ decl_event! {
         StorageProviderId = StorageProviderId<T>,
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
-        QuotaLimit = u64
+        QuotaLimit = u64,
+        UploadingStatus = bool
     {
         /// Emits on adding of the content.
         /// Params:
@@ -307,6 +308,11 @@ decl_event! {
         /// - StorageObjectOwner enum.
         /// - quota objects limit.
         StorageObjectOwnerQuotaObjectsLimitUpdated(StorageObjectOwner, QuotaLimit),
+
+        /// Emits when the content uploading status update performed.
+        /// Params:
+        /// - UploadingStatus bool flag.
+        ContentUploadingStatusUpdated(UploadingStatus),
     }
 }
 
@@ -330,7 +336,7 @@ decl_module! {
             owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
             content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
-            
+
             // Ensure given origin can perform operation under specific storage object owner
             Self::ensure_storage_object_owner_origin(origin, &owner)?;
 
@@ -446,6 +452,17 @@ decl_module! {
 
             Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Rejected)?;
             Self::deposit_event(RawEvent::ContentRejected(content_id, storage_provider_id));
+        }
+
+        /// Locks / unlocks content uploading
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn update_content_uploading_status(origin, is_blocked: bool) {
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+
+            // == MUTATION SAFE ==
+
+            <UploadingBlocked>::put(is_blocked);
+            Self::deposit_event(RawEvent::ContentUploadingStatusUpdated(is_blocked));
         }
 
         // Sudo methods
