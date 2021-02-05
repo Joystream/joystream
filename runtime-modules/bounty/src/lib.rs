@@ -228,9 +228,9 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
     /// Includes initial funding by a creator and other members funding.
     pub total_funding: Balance,
 
-    /// Bounty current state. It represents fact known about the bounty, eg.:
+    /// Bounty current milestone(state). It represents fact known about the bounty, eg.:
     /// it was canceled or max funding amount was reached.
-    pub state: BountyMilestone<BlockNumber>,
+    pub milestone: BountyMilestone<BlockNumber>,
 }
 
 /// Balance alias for `balances` module.
@@ -242,7 +242,7 @@ decl_storage! {
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
         /// Double map for bounty funding. It stores member funding for bounties.
-        pub Funding get(fn funding_by_bounty_by_member): double_map hasher(blake2_128_concat)
+        pub BountyContributions get(fn contribution_by_bounty_by_member): double_map hasher(blake2_128_concat)
             T::BountyId, hasher(blake2_128_concat) MemberId<T> => BalanceOf<T>;
 
         /// Count of all bounties that have been created.
@@ -342,7 +342,7 @@ decl_module! {
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
-                state: BountyMilestone::Created(Self::current_block()),
+                milestone: BountyMilestone::Created(Self::current_block()),
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -368,12 +368,7 @@ decl_module! {
                 creator.clone(),
             )?;
 
-            ensure!(
-                <Bounties<T>>::contains_key(bounty_id),
-                Error::<T>::BountyDoesntExist
-            );
-
-            let mut bounty = <Bounties<T>>::get(bounty_id);
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
@@ -387,8 +382,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.state = BountyMilestone::Canceled;
-            <Bounties<T>>::insert(bounty_id, bounty);
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.milestone = BountyMilestone::Canceled;
+            });
 
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
         }
@@ -405,12 +401,7 @@ decl_module! {
         pub fn veto_bounty(origin, bounty_id: T::BountyId) {
             ensure_root(origin)?;
 
-            ensure!(
-                <Bounties<T>>::contains_key(bounty_id),
-                Error::<T>::BountyDoesntExist
-            );
-
-            let mut bounty = <Bounties<T>>::get(bounty_id);
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
@@ -422,8 +413,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty.state = BountyMilestone::Canceled;
-            <Bounties<T>>::insert(bounty_id, bounty);
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.milestone = BountyMilestone::Canceled;
+            });
 
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
         }
@@ -443,19 +435,13 @@ decl_module! {
             bounty_id: T::BountyId,
             amount: BalanceOf<T>
         ) {
-            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin, member_id,
-            )?;
+            let controller_account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             ensure!(
-                <Bounties<T>>::contains_key(bounty_id),
-                Error::<T>::BountyDoesntExist
-            );
-
-            let mut bounty = <Bounties<T>>::get(bounty_id);
-
-            ensure!(
-                Self::check_balance_for_account(amount, &account_id),
+                Self::check_balance_for_account(amount, &controller_account_id),
                 Error::<T>::InsufficientBalanceForBounty
             );
 
@@ -469,22 +455,22 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_balance_from_account(amount, &account_id);
+            Self::slash_balance_from_account(amount, &controller_account_id);
 
-            bounty.total_funding = bounty.total_funding.saturating_add(amount);
+            let total_funding = bounty.total_funding.saturating_add(amount);
+            let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
 
-            let maximum_funding_reached =
-                bounty.total_funding >= bounty.creation_params.max_amount;
-            if  maximum_funding_reached{
-                bounty.state = BountyMilestone::MaxFundingReached(Self::current_block());
-            }
-
-            <Bounties<T>>::insert(bounty_id, bounty);
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.total_funding = total_funding;
+                if  maximum_funding_reached{
+                    bounty.milestone = BountyMilestone::MaxFundingReached(Self::current_block());
+                }
+            });
 
             // Previous funding by member.
-            let funds_so_far = Self::funding_by_bounty_by_member(bounty_id, member_id);
+            let funds_so_far = Self::contribution_by_bounty_by_member(bounty_id, member_id);
             let total_funding = funds_so_far.saturating_add(amount);
-            <Funding<T>>::insert(bounty_id, member_id, total_funding);
+            <BountyContributions<T>>::insert(bounty_id, member_id, total_funding);
 
             Self::deposit_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
             if  maximum_funding_reached{
@@ -637,7 +623,7 @@ impl<T: Trait> Module<T> {
     fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
 
-        match bounty.state {
+        match bounty.milestone {
             BountyMilestone::Created(created_at) => {
                 // Limited funding period.
                 if let Some(funding_period) = bounty.creation_params.funding_period {
@@ -672,5 +658,17 @@ impl<T: Trait> Module<T> {
                 }
             }
         }
+    }
+
+    // Verifies bounty existence and retrieves a bounty from the storage.
+    fn ensure_bounty_exists(bounty_id: &T::BountyId) -> Result<Bounty<T>, DispatchError> {
+        ensure!(
+            <Bounties<T>>::contains_key(bounty_id),
+            Error::<T>::BountyDoesntExist
+        );
+
+        let bounty = <Bounties<T>>::get(bounty_id);
+
+        Ok(bounty)
     }
 }

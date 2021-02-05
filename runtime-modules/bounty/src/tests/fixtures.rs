@@ -205,7 +205,7 @@ impl CancelBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.state, BountyMilestone::Canceled))
+            assert!(matches!(bounty.milestone, BountyMilestone::Canceled))
         }
     }
 }
@@ -239,7 +239,7 @@ impl VetoBountyFixture {
         if actual_result.is_ok() {
             let bounty = <crate::Bounties<Test>>::get(&self.bounty_id);
 
-            assert!(matches!(bounty.state, BountyMilestone::Canceled))
+            assert!(matches!(bounty.milestone, BountyMilestone::Canceled))
         }
     }
 }

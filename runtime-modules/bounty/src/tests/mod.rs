@@ -383,7 +383,7 @@ fn fund_bounty_succeeds() {
         );
 
         assert_eq!(
-            crate::Module::<Test>::funding_by_bounty_by_member(bounty_id, member_id),
+            crate::Module::<Test>::contribution_by_bounty_by_member(bounty_id, member_id),
             amount
         );
 
@@ -425,7 +425,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
 
         let bounty = <crate::Bounties<Test>>::get(&bounty_id);
         assert_eq!(
-            bounty.state,
+            bounty.milestone,
             BountyMilestone::MaxFundingReached(starting_block)
         );
 

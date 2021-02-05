@@ -155,7 +155,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyMilestone::Canceled));
+        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -188,7 +188,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyMilestone::Canceled));
+        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -208,7 +208,7 @@ benchmarks! {
     verify {
         let bounty = <crate::Bounties<T>>::get(bounty_id);
 
-        assert!(matches!(bounty.state, BountyMilestone::Canceled));
+        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
