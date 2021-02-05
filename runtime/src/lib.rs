@@ -96,8 +96,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 8,
-    spec_version: 0,
-    impl_version: 1,
+    spec_version: 1,
+    impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
 };
@@ -874,6 +874,14 @@ impl pallet_constitution::Trait for Runtime {
     type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
+impl bounty::Trait for Runtime {
+    type Event = Event;
+    type BountyId = u64;
+    type MemberOriginValidator = Members;
+    type WeightInfo = weights::bounty::WeightInfo;
+    type CouncilBudgetManager = Council;
+}
+
 /// Forum identifier for category
 pub type CategoryId = u64;
 
@@ -926,6 +934,7 @@ construct_runtime!(
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
+        Bounty: bounty::{Module, Call, Storage, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

@@ -2,6 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod constraints;
+pub mod council;
 pub mod origin;
 pub mod working_group;
 
