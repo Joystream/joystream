@@ -19,7 +19,7 @@ struct VideoCreationParameters {
   meta: Vec<u8>,
 }
 
-// suppose assets is a vector of two elements. Thi is the "out of band" array being referenced by the VideoMetadata message
+// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
 assets = [
     NewAsset::Uri("https://mydomain.net/thumbnail.png"),
     NewAsset::Upload({
@@ -30,7 +30,7 @@ assets = [
     }),
 ];
 
-metat = VideoMetadata {
+meta = VideoMetadata {
     ...
     // refers to second element: assets[1] which is being uploaded to the storage system
     video: 1,

@@ -11,6 +11,7 @@
   "scripts": {
     "build": "./compile.sh && tsc",
     "compile": "./compile.sh",
+    "generate-doc": "./generate-md-doc.sh",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",

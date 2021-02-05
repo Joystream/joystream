@@ -37,7 +37,13 @@ Building will compile the protofiles and build the library from source.
     - [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc) to generate docs
 
 ```
-yarn build
+yarn && yarn build
+```
+
+### Generating docs
+
+```
+yarn generate-docs
 ```
 
 ### Tests
