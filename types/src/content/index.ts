@@ -28,7 +28,6 @@ export class ContentActor extends JoyEnum({
 }) {}
 
 export class ChannelOwner extends JoyEnum({
-  Nobody: Null,
   Member: MemberId,
   Curators: CuratorGroupId,
   Dao: DAOId,
@@ -142,7 +141,6 @@ export class SeriesParameters extends JoyStructDecorated({
 }) {}
 
 export class PersonController extends JoyEnum({
-  Nobody: Null,
   Member: MemberId,
   Curators: Null,
 }) {}

@@ -123,8 +123,6 @@ pub enum NewAsset<ContentParameters> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
-    /// Do not use - Default value representing empty value
-    Nobody,
     /// A Member owns the channel
     Member(MemberId),
     /// A specific curation group owns the channel
@@ -135,9 +133,11 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
-impl<MemberId, CuratorGroupId, DAOId> Default for ChannelOwner<MemberId, CuratorGroupId, DAOId> {
+impl<MemberId: Default, CuratorGroupId, DAOId> Default
+    for ChannelOwner<MemberId, CuratorGroupId, DAOId>
+{
     fn default() -> Self {
-        ChannelOwner::Nobody
+        ChannelOwner::Member(MemberId::default())
     }
 }
 
@@ -391,8 +391,6 @@ pub enum PersonActor<MemberId, CuratorId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonController<MemberId> {
-    /// Do not use - Default value representing empty value
-    Nobody,
     /// Member controls the person
     Member(MemberId),
     /// Any curator controls the person
@@ -401,9 +399,9 @@ pub enum PersonController<MemberId> {
 
 // Default trait implemented only because its used in Person which needs to implement a Default trait
 // since it is a StorageValue.
-impl<MemberId> Default for PersonController<MemberId> {
+impl<MemberId: Default> Default for PersonController<MemberId> {
     fn default() -> Self {
-        PersonController::Nobody
+        PersonController::Member(MemberId::default())
     }
 }
 
