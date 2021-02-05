@@ -181,8 +181,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Bal
     number_of_playlists: u32,
     /// The number of series under this channel
     number_of_series: u32,
-    /// If curators have curated this channel or not
-    is_curated: bool,
+    /// If curators have censored this channel or not
+    is_censored: bool,
     /// Earned revenue yet to be withdrawn by channel owner
     revenue: Balance,
     // TODO: I think we need to add these instead of the counters!
@@ -297,8 +297,8 @@ pub struct Video<ChannelId, SeriesId, PlaylistId> {
     in_series: Vec<SeriesId>,
     in_playlists: Vec<PlaylistId>,
 
-    /// Whether the curators have curated the video or not.
-    is_curated: bool,
+    /// Whether the curators have censored the video or not.
+    is_censored: bool,
     /// Whether the curators have chosen to feature the video or not.
     is_featured: bool,
 }
@@ -881,7 +881,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn curate_video(
+        pub fn censor_video(
             origin,
             curator_id: T::CuratorId,
             video_id: T::VideoId,
@@ -891,7 +891,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn curate_channel(
+        pub fn censor_channel(
             origin,
             curator_id: T::CuratorId,
             channel_id: T::ChannelId,
@@ -901,7 +901,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncurate_video(
+        pub fn uncensor_video(
             origin,
             curator_id: T::CuratorId,
             video_id: T::VideoId,
@@ -911,7 +911,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncurate_channel(
+        pub fn uncensor_channel(
             origin,
             curator_id: T::CuratorId,
             channel_id: T::ChannelId,
@@ -1079,6 +1079,9 @@ decl_event!(
         ),
         ChannelDeleted(ChannelId),
 
+        ChannelCensored(ChannelId, Vec<u8> /* rationale */),
+        ChannelUncensored(ChannelId, Vec<u8> /* rationale */),
+
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
             ChannelOwnershipTransferRequestId,
@@ -1109,8 +1112,8 @@ decl_event!(
         ),
         VideoDeleted(VideoId),
 
-        VideoCurated(VideoId, Vec<u8> /* rationale */),
-        VideoUncurated(VideoId, Vec<u8> /* rationale */),
+        VideoCensored(VideoId, Vec<u8> /* rationale */),
+        VideoUncensored(VideoId, Vec<u8> /* rationale */),
 
         // Featured Videos
         FeaturedVideosSet(Vec<VideoId>),

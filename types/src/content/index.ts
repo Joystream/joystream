@@ -39,7 +39,7 @@ export class Channel extends JoyStructDecorated({
   number_of_videos: u32,
   number_of_playlists: u32,
   number_of_series: u32,
-  is_curated: bool,
+  is_censored: bool,
   revenue: u128,
 }) {}
 
@@ -87,7 +87,7 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Vec.with(SeriesId),
   in_playlists: Vec.with(PlaylistId),
-  is_curated: bool,
+  is_censored: bool,
   is_featured: bool,
 }) {}
 
