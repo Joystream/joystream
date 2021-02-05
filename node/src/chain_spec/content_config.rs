@@ -71,6 +71,8 @@ struct EncodedContentData {
     quota_objects_limit_upper_bound: String,
     /// hex encoded GlobalQuota
     global_quota: String,
+    /// hex encoded UploadingBlocked flag
+    uploading_blocked: String
 }
 
 fn parse_content_data(data_file: &Path) -> EncodedContentData {
@@ -119,6 +121,7 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
         quota_size_limit_upper_bound: 20000,
         quota_objects_limit_upper_bound: 200,
         global_quota: Quota::new(2000000, 2000),
+        uploading_blocked: false
     }
 }
 
@@ -147,5 +150,6 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
         quota_size_limit_upper_bound: content.quota_size_limit_upper_bound,
         quota_objects_limit_upper_bound: content.quota_objects_limit_upper_bound,
         global_quota: content.global_quota,
+        uploading_blocked: content.uploading_blocked
     }
 }

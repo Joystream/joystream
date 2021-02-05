@@ -106,6 +106,9 @@ decl_error! {
 
         /// Contant uploading failed. Actor quota objects limit exceeded.
         GlobalQuotaObjectsLimitExceeded,
+
+        /// Content uploading blocked.
+        ContentUploadingBlocked,
     }
 }
 
@@ -260,6 +263,9 @@ decl_storage! {
 
         /// Global quota.
         pub GlobalQuota get(fn global_quota) config(): Quota;
+
+        /// If all new uploads blocked
+        pub UploadingBlocked get(fn uploading_blocked) config(): bool;
     }
 }
 
@@ -332,6 +338,8 @@ decl_module! {
             } else {
                 ensure_root(origin)?;
             };
+
+            Self::ensure_uploading_is_not_blocked()?;
 
             Self::ensure_content_is_valid(&content)?;
 
@@ -497,6 +505,15 @@ impl<T: Trait> Module<T> {
         } else {
             T::DefaultQuota::get()
         }
+    }
+
+    // Ensure content uploading is not blocked
+    fn ensure_uploading_is_not_blocked() -> DispatchResult {
+        ensure!(
+            !Self::uploading_blocked(),
+            Error::<T>::ContentUploadingBlocked
+        );
+        Ok(())
     }
 
     // Ensure owner quota constraints satisfied, returns total object length and total size delta for this upload.
