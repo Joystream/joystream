@@ -28,15 +28,20 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 use system::ensure_signed;
 
-pub use common::storage::{ContentParameters, StorageSystem};
+pub use common::storage::{
+    AbstractStorageObjectOwner, ContentParameters, StorageObjectOwner, StorageSystem,
+};
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
+    working_group::WorkingGroup,
     MembershipTypes, StorageOwnership,
 };
 
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
+
+pub(crate) type UploadParameters<T> = ContentParameters<ContentId<T>, DataObjectTypeId<T>>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -111,9 +116,9 @@ pub trait Trait:
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NewAsset<ContentParameters> {
+pub enum NewAsset<UploadParameters> {
     /// Upload to the storage system
-    Upload(ContentParameters),
+    Upload(UploadParameters),
     /// A url string pointing at an asset
     Uri(Vec<u8>),
 }
@@ -201,15 +206,20 @@ pub type Channel<T> = ChannelInternal<
 /// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelOwnershipTransferRequestType<ChannelId, MemberId, CuratorGroupId, DAOId, Balance>
-{
+pub struct ChannelOwnershipTransferRequestInternal<
+    ChannelId,
+    MemberId,
+    CuratorGroupId,
+    DAOId,
+    Balance,
+> {
     channel_id: ChannelId,
     new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     payment: Balance,
 }
 
 // ChannelOwnershipTransferRequest type alias for simplification.
-pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestType<
+pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestInternal<
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
@@ -643,21 +653,131 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel(
             origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
             params: ChannelCreationParameters<T::ChannelCategoryId>,
         ) -> DispatchResult {
+            let _sender = ensure_signed(origin.clone())?;
+
+            ensure_actor_authorized_to_create_or_update_channel::<T>(
+                origin,
+                &actor,
+                &owner,
+            )?;
+
+            // Ensure the channel category exists
+            Self::ensure_channel_category_exists(&params.in_category)?;
+
+            // Pick out the assets to be uploaded to storage system
+            let upload_parameters: Vec<UploadParameters<T>> = Self::pick_upload_parameters_from_assets(&assets);
+
+            let object_owner = Self::channel_owner_to_object_owner(&owner)?;
+
+            // check assets can be uploaded to storage.
+            // update can_add_content() to only take &refrences
+            T::StorageSystem::can_add_content(
+                object_owner.clone(),
+                upload_parameters.clone(),
+            )?;
+
+            // TODO:
+            // Enough funds to create channel?
+            // Limit on number of channels per owner?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // TODO: Burn funds from sender account as fee for creating a channel
+
+            // add assets to storage
+            // This should not fail because of prior can_add_content() check!
+            T::StorageSystem::atomically_add_content(
+                object_owner,
+                upload_parameters,
+            )?;
+
+            let channel_id = NextChannelId::<T>::get();
+            NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
+
+            let channel: Channel<T> = ChannelInternal {
+                owner: owner.clone(),
+                number_of_videos: 0,
+                number_of_playlists: 0,
+                number_of_series: 0,
+                in_category: params.in_category,
+                is_curated: false,
+                revenue: BalanceOf::<T>::from(0),
+            };
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            if let ChannelOwner::CuratorGroup(curator_group_id) = owner {
+                Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
+            }
+
+            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, assets, params));
             Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            new_assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
+            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
             params: ChannelUpdateParameters<T::ChannelCategoryId>,
         ) -> DispatchResult {
+            let _sender = ensure_signed(origin.clone())?;
+
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_create_or_update_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            // change of category?
+            if let Some(new_category_id) = params.new_in_category {
+                Self::ensure_channel_category_exists(&new_category_id)?;
+            }
+
+            // Pick out the assets to be uploaded to storage system
+            let upload_parameters: Vec<UploadParameters<T>> = Self::pick_upload_parameters_from_assets(&assets);
+
+            let object_owner = Self::channel_owner_to_object_owner(&channel.owner)?;
+
+            // check assets can be uploaded to storage.
+            // update can_add_content() to only take &refrences
+            T::StorageSystem::can_add_content(
+                object_owner.clone(),
+                upload_parameters.clone(),
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            // change of category, already validated
+            if let Some(new_category_id) = params.new_in_category {
+                channel.in_category = new_category_id;
+            }
+
+            // update the channel
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            // add assets to storage
+            // This should not fail because of prior can_add_content() check!
+            T::StorageSystem::atomically_add_content(
+                object_owner,
+                upload_parameters,
+            )?;
+
+            Self::deposit_event(RawEvent::ChannelUpdated(channel_id, channel, assets, params));
             Ok(())
         }
 
@@ -806,6 +926,9 @@ decl_module! {
             curator: T::CuratorId,
             params: ChannelCategoryCreationParameters,
         ) -> DispatchResult {
+            // check origin is curator in active curator group
+            // any curator can create a category
+            // create category and emit event
             Ok(())
         }
 
@@ -971,11 +1094,8 @@ impl<T: Trait> Module<T> {
         });
     }
 
-    // TODO: make this private again after used in module
     /// Increment number of classes, maintained by curator group
-    pub fn increment_number_of_channels_owned_by_curator_group(
-        curator_group_id: T::CuratorGroupId,
-    ) {
+    fn increment_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
         <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
             curator_group.increment_number_of_channels_owned_count();
         });
@@ -1020,6 +1140,49 @@ impl<T: Trait> Module<T> {
         }
         Ok(())
     }
+
+    fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+        ensure!(
+            ChannelById::<T>::contains_key(channel_id),
+            Error::<T>::ChannelDoesNotExist
+        );
+        Ok(ChannelById::<T>::get(channel_id))
+    }
+
+    fn ensure_channel_category_exists(
+        channel_category_id: &T::ChannelCategoryId
+    ) -> Result<ChannelCategory, Error<T>> {
+        ensure!(
+            ChannelCategoryById::<T>::contains_key(channel_category_id),
+            Error::<T>::ChannelCategoryDoesNotExist
+        );
+        Ok(ChannelCategoryById::<T>::get(channel_category_id))
+    }
+
+    fn pick_upload_parameters_from_assets(
+        assets: &Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>
+    ) -> Vec<UploadParameters<T>> {
+        assets.clone().into_iter().filter_map(|asset| {
+            match asset {
+                NewAsset::Upload(upload_parameters) => Some(upload_parameters),
+                _ => None,
+            }
+        }).collect()
+    }
+
+    fn channel_owner_to_object_owner(
+        channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>
+    ) -> Result<StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>, Error::<T>> {
+        match channel_owner {
+            ChannelOwner::Member(member_id) => Ok(StorageObjectOwner::Member(*member_id)),
+            ChannelOwner::CuratorGroup(_id) => {
+                Ok(StorageObjectOwner::AbstractStorageObjectOwner(
+                    AbstractStorageObjectOwner::WorkingGroup(WorkingGroup::Content)
+                ))
+            },
+            _ => Err(Error::<T>::CannotConverChannelOwnerToObjectOwner),
+        }
+    }
 }
 
 // Some initial config for the module on runtime upgrade
@@ -1044,16 +1207,17 @@ decl_event!(
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as StorageOwnership>::ChannelId,
-        MemberId = <T as MembershipTypes>::MemberId,
+        // MemberId = <T as MembershipTypes>::MemberId,
         NewAsset = NewAsset<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
         SeriesId = <T as Trait>::SeriesId,
         PersonId = <T as Trait>::PersonId,
-        DAOId = <T as StorageOwnership>::DAOId,
+        // DAOId = <T as StorageOwnership>::DAOId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
+        Channel = Channel<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1065,12 +1229,13 @@ decl_event!(
         // Channels
         ChannelCreated(
             ChannelId,
-            ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+            Channel,
             Vec<NewAsset>,
             ChannelCreationParameters<ChannelCategoryId>,
         ),
         ChannelUpdated(
             ChannelId,
+            Channel,
             Vec<NewAsset>,
             ChannelUpdateParameters<ChannelCategoryId>,
         ),

@@ -43,5 +43,20 @@ decl_error! {
 
         /// Expected root or signed origin
         BadOrigin,
+
+        /// Operation Cannot be perfomed with this Actor
+        OperationDeniedForActor,
+
+        /// It is not valid to use this variant of a ChannelOwner
+        BadChannelOwner,
+
+        /// Channel Category Does not Exist.
+        ChannelCategoryDoesNotExist,
+
+        /// Channel Does Not Exist
+        ChannelDoesNotExist,
+
+        /// Cannot convert channelowner to an object owner
+        CannotConverChannelOwnerToObjectOwner,
     }
 }
