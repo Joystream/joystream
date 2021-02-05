@@ -55,18 +55,18 @@ impl<T: Trait> CuratorGroup<T> {
         &mut self.curators
     }
 
-    /// Increment number of classes `CuratorGroup` maintains
+    /// Increment number of channels `CuratorGroup` owns
     pub fn increment_number_of_channels_owned_count(&mut self) {
         self.number_of_channels_owned += 1;
     }
 
-    /// Decrement number of classes `CuratorGroup` maintains
+    /// Decrement number of channels `CuratorGroup` owns
     pub fn decrement_number_of_channels_owned_count(&mut self) {
         self.number_of_channels_owned -= 1;
     }
 
-    /// Ensure curator group does not maintain any `Class`
-    pub fn ensure_curator_group_maintains_no_classes(&self) -> Result<(), Error<T>> {
+    /// Ensure curator group does not maintain any `Channel`
+    pub fn ensure_curator_group_owns_no_channels(&self) -> Result<(), Error<T>> {
         ensure!(
             self.number_of_channels_owned == 0,
             Error::<T>::CuratorGroupRemovalForbidden

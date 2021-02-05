@@ -534,8 +534,8 @@ decl_module! {
             // Ensure CuratorGroup under given curator_group_id exists
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            // We should previously ensure that curator_group  maintains no classes to be able to remove it
-            curator_group.ensure_curator_group_maintains_no_classes()?;
+            // We should previously ensure that curator_group  owns no channels to be able to remove it
+            curator_group.ensure_curator_group_owns_no_channels()?;
 
             //
             // == MUTATION SAFE ==
@@ -955,7 +955,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // TODO: make this private again after used in module
-    /// Increment number of classes, maintained by each curator group
+    /// Increment number of channels, maintained by each curator group
     pub fn increment_number_of_channels_owned_by_curator_groups(
         curator_group_ids: BTreeSet<T::CuratorGroupId>,
     ) {
@@ -965,7 +965,7 @@ impl<T: Trait> Module<T> {
     }
 
     // TODO: make this private again after used in module
-    /// Decrement number of classes, maintained by each curator group
+    /// Decrement number of channels, maintained by each curator group
     pub fn decrement_number_of_channels_owned_by_curator_groups(
         curator_group_ids: BTreeSet<T::CuratorGroupId>,
     ) {
@@ -975,7 +975,7 @@ impl<T: Trait> Module<T> {
     }
 
     // TODO: make this private again after used in module
-    /// Increment number of classes, maintained by curator group
+    /// Increment number of channels, maintained by curator group
     pub fn increment_number_of_channels_owned_by_curator_group(
         curator_group_id: T::CuratorGroupId,
     ) {
@@ -985,7 +985,7 @@ impl<T: Trait> Module<T> {
     }
 
     // TODO: make this private again after used in module
-    /// Decrement number of classes, maintained by curator group
+    /// Decrement number of channels, maintained by curator group
     pub fn decrement_number_of_channels_owned_by_curator_group(
         curator_group_id: T::CuratorGroupId,
     ) {
