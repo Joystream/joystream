@@ -324,14 +324,9 @@ decl_module! {
             owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
             content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
-            if let StorageObjectOwner::Member(member_id) = owner {
-                T::MemberOriginValidator::ensure_actor_origin(
-                    origin,
-                    member_id,
-                )?;
-            } else {
-                ensure_root(origin)?;
-            };
+            
+            // Ensure given origin can perform operation under specific storage object owner
+            Self::ensure_storage_object_owner_origin(origin, &owner)?;
 
             Self::ensure_content_is_valid(&content)?;
 
@@ -490,6 +485,19 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Ensure given origin can perform operation under specific storage object owner
+    fn ensure_storage_object_owner_origin(
+        origin: T::Origin,
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+    ) -> DispatchResult {
+        if let StorageObjectOwner::Member(member_id) = owner {
+            T::MemberOriginValidator::ensure_actor_origin(origin, *member_id)?;
+        } else {
+            ensure_root(origin)?;
+        };
+        Ok(())
+    }
+
     // Get owner quota if exists, otherwise return default one.
     fn get_quota(owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>) -> Quota {
         if <Quotas<T>>::contains_key(owner) {
