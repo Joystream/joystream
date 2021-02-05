@@ -26,6 +26,7 @@ struct ContentData {
     quota_size_limit_upper_bound: u64,
     quota_objects_limit_upper_bound: u64,
     global_quota: Quota,
+    uploading_blocked: bool,
 }
 
 #[derive(Deserialize)]
