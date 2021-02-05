@@ -23,7 +23,8 @@
     "utils/api-scripts",
     "content-directory-schemas",
     "query-node",
-    "query-node/generated/*"
+    "query-node/generated/*",
+    "content-metadata-protobuf"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
