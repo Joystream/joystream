@@ -3982,6 +3982,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-council",

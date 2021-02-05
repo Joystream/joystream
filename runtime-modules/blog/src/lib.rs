@@ -1,5 +1,6 @@
 //! # Blog Module
 //!
+//!
 //! The Blog module provides functionality for handling blogs
 //!
 //! - [`timestamp::Trait`](./trait.Trait.html)
@@ -57,10 +58,14 @@ mod errors;
 mod mock;
 mod tests;
 
+// Type for maximum number of posts/replies
 type MaxNumber = u64;
 
+/// Type for post IDs
+pub type PostId = u64;
+
 /// Type, representing reactions number
-type ReactionsNumber = u64;
+pub type ReactionsNumber = u64;
 
 /// Number of reactions, presented in runtime
 pub const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
@@ -99,18 +104,6 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
 
     /// The maximum number of replies to a post.
     type RepliesMaxNumber: Get<MaxNumber>;
-
-    /// Type of identifier for blog posts.
-    type PostId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
 
     /// Type of identifier for replies.
     type ReplyId: Parameter
@@ -165,7 +158,7 @@ impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
 
 impl<T: Trait<I>, I: Instance> Post<T, I> {
     /// Create a new post with given title and body
-    fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
+    pub fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
         Self {
             // Post default locking status
             locked: false,
@@ -187,7 +180,7 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
     }
 
     /// Get current locking status
-    fn is_locked(&self) -> bool {
+    pub fn is_locked(&self) -> bool {
         self.locked
     }
 
@@ -212,7 +205,7 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
     }
 }
 
-/// Enum variant, representing either reply or post id
+/// Ekkjkjkjkjkjnum variant, representing either reply or post id
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ParentId<ReplyId, PostId: Default> {
@@ -236,7 +229,7 @@ pub struct Reply<T: Trait<I>, I: Instance> {
     /// Participant id, associated with a reply owner
     owner: ParticipantId<T>,
     /// Reply`s parent id
-    parent_id: ParentId<T::ReplyId, T::PostId>,
+    parent_id: ParentId<T::ReplyId, PostId>,
 }
 
 /// Reply comparator
@@ -264,7 +257,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
     fn new(
         text: Vec<u8>,
         owner: ParticipantId<T>,
-        parent_id: ParentId<T::ReplyId, T::PostId>,
+        parent_id: ParentId<T::ReplyId, PostId>,
     ) -> Self {
         Self {
             text_hash: T::Hashing::hash(&text),
@@ -291,16 +284,16 @@ decl_storage! {
         /// Maps, representing id => item relationship for blogs, posts and replies related structures
 
         /// Post count
-        PostCount get(fn post_count): T::PostId;
+        PostCount get(fn post_count): PostId;
 
         /// Post by unique blog and post identificators
-        PostById get(fn post_by_id): map hasher(blake2_128_concat) T::PostId => Post<T, I>;
+        PostById get(fn post_by_id): map hasher(blake2_128_concat) PostId => Post<T, I>;
 
         /// Reply by unique blog, post and reply identificators
-        ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T, I>;
+        ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T, I>;
 
         /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
-        pub Reactions get(fn reactions): double_map hasher(blake2_128_concat) (T::PostId, Option<T::ReplyId>), hasher(blake2_128_concat) ParticipantId<T> => [bool; REACTIONS_MAX_NUMBER as usize];
+        pub Reactions get(fn reactions): double_map hasher(blake2_128_concat) (PostId, Option<T::ReplyId>), hasher(blake2_128_concat) ParticipantId<T> => [bool; REACTIONS_MAX_NUMBER as usize];
     }
 }
 
@@ -332,9 +325,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            //<PostCount<T, I>>::mutate(|count| *count += 1);
-            let post_count = <PostCount<T, I>>::get();
-            <PostCount<T, I>>::put(post_count + One::one());
+            let post_count = <PostCount<I>>::get();
+            <PostCount<I>>::put(post_count + 1);
 
             // New post creation
             let post = Post::new(title.clone(), body.clone());
@@ -348,7 +340,7 @@ decl_module! {
         /// Blog owner can lock posts, related to a given blog,
         /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
         #[weight = T::WeightInfo::lock_post()]
-        pub fn lock_post(origin, post_id: T::PostId) -> DispatchResult {
+        pub fn lock_post(origin, post_id: PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
             Self::ensure_blog_ownership(origin)?;
@@ -371,7 +363,7 @@ decl_module! {
         /// Blog owner can unlock posts, related to a given blog,
         /// making post accesible to previously forbidden actions
         #[weight = T::WeightInfo::unlock_post()]
-        pub fn unlock_post(origin, post_id: T::PostId) -> DispatchResult {
+        pub fn unlock_post(origin, post_id: PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
             Self::ensure_blog_ownership(origin)?;
@@ -396,7 +388,7 @@ decl_module! {
         #[weight = Module::<T, I>::edit_post_weight(&new_title, &new_body)]
         pub fn edit_post(
             origin,
-            post_id: T::PostId,
+            post_id: PostId,
             new_title: Option<Vec<u8>>,
             new_body: Option<Vec<u8>>
         ) -> DispatchResult {
@@ -429,7 +421,7 @@ decl_module! {
         pub fn create_reply(
             origin,
             participant_id: ParticipantId<T>,
-            post_id: T::PostId,
+            post_id: PostId,
             reply_id: Option<T::ReplyId>,
             text: Vec<u8>
         ) -> DispatchResult {
@@ -480,7 +472,7 @@ decl_module! {
         pub fn edit_reply(
             origin,
             participant_id: ParticipantId<T>,
-            post_id: T::PostId,
+            post_id: PostId,
             reply_id: T::ReplyId,
             new_text: Vec<u8>
         ) -> DispatchResult {
@@ -522,7 +514,7 @@ decl_module! {
             participant_id: ParticipantId<T>,
             // reaction index in array
             index: ReactionsNumber,
-            post_id: T::PostId,
+            post_id: PostId,
             reply_id: Option<T::ReplyId>
         ) {
             Self::ensure_valid_participant(origin, participant_id)?;
@@ -590,7 +582,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T, I>, DispatchError> {
+    fn ensure_post_exists(post_id: PostId) -> Result<Post<T, I>, DispatchError> {
         ensure!(
             <PostById<T, I>>::contains_key(post_id),
             Error::<T, I>::PostNotFound
@@ -599,7 +591,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_reply_exists(
-        post_id: T::PostId,
+        post_id: PostId,
         reply_id: T::ReplyId,
     ) -> Result<Reply<T, I>, DispatchError> {
         ensure!(
@@ -634,7 +626,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_posts_limit_not_reached() -> Result<T::PostId, DispatchError> {
+    fn ensure_posts_limit_not_reached() -> Result<PostId, DispatchError> {
         // Get posts count, associated with given blog
         let posts_count = Self::post_count();
 
@@ -671,7 +663,7 @@ decl_event!(
     pub enum Event<T, I = DefaultInstance>
     where
         ParticipantId = ParticipantId<T>,
-        PostId = <T as Trait<I>>::PostId,
+        PostId = PostId,
         ReplyId = <T as Trait<I>>::ReplyId,
         ReactionIndex = ReactionsNumber,
         Title = Vec<u8>,

@@ -86,14 +86,14 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn generate_post<T: Trait<I>, I: Instance>() -> T::PostId {
-    assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
+fn generate_post<T: Trait<I>, I: Instance>() -> PostId {
+    assert_eq!(Blog::<T, I>::post_count(), 0);
 
     Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
 
-    let post_id = T::PostId::zero();
+    let post_id = 0;
 
-    assert_eq!(Blog::<T, I>::post_count(), One::one());
+    assert_eq!(Blog::<T, I>::post_count(), 1);
 
     assert!(Blog::<T, I>::post_by_id(post_id) == Post::<T, I>::new(vec![0u8], vec![0u8]));
 
@@ -103,7 +103,7 @@ fn generate_post<T: Trait<I>, I: Instance>() -> T::PostId {
 fn generate_reply<T: Trait<I>, I: Instance>(
     creator_id: T::AccountId,
     participant_id: ParticipantId<T>,
-    post_id: T::PostId,
+    post_id: PostId,
 ) -> T::ReplyId {
     let creator_origin = RawOrigin::Signed(creator_id);
     Blog::<T, I>::create_reply(
@@ -131,21 +131,21 @@ benchmarks_instance! {
     create_post {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
-        assert_eq!(Blog::<T, I>::post_count(), Zero::zero());
+        assert_eq!(Blog::<T, I>::post_count(), 0);
         let title = vec![0u8; t.try_into().unwrap()];
         let body = vec![0u8; b.try_into().unwrap()];
 
     }:_(RawOrigin::Root, title.clone(), body.clone())
     verify {
-        assert_eq!(Blog::<T, I>::post_count(), One::one());
+        assert_eq!(Blog::<T, I>::post_count(), 1);
 
         assert!(
-            Blog::<T, I>::post_by_id(T::PostId::zero()) ==
+            Blog::<T, I>::post_by_id(0) ==
             Post::<T, I>::new(title.clone(), body.clone())
         );
 
         assert_last_event::<T, I>(RawEvent::PostCreated(
-                T::PostId::zero(),
+                0,
                 title,
                 body
             ).into());

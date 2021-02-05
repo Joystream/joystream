@@ -229,7 +229,6 @@ impl Trait for Runtime {
     type ParticipantEnsureOrigin = MockEnsureParticipant;
     type WeightInfo = ();
 
-    type PostId = u64;
     type ReplyId = u64;
 }
 
@@ -329,7 +328,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
 
 type RawTestEvent = RawEvent<
     ParticipantId<Runtime>,
-    <Runtime as Trait>::PostId,
+    PostId,
     <Runtime as Trait>::ReplyId,
     ReactionsNumber,
     Vec<u8>,
@@ -348,7 +347,7 @@ pub fn post_count() -> u64 {
     TestBlogModule::post_count()
 }
 
-pub fn post_by_id(post_id: <Runtime as Trait>::PostId) -> Option<Post<Runtime, DefaultInstance>> {
+pub fn post_by_id(post_id: PostId) -> Option<Post<Runtime, DefaultInstance>> {
     match TestBlogModule::post_by_id(post_id) {
         post if post != Post::<Runtime, DefaultInstance>::default() => Some(post),
         _ => None,
@@ -374,22 +373,22 @@ pub fn create_post(origin: Origin) -> DispatchResult {
     TestBlogModule::create_post(origin, title, body)
 }
 
-pub fn lock_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+pub fn lock_post(origin: Origin, post_id: PostId) -> DispatchResult {
     TestBlogModule::lock_post(origin, post_id)
 }
 
-pub fn unlock_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+pub fn unlock_post(origin: Origin, post_id: PostId) -> DispatchResult {
     TestBlogModule::unlock_post(origin, post_id)
 }
 
-pub fn edit_post(origin: Origin, post_id: <Runtime as Trait>::PostId) -> DispatchResult {
+pub fn edit_post(origin: Origin, post_id: PostId) -> DispatchResult {
     let (title, body) = generate_post();
     TestBlogModule::edit_post(origin, post_id, Some(title), Some(body))
 }
 
 // Replies
 pub fn reply_by_id(
-    post_id: <Runtime as Trait>::PostId,
+    post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> Option<Reply<Runtime, DefaultInstance>> {
     match TestBlogModule::reply_by_id(post_id, reply_id) {
@@ -404,7 +403,7 @@ pub fn get_reply_text() -> Vec<u8> {
 
 pub fn get_reply(
     owner: <Runtime as frame_system::Trait>::AccountId,
-    parent_id: ParentId<<Runtime as Trait>::ReplyId, <Runtime as Trait>::PostId>,
+    parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
     Reply::new(reply_text, owner, parent_id)
@@ -413,7 +412,7 @@ pub fn get_reply(
 pub fn create_reply(
     origin_id: u64,
     participant_id: u64,
-    post_id: <Runtime as Trait>::PostId,
+    post_id: PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
 ) -> DispatchResult {
     let reply = get_reply_text();
@@ -429,7 +428,7 @@ pub fn create_reply(
 pub fn edit_reply(
     origin_id: u64,
     participant_id: u64,
-    post_id: <Runtime as Trait>::PostId,
+    post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> DispatchResult {
     let reply = get_reply_text();
@@ -448,7 +447,7 @@ pub fn react(
     origin_id: u64,
     participant_id: u64,
     index: ReactionsNumber,
-    post_id: <Runtime as Trait>::PostId,
+    post_id: PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
 ) -> DispatchResult {
     TestBlogModule::react(

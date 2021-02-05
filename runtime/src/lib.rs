@@ -860,6 +860,10 @@ impl proposals_codex::Trait for Runtime {
     type SetMembershipLeadInvitationQuotaProposalParameters =
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
+    type CreateBlogPostProposalParameters = CreateBlogPostProposalParameters;
+    type EditBlogPostProoposalParamters = EditBlogPostProoposalParamters;
+    type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
+    type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
         call_wg!(working_group, get_budget)
@@ -888,7 +892,6 @@ impl blog::Trait<BlogInstance> for Runtime {
     type ParticipantEnsureOrigin = Members;
     type WeightInfo = weights::blog::WeightInfo;
 
-    type PostId = u64;
     type ReplyId = u64;
 }
 

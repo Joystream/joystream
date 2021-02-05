@@ -565,6 +565,10 @@ impl crate::Trait for Test {
     type SetInvitationCountProposalParameters = DefaultProposalParameters;
     type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
     type SetReferralCutProposalParameters = DefaultProposalParameters;
+    type CreateBlogPostProposalParameters = DefaultProposalParameters;
+    type EditBlogPostProoposalParamters = DefaultProposalParameters;
+    type LockBlogPostProposalParameters = DefaultProposalParameters;
+    type UnlockBlogPostProposalParameters = DefaultProposalParameters;
 
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
         call_wg!(working_group<Test>, get_budget)

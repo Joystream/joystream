@@ -42,7 +42,7 @@ where
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
@@ -479,6 +479,214 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
             proposal_parameters:
                 <Test as crate::Trait>::SetMaxValidatorCountProposalParameters::get(),
             proposal_details: validator_count_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_create_blog_post_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::CreateBlogPostProposalParameters::get(),
+            proposal_details: proposal_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_edit_blog_post_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::EditBlogPost(0, Some(vec![0u8]), Some(vec![0u8]));
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::EditBlogPostProoposalParamters::get(),
+            proposal_details: proposal_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_lock_blog_post_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::LockBlogPost(0);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::LockBlogPostProposalParameters::get(),
+            proposal_details: proposal_details.clone(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_unlock_blog_post_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_with_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::UnlockBlogPost(0);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_with_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::UnlockBlogPostProposalParameters::get(),
+            proposal_details: proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });

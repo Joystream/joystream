@@ -40,7 +40,7 @@ fn assert_failure(
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime, DefaultInstance>>,
     reply_owner_id: <Runtime as frame_system::Trait>::AccountId,
-    parent: ParentId<<Runtime as Trait>::ReplyId, <Runtime as Trait>::PostId>,
+    parent: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) {
     // Ensure  stored reply is equal to expected one
     assert!(matches!(
@@ -1032,10 +1032,7 @@ fn reaction_post_locked_error() {
     })
 }
 
-fn replies_storage_unchanged(
-    post_id: <Runtime as Trait>::PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
-) -> bool {
+fn replies_storage_unchanged(post_id: PostId, reply_id: <Runtime as Trait>::ReplyId) -> bool {
     match post_by_id(post_id) {
         Some(post) if post.replies_count() == 0 && reply_by_id(post_id, reply_id).is_none() => true,
         Some(_) => false,

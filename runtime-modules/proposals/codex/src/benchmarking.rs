@@ -510,6 +510,65 @@ benchmarks! {
         create_proposal_verify::<T>(account_id, member_id, proposal_details);
     }
 
+    create_proposal_create_blog_post {
+        let t in ...;
+        let d in ...;
+        let h in 1 .. MAX_BYTES;
+        let b in 1 .. MAX_BYTES;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::CreateBlogPost(
+                vec![0; h.try_into().unwrap()],
+                vec![0; b.try_into().unwrap()],
+            );
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    create_proposal_edit_blog_post {
+        let t in ...;
+        let d in ...;
+        let h in 1 .. MAX_BYTES;
+        let b in 1 .. MAX_BYTES;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::EditBlogPost(
+                0,
+                Some(vec![0; h.try_into().unwrap()]),
+                Some(vec![0; b.try_into().unwrap()]),
+            );
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    create_proposal_lock_blog_post {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::LockBlogPost(0);
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
+    create_proposal_unlock_blog_post {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UnlockBlogPost(0);
+    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    verify {
+        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+    }
+
     update_working_group_budget_positive_forum {
         set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
     }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Forum, One::one(), BalanceKind::Positive)
@@ -775,6 +834,34 @@ mod tests {
     fn test_update_working_group_budget_negative_membership() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_update_working_group_budget_negative_membership::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_create_blog_post() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_create_blog_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_edit_blog_post() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_edit_blog_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_lock_blog_post() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_lock_blog_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_unlock_blog_post() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_unlock_blog_post::<Test>());
         });
     }
 }
