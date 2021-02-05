@@ -175,7 +175,7 @@ pub struct DataObjectInternal<
 }
 
 #[derive(Clone, Copy)]
-pub struct Delta {
+pub struct Voucher {
     pub size: u64,
     pub objects: u64,
 }
@@ -204,25 +204,25 @@ impl Quota {
     }
 
     /// Calculate free quota
-    pub fn calculate_delta(&self) -> Delta {
-        Delta {
+    pub fn calculate_voucher(&self) -> Voucher {
+        Voucher {
             size: self.size_limit - self.size_used,
             objects: self.objects_limit - self.objects_used,
         }
     }
 
-    pub fn fill_quota(self, delta: Delta) -> Self {
+    pub fn fill_quota(self, voucher: Voucher) -> Self {
         Self {
-            size_used: self.size_used + delta.size,
-            objects_used: self.objects_used + delta.objects,
+            size_used: self.size_used + voucher.size,
+            objects_used: self.objects_used + voucher.objects,
             ..self
         }
     }
 
-    pub fn release_quota(self, delta: Delta) -> Self {
+    pub fn release_quota(self, voucher: Voucher) -> Self {
         Self {
-            size_used: self.size_used - delta.size,
-            objects_used: self.objects_used - delta.objects,
+            size_used: self.size_used - voucher.size,
+            objects_used: self.objects_used - voucher.objects,
             ..self
         }
     }
@@ -336,11 +336,11 @@ decl_module! {
             let owner_quota = Self::get_quota(&owner);
 
             // Ensure owner quota constraints satisfied.
-            // Calculate upload delta
-            let upload_delta = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+            // Calculate upload voucher
+            let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
             // Ensure global quota constraints satisfied.
-            Self::ensure_global_quota_constraints_satisfied(upload_delta)?;
+            Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -349,7 +349,7 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(owner_quota, upload_delta, liaison, content.clone(), owner.clone());
+            Self::upload_content(owner_quota, upload_voucher, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -371,11 +371,11 @@ decl_module! {
             let owner_quota = Self::get_quota(&owner);
 
             // Ensure owner quota constraints satisfied.
-            // Calculate upload delta
-            let upload_delta = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+            // Calculate upload voucher
+            let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
             // Ensure global quota constraints satisfied.
-            Self::ensure_global_quota_constraints_satisfied(upload_delta)?;
+            Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -384,7 +384,7 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(owner_quota, upload_delta, liaison, content.clone(), owner.clone());
+            Self::upload_content(owner_quota, upload_voucher, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -532,18 +532,18 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Ensure owner quota constraints satisfied, returns total object length and total size delta for this upload.
+    // Ensure owner quota constraints satisfied, returns total object length and total size voucher for this upload.
     fn ensure_owner_quota_constraints_satisfied(
         owner_quota: Quota,
         content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<Delta, Error<T>> {
-        let owner_quota_delta = owner_quota.calculate_delta();
+    ) -> Result<Voucher, Error<T>> {
+        let owner_quota_voucher = owner_quota.calculate_voucher();
 
         // Ensure total content length is less or equal then available per given owner quota
         let content_length = content.len() as u64;
 
         ensure!(
-            owner_quota_delta.objects >= content_length,
+            owner_quota_voucher.objects >= content_length,
             Error::<T>::QuotaObjectsLimitExceeded
         );
 
@@ -553,27 +553,27 @@ impl<T: Trait> Module<T> {
             .fold(0, |total_size, content| total_size + content.size);
 
         ensure!(
-            owner_quota_delta.size >= content_size,
+            owner_quota_voucher.size >= content_size,
             Error::<T>::QuotaSizeLimitExceeded
         );
 
-        Ok(Delta {
+        Ok(Voucher {
             size: content_size,
             objects: content_length,
         })
     }
 
     // Ensures global quota constraints satisfied.
-    fn ensure_global_quota_constraints_satisfied(upload_delta: Delta) -> DispatchResult {
-        let global_quota_delta = Self::global_quota().calculate_delta();
+    fn ensure_global_quota_constraints_satisfied(upload_voucher: Voucher) -> DispatchResult {
+        let global_quota_voucher = Self::global_quota().calculate_voucher();
 
         ensure!(
-            global_quota_delta.objects >= upload_delta.objects,
+            global_quota_voucher.objects >= upload_voucher.objects,
             Error::<T>::GlobalQuotaObjectsLimitExceeded
         );
 
         ensure!(
-            global_quota_delta.size >= upload_delta.size,
+            global_quota_voucher.size >= upload_voucher.size,
             Error::<T>::GlobalQuotaSizeLimitExceeded
         );
 
@@ -583,7 +583,7 @@ impl<T: Trait> Module<T> {
     // Complete content upload, update quotas
     fn upload_content(
         owner_quota: Quota,
-        upload_delta: Delta,
+        upload_voucher: Voucher,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -603,10 +603,10 @@ impl<T: Trait> Module<T> {
         }
 
         // Updade or create owner quota.
-        <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_delta));
+        <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_voucher));
 
         // Update global quota
-        <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_delta));
+        <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_voucher));
     }
 
     fn ensure_content_is_valid(
@@ -685,9 +685,9 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
         let owner_quota = Self::get_quota(&owner);
-        let upload_delta = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+        let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
-        Self::upload_content(owner_quota, upload_delta, liaison, content, owner);
+        Self::upload_content(owner_quota, upload_voucher, liaison, content, owner);
         Ok(())
     }
 
