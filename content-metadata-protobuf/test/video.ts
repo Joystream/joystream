@@ -47,6 +47,7 @@ describe('Video Metadata', () => {
       isExplicit: false,
       thumbnailPhoto: 1,
       video: 0,
+      personsList: [],
     })
 
     // sanity check - encoding / decoding works

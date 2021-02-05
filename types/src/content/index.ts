@@ -147,7 +147,6 @@ export class PersonController extends JoyEnum({
 
 export class Person extends JoyStructDecorated({
   controlled_by: PersonController,
-  number_of_videos_person_involed_in: u32,
 }) {}
 
 export class PersonCreationParameters extends JoyStructDecorated({

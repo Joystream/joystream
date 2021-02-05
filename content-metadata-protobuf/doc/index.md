@@ -290,6 +290,7 @@ Publication status before joystream
 | has_marketing | [bool](#bool) | optional | Does video have marketing or advertising in the stream |
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
 
 
 

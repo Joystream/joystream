@@ -432,8 +432,6 @@ pub struct PersonUpdateParameters {
 pub struct Person<MemberId> {
     /// Who can update or delete this person.
     controlled_by: PersonController<MemberId>,
-    /// The number of videos this person appears in.
-    number_of_videos_person_involed_in: u32,
 }
 
 decl_storage! {
@@ -451,8 +449,6 @@ decl_storage! {
         pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
 
         pub PersonById get(fn person_by_id): map hasher(blake2_128_concat) T::PersonId => Person<T::MemberId>;
-
-        // pub PersonInVideo get(fn person_in_video): double_map hasher(blake2_128_concat) (T::VideoId, T::PersonId), hasher(blake2_128_concat) T::Hash => ();
 
         pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
             map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T>;
@@ -1142,7 +1138,5 @@ decl_event!(
         PersonCreated(PersonId, Vec<NewAsset>, PersonCreationParameters),
         PersonUpdated(PersonId, Vec<NewAsset>, PersonUpdateParameters),
         PersonDeleted(PersonId),
-        PersonAddedToVideo(PersonId, VideoId),
-        PersonRemovedFromVideo(PersonId, VideoId),
     }
 );

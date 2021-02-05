@@ -93,7 +93,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.VideoMetadata = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.VideoMetadata.repeatedFields_, null);
 };
 goog.inherits(proto.VideoMetadata, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -809,6 +809,13 @@ proto.MediaType.prototype.hasMimeMediaType = function() {
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.VideoMetadata.repeatedFields_ = [15];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -853,7 +860,8 @@ proto.VideoMetadata.toObject = function(includeInstance, msg) {
     publishedBeforeJoystream: (f = msg.getPublishedBeforeJoystream()) && proto.PublishedBeforeJoystream.toObject(includeInstance, f),
     hasMarketing: (f = jspb.Message.getBooleanField(msg, 12)) == null ? undefined : f,
     isPublic: (f = jspb.Message.getBooleanField(msg, 13)) == null ? undefined : f,
-    isExplicit: (f = jspb.Message.getBooleanField(msg, 14)) == null ? undefined : f
+    isExplicit: (f = jspb.Message.getBooleanField(msg, 14)) == null ? undefined : f,
+    personsList: (f = jspb.Message.getRepeatedField(msg, 15)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -948,6 +956,12 @@ proto.VideoMetadata.deserializeBinaryFromReader = function(msg, reader) {
     case 14:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setIsExplicit(value);
+      break;
+    case 15:
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addPersons(values[i]);
+      }
       break;
     default:
       reader.skipField();
@@ -1076,6 +1090,13 @@ proto.VideoMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeBool(
       14,
+      f
+    );
+  }
+  f = message.getPersonsList();
+  if (f.length > 0) {
+    writer.writePackedUint64(
+      15,
       f
     );
   }
@@ -1586,6 +1607,43 @@ proto.VideoMetadata.prototype.clearIsExplicit = function() {
  */
 proto.VideoMetadata.prototype.hasIsExplicit = function() {
   return jspb.Message.getField(this, 14) != null;
+};
+
+
+/**
+ * repeated uint64 persons = 15;
+ * @return {!Array<number>}
+ */
+proto.VideoMetadata.prototype.getPersonsList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 15));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setPersonsList = function(value) {
+  return jspb.Message.setField(this, 15, value || []);
+};
+
+
+/**
+ * @param {number} value
+ * @param {number=} opt_index
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.addPersons = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 15, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearPersonsList = function() {
+  return this.setPersonsList([]);
 };
 
 
