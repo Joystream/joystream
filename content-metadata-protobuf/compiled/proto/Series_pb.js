@@ -27,7 +27,7 @@ goog.exportSymbol('proto.SeriesMetadata', null, global);
  * @constructor
  */
 proto.SeriesMetadata = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.SeriesMetadata.repeatedFields_, null);
 };
 goog.inherits(proto.SeriesMetadata, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -48,7 +48,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.SeasonMetadata = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.SeasonMetadata.repeatedFields_, null);
 };
 goog.inherits(proto.SeasonMetadata, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -58,6 +58,13 @@ if (goog.DEBUG && !COMPILED) {
    */
   proto.SeasonMetadata.displayName = 'proto.SeasonMetadata';
 }
+
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.SeriesMetadata.repeatedFields_ = [4];
 
 
 
@@ -92,7 +99,8 @@ proto.SeriesMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
-    coverPhoto: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f
+    coverPhoto: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
+    personsList: (f = jspb.Message.getRepeatedField(msg, 4)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -141,6 +149,12 @@ proto.SeriesMetadata.deserializeBinaryFromReader = function(msg, reader) {
       var value = /** @type {number} */ (reader.readUint32());
       msg.setCoverPhoto(value);
       break;
+    case 4:
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addPersons(values[i]);
+      }
+      break;
     default:
       reader.skipField();
       break;
@@ -188,6 +202,13 @@ proto.SeriesMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeUint32(
       3,
+      f
+    );
+  }
+  f = message.getPersonsList();
+  if (f.length > 0) {
+    writer.writePackedUint64(
+      4,
       f
     );
   }
@@ -302,6 +323,50 @@ proto.SeriesMetadata.prototype.hasCoverPhoto = function() {
 };
 
 
+/**
+ * repeated uint64 persons = 4;
+ * @return {!Array<number>}
+ */
+proto.SeriesMetadata.prototype.getPersonsList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 4));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.SeriesMetadata} returns this
+ */
+proto.SeriesMetadata.prototype.setPersonsList = function(value) {
+  return jspb.Message.setField(this, 4, value || []);
+};
+
+
+/**
+ * @param {number} value
+ * @param {number=} opt_index
+ * @return {!proto.SeriesMetadata} returns this
+ */
+proto.SeriesMetadata.prototype.addPersons = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 4, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.SeriesMetadata} returns this
+ */
+proto.SeriesMetadata.prototype.clearPersonsList = function() {
+  return this.setPersonsList([]);
+};
+
+
+
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.SeasonMetadata.repeatedFields_ = [4];
 
 
 
@@ -336,7 +401,8 @@ proto.SeasonMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
-    coverPhoto: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f
+    coverPhoto: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
+    personsList: (f = jspb.Message.getRepeatedField(msg, 4)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -385,6 +451,12 @@ proto.SeasonMetadata.deserializeBinaryFromReader = function(msg, reader) {
       var value = /** @type {number} */ (reader.readUint32());
       msg.setCoverPhoto(value);
       break;
+    case 4:
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addPersons(values[i]);
+      }
+      break;
     default:
       reader.skipField();
       break;
@@ -432,6 +504,13 @@ proto.SeasonMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeUint32(
       3,
+      f
+    );
+  }
+  f = message.getPersonsList();
+  if (f.length > 0) {
+    writer.writePackedUint64(
+      4,
       f
     );
   }
@@ -543,6 +622,43 @@ proto.SeasonMetadata.prototype.clearCoverPhoto = function() {
  */
 proto.SeasonMetadata.prototype.hasCoverPhoto = function() {
   return jspb.Message.getField(this, 3) != null;
+};
+
+
+/**
+ * repeated uint64 persons = 4;
+ * @return {!Array<number>}
+ */
+proto.SeasonMetadata.prototype.getPersonsList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 4));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.SeasonMetadata} returns this
+ */
+proto.SeasonMetadata.prototype.setPersonsList = function(value) {
+  return jspb.Message.setField(this, 4, value || []);
+};
+
+
+/**
+ * @param {number} value
+ * @param {number=} opt_index
+ * @return {!proto.SeasonMetadata} returns this
+ */
+proto.SeasonMetadata.prototype.addPersons = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 4, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.SeasonMetadata} returns this
+ */
+proto.SeasonMetadata.prototype.clearPersonsList = function() {
+  return this.setPersonsList([]);
 };
 
 

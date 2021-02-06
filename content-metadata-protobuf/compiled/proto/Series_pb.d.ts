@@ -19,6 +19,11 @@ export class SeriesMetadata extends jspb.Message {
   getCoverPhoto(): number | undefined;
   setCoverPhoto(value: number): void;
 
+  clearPersonsList(): void;
+  getPersonsList(): Array<number>;
+  setPersonsList(value: Array<number>): void;
+  addPersons(value: number, index?: number): number;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SeriesMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: SeriesMetadata): SeriesMetadata.AsObject;
@@ -34,6 +39,7 @@ export namespace SeriesMetadata {
     title?: string,
     description?: string,
     coverPhoto?: number,
+    personsList: Array<number>,
   }
 }
 
@@ -53,6 +59,11 @@ export class SeasonMetadata extends jspb.Message {
   getCoverPhoto(): number | undefined;
   setCoverPhoto(value: number): void;
 
+  clearPersonsList(): void;
+  getPersonsList(): Array<number>;
+  setPersonsList(value: Array<number>): void;
+  addPersons(value: number, index?: number): number;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SeasonMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: SeasonMetadata): SeasonMetadata.AsObject;
@@ -68,6 +79,7 @@ export namespace SeasonMetadata {
     title?: string,
     description?: string,
     coverPhoto?: number,
+    personsList: Array<number>,
   }
 }
 

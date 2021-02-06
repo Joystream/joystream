@@ -164,6 +164,7 @@
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this Season |
 
 
 
@@ -181,6 +182,7 @@
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this Series |
 
 
 
