@@ -324,7 +324,7 @@ decl_module! {
             owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
             content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
-            
+
             // Ensure given origin can perform operation under specific storage object owner
             Self::ensure_storage_object_owner_origin(origin, &owner)?;
 
