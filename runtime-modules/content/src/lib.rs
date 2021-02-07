@@ -76,9 +76,6 @@ pub trait Trait:
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
 
-    /// ChannelRevenueTreasury seed for ModuleId to compute deterministic AccountId
-    type ChannelRevenueTreasuryId: Get<[u8; 8]>;
-
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
@@ -174,7 +171,7 @@ pub struct ChannelRecord<
     CuratorGroupId,
     ChannelCategoryId,
     DAOId,
-    Balance,
+    AccountId,
     VideoId,
     PlaylistId,
     SeriesId,
@@ -191,8 +188,8 @@ pub struct ChannelRecord<
     series: Vec<SeriesId>,
     /// If curators have censored this channel or not
     is_censored: bool,
-    /// Earned revenue yet to be withdrawn by channel owner
-    revenue: Balance,
+    /// Reward account where revenue is sent if set.
+    reward_account: Option<AccountId>,
 }
 
 // Channel alias type for simplification.
@@ -201,7 +198,7 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as Trait>::ChannelCategoryId,
     <T as StorageOwnership>::DAOId,
-    BalanceOf<T>,
+    <T as system::Trait>::AccountId,
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,

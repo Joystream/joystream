@@ -370,13 +370,11 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
-    pub const ChannelRevenueTreasuryId: [u8; 8] = *b"chtresry";
 }
 
 impl content::Trait for Runtime {
     type Event = Event;
     type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
-    type ChannelRevenueTreasuryId = ChannelRevenueTreasuryId;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type VideoCategoryId = VideoCategoryId;
