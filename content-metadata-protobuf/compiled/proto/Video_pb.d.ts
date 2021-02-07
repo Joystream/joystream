@@ -175,6 +175,11 @@ export class VideoMetadata extends jspb.Message {
   setPersonsList(value: Array<number>): void;
   addPersons(value: number, index?: number): number;
 
+  hasCategory(): boolean;
+  clearCategory(): void;
+  getCategory(): number | undefined;
+  setCategory(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): VideoMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: VideoMetadata): VideoMetadata.AsObject;
@@ -202,6 +207,7 @@ export namespace VideoMetadata {
     isPublic?: boolean,
     isExplicit?: boolean,
     personsList: Array<number>,
+    category?: number,
   }
 }
 

@@ -34,6 +34,11 @@ export class ChannelMetadata extends jspb.Message {
   getAvatarPhoto(): number | undefined;
   setAvatarPhoto(value: number): void;
 
+  hasCategory(): boolean;
+  clearCategory(): void;
+  getCategory(): number | undefined;
+  setCategory(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ChannelMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: ChannelMetadata): ChannelMetadata.AsObject;
@@ -52,6 +57,7 @@ export namespace ChannelMetadata {
     language?: string,
     coverPhoto?: number,
     avatarPhoto?: number,
+    category?: number,
   }
 }
 

@@ -17,6 +17,9 @@ message ChannelMetadata {
     optional uint32 cover_photo = 5;
     // index into external [assets array](#.Assets)
     optional uint32 avatar_photo  = 6;
+
+    // Channel Category Id
+    optional uint64 category = 7;
 }
 
 message ChannelCategoryMetadata {

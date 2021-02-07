@@ -166,20 +166,10 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<
-    MemberId,
-    CuratorGroupId,
-    ChannelCategoryId,
-    DAOId,
-    AccountId,
-    VideoId,
-    PlaylistId,
-    SeriesId,
-> {
+pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
+{
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-    /// The category the channel belongs to
-    in_category: ChannelCategoryId,
     /// The videos under this channel
     videos: Vec<VideoId>,
     /// The playlists under this channel
@@ -196,7 +186,6 @@ pub struct ChannelRecord<
 pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as Trait>::ChannelCategoryId,
     <T as StorageOwnership>::DAOId,
     <T as system::Trait>::AccountId,
     <T as Trait>::VideoId,
@@ -231,9 +220,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ChannelCategoryId> {
-    /// ChannelCategory to enter the channel into.
-    in_category: ChannelCategoryId,
+pub struct ChannelCreationParameters {
     /// Metadata about the channel.
     meta: Vec<u8>,
 }
@@ -241,9 +228,7 @@ pub struct ChannelCreationParameters<ChannelCategoryId> {
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<ChannelCategoryId> {
-    /// If set, the new channel category to move the channel into.
-    new_in_category: Option<ChannelCategoryId>,
+pub struct ChannelUpdateParameters {
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
 }
@@ -275,18 +260,14 @@ pub struct VideoCategoryUpdateParameters {
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParameters<VideoCategoryId> {
-    /// The video category the video belongs to.
-    in_category: VideoCategoryId,
+pub struct VideoCreationParameters {
     /// Metadata for the video.
     meta: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParameters<VideoCategoryId> {
-    /// If set, the new category the video should be moved into.
-    new_in_category: Option<VideoCategoryId>,
+pub struct VideoUpdateParameters {
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
 }
@@ -341,9 +322,9 @@ pub struct Playlist<ChannelId, VideoId> {
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoCategoryId, VideoId> {
+pub enum EpisodeParameters<VideoId> {
     /// A new video is being added as the episode.
-    NewVideo(VideoCreationParameters<VideoCategoryId>),
+    NewVideo(VideoCreationParameters),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
@@ -351,13 +332,13 @@ pub enum EpisodeParameters<VideoCategoryId, VideoId> {
 /// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoCategoryId, VideoId> {
+pub struct SeasonParameters<VideoId> {
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
     /// If set, updates the episodes of a season. Extends the number of episodes in a season
     /// when length of new_episodes is greater than previously set. Last elements must all be
     /// 'Some' in that case.
     /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoCategoryId, VideoId>>>>,
+    episodes: Option<Vec<Option<EpisodeParameters<VideoId>>>>,
     /// If set, Metadata update for season.
     meta: Option<Vec<u8>>,
 }
@@ -365,12 +346,12 @@ pub struct SeasonParameters<VideoCategoryId, VideoId> {
 /// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoCategoryId, VideoId> {
+pub struct SeriesParameters<VideoId> {
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
     /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoCategoryId, VideoId>>>>,
+    seasons: Option<Vec<Option<SeasonParameters<VideoId>>>>,
     meta: Option<Vec<u8>>,
 }
 
@@ -649,7 +630,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: ChannelCreationParameters<T::ChannelCategoryId>,
+            params: ChannelCreationParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -660,7 +641,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             new_assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: ChannelUpdateParameters<T::ChannelCategoryId>,
+            params: ChannelUpdateParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -710,7 +691,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: VideoCreationParameters<T::VideoCategoryId>,
+            params: VideoCreationParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -721,7 +702,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             video: T::VideoId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: VideoUpdateParameters<T::VideoCategoryId>,
+            params: VideoUpdateParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -927,7 +908,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesParameters<T::VideoCategoryId, T::VideoId>,
+            params: SeriesParameters<T::VideoId>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -938,7 +919,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesParameters<T::VideoCategoryId, T::VideoId>,
+            params: SeriesParameters<T::VideoId>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -1071,13 +1052,9 @@ decl_event!(
             ChannelId,
             ChannelOwner<MemberId, CuratorGroupId, DAOId>,
             Vec<NewAsset>,
-            ChannelCreationParameters<ChannelCategoryId>,
+            ChannelCreationParameters,
         ),
-        ChannelUpdated(
-            ChannelId,
-            Vec<NewAsset>,
-            ChannelUpdateParameters<ChannelCategoryId>,
-        ),
+        ChannelUpdated(ChannelId, Vec<NewAsset>, ChannelUpdateParameters),
         ChannelDeleted(ChannelId),
 
         ChannelCensored(ChannelId, Vec<u8> /* rationale */),
@@ -1101,16 +1078,8 @@ decl_event!(
         VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(VideoCategoryId),
 
-        VideoCreated(
-            VideoId,
-            Vec<NewAsset>,
-            VideoCreationParameters<VideoCategoryId>,
-        ),
-        VideoUpdated(
-            VideoId,
-            Vec<NewAsset>,
-            VideoUpdateParameters<VideoCategoryId>,
-        ),
+        VideoCreated(VideoId, Vec<NewAsset>, VideoCreationParameters),
+        VideoUpdated(VideoId, Vec<NewAsset>, VideoUpdateParameters),
         VideoDeleted(VideoId),
 
         VideoCensored(VideoId, Vec<u8> /* rationale */),
@@ -1125,18 +1094,8 @@ decl_event!(
         PlaylistDeleted(PlaylistId),
 
         // Series
-        SeriesCreated(
-            SeriesId,
-            Vec<NewAsset>,
-            SeriesParameters<VideoCategoryId, VideoId>,
-            Series,
-        ),
-        SeriesUpdated(
-            SeriesId,
-            Vec<NewAsset>,
-            SeriesParameters<VideoCategoryId, VideoId>,
-            Series,
-        ),
+        SeriesCreated(SeriesId, Vec<NewAsset>, SeriesParameters<VideoId>, Series),
+        SeriesUpdated(SeriesId, Vec<NewAsset>, SeriesParameters<VideoId>, Series),
         SeriesDeleted(SeriesId),
 
         // Persons

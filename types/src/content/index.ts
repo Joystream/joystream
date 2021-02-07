@@ -36,7 +36,6 @@ export class ChannelOwner extends JoyEnum({
 
 export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
-  in_category: ChannelCategoryId,
   videos: Vec.with(VideoId),
   playlists: Vec.with(PlaylistId),
   series: Vec.with(SeriesId),
@@ -45,12 +44,10 @@ export class Channel extends JoyStructDecorated({
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
-  in_category: ChannelCategoryId,
   meta: Bytes,
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
-  new_in_category: Option.with(ChannelCategoryId),
   new_meta: Bytes,
 }) {}
 
@@ -93,12 +90,10 @@ export class Video extends JoyStructDecorated({
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
-  in_category: VideoCategoryId,
   meta: Bytes,
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
-  new_in_category: Option.with(VideoCategoryId),
   new_meta: Option.with(Bytes),
 }) {}
 

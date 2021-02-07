@@ -861,7 +861,8 @@ proto.VideoMetadata.toObject = function(includeInstance, msg) {
     hasMarketing: (f = jspb.Message.getBooleanField(msg, 12)) == null ? undefined : f,
     isPublic: (f = jspb.Message.getBooleanField(msg, 13)) == null ? undefined : f,
     isExplicit: (f = jspb.Message.getBooleanField(msg, 14)) == null ? undefined : f,
-    personsList: (f = jspb.Message.getRepeatedField(msg, 15)) == null ? undefined : f
+    personsList: (f = jspb.Message.getRepeatedField(msg, 15)) == null ? undefined : f,
+    category: (f = jspb.Message.getField(msg, 16)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -962,6 +963,10 @@ proto.VideoMetadata.deserializeBinaryFromReader = function(msg, reader) {
       for (var i = 0; i < values.length; i++) {
         msg.addPersons(values[i]);
       }
+      break;
+    case 16:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setCategory(value);
       break;
     default:
       reader.skipField();
@@ -1097,6 +1102,13 @@ proto.VideoMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f.length > 0) {
     writer.writePackedUint64(
       15,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 16));
+  if (f != null) {
+    writer.writeUint64(
+      16,
       f
     );
   }
@@ -1644,6 +1656,42 @@ proto.VideoMetadata.prototype.addPersons = function(value, opt_index) {
  */
 proto.VideoMetadata.prototype.clearPersonsList = function() {
   return this.setPersonsList([]);
+};
+
+
+/**
+ * optional uint64 category = 16;
+ * @return {number}
+ */
+proto.VideoMetadata.prototype.getCategory = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 16, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setCategory = function(value) {
+  return jspb.Message.setField(this, 16, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.clearCategory = function() {
+  return jspb.Message.setField(this, 16, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.VideoMetadata.prototype.hasCategory = function() {
+  return jspb.Message.getField(this, 16) != null;
 };
 
 
