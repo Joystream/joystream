@@ -60,7 +60,7 @@ export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
 }) {}
 
 export class ChannelCategory extends JoyStructDecorated({
-  number_of_channels_in: u32,
+  // No runtime information is currently stored for a Category.
 }) {}
 
 export class ChannelCategoryCreationParameters extends JoyStructDecorated({
@@ -72,7 +72,7 @@ export class ChannelCategoryUpdateParameters extends JoyStructDecorated({
 }) {}
 
 export class VideoCategory extends JoyStructDecorated({
-  number_of_videos_in_category: u32,
+  // No runtime information is currently stored for a Category.
 }) {}
 
 export class VideoCategoryCreationParameters extends JoyStructDecorated({

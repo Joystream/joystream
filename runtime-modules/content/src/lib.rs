@@ -141,12 +141,11 @@ impl<MemberId: Default, CuratorGroupId, DAOId> Default
     }
 }
 
-/// A category which channels can belong to. The category will not be deleted if it contains any channels.
+/// A category which channels can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCategory {
-    /// The number of channels in this category.
-    number_of_channels_in: u32,
+    // No runtime information is currently stored for a Category.
 }
 
 /// Information on the category being created.
@@ -242,12 +241,11 @@ pub struct ChannelUpdateParameters<ChannelCategoryId> {
     new_meta: Option<Vec<u8>>,
 }
 
-/// A category that videos can belong to. A category will not be deleted if it contains any videos.
+/// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCategory {
-    /// The number of videos in this category.
-    number_of_videos_in_category: u32,
+    // No runtime information is currently stored for a Category.
 }
 
 /// Information about the video category being created.
