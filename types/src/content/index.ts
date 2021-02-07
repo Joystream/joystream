@@ -36,9 +36,9 @@ export class ChannelOwner extends JoyEnum({
 export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
   in_category: ChannelCategoryId,
-  number_of_videos: u32,
-  number_of_playlists: u32,
-  number_of_series: u32,
+  videos: Vec.with(VideoId),
+  playlists: Vec.with(PlaylistId),
+  series: Vec.with(SeriesId),
   is_censored: bool,
   revenue: u128,
 }) {}

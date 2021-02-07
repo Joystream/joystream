@@ -169,23 +169,30 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, ChannelCategoryId, DAOId, Balance> {
+pub struct ChannelRecord<
+    MemberId,
+    CuratorGroupId,
+    ChannelCategoryId,
+    DAOId,
+    Balance,
+    VideoId,
+    PlaylistId,
+    SeriesId,
+> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The category the channel belongs to
     in_category: ChannelCategoryId,
-    /// The number of videos under this channel
-    number_of_videos: u32,
-    /// The number of playlists under this channel
-    number_of_playlists: u32,
-    /// The number of series under this channel
-    number_of_series: u32,
+    /// The videos under this channel
+    videos: Vec<VideoId>,
+    /// The playlists under this channel
+    playlists: Vec<PlaylistId>,
+    /// The series under this channel
+    series: Vec<SeriesId>,
     /// If curators have censored this channel or not
     is_censored: bool,
     /// Earned revenue yet to be withdrawn by channel owner
     revenue: Balance,
-    // TODO: I think we need to add these instead of the counters!
-    // videos: Vec<VideoId>, playlists: Vec<PlaylistId>, series: Vec<SeriesId>
 }
 
 // Channel alias type for simplification.
@@ -195,6 +202,9 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::ChannelCategoryId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
+    <T as Trait>::VideoId,
+    <T as Trait>::PlaylistId,
+    <T as Trait>::SeriesId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
