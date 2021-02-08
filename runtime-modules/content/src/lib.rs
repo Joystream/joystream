@@ -202,10 +202,12 @@ pub struct ChannelOwnershipTransferRequestRecord<
     CuratorGroupId,
     DAOId,
     Balance,
+    AccountId,
 > {
     channel_id: ChannelId,
     new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     payment: Balance,
+    new_reward_account: Option<AccountId>,
 }
 
 // ChannelOwnershipTransferRequest type alias for simplification.
@@ -215,6 +217,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
+    <T as system::Trait>::AccountId,
 >;
 
 /// Information about channel being created.

@@ -55,6 +55,7 @@ export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
   channel_id: ChannelId,
   new_owner: ChannelOwner,
   payment: u128,
+  new_reward_account: Option.with(AccountId),
 }) {}
 
 export class ChannelCategory extends JoyStructDecorated({
