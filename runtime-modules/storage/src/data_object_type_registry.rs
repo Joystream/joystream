@@ -97,12 +97,14 @@ decl_event! {
     {
         /// Emits on the data object type registration.
         /// Params:
+        /// - DataObjectType
         /// - Id of the new data object type.
         DataObjectTypeRegistered(DataObjectType, DataObjectTypeId),
 
         /// Emits on the data object type update.
         /// Params:
         /// - Id of the updated data object type.
+        /// - DataObjectType
         DataObjectTypeUpdated(DataObjectTypeId, DataObjectType),
     }
 }
