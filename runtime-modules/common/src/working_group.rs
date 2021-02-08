@@ -18,6 +18,6 @@ pub enum WorkingGroup {
     Content,
     /// Builder working group: working_group::Instance4.
     Builder,
-    /// Gateway working group: working_group::Instance4.
-    Gateway
+    /// Gateway working group: working_group::Instance5.
+    Gateway,
 }

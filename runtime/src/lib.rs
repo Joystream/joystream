@@ -522,6 +522,12 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
+// The builder working group instance alias.
+pub type BuilderWorkingGroupInstance = working_group::Instance4;
+
+// The gateway working group instance alias.
+pub type GatewayWorkingGroupInstance = working_group::Instance5;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -532,6 +538,16 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<BuilderWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -670,5 +686,7 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        BuilderWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );
