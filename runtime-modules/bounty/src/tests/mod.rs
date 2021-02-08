@@ -6,6 +6,7 @@ pub(crate) mod mocks;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
+use crate::tests::fixtures::WithdrawCreatorFundingFixture;
 use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
@@ -221,7 +222,6 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
-
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
@@ -244,7 +244,7 @@ fn cancel_bounty_fails_with_invalid_origin() {
 
         // Created by a member - try to cancel with bad origin
         CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(1))
+            .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .call_and_assert(Ok(()));
 
@@ -262,6 +262,7 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .call_and_assert(Ok(()));
 
         let bounty_id = 4u64;
+
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
@@ -700,5 +701,216 @@ fn withdraw_member_funding_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_by_council_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let max_amount = 500;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance - creator_funding - cherry
+        );
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
+            bounty_id,
+            BountyCreator::Council,
+        ));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_by_member_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let max_amount = 500;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let account_id = 1;
+        let member_id = 1;
+
+        increase_account_balance(&account_id, initial_balance);
+
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id),
+            initial_balance - creator_funding - cherry
+        );
+
+        CancelBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorFundingFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id),
+            initial_balance
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
+            bounty_id,
+            BountyCreator::Member(member_id),
+        ));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bounty_id = 11u64;
+
+        CancelBountyFixture::default()
+            .with_bounty_id(invalid_bounty_id)
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+
+        // Created by council - try to cancel with bad origin
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        // Created by a member - try to cancel with invalid member_id
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 2u64;
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let invalid_member_id = 2;
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+
+        // Created by a member - try to cancel with bad origin
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 3u64;
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        // Created by a member  - try to cancel by council
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 4u64;
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });
 }
