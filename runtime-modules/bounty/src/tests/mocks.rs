@@ -93,7 +93,7 @@ impl Trait for Test {
     type CouncilBudgetManager = CouncilBudgetManager;
 }
 
-const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {

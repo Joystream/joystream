@@ -26,6 +26,10 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
 
+pub fn increase_account_balance(account_id: &u64, balance: u64) {
+    let _ = Balances::deposit_creating(&account_id, balance);
+}
+
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
@@ -279,7 +283,7 @@ impl FundBountyFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty_funding =
-            Bounty::funding_by_bounty_by_member(self.bounty_id, self.member_id);
+            Bounty::contribution_by_bounty_by_member(self.bounty_id, self.member_id);
 
         let actual_result = Bounty::fund_bounty(
             self.origin.clone().into(),
@@ -291,7 +295,7 @@ impl FundBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         let new_bounty_funding =
-            Bounty::funding_by_bounty_by_member(self.bounty_id, self.member_id);
+            Bounty::contribution_by_bounty_by_member(self.bounty_id, self.member_id);
         if actual_result.is_ok() {
             assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
         } else {

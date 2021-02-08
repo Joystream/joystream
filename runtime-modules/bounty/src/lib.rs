@@ -53,6 +53,7 @@ use common::MemberId;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_runtime::Perbill;
 
 /// Main pallet-bounty trait.
 pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
@@ -178,11 +179,8 @@ impl<MemberId> Default for BountyCreator<MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyStage {
-    /// Bounty founding stage with starting block number.
-    Funding,
-
-    /// A bounty was canceled.
-    Canceled,
+    /// Bounty founding stage. Inner value defines whether there is any contribution.
+    Funding(bool),
 
     /// Funding and cherry can be withdrawn.
     Withdrawal,
@@ -197,6 +195,9 @@ pub enum BountyStage {
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
     Created(BlockNumber),
+
+    /// Bounty has some funding contributions. Enum value is a bounty creation block.
+    SomeFundingContributions(BlockNumber),
 
     /// A bounty was canceled.
     Canceled,
@@ -383,16 +384,10 @@ decl_module! {
 
             bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
-            // TODO: ensure no funding
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            // TODO: ensure no funding
-            ensure!(
-                !Self::bounty_funding_started(&bounty_id),
-                Error::<T>::InvalidBountyStage,
-            );
 
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding(false)),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -421,16 +416,10 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            // TODO: ensure no funding
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            // TODO: ensure no funding
-            ensure!(
-                !Self::bounty_funding_started(&bounty_id),
-                Error::<T>::InvalidBountyStage,
-            );
 
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding(false)),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -472,10 +461,9 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding(..)),
                 Error::<T>::InvalidBountyStage,
             );
-            Self::ensure_bounty_stage_is_valid_for_member_funding(&bounty)?;
 
             //
             // == MUTATION SAFE ==
@@ -485,13 +473,14 @@ decl_module! {
 
             let total_funding = bounty.total_funding.saturating_add(amount);
             let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
-            bounty.total_funding = bounty.total_funding.saturating_add(amount);
-            // Update bounty record.
 
+            // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.total_funding = total_funding;
                 if  maximum_funding_reached{
-                    bounty.milestone = BountyMilestone::MaxFundingReached(Self::current_block());
+                    bounty.milestone = BountyMilestone::BountyMaxFundingReached(Self::current_block());
+                } else if let BountyMilestone::Created(created_at) = bounty.milestone.clone() {
+                    bounty.milestone = BountyMilestone::SomeFundingContributions(created_at);
                 }
             });
 
@@ -518,17 +507,16 @@ decl_module! {
                 origin, member_id,
             )?;
 
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                <Bounties<T>>::contains_key(bounty_id),
-                Error::<T>::BountyDoesntExist
+                matches!(current_bounty_stage, BountyStage::Withdrawal),
+                Error::<T>::InvalidBountyStage,
             );
 
-            let mut bounty = <Bounties<T>>::get(bounty_id);
-
-            Self::ensure_bounty_stage_is_valid_for_member_withdrawal(&bounty)?;
-
             ensure!(
-                <Funding<T>>::contains_key(bounty_id, member_id),
+                <BountyContributions<T>>::contains_key(bounty_id, member_id),
                 Error::<T>::NotBountyFunder,
             );
 
@@ -536,16 +524,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let funding_amount = <Funding<T>>::get(bounty_id, member_id);
+            let funding_amount = <BountyContributions<T>>::get(bounty_id, member_id);
+            let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding_amount);
+            let withdrawal_amount = funding_amount + cherry_fraction;
 
-            let _ = balances::Module::<T>::deposit_creating(&account_id, funding_amount);
+            let _ = balances::Module::<T>::deposit_creating(&account_id, withdrawal_amount);
 
-            bounty.current_funding = bounty.current_funding.saturating_sub(funding_amount);
             <Bounties<T>>::insert(bounty_id, bounty);
 
-            <Funding<T>>::remove(bounty_id, member_id);
-
-            //TODO: split the cherry and burn the rest
+            <BountyContributions<T>>::remove(bounty_id, member_id);
 
             Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
         }
@@ -694,12 +681,19 @@ impl<T: Trait> Module<T> {
         let now = Self::current_block();
 
         match bounty.milestone {
-            BountyMilestone::Created(created_at) => {
+            // Funding period. No contributions or some contributions.
+            BountyMilestone::Created(created_at)
+            | BountyMilestone::SomeFundingContributions(created_at) => {
+                let some_contributions = matches!(
+                    bounty.milestone,
+                    BountyMilestone::SomeFundingContributions(..)
+                );
+
                 // Limited funding period.
                 if let Some(funding_period) = bounty.creation_params.funding_period {
                     // Funding period is not over.
                     if created_at + funding_period >= now {
-                        BountyStage::Funding
+                        BountyStage::Funding(some_contributions)
                     } else {
                         // Funding period expired.
                         if bounty.total_funding >= bounty.creation_params.min_amount {
@@ -712,12 +706,12 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     // Perpetual funding.
-                    BountyStage::Funding
+                    BountyStage::Funding(some_contributions)
                 }
             }
             // Bounty was canceled or vetoed.
-            BountyMilestone::Canceled => BountyStage::Canceled,
-            BountyMilestone::MaxFundingReached(funding_completed) => {
+            BountyMilestone::Canceled => BountyStage::Withdrawal,
+            BountyMilestone::BountyMaxFundingReached(funding_completed) => {
                 // Work period is not over.
                 if bounty.creation_params.work_period + funding_completed <= now {
                     BountyStage::WorkSubmission
@@ -742,56 +736,16 @@ impl<T: Trait> Module<T> {
         Ok(bounty)
     }
 
-    // Checks for a bounty stage during the member funding withdrawal.
-    fn ensure_bounty_stage_is_valid_for_member_withdrawal(bounty: &Bounty<T>) -> DispatchResult {
-        // Ensure funding period is over.
-        match bounty.stage {
-            BountyStage::Funding(created_at) => {
-                if let Some(funding_period) = bounty.creation_params.funding_period {
-                    ensure!(
-                        created_at + funding_period < Self::current_block(),
-                        Error::<T>::FundingPeriodNotExpired,
-                    );
-                }
-            }
-            BountyStage::Canceled | BountyStage::Vetoed => {
-                // allowed withdrawal stages
-            }
-            _ => {
-                return Err(Error::<T>::InvalidBountyStage.into());
-            }
-        }
+    // Calculate cherry fraction to reward member for an unsuccessful bounty.
+    // Cherry fraction = cherry * (member funding / total funding).
+    fn get_cherry_fraction_for_member(
+        bounty: &Bounty<T>,
+        funding_amount: BalanceOf<T>,
+    ) -> BalanceOf<T> {
+        let funding_share =
+            Perbill::from_rational_approximation(funding_amount, bounty.total_funding);
 
-        // Ensure the bounty failed to gather minimum funding amount.
-        ensure!(
-            bounty.current_funding < bounty.creation_params.min_amount,
-            Error::<T>::InvalidBountyStage
-        );
-
-        Ok(())
-    }
-
-    // Checks for a bounty stage during the member funding.
-    fn ensure_bounty_stage_is_valid_for_member_funding(bounty: &Bounty<T>) -> DispatchResult {
-        if let BountyStage::Funding(created_at) = bounty.stage {
-            if let Some(funding_period) = bounty.creation_params.funding_period {
-                ensure!(
-                    created_at + funding_period >= Self::current_block(),
-                    Error::<T>::FundingPeriodExpired,
-                );
-            }
-        } else {
-            return Err(Error::<T>::InvalidBountyStage.into());
-        }
-
-        Ok(())
-    }
-
-    // Verifies that bounty has some funding.
-    fn bounty_funding_started(bounty_id: &T::BountyId) -> bool {
-        <Funding<T>>::iter_prefix_values(bounty_id)
-            .peekable()
-            .peek()
-            .is_some()
+        // cherry share
+        funding_share * bounty.creation_params.cherry
     }
 }

@@ -3,18 +3,17 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
-    increase_total_balance_issuance_using_account_id, run_to_block, CancelBountyFixture,
-    CreateBountyFixture, EventFixture, FundBountyFixture, VetoBountyFixture,
+    increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
+    CancelBountyFixture, CreateBountyFixture, EventFixture, FundBountyFixture, VetoBountyFixture,
     WithdrawMemberFundingFixture,
 };
-use mocks::{build_test_externalities, Bounty, Test};
+use mocks::{build_test_externalities, Bounty, Test, COUNCIL_BUDGET_ACCOUNT_ID};
 
 #[test]
 fn create_bounty_succeeds() {
@@ -481,7 +480,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
         let bounty = Bounty::bounties(&bounty_id);
         assert_eq!(
             bounty.milestone,
-            BountyMilestone::MaxFundingReached(starting_block)
+            BountyMilestone::BountyMaxFundingReached(starting_block)
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyMaxFundingReached(bounty_id));
@@ -635,14 +634,19 @@ fn withdraw_member_funding_succeeds() {
         let account_id = 1;
         let member_id = 1;
         let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
         let funding_period = 10;
 
-        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id, initial_balance);
 
         CreateBountyFixture::default()
             .with_max_amount(max_amount)
             .with_min_amount(max_amount)
             .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -663,7 +667,7 @@ fn withdraw_member_funding_succeeds() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance
+            initial_balance + (cherry / 2)
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyMemberFundingWithdrawal(
