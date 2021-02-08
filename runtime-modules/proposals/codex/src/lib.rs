@@ -55,7 +55,7 @@ mod benchmarking;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::weights::{DispatchClass, Weight};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
@@ -130,6 +130,9 @@ pub trait Trait:
     + council::Trait
     + staking::Trait
 {
+    /// Proposal Codex module event type.
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
         Self::Origin,
@@ -255,6 +258,15 @@ pub type GeneralProposalParameters<T> = GeneralProposalParams<
     <T as frame_system::Trait>::BlockNumber,
 >;
 
+decl_event! {
+    pub enum Event<T> where
+        GeneralProposalParameters = GeneralProposalParameters<T>,
+        ProposalDetailsOf = ProposalDetailsOf<T>,
+    {
+        ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+    }
+}
+
 decl_error! {
     /// Codex module predefined errors
     pub enum Error for Module<T: Trait> {
@@ -334,6 +346,8 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
+
+        fn deposit_event() = default;
 
         /// Exports 'Set Max Validator Count' proposal parameters.
         const SetMaxValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
@@ -437,7 +451,11 @@ decl_module! {
             Self::ensure_details_checks(&proposal_details)?;
 
             let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details);
+            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
+            // since the encode trait takes a reference to `self`.
+            // (Note: this is an useful change since this could be a ~3MB copy in the case of
+            // a Runtime Upgrade)
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
                 T::MembershipOriginValidator::ensure_member_controller_account_origin(
@@ -465,9 +483,9 @@ decl_module! {
                 account_id,
                 proposer_id: general_proposal_parameters.member_id,
                 proposal_parameters,
-                title: general_proposal_parameters.title,
-                description: general_proposal_parameters.description,
-                staking_account_id: general_proposal_parameters.staking_account_id,
+                title: general_proposal_parameters.title.clone(),
+                description: general_proposal_parameters.description.clone(),
+                staking_account_id: general_proposal_parameters.staking_account_id.clone(),
                 encoded_dispatchable_call_code: proposal_code,
                 exact_execution_block: general_proposal_parameters.exact_execution_block,
             };
@@ -476,6 +494,8 @@ decl_module! {
                 <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+
+            Self::deposit_event(RawEvent::ProposalCreated(general_proposal_parameters, proposal_details));
         }
 
 // *************** Extrinsic to execute
