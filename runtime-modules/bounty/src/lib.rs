@@ -8,6 +8,10 @@
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
+//! - [withdraw_member_funding](./struct.Module.html#method.withdraw_member_funding) - withdraw
+//! funding for a failed bounty.
+//! - [withdraw_creator_funding](./struct.Module.html#method.withdraw_creator_funding) - withdraw
+//! funding for a failed or canceled bounty..
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
