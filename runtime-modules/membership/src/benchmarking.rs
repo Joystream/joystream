@@ -760,9 +760,12 @@ mod tests {
 
     #[test]
     fn set_leader_invitation_quota() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_leader_invitation_quota::<Test>());
-        });
+        TestExternalitiesBuilder::<Test>::default()
+            .with_lead()
+            .build()
+            .execute_with(|| {
+                assert_ok!(test_benchmark_set_leader_invitation_quota::<Test>());
+            });
     }
 
     #[test]

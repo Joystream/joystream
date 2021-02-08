@@ -734,17 +734,13 @@ decl_module! {
 
             let leader_member_id = T::WorkingGroup::get_leader_member_id();
 
-            if let Some(member_id) = leader_member_id{
-                Self::ensure_membership(member_id)?;
-            }
-
             ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(member_id) = leader_member_id{
+            if let Some(member_id) = leader_member_id {
                 <MembershipById<T>>::mutate(&member_id, |membership| {
                         membership.invites = invitation_quota;
                 });

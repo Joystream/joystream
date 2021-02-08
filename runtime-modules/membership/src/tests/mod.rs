@@ -658,7 +658,7 @@ fn set_leader_invitation_quota_with_invalid_origin() {
 fn set_leader_invitation_quota_fails_with_not_found_leader_membership() {
     build_test_externalities().execute_with(|| {
         SetLeaderInvitationQuotaFixture::default()
-            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+            .call_and_assert(Err(Error::<Test>::WorkingGroupLeaderNotSet.into()));
     });
 }
 
