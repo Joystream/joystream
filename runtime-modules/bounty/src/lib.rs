@@ -27,7 +27,7 @@ mod benchmarking;
 // TODO: add assertion for the created bounty object content
 // TODO: use Bounty instead of Module in benchmarking
 // TODO: add more fine-grained errors.
-// TODO: max funding reached on initial creator funding greator than minimal amount
+// TODO: max funding reached on initial creator funding greater than minimal amount
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -39,6 +39,8 @@ pub trait WeightInfo {
     fn veto_bounty() -> Weight;
     fn fund_bounty() -> Weight;
     fn withdraw_member_funding() -> Weight;
+    fn withdraw_creator_funding_by_council() -> Weight;
+    fn withdraw_creator_funding_by_member() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -562,7 +564,15 @@ decl_module! {
         }
 
         /// Withdraw creator funding.
-        #[weight = 10000000] //TODO adjust weight
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_creator_funding_by_member()
+              .max(WeightInfoBounty::<T>::withdraw_creator_funding_by_council())]
         pub fn withdraw_creator_funding(
             origin,
             creator: BountyCreator<MemberId<T>>,
