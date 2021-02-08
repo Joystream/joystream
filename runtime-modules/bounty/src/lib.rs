@@ -23,6 +23,7 @@ mod benchmarking;
 // TODO: add assertion for the created bounty object content
 // TODO: use Bounty instead of Module in benchmarking
 // TODO: add more fine-grained errors.
+// TODO: max funding reached on initial creator funding greator than minimal amount
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -195,10 +196,13 @@ pub enum BountyStage {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
-    Created(BlockNumber),
-
-    /// Bounty has some funding contributions. Enum value is a bounty creation block.
-    SomeFundingContributions(BlockNumber),
+    /// Boolean value defines whether the bounty has some funding contributions
+    Created {
+        /// Bounty creation block.
+        created_at: BlockNumber,
+        /// Bounty has already some contributions.
+        has_contributions: bool,
+    },
 
     /// A bounty was canceled.
     Canceled,
@@ -210,7 +214,10 @@ pub enum BountyMilestone<BlockNumber> {
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
     fn default() -> Self {
-        BountyMilestone::Created(Default::default())
+        BountyMilestone::Created {
+            created_at: Default::default(),
+            has_contributions: false,
+        }
     }
 }
 
@@ -358,7 +365,10 @@ decl_module! {
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
-                milestone: BountyMilestone::Created(Self::current_block()),
+                milestone: BountyMilestone::Created{
+                    created_at: Self::current_block(),
+                    has_contributions: false,
+                },
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -481,10 +491,11 @@ decl_module! {
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.total_funding = total_funding;
-                if  maximum_funding_reached{
+                if maximum_funding_reached{
                     bounty.milestone = BountyMilestone::BountyMaxFundingReached(Self::current_block());
-                } else if let BountyMilestone::Created(created_at) = bounty.milestone.clone() {
-                    bounty.milestone = BountyMilestone::SomeFundingContributions(created_at);
+                } else if let BountyMilestone::Created{created_at, ..} = bounty.milestone.clone() {
+                    // The bounty has some contributions now.
+                    bounty.milestone = BountyMilestone::Created{created_at, has_contributions: true};
                 }
             });
 
@@ -748,18 +759,15 @@ impl<T: Trait> Module<T> {
 
         match bounty.milestone {
             // Funding period. No contributions or some contributions.
-            BountyMilestone::Created(created_at)
-            | BountyMilestone::SomeFundingContributions(created_at) => {
-                let some_contributions = matches!(
-                    bounty.milestone,
-                    BountyMilestone::SomeFundingContributions(..)
-                );
-
+            BountyMilestone::Created {
+                created_at,
+                has_contributions,
+            } => {
                 // Limited funding period.
                 if let Some(funding_period) = bounty.creation_params.funding_period {
                     // Funding period is not over.
                     if created_at + funding_period >= now {
-                        BountyStage::Funding(some_contributions)
+                        BountyStage::Funding(has_contributions)
                     } else {
                         // Funding period expired.
                         if bounty.total_funding >= bounty.creation_params.min_amount {
@@ -772,7 +780,7 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     // Perpetual funding.
-                    BountyStage::Funding(some_contributions)
+                    BountyStage::Funding(has_contributions)
                 }
             }
             // Bounty was canceled or vetoed.
