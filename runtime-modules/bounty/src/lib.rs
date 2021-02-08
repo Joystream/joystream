@@ -33,6 +33,7 @@ pub trait WeightInfo {
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
     fn fund_bounty() -> Weight;
+    fn withdraw_member_funding() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -497,7 +498,14 @@ decl_module! {
         }
 
         /// Withdraw funding.
-        #[weight = 10000000] //TODO: adjust weight
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_member_funding()]
         pub fn withdraw_member_funding(
             origin,
             member_id: MemberId<T>,

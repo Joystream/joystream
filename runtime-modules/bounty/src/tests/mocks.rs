@@ -136,6 +136,9 @@ impl crate::WeightInfo for () {
     fn fund_bounty() -> u64 {
         0
     }
+    fn withdraw_member_funding() -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

@@ -3,8 +3,7 @@
 use frame_benchmarking::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::storage::StorageMap;
-use frame_support::traits::Currency;
-use frame_system::Module as System;
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::SaturatedConversion;
@@ -12,14 +11,30 @@ use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
+use crate::Module as Bounty;
 use balances::Module as Balances;
 use common::council::CouncilBudgetManager;
+use frame_system::Module as System;
 use membership::Module as Membership;
 
 use crate::{
     BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, Call, Event,
     Module, Trait,
 };
+
+pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
+    let mut current_block = System::<T>::block_number();
+    while current_block < target_block {
+        System::<T>::on_finalize(current_block);
+        Bounty::<T>::on_finalize(current_block);
+
+        current_block += One::one();
+        System::<T>::set_block_number(current_block);
+
+        System::<T>::on_initialize(current_block);
+        Bounty::<T>::on_initialize(current_block);
+    }
+}
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -233,6 +248,43 @@ benchmarks! {
         assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
+
+    withdraw_member_funding {
+        let funding_period = 1;
+        let bounty_amount = 200;
+        let params = BountyCreationParameters::<T>{
+            funding_period: Some(funding_period.into()),
+            work_period: One::one(),
+            judging_period: One::one(),
+            max_amount: bounty_amount.into(),
+            min_amount: bounty_amount.into(),
+            ..Default::default()
+        };
+        // should reach default max bounty funding amount
+        let amount: BalanceOf<T> = 100.into();
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        Module::<T>::fund_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            bounty_id,
+            amount
+        ).unwrap();
+
+        run_to_block::<T>((funding_period + 1).into());
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id)
+    verify {
+        assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value());
+        assert_last_event::<T>(Event::<T>::BountyMemberFundingWithdrawal(bounty_id, member_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -280,6 +332,13 @@ mod tests {
     fn fund_bounty() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_fund_bounty::<Test>());
+        });
+    }
+
+    #[test]
+    fn withdraw_member_funding() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_member_funding::<Test>());
         });
     }
 }
