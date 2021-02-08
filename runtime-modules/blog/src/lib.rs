@@ -133,7 +133,9 @@ pub struct Post<T: Trait<I>, I: Instance> {
     replies_count: T::ReplyId,
 }
 
-// Note: we derive it by hand because the derive wasn't working
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
 impl<T: Trait<I>, I: Instance> PartialEq for Post<T, I> {
     fn eq(&self, other: &Post<T, I>) -> bool {
         self.locked == other.locked
@@ -144,7 +146,9 @@ impl<T: Trait<I>, I: Instance> PartialEq for Post<T, I> {
 }
 
 /// Default Post
-// Note: We implement it by hand because it couldn't automatically derive it
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
 impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
     fn default() -> Self {
         Post {
@@ -233,6 +237,9 @@ pub struct Reply<T: Trait<I>, I: Instance> {
 }
 
 /// Reply comparator
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
 impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
     fn eq(&self, other: &Reply<T, I>) -> bool {
         self.text_hash == other.text_hash
@@ -242,6 +249,9 @@ impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
 }
 
 /// Default Reply
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
 impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
     fn default() -> Self {
         Reply {
