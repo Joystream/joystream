@@ -100,6 +100,15 @@ export class DataObjectType extends JoyStructDecorated({
 
 export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
 
+export class Quota extends JoyStructDecorated({
+  // Total objects size limit per StorageObjectOwner
+  size_limit: u64,
+  // Total objects number limit per StorageObjectOwner
+  objects_limit: u64,
+  size_used: u64,
+  objects_used: u64,
+}) {}
+
 export const mediaTypes: RegistryTypes = {
   ContentId,
   LiaisonJudgement,
@@ -114,6 +123,7 @@ export const mediaTypes: RegistryTypes = {
   AbstractStorageObjectOwner,
   WorkingGroupType,
   Content,
+  Quota,
 }
 
 export default mediaTypes

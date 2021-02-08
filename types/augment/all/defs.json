@@ -539,6 +539,12 @@
         ]
     },
     "Content": "Vec<ContentParameters>",
+    "Quota": {
+        "size_limit": "u64",
+        "objects_limit": "u64",
+        "size_used": "u64",
+        "objects_used": "u64"
+    },
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {

@@ -918,6 +918,14 @@ export interface ProposalStatus extends Enum {
   readonly asFinalized: Finalized;
 }
 
+/** @name Quota */
+export interface Quota extends Struct {
+  readonly size_limit: u64;
+  readonly objects_limit: u64;
+  readonly size_used: u64;
+  readonly objects_used: u64;
+}
+
 /** @name RationaleText */
 export interface RationaleText extends Bytes {}
 
