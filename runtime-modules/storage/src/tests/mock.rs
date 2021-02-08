@@ -293,7 +293,6 @@ impl ExtBuilder {
             quota_objects_limit_upper_bound: self.quota_objects_limit_upper_bound,
             global_quota: self.global_quota,
             data_object_by_content_id: vec![],
-            known_content_ids: vec![],
             quotas: vec![],
             uploading_blocked: false,
         }
