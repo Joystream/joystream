@@ -643,7 +643,7 @@ impl membership::Trait for Runtime {
 
 parameter_types! {
     pub const DefaultInitialInvitationBalance: Balance = 100;
-    pub const MaxCategoryDepth: u64 = 5;
+    pub const MaxCategoryDepth: u64 = 6;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
