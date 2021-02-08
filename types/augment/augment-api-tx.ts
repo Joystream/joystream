@@ -310,6 +310,10 @@ declare module '@polkadot/api/types/submittable' {
        **/
       removeKnownContentId: AugmentedSubmittable<(contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
+       * Locks / unlocks content uploading
+       **/
+      updateContentUploadingStatus: AugmentedSubmittable<(isBlocked: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
        * Updates storage object owner quota objects limit. Requires leader privileges.
        **/
       updateStorageObjectOwnerQuotaObjectsLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { AbstractStorageObjectOwner: any } | string | Uint8Array, newQuotaObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;

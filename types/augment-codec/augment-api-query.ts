@@ -275,6 +275,10 @@ declare module '@polkadot/api/types/storage' {
        * Upper bound for the Quota size limit.
        **/
       quotaSizeLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
+      /**
+       * If all new uploads blocked
+       **/
+      uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>>;
     };
     dataObjectStorageRegistry: {
       /**

@@ -545,6 +545,8 @@
         "size_used": "u64",
         "objects_used": "u64"
     },
+    "QuotaLimit": "u64",
+    "UploadingStatus": "bool",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {

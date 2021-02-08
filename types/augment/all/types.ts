@@ -926,6 +926,9 @@ export interface Quota extends Struct {
   readonly objects_used: u64;
 }
 
+/** @name QuotaLimit */
+export interface QuotaLimit extends u64 {}
+
 /** @name RationaleText */
 export interface RationaleText extends Bytes {}
 
@@ -1217,6 +1220,9 @@ export interface UnstakingApplicationStage extends Struct {
 
 /** @name UpdatePropertyValuesOperation */
 export interface UpdatePropertyValuesOperation extends Null {}
+
+/** @name UploadingStatus */
+export interface UploadingStatus extends bool {}
 
 /** @name Url */
 export interface Url extends Text {}

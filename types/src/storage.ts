@@ -109,6 +109,9 @@ export class Quota extends JoyStructDecorated({
   objects_used: u64,
 }) {}
 
+export class QuotaLimit extends u64 {}
+export class UploadingStatus extends bool {}
+
 export const mediaTypes: RegistryTypes = {
   ContentId,
   LiaisonJudgement,
@@ -124,6 +127,8 @@ export const mediaTypes: RegistryTypes = {
   WorkingGroupType,
   Content,
   Quota,
+  QuotaLimit,
+  UploadingStatus,
 }
 
 export default mediaTypes
