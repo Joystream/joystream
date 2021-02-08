@@ -7,17 +7,6 @@ import { GenericAccountId } from '@polkadot/types/generic';
 import { Bytes, Null, Text, bool, u128, u16, u32, u64 } from '@polkadot/types/primitive';
 import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
-/** @name AbstractStorageObjectOwner */
-export interface AbstractStorageObjectOwner extends Enum {
-  readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
-  readonly isCouncil: boolean;
-  readonly isWorkingGroup: boolean;
-  readonly asWorkingGroup: WorkingGroupType;
-}
-
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {
   readonly started_accepting_applicants_at_block: u32;
@@ -1150,8 +1139,13 @@ export interface Status extends Null {}
 export interface StorageObjectOwner extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
-  readonly isAbstractStorageObjectOwner: boolean;
-  readonly asAbstractStorageObjectOwner: AbstractStorageObjectOwner;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name StorageProviderId */
@@ -1314,13 +1308,6 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
-}
-
-/** @name WorkingGroupType */
-export interface WorkingGroupType extends Enum {
-  readonly isContentDirectory: boolean;
-  readonly isBuilders: boolean;
-  readonly isStorageProviders: boolean;
 }
 
 /** @name WorkingGroupUnstaker */

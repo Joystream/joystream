@@ -291,7 +291,7 @@ declare module '@polkadot/api/types/submittable' {
        * Adds the content to the system. The created DataObject
        * awaits liaison to accept or reject it.
        **/
-      addContent: AugmentedSubmittable<(owner: StorageObjectOwner | { Member: any } | { AbstractStorageObjectOwner: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      addContent: AugmentedSubmittable<(owner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Injects a set of data objects and their corresponding content id into the directory.
        * The operation is "silent" - no events will be emitted as objects are added.
@@ -316,11 +316,11 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Updates storage object owner quota objects limit. Requires leader privileges.
        **/
-      updateStorageObjectOwnerQuotaObjectsLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { AbstractStorageObjectOwner: any } | string | Uint8Array, newQuotaObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerQuotaObjectsLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newQuotaObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Updates storage object owner quota size limit. Requires leader privileges.
        **/
-      updateStorageObjectOwnerQuotaSizeLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { AbstractStorageObjectOwner: any } | string | Uint8Array, newQuotaSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerQuotaSizeLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newQuotaSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     dataObjectStorageRegistry: {
       /**

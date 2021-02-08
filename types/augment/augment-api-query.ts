@@ -270,7 +270,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
        **/
-      quotas: AugmentedQuery<ApiType, (arg: StorageObjectOwner | { Member: any } | { AbstractStorageObjectOwner: any } | string | Uint8Array) => Observable<Quota>>;
+      quotas: AugmentedQuery<ApiType, (arg: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<Quota>>;
       /**
        * Upper bound for the Quota size limit.
        **/

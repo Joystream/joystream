@@ -520,23 +520,11 @@
     "StorageObjectOwner": {
         "_enum": {
             "Member": "MemberId",
-            "AbstractStorageObjectOwner": "AbstractStorageObjectOwner"
-        }
-    },
-    "AbstractStorageObjectOwner": {
-        "_enum": {
             "Channel": "ChannelId",
             "DAO": "DAOId",
             "Council": "Null",
-            "WorkingGroup": "WorkingGroupType"
+            "WorkingGroup": "WorkingGroup"
         }
-    },
-    "WorkingGroupType": {
-        "_enum": [
-            "ContentDirectory",
-            "Builders",
-            "StorageProviders"
-        ]
     },
     "Content": "Vec<ContentParameters>",
     "Quota": {

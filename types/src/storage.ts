@@ -1,5 +1,5 @@
 import { Option, Vec, BTreeMap, u64, bool, Text, Null, Bytes } from '@polkadot/types'
-import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DAOId } from './common'
+import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DAOId, WorkingGroup } from './common'
 import { MemberId } from './members'
 import { StorageProviderId } from './working-group' // this should be in discovery really
 import { randomAsU8a } from '@polkadot/util-crypto'
@@ -40,22 +40,12 @@ export const LiaisonJudgementDef = {
 export type LiaisonJudgementKey = keyof typeof LiaisonJudgementDef
 export class LiaisonJudgement extends JoyEnum(LiaisonJudgementDef) {}
 
-export class WorkingGroupType extends JoyEnum({
-  ContentDirectory: Null,
-  Builders: Null,
-  StorageProviders: Null,
-}) {}
-
-export class AbstractStorageObjectOwner extends JoyEnum({
+export class StorageObjectOwner extends JoyEnum({
+  Member: MemberId,
   Channel: ChannelId,
   DAO: DAOId,
   Council: Null,
-  WorkingGroup: WorkingGroupType,
-}) {}
-
-export class StorageObjectOwner extends JoyEnum({
-  Member: MemberId,
-  AbstractStorageObjectOwner: AbstractStorageObjectOwner,
+  WorkingGroup: WorkingGroup,
 }) {}
 
 export class ContentParameters extends JoyStructDecorated({
@@ -123,8 +113,6 @@ export const mediaTypes: RegistryTypes = {
   DataObjectsMap,
   ContentParameters,
   StorageObjectOwner,
-  AbstractStorageObjectOwner,
-  WorkingGroupType,
   Content,
   Quota,
   QuotaLimit,
