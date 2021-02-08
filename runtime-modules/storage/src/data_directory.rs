@@ -244,8 +244,6 @@ pub type DataObjectsMap<T> = BTreeMap<ContentId<T>, DataObject<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
-        /// List of ids known to the system.
-        pub KnownContentIds get(fn known_content_ids) config(): Vec<ContentId<T>> = Vec::new();
 
         /// Maps data objects by their content id.
         pub DataObjectByContentId get(fn data_object_by_content_id) config():
@@ -433,8 +431,6 @@ decl_module! {
 
             Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Accepted)?;
 
-            <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
-
             Self::deposit_event(RawEvent::ContentAccepted(content_id, storage_provider_id));
         }
 
@@ -463,48 +459,6 @@ decl_module! {
 
             <UploadingBlocked>::put(is_blocked);
             Self::deposit_event(RawEvent::ContentUploadingStatusUpdated(is_blocked));
-        }
-
-        // Sudo methods
-
-        /// Removes the content id from the list of known content ids. Requires root privileges.
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn remove_known_content_id(origin, content_id: T::ContentId) {
-            ensure_root(origin)?;
-
-            // == MUTATION SAFE ==
-
-            let upd_content_ids: Vec<T::ContentId> = Self::known_content_ids()
-                .into_iter()
-                .filter(|&id| id != content_id)
-                .collect();
-            <KnownContentIds<T>>::put(upd_content_ids);
-        }
-
-        /// Injects a set of data objects and their corresponding content id into the directory.
-        /// The operation is "silent" - no events will be emitted as objects are added.
-        /// The number of objects that can be added per call is limited to prevent the dispatch
-        /// from causing the block production to fail if it takes too much time to process.
-        /// Existing data objects will be overwritten.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub(crate) fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
-            ensure_root(origin)?;
-
-            // Must provide something to inject
-            ensure!(objects.len() <= T::MaxObjectsPerInjection::get() as usize, Error::<T>::DataObjectsInjectionExceededLimit);
-
-            for (id, object) in objects.into_iter() {
-                // append to known content ids
-                // duplicates will be removed at the end
-                <KnownContentIds<T>>::mutate(|ids| ids.push(id));
-                <DataObjectByContentId<T>>::insert(id, object);
-            }
-
-            // remove duplicate ids
-            <KnownContentIds<T>>::mutate(|ids| {
-                ids.sort();
-                ids.dedup();
-            });
         }
     }
 }
