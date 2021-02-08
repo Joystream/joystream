@@ -98,16 +98,13 @@ export class VideoUpdateParameters extends JoyStructDecorated({
 
 export class Playlist extends JoyStructDecorated({
   in_channel: ChannelId,
-  videos: Vec.with(VideoId),
 }) {}
 
 export class PlaylistCreationParameters extends JoyStructDecorated({
-  videos: Vec.with(VideoId),
   meta: Bytes,
 }) {}
 
 export class PlaylistUpdateParameters extends JoyStructDecorated({
-  new_videos: Option.with(Vec.with(VideoId)),
   new_meta: Option.with(Bytes),
 }) {}
 

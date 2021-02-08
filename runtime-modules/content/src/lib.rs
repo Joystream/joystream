@@ -289,9 +289,7 @@ pub struct Video<ChannelId, SeriesId> {
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistCreationParameters<VideoId> {
-    /// The full list of videos that make up the playlist.
-    videos: Vec<VideoId>,
+pub struct PlaylistCreationParameters {
     /// Metadata about the playlist.
     meta: Vec<u8>,
 }
@@ -299,9 +297,7 @@ pub struct PlaylistCreationParameters<VideoId> {
 /// Information about the playlist being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PlaylistUpdateParameters<VideoId> {
-    /// If set, the new full list of videos that make up the playlist.
-    new_videos: Option<Vec<VideoId>>,
+pub struct PlaylistUpdateParameters {
     /// If set, metadata update for the playlist.
     new_meta: Option<Vec<u8>>,
 }
@@ -309,11 +305,9 @@ pub struct PlaylistUpdateParameters<VideoId> {
 /// A playlist is an ordered collection of videos.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Playlist<ChannelId, VideoId> {
+pub struct Playlist<ChannelId> {
     /// The channel the playlist belongs to.
     in_channel: ChannelId,
-    /// The videos that make up the playlist.
-    videos: Vec<VideoId>,
 }
 
 /// Information about the episode being created or updated.
@@ -427,7 +421,7 @@ decl_storage! {
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
-        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId, T::VideoId>;
+        pub PlaylistById get(fn playlist_by_id): map hasher(blake2_128_concat) T::PlaylistId => Playlist<T::ChannelId>;
 
         pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
 
@@ -719,7 +713,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: PlaylistCreationParameters<T::VideoId>,
+            params: PlaylistCreationParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -730,7 +724,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             playlist: T::PlaylistId,
             assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: PlaylistUpdateParameters<T::VideoId>,
+            params: PlaylistUpdateParameters,
         ) -> DispatchResult {
             Ok(())
         }
@@ -1086,8 +1080,8 @@ decl_event!(
         FeaturedVideosSet(Vec<VideoId>),
 
         // Video Playlists
-        PlaylistCreated(PlaylistId, PlaylistCreationParameters<VideoId>),
-        PlaylistUpdated(PlaylistId, PlaylistUpdateParameters<VideoId>),
+        PlaylistCreated(PlaylistId, PlaylistCreationParameters),
+        PlaylistUpdated(PlaylistId, PlaylistUpdateParameters),
         PlaylistDeleted(PlaylistId),
 
         // Series
