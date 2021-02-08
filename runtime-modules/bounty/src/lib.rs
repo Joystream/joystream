@@ -279,6 +279,9 @@ decl_event! {
 
         /// A member has withdrew the funding.
         BountyMemberFundingWithdrawal(BountyId, MemberId),
+
+        /// A bounty creator has withdrew the funding.
+        BountyCreatorFundingWithdrawal(BountyId, BountyCreator<MemberId>),
     }
 }
 
@@ -497,7 +500,7 @@ decl_module! {
             }
         }
 
-        /// Withdraw funding.
+        /// Withdraw member funding.
         /// # <weight>
         ///
         /// ## weight
@@ -538,11 +541,44 @@ decl_module! {
 
             let _ = balances::Module::<T>::deposit_creating(&account_id, withdrawal_amount);
 
-            <Bounties<T>>::insert(bounty_id, bounty);
-
             <BountyContributions<T>>::remove(bounty_id, member_id);
 
             Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
+        }
+
+        /// Withdraw creator funding.
+        #[weight = 10000000] //TODO adjust weight
+        pub fn withdraw_creator_funding(
+            origin,
+            creator: BountyCreator<MemberId<T>>,
+            bounty_id: T::BountyId,
+        ) {
+            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
+                origin,
+                creator.clone(),
+            )?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::Withdrawal),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let funding_amount = bounty.creation_params.creator_funding;
+            let cherry = bounty.creation_params.cherry;
+
+            bounty_creator_manager.restore_balance(funding_amount, cherry);
+
+            Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
         }
     }
 }
@@ -637,10 +673,32 @@ impl<T: Trait> BountyCreatorManager<T> {
         }
     }
 
-    // Remove a balance from the council budget.
+    // Restore a balance for the bounty creator.
+    fn restore_balance(&self, cherry: BalanceOf<T>, creator_funding: BalanceOf<T>) {
+        let required_balance = cherry + creator_funding;
+
+        match self {
+            BountyCreatorManager::Council => {
+                BountyCreatorManager::<T>::add_balance_to_council_budget(required_balance);
+            }
+            BountyCreatorManager::Member(account_id, _) => {
+                let _ = balances::Module::<T>::deposit_creating(&account_id, required_balance);
+            }
+        }
+    }
+
+    // Remove some balance from the council budget.
     fn remove_balance_from_council_budget(amount: BalanceOf<T>) {
         let budget = T::CouncilBudgetManager::get_budget();
         let new_budget = budget.saturating_sub(amount);
+
+        T::CouncilBudgetManager::set_budget(new_budget);
+    }
+
+    // Add some balance from the council budget.
+    fn add_balance_to_council_budget(amount: BalanceOf<T>) {
+        let budget = T::CouncilBudgetManager::get_budget();
+        let new_budget = budget.saturating_add(amount);
 
         T::CouncilBudgetManager::set_budget(new_budget);
     }
