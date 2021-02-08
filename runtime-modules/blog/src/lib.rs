@@ -25,8 +25,8 @@
 //! laugh, etc. The semantics of each reaction is not present in the runtime.
 //!
 //! ## Interface
-//! You need to provide an `EnsureOrigin` for `BlogOwnerEnsureOrigin` so that
-//! there are a number of origins that can create posts
+//! The posts creation/edition/locking/unlocking are done through proposals
+//! To reply/react to posts you need to be a member
 //!
 //! ## Supported extrinsics
 //!
@@ -205,7 +205,7 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
     }
 }
 
-/// Ekkjkjkjkjkjnum variant, representing either reply or post id
+/// Enum variant, representing either reply or post id
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ParentId<ReplyId, PostId: Default> {
