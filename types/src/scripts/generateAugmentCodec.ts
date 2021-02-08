@@ -11,18 +11,14 @@ import fs from 'fs'
 import common from '../common'
 import members from '../members'
 import council from '../council'
-import roles from '../roles'
 import forum from '../forum'
-import stake from '../stake'
-import mint from '../mint'
-import recurringRewards from '../recurring-rewards'
-import hiring from '../hiring'
-import contentWorkingGroup from '../content-working-group'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
 import media from '../media'
 import proposals from '../proposals'
 import contentDirectory from '../content-directory'
+import referendum from '../referendum'
+import constitution from '../constitution'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -33,18 +29,14 @@ const typesByModule = {
   'common': common,
   'members': members,
   'council': council,
-  'roles': roles,
   'forum': forum,
-  'stake': stake,
-  'mint': mint,
-  'recurring-rewards': recurringRewards,
-  'hiring': hiring,
-  'content-working-group': contentWorkingGroup,
   'working-group': workingGroup,
   'discovery': discovery,
   'media': media,
   'proposals': proposals,
   'content-directory': contentDirectory,
+  'referendum': referendum,
+  'constitution': constitution,
 }
 
 type Imports = { [moduleName: string]: string[] }

@@ -188,10 +188,15 @@ class IdentitiesApi {
 
   /*
    * Register account id with userInfo as a new member
-   * using default policy 0, returns new member id
+   * returns new member id
    */
   async registerMember(accountId, userInfo) {
-    const tx = this.base.api.tx.members.buyMembership(0, userInfo.handle, userInfo.avatarUri, userInfo.about)
+    const tx = this.base.api.tx.members.buyMembership({
+      root_account: accountId,
+      controller_account: accountId,
+      name: userInfo.handle,
+      handle: userInfo.handle,
+    })
 
     return this.base.signAndSendThenGetEventResult(accountId, tx, {
       module: 'members',

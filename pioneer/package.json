@@ -92,7 +92,7 @@
     "node-sass": "^4.13.0",
     "sass-loader": "^8.0.0",
     "style-loader": "^1.0.0",
-    "@joystream/types": "link:../types"
+    "@joystream/types": "^0.15.0"
   },
   "volta": {
     "extends": "../package.json"

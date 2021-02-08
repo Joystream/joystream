@@ -81,10 +81,17 @@ export class Sender {
           } = record
           const err = data[0] as DispatchError
           if (err.isModule) {
-            const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-            this.debug('Dispatch Error:', name, sentTx)
+            try {
+              const { name } = this.api.registry.findMetaError(err.asModule)
+              this.debug('Dispatch Error:', name, sentTx)
+            } catch (findmetaerror) {
+              // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
+              // Happens for dispatchable calls that don't explicitly use `-> DispatchResult` return value even
+              // if they return an error enum variant from the decl_error! macro
+              this.debug('Dispatch Error (error details not found):', err.asModule.toHuman(), sentTx)
+            }
           } else {
-            this.debug('Dispatch Error:', sentTx)
+            this.debug('Dispatch Error:', err.toHuman(), sentTx)
           }
         } else {
           assert(success)
@@ -95,10 +102,15 @@ export class Sender {
             if (dispatchResult.isError) {
               const err = dispatchResult.asError
               if (err.isModule) {
-                const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
-                this.debug('Sudo Dispatch Failed', name, sentTx)
+                try {
+                  const { name } = this.api.registry.findMetaError(err.asModule)
+                  this.debug('Sudo Dispatch Failed', name, sentTx)
+                } catch (findmetaerror) {
+                  // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
+                  this.debug('Sudo Dispatch Failed (error details not found)', err.asModule.toHuman(), sentTx)
+                }
               } else {
-                this.debug('Sudo Dispatch Failed', sentTx)
+                this.debug('Sudo Dispatch Failed', err.toHuman(), sentTx)
               }
             }
           }

@@ -9,8 +9,7 @@
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
 //! encodes extrinsic calls from dependency modules in order to create proposals inside the `engine`
-//! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
-//! `ProposalDetailsByProposalId` map.
+//! module.
 //!
 //! To create a proposal you need to call the extrinsic `create_proposal` with the `ProposalDetails` variant
 //! corresponding to the proposal you want to create. [See the possible details with their proposal](./enum.ProposalDetails.html)
@@ -347,9 +346,6 @@ decl_storage! {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
-
-        /// Map proposal id to proposal details
-        pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
     }
 }
 
@@ -474,7 +470,7 @@ decl_module! {
             Self::ensure_details_checks(&proposal_details)?;
 
             let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details);
 
             let account_id =
                 T::MembershipOriginValidator::ensure_member_controller_account_origin(
@@ -513,7 +509,6 @@ decl_module! {
                 <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
-            <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
         }
 
 // *************** Extrinsic to execute
@@ -963,7 +958,6 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> ProposalObserver<T> for Module<T> {
     fn proposal_removed(proposal_id: &<T as proposals_engine::Trait>::ProposalId) {
         <ThreadIdByProposalId<T>>::remove(proposal_id);
-        <ProposalDetailsByProposalId<T>>::remove(proposal_id);
 
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 

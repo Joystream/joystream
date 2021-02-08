@@ -3976,7 +3976,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "4.0.1"
+version = "4.0.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

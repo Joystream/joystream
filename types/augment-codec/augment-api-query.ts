@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassOf, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, ReferendumStage, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, Thread, ThreadId, Url, VoteKind, Worker, WorkerId } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -127,6 +127,9 @@ declare module '@polkadot/api/types/storage' {
        **/
       totalIssuance: AugmentedQuery<ApiType, () => Observable<Balance>>;
     };
+    constitution: {
+      constitution: AugmentedQuery<ApiType, () => Observable<ConstitutionInfo>>;
+    };
     contentDirectory: {
       /**
        * Map, representing ClassId -> Class relation
@@ -160,177 +163,70 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Maps identifier to worker application on opening.
        **/
-      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>>;
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<Application>>;
       /**
-       * The current lead.
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      /**
+       * Current group lead.
        **/
       currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
-      /**
-       * Map member id by hiring application id.
-       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
-       **/
-      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>>;
-      /**
-       * The mint currently funding the rewards for this module.
-       **/
-      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
       /**
        * Next identifier value for new worker application.
        **/
       nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
       /**
-       * Next identifier value for new worker opening.
+       * Next identifier value for new job opening.
        **/
       nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
       /**
-       * Next identifier for new worker.
+       * Next identifier for a new worker.
        **/
       nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
       /**
-       * Maps identifier to worker opening.
+       * Maps identifier to job opening.
        **/
-      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>>;
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<Opening>>;
       /**
-       * Opening human readable text length limits
+       * Status text hash.
        **/
-      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Worker application human readable text length limits
-       **/
-      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>>;
       /**
        * Maps identifier to corresponding worker.
        **/
-      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>>;
-      /**
-       * Worker exit rationale text length limits.
-       **/
-      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-    };
-    contentWorkingGroup: {
-      channelAvatarConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      channelBannerConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to corresponding channel.
-       **/
-      channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>>;
-      /**
-       * Whether it is currently possible to create a channel via `create_channel` extrinsic.
-       **/
-      channelCreationEnabled: AugmentedQuery<ApiType, () => Observable<bool>>;
-      channelDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      channelHandleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps (unique) channel handle to the corresponding identifier for the channel.
-       * Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique
-       * at the time it is being proposed.
-       **/
-      channelIdByHandle: AugmentedQuery<ApiType, (arg: Bytes | string | Uint8Array) => Observable<ChannelId>>;
-      channelTitleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to curator application on opening.
-       **/
-      curatorApplicationById: AugmentedQuery<ApiType, (arg: CuratorApplicationId | AnyNumber | Uint8Array) => Observable<CuratorApplication>>;
-      curatorApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to corresponding curator.
-       **/
-      curatorById: AugmentedQuery<ApiType, (arg: CuratorId | AnyNumber | Uint8Array) => Observable<Curator>>;
-      curatorExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifeir to curator opening.
-       **/
-      curatorOpeningById: AugmentedQuery<ApiType, (arg: CuratorOpeningId | AnyNumber | Uint8Array) => Observable<CuratorOpening>>;
-      /**
-       * The current lead.
-       **/
-      currentLeadId: AugmentedQuery<ApiType, () => Observable<Option<LeadId>>>;
-      /**
-       * Maps identifier to corresponding lead.
-       **/
-      leadById: AugmentedQuery<ApiType, (arg: LeadId | AnyNumber | Uint8Array) => Observable<Lead>>;
-      /**
-       * The mint currently funding the rewards for this module.
-       **/
-      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
-      /**
-       * Identifier to be used by the next channel introduced.
-       **/
-      nextChannelId: AugmentedQuery<ApiType, () => Observable<ChannelId>>;
-      /**
-       * Next identifier value for new curator application.
-       **/
-      nextCuratorApplicationId: AugmentedQuery<ApiType, () => Observable<CuratorApplicationId>>;
-      /**
-       * Next identifier for new curator.
-       **/
-      nextCuratorId: AugmentedQuery<ApiType, () => Observable<CuratorId>>;
-      /**
-       * Next identifier valuefor new curator opening.
-       **/
-      nextCuratorOpeningId: AugmentedQuery<ApiType, () => Observable<CuratorOpeningId>>;
-      /**
-       * Next identifier for new current lead.
-       **/
-      nextLeadId: AugmentedQuery<ApiType, () => Observable<LeadId>>;
-      /**
-       * Next identifier for
-       **/
-      nextPrincipalId: AugmentedQuery<ApiType, () => Observable<PrincipalId>>;
-      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Maps identifier to principal.
-       **/
-      principalById: AugmentedQuery<ApiType, (arg: PrincipalId | AnyNumber | Uint8Array) => Observable<Principal>>;
-      /**
-       * Recover curator by the role stake which is currently unstaking.
-       **/
-      unstakerByStakeId: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<WorkingGroupUnstaker>>;
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>>;
     };
     council: {
-      activeCouncil: AugmentedQuery<ApiType, () => Observable<Seats>>;
       /**
-       * Reward amount paid out at each PayoutInterval
+       * Index of the current candidacy period. It is incremented everytime announcement period
+       * starts.
        **/
-      amountPerPayout: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      announcementPeriodNr: AugmentedQuery<ApiType, () => Observable<u64>>;
       /**
-       * The mint that funds council member rewards and spending proposals budget
+       * Budget for the council's elected members rewards.
        **/
-      councilMint: AugmentedQuery<ApiType, () => Observable<MintId>>;
+      budget: AugmentedQuery<ApiType, () => Observable<Balance>>;
       /**
-       * How many blocks after the reward is created, the first payout will be made
+       * Map of all candidates that ever candidated and haven't unstake yet.
        **/
-      firstPayoutAfterRewardCreated: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
+      candidates: AugmentedQuery<ApiType, (arg: MemberId | AnyNumber | Uint8Array) => Observable<Candidate>>;
       /**
-       * Optional interval in blocks on which a reward payout will be made to each council member
+       * Current council members
        **/
-      payoutInterval: AugmentedQuery<ApiType, () => Observable<Option<BlockNumber>>>;
+      councilMembers: AugmentedQuery<ApiType, () => Observable<Vec<CouncilMemberOf>>>;
       /**
-       * The reward relationships currently in place. There may not necessarily be a 1-1 correspondance with
-       * the active council, since there are multiple ways of setting/adding/removing council members, some of which
-       * do not involve creating a relationship.
+       * The next block in which the budget will be increased.
        **/
-      rewardRelationships: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<RewardRelationshipId>>;
-      termEndsAt: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-    };
-    councilElection: {
-      announcingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      applicants: AugmentedQuery<ApiType, () => Observable<Vec<AccountId>>>;
-      applicantStakes: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<ElectionStake>>;
-      autoStart: AugmentedQuery<ApiType, () => Observable<bool>>;
-      candidacyLimit: AugmentedQuery<ApiType, () => Observable<u32>>;
-      commitments: AugmentedQuery<ApiType, () => Observable<Vec<Hash>>>;
-      councilSize: AugmentedQuery<ApiType, () => Observable<u32>>;
-      existingStakeHolders: AugmentedQuery<ApiType, () => Observable<Vec<AccountId>>>;
-      minCouncilStake: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
-      minVotingStake: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
-      newTermDuration: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      revealingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      round: AugmentedQuery<ApiType, () => Observable<u32>>;
-      stage: AugmentedQuery<ApiType, () => Observable<Option<ElectionStage>>>;
-      transferableStakes: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<TransferableStake>>;
-      votes: AugmentedQuery<ApiType, (arg: Hash | string | Uint8Array) => Observable<SealedVote>>;
-      votingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
+      nextBudgetRefill: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
+      /**
+       * The next block in which the elected council member rewards will be payed.
+       **/
+      nextRewardPayments: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
+      /**
+       * Current council voting stage
+       **/
+      stage: AugmentedQuery<ApiType, () => Observable<CouncilStageUpdate>>;
     };
     dataDirectory: {
       /**
@@ -393,17 +289,18 @@ declare module '@polkadot/api/types/storage' {
        * Map category identifier to corresponding category.
        **/
       categoryById: AugmentedQuery<ApiType, (arg: CategoryId | AnyNumber | Uint8Array) => Observable<Category>>;
-      categoryDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
       /**
-       * Input constraints
-       * These are all forward looking, that is they are enforced on all
-       * future calls.
+       * Moderator set for each Category
        **/
-      categoryTitleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      categoryByModerator: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ModeratorId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>>;
       /**
-       * Account of forum sudo.
+       * Counter for all existing categories.
        **/
-      forumSudo: AugmentedQuery<ApiType, () => Observable<Option<AccountId>>>;
+      categoryCounter: AugmentedQuery<ApiType, () => Observable<CategoryId>>;
+      /**
+       * If data migration is done, set as configible for unit test purpose
+       **/
+      dataMigrationDone: AugmentedQuery<ApiType, () => Observable<bool>>;
       /**
        * Category identifier value to be used for the next Category created.
        **/
@@ -419,15 +316,53 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Map post identifier to corresponding post.
        **/
-      postById: AugmentedQuery<ApiType, (arg: PostId | AnyNumber | Uint8Array) => Observable<Post>>;
-      postModerationRationaleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      postTextConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      postById: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: PostId | AnyNumber | Uint8Array) => Observable<Post>>;
       /**
        * Map thread identifier to corresponding thread.
        **/
-      threadById: AugmentedQuery<ApiType, (arg: ThreadId | AnyNumber | Uint8Array) => Observable<Thread>>;
-      threadModerationRationaleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      threadTitleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      threadById: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ThreadId | AnyNumber | Uint8Array) => Observable<Thread>>;
+    };
+    forumWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<Application>>;
+      /**
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      /**
+       * Current group lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
+      /**
+       * Next identifier value for new job opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
+      /**
+       * Next identifier for a new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
+      /**
+       * Maps identifier to job opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<Opening>>;
+      /**
+       * Status text hash.
+       **/
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>>;
     };
     grandpa: {
       /**
@@ -459,28 +394,6 @@ declare module '@polkadot/api/types/storage' {
        **/
       state: AugmentedQuery<ApiType, () => Observable<StoredState>>;
     };
-    hiring: {
-      /**
-       * Applications
-       **/
-      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<Application>>;
-      /**
-       * Internal purpose of given stake, i.e. fro what application, and whether for the role or for the application.
-       **/
-      applicationIdByStakingId: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<ApplicationId>>;
-      /**
-       * Identifier for next application to be added.
-       **/
-      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
-      /**
-       * Identifier for next opening to be added.
-       **/
-      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
-      /**
-       * Openings.
-       **/
-      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<Opening>>;
-    };
     imOnline: {
       /**
        * For each session index, we keep a mapping of `T::ValidatorId` to the
@@ -508,18 +421,19 @@ declare module '@polkadot/api/types/storage' {
     };
     members: {
       /**
-       * Active Paid membership terms
+       * Initial invitation balance for the invited member.
        **/
-      activePaidMembershipTerms: AugmentedQuery<ApiType, () => Observable<Vec<PaidTermId>>>;
-      maxAboutTextLength: AugmentedQuery<ApiType, () => Observable<u32>>;
-      maxAvatarUriLength: AugmentedQuery<ApiType, () => Observable<u32>>;
-      maxHandleLength: AugmentedQuery<ApiType, () => Observable<u32>>;
+      initialInvitationBalance: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
       /**
-       * Registered unique handles and their mapping to their owner
+       * Initial invitation count for the newly bought membership.
        **/
-      memberIdByHandle: AugmentedQuery<ApiType, (arg: Bytes | string | Uint8Array) => Observable<MemberId>>;
+      initialInvitationCount: AugmentedQuery<ApiType, () => Observable<u32>>;
       /**
-       * Mapping of a controller account id to vector of member ids it controls
+       * Registered unique handles hash and their mapping to their owner.
+       **/
+      memberIdByHandleHash: AugmentedQuery<ApiType, (arg: Bytes | string | Uint8Array) => Observable<MemberId>>;
+      /**
+       * Mapping of a controller account id to vector of member ids it controls.
        **/
       memberIdsByControllerAccountId: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<Vec<MemberId>>>;
       /**
@@ -527,42 +441,72 @@ declare module '@polkadot/api/types/storage' {
        **/
       memberIdsByRootAccountId: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<Vec<MemberId>>>;
       /**
-       * Mapping of member's id to their membership profile
+       * Mapping of member's id to their membership profile.
        **/
       membershipById: AugmentedQuery<ApiType, (arg: MemberId | AnyNumber | Uint8Array) => Observable<Membership>>;
-      minHandleLength: AugmentedQuery<ApiType, () => Observable<u32>>;
       /**
-       * Is the platform is accepting new members or not
+       * Current membership price.
        **/
-      newMembershipsAllowed: AugmentedQuery<ApiType, () => Observable<bool>>;
+      membershipPrice: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
       /**
        * MemberId to assign to next member that is added to the registry, and is also the
        * total number of members created. MemberIds start at Zero.
        **/
       nextMemberId: AugmentedQuery<ApiType, () => Observable<MemberId>>;
       /**
-       * Next paid membership terms id
+       * Referral cut to receive during on buying the membership.
        **/
-      nextPaidMembershipTermsId: AugmentedQuery<ApiType, () => Observable<PaidTermId>>;
+      referralCut: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
       /**
-       * Paid membership terms record
+       * Double of a staking account id and member id to the confirmation status.
        **/
-      paidMembershipTermsById: AugmentedQuery<ApiType, (arg: PaidTermId | AnyNumber | Uint8Array) => Observable<PaidMembershipTerms>>;
-      screeningAuthority: AugmentedQuery<ApiType, () => Observable<AccountId>>;
+      stakingAccountIdMemberStatus: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<StakingAccountMemberBinding>>;
+    };
+    membershipWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<Application>>;
+      /**
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      /**
+       * Current group lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
+      /**
+       * Next identifier value for new job opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
+      /**
+       * Next identifier for a new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
+      /**
+       * Maps identifier to job opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<Opening>>;
+      /**
+       * Status text hash.
+       **/
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>>;
     };
     memo: {
       maxMemoLength: AugmentedQuery<ApiType, () => Observable<u32>>;
       memo: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<MemoText>>;
-    };
-    minting: {
-      /**
-       * Mints
-       **/
-      mints: AugmentedQuery<ApiType, (arg: MintId | AnyNumber | Uint8Array) => Observable<Mint>>;
-      /**
-       * The number of mints created.
-       **/
-      mintsCreated: AugmentedQuery<ApiType, () => Observable<MintId>>;
     };
     offences: {
       /**
@@ -590,123 +534,15 @@ declare module '@polkadot/api/types/storage' {
     };
     proposalsCodex: {
       /**
-       * Grace period for the 'add working group opening' proposal
-       **/
-      addWorkingGroupOpeningProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'add working group opening' proposal
-       **/
-      addWorkingGroupOpeningProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'begin review working group leader applications' proposal
-       **/
-      beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'begin review working group leader applications' proposal
-       **/
-      beginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'decrease working group leader stake' proposal
-       **/
-      decreaseWorkingGroupLeaderStakeProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'decrease working group leader stake' proposal
-       **/
-      decreaseWorkingGroupLeaderStakeProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'fill working group leader opening' proposal
-       **/
-      fillWorkingGroupLeaderOpeningProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'fill working group leader opening' proposal
-       **/
-      fillWorkingGroupLeaderOpeningProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
        * Map proposal id to proposal details
        **/
       proposalDetailsByProposalId: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<ProposalDetailsOf>>;
-      /**
-       * Grace period for the 'runtime upgrade' proposal
-       **/
-      runtimeUpgradeProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'runtime upgrade' proposal
-       **/
-      runtimeUpgradeProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set election parameters' proposal
-       **/
-      setElectionParametersProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set election parameters' proposal
-       **/
-      setElectionParametersProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set validator count' proposal
-       **/
-      setValidatorCountProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set validator count' proposal
-       **/
-      setValidatorCountProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set working group leader reward' proposal
-       **/
-      setWorkingGroupLeaderRewardProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set working group leader reward' proposal
-       **/
-      setWorkingGroupLeaderRewardProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set working group mint capacity' proposal
-       **/
-      setWorkingGroupMintCapacityProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set working group mint capacity' proposal
-       **/
-      setWorkingGroupMintCapacityProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'slash working group leader stake' proposal
-       **/
-      slashWorkingGroupLeaderStakeProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'slash working group leader stake' proposal
-       **/
-      slashWorkingGroupLeaderStakeProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'spending' proposal
-       **/
-      spendingProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'spending' proposal
-       **/
-      spendingProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'terminate working group leader role' proposal
-       **/
-      terminateWorkingGroupLeaderRoleProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'terminate working group leader role' proposal
-       **/
-      terminateWorkingGroupLeaderRoleProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'text' proposal
-       **/
-      textProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'text' proposal
-       **/
-      textProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
       /**
        * Map proposal id to its discussion thread id
        **/
       threadIdByProposalId: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<ThreadId>>;
     };
     proposalsDiscussion: {
-      /**
-       * Last author thread counter (part of the antispam mechanism)
-       **/
-      lastThreadAuthorCounter: AugmentedQuery<ApiType, () => Observable<Option<ThreadCounter>>>;
       /**
        * Count of all posts that have been created.
        **/
@@ -730,17 +566,9 @@ declare module '@polkadot/api/types/storage' {
        **/
       activeProposalCount: AugmentedQuery<ApiType, () => Observable<u32>>;
       /**
-       * Ids of proposals that are open for voting (have not been finalized yet).
-       **/
-      activeProposalIds: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>>;
-      /**
        * Map proposal executable code by proposal id.
        **/
       dispatchableCallCode: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<Bytes>>;
-      /**
-       * Ids of proposals that were approved and theirs grace period was not expired.
-       **/
-      pendingExecutionProposalIds: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<ITuple<[]>>>;
       /**
        * Count of all proposals that have been created.
        **/
@@ -749,10 +577,6 @@ declare module '@polkadot/api/types/storage' {
        * Map proposal by its id.
        **/
       proposals: AugmentedQuery<ApiType, (arg: ProposalId | AnyNumber | Uint8Array) => Observable<ProposalOf>>;
-      /**
-       * Map proposal id by stake id. Required by StakingEventsHandler callback call
-       **/
-      stakesProposals: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<ProposalId>>;
       /**
        * Double map for preventing duplicate votes. Should be cleaned after usage.
        **/
@@ -766,11 +590,18 @@ declare module '@polkadot/api/types/storage' {
        **/
       randomMaterial: AugmentedQuery<ApiType, () => Observable<Vec<Hash>>>;
     };
-    recurringRewards: {
-      recipients: AugmentedQuery<ApiType, (arg: RecipientId | AnyNumber | Uint8Array) => Observable<Recipient>>;
-      recipientsCreated: AugmentedQuery<ApiType, () => Observable<RecipientId>>;
-      rewardRelationships: AugmentedQuery<ApiType, (arg: RewardRelationshipId | AnyNumber | Uint8Array) => Observable<RewardRelationship>>;
-      rewardRelationshipsCreated: AugmentedQuery<ApiType, () => Observable<RewardRelationshipId>>;
+    referendum: {
+      /**
+       * Current referendum stage.
+       **/
+      stage: AugmentedQuery<ApiType, () => Observable<ReferendumStage>>;
+      /**
+       * Votes cast in the referendum. A new record is added to this map when a user casts a sealed vote.
+       * It is modified when a user reveals the vote's commitment proof.
+       * A record is finally removed when the user unstakes, which can happen during a voting stage or after the current cycle ends.
+       * A stake for a vote can be reused in future referendum cycles.
+       **/
+      votes: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<CastVoteOf>>;
     };
     session: {
       /**
@@ -805,17 +636,6 @@ declare module '@polkadot/api/types/storage' {
        * The current set of validators.
        **/
       validators: AugmentedQuery<ApiType, () => Observable<Vec<ValidatorId>>>;
-    };
-    stake: {
-      /**
-       * Maps identifiers to a stake.
-       **/
-      stakes: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<Stake>>;
-      /**
-       * Identifier value for next stake, and count of total stakes created (not necessarily the number of current
-       * stakes in the Stakes map as stakes can be removed.)
-       **/
-      stakesCreated: AugmentedQuery<ApiType, () => Observable<StakeId>>;
     };
     staking: {
       /**
@@ -1021,52 +841,39 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Maps identifier to worker application on opening.
        **/
-      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>>;
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<Application>>;
       /**
-       * The current lead.
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      /**
+       * Current group lead.
        **/
       currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
-      /**
-       * Map member id by hiring application id.
-       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
-       **/
-      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>>;
-      /**
-       * The mint currently funding the rewards for this module.
-       **/
-      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
       /**
        * Next identifier value for new worker application.
        **/
       nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
       /**
-       * Next identifier value for new worker opening.
+       * Next identifier value for new job opening.
        **/
       nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
       /**
-       * Next identifier for new worker.
+       * Next identifier for a new worker.
        **/
       nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
       /**
-       * Maps identifier to worker opening.
+       * Maps identifier to job opening.
        **/
-      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>>;
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<Opening>>;
       /**
-       * Opening human readable text length limits
+       * Status text hash.
        **/
-      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      /**
-       * Worker application human readable text length limits
-       **/
-      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>>;
       /**
        * Maps identifier to corresponding worker.
        **/
-      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>>;
-      /**
-       * Worker exit rationale text length limits.
-       **/
-      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>>;
     };
     sudo: {
       /**
@@ -1144,6 +951,10 @@ declare module '@polkadot/api/types/storage' {
        * Hash of the previous block.
        **/
       parentHash: AugmentedQuery<ApiType, () => Observable<Hash>>;
+      /**
+       * True if we have upgraded so that `type RefCount` is `u32`. False (default) if not.
+       **/
+      upgradedToU32RefCount: AugmentedQuery<ApiType, () => Observable<bool>>;
     };
     timestamp: {
       /**
@@ -1158,26 +969,6 @@ declare module '@polkadot/api/types/storage' {
     transactionPayment: {
       nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<Multiplier>>;
       storageVersion: AugmentedQuery<ApiType, () => Observable<Releases>>;
-    };
-    versionedStore: {
-      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<Class>>;
-      classDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      classNameConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Entity>>;
-      nextClassId: AugmentedQuery<ApiType, () => Observable<ClassId>>;
-      nextEntityId: AugmentedQuery<ApiType, () => Observable<EntityId>>;
-      propertyDescriptionConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-      propertyNameConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
-    };
-    versionedStorePermissions: {
-      /**
-       * ClassPermissions of corresponding Classes in the versioned store
-       **/
-      classPermissionsByClassId: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<ClassPermissionsType>>;
-      /**
-       * Owner of an entity in the versioned store. If it is None then it is owned by the system.
-       **/
-      entityMaintainerByEntityId: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Option<Credential>>>;
     };
   }
 
