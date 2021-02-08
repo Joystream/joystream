@@ -9,6 +9,11 @@ export class PlaylistMetadata extends jspb.Message {
   getTitle(): string | undefined;
   setTitle(value: string): void;
 
+  clearVideosList(): void;
+  getVideosList(): Array<number>;
+  setVideosList(value: Array<number>): void;
+  addVideos(value: number, index?: number): number;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlaylistMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: PlaylistMetadata): PlaylistMetadata.AsObject;
@@ -22,6 +27,7 @@ export class PlaylistMetadata extends jspb.Message {
 export namespace PlaylistMetadata {
   export type AsObject = {
     title?: string,
+    videosList: Array<number>,
   }
 }
 

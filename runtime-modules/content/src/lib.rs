@@ -275,14 +275,11 @@ pub struct VideoUpdateParameters {
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Video<ChannelId, SeriesId, PlaylistId> {
+pub struct Video<ChannelId, SeriesId> {
     in_channel: ChannelId,
-    // keep track of which seasons and playlists which reference the video
+    // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
-    // - remove from playlist on deletion
-    in_series: Vec<SeriesId>,
-    in_playlists: Vec<PlaylistId>,
-
+    in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     is_censored: bool,
     /// Whether the curators have chosen to feature the video or not.
@@ -426,7 +423,7 @@ decl_storage! {
 
         pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
-        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T::ChannelId, T::SeriesId, T::PlaylistId>;
+        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T::ChannelId, T::SeriesId>;
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 

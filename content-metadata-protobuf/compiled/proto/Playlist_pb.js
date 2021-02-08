@@ -26,7 +26,7 @@ goog.exportSymbol('proto.PlaylistMetadata', null, global);
  * @constructor
  */
 proto.PlaylistMetadata = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.PlaylistMetadata.repeatedFields_, null);
 };
 goog.inherits(proto.PlaylistMetadata, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -36,6 +36,13 @@ if (goog.DEBUG && !COMPILED) {
    */
   proto.PlaylistMetadata.displayName = 'proto.PlaylistMetadata';
 }
+
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.PlaylistMetadata.repeatedFields_ = [2];
 
 
 
@@ -68,7 +75,8 @@ proto.PlaylistMetadata.prototype.toObject = function(opt_includeInstance) {
  */
 proto.PlaylistMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
-    title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f
+    title: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
+    videosList: (f = jspb.Message.getRepeatedField(msg, 2)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -109,6 +117,12 @@ proto.PlaylistMetadata.deserializeBinaryFromReader = function(msg, reader) {
       var value = /** @type {string} */ (reader.readString());
       msg.setTitle(value);
       break;
+    case 2:
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addVideos(values[i]);
+      }
+      break;
     default:
       reader.skipField();
       break;
@@ -142,6 +156,13 @@ proto.PlaylistMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeString(
       1,
+      f
+    );
+  }
+  f = message.getVideosList();
+  if (f.length > 0) {
+    writer.writeRepeatedUint64(
+      2,
       f
     );
   }
@@ -181,6 +202,43 @@ proto.PlaylistMetadata.prototype.clearTitle = function() {
  */
 proto.PlaylistMetadata.prototype.hasTitle = function() {
   return jspb.Message.getField(this, 1) != null;
+};
+
+
+/**
+ * repeated uint64 videos = 2;
+ * @return {!Array<number>}
+ */
+proto.PlaylistMetadata.prototype.getVideosList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 2));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.PlaylistMetadata} returns this
+ */
+proto.PlaylistMetadata.prototype.setVideosList = function(value) {
+  return jspb.Message.setField(this, 2, value || []);
+};
+
+
+/**
+ * @param {number} value
+ * @param {number=} opt_index
+ * @return {!proto.PlaylistMetadata} returns this
+ */
+proto.PlaylistMetadata.prototype.addVideos = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 2, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.PlaylistMetadata} returns this
+ */
+proto.PlaylistMetadata.prototype.clearVideosList = function() {
+  return this.setVideosList([]);
 };
 
 

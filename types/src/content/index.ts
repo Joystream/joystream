@@ -83,8 +83,7 @@ export class VideoCategoryUpdateParameters extends JoyStructDecorated({
 
 export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
-  in_series: Vec.with(SeriesId),
-  in_playlists: Vec.with(PlaylistId),
+  in_series: Option.with(SeriesId),
   is_censored: bool,
   is_featured: bool,
 }) {}

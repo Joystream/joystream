@@ -132,6 +132,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
+| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
