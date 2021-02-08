@@ -152,7 +152,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberRegistered(member_id).into());
+        assert_last_event::<T>(RawEvent::MembershipBought(member_id).into());
     }
 
     buy_membership_with_referrer{
@@ -232,7 +232,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(second_member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberRegistered(second_member_id).into());
+        assert_last_event::<T>(RawEvent::MembershipBought(second_member_id).into());
     }
 
     update_profile{
@@ -503,7 +503,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), invited_membership);
 
-        assert_last_event::<T>(RawEvent::MemberRegistered(invited_member_id).into());
+        assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id).into());
 
     }
 

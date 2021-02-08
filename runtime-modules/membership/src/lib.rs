@@ -324,7 +324,8 @@ decl_event! {
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
     {
-        MemberRegistered(MemberId),
+        MemberInvited(MemberId),
+        MembershipBought(MemberId),
         MemberProfileUpdated(MemberId),
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
@@ -413,7 +414,7 @@ decl_module! {
             }
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+            Self::deposit_event(RawEvent::MembershipBought(member_id));
         }
 
         /// Update member's all or some of name, handle, avatar and about text.
@@ -693,7 +694,7 @@ decl_module! {
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+            Self::deposit_event(RawEvent::MemberInvited(member_id));
         }
 
         /// Updates membership price. Requires root origin.
