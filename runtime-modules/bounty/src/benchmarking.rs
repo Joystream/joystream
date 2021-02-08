@@ -117,7 +117,7 @@ benchmarks! {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-        assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
+        assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
     }
 
@@ -143,7 +143,7 @@ benchmarks! {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-        assert_eq!(Module::<T>::bounty_count(), 1); // Bounty counter was updated.
+        assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
     }
 
@@ -161,14 +161,14 @@ benchmarks! {
             ..Default::default()
         };
 
-        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
-        let bounty = <crate::Bounties<T>>::get(bounty_id);
+        let bounty = Bounty::<T>::bounties(bounty_id);
 
         assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
@@ -190,18 +190,18 @@ benchmarks! {
             ..Default::default()
         };
 
-        Module::<T>::create_bounty(
+        Bounty::<T>::create_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
             params,
             Vec::new()
         ).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
-        let bounty = <crate::Bounties<T>>::get(bounty_id);
+        let bounty = Bounty::<T>::bounties(bounty_id);
 
         assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
@@ -214,14 +214,14 @@ benchmarks! {
             ..Default::default()
         };
 
-        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Root, bounty_id)
     verify {
-        let bounty = <crate::Bounties<T>>::get(bounty_id);
+        let bounty = Bounty::<T>::bounties(bounty_id);
 
         assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
@@ -238,9 +238,9 @@ benchmarks! {
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
@@ -265,13 +265,13 @@ benchmarks! {
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
 
-        Module::<T>::fund_bounty(
+        Bounty::<T>::fund_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
@@ -300,17 +300,17 @@ benchmarks! {
             ..Default::default()
         };
 
-        Module::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
 
-        Module::<T>::cancel_bounty(RawOrigin::Root.into(), creator.clone(), bounty_id).unwrap();
+        Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), creator.clone(), bounty_id).unwrap();
 
     }: withdraw_creator_funding(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
-        let bounty = <crate::Bounties<T>>::get(bounty_id);
+        let bounty = Bounty::<T>::bounties(bounty_id);
 
         assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCreatorFundingWithdrawal(bounty_id, creator).into());
@@ -332,17 +332,17 @@ benchmarks! {
             ..Default::default()
         };
 
-        Module::<T>::create_bounty(
+        Bounty::<T>::create_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
             params,
             Vec::new()
         ).unwrap();
 
-        let bounty_id: T::BountyId = Module::<T>::bounty_count().into();
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
 
-        Module::<T>::cancel_bounty(
+        Bounty::<T>::cancel_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
             creator.clone(),
             bounty_id
@@ -350,7 +350,7 @@ benchmarks! {
 
     }: withdraw_creator_funding(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
-        let bounty = <crate::Bounties<T>>::get(bounty_id);
+        let bounty = Bounty::<T>::bounties(bounty_id);
 
         assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
         assert_last_event::<T>(Event::<T>::BountyCreatorFundingWithdrawal(bounty_id, creator).into());
