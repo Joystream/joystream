@@ -28,7 +28,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 use system::ensure_signed;
 
-pub use common::storage::{ContentParameters, StorageSystem};
+pub use common::storage::{ContentParameters as ContentParametersRecord, StorageSystem};
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
     MembershipTypes, StorageOwnership, Url,
@@ -37,6 +37,8 @@ pub use common::{
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
+
+pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, DataObjectTypeId<T>>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -222,8 +224,10 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct ChannelCreationParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
     meta: Vec<u8>,
 }
@@ -231,7 +235,9 @@ pub struct ChannelCreationParameters {
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters {
+pub struct ChannelUpdateParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
 }
@@ -262,15 +268,19 @@ pub struct VideoCategoryUpdateParameters {
 
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParameters {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct VideoCreationParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata for the video.
     meta: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParameters {
+pub struct VideoUpdateParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
 }
@@ -301,8 +311,9 @@ pub struct PlaylistCreationParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistUpdateParameters {
-    /// If set, metadata update for the playlist.
-    new_meta: Option<Vec<u8>>,
+    // It is the only field so its not an Option
+    /// Metadata update for the playlist.
+    new_meta: Vec<u8>,
 }
 
 /// A playlist is an ordered collection of videos.
@@ -316,9 +327,9 @@ pub struct Playlist<ChannelId> {
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId> {
+pub enum EpisodeParameters<VideoId, ContentParameters> {
     /// A new video is being added as the episode.
-    NewVideo(VideoCreationParameters),
+    NewVideo(VideoCreationParameters<ContentParameters>),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
@@ -326,13 +337,15 @@ pub enum EpisodeParameters<VideoId> {
 /// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId> {
+pub struct SeasonParameters<VideoId, ContentParameters> {
+    /// Season assets referenced by metadata
+    assets: Option<Vec<NewAsset<ContentParameters>>>,
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
     /// If set, updates the episodes of a season. Extends the number of episodes in a season
     /// when length of new_episodes is greater than previously set. Last elements must all be
     /// 'Some' in that case.
     /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId>>>>,
+    episodes: Option<Vec<Option<EpisodeParameters<VideoId, ContentParameters>>>>,
     /// If set, Metadata update for season.
     meta: Option<Vec<u8>>,
 }
@@ -340,12 +353,14 @@ pub struct SeasonParameters<VideoId> {
 /// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId> {
+pub struct SeriesParameters<VideoId, ContentParameters> {
+    /// Series assets referenced by metadata
+    assets: Option<Vec<NewAsset<ContentParameters>>>,
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
     /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId>>>>,
+    seasons: Option<Vec<Option<SeasonParameters<VideoId, ContentParameters>>>>,
     meta: Option<Vec<u8>>,
 }
 
@@ -392,8 +407,10 @@ impl<MemberId: Default> Default for PersonController<MemberId> {
 
 /// Information for Person being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonCreationParameters {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct PersonCreationParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata for person.
     meta: Vec<u8>,
 }
@@ -401,9 +418,11 @@ pub struct PersonCreationParameters {
 /// Information for Persion being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonUpdateParameters {
+pub struct PersonUpdateParameters<ContentParameters> {
+    /// Assets referenced by metadata
+    assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// Metadata to update person.
-    new_meta: Vec<u8>,
+    new_meta: Option<Vec<u8>>,
 }
 
 /// A Person represents a real person that may be associated with a video.
@@ -623,8 +642,7 @@ decl_module! {
         pub fn create_channel(
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: ChannelCreationParameters,
+            params: ChannelCreationParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -634,8 +652,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
-            new_assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: ChannelUpdateParameters,
+            params: ChannelUpdateParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -684,8 +701,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: VideoCreationParameters,
+            params: VideoCreationParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -695,8 +711,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             video: T::VideoId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: VideoUpdateParameters,
+            params: VideoUpdateParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -715,7 +730,6 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
             params: PlaylistCreationParameters,
         ) -> DispatchResult {
             Ok(())
@@ -726,7 +740,6 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             playlist: T::PlaylistId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
             params: PlaylistUpdateParameters,
         ) -> DispatchResult {
             Ok(())
@@ -811,8 +824,7 @@ decl_module! {
         pub fn create_person(
             origin,
             actor: PersonActor<T::MemberId, T::CuratorId>,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: PersonCreationParameters,
+            params: PersonCreationParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -822,8 +834,7 @@ decl_module! {
             origin,
             actor: PersonActor<T::MemberId, T::CuratorId>,
             person: T::PersonId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: PersonUpdateParameters,
+            params: PersonUpdateParameters<ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -901,8 +912,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesParameters<T::VideoId>,
+            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -912,8 +922,7 @@ decl_module! {
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             channel_id: T::ChannelId,
-            assets: Vec<NewAsset<ContentParameters<T::ContentId, T::DataObjectTypeId>>>,
-            params: SeriesParameters<T::VideoId>,
+            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) -> DispatchResult {
             Ok(())
         }
@@ -1024,7 +1033,7 @@ decl_event!(
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as StorageOwnership>::ChannelId,
         MemberId = <T as MembershipTypes>::MemberId,
-        NewAsset = NewAsset<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
+        NewAsset = NewAsset<ContentParameters<T>>,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
@@ -1033,6 +1042,7 @@ decl_event!(
         DAOId = <T as StorageOwnership>::DAOId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
+        ContentParameters = ContentParameters<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1046,9 +1056,13 @@ decl_event!(
             ChannelId,
             ChannelOwner<MemberId, CuratorGroupId, DAOId>,
             Vec<NewAsset>,
-            ChannelCreationParameters,
+            ChannelCreationParameters<ContentParameters>,
         ),
-        ChannelUpdated(ChannelId, Vec<NewAsset>, ChannelUpdateParameters),
+        ChannelUpdated(
+            ChannelId,
+            Vec<NewAsset>,
+            ChannelUpdateParameters<ContentParameters>,
+        ),
         ChannelDeleted(ChannelId),
 
         ChannelCensored(ChannelId, Vec<u8> /* rationale */),
@@ -1072,8 +1086,16 @@ decl_event!(
         VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(VideoCategoryId),
 
-        VideoCreated(VideoId, Vec<NewAsset>, VideoCreationParameters),
-        VideoUpdated(VideoId, Vec<NewAsset>, VideoUpdateParameters),
+        VideoCreated(
+            VideoId,
+            Vec<NewAsset>,
+            VideoCreationParameters<ContentParameters>,
+        ),
+        VideoUpdated(
+            VideoId,
+            Vec<NewAsset>,
+            VideoUpdateParameters<ContentParameters>,
+        ),
         VideoDeleted(VideoId),
 
         VideoCensored(VideoId, Vec<u8> /* rationale */),
@@ -1088,13 +1110,31 @@ decl_event!(
         PlaylistDeleted(PlaylistId),
 
         // Series
-        SeriesCreated(SeriesId, Vec<NewAsset>, SeriesParameters<VideoId>, Series),
-        SeriesUpdated(SeriesId, Vec<NewAsset>, SeriesParameters<VideoId>, Series),
+        SeriesCreated(
+            SeriesId,
+            Vec<NewAsset>,
+            SeriesParameters<VideoId, ContentParameters>,
+            Series,
+        ),
+        SeriesUpdated(
+            SeriesId,
+            Vec<NewAsset>,
+            SeriesParameters<VideoId, ContentParameters>,
+            Series,
+        ),
         SeriesDeleted(SeriesId),
 
         // Persons
-        PersonCreated(PersonId, Vec<NewAsset>, PersonCreationParameters),
-        PersonUpdated(PersonId, Vec<NewAsset>, PersonUpdateParameters),
+        PersonCreated(
+            PersonId,
+            Vec<NewAsset>,
+            PersonCreationParameters<ContentParameters>,
+        ),
+        PersonUpdated(
+            PersonId,
+            Vec<NewAsset>,
+            PersonUpdateParameters<ContentParameters>,
+        ),
         PersonDeleted(PersonId),
     }
 );

@@ -16,6 +16,11 @@ export class SeriesId extends u64 {}
 export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 
+export class NewAsset extends JoyEnum({
+  Upload: ContentParameters,
+  Urls: Vec.with(Url),
+}) {}
+
 export class CuratorGroup extends JoyStructDecorated({
   curators: JoyBTreeSet(CuratorId),
   active: bool,
@@ -44,10 +49,12 @@ export class Channel extends JoyStructDecorated({
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
+  assets: Vec.with(NewAsset),
   meta: Bytes,
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
+  assets: Option.with(Vec.with(NewAsset)),
   new_meta: Bytes,
 }) {}
 
@@ -90,10 +97,12 @@ export class Video extends JoyStructDecorated({
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
+  assets: Vec.with(NewAsset),
   meta: Bytes,
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
+  assets: Option.with(Vec.with(NewAsset)),
   new_meta: Option.with(Bytes),
 }) {}
 
@@ -106,7 +115,7 @@ export class PlaylistCreationParameters extends JoyStructDecorated({
 }) {}
 
 export class PlaylistUpdateParameters extends JoyStructDecorated({
-  new_meta: Option.with(Bytes),
+  new_meta: Bytes,
 }) {}
 
 export class EpisodeParemters extends JoyEnum({
@@ -119,6 +128,7 @@ export class Season extends JoyStructDecorated({
 }) {}
 
 export class SeasonParameters extends JoyStructDecorated({
+  assets: Option.with(Vec.with(NewAsset)),
   episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
   meta: Option.with(Bytes),
 }) {}
@@ -129,6 +139,7 @@ export class Series extends JoyStructDecorated({
 }) {}
 
 export class SeriesParameters extends JoyStructDecorated({
+  assets: Option.with(Vec.with(NewAsset)),
   seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
   meta: Option.with(Bytes),
 }) {}
@@ -143,21 +154,18 @@ export class Person extends JoyStructDecorated({
 }) {}
 
 export class PersonCreationParameters extends JoyStructDecorated({
+  assets: Vec.with(NewAsset),
   meta: Bytes,
 }) {}
 
 export class PersonUpdateParameters extends JoyStructDecorated({
-  meta: Bytes,
+  assets: Option.with(Vec.with(NewAsset)),
+  meta: Option.with(Bytes),
 }) {}
 
 export class PersonActor extends JoyEnum({
   Member: MemberId,
   Curator: CuratorId,
-}) {}
-
-export class NewAsset extends JoyEnum({
-  Upload: ContentParameters,
-  Urls: Vec.with(Url),
 }) {}
 
 export const contentDirectoryTypes = {
