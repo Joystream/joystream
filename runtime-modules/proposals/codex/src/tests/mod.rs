@@ -521,7 +521,6 @@ fn create_create_blog_post_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::CreateBlogPostProposalParameters::get(),
-            proposal_details: proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -573,7 +572,6 @@ fn create_edit_blog_post_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::EditBlogPostProoposalParamters::get(),
-            proposal_details: proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -625,7 +623,6 @@ fn create_lock_blog_post_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::LockBlogPostProposalParameters::get(),
-            proposal_details: proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
@@ -677,7 +674,6 @@ fn create_unlock_blog_post_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::UnlockBlogPostProposalParameters::get(),
-            proposal_details: proposal_details.clone(),
         };
         proposal_fixture.check_all();
     });
