@@ -2094,6 +2094,9 @@ declare module '@polkadot/types/types/registry' {
     'Compact<DAOId>': Compact<DAOId>;
     'Option<DAOId>': Option<DAOId>;
     'Vec<DAOId>': Vec<DAOId>;
+    Url: Url;
+    'Option<Url>': Option<Url>;
+    'Vec<Url>': Vec<Url>;
     EntryMethod: EntryMethod;
     'Option<EntryMethod>': Option<EntryMethod>;
     'Vec<EntryMethod>': Vec<EntryMethod>;
@@ -2342,9 +2345,6 @@ declare module '@polkadot/types/types/registry' {
     RoleStakeProfile: RoleStakeProfile;
     'Option<RoleStakeProfile>': Option<RoleStakeProfile>;
     'Vec<RoleStakeProfile>': Vec<RoleStakeProfile>;
-    Url: Url;
-    'Option<Url>': Option<Url>;
-    'Vec<Url>': Vec<Url>;
     IPNSIdentity: IPNSIdentity;
     'Option<IPNSIdentity>': Option<IPNSIdentity>;
     'Vec<IPNSIdentity>': Vec<IPNSIdentity>;
