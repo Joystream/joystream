@@ -122,7 +122,6 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
 }
 
 /// Type, representing blog related post structure
-#[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Clone)]
 pub struct Post<T: Trait<I>, I: Instance> {
     /// Locking status
@@ -131,6 +130,20 @@ pub struct Post<T: Trait<I>, I: Instance> {
     body_hash: T::Hash,
     /// Overall replies counter, associated with post
     replies_count: T::ReplyId,
+}
+
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
+impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Post<T, I> {
+    fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+        f.debug_struct("Post")
+            .field("locked", &self.locked)
+            .field("title_hash", &self.title_hash)
+            .field("body_hash", &self.body_hash)
+            .field("replies_count", &self.replies_count)
+            .finish()
+    }
 }
 
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
@@ -210,8 +223,7 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
 }
 
 /// Enum variant, representing either reply or post id
-#[derive(Encode, Decode, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub enum ParentId<ReplyId, PostId: Default> {
     Reply(ReplyId),
     Post(PostId),
@@ -226,7 +238,6 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 
 /// Type, representing either root post reply or direct reply to reply
 #[derive(Encode, Decode, Clone)]
-#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Reply<T: Trait<I>, I: Instance> {
     /// Reply text hash
     text_hash: T::Hash,
@@ -234,6 +245,19 @@ pub struct Reply<T: Trait<I>, I: Instance> {
     owner: ParticipantId<T>,
     /// Reply`s parent id
     parent_id: ParentId<T::ReplyId, PostId>,
+}
+
+// Note: we derive it by hand because the derive isn't working because of a Rust problem
+// where the generic parameters need to comply with the bounds instead of the associated traits
+// see: https://github.com/rust-lang/rust/issues/26925
+impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
+    fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+        f.debug_struct("Reply")
+            .field("text_hash", &self.text_hash)
+            .field("owner", &self.owner)
+            .field("parent_id", &self.parent_id)
+            .finish()
+    }
 }
 
 /// Reply comparator
@@ -318,6 +342,16 @@ decl_module! {
         type Error = Error<T, I>;
 
         /// Blog owner can create posts, related to a given blog, if related blog is unlocked
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T + B)` where:
+        /// - `T` is the length of the title
+        /// - `B` is the length of the body
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = T::WeightInfo::create_post(
                 title.len().saturated_into(),
                 body.len().saturated_into()
@@ -349,6 +383,14 @@ decl_module! {
 
         /// Blog owner can lock posts, related to a given blog,
         /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depends on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = T::WeightInfo::lock_post()]
         pub fn lock_post(origin, post_id: PostId) -> DispatchResult {
 
@@ -372,6 +414,14 @@ decl_module! {
 
         /// Blog owner can unlock posts, related to a given blog,
         /// making post accesible to previously forbidden actions
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depends on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = T::WeightInfo::unlock_post()]
         pub fn unlock_post(origin, post_id: PostId) -> DispatchResult {
 
@@ -395,6 +445,15 @@ decl_module! {
 
         /// Blog owner can edit post, related to a given blog (if unlocked)
         /// with a new title and/or body
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T + B)` where:
+        /// - `T` is the length of the `new_title`
+        /// - `B` is the length of the `new_body`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T, I>::edit_post_weight(&new_title, &new_body)]
         pub fn edit_post(
             origin,
@@ -427,6 +486,14 @@ decl_module! {
 
         /// Create either root post reply or direct reply to reply
         /// (Only accessible, if related blog and post are unlocked)
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T)` where:
+        /// - `T` is the length of the `text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T, I>::create_reply_weight(text.len())]
         pub fn create_reply(
             origin,
@@ -478,6 +545,15 @@ decl_module! {
 
         /// Reply owner can edit reply with a new text
         /// (Only accessible, if related blog and post are unlocked)
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T)` where:
+        /// - `T` is the length of the `new_text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = T::WeightInfo::edit_reply(new_text.len().saturated_into())]
         pub fn edit_reply(
             origin,
@@ -518,6 +594,13 @@ decl_module! {
 
         /// Submit either post reaction or reply reaction
         /// In case, when you resubmit reaction, it`s status will be changed to an opposite one
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depends on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T, I>::react_weight()]
         pub fn react(
             origin,

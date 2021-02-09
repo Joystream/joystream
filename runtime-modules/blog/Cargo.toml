@@ -1,8 +1,8 @@
 [package]
-name = "pallet-blog"
-version = "3.0.0"
-authors = ["iorveth"]
-edition = "2018"
+name = 'pallet-blog'
+version = '3.0.0'
+authors = ['Joystream contributors']
+edition = '2018'
 
 [dependencies]
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
