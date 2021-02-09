@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use frame_support::traits::LockIdentifier;
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{
     impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, weights::Weight,
 };
@@ -937,7 +937,19 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    t.into()
+    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+
+    // Make sure we are not in block 1 where no events are emitted
+    // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
+    result.execute_with(|| {
+        let mut block_number = frame_system::Module::<Test>::block_number();
+        <System as OnFinalize<u64>>::on_finalize(block_number);
+        block_number = block_number + 1;
+        System::set_block_number(block_number);
+        <System as OnInitialize<u64>>::on_initialize(block_number);
+    });
+
+    result
 }
 
 pub type Staking = staking::Module<Test>;

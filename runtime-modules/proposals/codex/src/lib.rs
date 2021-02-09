@@ -262,8 +262,14 @@ decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
+        WorkingGroup = WorkingGroup,
+        Balance = BalanceOf<T>,
+        BalanceKind = BalanceKind
     {
         ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+        Signaled(Vec<u8>),
+        RuntimeUpgraded(Vec<u8>),
+        UpdatedWorkingGroupBudget(WorkingGroup, Balance, BalanceKind),
     }
 }
 
@@ -518,6 +524,8 @@ decl_module! {
             ensure_root(origin)?;
 
             // Signal proposal stub: no code implied.
+
+            Self::deposit_event(RawEvent::Signaled(signal));
         }
 
         /// Runtime upgrade proposal extrinsic.
@@ -538,9 +546,11 @@ decl_module! {
 
             print("Runtime upgrade proposal execution started.");
 
-            <frame_system::Module<T>>::set_code(origin, wasm)?;
+            <frame_system::Module<T>>::set_code(origin, wasm.clone())?;
 
             print("Runtime upgrade proposal execution finished.");
+
+            Self::deposit_event(RawEvent::RuntimeUpgraded(wasm));
         }
 
         /// Update working group budget
@@ -578,6 +588,8 @@ decl_module! {
                     Council::<T>::set_budget(origin, current_budget.saturating_add(amount))?;
                 }
             }
+
+            Self::deposit_event(RawEvent::UpdatedWorkingGroupBudget(working_group, amount, balance_kind));
         }
 
     }
