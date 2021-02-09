@@ -266,9 +266,16 @@ decl_event! {
         Balance = BalanceOf<T>,
         BalanceKind = BalanceKind
     {
+        /// A proposal was created
         ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+
+        /// A signal proposal was executed
         Signaled(Vec<u8>),
+
+        /// A runtime upgrade was executed
         RuntimeUpgraded(Vec<u8>),
+
+        /// An `Update Working Group Budget` proposal was executed
         UpdatedWorkingGroupBudget(WorkingGroup, Balance, BalanceKind),
     }
 }
