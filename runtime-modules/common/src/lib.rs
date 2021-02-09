@@ -14,12 +14,16 @@ use serde::{Deserialize, Serialize};
 use frame_support::Parameter;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::vec::Vec;
 
 /// Member id type alias
 pub type MemberId<T> = <T as MembershipTypes>::MemberId;
 
 /// Actor id type alias
 pub type ActorId<T> = <T as MembershipTypes>::ActorId;
+
+/// HTTP Url string
+pub type Url = Vec<u8>;
 
 /// Generic trait for membership dependent pallets.
 pub trait MembershipTypes: system::Trait {
