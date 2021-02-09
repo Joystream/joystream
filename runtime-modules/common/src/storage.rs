@@ -41,4 +41,19 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
         owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
     ) -> DispatchResult;
+
+    // Should hook into call on storage system,
+    // but requires rich error (with reasons)  types.
+    // caller already knows the `ContentId`s as they are part of
+    // the ContentUploadParameters
+    fn atomically_remove_content(
+        owner: &StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        content_ids: &[T::ContentId],
+    ) -> DispatchResult;
+
+    // Checks if given owner can remove content under givencontent ids from the storage system
+    fn can_remove_content(
+        owner: &StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        content_ids: &[T::ContentId],
+    ) -> DispatchResult;
 }

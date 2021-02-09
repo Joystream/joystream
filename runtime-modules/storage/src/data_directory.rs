@@ -729,12 +729,42 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     ) -> DispatchResult {
         Self::ensure_content_is_valid(&content)?;
 
-        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+        Self::ensure_uploading_is_not_blocked()?;
 
         let owner_quota = Self::get_quota(&owner);
+
+        // Ensure owner quota constraints satisfied.
+        // Calculate upload voucher
         let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
+        // Ensure global quota constraints satisfied.
+        Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
+
+        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Let's create the entry then
+
         Self::upload_content(owner_quota, upload_voucher, liaison, content, owner);
+        Ok(())
+    }
+
+    fn atomically_remove_content(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content_ids: &[T::ContentId],
+    ) -> DispatchResult {
+        // Ensure content under given content ids can be successfully removed
+        let content = Self::ensure_content_can_be_removed(content_ids, owner)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Let's remove a content
+        Self::delete_content(owner, content_ids, content);
         Ok(())
     }
 
@@ -742,9 +772,23 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> DispatchResult {
+        Self::ensure_uploading_is_not_blocked()?;
+
         T::StorageProviderHelper::get_random_storage_provider()?;
         let owner_quota = Self::get_quota(&owner);
+
+        // Ensure owner quota constraints satisfied.
         Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
         Self::ensure_content_is_valid(&content)
+    }
+
+    fn can_remove_content(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content_ids: &[ContentId<T>],
+    ) -> DispatchResult {
+        // Ensure content under given content ids can be successfully removed
+        Self::ensure_content_can_be_removed(content_ids, &owner)?;
+
+        Ok(())
     }
 }
