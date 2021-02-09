@@ -149,6 +149,7 @@ benchmarks! {
 
     cancel_bounty_by_council {
         let cherry: BalanceOf<T> = 100.into();
+        let max_amount: BalanceOf<T> = 1000.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -158,6 +159,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
+            max_amount,
             ..Default::default()
         };
 
@@ -176,6 +178,7 @@ benchmarks! {
 
     cancel_bounty_by_member {
         let cherry: BalanceOf<T> = 100.into();
+        let max_amount: BalanceOf<T> = 1000.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
         T::CouncilBudgetManager::set_budget(cherry);
@@ -187,6 +190,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
+            max_amount,
             ..Default::default()
         };
 
@@ -208,9 +212,12 @@ benchmarks! {
     }
 
     veto_bounty {
+        let max_amount: BalanceOf<T> = 1000.into();
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
+            max_amount,
             ..Default::default()
         };
 
@@ -228,9 +235,12 @@ benchmarks! {
     }
 
     fund_bounty {
+        let max_amount: BalanceOf<T> = 100.into();
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
+            max_amount,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -252,6 +262,7 @@ benchmarks! {
     withdraw_member_funding {
         let funding_period = 1;
         let bounty_amount = 200;
+
         let params = BountyCreationParameters::<T>{
             funding_period: Some(funding_period.into()),
             work_period: One::one(),
@@ -283,10 +294,11 @@ benchmarks! {
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value());
-        assert_last_event::<T>(Event::<T>::BountyMemberFundingWithdrawal(bounty_id, member_id).into());
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
     withdraw_creator_funding_by_council {
+        let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
@@ -296,6 +308,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            max_amount,
             creator: creator.clone(),
             ..Default::default()
         };
@@ -310,13 +323,12 @@ benchmarks! {
 
     }: withdraw_creator_funding(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
-        let bounty = Bounty::<T>::bounties(bounty_id);
-
-        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
-        assert_last_event::<T>(Event::<T>::BountyCreatorFundingWithdrawal(bounty_id, creator).into());
+        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
     withdraw_creator_funding_by_member {
+        let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
@@ -329,6 +341,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
+            max_amount,
             ..Default::default()
         };
 
@@ -350,10 +363,8 @@ benchmarks! {
 
     }: withdraw_creator_funding(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
-        let bounty = Bounty::<T>::bounties(bounty_id);
-
-        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
-        assert_last_event::<T>(Event::<T>::BountyCreatorFundingWithdrawal(bounty_id, creator).into());
+        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 }
 
