@@ -29,7 +29,8 @@ use sp_std::vec::Vec;
 use system::ensure_signed;
 
 pub use common::storage::{
-    ContentParameters as ContentParametersRecord, StorageObjectOwner, StorageSystem,
+    ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
+    StorageSystem,
 };
 
 pub use common::{
@@ -43,6 +44,12 @@ pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
 
 pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, DataObjectTypeId<T>>;
+
+pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
+    <T as MembershipTypes>::MemberId,
+    <T as StorageOwnership>::ChannelId,
+    <T as StorageOwnership>::DAOId,
+>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -229,21 +236,25 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ContentParameters> {
+pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
     meta: Vec<u8>,
+    /// optional reward account
+    reward_account: Option<AccountId>,
 }
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<ContentParameters> {
+pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     /// Assets referenced by metadata
     assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
+    /// If set, updates the reward account of the channel
+    reward_account: Option<Option<AccountId>>,
 }
 
 /// A category that videos can belong to.
@@ -648,7 +659,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-            params: ChannelCreationParameters<ContentParameters<T>>,
+            params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) -> DispatchResult {
             ensure_actor_authorized_to_create_or_update_channel::<T>(
                 origin,
@@ -657,11 +668,11 @@ decl_module! {
             )?;
 
             // Pick out the assets to be uploaded to storage system
-            let content_parameters: Vec<ContentParameters<T>> = Self::pick_upload_parameters_from_assets(&params.assets);
+            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
             let expected_channel_id = NextChannelId::<T>::get();
 
-            let object_owner = Self::channel_owner_to_object_owner(&owner, &expected_channel_id)?;
+            let object_owner = StorageObjectOwner::<T>::Channel(expected_channel_id);
 
             // check assets can be uploaded to storage.
             // update can_add_content() to only take &refrences
@@ -697,7 +708,7 @@ decl_module! {
                 playlists: vec![],
                 series: vec![],
                 is_censored: false,
-                reward_account: None,
+                reward_account: params.reward_account.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -715,7 +726,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<ContentParameters<T>>,
+            params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
         ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -728,9 +739,9 @@ decl_module! {
 
             // Pick out the assets to be uploaded to storage system
             let new_assets = if let Some(assets) = &params.assets {
-                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_upload_parameters_from_assets(assets);
+                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
-                let object_owner = Self::channel_owner_to_object_owner(&channel.owner, &channel_id)?;
+                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
                 // check assets can be uploaded to storage.
                 // update can_add_content() to only take &refrences
@@ -748,8 +759,14 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let mut channel = channel;
+
+            if let Some(reward_account) = &params.reward_account {
+                channel.reward_account = reward_account.clone();
+            }
+
             // update the channel
-            // ChannelById::<T>::insert(channel_id, channel.clone());
+            ChannelById::<T>::insert(channel_id, channel.clone());
 
             // add assets to storage
             // This should not fail because of prior can_add_content() check!
@@ -1134,30 +1151,16 @@ impl<T: Trait> Module<T> {
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
     }
 
-    fn pick_upload_parameters_from_assets(
-        assets: &Vec<NewAsset<ContentParameters<T>>>,
+    fn pick_content_parameters_from_assets(
+        assets: &[NewAsset<ContentParameters<T>>],
     ) -> Vec<ContentParameters<T>> {
         assets
-            .clone()
-            .into_iter()
+            .iter()
             .filter_map(|asset| match asset {
-                NewAsset::Upload(upload_parameters) => Some(upload_parameters),
+                NewAsset::Upload(content_parameters) => Some(content_parameters.clone()),
                 _ => None,
             })
             .collect()
-    }
-
-    fn channel_owner_to_object_owner(
-        channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-        channel_id: &T::ChannelId,
-    ) -> Result<StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>, Error<T>> {
-        match channel_owner {
-            ChannelOwner::Member(_member_id) => Ok(StorageObjectOwner::Channel(*channel_id)),
-            ChannelOwner::CuratorGroup(_id) => {
-                Ok(StorageObjectOwner::WorkingGroup(WorkingGroup::Content))
-            }
-            _ => Err(Error::<T>::CannotConverChannelOwnerToObjectOwner),
-        }
     }
 }
 
@@ -1193,6 +1196,7 @@ decl_event!(
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         ContentParameters = ContentParameters<T>,
+        AccountId = <T as system::Trait>::AccountId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1205,12 +1209,12 @@ decl_event!(
         ChannelCreated(
             ChannelId,
             Channel,
-            ChannelCreationParameters<ContentParameters>,
+            ChannelCreationParameters<ContentParameters, AccountId>,
         ),
         ChannelUpdated(
             ChannelId,
             Channel,
-            ChannelUpdateParameters<ContentParameters>,
+            ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
         ChannelDeleted(ChannelId),
 

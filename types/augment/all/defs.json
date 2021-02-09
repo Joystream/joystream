@@ -727,11 +727,13 @@
     },
     "ChannelCreationParameters": {
         "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
+        "meta": "Bytes",
+        "reward_account": "Option<GenericAccountId>"
     },
     "ChannelUpdateParameters": {
         "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Bytes"
+        "new_meta": "Option<Bytes>",
+        "reward_account": "Option<Option<GenericAccountId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {

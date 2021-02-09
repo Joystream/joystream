@@ -210,6 +210,7 @@ export interface ChannelContentType extends Null {}
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
+  readonly reward_account: Option<GenericAccountId>;
 }
 
 /** @name ChannelCurationStatus */
@@ -245,7 +246,8 @@ export interface ChannelPublicationStatus extends Null {}
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
   readonly assets: Option<Vec<NewAsset>>;
-  readonly new_meta: Bytes;
+  readonly new_meta: Option<Bytes>;
+  readonly reward_account: Option<Option<GenericAccountId>>;
 }
 
 /** @name ChildPositionInParentCategory */

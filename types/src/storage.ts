@@ -102,6 +102,8 @@ export class Quota extends JoyStructDecorated({
 export class QuotaLimit extends u64 {}
 export class UploadingStatus extends bool {}
 
+// Add 'Voucher' ? used as extrinsic parameter..
+
 export const mediaTypes: RegistryTypes = {
   ContentId,
   LiaisonJudgement,
