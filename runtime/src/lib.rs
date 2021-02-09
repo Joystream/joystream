@@ -59,6 +59,7 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+use storage::data_directory::Quota;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
@@ -369,13 +370,11 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
-    pub const ChannelRevenueTreasuryId: [u8; 8] = *b"chtresry";
 }
 
 impl content::Trait for Runtime {
     type Event = Event;
     type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
-    type ChannelRevenueTreasuryId = ChannelRevenueTreasuryId;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type VideoCategoryId = VideoCategoryId;
@@ -455,6 +454,7 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
+    pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -467,6 +467,7 @@ impl storage::data_directory::Trait for Runtime {
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
+    type DefaultQuota = DefaultQuota;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {

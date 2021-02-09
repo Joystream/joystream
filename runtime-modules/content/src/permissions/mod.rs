@@ -92,13 +92,13 @@ pub fn ensure_actor_authorized_to_create_or_update_channel<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-
     // Authenticate actor and proposed channel owner
     match actor {
         // Lead should use their member or curator role to create or update channels.
         ContentActor::Lead => Err(Error::<T>::OperationDeniedForActor),
         ContentActor::Curator(curator_group_id, curator_id) => {
+            let sender = ensure_signed(origin)?;
+
             // Authorize curator, performing all checks to ensure curator can act
             CuratorGroup::<T>::perform_curator_in_group_auth(
                 curator_id,
@@ -115,6 +115,8 @@ pub fn ensure_actor_authorized_to_create_or_update_channel<T: Trait>(
             Ok(())
         }
         ContentActor::Member(member_id) => {
+            let sender = ensure_signed(origin)?;
+
             ensure_member_auth_success::<T>(member_id, &sender)?;
 
             ensure!(
@@ -124,6 +126,8 @@ pub fn ensure_actor_authorized_to_create_or_update_channel<T: Trait>(
 
             Ok(())
         }
+        // TODO:
+        // ContentActor::Dao(_daoId) => Error::<T>::OperationDeniedForActor,
     }?;
     Ok(())
 }
@@ -139,6 +143,7 @@ pub enum ContentActor<
     Curator(CuratorGroupId, CuratorId),
     Member(MemberId),
     Lead,
+    // Dao,
 }
 
 impl<

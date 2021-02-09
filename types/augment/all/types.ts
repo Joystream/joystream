@@ -7,17 +7,6 @@ import { GenericAccountId } from '@polkadot/types/generic';
 import { Bytes, Null, Text, bool, u128, u16, u32, u64 } from '@polkadot/types/primitive';
 import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
-/** @name AbstractStorageObjectOwner */
-export interface AbstractStorageObjectOwner extends Enum {
-  readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-  readonly isDao: boolean;
-  readonly asDao: DAOId;
-  readonly isCouncil: boolean;
-  readonly isWorkingGroup: boolean;
-  readonly asWorkingGroup: WorkingGroupType;
-}
-
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {
   readonly started_accepting_applicants_at_block: u32;
@@ -191,18 +180,15 @@ export interface CategoryId extends u64 {}
 /** @name Channel */
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
-  readonly in_category: ChannelCategoryId;
-  readonly number_of_videos: u32;
-  readonly number_of_playlists: u32;
-  readonly number_of_series: u32;
-  readonly is_curated: bool;
-  readonly revenue: u128;
+  readonly videos: Vec<VideoId>;
+  readonly playlists: Vec<PlaylistId>;
+  readonly series: Vec<SeriesId>;
+  readonly is_censored: bool;
+  readonly reward_account: Option<GenericAccountId>;
 }
 
 /** @name ChannelCategory */
-export interface ChannelCategory extends Struct {
-  readonly number_of_channels_in: u32;
-}
+export interface ChannelCategory extends Struct {}
 
 /** @name ChannelCategoryCreationParameters */
 export interface ChannelCategoryCreationParameters extends Struct {
@@ -222,7 +208,7 @@ export interface ChannelContentType extends Null {}
 
 /** @name ChannelCreationParameters */
 export interface ChannelCreationParameters extends Struct {
-  readonly in_category: ChannelCategoryId;
+  readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
 }
 
@@ -234,7 +220,6 @@ export interface ChannelId extends u64 {}
 
 /** @name ChannelOwner */
 export interface ChannelOwner extends Enum {
-  readonly isNobody: boolean;
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isCurators: boolean;
@@ -248,6 +233,7 @@ export interface ChannelOwnershipTransferRequest extends Struct {
   readonly channel_id: ChannelId;
   readonly new_owner: ChannelOwner;
   readonly payment: u128;
+  readonly new_reward_account: Option<GenericAccountId>;
 }
 
 /** @name ChannelOwnershipTransferRequestId */
@@ -258,7 +244,7 @@ export interface ChannelPublicationStatus extends Null {}
 
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
-  readonly new_in_category: Option<ChannelCategoryId>;
+  readonly assets: Option<Vec<NewAsset>>;
   readonly new_meta: Bytes;
 }
 
@@ -602,8 +588,8 @@ export interface ModerationAction extends Struct {
 export interface NewAsset extends Enum {
   readonly isUpload: boolean;
   readonly asUpload: ContentParameters;
-  readonly isUri: boolean;
-  readonly asUri: Text;
+  readonly isUrls: boolean;
+  readonly asUrls: Vec<Url>;
 }
 
 /** @name NextAdjustment */
@@ -706,7 +692,6 @@ export interface ParametrizedPropertyValue extends Null {}
 /** @name Person */
 export interface Person extends Struct {
   readonly controlled_by: PersonController;
-  readonly number_of_videos_person_involed_in: u32;
 }
 
 /** @name PersonActor */
@@ -719,7 +704,6 @@ export interface PersonActor extends Enum {
 
 /** @name PersonController */
 export interface PersonController extends Enum {
-  readonly isNobody: boolean;
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isCurators: boolean;
@@ -727,6 +711,7 @@ export interface PersonController extends Enum {
 
 /** @name PersonCreationParameters */
 export interface PersonCreationParameters extends Struct {
+  readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
 }
 
@@ -735,18 +720,17 @@ export interface PersonId extends u64 {}
 
 /** @name PersonUpdateParameters */
 export interface PersonUpdateParameters extends Struct {
-  readonly meta: Bytes;
+  readonly assets: Option<Vec<NewAsset>>;
+  readonly meta: Option<Bytes>;
 }
 
 /** @name Playlist */
 export interface Playlist extends Struct {
   readonly in_channel: ChannelId;
-  readonly videos: Vec<VideoId>;
 }
 
 /** @name PlaylistCreationParameters */
 export interface PlaylistCreationParameters extends Struct {
-  readonly videos: Vec<VideoId>;
   readonly meta: Bytes;
 }
 
@@ -755,8 +739,7 @@ export interface PlaylistId extends u64 {}
 
 /** @name PlaylistUpdateParameters */
 export interface PlaylistUpdateParameters extends Struct {
-  readonly new_videos: Option<Vec<VideoId>>;
-  readonly new_meta: Option<Bytes>;
+  readonly new_meta: Bytes;
 }
 
 /** @name Post */
@@ -924,6 +907,17 @@ export interface ProposalStatus extends Enum {
   readonly asFinalized: Finalized;
 }
 
+/** @name Quota */
+export interface Quota extends Struct {
+  readonly size_limit: u64;
+  readonly objects_limit: u64;
+  readonly size_used: u64;
+  readonly objects_used: u64;
+}
+
+/** @name QuotaLimit */
+export interface QuotaLimit extends u64 {}
+
 /** @name RationaleText */
 export interface RationaleText extends Bytes {}
 
@@ -1026,6 +1020,7 @@ export interface Season extends Struct {
 
 /** @name SeasonParameters */
 export interface SeasonParameters extends Struct {
+  readonly assets: Option<Vec<NewAsset>>;
   readonly episodes: Option<Vec<Option<EpisodeParemters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1051,6 +1046,7 @@ export interface SeriesId extends u64 {}
 
 /** @name SeriesParameters */
 export interface SeriesParameters extends Struct {
+  readonly assets: Option<Vec<NewAsset>>;
   readonly seasons: Option<Vec<Option<SeasonParameters>>>;
   readonly meta: Option<Bytes>;
 }
@@ -1143,8 +1139,13 @@ export interface Status extends Null {}
 export interface StorageObjectOwner extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
-  readonly isAbstractStorageObjectOwner: boolean;
-  readonly asAbstractStorageObjectOwner: AbstractStorageObjectOwner;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name StorageProviderId */
@@ -1214,6 +1215,9 @@ export interface UnstakingApplicationStage extends Struct {
 /** @name UpdatePropertyValuesOperation */
 export interface UpdatePropertyValuesOperation extends Null {}
 
+/** @name UploadingStatus */
+export interface UploadingStatus extends bool {}
+
 /** @name Url */
 export interface Url extends Text {}
 
@@ -1232,16 +1236,13 @@ export interface VecStoredValue extends Null {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
-  readonly in_series: Vec<SeriesId>;
-  readonly in_playlists: Vec<PlaylistId>;
-  readonly is_curated: bool;
+  readonly in_series: Option<SeriesId>;
+  readonly is_censored: bool;
   readonly is_featured: bool;
 }
 
 /** @name VideoCategory */
-export interface VideoCategory extends Struct {
-  readonly number_of_videos_in_category: u32;
-}
+export interface VideoCategory extends Struct {}
 
 /** @name VideoCategoryCreationParameters */
 export interface VideoCategoryCreationParameters extends Struct {
@@ -1258,7 +1259,7 @@ export interface VideoCategoryUpdateParameters extends Struct {
 
 /** @name VideoCreationParameters */
 export interface VideoCreationParameters extends Struct {
-  readonly in_category: VideoCategoryId;
+  readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
 }
 
@@ -1267,7 +1268,7 @@ export interface VideoId extends u64 {}
 
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
-  readonly new_in_category: Option<VideoCategoryId>;
+  readonly assets: Option<Vec<NewAsset>>;
   readonly new_meta: Option<Bytes>;
 }
 
@@ -1307,13 +1308,6 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
-}
-
-/** @name WorkingGroupType */
-export interface WorkingGroupType extends Enum {
-  readonly isContentDirectory: boolean;
-  readonly isBuilders: boolean;
-  readonly isStorageProviders: boolean;
 }
 
 /** @name WorkingGroupUnstaker */

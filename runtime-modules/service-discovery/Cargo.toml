@@ -12,6 +12,7 @@ frame-support = { package = 'frame-support', default-features = false, git = 'ht
 system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
+common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -23,7 +24,6 @@ stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
 hiring = { package = 'pallet-hiring', default-features = false, path = '../hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
-common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [features]
 default = ['std']
@@ -35,4 +35,5 @@ std = [
 	'system/std',
 	'sp-runtime/std',
 	'working-group/std',
+	'common/std'
 ]
