@@ -39,7 +39,7 @@ fn buy_membership_succeeds() {
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(next_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(next_member_id));
     });
 }
 
@@ -485,7 +485,7 @@ fn invite_member_succeeds() {
         // Invited member balance locked.
         assert_eq!(0, Balances::usable_balance(&profile.controller_account));
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(bob_member_id));
     });
 }
 
@@ -658,7 +658,7 @@ fn set_leader_invitation_quota_with_invalid_origin() {
 fn set_leader_invitation_quota_fails_with_not_found_leader_membership() {
     build_test_externalities().execute_with(|| {
         SetLeaderInvitationQuotaFixture::default()
-            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+            .call_and_assert(Err(Error::<Test>::WorkingGroupLeaderNotSet.into()));
     });
 }
 
