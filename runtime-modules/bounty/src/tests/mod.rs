@@ -85,6 +85,39 @@ fn create_bounty_slashes_the_council_balance_correctly() {
 }
 
 #[test]
+fn created_bounty_gets_fully_funded_by_creator() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 0;
+
+        let cherry = 100;
+        let initial_balance = 500;
+        let creator_funding = 200;
+        let max_amount = 100;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        // Insufficient member controller account balance.
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .with_max_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached(starting_block))
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        assert_eq!(
+            Bounty::bounties(bounty_id).milestone,
+            BountyMilestone::BountyMaxFundingReached(starting_block)
+        );
+
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
 fn create_bounty_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         // For a council bounty.
@@ -678,6 +711,56 @@ fn withdraw_member_funding_succeeds() {
 }
 
 #[test]
+fn withdraw_member_funding_removes_bounty() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_period = 10;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + starting_block + 1);
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawMemberFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+    });
+}
+
+#[test]
 fn withdraw_member_funding_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let invalid_bounty_id = 11u64;
@@ -705,7 +788,158 @@ fn withdraw_member_funding_fails_with_invalid_origin() {
 }
 
 #[test]
+fn withdraw_member_funding_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        let max_amount = 500;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_period = 10;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        WithdrawMemberFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
+fn withdraw_member_funding_fails_with_invalid_bounty_funder() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+        let amount = 100;
+        let account_id = 1;
+        let member_id = 1;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_period = 10;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        // Bounty failed because of the funding period
+        run_to_block(starting_block + funding_period + 1);
+
+        let invalid_account_id = 2;
+        let invalid_member_id = 2;
+
+        WithdrawMemberFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_member_id(invalid_member_id)
+            .with_origin(RawOrigin::Signed(invalid_account_id))
+            .call_and_assert(Err(Error::<Test>::NotBountyFunder.into()));
+    });
+}
+
+#[test]
 fn withdraw_creator_funding_by_council_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let funding_period = 10;
+        let max_amount = 500;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_amount = 200;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id, initial_balance);
+
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_funding_period(funding_period)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance - creator_funding - cherry
+        );
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(funding_amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Ok(()));
+
+        // Bounty failed because of the funding period
+        run_to_block(starting_block + funding_period + 1);
+
+        WithdrawCreatorFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance
+        );
+
+        assert_eq!(
+            Bounty::bounties(bounty_id).milestone,
+            BountyMilestone::CreatorFundsWithdrawn
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
+            bounty_id,
+            BountyCreator::Council,
+        ));
+    });
+}
+
+#[test]
+fn withdraw_creator_funding_removes_the_bounty() {
     build_test_externalities().execute_with(|| {
         let max_amount = 500;
         let initial_balance = 500;
@@ -744,10 +978,7 @@ fn withdraw_creator_funding_by_council_succeeds() {
             initial_balance
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
-            bounty_id,
-            BountyCreator::Council,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
     });
 }
 
@@ -755,11 +986,13 @@ fn withdraw_creator_funding_by_council_succeeds() {
 fn withdraw_creator_funding_by_member_succeeds() {
     build_test_externalities().execute_with(|| {
         let max_amount = 500;
+        let amount = 33;
         let initial_balance = 500;
         let creator_funding = 100;
         let cherry = 200;
         let account_id = 1;
         let member_id = 1;
+        let funding_period = 10;
 
         increase_account_balance(&account_id, initial_balance);
 
@@ -773,6 +1006,7 @@ fn withdraw_creator_funding_by_member_succeeds() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(member_id)
             .with_cherry(cherry)
+            .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -782,11 +1016,15 @@ fn withdraw_creator_funding_by_member_succeeds() {
             initial_balance - creator_funding - cherry
         );
 
-        CancelBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
+        FundBountyFixture::default()
             .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_member_id(member_id)
+            .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Ok(()));
+
+        // Bounty failed because of the funding period
+        run_to_block(starting_block + funding_period + 1);
 
         WithdrawCreatorFundingFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
@@ -796,7 +1034,7 @@ fn withdraw_creator_funding_by_member_succeeds() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance
+            initial_balance - amount
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(

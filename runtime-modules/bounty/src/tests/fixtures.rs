@@ -4,7 +4,7 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{BountyCreationParameters, BountyCreator, BountyMilestone, RawEvent};
+use crate::{BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -49,6 +49,7 @@ impl EventFixture {
     }
 }
 
+pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
 pub struct CreateBountyFixture {
     origin: RawOrigin<u64>,
     metadata: Vec<u8>,
@@ -60,6 +61,7 @@ pub struct CreateBountyFixture {
     judging_period: u64,
     cherry: u64,
     creator_funding: u64,
+    expected_milestone: Option<BountyMilestone<u64>>,
 }
 
 impl CreateBountyFixture {
@@ -70,11 +72,12 @@ impl CreateBountyFixture {
             creator: BountyCreator::Council,
             funding_period: None,
             min_amount: 0,
-            max_amount: 0,
+            max_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
             work_period: 1,
             judging_period: 1,
             cherry: 0,
             creator_funding: 0,
+            expected_milestone: None,
         }
     }
 
@@ -132,6 +135,13 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_expected_milestone(self, milestone: BountyMilestone<u64>) -> Self {
+        Self {
+            expected_milestone: Some(milestone),
+            ..self
+        }
+    }
+
     pub fn get_bounty_creation_parameters(&self) -> BountyCreationParameters<Test> {
         BountyCreationParameters::<Test> {
             creator: self.creator.clone(),
@@ -152,14 +162,34 @@ impl CreateBountyFixture {
         let next_bounty_count_value = Bounty::bounty_count() + 1;
         let bounty_id: u64 = next_bounty_count_value.into();
 
-        let actual_result =
-            Bounty::create_bounty(self.origin.clone().into(), params, self.metadata.clone());
+        let actual_result = Bounty::create_bounty(
+            self.origin.clone().into(),
+            params.clone(),
+            self.metadata.clone(),
+        );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
             assert_eq!(next_bounty_count_value, Bounty::bounty_count());
             assert!(<crate::Bounties<Test>>::contains_key(&bounty_id));
+
+            let expected_milestone = if let Some(milestone) = self.expected_milestone.clone() {
+                milestone
+            } else {
+                BountyMilestone::Created {
+                    created_at: System::block_number(),
+                    has_contributions: false,
+                }
+            };
+
+            let expected_bounty = BountyRecord::<u64, u64, u64> {
+                creation_params: params.clone(),
+                total_funding: params.creator_funding,
+                milestone: expected_milestone,
+            };
+
+            assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
         } else {
             assert_eq!(next_bounty_count_value - 1, Bounty::bounty_count());
             assert!(!<crate::Bounties<Test>>::contains_key(&bounty_id));

@@ -1,6 +1,11 @@
 //! This pallet works with crowd funded bounties that allows a member, or the council, to crowd
 //! fund work on projects with a public benefit.
 //!
+//! ### Bounty stages
+//! - Funding - a bounty is being funded.
+//! - WorkSubmission - interested participants can submit their work.
+//! - Withdrawal - all funds can be withdrawn.
+//!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
 //! ### Supported extrinsics:
@@ -23,11 +28,8 @@ pub(crate) mod tests;
 mod benchmarking;
 
 // TODO: add max entries limit
-// TODO: benchmark all bounty creation parameters
-// TODO: add assertion for the created bounty object content
-// TODO: use Bounty instead of Module in benchmarking
 // TODO: add more fine-grained errors.
-// TODO: max funding reached on initial creator funding greater than minimal amount
+// TODO: add bounty milestones module comments
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -191,7 +193,10 @@ pub enum BountyStage {
     Funding(bool),
 
     /// Funding and cherry can be withdrawn.
-    Withdrawal,
+    Withdrawal {
+        /// Creator funds are not withdrawn or don't need to be withdrawn.
+        creator_funds_need_withdrawal: bool,
+    },
 
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
@@ -212,6 +217,9 @@ pub enum BountyMilestone<BlockNumber> {
 
     /// A bounty was canceled.
     Canceled,
+
+    /// Creator funds (initial funding and/or cherry) were withdrawn.
+    CreatorFundsWithdrawn,
 
     /// A bounty funding was successful on the provided block.
     /// The stage is set when the funding exceeded max funding amount.
@@ -295,6 +303,9 @@ decl_event! {
 
         /// A bounty creator has withdrew the funding.
         BountyCreatorFundingWithdrawal(BountyId, BountyCreator<MemberId>),
+
+        /// A bounty was removed.
+        BountyRemoved(BountyId),
     }
 }
 
@@ -326,7 +337,7 @@ decl_error! {
         FundingPeriodNotExpired,
 
         /// A member is not a bounty funder.
-        NotBountyFunder,
+        NotBountyFunder, //TODO change to no bounty funding found
     }
 }
 
@@ -368,13 +379,21 @@ decl_module! {
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
+            let now = Self::current_block();
+            // Whether the bounty is fully funded on creation.
+            let created_bounty_milestone = if params.creator_funding < params.max_amount {
+                BountyMilestone::Created{
+                        created_at: now,
+                        has_contributions: false,
+                }
+            } else {
+                BountyMilestone::BountyMaxFundingReached(now)
+            };
+
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
-                milestone: BountyMilestone::Created{
-                    created_at: Self::current_block(),
-                    has_contributions: false,
-                },
+                milestone: created_bounty_milestone,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -539,7 +558,7 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Withdrawal),
+                matches!(current_bounty_stage, BountyStage::Withdrawal{..}),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -561,6 +580,10 @@ decl_module! {
             <BountyContributions<T>>::remove(bounty_id, member_id);
 
             Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
+
+            if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
+                Self::remove_bounty(&bounty_id);
+            }
         }
 
         /// Withdraw creator funding.
@@ -583,14 +606,16 @@ decl_module! {
                 creator.clone(),
             )?;
 
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            let mut bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Withdrawal),
+                matches!(current_bounty_stage, BountyStage::Withdrawal {
+                    creator_funds_need_withdrawal: true
+                }),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -598,12 +623,22 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+
             let funding_amount = bounty.creation_params.creator_funding;
             let cherry = bounty.creation_params.cherry;
 
             bounty_creator_manager.restore_balance(funding_amount, cherry);
 
+            bounty.milestone = BountyMilestone::CreatorFundsWithdrawn;
+            <Bounties<T>>::insert(bounty_id, bounty.clone());
+
             Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
+
+            let new_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            if Self::withdrawal_completed(&new_bounty_stage, &bounty_id) {
+                Self::remove_bounty(&bounty_id);
+            }
         }
     }
 }
@@ -770,6 +805,8 @@ impl<T: Trait> Module<T> {
     // Computes the stage of a bounty based on its creation parameters and the current state.
     fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
+        let funding_or_cherry_was_provided = bounty.creation_params.cherry != Zero::zero()
+            || bounty.creation_params.creator_funding != Zero::zero();
 
         match bounty.milestone {
             // Funding period. No contributions or some contributions.
@@ -789,7 +826,9 @@ impl<T: Trait> Module<T> {
                             BountyStage::WorkSubmission
                         } else {
                             // Funding failed.
-                            BountyStage::Withdrawal
+                            BountyStage::Withdrawal {
+                                creator_funds_need_withdrawal: funding_or_cherry_was_provided,
+                            }
                         }
                     }
                 } else {
@@ -798,7 +837,13 @@ impl<T: Trait> Module<T> {
                 }
             }
             // Bounty was canceled or vetoed.
-            BountyMilestone::Canceled => BountyStage::Withdrawal,
+            BountyMilestone::Canceled => BountyStage::Withdrawal {
+                creator_funds_need_withdrawal: funding_or_cherry_was_provided,
+            },
+            // It is withdrawal stage and the creator don't expect any withdrawals.
+            BountyMilestone::CreatorFundsWithdrawn => BountyStage::Withdrawal {
+                creator_funds_need_withdrawal: false,
+            },
             BountyMilestone::BountyMaxFundingReached(funding_completed) => {
                 // Work period is not over.
                 if bounty.creation_params.work_period + funding_completed <= now {
@@ -806,7 +851,9 @@ impl<T: Trait> Module<T> {
                 } else {
                     // Work period is over.
                     // TODO: change to judging stage when it will be introduced
-                    BountyStage::Withdrawal
+                    BountyStage::Withdrawal {
+                        creator_funds_need_withdrawal: funding_or_cherry_was_provided,
+                    }
                 }
             }
         }
@@ -835,5 +882,33 @@ impl<T: Trait> Module<T> {
 
         // cherry share
         funding_share * bounty.creation_params.cherry
+    }
+
+    // Remove bounty and all related info from the storage.
+    fn remove_bounty(bounty_id: &T::BountyId) {
+        <Bounties<T>>::remove(bounty_id);
+        <BountyContributions<T>>::remove_prefix(bounty_id);
+
+        Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
+    }
+
+    // Verifies that the bounty has no pending fund withdrawals left.
+    fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
+        !Self::contributions_exist(bounty_id)
+            && matches!(
+                stage,
+                BountyStage::Withdrawal {
+                    creator_funds_need_withdrawal: false
+                }
+            )
+    }
+
+    // Verifies that bounty has some contribution to withdraw.
+    // Should be O(1) because of the single inner call of the next() function of the iterator.
+    fn contributions_exist(bounty_id: &T::BountyId) -> bool {
+        <BountyContributions<T>>::iter_prefix_values(bounty_id)
+            .peekable()
+            .peek()
+            .is_some()
     }
 }
