@@ -10,9 +10,9 @@ import recurringRewards from './recurring-rewards'
 import hiring from './hiring'
 import workingGroup from './working-group'
 import discovery from './discovery'
-import media from './media'
+import storage from './storage'
 import proposals from './proposals'
-import contentDirectory from './content-directory'
+import contentDirectory from './content'
 import legacy from './legacy'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
@@ -32,7 +32,7 @@ export {
   hiring,
   workingGroup,
   discovery,
-  media,
+  storage,
   proposals,
   contentDirectory,
 }
@@ -51,7 +51,7 @@ export const types: RegistryTypes = {
   ...hiring,
   ...workingGroup,
   ...discovery,
-  ...media,
+  ...storage,
   ...proposals,
   ...contentDirectory,
 }

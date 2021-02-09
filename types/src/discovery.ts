@@ -1,9 +1,8 @@
-import { Text, u32 } from '@polkadot/types'
+import { u32, Text } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from './common'
 
 export class IPNSIdentity extends Text {}
-export class Url extends Text {}
 
 export class ServiceProviderRecord extends JoyStructDecorated({
   identity: IPNSIdentity,
@@ -11,7 +10,6 @@ export class ServiceProviderRecord extends JoyStructDecorated({
 }) {}
 
 export const discoveryTypes: RegistryTypes = {
-  Url,
   IPNSIdentity,
   ServiceProviderRecord,
 }
