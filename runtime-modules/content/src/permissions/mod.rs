@@ -87,12 +87,13 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     Ok(ensure_lead_auth_success::<T>(&account_id)?)
 }
 
-pub fn ensure_actor_authorized_to_create_or_update_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_create_update_delete_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Authenticate actor and proposed channel owner
+    // Authenticate actor against channel owner
+    // Only Owner of a channel can update and delete it.
     match actor {
         // Lead should use their member or curator role to create or update channels.
         ContentActor::Lead => Err(Error::<T>::OperationDeniedForActor),

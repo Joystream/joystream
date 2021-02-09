@@ -29,9 +29,6 @@ decl_error! {
         // Authentication Errors
         // ---------------------
 
-        /// Origin cannot be made into raw origin
-        OriginCanNotBeMadeIntoRawOrigin,
-
         /// Lead authentication failed
         LeadAuthFailed,
 
@@ -47,16 +44,10 @@ decl_error! {
         /// Operation Cannot be perfomed with this Actor
         OperationDeniedForActor,
 
-        /// It is not valid to use this variant of a ChannelOwner
-        BadChannelOwner,
-
         /// Channel Category Does not Exist.
         ChannelCategoryDoesNotExist,
 
         /// Channel Does Not Exist
         ChannelDoesNotExist,
-
-        /// Cannot convert channelowner to an object owner
-        CannotConverChannelOwnerToObjectOwner,
     }
 }

@@ -661,7 +661,7 @@ decl_module! {
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) -> DispatchResult {
-            ensure_actor_authorized_to_create_or_update_channel::<T>(
+            ensure_actor_authorized_to_create_update_delete_channel::<T>(
                 origin,
                 &actor,
                 &owner,
@@ -731,7 +731,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_create_or_update_channel::<T>(
+            ensure_actor_authorized_to_create_update_delete_channel::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -761,11 +761,12 @@ decl_module! {
 
             let mut channel = channel;
 
+            // Maybe update the reward account
             if let Some(reward_account) = &params.reward_account {
                 channel.reward_account = reward_account.clone();
             }
 
-            // update the channel
+            // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             // add assets to storage
@@ -785,8 +786,49 @@ decl_module! {
         pub fn delete_channel(
             origin,
             owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
         ) -> DispatchResult {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_create_update_delete_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            // Important Note: Since channel ownership information is lost after a channel is deleted, if there are
+            // any lingering data objects in storage owned by the channel there is no way to authenticate an actor
+            // if they wish to delete those objects. So the risk of relying on user to delete data objects prior
+            // to deleting a channel is that there will be unrecoverable capacity on storage nodes. Quota/Limits is not
+            // a problem because the channel is removed. So storage lead would have to occasionally dispatch and extrinsic
+            // to cleanup storage data objects.. Or we can delete them all here.
+            // TOOD: Delete all data objects owned by the channel from storage.
+            // If we don't track the objects in content directory, how will storage iterate? IterableStorageMap?
+            // let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // T::StorageSystem::delete_objects_owned_by(object_owner);
+
+            channel.videos.iter().for_each(|id| {
+                VideoById::<T>::remove(id);
+                Self::deposit_event(RawEvent::VideoDeleted(*id));
+            });
+
+            channel.playlists.iter().for_each(|id| {
+                PlaylistById::<T>::remove(id);
+                Self::deposit_event(RawEvent::PlaylistDeleted(*id));
+            });
+
+            channel.series.iter().for_each(|id| {
+                SeriesById::<T>::remove(id);
+                Self::deposit_event(RawEvent::SeriesDeleted(*id));
+            });
+
+            // TODO: Remove any channel transfer requests and refund requester
+            // Self::terminate_channel_transfer_requests(channel_id)
+            // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
+
+            Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
             Ok(())
         }
 

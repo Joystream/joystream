@@ -119,7 +119,7 @@ declare module '@polkadot/api/types/submittable' {
       createSeries: AugmentedSubmittable<(owner: ChannelOwner | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       createVideo: AugmentedSubmittable<(owner: ChannelOwner | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: VideoCreationParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       createVideoCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, params: VideoCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      deleteChannel: AugmentedSubmittable<(owner: ChannelOwner | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteChannel: AugmentedSubmittable<(owner: ChannelOwner | { Member: any } | { Curators: any } | { Dao: any } | string | Uint8Array, actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       deleteChannelCategory: AugmentedSubmittable<(curator: CuratorId | AnyNumber | Uint8Array, category: ChannelCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Remove curator group under given `curator_group_id` from runtime storage
