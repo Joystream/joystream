@@ -30,8 +30,8 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    BuilderWorkingGroupConfig, ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    BuilderWorkingGroupConfig, ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig,
+    CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
     GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
     SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
@@ -333,14 +333,17 @@ pub fn testnet_genesis(
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
-        content_directory: Some({
-            ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
-                curator_group_by_id: vec![],
-                next_class_id: 1,
-                next_entity_id: 1,
+        content: Some({
+            ContentConfig {
                 next_curator_group_id: 1,
+                next_channel_category_id: 1,
+                next_channel_id: 1,
+                next_video_category_id: 1,
+                next_video_id: 1,
+                next_playlist_id: 1,
+                next_series_id: 1,
+                next_person_id: 1,
+                next_channel_transfer_request_id: 1,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {

@@ -16,9 +16,7 @@ members = [
 	"runtime-modules/storage",
 	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
-	"runtime-modules/content-directory",
-	# New content directory
-	# "runtime-modules/content",
+	"runtime-modules/content",
 	"node",
 	"utils/chain-spec-builder/"
 ]
