@@ -3,7 +3,7 @@
 use crate::*;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, ord_parameter_types, parameter_types};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
@@ -210,10 +210,6 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
-}
-
-ord_parameter_types! {
-    pub const CorrectOwner: u64 = FIRST_OWNER_ORIGIN;
 }
 
 parameter_types! {
