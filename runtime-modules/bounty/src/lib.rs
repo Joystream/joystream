@@ -202,7 +202,7 @@ pub enum BountyStage {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
-    /// Boolean value defines whether the bounty has some funding contributions
+    /// Boolean value defines whether the bounty has some funding contributions.
     Created {
         /// Bounty creation block.
         created_at: BlockNumber,
