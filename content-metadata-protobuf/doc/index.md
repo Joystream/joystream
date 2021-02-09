@@ -64,6 +64,7 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
@@ -131,6 +132,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) | optional |  |
+| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
@@ -164,6 +166,7 @@
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this Season |
 
 
 
@@ -181,6 +184,7 @@
 | title | [string](#string) | optional |  |
 | description | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this Series |
 
 
 
@@ -290,6 +294,8 @@ Publication status before joystream
 | has_marketing | [bool](#bool) | optional | Does video have marketing or advertising in the stream |
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
+| persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
+| category | [uint64](#uint64) | optional | Video Category Id |
 
 
 

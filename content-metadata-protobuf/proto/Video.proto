@@ -74,6 +74,12 @@ message VideoMetadata {
 
     // Does Video have explicit language or scenes
     optional bool is_explicit = 14;
+
+    // Person(s) referenced by PersonId involved in this video
+    repeated uint64 persons = 15 [packed=true];
+
+    // Video Category Id
+    optional uint64 category = 16;
 }
 
 message VideoCategoryMetadata {

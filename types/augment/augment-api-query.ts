@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, ClassId, ClassOf, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Quota, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageObjectOwner, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, WorkerId, WorkerOf } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -127,30 +127,28 @@ declare module '@polkadot/api/types/storage' {
        **/
       totalIssuance: AugmentedQuery<ApiType, () => Observable<Balance>>;
     };
-    contentDirectory: {
-      /**
-       * Map, representing ClassId -> Class relation
-       **/
-      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<ClassOf>>;
+    content: {
+      channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>>;
+      channelCategoryById: AugmentedQuery<ApiType, (arg: ChannelCategoryId | AnyNumber | Uint8Array) => Observable<ChannelCategory>>;
+      channelOwnershipTransferRequestById: AugmentedQuery<ApiType, (arg: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => Observable<ChannelOwnershipTransferRequest>>;
       /**
        * Map, representing  CuratorGroupId -> CuratorGroup relation
        **/
       curatorGroupById: AugmentedQuery<ApiType, (arg: CuratorGroupId | AnyNumber | Uint8Array) => Observable<CuratorGroup>>;
-      /**
-       * Map, representing EntityId -> Entity relation
-       **/
-      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<EntityOf>>;
-      entityCreationVouchers: AugmentedQueryDoubleMap<ApiType, (key1: ClassId | AnyNumber | Uint8Array, key2: EntityController | { Maintainers: any } | { Member: any } | { Lead: any } | string | Uint8Array) => Observable<EntityCreationVoucher>>;
-      /**
-       * Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
-       **/
-      nextClassId: AugmentedQuery<ApiType, () => Observable<ClassId>>;
+      nextChannelCategoryId: AugmentedQuery<ApiType, () => Observable<ChannelCategoryId>>;
+      nextChannelId: AugmentedQuery<ApiType, () => Observable<ChannelId>>;
+      nextChannelOwnershipTransferRequestId: AugmentedQuery<ApiType, () => Observable<ChannelOwnershipTransferRequestId>>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<CuratorGroupId>>;
-      nextEntityId: AugmentedQuery<ApiType, () => Observable<EntityId>>;
-      /**
-       * Mapping of class id and its property id to the respective entity id and property value hash.
-       **/
-      uniquePropertyValueHashes: AugmentedQueryDoubleMap<ApiType, (key1: ITuple<[ClassId, PropertyId]> | [ClassId | AnyNumber | Uint8Array, PropertyId | AnyNumber | Uint8Array], key2: Hash | string | Uint8Array) => Observable<ITuple<[]>>>;
+      nextPersonId: AugmentedQuery<ApiType, () => Observable<PersonId>>;
+      nextPlaylistId: AugmentedQuery<ApiType, () => Observable<PlaylistId>>;
+      nextSeriesId: AugmentedQuery<ApiType, () => Observable<SeriesId>>;
+      nextVideoCategoryId: AugmentedQuery<ApiType, () => Observable<VideoCategoryId>>;
+      nextVideoId: AugmentedQuery<ApiType, () => Observable<VideoId>>;
+      personById: AugmentedQuery<ApiType, (arg: PersonId | AnyNumber | Uint8Array) => Observable<Person>>;
+      playlistById: AugmentedQuery<ApiType, (arg: PlaylistId | AnyNumber | Uint8Array) => Observable<Playlist>>;
+      seriesById: AugmentedQuery<ApiType, (arg: SeriesId | AnyNumber | Uint8Array) => Observable<Series>>;
+      videoById: AugmentedQuery<ApiType, (arg: VideoId | AnyNumber | Uint8Array) => Observable<Video>>;
+      videoCategoryById: AugmentedQuery<ApiType, (arg: VideoCategoryId | AnyNumber | Uint8Array) => Observable<VideoCategory>>;
     };
     contentDirectoryWorkingGroup: {
       /**
@@ -258,9 +256,29 @@ declare module '@polkadot/api/types/storage' {
        **/
       dataObjectByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>>;
       /**
+       * Global quota.
+       **/
+      globalQuota: AugmentedQuery<ApiType, () => Observable<Quota>>;
+      /**
        * List of ids known to the system.
        **/
       knownContentIds: AugmentedQuery<ApiType, () => Observable<Vec<ContentId>>>;
+      /**
+       * Upper bound for the Quota objects number limit.
+       **/
+      quotaObjectsLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
+      /**
+       * Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
+       **/
+      quotas: AugmentedQuery<ApiType, (arg: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<Quota>>;
+      /**
+       * Upper bound for the Quota size limit.
+       **/
+      quotaSizeLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
+      /**
+       * If all new uploads blocked
+       **/
+      uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>>;
     };
     dataObjectStorageRegistry: {
       /**

@@ -95,7 +95,8 @@ proto.ChannelMetadata.toObject = function(includeInstance, msg) {
     isPublic: (f = jspb.Message.getBooleanField(msg, 3)) == null ? undefined : f,
     language: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
     coverPhoto: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
-    avatarPhoto: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f
+    avatarPhoto: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f,
+    category: (f = jspb.Message.getField(msg, 7)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -155,6 +156,10 @@ proto.ChannelMetadata.deserializeBinaryFromReader = function(msg, reader) {
     case 6:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setAvatarPhoto(value);
+      break;
+    case 7:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setCategory(value);
       break;
     default:
       reader.skipField();
@@ -224,6 +229,13 @@ proto.ChannelMetadata.serializeBinaryToWriter = function(message, writer) {
   if (f != null) {
     writer.writeUint32(
       6,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 7));
+  if (f != null) {
+    writer.writeUint64(
+      7,
       f
     );
   }
@@ -443,6 +455,42 @@ proto.ChannelMetadata.prototype.clearAvatarPhoto = function() {
  */
 proto.ChannelMetadata.prototype.hasAvatarPhoto = function() {
   return jspb.Message.getField(this, 6) != null;
+};
+
+
+/**
+ * optional uint64 category = 7;
+ * @return {number}
+ */
+proto.ChannelMetadata.prototype.getCategory = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.ChannelMetadata} returns this
+ */
+proto.ChannelMetadata.prototype.setCategory = function(value) {
+  return jspb.Message.setField(this, 7, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.ChannelMetadata} returns this
+ */
+proto.ChannelMetadata.prototype.clearCategory = function() {
+  return jspb.Message.setField(this, 7, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.ChannelMetadata.prototype.hasCategory = function() {
+  return jspb.Message.getField(this, 7) != null;
 };
 
 

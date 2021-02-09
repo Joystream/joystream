@@ -23,6 +23,8 @@ mod mock;
 mod tests;
 
 use codec::{Decode, Encode};
+use common::Url;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -44,9 +46,6 @@ use system::ensure_root;
 */
 /// base58 encoded IPNS identity multihash codec
 pub type IPNSIdentity = Vec<u8>;
-
-/// HTTP Url string to a discovery service endpoint
-pub type Url = Vec<u8>;
 
 // The storage working group instance alias.
 pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
