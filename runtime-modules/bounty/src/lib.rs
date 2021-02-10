@@ -193,8 +193,11 @@ impl<MemberId> Default for BountyCreator<MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyStage {
-    /// Bounty founding stage. Inner value defines whether there is any contribution.
-    Funding(bool),
+    /// Bounty founding stage.
+    Funding {
+        /// Bounty has already some contributions.
+        has_contributions: bool,
+    },
 
     /// Funding and cherry can be withdrawn.
     Withdrawal {
@@ -448,7 +451,7 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding(false)),
+                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -480,7 +483,7 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding(false)),
+                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -923,7 +926,7 @@ impl<T: Trait> Module<T> {
                 if let Some(funding_period) = bounty.creation_params.funding_period {
                     // Funding period is not over.
                     if created_at + funding_period >= now {
-                        BountyStage::Funding(has_contributions)
+                        BountyStage::Funding { has_contributions }
                     } else {
                         // Funding period expired.
                         if bounty.total_funding >= bounty.creation_params.min_amount {
@@ -939,7 +942,7 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     // Perpetual funding.
-                    BountyStage::Funding(has_contributions)
+                    BountyStage::Funding { has_contributions }
                 }
             }
             // Bounty was canceled or vetoed.
