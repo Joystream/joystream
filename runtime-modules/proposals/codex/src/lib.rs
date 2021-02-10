@@ -267,15 +267,27 @@ decl_event! {
         BalanceKind = BalanceKind
     {
         /// A proposal was created
+        /// Params:
+        /// - General proposal parameter. Parameters shared by all proposals
+        /// - Proposal Details. Parameter of proposal with a variant for each kind of proposal
         ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
 
         /// A signal proposal was executed
+        /// Params:
+        /// - Signal given when creating the corresponding proposal
         Signaled(Vec<u8>),
 
         /// A runtime upgrade was executed
+        /// Params:
+        /// - New code encoded in bytes
         RuntimeUpgraded(Vec<u8>),
 
         /// An `Update Working Group Budget` proposal was executed
+        /// Params:
+        /// - Working group which budget is being updated
+        /// - Amount of balance being moved
+        /// - Enum variant with positive indicating funds moved torwards working group and negative
+        /// and negative funds moving from the working group
         UpdatedWorkingGroupBudget(WorkingGroup, Balance, BalanceKind),
     }
 }
@@ -467,7 +479,7 @@ decl_module! {
             // TODO: encode_proposal could take a reference instead of moving to prevent cloning
             // since the encode trait takes a reference to `self`.
             // (Note: this is an useful change since this could be a ~3MB copy in the case of
-            // a Runtime Upgrade)
+            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
