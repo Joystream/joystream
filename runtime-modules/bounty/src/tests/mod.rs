@@ -701,13 +701,77 @@ fn withdraw_member_funding_succeeds() {
             .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Ok(()));
 
+        // The whole cherry
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance + (cherry / 2)
+            initial_balance + cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyMemberFundingWithdrawal(
             bounty_id, member_id,
+        ));
+    });
+}
+
+#[test]
+fn withdraw_member_funding_with_half_cherry() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+        let amount = 100;
+        let account_id1 = 1;
+        let member_id1 = 1;
+        let account_id2 = 2;
+        let member_id2 = 2;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_period = 10;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+        increase_account_balance(&account_id1, initial_balance);
+        increase_account_balance(&account_id2, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id2))
+            .with_member_id(member_id2)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + starting_block + 1);
+
+        WithdrawMemberFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_member_id(member_id1)
+            .with_origin(RawOrigin::Signed(account_id1))
+            .call_and_assert(Ok(()));
+
+        // A half of the cherry
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&account_id1),
+            initial_balance + cherry / 2
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyMemberFundingWithdrawal(
+            bounty_id, member_id1,
         ));
     });
 }

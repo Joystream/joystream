@@ -992,9 +992,12 @@ impl<T: Trait> Module<T> {
         bounty: &Bounty<T>,
         funding_amount: BalanceOf<T>,
     ) -> BalanceOf<T> {
-        //TODO: don't count creator_funding.
-        let funding_share =
-            Perbill::from_rational_approximation(funding_amount, bounty.total_funding);
+        //We don't count creator_funding.
+        let total_funding = bounty
+            .total_funding
+            .saturating_sub(bounty.creation_params.creator_funding);
+
+        let funding_share = Perbill::from_rational_approximation(funding_amount, total_funding);
 
         // cherry share
         funding_share * bounty.creation_params.cherry
@@ -1019,6 +1022,8 @@ impl<T: Trait> Module<T> {
     fn remove_bounty(bounty_id: &T::BountyId) {
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
+
+        //TODO: slash the rest
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
     }
