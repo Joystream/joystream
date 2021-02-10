@@ -796,7 +796,6 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
         ) -> DispatchResult {
@@ -835,6 +834,11 @@ decl_module! {
                 Self::deposit_event(RawEvent::SeriesDeleted(*id));
             });
 
+            // If the channel was owned by a curator group, decrement counter
+            if let ChannelOwner::CuratorGroup(curator_group_id) = channel.owner {
+                Self::decrement_number_of_channels_owned_by_curator_group(curator_group_id);
+            }
+
             // TODO: Remove any channel transfer requests and refund requester
             // Self::terminate_channel_transfer_requests(channel_id)
             // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
@@ -846,9 +850,8 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn request_channel_transfer(
             origin,
-            new_owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-            channel_id: T::ChannelId,
-            payment: BalanceOf<T>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            request: ChannelOwnershipTransferRequest<T>,
         ) -> DispatchResult {
             // requester must be new_owner
             Ok(())
@@ -866,7 +869,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             request_id: T::ChannelOwnershipTransferRequestId,
         ) -> DispatchResult {
             // only current owner of channel can approve
@@ -876,7 +879,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) -> DispatchResult {
@@ -886,7 +889,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video: T::VideoId,
             params: VideoUpdateParameters<ContentParameters<T>>,
         ) -> DispatchResult {
@@ -896,7 +899,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video: T::VideoId,
         ) -> DispatchResult {
             Ok(())
@@ -905,7 +908,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: PlaylistCreationParameters,
         ) -> DispatchResult {
@@ -915,7 +918,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             playlist: T::PlaylistId,
             params: PlaylistUpdateParameters,
         ) -> DispatchResult {
@@ -925,7 +928,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             playlist: T::PlaylistId,
         ) -> DispatchResult {
@@ -935,6 +938,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_featured_videos(
             origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             list: Vec<T::VideoId>
         ) -> DispatchResult {
             // can only be set by lead
@@ -944,7 +948,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoCategoryCreationParameters,
         ) -> DispatchResult {
             Ok(())
@@ -953,7 +957,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::VideoCategoryId,
             params: VideoCategoryUpdateParameters,
         ) -> DispatchResult {
@@ -963,7 +967,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::VideoCategoryId,
         ) -> DispatchResult {
             Ok(())
@@ -972,7 +976,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCategoryCreationParameters,
         ) -> DispatchResult {
             // check origin is curator in active curator group
@@ -984,7 +988,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::ChannelCategoryId,
             params: ChannelCategoryUpdateParameters,
         ) -> DispatchResult {
@@ -994,7 +998,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::ChannelCategoryId,
         ) -> DispatchResult {
             Ok(())
@@ -1031,7 +1035,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_person_to_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             person: T::PersonId
         ) -> DispatchResult {
@@ -1041,7 +1045,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_person_from_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId
         ) -> DispatchResult {
             Ok(())
@@ -1050,7 +1054,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn censor_video(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -1060,7 +1064,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn censor_channel(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -1070,7 +1074,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn uncensor_video(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             rationale: Vec<u8>
         ) -> DispatchResult {
@@ -1080,7 +1084,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn uncensor_channel(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -1090,7 +1094,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) -> DispatchResult {
@@ -1100,7 +1104,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) -> DispatchResult {
@@ -1110,7 +1114,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             series: T::SeriesId,
         ) -> DispatchResult {
             Ok(())
@@ -1119,38 +1123,15 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // TODO: make this private again after used in module
-    /// Increment number of channels, maintained by each curator group
-    pub fn increment_number_of_channels_owned_by_curator_groups(
-        curator_group_ids: BTreeSet<T::CuratorGroupId>,
-    ) {
-        curator_group_ids.into_iter().for_each(|curator_group_id| {
-            Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
-        });
-    }
-
-    // TODO: make this private again after used in module
-    /// Decrement number of channels, maintained by each curator group
-    pub fn decrement_number_of_channels_owned_by_curator_groups(
-        curator_group_ids: BTreeSet<T::CuratorGroupId>,
-    ) {
-        curator_group_ids.into_iter().for_each(|curator_group_id| {
-            Self::decrement_number_of_channels_owned_by_curator_group(curator_group_id);
-        });
-    }
-
-    /// Increment number of channels, maintained by curator group
+    /// Increment number of channels, owned by curator group
     fn increment_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
         <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
             curator_group.increment_number_of_channels_owned_count();
         });
     }
 
-    // TODO: make this private again after used in module
-    /// Decrement number of channels, maintained by curator group
-    pub fn decrement_number_of_channels_owned_by_curator_group(
-        curator_group_id: T::CuratorGroupId,
-    ) {
+    /// Decrement number of channels, owned by curator group
+    fn decrement_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
         <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
             curator_group.decrement_number_of_channels_owned_count();
         });
