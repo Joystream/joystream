@@ -478,7 +478,6 @@ impl memo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const MaxObjectsPerInjection: u32 = 100;
     pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
@@ -491,7 +490,6 @@ impl storage::data_directory::Trait for Runtime {
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
     type DefaultQuota = DefaultQuota;
 }
 

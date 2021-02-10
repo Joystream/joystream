@@ -62,8 +62,6 @@ pub trait Trait:
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
-    type MaxObjectsPerInjection: Get<u32>;
-
     /// Default content quota for all actors.
     type DefaultQuota: Get<Quota>;
 }
@@ -322,9 +320,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-        /// Maximum objects allowed per inject_data_objects() transaction
-        const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
         /// Adds the content to the system. The created DataObject
         /// awaits liaison to accept or reject it.
