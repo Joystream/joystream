@@ -42,7 +42,10 @@ decl_error! {
         BadOrigin,
 
         /// Operation Cannot be perfomed with this Actor
-        OperationDeniedForActor,
+        ActorNotAuthorized,
+
+        /// This content actor cannot own a channel
+        ActorCannotOwnChannel,
 
         /// Channel Category Does not Exist.
         ChannelCategoryDoesNotExist,

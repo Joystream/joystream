@@ -87,16 +87,13 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     Ok(ensure_lead_auth_success::<T>(&account_id)?)
 }
 
-pub fn ensure_actor_authorized_to_create_update_delete_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Authenticate actor against channel owner
-    // Only Owner of a channel can update and delete it.
     match actor {
         // Lead should use their member or curator role to create or update channels.
-        ContentActor::Lead => Err(Error::<T>::OperationDeniedForActor),
+        ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
@@ -107,10 +104,44 @@ pub fn ensure_actor_authorized_to_create_update_delete_channel<T: Trait>(
                 &sender,
             )?;
 
-            // Ensure curator group specified as channel owner is same as authenticated group id.
+            Ok(())
+        }
+        ContentActor::Member(member_id) => {
+            let sender = ensure_signed(origin)?;
+
+            ensure_member_auth_success::<T>(member_id, &sender)?;
+
+            Ok(())
+        }
+        // TODO:
+        // ContentActor::Dao(_daoId) => ...,
+    }?;
+    Ok(())
+}
+
+pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    // Authenticate actor against channel owner
+    // Only Owner of a channel can update and delete it.
+    match actor {
+        ContentActor::Lead => Err(Error::<T>::ActorNotAuthorized),
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            let sender = ensure_signed(origin)?;
+
+            // Authorize curator, performing all checks to ensure curator can act
+            CuratorGroup::<T>::perform_curator_in_group_auth(
+                curator_id,
+                curator_group_id,
+                &sender,
+            )?;
+
+            // Ensure curator group is the channel owner.
             ensure!(
                 *owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                Error::<T>::OperationDeniedForActor
+                Error::<T>::ActorNotAuthorized
             );
 
             Ok(())
@@ -120,15 +151,16 @@ pub fn ensure_actor_authorized_to_create_update_delete_channel<T: Trait>(
 
             ensure_member_auth_success::<T>(member_id, &sender)?;
 
+            // Ensure the member is the channel owner.
             ensure!(
                 *owner == ChannelOwner::Member(*member_id),
-                Error::<T>::OperationDeniedForActor
+                Error::<T>::ActorNotAuthorized
             );
 
             Ok(())
         }
         // TODO:
-        // ContentActor::Dao(_daoId) => Error::<T>::OperationDeniedForActor,
+        // ContentActor::Dao(_daoId) => ...,
     }?;
     Ok(())
 }

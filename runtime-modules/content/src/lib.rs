@@ -2,8 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 mod errors;
 mod permissions;
@@ -140,6 +140,16 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     // Native DAO owns the channel
     Dao(DAOId),
 }
+
+// simplification type
+pub(crate) type ActorToChannelOwnerResult<T> = Result<
+    ChannelOwner<
+        <T as MembershipTypes>::MemberId,
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as StorageOwnership>::DAOId,
+    >,
+    Error<T>,
+>;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
@@ -658,14 +668,15 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) -> DispatchResult {
-            ensure_actor_authorized_to_create_update_delete_channel::<T>(
+            ensure_actor_authorized_to_create_channel::<T>(
                 origin,
                 &actor,
-                &owner,
             )?;
+
+            // The channel owner will be..
+            let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
             // Pick out the assets to be uploaded to storage system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
@@ -703,7 +714,7 @@ decl_module! {
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
             let channel: Channel<T> = ChannelRecord {
-                owner: owner.clone(),
+                owner: channel_owner.clone(),
                 videos: vec![],
                 playlists: vec![],
                 series: vec![],
@@ -712,7 +723,7 @@ decl_module! {
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
-            if let ChannelOwner::CuratorGroup(curator_group_id) = owner {
+            if let ChannelOwner::CuratorGroup(curator_group_id) = channel_owner {
                 Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
             }
 
@@ -731,7 +742,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_create_update_delete_channel::<T>(
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -792,7 +803,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_create_update_delete_channel::<T>(
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -1203,6 +1214,26 @@ impl<T: Trait> Module<T> {
                 _ => None,
             })
             .collect()
+    }
+
+    fn actor_to_channel_owner(
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> ActorToChannelOwnerResult<T> {
+        match actor {
+            // Lead should use their member or curator role to create channels
+            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
+            ContentActor::Curator(
+                curator_group_id,
+                _curator_id
+            ) => {
+                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
+            }
+            ContentActor::Member(member_id) => {
+                Ok(ChannelOwner::Member(*member_id))
+            }
+            // TODO:
+            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+        }
     }
 }
 
