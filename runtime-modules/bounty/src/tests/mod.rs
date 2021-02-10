@@ -7,6 +7,7 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::tests::fixtures::WithdrawCreatorFundingFixture;
+use crate::tests::mocks::Balances;
 use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
@@ -728,6 +729,11 @@ fn withdraw_member_funding_removes_bounty() {
         increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
         increase_account_balance(&account_id, initial_balance);
 
+        println!(
+            "Initial: {}",
+            Balances::usable_balance(&Bounty::bounty_account_id(1u64))
+        );
+
         CreateBountyFixture::default()
             .with_max_amount(max_amount)
             .with_min_amount(max_amount)
@@ -738,6 +744,11 @@ fn withdraw_member_funding_removes_bounty() {
 
         let bounty_id = 1u64;
 
+        println!(
+            "After creation: {}",
+            Balances::usable_balance(&Bounty::bounty_account_id(bounty_id))
+        );
+
         FundBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
@@ -746,9 +757,19 @@ fn withdraw_member_funding_removes_bounty() {
 
         run_to_block(funding_period + starting_block + 1);
 
+        println!(
+            "Before creator withdrawal: {}",
+            Balances::usable_balance(&Bounty::bounty_account_id(bounty_id))
+        );
+
         WithdrawCreatorFundingFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
+
+        println!(
+            "Before member withdrawal: {}",
+            Balances::usable_balance(&Bounty::bounty_account_id(bounty_id))
+        );
 
         WithdrawMemberFundingFixture::default()
             .with_bounty_id(bounty_id)

@@ -18,7 +18,7 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {
         let _ = Balances::deposit_creating(&account_id, balance);
@@ -26,7 +26,7 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
 
-pub fn increase_account_balance(account_id: &u64, balance: u64) {
+pub fn increase_account_balance(account_id: &u128, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
@@ -51,7 +51,7 @@ impl EventFixture {
 
 pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
 pub struct CreateBountyFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     metadata: Vec<u8>,
     creator: BountyCreator<u64>,
     funding_period: Option<u64>,
@@ -81,7 +81,7 @@ impl CreateBountyFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -198,7 +198,7 @@ impl CreateBountyFixture {
 }
 
 pub struct CancelBountyFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     creator: BountyCreator<u64>,
     bounty_id: u64,
 }
@@ -212,7 +212,7 @@ impl CancelBountyFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -245,7 +245,7 @@ impl CancelBountyFixture {
 }
 
 pub struct VetoBountyFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     bounty_id: u64,
 }
 
@@ -257,7 +257,7 @@ impl VetoBountyFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -279,7 +279,7 @@ impl VetoBountyFixture {
 }
 
 pub struct FundBountyFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     member_id: u64,
     bounty_id: u64,
     amount: u64,
@@ -295,7 +295,7 @@ impl FundBountyFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -335,7 +335,7 @@ impl FundBountyFixture {
 }
 
 pub struct WithdrawMemberFundingFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     member_id: u64,
     bounty_id: u64,
 }
@@ -349,7 +349,7 @@ impl WithdrawMemberFundingFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -373,7 +373,7 @@ impl WithdrawMemberFundingFixture {
 }
 
 pub struct WithdrawCreatorFundingFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     creator: BountyCreator<u64>,
     bounty_id: u64,
 }
@@ -387,7 +387,7 @@ impl WithdrawCreatorFundingFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 

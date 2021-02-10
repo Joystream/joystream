@@ -43,7 +43,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -874,8 +874,13 @@ impl pallet_constitution::Trait for Runtime {
     type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
+parameter_types! {
+    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+}
+
 impl bounty::Trait for Runtime {
     type Event = Event;
+    type ModuleId = BountyModuleId;
     type BountyId = u64;
     type MemberOriginValidator = Members;
     type WeightInfo = weights::bounty::WeightInfo;
