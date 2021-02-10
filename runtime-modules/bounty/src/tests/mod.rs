@@ -102,15 +102,13 @@ fn created_bounty_gets_fully_funded_by_creator() {
             .with_cherry(cherry)
             .with_max_amount(max_amount)
             .with_creator_funding(creator_funding)
-            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached(starting_block))
+            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: starting_block,
+                reached_on_creation: true,
+            })
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
-
-        assert_eq!(
-            Bounty::bounties(bounty_id).milestone,
-            BountyMilestone::BountyMaxFundingReached(starting_block)
-        );
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -515,7 +513,10 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
         let bounty = Bounty::bounties(&bounty_id);
         assert_eq!(
             bounty.milestone,
-            BountyMilestone::BountyMaxFundingReached(starting_block)
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: starting_block,
+                reached_on_creation: false
+            }
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyMaxFundingReached(bounty_id));
@@ -944,7 +945,7 @@ fn withdraw_creator_funding_by_council_succeeds() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance
+            initial_balance - cherry
         );
 
         assert_eq!(
@@ -1015,7 +1016,11 @@ fn withdraw_creator_funding_by_member_succeeds() {
         let member_id = 1;
         let funding_period = 10;
 
+        let funding_account_id = 2;
+        let funding_member_id = 2;
+
         increase_account_balance(&account_id, initial_balance);
+        increase_account_balance(&funding_account_id, initial_balance);
 
         let starting_block = 1;
         run_to_block(starting_block);
@@ -1040,8 +1045,8 @@ fn withdraw_creator_funding_by_member_succeeds() {
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_amount(amount)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(funding_member_id)
+            .with_origin(RawOrigin::Signed(funding_account_id))
             .call_and_assert(Ok(()));
 
         // Bounty failed because of the funding period
@@ -1055,7 +1060,7 @@ fn withdraw_creator_funding_by_member_succeeds() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance - amount
+            initial_balance - cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
