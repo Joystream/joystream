@@ -14,19 +14,14 @@
 //! - Creation and editing of posts, associated with given blog
 //! - Posts locking/unlocking
 //! - Creation and editing of replies, associated with given post
-//! - Reactions for both posts and replies
 //!
 //! ### Terminology
 //!
 //! - **Lock:** A forbiddance of mutation of any associated information related to a given post.
 //!
-//! - **Reaction:** A user can react to a post in N different ways, where N is an integer parameter configured through runtime.
-//! For each way, the reader can simply react and unreact to a given post. Think of reactions as being things like, unlike,
-//! laugh, etc. The semantics of each reaction is not present in the runtime.
-//!
 //! ## Interface
 //! The posts creation/edition/locking/unlocking are done through proposals
-//! To reply/react to posts you need to be a member
+//! To reply to posts you need to be a member
 //!
 //! ## Supported extrinsics
 //!
@@ -36,7 +31,6 @@
 //! - [edit_post](./struct.Module.html#method.edit_post)
 //! - [create_reply](./struct.Module.html#method.create_reply)
 //! - [edit_reply](./struct.Module.html#method.create_reply)
-//! - [react](./struct.Module.html#method.create_reply)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -64,12 +58,6 @@ type MaxNumber = u64;
 /// Type for post IDs
 pub type PostId = u64;
 
-/// Type, representing reactions number
-pub type ReactionsNumber = u64;
-
-/// Number of reactions, presented in runtime
-pub const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
-
 /// Blogger participant ID alias for the member of the system.
 pub type ParticipantId<T> = common::MemberId<T>;
 
@@ -83,8 +71,6 @@ pub trait WeightInfo {
     fn create_reply_to_post(t: u32) -> Weight;
     fn create_reply_to_reply(t: u32) -> Weight;
     fn edit_reply(t: u32) -> Weight;
-    fn react_to_post() -> Weight;
-    fn react_to_reply() -> Weight;
 }
 
 // The pallet's configuration trait.
@@ -326,8 +312,6 @@ decl_storage! {
         /// Reply by unique blog, post and reply identificators
         ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T, I>;
 
-        /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
-        pub Reactions get(fn reactions): double_map hasher(blake2_128_concat) (PostId, Option<T::ReplyId>), hasher(blake2_128_concat) ParticipantId<T> => [bool; REACTIONS_MAX_NUMBER as usize];
     }
 }
 
@@ -382,7 +366,7 @@ decl_module! {
         }
 
         /// Blog owner can lock posts, related to a given blog,
-        /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
+        /// making post immutable to any actions (replies creation, post editing, etc.)
         ///
         /// <weight>
         ///
@@ -592,52 +576,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Submit either post reaction or reply reaction
-        /// In case, when you resubmit reaction, it`s status will be changed to an opposite one
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (1)` doesn't depends on the state or parameters
-        /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = Module::<T, I>::react_weight()]
-        pub fn react(
-            origin,
-            participant_id: ParticipantId<T>,
-            // reaction index in array
-            index: ReactionsNumber,
-            post_id: PostId,
-            reply_id: Option<T::ReplyId>
-        ) {
-            Self::ensure_valid_participant(origin, participant_id)?;
-
-            // Ensure index is valid & reaction under given index exists
-            Self::ensure_reaction_index_is_valid(index)?;
-
-            // Ensure post with given id exists
-            let post = Self::ensure_post_exists(post_id)?;
-
-            // Ensure post unlocked, so mutations can be performed
-            Self::ensure_post_unlocked(&post)?;
-
-            // Ensure reply with given id exists
-            if let Some(reply_id) = reply_id {
-                Self::ensure_reply_exists(post_id, reply_id)?;
-            }
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Trigger event
-            if let Some(reply_id) = reply_id {
-                Self::deposit_event(RawEvent::ReplyReactionsUpdated(participant_id, post_id, reply_id, index));
-            } else {
-                Self::deposit_event(RawEvent::PostReactionsUpdated(participant_id, post_id, index));
-            }
-        }
-
     }
 }
 
@@ -648,11 +586,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let body_len: u32 = body.as_ref().map_or(0, |b| b.len().saturated_into());
 
         T::WeightInfo::edit_post(title_len, body_len)
-    }
-
-    // calculate react weight
-    fn react_weight() -> Weight {
-        T::WeightInfo::react_to_post().max(T::WeightInfo::react_to_reply())
     }
 
     // calculate create_reply weight
@@ -742,14 +675,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         Ok(())
     }
-
-    fn ensure_reaction_index_is_valid(index: ReactionsNumber) -> Result<(), DispatchError> {
-        ensure!(
-            index < REACTIONS_MAX_NUMBER,
-            Error::<T, I>::InvalidReactionIndex
-        );
-        Ok(())
-    }
 }
 
 decl_event!(
@@ -758,7 +683,6 @@ decl_event!(
         ParticipantId = ParticipantId<T>,
         PostId = PostId,
         ReplyId = <T as Trait<I>>::ReplyId,
-        ReactionIndex = ReactionsNumber,
         Title = Vec<u8>,
         Text = Vec<u8>,
         UpdatedTitle = Option<Vec<u8>>,
@@ -784,11 +708,5 @@ decl_event!(
 
         /// A reply was edited
         ReplyEdited(ParticipantId, PostId, ReplyId, Text),
-
-        /// A post reaction was created or changed
-        PostReactionsUpdated(ParticipantId, PostId, ReactionIndex),
-
-        /// A reply creation was created or changed
-        ReplyReactionsUpdated(ParticipantId, PostId, ReplyId, ReactionIndex),
     }
 );

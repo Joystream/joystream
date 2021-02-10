@@ -285,29 +285,6 @@ benchmarks_instance! {
                 updated_text
             ).into());
     }
-
-    react_to_post {
-        let post_id = generate_post::<T, I>();
-        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let origin = RawOrigin::Signed(account_id);
-    }: react(origin.clone(), participant_id, 0, post_id, None)
-    verify {
-        assert_last_event::<T, I>(
-            RawEvent::PostReactionsUpdated(participant_id, post_id, 0).into()
-        );
-    }
-
-    react_to_reply {
-        let post_id = generate_post::<T, I>();
-        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
-        let origin = RawOrigin::Signed(account_id);
-    }: react(origin.clone(), participant_id, 0, post_id, Some(reply_id))
-    verify {
-        assert_last_event::<T, I>(
-            RawEvent::ReplyReactionsUpdated(participant_id, post_id, reply_id, 0).into()
-        );
-    }
 }
 
 #[cfg(test)]
@@ -362,20 +339,6 @@ mod tests {
     fn test_edit_reply() {
         ExtBuilder::default().build().execute_with(|| {
             assert_ok!(test_benchmark_edit_reply::<Runtime>());
-        })
-    }
-
-    #[test]
-    fn test_react_to_post() {
-        ExtBuilder::default().build().execute_with(|| {
-            assert_ok!(test_benchmark_react_to_post::<Runtime>());
-        })
-    }
-
-    #[test]
-    fn test_react_to_reply() {
-        ExtBuilder::default().build().execute_with(|| {
-            assert_ok!(test_benchmark_react_to_reply::<Runtime>());
         })
     }
 }

@@ -250,12 +250,6 @@ impl WeightInfo for () {
     fn edit_reply(_: u32) -> Weight {
         unimplemented!()
     }
-    fn react_to_post() -> Weight {
-        unimplemented!()
-    }
-    fn react_to_reply() -> Weight {
-        unimplemented!()
-    }
 }
 
 pub struct MockEnsureParticipant;
@@ -326,7 +320,6 @@ type RawTestEvent = RawEvent<
     ParticipantId<Runtime>,
     PostId,
     <Runtime as Trait>::ReplyId,
-    ReactionsNumber,
     Vec<u8>,
     Vec<u8>,
     Option<Vec<u8>>,
@@ -434,23 +427,5 @@ pub fn edit_reply(
         post_id,
         reply_id,
         reply,
-    )
-}
-
-// Reactions
-
-pub fn react(
-    origin_id: u64,
-    participant_id: u64,
-    index: ReactionsNumber,
-    post_id: PostId,
-    reply_id: Option<<Runtime as Trait>::ReplyId>,
-) -> DispatchResult {
-    TestBlogModule::react(
-        Origin::signed(origin_id),
-        participant_id,
-        index,
-        post_id,
-        reply_id,
     )
 }
