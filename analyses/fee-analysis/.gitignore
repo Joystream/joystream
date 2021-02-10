@@ -2,3 +2,4 @@
 .vim/
 __pycache__/
 .venv/
+*.csv
