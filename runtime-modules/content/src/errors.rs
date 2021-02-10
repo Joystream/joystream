@@ -4,6 +4,8 @@ use frame_support::decl_error;
 decl_error! {
     /// Content directory errors
     pub enum Error for Module<T: Trait> {
+        /// Feature Not Implemented
+        FeatureNotImplemented,
 
         // Curator Management Errors
         // -------------------------
@@ -52,5 +54,8 @@ decl_error! {
 
         /// Channel Does Not Exist
         ChannelDoesNotExist,
+
+        /// Curators can only censore non curator group channels
+        CannotCensoreCuratorGroupOwnedChannels
     }
 }

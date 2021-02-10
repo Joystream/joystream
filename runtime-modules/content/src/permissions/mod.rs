@@ -93,7 +93,13 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 ) -> DispatchResult {
     match actor {
         // Lead should use their member or curator role to create or update channels.
-        ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
+        ContentActor::Lead => {
+            ensure!(
+                false,
+                Error::<T>::ActorCannotOwnChannel
+            );
+            Ok(())
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
@@ -115,8 +121,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
-    }?;
-    Ok(())
+    }
 }
 
 pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
@@ -124,10 +129,17 @@ pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Authenticate actor against channel owner
-    // Only Owner of a channel can update and delete it.
+    // Only owner of a channel can update and delete it.
+    // Should we allow lead to also update and delete curator group owned channels,
+    // to avoid need for them to add themselves into the group?
     match actor {
-        ContentActor::Lead => Err(Error::<T>::ActorNotAuthorized),
+        ContentActor::Lead => {
+            ensure!(
+                false,
+                Error::<T>::ActorNotAuthorized
+            );
+            Ok(())
+        }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
 
@@ -161,8 +173,54 @@ pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
-    }?;
-    Ok(())
+    }
+}
+
+pub fn ensure_actor_authorized_to_censor<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    // Only owner of a channel can update and delete it.
+    // Should we allow lead to also update and delete curator group owned channels,
+    // to avoid need for them to add themselves into the group?
+    match actor {
+        ContentActor::Lead => {
+            let sender = ensure_signed(origin)?;
+            ensure_lead_auth_success::<T>(&sender)?;
+            Ok(())
+        },
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            let sender = ensure_signed(origin)?;
+
+            // Authorize curator, performing all checks to ensure curator can act
+            CuratorGroup::<T>::perform_curator_in_group_auth(
+                curator_id,
+                curator_group_id,
+                &sender,
+            )?;
+
+            // Curators cannot censor group channels
+            match owner {
+                ChannelOwner::CuratorGroup(_curator_group_id) => {
+                    Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels)
+                }
+                _ => Ok(())
+            }?;
+
+            Ok(())
+        }
+        ContentActor::Member(_member_id) => {
+            // Members cannot censore channels!
+            ensure!(
+                false,
+                Error::<T>::ActorNotAuthorized
+            );
+            Ok(())
+        }
+        // TODO:
+        // ContentActor::Dao(_daoId) => ...,
+    }
 }
 
 /// Enum, representing all possible `Actor`s

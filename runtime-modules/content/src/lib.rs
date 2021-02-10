@@ -848,236 +848,35 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn request_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request: ChannelOwnershipTransferRequest<T>,
-        ) -> DispatchResult {
-            // requester must be new_owner
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_channel_transfer_request(
-            origin,
-            request_id: T::ChannelOwnershipTransferRequestId,
-        ) -> DispatchResult {
-            // origin must be original requester (ie. proposed new channel owner)
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request_id: T::ChannelOwnershipTransferRequestId,
-        ) -> DispatchResult {
-            // only current owner of channel can approve
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: VideoCreationParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
-            params: VideoUpdateParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: PlaylistCreationParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            playlist: T::PlaylistId,
-            params: PlaylistUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            playlist: T::PlaylistId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_featured_videos(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            list: Vec<T::VideoId>
-        ) -> DispatchResult {
-            // can only be set by lead
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: VideoCategoryCreationParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
-            params: VideoCategoryUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCategoryCreationParameters,
-        ) -> DispatchResult {
-            // check origin is curator in active curator group
-            // any curator can create a category
-            // create category and emit event
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::ChannelCategoryId,
-            params: ChannelCategoryUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::ChannelCategoryId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            params: PersonCreationParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
-            params: PersonUpdateParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_person_to_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            person: T::PersonId
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_person_from_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn censor_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn censor_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-            Ok(())
-        }
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
 
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncensor_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            rationale: Vec<u8>
-        ) -> DispatchResult {
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            channel.is_censored = true;
+
+            // TODO: unset the reward account ? so no revenue can be earned for censored channels?
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            Self::deposit_event(RawEvent::ChannelCensored(channel_id, rationale));
             Ok(())
         }
 
@@ -1088,7 +887,250 @@ decl_module! {
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
         ) -> DispatchResult {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            channel.is_censored = false;
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            Self::deposit_event(RawEvent::ChannelUncensored(channel_id, rationale));
             Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn request_channel_transfer(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            request: ChannelOwnershipTransferRequest<T>,
+        ) {
+            // requester must be new_owner
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_channel_transfer_request(
+            origin,
+            request_id: T::ChannelOwnershipTransferRequestId,
+        ) {
+            // origin must be original requester (ie. proposed new channel owner)
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_channel_transfer(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            request_id: T::ChannelOwnershipTransferRequestId,
+        ) {
+            // only current owner of channel can approve
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: VideoCreationParameters<ContentParameters<T>>,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video: T::VideoId,
+            params: VideoUpdateParameters<ContentParameters<T>>,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video: T::VideoId,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_playlist(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: PlaylistCreationParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_playlist(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            playlist: T::PlaylistId,
+            params: PlaylistUpdateParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_playlist(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            playlist: T::PlaylistId,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_featured_videos(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            list: Vec<T::VideoId>
+        ) {
+            // can only be set by lead
+
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_video_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            params: VideoCategoryCreationParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_video_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category: T::VideoCategoryId,
+            params: VideoCategoryUpdateParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_video_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category: T::VideoCategoryId,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            params: ChannelCategoryCreationParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category: T::ChannelCategoryId,
+            params: ChannelCategoryUpdateParameters,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category: T::ChannelCategoryId,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_person(
+            origin,
+            actor: PersonActor<T::MemberId, T::CuratorId>,
+            params: PersonCreationParameters<ContentParameters<T>>,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_person(
+            origin,
+            actor: PersonActor<T::MemberId, T::CuratorId>,
+            person: T::PersonId,
+            params: PersonUpdateParameters<ContentParameters<T>>,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_person(
+            origin,
+            actor: PersonActor<T::MemberId, T::CuratorId>,
+            person: T::PersonId,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn add_person_to_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            person: T::PersonId
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_person_from_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn censor_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            rationale: Vec<u8>,
+        ) {
+            Self::not_implemented()?;
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn uncensor_video(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            rationale: Vec<u8>
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1097,8 +1139,8 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1107,8 +1149,8 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1116,8 +1158,8 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             series: T::SeriesId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
     }
 }
@@ -1215,6 +1257,11 @@ impl<T: Trait> Module<T> {
             // TODO:
             // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
         }
+    }
+
+    fn not_implemented() -> Result<(), Error<T>> {
+        ensure!(false, Error::<T>::FeatureNotImplemented);
+        Ok(())
     }
 }
 
