@@ -165,7 +165,7 @@ impl ContentActorAuthenticator for Test {
 
 pub struct MockStorageSystem {}
 
-// Anyone can upload without restriction
+// Anyone can upload and delete without restriction
 impl StorageSystem<Test> for MockStorageSystem {
     fn atomically_add_content(
         _owner: StorageObjectOwner<Test>,
@@ -177,6 +177,20 @@ impl StorageSystem<Test> for MockStorageSystem {
     fn can_add_content(
         _owner: StorageObjectOwner<Test>,
         _content_parameters: Vec<ContentParameters<Test>>,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn atomically_remove_content(
+        _owner: &StorageObjectOwner<Test>,
+        _content_ids: &[u64],
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn can_remove_content(
+        _owner: &StorageObjectOwner<Test>,
+        _content_ids: &[u64],
     ) -> DispatchResult {
         Ok(())
     }

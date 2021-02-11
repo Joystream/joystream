@@ -803,17 +803,6 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Important Note: Since channel ownership information is lost after a channel is deleted, if there are
-            // any lingering data objects in storage owned by the channel there is no way to authenticate an actor
-            // if they wish to delete those objects. So the risk of relying on user to delete data objects prior
-            // to deleting a channel is that there will be unrecoverable capacity on storage nodes. Quota/Limits is not
-            // a problem because the channel is removed. So storage lead would have to occasionally dispatch and extrinsic
-            // to cleanup storage data objects.. Or we can delete them all here.
-            // TOOD: Delete all data objects owned by the channel from storage.
-            // If we don't track the objects in content directory, how will storage iterate? IterableStorageMap?
-            // let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-            // T::StorageSystem::delete_objects_owned_by(object_owner);
-
             channel.videos.iter().for_each(|id| {
                 VideoById::<T>::remove(id);
                 Self::deposit_event(RawEvent::VideoDeleted(*id));
@@ -839,6 +828,57 @@ decl_module! {
             // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
 
             Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
+        }
+
+        /// Remove assets of a channel from storage
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_channel_assets(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            assets: Vec<ContentId<T>>,
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+        }
+
+        // The content directory doesn't track individual content ids of assets uploaded for a channel.
+        // A channel owner can manage their storage usage with remove_channel_assets(). However when they choose
+        // to delete their channel they may leave behind some assets if not explicitly removed.
+        // So the 'lead' can and should occasionally dispatch this call to cleanup and recover storage capacity of
+        // deleted channels.
+        /// Lead utility to remove assets of a deleted channel from storage
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_deleted_channel_assets(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            assets: Vec<ContentId<T>>,
+        ) {
+            ensure_actor_authorized_to_delete_stale_assets::<T>(
+                origin,
+                &actor
+            )?;
+
+            // Ensure channel does not exist
+            ensure!(
+                !ChannelById::<T>::contains_key(channel_id),
+                Error::<T>::ChannelMustNotExist
+            );
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight

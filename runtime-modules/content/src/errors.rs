@@ -55,8 +55,11 @@ decl_error! {
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
 
-        /// Channel coes not exist
+        /// Channel does not exist
         ChannelDoesNotExist,
+
+        /// Channel must have been deleted
+        ChannelMustNotExist,
 
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels

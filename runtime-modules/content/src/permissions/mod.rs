@@ -12,6 +12,7 @@ use frame_support::{ensure, Parameter};
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use system::ensure_root;
 
 /// Model of authentication manager.
 pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
@@ -269,6 +270,24 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
+    }
+}
+
+pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
+    match actor {
+        ContentActor::Lead => {
+            let sender = ensure_signed(origin)?;
+            ensure_lead_auth_success::<T>(&sender)?;
+            Ok(())
+        }
+        _ => {
+            ensure_root(origin)?;
+            Ok(())
+        }
     }
 }
 
