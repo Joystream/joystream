@@ -352,10 +352,13 @@ decl_error! {
         FundingPeriodNotExpired,
 
         /// A member is not a bounty funder.
-        NotBountyFunder, //TODO change to no bounty funding found
+        NotBountyFunder, //TODO change to "no bounty funding found"
 
         /// There is nothing to withdraw.
-        NothingToWithdraw, //TODO test
+        NothingToWithdraw,
+
+        /// Incorrect funding amount.
+        ZeroFundingAmount,
     }
 }
 
@@ -401,19 +404,7 @@ decl_module! {
                 params.creator_funding
             )?;
 
-            let now = Self::current_block();
-            // Whether the bounty is fully funded on creation.
-            let created_bounty_milestone = if params.creator_funding < params.max_amount {
-                BountyMilestone::Created{
-                        created_at: now,
-                        has_contributions: false,
-                }
-            } else {
-                BountyMilestone::BountyMaxFundingReached {
-                    max_funding_reached_at: now,
-                    reached_on_creation: true,
-                }
-            };
+            let created_bounty_milestone = Self::get_bounty_milestone_on_creation(&params);
 
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
@@ -518,6 +509,8 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
+            ensure!(amount > Zero::zero(), Error::<T>::ZeroFundingAmount);
+
             ensure!(
                 Self::check_balance_for_account(amount, &controller_account_id),
                 Error::<T>::InsufficientBalanceForBounty
@@ -529,8 +522,6 @@ decl_module! {
                 Error::<T>::InvalidBountyStage,
             );
 
-            //TODO: test zero amount
-
             //
             // == MUTATION SAFE ==
             //
@@ -539,21 +530,15 @@ decl_module! {
 
             let total_funding = bounty.total_funding.saturating_add(amount);
             let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
+            let new_milestone = Self::get_bounty_milestone_on_funding(
+                    maximum_funding_reached,
+                    bounty.milestone
+            );
 
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.total_funding = total_funding;
-                if maximum_funding_reached{
-                    bounty.milestone = BountyMilestone::BountyMaxFundingReached {
-                        max_funding_reached_at: Self::current_block(),
-                        reached_on_creation: false,
-                    };
-                } else if let BountyMilestone::Created{created_at, ..} =
-                    bounty.milestone.clone() {
-
-                    // The bounty has some contributions now.
-                    bounty.milestone = BountyMilestone::Created{created_at, has_contributions: true};
-                }
+                bounty.milestone = new_milestone;
             });
 
             // Update member funding record checking previous funding.
@@ -599,13 +584,13 @@ decl_module! {
                 Error::<T>::NotBountyFunder,
             );
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             let funding_amount = <BountyContributions<T>>::get(bounty_id, member_id);
             let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding_amount);
             let withdrawal_amount = funding_amount + cherry_fraction;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::transfer_funds_from_bounty_account(&account_id, bounty_id, withdrawal_amount)?;
 
@@ -644,31 +629,23 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::Withdrawal {..}),
-                Error::<T>::InvalidBountyStage,
-            );
-
             if let BountyStage::Withdrawal {creator_funds_need_withdrawal, cherry_needs_withdrawal} =
                 current_bounty_stage
             {
                 ensure!(
                     creator_funds_need_withdrawal || cherry_needs_withdrawal,
-                    Error::<T>::InvalidBountyStage, //TODO: change error message
+                    Error::<T>::NothingToWithdraw,
                 );
+            } else {
+                return Err(Error::<T>::InvalidBountyStage.into());
             };
-
-            let funding_amount = bounty.creation_params.creator_funding;
-            let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
-
-             ensure!(
-                    funding_amount + cherry > Zero::zero(),
-                    Error::<T>::NothingToWithdraw, //TODO test
-             );
 
             //
             // == MUTATION SAFE ==
             //
+
+            let funding_amount = bounty.creation_params.creator_funding;
+            let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
 
             bounty_creator_manager.transfer_funds_from_bounty_account(
                 bounty_id,
@@ -1023,7 +1000,12 @@ impl<T: Trait> Module<T> {
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
 
-        //TODO: slash the rest
+        // Slash remaining funds.
+        let bounty_account_id = Self::bounty_account_id(*bounty_id);
+        let all = balances::Module::<T>::usable_balance(&bounty_account_id);
+        if all != Zero::zero() {
+            let _ = balances::Module::<T>::slash(&bounty_account_id, all);
+        }
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
     }
@@ -1042,7 +1024,7 @@ impl<T: Trait> Module<T> {
 
     // Verifies that bounty has some contribution to withdraw.
     // Should be O(1) because of the single inner call of the next() function of the iterator.
-    fn contributions_exist(bounty_id: &T::BountyId) -> bool {
+    pub(crate) fn contributions_exist(bounty_id: &T::BountyId) -> bool {
         <BountyContributions<T>>::iter_prefix_values(bounty_id)
             .peekable()
             .peek()
@@ -1052,5 +1034,55 @@ impl<T: Trait> Module<T> {
     // The account ID of a bounty account. Tests require AccountID type to be at least u128.
     pub(crate) fn bounty_account_id(bounty_id: T::BountyId) -> T::AccountId {
         T::ModuleId::get().into_sub_account(bounty_id)
+    }
+
+    // Calculates bounty milestone on creation.
+    fn get_bounty_milestone_on_creation(
+        params: &BountyCreationParameters<T>,
+    ) -> BountyMilestone<T::BlockNumber> {
+        let now = Self::current_block();
+
+        // Whether the bounty is fully funded on creation.
+        if params.creator_funding < params.max_amount {
+            BountyMilestone::Created {
+                created_at: now,
+                has_contributions: false, // just created - no contributions
+            }
+        } else {
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: now,
+                reached_on_creation: true,
+            }
+        }
+    }
+
+    // Calculates bounty milestone on member funding.
+    fn get_bounty_milestone_on_funding(
+        maximum_funding_reached: bool,
+        previous_milestone: BountyMilestone<T::BlockNumber>,
+    ) -> BountyMilestone<T::BlockNumber> {
+        let now = Self::current_block();
+
+        if maximum_funding_reached {
+            // Bounty maximum funding reached.
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: now,
+                reached_on_creation: false, // reached only now
+            }
+        // No previous contributions.
+        } else if let BountyMilestone::Created {
+            created_at,
+            has_contributions: false,
+        } = previous_milestone
+        {
+            // The bounty has some contributions now.
+            BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            }
+        } else {
+            // No changes.
+            previous_milestone
+        }
     }
 }
