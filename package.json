@@ -36,8 +36,7 @@
     "@polkadot/wasm-crypto": "^1.2.1",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
-    "bn.js": "^5.1.2",
-    "@dzlzv/hydra-indexer-lib": "0.0.22-legacy.1.26.1"
+    "bn.js": "^5.1.2"
   },
   "devDependencies": {
     "eslint": "^7.6.0",
