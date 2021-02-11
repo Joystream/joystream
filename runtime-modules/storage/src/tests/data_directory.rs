@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use crate::data_directory::Error;
 use common::storage::StorageObjectOwner;
 use frame_support::dispatch::DispatchError;
 use system::RawOrigin;
@@ -46,11 +47,38 @@ fn add_content_fails_with_invalid_origin() {
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
-        // Register a content with 1234 bytes of type 1, which should be recognized.
+        // Make an attempt to register a content with 1234 bytes of type 1, which should be recognized.
         let res =
             TestDataDirectory::add_content(RawOrigin::Root.into(), owner, vec![content_parameters]);
         assert_eq!(res, Err(DispatchError::Other("Bad origin")));
     });
+}
+
+#[test]
+fn add_content_uploading_blocked() {
+    ExtBuilder::default()
+        .uploading_blocked_status(true)
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(res, Err(Error::<Test>::ContentUploadingBlocked.into()));
+        });
 }
 
 #[test]

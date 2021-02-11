@@ -244,6 +244,7 @@ pub struct ExtBuilder {
     first_content_id: u64,
     first_relationship_id: u64,
     first_metadata_id: u64,
+    uploading_blocked: bool,
 }
 
 impl Default for ExtBuilder {
@@ -256,6 +257,7 @@ impl Default for ExtBuilder {
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
+            uploading_blocked: false,
         }
     }
 }
@@ -281,6 +283,11 @@ impl ExtBuilder {
         self
     }
 
+    pub fn uploading_blocked_status(mut self, uploading_blocked: bool) -> Self {
+        self.uploading_blocked = uploading_blocked;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
@@ -292,7 +299,7 @@ impl ExtBuilder {
             global_quota: self.global_quota,
             data_object_by_content_id: vec![],
             quotas: vec![],
-            uploading_blocked: false,
+            uploading_blocked: self.uploading_blocked,
         }
         .assimilate_storage(&mut t)
         .unwrap();
