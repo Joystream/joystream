@@ -43,19 +43,19 @@ decl_error! {
         /// Expected root or signed origin
         BadOrigin,
 
-        /// Operation Cannot be perfomed with this Actor
+        /// Operation cannot be perfomed with this Actor
         ActorNotAuthorized,
 
         /// This content actor cannot own a channel
         ActorCannotOwnChannel,
 
-        /// Channel Category Does not Exist.
-        ChannelCategoryDoesNotExist,
+        /// A Channel or Video Category does not exist.
+        CategoryDoesNotExist,
 
-        /// Channel Does Not Exist
+        /// Channel coes not exist
         ChannelDoesNotExist,
 
-        /// Curators can only censore non curator group channels
+        /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels
     }
 }

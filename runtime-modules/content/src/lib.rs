@@ -519,7 +519,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_curator_group(
             origin,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -538,7 +538,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
-            Ok(())
         }
 
         /// Remove curator group under given `curator_group_id` from runtime storage
@@ -546,7 +545,7 @@ decl_module! {
         pub fn delete_curator_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -561,13 +560,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-
             // Remove curator group under given curator group id from runtime storage
             <CuratorGroupById<T>>::remove(curator_group_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupDeleted(curator_group_id));
-            Ok(())
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -576,7 +573,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             is_active: bool,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -595,7 +592,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupStatusSet(curator_group_id, is_active));
-            Ok(())
         }
 
         /// Add curator to curator group under given `curator_group_id`
@@ -604,7 +600,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -629,7 +625,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id));
-            Ok(())
         }
 
         /// Remove curator from a given curator group
@@ -638,7 +633,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -660,7 +655,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
-            Ok(())
         }
 
         // TODO: Add Option<reward_account> to ChannelCreationParameters ?
@@ -669,7 +663,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
-        ) -> DispatchResult {
+        ) {
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
                 &actor,
@@ -728,7 +722,6 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
-            Ok(())
         }
 
         // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
@@ -738,7 +731,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
-        ) -> DispatchResult {
+        ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -790,7 +783,6 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::ChannelUpdated(channel_id, channel, params));
-            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -798,7 +790,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-        ) -> DispatchResult {
+        ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -844,7 +836,6 @@ decl_module! {
             // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
 
             Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
-            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -853,7 +844,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
-        ) -> DispatchResult {
+        ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -874,10 +865,9 @@ decl_module! {
             // TODO: unset the reward account ? so no revenue can be earned for censored channels?
 
             // Update the channel
-            ChannelById::<T>::insert(channel_id, channel.clone());
+            ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::ChannelCensored(channel_id, rationale));
-            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -886,7 +876,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             rationale: Vec<u8>,
-        ) -> DispatchResult {
+        ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -905,10 +895,68 @@ decl_module! {
             channel.is_censored = false;
 
             // Update the channel
-            ChannelById::<T>::insert(channel_id, channel.clone());
+            ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::ChannelUncensored(channel_id, rationale));
-            Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            params: ChannelCategoryCreationParameters,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let category_id = Self::next_channel_category_id();
+            NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
+
+            let category = ChannelCategory {};
+            ChannelCategoryById::<T>::insert(category_id, category.clone());
+
+            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, category, params));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category_id: T::ChannelCategoryId,
+            params: ChannelCategoryUpdateParameters,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            let category = Self::ensure_channel_category_exists(&category_id)?;
+
+            Self::deposit_event(RawEvent::ChannelCategoryUpdated(category_id, category, params));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category_id: T::ChannelCategoryId,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_channel_category_exists(&category_id)?;
+
+            ChannelCategoryById::<T>::remove(&category_id);
+
+            Self::deposit_event(RawEvent::ChannelCategoryDeleted(category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1039,34 +1087,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCategoryCreationParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::ChannelCategoryId,
-            params: ChannelCategoryUpdateParameters,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::ChannelCategoryId,
-        ) {
-            Self::not_implemented()?;
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_person(
             origin,
             actor: PersonActor<T::MemberId, T::CuratorId>,
@@ -1180,7 +1200,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `CuratorGroup` under given id exists
-    pub fn ensure_curator_group_under_given_id_exists(
+    fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
     ) -> Result<(), Error<T>> {
         ensure!(
@@ -1191,22 +1211,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `CuratorGroup` under given id exists, return corresponding one
-    pub fn ensure_curator_group_exists(
+    fn ensure_curator_group_exists(
         curator_group_id: &T::CuratorGroupId,
     ) -> Result<CuratorGroup<T>, Error<T>> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
-    }
-
-    /// Ensure all `CuratorGroup`'s under given ids exist
-    pub fn ensure_curator_groups_exist(
-        curator_groups: &BTreeSet<T::CuratorGroupId>,
-    ) -> Result<(), Error<T>> {
-        for curator_group in curator_groups {
-            // Ensure CuratorGroup under given id exists
-            Self::ensure_curator_group_exists(curator_group)?;
-        }
-        Ok(())
     }
 
     fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
@@ -1217,12 +1226,12 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    pub fn ensure_channel_category_exists(
+    fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
         ensure!(
             ChannelCategoryById::<T>::contains_key(channel_category_id),
-            Error::<T>::ChannelCategoryDoesNotExist
+            Error::<T>::CategoryDoesNotExist
         );
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
     }
@@ -1331,8 +1340,16 @@ decl_event!(
         ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),
 
         // Channel Categories
-        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
-        ChannelCategoryUpdated(ChannelCategoryUpdateParameters),
+        ChannelCategoryCreated(
+            ChannelCategoryId,
+            ChannelCategory,
+            ChannelCategoryCreationParameters,
+        ),
+        ChannelCategoryUpdated(
+            ChannelCategoryId,
+            ChannelCategory,
+            ChannelCategoryUpdateParameters,
+        ),
         ChannelCategoryDeleted(ChannelCategoryId),
 
         // Videos

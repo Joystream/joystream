@@ -12,6 +12,10 @@ pub struct CuratorGroup<T: Trait> {
 
     /// Used to count the number of Channels, given curator group owns
     number_of_channels_owned: u32,
+    // IDEA: Give explicit permissions to:
+    // create new categories
+    // restrict censoring to subset of categories
+    // create curator group channels
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
