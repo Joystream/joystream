@@ -197,6 +197,84 @@ fn add_content_global_objects_limit_reached() {
 }
 
 #[test]
+fn delete_content() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let content_id = 1;
+
+        let content_parameters = ContentParameters {
+            content_id,
+            type_id: 1234,
+            size: 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+        
+        TestDataDirectory::add_content(Origin::signed(sender), owner.clone(), vec![content_parameters]).unwrap();
+
+        let res = TestDataDirectory::remove_content(Origin::signed(sender),  owner, vec![content_id]);
+
+        assert!(res.is_ok());
+    });
+}
+
+#[test]
+fn delete_content_id_not_found() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let content_id = 1;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        // Make an attempt to remove content under non existent id
+        let res = TestDataDirectory::remove_content(Origin::signed(sender),  owner, vec![content_id]);
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::CidNotFound.into())
+        );
+    });
+}
+
+#[test]
+fn delete_content_owners_are_not_equal() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let second_owner = StorageObjectOwner::Member(10u64);
+
+        let content_id = 1;
+
+        let content_parameters = ContentParameters {
+            content_id,
+            type_id: 1234,
+            size: 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+        
+        TestDataDirectory::add_content(Origin::signed(sender), owner.clone(), vec![content_parameters]).unwrap();
+
+        // Make an attempt to remove content, providing a wrong origin
+        let res = TestDataDirectory::remove_content(Origin::signed(sender),  second_owner, vec![content_id]);
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::OwnersAreNotEqual.into())
+        );
+    });
+}
+
+
+#[test]
 fn accept_and_reject_content_fail_with_invalid_storage_provider() {
     with_default_mock_builder(|| {
         /*

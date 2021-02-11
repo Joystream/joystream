@@ -226,7 +226,7 @@ impl Quota {
     pub fn release_quota(self, voucher: Voucher) -> Self {
         Self {
             size_used: self.size_used - voucher.size,
-            objects_used: self.objects_used - voucher.objects,
+            // objects_used: self.objects_used - voucher.objects,
             ..self
         }
     }
@@ -627,7 +627,7 @@ impl<T: Trait> Module<T> {
         <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_voucher));
 
         // Update global quota
-        <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_voucher));
+        <GlobalQuota>::put(Self::global_quota().fill_quota(upload_voucher));
     }
 
     // Complete content removal
@@ -648,7 +648,7 @@ impl<T: Trait> Module<T> {
         });
 
         // Update global quota
-        <GlobalQuota>::mutate(|global_quota| global_quota.release_quota(removal_voucher));
+        <GlobalQuota>::put(Self::global_quota().release_quota(removal_voucher));
     }
 
     fn ensure_content_is_valid(
