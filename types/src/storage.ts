@@ -26,6 +26,7 @@ export class ContentId extends Hash {
   }
 }
 
+export class ContentIds extends Vec.with(ContentId) {}
 export class DataObjectTypeId extends u64 {}
 export class DataObjectStorageRelationshipId extends u64 {}
 
@@ -106,6 +107,7 @@ export class UploadingStatus extends bool {}
 
 export const mediaTypes: RegistryTypes = {
   ContentId,
+  ContentIds,
   LiaisonJudgement,
   DataObject,
   DataObjectStorageRelationshipId,

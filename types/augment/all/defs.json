@@ -81,7 +81,9 @@
     "WorkingGroup": {
         "_enum": [
             "Storage",
-            "Content"
+            "Content",
+            "Builder",
+            "Gateway"
         ]
     },
     "SlashingTerms": {
@@ -483,6 +485,7 @@
         "expires_at": "u32"
     },
     "ContentId": "[u8;32]",
+    "ContentIds": "Vec<ContentId>",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",

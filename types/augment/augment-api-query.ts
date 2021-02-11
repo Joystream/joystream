@@ -127,6 +127,61 @@ declare module '@polkadot/api/types/storage' {
        **/
       totalIssuance: AugmentedQuery<ApiType, () => Observable<Balance>>;
     };
+    builderWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>>;
+      /**
+       * The current lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
+      /**
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
+       **/
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>>;
+      /**
+       * The mint currently funding the rewards for this module.
+       **/
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
+      /**
+       * Next identifier value for new worker opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
+      /**
+       * Next identifier for new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
+      /**
+       * Maps identifier to worker opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>>;
+      /**
+       * Opening human readable text length limits
+       **/
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Worker application human readable text length limits
+       **/
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+    };
     content: {
       channelById: AugmentedQuery<ApiType, (arg: ChannelId | AnyNumber | Uint8Array) => Observable<Channel>>;
       channelCategoryById: AugmentedQuery<ApiType, (arg: ChannelCategoryId | AnyNumber | Uint8Array) => Observable<ChannelCategory>>;
@@ -260,10 +315,6 @@ declare module '@polkadot/api/types/storage' {
        **/
       globalQuota: AugmentedQuery<ApiType, () => Observable<Quota>>;
       /**
-       * List of ids known to the system.
-       **/
-      knownContentIds: AugmentedQuery<ApiType, () => Observable<Vec<ContentId>>>;
-      /**
        * Upper bound for the Quota objects number limit.
        **/
       quotaObjectsLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
@@ -366,6 +417,61 @@ declare module '@polkadot/api/types/storage' {
       threadById: AugmentedQuery<ApiType, (arg: ThreadId | AnyNumber | Uint8Array) => Observable<Thread>>;
       threadModerationRationaleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
       threadTitleConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>>;
+      /**
+       * The current lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
+      /**
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
+       **/
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>>;
+      /**
+       * The mint currently funding the rewards for this module.
+       **/
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
+      /**
+       * Next identifier value for new worker opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
+      /**
+       * Next identifier for new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
+      /**
+       * Maps identifier to worker opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>>;
+      /**
+       * Opening human readable text length limits
+       **/
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Worker application human readable text length limits
+       **/
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
     };
     grandpa: {
       /**

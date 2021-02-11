@@ -289,6 +289,9 @@ export interface ContentActor extends Enum {
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
 
+/** @name ContentIds */
+export interface ContentIds extends Vec<ContentId> {}
+
 /** @name ContentParameters */
 export interface ContentParameters extends Struct {
   readonly content_id: ContentId;
@@ -1310,6 +1313,8 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
+  readonly isBuilder: boolean;
+  readonly isGateway: boolean;
 }
 
 /** @name WorkingGroupUnstaker */
