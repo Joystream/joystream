@@ -1,12 +1,11 @@
-use crate::{AccountId, ContentDirectoryWorkingGroupInstance, MemberId, Runtime};
+use crate::{AccountId, ContentDirectoryWorkingGroupInstance, Runtime};
 
 // Alias for content directory working group
 pub(crate) type ContentDirectoryWorkingGroup<T> =
     working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
 
-impl content_directory::ActorAuthenticator for Runtime {
+impl content::ContentActorAuthenticator for Runtime {
     type CuratorId = u64;
-    type MemberId = MemberId;
     type CuratorGroupId = u64;
 
     fn is_lead(account_id: &AccountId) -> bool {

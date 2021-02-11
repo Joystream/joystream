@@ -12,8 +12,8 @@ use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    content, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
+    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
@@ -59,6 +59,10 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
+        content::Module::<Runtime>::on_runtime_upgrade();
+
+        // TODO: storage / data_directory migration or clear all data objects
+
         10_000_000 // TODO: adjust weight
     }
 }

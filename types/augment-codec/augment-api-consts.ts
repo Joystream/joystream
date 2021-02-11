@@ -3,6 +3,7 @@
 
 import { Vec } from '@polkadot/types/codec';
 import { u32, u64 } from '@polkadot/types/primitive';
+import { MaxNumber } from './all';
 import { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
 import { SessionIndex } from '@polkadot/types/interfaces/session';
 import { EraIndex } from '@polkadot/types/interfaces/staking';
@@ -30,6 +31,12 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        * The minimum amount required to keep an account open.
        **/
       existentialDeposit: AugmentedConst<Balance>;
+    };
+    content: {
+      /**
+       * Exports const -  max number of curators per group
+       **/
+      maxNumberOfCuratorsPerGroup: AugmentedConst<MaxNumber>;
     };
     contentDirectoryWorkingGroup: {
       /**

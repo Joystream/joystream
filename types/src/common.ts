@@ -44,8 +44,10 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
   }
 }
 
-export class Credential extends u64 {}
-export class CredentialSet extends JoyBTreeSet(Credential) {}
+export class Url extends Text {}
+
+export class ChannelId extends u64 {}
+export class DAOId extends u64 {}
 
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
@@ -131,14 +133,13 @@ export class SlashingTerms extends JoyEnum({
 } as const) {}
 
 export class MemoText extends Text {}
+
 // @polkadot/types overrides required since migration to Substrate 2.0,
 // see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
 
 export const commonTypes: RegistryTypes = {
-  Credential,
-  CredentialSet,
   BlockAndTime,
   ThreadId,
   PostId,
@@ -150,6 +151,9 @@ export const commonTypes: RegistryTypes = {
   MemoText,
   Address,
   LookupSource,
+  ChannelId,
+  DAOId,
+  Url,
 }
 
 export default commonTypes

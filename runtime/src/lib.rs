@@ -59,13 +59,12 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+use storage::data_directory::Quota;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
-pub use content_directory;
-pub use content_directory::{
-    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
-};
+pub use content;
+pub use content::MaxNumber;
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -368,46 +367,23 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-type EntityId = <Runtime as content_directory::Trait>::EntityId;
-
 parameter_types! {
-    pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const MaxNumberOfClasses: MaxNumber = 100;
-    pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
-    pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
-    pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
-    pub const VecMaxLengthConstraint: VecMaxLength = 200;
-    pub const TextMaxLengthConstraint: TextMaxLength = 5000;
-    pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 500;
+    pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
 }
 
-impl content_directory::Trait for Runtime {
+impl content::Trait for Runtime {
     type Event = Event;
-    type Nonce = u64;
-    type ClassId = u64;
-    type EntityId = u64;
-    type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
-    type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
-    type ClassNameLengthConstraint = ClassNameLengthConstraint;
-    type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
-    type MaxNumberOfClasses = MaxNumberOfClasses;
-    type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
-    type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
-    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
+    type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
+    type ChannelCategoryId = ChannelCategoryId;
+    type VideoId = VideoId;
+    type VideoCategoryId = VideoCategoryId;
+    type PlaylistId = PlaylistId;
+    type PersonId = PersonId;
+    type SeriesId = SeriesId;
+    type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
-    type VecMaxLengthConstraint = VecMaxLengthConstraint;
-    type TextMaxLengthConstraint = TextMaxLengthConstraint;
-    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
-    type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type StorageSystem = data_directory::Module<Self>;
 }
 
 impl hiring::Trait for Runtime {
@@ -450,6 +426,18 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
 }
 
+impl common::MembershipTypes for Runtime {
+    type MemberId = MemberId;
+    type ActorId = ActorId;
+}
+
+impl common::StorageOwnership for Runtime {
+    type ChannelId = ChannelId;
+    type DAOId = DAOId;
+    type ContentId = ContentId;
+    type DataObjectTypeId = DataObjectTypeId;
+}
+
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
@@ -465,21 +453,19 @@ impl memo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const MaxObjectsPerInjection: u32 = 100;
+    pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
-    type DataObjectTypeId = u64;
 }
 
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
-    type ContentId = ContentId;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
+    type DefaultQuota = DefaultQuota;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {
@@ -509,6 +495,12 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
+// The builder working group instance alias.
+pub type BuilderWorkingGroupInstance = working_group::Instance4;
+
+// The gateway working group instance alias.
+pub type GatewayWorkingGroupInstance = working_group::Instance5;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -519,6 +511,16 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<BuilderWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -643,7 +645,7 @@ construct_runtime!(
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
-        ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
@@ -657,5 +659,7 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        BuilderWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );
