@@ -124,7 +124,6 @@ impl EncodedContentData {
 pub fn empty_data_directory_config() -> DataDirectoryConfig {
     DataDirectoryConfig {
         data_object_by_content_id: vec![],
-        known_content_ids: vec![],
         quotas: vec![],
         quota_size_limit_upper_bound: 20000,
         quota_objects_limit_upper_bound: 200,
@@ -149,11 +148,6 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
             .data_objects
             .iter()
             .map(|object| (object.storage_object_owner.clone(), object.quota))
-            .collect(),
-        known_content_ids: content
-            .data_objects
-            .into_iter()
-            .map(|object| object.content_id)
             .collect(),
         quota_size_limit_upper_bound: content.quota_size_limit_upper_bound,
         quota_objects_limit_upper_bound: content.quota_objects_limit_upper_bound,

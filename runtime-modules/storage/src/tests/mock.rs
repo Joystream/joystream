@@ -96,7 +96,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const MaxObjectsPerInjection: u32 = 5;
     pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
@@ -180,7 +179,6 @@ impl data_directory::Trait for Test {
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
     type DefaultQuota = DefaultQuota;
 }
 
@@ -293,7 +291,6 @@ impl ExtBuilder {
             quota_objects_limit_upper_bound: self.quota_objects_limit_upper_bound,
             global_quota: self.global_quota,
             data_object_by_content_id: vec![],
-            known_content_ids: vec![],
             quotas: vec![],
             uploading_blocked: false,
         }
