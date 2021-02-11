@@ -213,10 +213,16 @@ fn delete_content() {
         };
 
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        
-        TestDataDirectory::add_content(Origin::signed(sender), owner.clone(), vec![content_parameters]).unwrap();
 
-        let res = TestDataDirectory::remove_content(Origin::signed(sender),  owner, vec![content_id]);
+        TestDataDirectory::add_content(
+            Origin::signed(sender),
+            owner.clone(),
+            vec![content_parameters],
+        )
+        .unwrap();
+
+        let res =
+            TestDataDirectory::remove_content(Origin::signed(sender), owner, vec![content_id]);
 
         assert!(res.is_ok());
     });
@@ -232,12 +238,10 @@ fn delete_content_id_not_found() {
         let owner = StorageObjectOwner::Member(1u64);
 
         // Make an attempt to remove content under non existent id
-        let res = TestDataDirectory::remove_content(Origin::signed(sender),  owner, vec![content_id]);
+        let res =
+            TestDataDirectory::remove_content(Origin::signed(sender), owner, vec![content_id]);
 
-        assert_eq!(
-            res,
-            Err(Error::<Test>::CidNotFound.into())
-        );
+        assert_eq!(res, Err(Error::<Test>::CidNotFound.into()));
     });
 }
 
@@ -260,19 +264,134 @@ fn delete_content_owners_are_not_equal() {
         };
 
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        
-        TestDataDirectory::add_content(Origin::signed(sender), owner.clone(), vec![content_parameters]).unwrap();
+
+        TestDataDirectory::add_content(
+            Origin::signed(sender),
+            owner.clone(),
+            vec![content_parameters],
+        )
+        .unwrap();
 
         // Make an attempt to remove content, providing a wrong origin
-        let res = TestDataDirectory::remove_content(Origin::signed(sender),  second_owner, vec![content_id]);
+        let res = TestDataDirectory::remove_content(
+            Origin::signed(sender),
+            second_owner,
+            vec![content_id],
+        );
+
+        assert_eq!(res, Err(Error::<Test>::OwnersAreNotEqual.into()));
+    });
+}
+
+#[test]
+fn update_content_uploading_status() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let res = TestDataDirectory::update_content_uploading_status(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            true,
+        );
+
+        assert!(res.is_ok());
+
+        assert_eq!(TestDataDirectory::uploading_blocked(), true);
+    });
+}
+
+#[test]
+fn update_storage_object_owner_quota_objects_limit() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_limit = 20;
+
+        let res = TestDataDirectory::update_storage_object_owner_quota_objects_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_limit,
+        );
+
+        assert!(res.is_ok());
 
         assert_eq!(
-            res,
-            Err(Error::<Test>::OwnersAreNotEqual.into())
+            TestDataDirectory::quotas(owner).objects_limit,
+            new_objects_limit
         );
     });
 }
 
+#[test]
+fn update_storage_object_owner_quota_objects_limit_upper_bound_exceeded() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_limit = TestDataDirectory::quota_objects_limit_upper_bound() + 1;
+
+        // Make an attempt to update storage object owner quota objects limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_quota_objects_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_limit,
+        );
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::QuotaObjectsLimitUpperBoundExceeded.into())
+        );
+    });
+}
+
+#[test]
+fn update_storage_object_owner_quota_size_limit() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_total_size_limit = 1500;
+
+        let res = TestDataDirectory::update_storage_object_owner_quota_size_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_total_size_limit,
+        );
+
+        assert!(res.is_ok());
+
+        assert_eq!(
+            TestDataDirectory::quotas(owner).size_limit,
+            new_objects_total_size_limit
+        );
+    });
+}
+
+#[test]
+fn update_storage_object_owner_quota_size_limit_upper_bound_exceeded() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_total_size_limit = TestDataDirectory::quota_size_limit_upper_bound() + 1;
+
+        // Make an attempt to update storage object owner quota size limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_quota_size_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_total_size_limit,
+        );
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::QuotaSizeLimitUpperBoundExceeded.into())
+        );
+    });
+}
 
 #[test]
 fn accept_and_reject_content_fail_with_invalid_storage_provider() {

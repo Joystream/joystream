@@ -400,7 +400,7 @@ decl_module! {
             new_quota_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
+            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
@@ -427,7 +427,7 @@ decl_module! {
             new_quota_size_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
+            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
@@ -481,7 +481,7 @@ decl_module! {
 
         /// Locks / unlocks content uploading
         #[weight = 10_000_000] // TODO: adjust weight
-        fn update_content_uploading_status(origin, is_blocked: bool) {
+        pub fn update_content_uploading_status(origin, is_blocked: bool) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             // == MUTATION SAFE ==
