@@ -341,7 +341,7 @@ decl_event! {
         VotingPeriodStarted(u64),
 
         /// New candidate announced
-        NewCandidate(MemberId, Balance),
+        NewCandidate(MemberId, AccountId, AccountId, Balance),
 
         /// New council was elected and appointed
         NewCouncilElected(Vec<MemberId>),
@@ -530,7 +530,11 @@ decl_module! {
 
             // prepare candidate
             let candidate =
-                Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
+                Self::prepare_new_candidate(
+                    staking_account_id.clone(),
+                    reward_account_id.clone(),
+                    stake
+                );
 
             //
             // == MUTATION SAFE ==
@@ -543,7 +547,12 @@ decl_module! {
             Mutations::<T>::announce_candidacy(&stage_data, &membership_id, &candidate, &stake);
 
             // emit event
-            Self::deposit_event(RawEvent::NewCandidate(membership_id, stake));
+            Self::deposit_event(RawEvent::NewCandidate(
+                    membership_id,
+                    staking_account_id,
+                    reward_account_id,
+                    stake
+                ));
 
             Ok(())
         }

@@ -614,7 +614,12 @@ pub fn create_category_mock(
         assert_eq!(TestForumModule::next_category_id(), category_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryCreated(category_id))
+            TestEvent::forum_mod(RawEvent::CategoryCreated(
+                category_id,
+                parent,
+                title.clone(),
+                description.clone()
+            ))
         );
     }
     category_id
@@ -637,8 +642,8 @@ pub fn create_thread_mock(
             mock_origin(origin.clone()),
             forum_user_id,
             category_id,
-            title,
-            text,
+            title.clone(),
+            text.clone(),
             poll_data.clone(),
         ),
         result
@@ -647,7 +652,14 @@ pub fn create_thread_mock(
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadCreated(thread_id))
+            TestEvent::forum_mod(RawEvent::ThreadCreated(
+                thread_id,
+                forum_user_id,
+                category_id,
+                title.clone(),
+                text.clone(),
+                poll_data.clone()
+            ))
         );
     }
     thread_id
@@ -678,7 +690,12 @@ pub fn edit_thread_title_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(thread_id,))
+            TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(
+                thread_id,
+                forum_user_id,
+                category_id,
+                new_title.clone()
+            ))
         );
     }
     thread_id
@@ -712,7 +729,11 @@ pub fn delete_thread_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
+            TestEvent::forum_mod(RawEvent::ThreadDeleted(
+                thread_id,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ))
         );
     }
 }
@@ -742,7 +763,12 @@ pub fn move_thread_mock(
         ),);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadMoved(thread_id, new_category_id))
+            TestEvent::forum_mod(RawEvent::ThreadMoved(
+                thread_id,
+                new_category_id,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ))
         );
     }
 }
@@ -758,7 +784,7 @@ pub fn update_thread_archival_status_mock(
     assert_eq!(
         TestForumModule::update_thread_archival_status(
             mock_origin(origin),
-            actor,
+            actor.clone(),
             category_id,
             thread_id,
             new_archival_status
@@ -768,7 +794,12 @@ pub fn update_thread_archival_status_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadUpdated(thread_id, new_archival_status))
+            TestEvent::forum_mod(RawEvent::ThreadUpdated(
+                thread_id,
+                new_archival_status,
+                actor,
+                category_id
+            ))
         );
     }
 }
@@ -788,7 +819,7 @@ pub fn create_post_mock(
             forum_user_id,
             category_id,
             thread_id,
-            text
+            text.clone()
         ),
         result
     );
@@ -796,7 +827,13 @@ pub fn create_post_mock(
         assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostAdded(post_id))
+            TestEvent::forum_mod(RawEvent::PostAdded(
+                post_id,
+                forum_user_id,
+                category_id,
+                thread_id,
+                text
+            ))
         );
     };
     post_id
@@ -829,7 +866,14 @@ pub fn edit_post_text_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostTextUpdated(post_id))
+            TestEvent::forum_mod(RawEvent::PostTextUpdated(
+                post_id,
+                forum_user_id,
+                category_id,
+                thread_id,
+                post_id,
+                new_text
+            ))
         );
     }
     post_id
@@ -903,7 +947,12 @@ pub fn vote_on_poll_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::VoteOnPoll(thread_id, index,))
+            TestEvent::forum_mod(RawEvent::VoteOnPoll(
+                thread_id,
+                index,
+                forum_user_id,
+                category_id
+            ))
         );
     };
     thread_id
@@ -919,7 +968,7 @@ pub fn update_category_archival_status_mock(
     assert_eq!(
         TestForumModule::update_category_archival_status(
             mock_origin(origin),
-            actor,
+            actor.clone(),
             category_id,
             new_archival_status
         ),
@@ -928,7 +977,11 @@ pub fn update_category_archival_status_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryUpdated(category_id, new_archival_status))
+            TestEvent::forum_mod(RawEvent::CategoryUpdated(
+                category_id,
+                new_archival_status,
+                actor
+            ))
         );
     }
 }
@@ -940,14 +993,14 @@ pub fn delete_category_mock(
     result: DispatchResult,
 ) -> () {
     assert_eq!(
-        TestForumModule::delete_category(mock_origin(origin), moderator_id, category_id),
+        TestForumModule::delete_category(mock_origin(origin), moderator_id.clone(), category_id),
         result,
     );
     if result.is_ok() {
         assert!(!<CategoryById<Runtime>>::contains_key(category_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id))
+            TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id, moderator_id))
         );
     };
 }
@@ -974,7 +1027,12 @@ pub fn moderate_thread_mock(
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale))
+            TestEvent::forum_mod(RawEvent::ThreadModerated(
+                thread_id,
+                rationale,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ))
         );
     }
     thread_id
@@ -1004,7 +1062,13 @@ pub fn moderate_post_mock(
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale))
+            TestEvent::forum_mod(RawEvent::PostModerated(
+                post_id,
+                rationale,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id,
+                thread_id
+            ))
         );
     }
 
@@ -1037,6 +1101,7 @@ pub fn set_stickied_threads_mock(
             TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
                 stickied_ids.clone(),
+                PrivilegedActor::Moderator(moderator_id)
             ))
         );
     };
@@ -1070,6 +1135,8 @@ pub fn react_post_mock(
                 forum_user_id,
                 post_id,
                 post_reaction_id,
+                category_id,
+                thread_id
             ))
         );
     };

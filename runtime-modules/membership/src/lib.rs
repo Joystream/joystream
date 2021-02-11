@@ -162,7 +162,7 @@ pub struct StakingAccountMemberBinding<MemberId> {
 }
 
 /// Parameters for the buy_membership extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member root account.
     pub root_account: AccountId,
@@ -187,7 +187,7 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
 }
 
 /// Parameters for the invite_member extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// Inviting member id.
     pub inviting_member_id: MemberId,
@@ -301,7 +301,7 @@ decl_storage! {
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
                 let handle_hash = <Module<T>>::get_handle_hash(
-                    Some(member.handle.clone().into_bytes()),
+                    &Some(member.handle.clone().into_bytes()),
                 ).expect("Importing Member Failed");
 
                 let member_id = <Module<T>>::insert_member(
@@ -323,12 +323,27 @@ decl_event! {
       <T as common::Trait>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
+      BuyMembershipParameters = BuyMembershipParameters<
+          <T as frame_system::Trait>::AccountId,
+          <T as common::Trait>::MemberId,
+        >,
+      <T as common::Trait>::ActorId,
+      InviteMembershipParameters = InviteMembershipParameters<
+          <T as frame_system::Trait>::AccountId,
+          <T as common::Trait>::MemberId,
+        >,
     {
-        MemberInvited(MemberId),
-        MembershipBought(MemberId),
-        MemberProfileUpdated(MemberId),
-        MemberAccountsUpdated(MemberId),
-        MemberVerificationStatusUpdated(MemberId, bool),
+        MemberInvited(MemberId, InviteMembershipParameters),
+        MembershipBought(MemberId, BuyMembershipParameters),
+        MemberProfileUpdated(
+            MemberId,
+            Option<Vec<u8>>,
+            Option<Vec<u8>>,
+            Option<Vec<u8>>,
+            Option<Vec<u8>>,
+        ),
+        MemberAccountsUpdated(MemberId, Option<AccountId>, Option<AccountId>),
+        MemberVerificationStatusUpdated(MemberId, bool, ActorId),
         ReferralCutUpdated(Balance),
         InvitesTransferred(MemberId, MemberId, u32),
         MembershipPriceUpdated(Balance),
@@ -377,7 +392,7 @@ decl_module! {
             );
 
             let handle_hash = Self::get_handle_hash(
-                params.handle,
+                &params.handle,
             )?;
 
             let referrer = params
@@ -414,7 +429,7 @@ decl_module! {
             }
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MembershipBought(member_id));
+            Self::deposit_event(RawEvent::MembershipBought(member_id, params));
         }
 
         /// Update member's all or some of name, handle, avatar and about text.
@@ -450,8 +465,8 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            let new_handle_hash = handle
-                .map(|handle| Self::get_handle_hash(Some(handle)))
+            let new_handle_hash = handle.clone()
+                .map(|handle| Self::get_handle_hash(&Some(handle)))
                 .transpose()?;
 
             //
@@ -468,7 +483,13 @@ decl_module! {
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
 
-                Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
+                Self::deposit_event(RawEvent::MemberProfileUpdated(
+                        member_id,
+                        name,
+                        handle,
+                        avatar_uri,
+                        about
+                    ));
             }
         }
 
@@ -504,16 +525,20 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(root_account) = new_root_account {
+            if let Some(root_account) = new_root_account.clone() {
                 membership.root_account = root_account;
             }
 
-            if let Some(controller_account) = new_controller_account {
+            if let Some(controller_account) = new_controller_account.clone() {
                 membership.controller_account = controller_account;
             }
 
             <MembershipById<T>>::insert(member_id, membership);
-            Self::deposit_event(RawEvent::MemberAccountsUpdated(member_id));
+            Self::deposit_event(RawEvent::MemberAccountsUpdated(
+                    member_id,
+                    new_root_account,
+                    new_controller_account
+                ));
         }
 
         /// Updates member profile verification status. Requires working group member origin.
@@ -545,7 +570,7 @@ decl_module! {
             });
 
             Self::deposit_event(
-                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
+                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified, worker_id)
             );
         }
 
@@ -649,7 +674,7 @@ decl_module! {
             ensure!(membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
 
             let handle_hash = Self::get_handle_hash(
-                params.handle,
+                &params.handle,
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
@@ -694,7 +719,7 @@ decl_module! {
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(member_id));
+            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
@@ -970,9 +995,11 @@ impl<T: Trait> Module<T> {
     }
 
     // Validate handle and return its hash.
-    fn get_handle_hash(handle: Option<Vec<u8>>) -> Result<Vec<u8>, Error<T>> {
+    fn get_handle_hash(handle: &Option<Vec<u8>>) -> Result<Vec<u8>, Error<T>> {
         // Handle is required during registration
-        let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
+        let handle = handle
+            .as_ref()
+            .ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
 
         if handle.is_empty() {
             return Err(Error::<T>::HandleMustBeProvidedDuringRegistration);

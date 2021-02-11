@@ -36,7 +36,7 @@ benchmarks! {
             };
 
             assert_eq!(Module::<T>::constitution(), constitution_info);
-            assert_last_event::<T>(Event::ConstutionAmended(hash).into());
+            assert_last_event::<T>(Event::ConstutionAmended(hash, text).into());
     }
 }
 

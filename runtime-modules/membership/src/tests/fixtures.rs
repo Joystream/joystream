@@ -92,10 +92,10 @@ pub const BOB_ACCOUNT_ID: u64 = 2;
 pub const ALICE_MEMBER_ID: u64 = 0;
 pub const BOB_MEMBER_ID: u64 = 1;
 
-pub fn buy_default_membership_as_alice() -> DispatchResult {
+pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     let info = get_alice_info();
 
-    let params = BuyMembershipParameters {
+    BuyMembershipParameters {
         root_account: ALICE_ACCOUNT_ID,
         controller_account: ALICE_ACCOUNT_ID,
         name: info.name,
@@ -103,8 +103,11 @@ pub fn buy_default_membership_as_alice() -> DispatchResult {
         avatar_uri: info.avatar_uri,
         about: info.about,
         referrer_id: None,
-    };
+    }
+}
 
+pub fn buy_default_membership_as_alice() -> DispatchResult {
+    let params = get_alice_membership_parameters();
     Membership::buy_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
 }
 
@@ -352,8 +355,8 @@ impl Default for InviteMembershipFixture {
 }
 
 impl InviteMembershipFixture {
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let params = InviteMembershipParameters {
+    pub fn get_invite_membership_parameters(&self) -> InviteMembershipParameters<u64, u64> {
+        InviteMembershipParameters {
             inviting_member_id: self.member_id.clone(),
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
@@ -361,7 +364,11 @@ impl InviteMembershipFixture {
             handle: self.handle.clone(),
             avatar_uri: self.avatar_uri.clone(),
             about: self.about.clone(),
-        };
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let params = self.get_invite_membership_parameters();
 
         let actual_result = Membership::invite_member(self.origin.clone().into(), params);
 

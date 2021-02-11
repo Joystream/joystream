@@ -422,7 +422,14 @@ benchmarks! {
                     parent_category.num_direct_subcategories + 1
                 );
             }
-            assert_last_event::<T>(RawEvent::CategoryCreated(category_id).into());
+            assert_last_event::<T>(
+                RawEvent::CategoryCreated(
+                    category_id,
+                    parent_category_id,
+                    title,
+                    description
+                ).into()
+            );
     }
 
     update_category_membership_of_moderator_new{
@@ -541,7 +548,13 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryUpdated(
+                category_id,
+                new_archival_status,
+                PrivilegedActor::Lead
+            ).into()
+        );
     }
 
     update_category_archival_status_moderator{
@@ -580,7 +593,13 @@ benchmarks! {
         };
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
-        assert_last_event::<T>(RawEvent::CategoryUpdated(category_id, new_archival_status).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryUpdated(
+                category_id,
+                new_archival_status,
+                PrivilegedActor::Moderator(moderator_id)
+            ).into()
+        );
     }
 
     delete_category_lead {
@@ -622,7 +641,9 @@ benchmarks! {
         // Ensure category removed successfully
         assert!(!<CategoryById<T>>::contains_key(category_id));
 
-        assert_last_event::<T>(RawEvent::CategoryDeleted(category_id).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryDeleted(category_id, PrivilegedActor::Lead).into()
+        );
     }
 
     delete_category_moderator {
@@ -666,7 +687,9 @@ benchmarks! {
         // Ensure category removed successfully
         assert!(!<CategoryById<T>>::contains_key(category_id));
 
-        assert_last_event::<T>(RawEvent::CategoryDeleted(category_id).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryDeleted(category_id, PrivilegedActor::Moderator(moderator_id)).into()
+        );
     }
 
     create_thread {
@@ -715,7 +738,7 @@ benchmarks! {
             title_hash: T::calculate_hash(&title),
             author_id: forum_user_id.saturated_into(),
             archived: false,
-            poll,
+            poll: poll.clone(),
             // initial posts number
             num_direct_posts: 1,
         };
@@ -732,7 +755,16 @@ benchmarks! {
         assert_eq!(Module::<T>::post_by_id(next_thread_id, next_post_id), new_post);
         assert_eq!(Module::<T>::next_post_id(), next_post_id + T::PostId::one());
 
-        assert_last_event::<T>(RawEvent::ThreadCreated(next_thread_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadCreated(
+                next_thread_id,
+                forum_user_id.saturated_into(),
+                category_id,
+                title,
+                text,
+                poll,
+            ).into()
+        );
     }
 
     edit_thread_title {
@@ -762,7 +794,14 @@ benchmarks! {
         thread.title_hash = T::calculate_hash(&text);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::ThreadTitleUpdated(thread_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadTitleUpdated(
+                thread_id,
+                forum_user_id.saturated_into(),
+                category_id,
+                text
+            ).into()
+        );
     }
 
     update_thread_archival_status_lead {
@@ -787,7 +826,14 @@ benchmarks! {
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadUpdated(
+                thread_id,
+                new_archival_status,
+                PrivilegedActor::Lead,
+                category_id
+            ).into()
+        );
     }
 
     update_thread_archival_status_moderator {
@@ -823,7 +869,14 @@ benchmarks! {
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::ThreadUpdated(thread_id, new_archival_status).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadUpdated(
+                thread_id,
+                new_archival_status,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ).into()
+        );
     }
 
     delete_thread_lead {
@@ -864,7 +917,13 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
 
-        assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadDeleted(
+                thread_id,
+                PrivilegedActor::Lead,
+                category_id
+            ).into()
+        );
     }
 
     delete_thread_moderator {
@@ -912,7 +971,13 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
 
-        assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadDeleted(
+                thread_id,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ).into()
+        );
     }
 
     move_thread_to_category_lead {
@@ -967,7 +1032,14 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::ThreadMoved(thread_id, new_category_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadMoved(
+                thread_id,
+                new_category_id,
+                PrivilegedActor::Lead,
+                category_id
+            ).into()
+        );
     }
 
     move_thread_to_category_moderator {
@@ -1034,7 +1106,14 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::ThreadMoved(thread_id, new_category_id).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadMoved(
+                thread_id,
+                new_category_id,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ).into()
+        );
     }
 
     vote_on_poll {
@@ -1083,7 +1162,14 @@ benchmarks! {
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, j - 1).into());
+        assert_last_event::<T>(
+            RawEvent::VoteOnPoll(
+                thread_id,
+                j - 1,
+                forum_user_id.saturated_into(),
+                category_id
+            ).into()
+        );
     }
 
     moderate_thread_lead {
@@ -1130,7 +1216,14 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
 
-        assert_last_event::<T>(RawEvent::ThreadModerated(thread_id, rationale).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadModerated(
+                thread_id,
+                rationale,
+                PrivilegedActor::Lead,
+                category_id
+            ).into()
+        );
     }
 
     moderate_thread_moderator {
@@ -1184,7 +1277,14 @@ benchmarks! {
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
 
-        assert_last_event::<T>(RawEvent::ThreadModerated(thread_id, rationale).into());
+        assert_last_event::<T>(
+            RawEvent::ThreadModerated(
+                thread_id,
+                rationale,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id
+            ).into()
+        );
     }
 
     add_post {
@@ -1226,7 +1326,15 @@ benchmarks! {
         assert_eq!(Module::<T>::post_by_id(thread_id, post_id), new_post);
         assert_eq!(Module::<T>::next_post_id(), post_id + T::PostId::one());
 
-        assert_last_event::<T>(RawEvent::PostAdded(post_id).into());
+        assert_last_event::<T>(
+            RawEvent::PostAdded(
+                post_id,
+                forum_user_id.saturated_into(),
+                category_id,
+                thread_id,
+                text
+            ).into()
+        );
     }
 
     react_post {
@@ -1258,7 +1366,15 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, post_id, react)
     verify {
-        assert_last_event::<T>(RawEvent::PostReacted(forum_user_id.saturated_into(), post_id, react).into());
+        assert_last_event::<T>(
+            RawEvent::PostReacted(
+                forum_user_id.saturated_into(),
+                post_id,
+                react,
+                category_id,
+                thread_id
+            ).into()
+        );
     }
 
     edit_post_text {
@@ -1298,7 +1414,16 @@ benchmarks! {
         post.text_hash = T::calculate_hash(&new_text);
         assert_eq!(Module::<T>::post_by_id(thread_id, post_id), post);
 
-        assert_last_event::<T>(RawEvent::PostTextUpdated(post_id).into());
+        assert_last_event::<T>(
+            RawEvent::PostTextUpdated(
+                post_id,
+                forum_user_id.saturated_into(),
+                category_id,
+                thread_id,
+                post_id,
+                new_text
+            ).into()
+        );
 
     }
 
@@ -1338,7 +1463,15 @@ benchmarks! {
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
         assert!(!<PostById<T>>::contains_key(thread_id, post_id));
 
-        assert_last_event::<T>(RawEvent::PostModerated(post_id, rationale).into());
+        assert_last_event::<T>(
+            RawEvent::PostModerated(
+                post_id,
+                rationale,
+                PrivilegedActor::Lead,
+                category_id,
+                thread_id
+            ).into()
+        );
     }
 
     moderate_post_moderator {
@@ -1384,7 +1517,15 @@ benchmarks! {
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
         assert!(!<PostById<T>>::contains_key(thread_id, post_id));
 
-        assert_last_event::<T>(RawEvent::PostModerated(post_id, rationale).into());
+        assert_last_event::<T>(
+            RawEvent::PostModerated(
+                post_id,
+                rationale,
+                PrivilegedActor::Moderator(moderator_id),
+                category_id,
+                thread_id
+            ).into()
+        );
     }
 
     set_stickied_threads_lead {
@@ -1421,7 +1562,13 @@ benchmarks! {
         category.sticky_thread_ids = stickied_ids;
         assert_eq!(Module::<T>::category_by_id(category_id), category);
 
-        assert_last_event::<T>(RawEvent::CategoryStickyThreadUpdate(category_id, category.sticky_thread_ids).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryStickyThreadUpdate(
+                category_id,
+                category.sticky_thread_ids,
+                PrivilegedActor::Lead
+            ).into()
+        );
     }
 
     set_stickied_threads_moderator {
@@ -1465,7 +1612,13 @@ benchmarks! {
         category.sticky_thread_ids = stickied_ids;
         assert_eq!(Module::<T>::category_by_id(category_id), category);
 
-        assert_last_event::<T>(RawEvent::CategoryStickyThreadUpdate(category_id, category.sticky_thread_ids).into());
+        assert_last_event::<T>(
+            RawEvent::CategoryStickyThreadUpdate(
+                category_id,
+                category.sticky_thread_ids,
+                PrivilegedActor::Moderator(moderator_id)
+            ).into()
+        );
     }
 }
 

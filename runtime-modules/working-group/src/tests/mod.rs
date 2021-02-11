@@ -48,7 +48,13 @@ fn add_opening_succeeded() {
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::OpeningAdded(opening_id));
+        EventFixture::assert_last_crate_event(RawEvent::OpeningAdded(
+            opening_id,
+            add_opening_fixture.description,
+            add_opening_fixture.opening_type,
+            add_opening_fixture.stake_policy,
+            add_opening_fixture.reward_per_block,
+        ));
     });
 }
 
@@ -143,7 +149,7 @@ fn apply_on_opening_succeeded() {
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::AppliedOnOpening(
-            opening_id,
+            apply_on_opening_fixture.get_apply_on_opening_parameters(),
             application_id,
         ));
     });
@@ -230,7 +236,11 @@ fn fill_opening_succeeded() {
         let mut result_map = BTreeMap::new();
         result_map.insert(application_id, worker_id);
 
-        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(opening_id, result_map));
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(
+            opening_id,
+            result_map,
+            fill_opening_fixture.successful_application_ids,
+        ));
     });
 }
 
@@ -279,7 +289,11 @@ fn fill_opening_succeeded_with_stake() {
         let mut result_map = BTreeMap::new();
         result_map.insert(application_id, worker_id);
 
-        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(opening_id, result_map));
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(
+            opening_id,
+            result_map,
+            fill_opening_fixture.successful_application_ids,
+        ));
     });
 }
 
@@ -519,7 +533,7 @@ fn leave_worker_role_succeeds() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::WorkerLeft(worker_id, None));
     });
 }
 
@@ -675,7 +689,11 @@ fn terminate_worker_role_succeeds() {
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
+            worker_id,
+            terminate_worker_role_fixture.penalty,
+            terminate_worker_role_fixture.rationale,
+        ));
     });
 }
 
@@ -726,7 +744,11 @@ fn terminate_leader_succeeds() {
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(
+            worker_id,
+            terminate_worker_role_fixture.penalty,
+            terminate_worker_role_fixture.rationale,
+        ));
 
         assert_eq!(TestWorkingGroup::current_lead(), None);
     });
@@ -1207,7 +1229,9 @@ fn slash_worker_stake_succeeds() {
 
         slash_stake_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id, penalty));
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(
+            worker_id, penalty, penalty, None,
+        ));
     });
 }
 
@@ -1264,7 +1288,12 @@ fn slash_leader_stake_succeeds() {
 
         slash_stake_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id, penalty));
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(
+            leader_worker_id,
+            penalty,
+            penalty,
+            None,
+        ));
     });
 }
 
@@ -2272,6 +2301,7 @@ fn set_status_text_succeeded() {
         let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&status_text);
         EventFixture::assert_last_crate_event(RawEvent::StatusTextChanged(
             expected_hash.as_ref().to_vec(),
+            Some(status_text),
         ));
     });
 }
@@ -2305,7 +2335,7 @@ fn spend_from_budget_succeeded() {
             .with_amount(amount)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(account_id, amount));
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(account_id, amount, None));
     });
 }
 

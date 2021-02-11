@@ -16,7 +16,18 @@ use crate::{
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, u64, u64, u64, DefaultInstance>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
     ) {
         let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
 
@@ -35,12 +46,12 @@ impl EventFixture {
 }
 
 pub struct AddOpeningFixture {
-    origin: RawOrigin<u64>,
-    description: Vec<u8>,
-    opening_type: OpeningType,
-    starting_block: u64,
-    stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_per_block: Option<u64>,
+    pub origin: RawOrigin<u64>,
+    pub description: Vec<u8>,
+    pub opening_type: OpeningType,
+    pub starting_block: u64,
+    pub stake_policy: Option<StakePolicy<u64, u64>>,
+    pub reward_per_block: Option<u64>,
 }
 
 impl Default for AddOpeningFixture {
@@ -181,18 +192,22 @@ impl ApplyOnOpeningFixture {
         }
     }
 
+    pub fn get_apply_on_opening_parameters(&self) -> ApplyOnOpeningParameters<Test> {
+        ApplyOnOpeningParameters::<Test> {
+            member_id: self.member_id,
+            opening_id: self.opening_id,
+            role_account_id: self.role_account_id,
+            reward_account_id: self.reward_account_id,
+            description: self.description.clone(),
+            stake_parameters: self.stake_parameters.clone(),
+        }
+    }
+
     pub fn call(&self) -> Result<u64, DispatchError> {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
         TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
-            ApplyOnOpeningParameters::<Test> {
-                member_id: self.member_id,
-                opening_id: self.opening_id,
-                role_account_id: self.role_account_id,
-                reward_account_id: self.reward_account_id,
-                description: self.description.clone(),
-                stake_parameters: self.stake_parameters.clone(),
-            },
+            self.get_apply_on_opening_parameters(),
         )?;
 
         Ok(saved_application_next_id)
@@ -234,7 +249,7 @@ impl ApplyOnOpeningFixture {
 pub struct FillOpeningFixture {
     origin: RawOrigin<u64>,
     opening_id: u64,
-    successful_application_ids: BTreeSet<u64>,
+    pub successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
     reward_account_id: u64,
     staking_account_id: Option<u64>,
@@ -541,8 +556,8 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
-    penalty: Option<u64>,
-    rationale: Option<Vec<u8>>,
+    pub penalty: Option<u64>,
+    pub rationale: Option<Vec<u8>>,
 }
 
 impl TerminateWorkerRoleFixture {

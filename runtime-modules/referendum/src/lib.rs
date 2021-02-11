@@ -313,7 +313,7 @@ decl_event! {
         VoteCast(AccountId, Hash, Balance),
 
         /// User revealed his vote
-        VoteRevealed(AccountId, MemberId),
+        VoteRevealed(AccountId, MemberId, Vec<u8>),
 
         /// User released his stake
         StakeReleased(AccountId),
@@ -468,7 +468,7 @@ decl_module! {
             Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id, salt));
 
             Ok(())
         }

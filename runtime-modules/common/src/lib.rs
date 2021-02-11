@@ -29,7 +29,7 @@ pub trait Trait: frame_system::Trait {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + Eq;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
