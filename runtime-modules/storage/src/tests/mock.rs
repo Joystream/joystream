@@ -11,7 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-use crate::data_directory::Quota;
+pub use crate::data_directory::Quota;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
@@ -285,6 +285,11 @@ impl ExtBuilder {
 
     pub fn uploading_blocked_status(mut self, uploading_blocked: bool) -> Self {
         self.uploading_blocked = uploading_blocked;
+        self
+    }
+
+    pub fn global_quota(mut self, global_quota: Quota) -> Self {
+        self.global_quota = global_quota;
         self
     }
 

@@ -82,6 +82,121 @@ fn add_content_uploading_blocked() {
 }
 
 #[test]
+fn add_content_size_limit_reached() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: DefaultQuota::get().size_limit + 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Make an attempt to register a content, when uploading is blocked.
+        let res =
+            TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
+        assert_eq!(res, Err(Error::<Test>::QuotaSizeLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn add_content_objects_limit_reached() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let mut content = vec![];
+
+        for i in 0..=DefaultQuota::get().objects_limit {
+            let content_parameters = ContentParameters {
+                content_id: i + 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+            content.push(content_parameters);
+        }
+
+        // Make an attempt to register a content, when uploading is blocked.
+        let res = TestDataDirectory::add_content(Origin::signed(sender), owner, content);
+        assert_eq!(res, Err(Error::<Test>::QuotaObjectsLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn add_content_global_size_limit_reached() {
+    let global_quota_size_limit = 0;
+    let global_quota_objects_limit = 50;
+
+    ExtBuilder::default()
+        .global_quota(Quota::new(
+            global_quota_size_limit,
+            global_quota_objects_limit,
+        ))
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: global_quota_size_limit + 1,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(res, Err(Error::<Test>::GlobalQuotaSizeLimitExceeded.into()));
+        });
+}
+
+#[test]
+fn add_content_global_objects_limit_reached() {
+    let global_quota_size_limit = 50000;
+    let global_quota_objects_limit = 0;
+
+    ExtBuilder::default()
+        .global_quota(Quota::new(
+            global_quota_size_limit,
+            global_quota_objects_limit,
+        ))
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(
+                res,
+                Err(Error::<Test>::GlobalQuotaObjectsLimitExceeded.into())
+            );
+        });
+}
+
+#[test]
 fn accept_and_reject_content_fail_with_invalid_storage_provider() {
     with_default_mock_builder(|| {
         /*
