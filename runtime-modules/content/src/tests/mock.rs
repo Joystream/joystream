@@ -157,6 +157,10 @@ impl ContentActorAuthenticator for Test {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
         *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
     }
+
+    fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
+        *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
+    }
 }
 
 pub struct MockStorageSystem {}

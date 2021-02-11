@@ -608,6 +608,9 @@ decl_module! {
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
+            // Ensure that curator_id is infact a worker in content working group
+            ensure_is_valid_curator_id::<T>(&curator_id)?;
+
             // Ensure max number of curators per group limit not reached yet
             curator_group.ensure_max_number_of_curators_limit_not_reached()?;
 

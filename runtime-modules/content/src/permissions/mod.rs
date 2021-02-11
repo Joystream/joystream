@@ -44,11 +44,22 @@ pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
     /// Authorize actor as lead
     fn is_lead(account_id: &Self::AccountId) -> bool;
 
+    /// Checks if Id represents a worker id in the working group
+    fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool;
+
     /// Authorize actor as curator
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
 
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
+}
+
+pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Result<(), Error<T>> {
+    ensure!(
+        T::is_valid_curator_id(curator_id),
+        Error::<T>::CuratorIdInvalid
+    );
+    Ok(())
 }
 
 /// Ensure curator authorization performed succesfully

@@ -31,7 +31,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
 
 impl<T: Trait> CuratorGroup<T> {
     /// Check if `CuratorGroup` contains curator under given `curator_id`
-    pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
+    pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
     }
 
@@ -93,7 +93,7 @@ impl<T: Trait> CuratorGroup<T> {
         curator_id: &T::CuratorId,
     ) -> Result<(), Error<T>> {
         ensure!(
-            self.get_curators().contains(curator_id),
+            self.has_curator(curator_id),
             Error::<T>::CuratorIsNotAMemberOfGivenCuratorGroup
         );
         Ok(())
@@ -105,7 +105,7 @@ impl<T: Trait> CuratorGroup<T> {
         curator_id: &T::CuratorId,
     ) -> Result<(), Error<T>> {
         ensure!(
-            !self.get_curators().contains(curator_id),
+            !self.has_curator(curator_id),
             Error::<T>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
         Ok(())

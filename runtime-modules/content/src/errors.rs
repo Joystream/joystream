@@ -28,6 +28,9 @@ decl_error! {
         /// Curator group is not active
         CuratorGroupIsNotActive,
 
+        /// Curator id is not a worker id in content working group
+        CuratorIdInvalid,
+
         // Authentication Errors
         // ---------------------
 
