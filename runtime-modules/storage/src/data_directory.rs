@@ -107,6 +107,9 @@ decl_error! {
 
         /// Content uploading blocked.
         ContentUploadingBlocked,
+
+        /// Provided owner should be equal o the data object owner under given content id
+        OwnersAreNotEqual
     }
 }
 
@@ -272,6 +275,7 @@ decl_event! {
         StorageProviderId = StorageProviderId<T>,
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
+        ContentIds = Vec<ContentId<T>>,
         QuotaLimit = u64,
         UploadingStatus = bool
     {
@@ -280,6 +284,12 @@ decl_event! {
         /// - Content parameters representation.
         /// - StorageObjectOwner enum.
         ContentAdded(Content, StorageObjectOwner),
+
+        /// Emits on content removal.
+        /// Params:
+        /// - Content parameters representation.
+        /// - StorageObjectOwner enum.
+        ContentRemoved(ContentIds, StorageObjectOwner),
 
         /// Emits when the storage provider accepts a content.
         /// Params:
@@ -356,6 +366,30 @@ decl_module! {
             Self::upload_content(owner_quota, upload_voucher, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
+        }
+
+        /// Remove the content from the system.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_content(
+            origin,
+            owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            content_ids: Vec<ContentId<T>>
+        ) {
+
+            // Ensure given origin can perform operation under specific storage object owner
+            Self::ensure_storage_object_owner_origin(origin, &owner)?;
+
+            // Ensure content under given content ids can be successfully removed
+            let content = Self::ensure_content_can_be_removed(&content_ids, &owner)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Let's remove a content
+            Self::delete_content(&owner, &content_ids, content);
+
+            Self::deposit_event(RawEvent::ContentRemoved(content_ids, owner));
         }
 
         /// Updates storage object owner quota objects limit. Requires leader privileges.
@@ -521,6 +555,35 @@ impl<T: Trait> Module<T> {
         })
     }
 
+    // Ensure content under given content ids can be successfully removed
+    fn ensure_content_can_be_removed(
+        content_ids: &[T::ContentId],
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+    ) -> Result<Vec<DataObject<T>>, Error<T>> {
+        let mut content = Vec::new();
+        for content_id in content_ids {
+            let data_object =
+                Self::data_object_by_content_id(content_id).ok_or(Error::<T>::CidNotFound)?;
+            ensure!(data_object.owner == *owner, Error::<T>::OwnersAreNotEqual);
+            content.push(data_object);
+        }
+
+        Ok(content)
+    }
+
+    fn calculate_content_voucher(content: Vec<DataObject<T>>) -> Voucher {
+        let content_length = content.len() as u64;
+
+        let content_size = content
+            .into_iter()
+            .fold(0, |total_size, content| total_size + content.size);
+
+        Voucher {
+            size: content_size,
+            objects: content_length,
+        }
+    }
+
     // Ensures global quota constraints satisfied.
     fn ensure_global_quota_constraints_satisfied(upload_voucher: Voucher) -> DispatchResult {
         let global_quota_voucher = Self::global_quota().calculate_voucher();
@@ -565,6 +628,27 @@ impl<T: Trait> Module<T> {
 
         // Update global quota
         <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_voucher));
+    }
+
+    // Complete content removal
+    fn delete_content(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content_ids: &[T::ContentId],
+        content: Vec<DataObject<T>>,
+    ) {
+        let removal_voucher = Self::calculate_content_voucher(content);
+
+        for content_id in content_ids {
+            <DataObjectByContentId<T>>::remove(content_id);
+        }
+
+        // Updade owner quota.
+        <Quotas<T>>::mutate(owner, |owner_quota| {
+            owner_quota.release_quota(removal_voucher)
+        });
+
+        // Update global quota
+        <GlobalQuota>::mutate(|global_quota| global_quota.release_quota(removal_voucher));
     }
 
     fn ensure_content_is_valid(
@@ -640,12 +724,42 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     ) -> DispatchResult {
         Self::ensure_content_is_valid(&content)?;
 
-        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+        Self::ensure_uploading_is_not_blocked()?;
 
         let owner_quota = Self::get_quota(&owner);
+
+        // Ensure owner quota constraints satisfied.
+        // Calculate upload voucher
         let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
 
+        // Ensure global quota constraints satisfied.
+        Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
+
+        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Let's create the entry then
+
         Self::upload_content(owner_quota, upload_voucher, liaison, content, owner);
+        Ok(())
+    }
+
+    fn atomically_remove_content(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content_ids: &[T::ContentId],
+    ) -> DispatchResult {
+        // Ensure content under given content ids can be successfully removed
+        let content = Self::ensure_content_can_be_removed(content_ids, owner)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Let's remove a content
+        Self::delete_content(owner, content_ids, content);
         Ok(())
     }
 
@@ -653,9 +767,23 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> DispatchResult {
+        Self::ensure_uploading_is_not_blocked()?;
+
         T::StorageProviderHelper::get_random_storage_provider()?;
         let owner_quota = Self::get_quota(&owner);
+
+        // Ensure owner quota constraints satisfied.
         Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
         Self::ensure_content_is_valid(&content)
+    }
+
+    fn can_remove_content(
+        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        content_ids: &[ContentId<T>],
+    ) -> DispatchResult {
+        // Ensure content under given content ids can be successfully removed
+        Self::ensure_content_can_be_removed(content_ids, &owner)?;
+
+        Ok(())
     }
 }
