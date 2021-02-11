@@ -27,3 +27,7 @@ yarn
 ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
 
 yarn tsc --build tsconfig.json
+
+# NOTE: hydra-processor will be updated! if it fail which means it is not updated yet so please manually edit 
+# generated/hydra-processor/tsconfig.json by update hydra-processor tsconfig file by setting include = ["index.js"] and root="." 
+(cd ./generated/hydra-processor && rm -rf lib && yarn tsc --build tsconfig.json)

@@ -10,6 +10,9 @@ cd $SCRIPT_PATH
 
 export TYPEORM_DATABASE=${PROCESSOR_DB_NAME:=query_node_processor}
 
-cd ./generated/indexer
-yarn
-DEBUG=${DEBUG} yarn start:processor --env ../../../.env
+cd ./generated/hydra-processor
+
+DEBUG=* node ./lib/index.js run \
+  --mappings ../../../lib/mappings \
+  --env ../../../.env \
+  --entities ../../../lib/generated/graphql-server/src/modules/**/*.model.js
