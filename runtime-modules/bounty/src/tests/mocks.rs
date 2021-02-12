@@ -150,6 +150,9 @@ impl crate::WeightInfo for () {
     fn withdraw_creator_funding_by_member() -> u64 {
         0
     }
+    fn announce_work_entry() -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

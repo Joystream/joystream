@@ -16,7 +16,9 @@
 //! - [withdraw_member_funding](./struct.Module.html#method.withdraw_member_funding) - withdraw
 //! funding for a failed bounty.
 //! - [withdraw_creator_funding](./struct.Module.html#method.withdraw_creator_funding) - withdraw
-//! funding for a failed or canceled bounty..
+//! funding for a failed or canceled bounty.
+//! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
+//! work entry for a successful bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -43,6 +45,7 @@ pub trait WeightInfo {
     fn withdraw_member_funding() -> Weight;
     fn withdraw_creator_funding_by_council() -> Weight;
     fn withdraw_creator_funding_by_member() -> Weight;
+    fn announce_work_entry() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -727,8 +730,15 @@ decl_module! {
             }
         }
 
-        /// Withdraw creator funding.
-        #[weight = 10_000_000]
+        /// Announce work entry for a successful bounty.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::announce_work_entry()]
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,

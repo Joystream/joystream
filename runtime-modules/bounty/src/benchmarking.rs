@@ -19,7 +19,7 @@ use membership::Module as Membership;
 
 use crate::{
     BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, Call, Event,
-    Module, Trait,
+    Module, Trait, WorkEntries,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -332,8 +332,6 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        T::CouncilBudgetManager::set_budget(cherry);
-
         let creator = BountyCreator::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
@@ -365,6 +363,44 @@ benchmarks! {
     verify {
         assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
+    }
+
+    announce_work_entry {
+        let max_amount: BalanceOf<T> = 100.into();
+        let creator_funding: BalanceOf<T> = 100.into();
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        let creator = BountyCreator::Member(member_id);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            creator_funding,
+            creator: creator.clone(),
+            max_amount,
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            params,
+            Vec::new()
+        ).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, Some(account_id.clone()))
+    verify {
+        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+
+        assert!(WorkEntries::<T>::contains_key(entry_id));
+        assert_last_event::<T>(
+            Event::<T>::WorkEntryAnnounced(entry_id, bounty_id, member_id, Some(account_id)).into()
+        );
     }
 }
 
@@ -434,6 +470,13 @@ mod tests {
     fn withdraw_creator_funding_by_member() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_creator_funding_by_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn announce_work_entry() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_announce_work_entry::<Test>());
         });
     }
 }
