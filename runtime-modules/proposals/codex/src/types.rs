@@ -23,6 +23,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as frame_system::Trait>::AccountId,
     working_group::WorkerId<T>,
     working_group::OpeningId,
+    blog::PostId,
 >;
 
 /// Kind of Balance for `Update Working Group Budget`.
@@ -38,7 +39,7 @@ pub enum BalanceKind {
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
-pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
+pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
 
@@ -103,10 +104,22 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
 
     /// `Set Referral Cut` proposal
     SetReferralCut(Balance),
+
+    /// `Create Blog Post` proposal
+    CreateBlogPost(Vec<u8>, Vec<u8>),
+
+    /// `Edit Blog Post` proposal
+    EditBlogPost(PostId, Option<Vec<u8>>, Option<Vec<u8>>),
+
+    /// `Lock Blog Post` proposal
+    LockBlogPost(PostId),
+
+    /// `Unlock Blog Post` proposal
+    UnlockBlogPost(PostId),
 }
 
-impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId> Default
-    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId>
+impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, ProposalId> Default
+    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, ProposalId>
 {
     fn default() -> Self {
         ProposalDetails::Signal(b"invalid proposal details".to_vec())

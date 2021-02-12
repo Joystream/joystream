@@ -53,6 +53,14 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.set_referral_cut_proposal;
     pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.set_invitation_count_proposal;
+    pub CreateBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.create_blog_post_proposal;
+    pub EditBlogPostProoposalParamters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.edit_blog_post_proposal;
+    pub LockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.lock_blog_post_proposal;
+    pub UnlockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.unlock_blog_post_proposal;
 }
 
 ///////////
@@ -78,6 +86,10 @@ struct AllProposalsParameters {
     pub set_membership_lead_invitation_quota_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_referral_cut_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_invitation_count_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub create_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub edit_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub lock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -173,7 +185,11 @@ fn convert_json_object_to_proposal_parameters(
             set_membership_lead_invitation_quota_proposal
         );
         init_proposal_parameter_object!(params, jo.clone(), set_referral_cut_proposal);
-        init_proposal_parameter_object!(params, jo, set_invitation_count_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), set_invitation_count_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), create_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), edit_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo, unlock_blog_post_proposal);
     }
 
     params
@@ -304,5 +320,9 @@ fn default_parameters() -> AllProposalsParameters {
             defaults::set_membership_lead_invitation_quota_proposal(),
         set_referral_cut_proposal: defaults::set_referral_cut_proposal(),
         set_invitation_count_proposal: defaults::set_invitation_count_proposal(),
+        create_blog_post_proposal: defaults::create_blog_post_proposal(),
+        edit_blog_post_proposal: defaults::edit_blog_post_proposal(),
+        lock_blog_post_proposal: defaults::lock_blog_post_proposal(),
+        unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
     }
 }
