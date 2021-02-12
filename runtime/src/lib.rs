@@ -643,7 +643,7 @@ impl membership::Trait for Runtime {
 
 parameter_types! {
     pub const DefaultInitialInvitationBalance: Balance = 100;
-    pub const MaxCategoryDepth: u64 = 5;
+    pub const MaxCategoryDepth: u64 = 6;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
@@ -832,6 +832,7 @@ macro_rules! call_wg {
 }
 
 impl proposals_codex::Trait for Runtime {
+    type Event = Event;
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
@@ -956,7 +957,7 @@ construct_runtime!(
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Event<T>},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},

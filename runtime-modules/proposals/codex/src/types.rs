@@ -28,7 +28,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 
 /// Kind of Balance for `Update Working Group Budget`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
 pub enum BalanceKind {
     /// Increasing Working Group budget decreasing Council budget
     Positive,
@@ -38,7 +38,7 @@ pub enum BalanceKind {
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -148,7 +148,7 @@ pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
 
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct TerminateRoleParameters<WorkerId, Balance> {
     /// Worker identifier.
     pub worker_id: WorkerId,
@@ -162,7 +162,7 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
 
 /// Parameters for the 'Fill Working Group Lead' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct FillOpeningParameters {
     /// Identifier for opening in group.
     pub opening_id: working_group::OpeningId,
@@ -176,7 +176,7 @@ pub struct FillOpeningParameters {
 
 /// Parameters for the 'Create Working Group Lead Opening' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct CreateOpeningParameters<BlockNumber, Balance> {
     /// Opening description.
     pub description: Vec<u8>,

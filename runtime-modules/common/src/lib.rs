@@ -62,7 +62,7 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 
 /// Parameters for the 'Funding Request' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct FundingRequestParameters<Balance, AccountId> {
     /// Single reciever account of funding request
     pub account: AccountId,

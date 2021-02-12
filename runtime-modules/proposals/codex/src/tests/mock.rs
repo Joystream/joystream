@@ -1,7 +1,9 @@
 #![cfg(test)]
 
-use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types, weights::Weight};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::{
+    impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, weights::Weight,
+};
 pub use frame_system;
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
@@ -35,6 +37,29 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+}
+
+mod proposals_codex_mod {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        proposals_codex_mod<T>,
+        frame_system<T>,
+        balances<T>,
+        staking<T>,
+        council<T>,
+        proposals_discussion<T>,
+        proposals_engine<T>,
+        referendum Instance0 <T>,
+        membership<T>,
+        working_group Instance0 <T>,
+        working_group Instance1 <T>,
+        working_group Instance2 <T>,
+        working_group Instance3 <T>,
+        working_group Instance4 <T>,
+    }
 }
 
 impl_outer_dispatch! {
@@ -111,7 +136,7 @@ impl membership::WeightInfo for Weights {
 }
 
 impl membership::Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -166,7 +191,7 @@ parameter_types! {
 impl balances::Trait for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -185,7 +210,7 @@ parameter_types! {
 pub struct MockProposalsEngineWeight;
 
 impl proposals_engine::Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type ProposerOriginValidator = ();
     type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
@@ -277,7 +302,7 @@ parameter_types! {
 pub struct MockProposalsDiscussionWeight;
 
 impl proposals_discussion::Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type AuthorOriginValidator = ();
     type CouncilOriginValidator = ();
     type ThreadId = u64;
@@ -327,7 +352,7 @@ parameter_types! {
 
 pub struct WorkingGroupWeightInfo;
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -410,7 +435,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -421,7 +446,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
 }
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -432,7 +457,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Test {
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -463,7 +488,7 @@ impl staking::Trait for Test {
     type UnixTime = Timestamp;
     type CurrencyToVote = ();
     type RewardRemainder = ();
-    type Event = ();
+    type Event = TestEvent;
     type Slash = ();
     type Reward = ();
     type SessionsPerEra = SessionsPerEra;
@@ -542,6 +567,7 @@ macro_rules! call_wg {
 }
 
 impl crate::Trait for Test {
+    type Event = TestEvent;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
@@ -596,7 +622,7 @@ parameter_types! {
 pub type ReferendumInstance = referendum::Instance0;
 
 impl council::Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -680,7 +706,7 @@ parameter_types! {
 }
 
 impl referendum::Trait<ReferendumInstance> for Test {
-    type Event = ();
+    type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -889,7 +915,7 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
@@ -927,7 +953,19 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    t.into()
+    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+
+    // Make sure we are not in block 1 where no events are emitted
+    // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
+    result.execute_with(|| {
+        let mut block_number = frame_system::Module::<Test>::block_number();
+        <System as OnFinalize<u64>>::on_finalize(block_number);
+        block_number = block_number + 1;
+        System::set_block_number(block_number);
+        <System as OnInitialize<u64>>::on_initialize(block_number);
+    });
+
+    result
 }
 
 pub type Staking = staking::Module<Test>;
