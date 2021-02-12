@@ -32,6 +32,10 @@ mod benchmarking;
 // TODO: add max entries limit
 // TODO: add more fine-grained errors.
 // TODO: add bounty milestones module comments
+// TODO: add working stake unstaking period.
+// TODO: prevent bounty removal with active entries
+// TODO: double map bounty-entry
+// TODO: add bounty stage test for entry withdrawal
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -370,13 +374,20 @@ decl_event! {
         /// A bounty was removed.
         BountyRemoved(BountyId),
 
-        /// Work entry announced.
+        /// Work entry was announced.
         /// Params:
-        /// - created entry ID
         /// - bounty ID
+        /// - created entry ID
         /// - entrant member ID
         /// - optional staking account ID
-        WorkEntryAnnounced(WorkEntryId, BountyId, MemberId, Option<AccountId>),
+        WorkEntryAnnounced(BountyId, WorkEntryId, MemberId, Option<AccountId>),
+
+        /// Work entry was withdrawn.
+        /// Params:
+        /// - bounty ID
+        /// - created entry ID
+        /// - entrant member ID
+        WorkEntryWithdrawn(BountyId, WorkEntryId, MemberId),
     }
 }
 
@@ -424,6 +435,12 @@ decl_error! {
 
         /// No staking account was provided.
         NoStakingAccountProvided,
+
+        /// Work entry doesnt exist.
+        WorkEntryDoesntExist,
+
+        /// Work entry doesn't match the bounty.
+        InvalidEntryForBounty, //TODO: test or consider removing in case of bounty-entry double map
     }
 }
 
@@ -781,11 +798,42 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::WorkEntryAnnounced(
-                entry_id,
                 bounty_id,
+                entry_id,
                 member_id,
                 staking_account_id,
             ));
+        }
+
+        /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
+        #[weight = 100000000]
+        pub fn withdraw_work_entry(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+            entry_id: T::WorkEntryId,
+        ) {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::WorkSubmission),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+
+            ensure!(bounty_id == entry.bounty_id, Error::<T>::InvalidEntryForBounty);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <WorkEntries<T>>::remove(entry_id);
+
+            Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
         }
     }
 }
@@ -1243,5 +1291,17 @@ impl<T: Trait> Module<T> {
             // No stake required
             Ok(None)
         }
+    }
+
+    // Verifies work entry existence and retrieves an entry from the storage.
+    fn ensure_work_entry_exists(entry_id: &T::WorkEntryId) -> Result<WorkEntry<T>, DispatchError> {
+        ensure!(
+            <WorkEntries<T>>::contains_key(entry_id),
+            Error::<T>::WorkEntryDoesntExist
+        );
+
+        let entry = <WorkEntries<T>>::get(entry_id);
+
+        Ok(entry)
     }
 }

@@ -491,3 +491,52 @@ impl AnnounceWorkEntryFixture {
         }
     }
 }
+
+pub struct WithdrawWorkEntryFixture {
+    origin: RawOrigin<u128>,
+    entry_id: u64,
+    bounty_id: u64,
+    member_id: u64,
+}
+
+impl WithdrawWorkEntryFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            entry_id: 1,
+            bounty_id: 1,
+            member_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_entry_id(self, entry_id: u64) -> Self {
+        Self { entry_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::withdraw_work_entry(
+            self.origin.clone().into(),
+            self.member_id,
+            self.bounty_id,
+            self.entry_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::WorkEntries<Test>>::contains_key(&self.entry_id));
+        }
+    }
+}
