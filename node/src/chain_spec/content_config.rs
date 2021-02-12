@@ -1,7 +1,7 @@
 use codec::Decode;
 use node_runtime::{
     common::storage::StorageObjectOwner,
-    data_directory::{DataObject, Quota},
+    data_directory::*,
     ChannelId, ContentId, DAOId, DataDirectoryConfig, MemberId, Runtime,
 };
 use serde::Deserialize;
@@ -125,10 +125,10 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
     DataDirectoryConfig {
         data_object_by_content_id: vec![],
         quotas: vec![],
-        quota_size_limit_upper_bound: 20000,
-        quota_objects_limit_upper_bound: 200,
-        global_quota: Quota::new(2000000, 2000),
-        uploading_blocked: false,
+        quota_size_limit_upper_bound: DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
+        quota_objects_limit_upper_bound: DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
+        global_quota: DEFAULT_GLOBAL_QUOTA,
+        uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
     }
 }
 

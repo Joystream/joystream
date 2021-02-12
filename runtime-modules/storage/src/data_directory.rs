@@ -40,6 +40,11 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
+pub const DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
+pub const DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
+pub const DEFAULT_GLOBAL_QUOTA: Quota = Quota::new(2000000, 2000);
+pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
+
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
@@ -255,16 +260,16 @@ decl_storage! {
             map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Quota;
 
         /// Upper bound for the Quota size limit.
-        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64;
+        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND;
 
         /// Upper bound for the Quota objects number limit.
-        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64;
+        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND;
 
         /// Global quota.
-        pub GlobalQuota get(fn global_quota) config(): Quota;
+        pub GlobalQuota get(fn global_quota) config(): Quota = DEFAULT_GLOBAL_QUOTA;
 
         /// If all new uploads blocked
-        pub UploadingBlocked get(fn uploading_blocked) config(): bool;
+        pub UploadingBlocked get(fn uploading_blocked) config(): bool = DEFAULT_UPLOADING_BLOCKED_STATUS;
     }
 }
 
@@ -493,6 +498,26 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn initialize_data_directory(
+        quotas: Vec<(
+            StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            Quota,
+        )>,
+        quota_size_limit_upper_bound: u64,
+        quota_objects_limit_upper_bound: u64,
+        global_quota: Quota,
+        uploading_blocked: bool,
+    ) {
+        for (storage_object_owner, quota) in quotas {
+            <Quotas<T>>::insert(storage_object_owner, quota);
+        }
+
+        <QuotaSizeLimitUpperBound>::put(quota_size_limit_upper_bound);
+        <QuotaObjectsLimitUpperBound>::put(quota_objects_limit_upper_bound);
+        <GlobalQuota>::put(global_quota);
+        <UploadingBlocked>::put(uploading_blocked);
+    }
+
     // Ensure given origin can perform operation under specific storage object owner
     fn ensure_storage_object_owner_origin(
         origin: T::Origin,

@@ -278,14 +278,14 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            quota_objects_limit_upper_bound: 200,
-            quota_size_limit_upper_bound: 20000,
-            global_quota: Quota::new(2000000, 2000),
+            quota_objects_limit_upper_bound: DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
+            quota_size_limit_upper_bound: DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
+            global_quota: DEFAULT_GLOBAL_QUOTA,
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
-            uploading_blocked: false,
+            uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
 }
