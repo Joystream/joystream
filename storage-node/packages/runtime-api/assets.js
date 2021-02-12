@@ -44,7 +44,7 @@ class AssetsApi {
    */
   async getDataObject(contentId) {
     contentId = parseContentId(contentId)
-    return this.base.api.query.dataDirectory.dataObjectByContentId(contentId)
+    return this.base.api.query.dataDirectory.DataByContentId(contentId)
   }
 
   /*

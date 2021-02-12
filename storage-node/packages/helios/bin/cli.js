@@ -30,7 +30,7 @@ function makeAssetUrl(contentId, source) {
 }
 
 async function assetRelationshipState(api, contentId, providers) {
-  const dataObject = await api.query.dataDirectory.dataObjectByContentId(contentId)
+  const dataObject = await api.query.dataDirectory.DataByContentId(contentId)
 
   const relationshipIds = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId)
 

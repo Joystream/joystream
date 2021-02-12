@@ -1790,8 +1790,8 @@ export class Api {
     return this.sendContentDirectoryTransaction(updateOperations)
   }
 
-  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this.api.query.dataDirectory.DataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
   }
 

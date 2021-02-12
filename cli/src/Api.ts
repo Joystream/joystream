@@ -527,8 +527,8 @@ export default class Api {
     return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
   }
 
-  async dataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this._api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+  async DataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this._api.query.dataDirectory.DataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
   }
 

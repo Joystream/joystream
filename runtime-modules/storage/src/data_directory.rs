@@ -247,7 +247,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(fn data_object_by_content_id) config():
+        pub DataByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
 
         /// Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
@@ -620,7 +620,7 @@ impl<T: Trait> Module<T> {
                 ipfs_content_id: content.ipfs_content_id,
             };
 
-            <DataObjectByContentId<T>>::insert(content.content_id, data);
+            <DataByContentId<T>>::insert(content.content_id, data);
         }
 
         // Updade or create owner quota.
@@ -639,7 +639,7 @@ impl<T: Trait> Module<T> {
         let removal_voucher = Self::calculate_content_voucher(content);
 
         for content_id in content_ids {
-            <DataObjectByContentId<T>>::remove(content_id);
+            <DataByContentId<T>>::remove(content_id);
         }
 
         // Updade owner quota.
@@ -661,7 +661,7 @@ impl<T: Trait> Module<T> {
             );
 
             ensure!(
-                !<DataObjectByContentId<T>>::contains_key(&content.content_id),
+                !<DataByContentId<T>>::contains_key(&content.content_id),
                 Error::<T>::DataObjectAlreadyAdded
             );
         }
@@ -683,7 +683,7 @@ impl<T: Trait> Module<T> {
         );
 
         data.liaison_judgement = judgement;
-        <DataObjectByContentId<T>>::insert(content_id, data);
+        <DataByContentId<T>>::insert(content_id, data);
 
         Ok(())
     }
