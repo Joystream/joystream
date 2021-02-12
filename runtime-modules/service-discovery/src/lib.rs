@@ -94,7 +94,8 @@ decl_storage! {
 decl_event! {
     /// _Service discovery_ events
     pub enum Event<T> where
-        StorageProviderId = StorageProviderId<T>
+        StorageProviderId = StorageProviderId<T>,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
        {
         /// Emits on updating of the account info.
         /// Params:
@@ -106,6 +107,16 @@ decl_event! {
         /// Params:
         /// - Id of the storage provider.
         AccountInfoRemoved(StorageProviderId),
+
+        /// Emits on default lifetime set.
+        /// Params:
+        /// - Set lifetime
+        LifetimeSet(BlockNumber),
+
+        /// Emits on bootstrap endpoints set
+        /// Params:
+        /// - Endpoints set
+        BootstrapEndpointsSet(Vec<Url>),
     }
 }
 
@@ -165,6 +176,8 @@ decl_module! {
             // == MUTATION SAFE ==
 
             <DefaultLifetime<T>>::put(lifetime);
+
+            Self::deposit_event(RawEvent::LifetimeSet(lifetime));
         }
 
         /// Sets bootstrap endpoints for the Colossus. Requires root privileges.
@@ -174,7 +187,9 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            BootstrapEndpoints::put(endpoints);
+            BootstrapEndpoints::put(endpoints.clone());
+
+            Self::deposit_event(RawEvent::BootstrapEndpointsSet(endpoints));
         }
     }
 }

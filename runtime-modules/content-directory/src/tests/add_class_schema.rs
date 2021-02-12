@@ -38,7 +38,7 @@ fn add_class_schema_success() {
         // Ensure class schemas added succesfully
         let mut class = create_class_with_default_permissions();
 
-        class.set_properties(vec![first_property, second_property]);
+        class.set_properties(vec![first_property.clone(), second_property.clone()]);
         *class.get_schemas_mut() = vec![
             Schema::new(BTreeSet::from_iter(vec![FIRST_PROPERTY_ID].into_iter())),
             Schema::new(BTreeSet::from_iter(
@@ -48,8 +48,12 @@ fn add_class_schema_success() {
 
         assert_eq!(class_by_id(FIRST_CLASS_ID), class);
 
-        let class_schema_added_event =
-            get_test_event(RawEvent::ClassSchemaAdded(FIRST_CLASS_ID, SECOND_SCHEMA_ID));
+        let class_schema_added_event = get_test_event(RawEvent::ClassSchemaAdded(
+            FIRST_CLASS_ID,
+            SECOND_SCHEMA_ID,
+            BTreeSet::from_iter(vec![FIRST_PROPERTY_ID].into_iter()),
+            vec![second_property],
+        ));
 
         // Last event checked
         assert_event(class_schema_added_event, number_of_events_before_call + 2);

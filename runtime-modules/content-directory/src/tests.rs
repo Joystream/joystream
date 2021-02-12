@@ -118,6 +118,8 @@ pub fn add_entity_schemas_support() -> (
         second_schema_property_values.clone()
     ));
 
+    let second_schema_property_value_original = second_schema_property_values.clone();
+
     // Update supported schemas set and properties of first entity
     *first_entity.get_supported_schemas_mut() =
         BTreeSet::from_iter(vec![FIRST_SCHEMA_ID, SECOND_SCHEMA_ID].into_iter());
@@ -142,6 +144,7 @@ pub fn add_entity_schemas_support() -> (
         FIRST_ENTITY_ID,
         SECOND_SCHEMA_ID,
         Some(side_effects),
+        second_schema_property_value_original,
     ));
 
     // Last event checked

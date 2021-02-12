@@ -56,6 +56,7 @@ fn remove_at_entity_property_vector_success() {
             index_in_property_vector,
             nonce + 1,
             Some((SECOND_ENTITY_ID, side_effect)),
+            nonce,
         ));
 
         // Last event checked

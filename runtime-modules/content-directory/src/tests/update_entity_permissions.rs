@@ -39,8 +39,11 @@ fn update_entity_permissions_success() {
             entity_permissions
         );
 
-        let entity_permissions_updated_event =
-            get_test_event(RawEvent::EntityPermissionsUpdated(FIRST_ENTITY_ID));
+        let entity_permissions_updated_event = get_test_event(RawEvent::EntityPermissionsUpdated(
+            FIRST_ENTITY_ID,
+            None,
+            Some(false),
+        ));
 
         // Last event checked
         assert_event(

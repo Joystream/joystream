@@ -63,7 +63,7 @@ decl_error! {
 }
 
 /// Contains description and constrains for the data object.
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
+#[derive(Clone, Encode, Decode, PartialEq, Debug, Eq)]
 pub struct DataObjectType {
     /// Data object description.
     pub description: Vec<u8>,
@@ -106,12 +106,19 @@ decl_event! {
         /// Emits on the data object type registration.
         /// Params:
         /// - Id of the new data object type.
-        DataObjectTypeRegistered(DataObjectTypeId),
+        /// - Object type parameter
+        DataObjectTypeRegistered(DataObjectTypeId, DataObjectType),
 
         /// Emits on the data object type update.
         /// Params:
         /// - Id of the updated data object type.
-        DataObjectTypeUpdated(DataObjectTypeId),
+        /// - Objet type parameter
+        DataObjectTypeUpdated(DataObjectTypeId, DataObjectType),
+
+        /// Emits on the datata type activation status changed.
+        /// Params:
+        /// - Id of the updated data object type.
+        DataObjectTypeActivationChanged(DataObjectTypeId),
     }
 }
 
@@ -155,7 +162,9 @@ decl_module! {
             <DataObjectTypes<T>>::insert(new_do_type_id, do_type);
             <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::from(1); });
 
-            Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
+            Self::deposit_event(
+                RawEvent::DataObjectTypeRegistered(new_do_type_id, data_object_type)
+            );
         }
 
         /// Updates existing data object type. Requires leader privileges.
@@ -178,7 +187,7 @@ decl_module! {
 
             <DataObjectTypes<T>>::insert(id, do_type);
 
-            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
+            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id, data_object_type));
         }
 
         /// Activates existing data object type. Requires leader privileges.
@@ -196,7 +205,7 @@ decl_module! {
 
             <DataObjectTypes<T>>::insert(id, do_type);
 
-            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
+            Self::deposit_event(RawEvent::DataObjectTypeActivationChanged(id));
         }
 
         /// Deactivates existing data object type. Requires leader privileges.
@@ -214,7 +223,7 @@ decl_module! {
 
             <DataObjectTypes<T>>::insert(id, do_type);
 
-            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
+            Self::deposit_event(RawEvent::DataObjectTypeActivationChanged(id));
         }
     }
 }
