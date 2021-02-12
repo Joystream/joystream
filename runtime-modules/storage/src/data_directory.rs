@@ -226,7 +226,7 @@ impl Quota {
     pub fn release_quota(self, voucher: Voucher) -> Self {
         Self {
             size_used: self.size_used - voucher.size,
-            // objects_used: self.objects_used - voucher.objects,
+            objects_used: self.objects_used - voucher.objects,
             ..self
         }
     }
