@@ -111,6 +111,7 @@ parameter_types! {
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
     pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
+    pub const BountyLockId: LockIdentifier = [11; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -173,6 +174,10 @@ lazy_static! {
         ].to_vec()),
         (MembershipWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
+            VotingLockId::get(),
+        ].to_vec()),
+        // Bounty
+        (BountyLockId::get(), [
             VotingLockId::get(),
         ].to_vec()),
     ]

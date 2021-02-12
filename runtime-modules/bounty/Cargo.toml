@@ -12,8 +12,9 @@ sp-std = { package = 'sp-std', default-features = false, git = 'https://github.c
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-common = { package = 'pallet-common', default-features = false, path = '../common'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+common = { package = 'pallet-common', default-features = false, path = '../common'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 # Benchmarking
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
@@ -46,6 +47,7 @@ std = [
 	'frame-support/std',
 	'frame-system/std',
 	'balances/std',
-	'common/std',
 	'sp-runtime/std',
+	'common/std',
+	'staking-handler/std',
 ]

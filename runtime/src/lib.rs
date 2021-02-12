@@ -885,6 +885,8 @@ impl bounty::Trait for Runtime {
     type MemberOriginValidator = Members;
     type WeightInfo = weights::bounty::WeightInfo;
     type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type WorkEntryId = u64;
 }
 
 /// Forum identifier for category

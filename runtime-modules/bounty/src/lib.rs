@@ -60,6 +60,7 @@ use sp_std::vec::Vec;
 use common::council::CouncilBudgetManager;
 use common::origin::MemberOriginValidator;
 use common::MemberId;
+use staking_handler::StakingHandler;
 
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
@@ -85,6 +86,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Provides an access for the council budget.
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
+
+    /// Provides stake logic implementation.
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+
+    /// Work entry Id type
+    type WorkEntryId: From<u32> + Parameter + Default + Copy;
 }
 
 /// Alias type for the BountyParameters.
@@ -272,12 +279,33 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
     pub milestone: BountyMilestone<BlockNumber>,
 }
 
+/// Alias type for the WorkEntry.
+pub type WorkEntry<T> = WorkEntryRecord<
+    <T as frame_system::Trait>::AccountId,
+    <T as common::Trait>::MemberId,
+    <T as Trait>::BountyId,
+>;
+
+/// Work entry.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct WorkEntryRecord<AccountId, MemberId, BountyId> {
+    /// Work entrant member ID.
+    pub member_id: MemberId,
+
+    /// Bounty ID .
+    pub bounty_id: BountyId,
+
+    /// Optional account ID for staking lock.
+    pub staking_account_id: Option<AccountId>,
+}
+
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
-        /// Bounty storage
+        /// Bounty storage.
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
         /// Double map for bounty funding. It stores member funding for bounties.
@@ -287,6 +315,13 @@ decl_storage! {
 
         /// Count of all bounties that have been created.
         pub BountyCount get(fn bounty_count): u32;
+
+        /// Work entry storage.
+        pub WorkEntries get(fn work_entries) : map hasher(blake2_128_concat)
+            T::WorkEntryId => WorkEntry<T>;
+
+        /// Count of all work entries that have been created.
+        pub WorkEntryCount get(fn work_entry_count): u32;
     }
 }
 
@@ -294,9 +329,11 @@ decl_event! {
     pub enum Event<T>
     where
         <T as Trait>::BountyId,
+        <T as Trait>::WorkEntryId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::AccountId,
     {
         /// A bounty was created.
         BountyCreated(BountyId, BountyParameters<Balance, BlockNumber, MemberId>),
@@ -321,6 +358,14 @@ decl_event! {
 
         /// A bounty was removed.
         BountyRemoved(BountyId),
+
+        /// Work entry announced.
+        /// Params:
+        /// - bounty ID
+        /// - entrant member ID
+        /// - optional staking account ID
+        /// - created entry ID
+        WorkEntryAnnounced(BountyId, MemberId, Option<AccountId>, WorkEntryId),
     }
 }
 
@@ -359,6 +404,15 @@ decl_error! {
 
         /// Incorrect funding amount.
         ZeroFundingAmount,
+
+        /// There is not enough balance for a stake.
+        InsufficientBalanceForStake,
+
+        /// The conflicting stake discovered. Cannot stake.
+        ConflictingStakes,
+
+        /// Stake cannot be empty with this bounty.
+        EmptyStake,
     }
 }
 
@@ -663,6 +717,52 @@ decl_module! {
             if Self::withdrawal_completed(&new_bounty_stage, &bounty_id) {
                 Self::remove_bounty(&bounty_id);
             }
+        }
+
+        /// Withdraw creator funding.
+        #[weight = 10_000_000]
+        pub fn announce_work_entry(
+            origin,
+            member_id: MemberId<T>,
+            staking_account_id: Option<T::AccountId>,
+            bounty_id: T::BountyId,
+        ) {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::WorkSubmission),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let next_entry_count_value = Self::work_entry_count() + 1;
+            let entry_id = T::WorkEntryId::from(next_entry_count_value);
+
+            let entry = WorkEntry::<T> {
+                bounty_id,
+                member_id,
+                staking_account_id: staking_account_id.clone()
+            };
+
+            <WorkEntries<T>>::insert(entry_id, entry);
+            WorkEntryCount::mutate(|count| {
+                *count = next_entry_count_value
+            });
+
+            Self::deposit_event(RawEvent::WorkEntryAnnounced(
+                bounty_id,
+                member_id,
+                staking_account_id,
+                entry_id,
+            ));
         }
     }
 }
@@ -1084,5 +1184,34 @@ impl<T: Trait> Module<T> {
             // No changes.
             previous_milestone
         }
+    }
+
+    // Validates stake on announcing the work entry.
+    fn validate_entrant_stake(
+        bounty: &Bounty<T>,
+        staking_account_id: Option<T::AccountId>,
+    ) -> DispatchResult {
+        let staking_balance = bounty.creation_params.entrant_stake;
+
+        if staking_balance != Zero::zero() {
+            if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    Error::<T>::ConflictingStakes
+                );
+
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(
+                        &staking_account_id,
+                        staking_balance
+                    ),
+                    Error::<T>::InsufficientBalanceForStake
+                );
+            } else {
+                return Err(Error::<T>::EmptyStake.into());
+            }
+        }
+
+        Ok(())
     }
 }
