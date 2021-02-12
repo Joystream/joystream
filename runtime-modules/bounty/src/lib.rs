@@ -303,6 +303,14 @@ pub struct WorkEntryRecord<AccountId, MemberId, BountyId> {
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
+// Entrant stake helper struct.
+struct RequiredStakeInfo<T: Trait> {
+    // stake amount
+    amount: BalanceOf<T>,
+    // staking_account_id
+    account_id: T::AccountId,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
         /// Bounty storage.
@@ -361,11 +369,11 @@ decl_event! {
 
         /// Work entry announced.
         /// Params:
+        /// - created entry ID
         /// - bounty ID
         /// - entrant member ID
         /// - optional staking account ID
-        /// - created entry ID
-        WorkEntryAnnounced(BountyId, MemberId, Option<AccountId>, WorkEntryId),
+        WorkEntryAnnounced(WorkEntryId, BountyId, MemberId, Option<AccountId>),
     }
 }
 
@@ -411,8 +419,8 @@ decl_error! {
         /// The conflicting stake discovered. Cannot stake.
         ConflictingStakes,
 
-        /// Stake cannot be empty with this bounty.
-        EmptyStake,
+        /// No staking account was provided.
+        NoStakingAccountProvided,
     }
 }
 
@@ -724,8 +732,8 @@ decl_module! {
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,
-            staking_account_id: Option<T::AccountId>,
             bounty_id: T::BountyId,
+            staking_account_id: Option<T::AccountId>,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
@@ -737,7 +745,7 @@ decl_module! {
                 Error::<T>::InvalidBountyStage,
             );
 
-            Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
+            let stake = Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
 
             //
             // == MUTATION SAFE ==
@@ -745,6 +753,11 @@ decl_module! {
 
             let next_entry_count_value = Self::work_entry_count() + 1;
             let entry_id = T::WorkEntryId::from(next_entry_count_value);
+
+            // Lock stake balance for bounty if the stake is required.
+            if let Some(stake) = stake {
+                T::StakingHandler::lock(&stake.account_id, stake.amount);
+            }
 
             let entry = WorkEntry::<T> {
                 bounty_id,
@@ -758,10 +771,10 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::WorkEntryAnnounced(
+                entry_id,
                 bounty_id,
                 member_id,
                 staking_account_id,
-                entry_id,
             ));
         }
     }
@@ -1037,7 +1050,7 @@ impl<T: Trait> Module<T> {
                 reached_on_creation,
             } => {
                 // Work period is not over.
-                if bounty.creation_params.work_period + max_funding_reached_at <= now {
+                if now <= max_funding_reached_at + bounty.creation_params.work_period {
                     BountyStage::WorkSubmission
                 } else {
                     // Work period is over.
@@ -1190,7 +1203,7 @@ impl<T: Trait> Module<T> {
     fn validate_entrant_stake(
         bounty: &Bounty<T>,
         staking_account_id: Option<T::AccountId>,
-    ) -> DispatchResult {
+    ) -> Result<Option<RequiredStakeInfo<T>>, DispatchError> {
         let staking_balance = bounty.creation_params.entrant_stake;
 
         if staking_balance != Zero::zero() {
@@ -1207,11 +1220,18 @@ impl<T: Trait> Module<T> {
                     ),
                     Error::<T>::InsufficientBalanceForStake
                 );
-            } else {
-                return Err(Error::<T>::EmptyStake.into());
-            }
-        }
 
-        Ok(())
+                Ok(Some(RequiredStakeInfo {
+                    amount: staking_balance,
+                    account_id: staking_account_id,
+                }))
+            } else {
+                // No staking account when required.
+                Err(Error::<T>::NoStakingAccountProvided.into())
+            }
+        } else {
+            // No stake required
+            Ok(None)
+        }
     }
 }

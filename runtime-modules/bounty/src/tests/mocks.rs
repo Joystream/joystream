@@ -56,6 +56,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+    pub const BountyLockId: [u8; 8] = [12; 8];
 }
 
 impl frame_system::Trait for Test {
@@ -93,6 +94,8 @@ impl Trait for Test {
     type MemberOriginValidator = ();
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
+    type StakingHandler = StakingManager<Test, BountyLockId>;
+    type WorkEntryId = u64;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -250,11 +253,12 @@ impl membership::Trait for Test {
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock != BountyLockId::get() {
+            return false;
+        }
+
+        existing_locks.contains(new_lock)
     }
 }
 

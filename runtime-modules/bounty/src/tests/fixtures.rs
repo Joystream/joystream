@@ -4,7 +4,9 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent};
+use crate::{
+    BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
+};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -32,7 +34,7 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64, u64, u128>) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -62,6 +64,7 @@ pub struct CreateBountyFixture {
     cherry: u64,
     creator_funding: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
+    entrant_stake: u64,
 }
 
 impl CreateBountyFixture {
@@ -78,6 +81,7 @@ impl CreateBountyFixture {
             cherry: 0,
             creator_funding: 0,
             expected_milestone: None,
+            entrant_stake: 0,
         }
     }
 
@@ -135,6 +139,13 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_entrant_stake(self, entrant_stake: u64) -> Self {
+        Self {
+            entrant_stake,
+            ..self
+        }
+    }
+
     pub fn with_expected_milestone(self, milestone: BountyMilestone<u64>) -> Self {
         Self {
             expected_milestone: Some(milestone),
@@ -152,6 +163,7 @@ impl CreateBountyFixture {
             funding_period: self.funding_period.clone(),
             cherry: self.cherry,
             creator_funding: self.creator_funding,
+            entrant_stake: self.entrant_stake,
             ..Default::default()
         }
     }
@@ -410,5 +422,72 @@ impl WithdrawCreatorFundingFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct AnnounceWorkEntryFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+    member_id: u64,
+    staking_account_id: Option<u128>,
+}
+
+impl AnnounceWorkEntryFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            bounty_id: 1,
+            member_id: 1,
+            staking_account_id: None,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_staking_account_id(self, staking_account_id: u128) -> Self {
+        Self {
+            staking_account_id: Some(staking_account_id),
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let next_entry_count_value = Bounty::work_entry_count() + 1;
+        let entry_id: u64 = next_entry_count_value.into();
+
+        let actual_result = Bounty::announce_work_entry(
+            self.origin.clone().into(),
+            self.member_id,
+            self.bounty_id,
+            self.staking_account_id.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(next_entry_count_value, Bounty::work_entry_count());
+            assert!(<crate::WorkEntries<Test>>::contains_key(&entry_id));
+
+            let expected_entry = WorkEntry::<Test> {
+                member_id: self.member_id,
+                bounty_id: self.bounty_id,
+                staking_account_id: self.staking_account_id,
+            };
+
+            assert_eq!(expected_entry, Bounty::work_entries(entry_id));
+        } else {
+            assert_eq!(next_entry_count_value - 1, Bounty::work_entry_count());
+            assert!(!<crate::WorkEntries<Test>>::contains_key(&entry_id));
+        }
     }
 }
