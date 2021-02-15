@@ -18,8 +18,8 @@ use frame_system::Module as System;
 use membership::Module as Membership;
 
 use crate::{
-    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, Call, Event,
-    Module, Trait,
+    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, BountyStage,
+    Call, Event, Module, Trait,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -321,6 +321,12 @@ benchmarks! {
 
         Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), creator.clone(), bounty_id).unwrap();
 
+        let bounty = Bounty::<T>::bounties(bounty_id);
+        assert!(matches!(
+            Bounty::<T>::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {cherry_needs_withdrawal: true, ..}
+        ));
+
     }: withdraw_creator_funding(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
         assert!(!Bounties::<T>::contains_key(bounty_id));
@@ -360,6 +366,12 @@ benchmarks! {
             creator.clone(),
             bounty_id
         ).unwrap();
+
+        let bounty = Bounty::<T>::bounties(bounty_id);
+        assert!(matches!(
+            Bounty::<T>::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {cherry_needs_withdrawal: true, ..}
+        ));
 
     }: withdraw_creator_funding(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
