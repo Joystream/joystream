@@ -1,8 +1,7 @@
 use codec::Decode;
 use node_runtime::{
-    common::storage::StorageObjectOwner,
-    data_directory::*,
-    ChannelId, ContentId, DAOId, DataDirectoryConfig, MemberId, Runtime,
+    common::storage::StorageObjectOwner, data_directory::*, ChannelId, ContentId, DAOId,
+    DataDirectoryConfig, MemberId, Runtime,
 };
 use serde::Deserialize;
 use std::{fs, path::Path};

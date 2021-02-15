@@ -151,7 +151,7 @@ pub type DataObject<T> = DataObjectInternal<
 
 /// Manages content ids, type and storage provider decision about it.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
+#[derive(Clone, Encode, Decode, PartialEq, Debug, Default)]
 pub struct DataObjectInternal<
     MemberId,
     ChannelId,
@@ -253,7 +253,7 @@ decl_storage! {
 
         /// Maps data objects by their content id.
         pub DataByContentId get(fn data_object_by_content_id) config():
-            map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
+            map hasher(blake2_128_concat) T::ContentId => DataObject<T>;
 
         /// Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
         pub Quotas get(fn quotas) config():
@@ -587,8 +587,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<Vec<DataObject<T>>, Error<T>> {
         let mut content = Vec::new();
         for content_id in content_ids {
-            let data_object =
-                Self::data_object_by_content_id(content_id).ok_or(Error::<T>::CidNotFound)?;
+            let data_object = Self::get_data_object(content_id)?;
             ensure!(data_object.owner == *owner, Error::<T>::OwnersAreNotEqual);
             content.push(data_object);
         }
@@ -698,8 +697,7 @@ impl<T: Trait> Module<T> {
         content_id: T::ContentId,
         judgement: LiaisonJudgement,
     ) -> DispatchResult {
-        let mut data =
-            Self::data_object_by_content_id(&content_id).ok_or(Error::<T>::CidNotFound)?;
+        let mut data = Self::get_data_object(&content_id)?;
 
         // Make sure the liaison matches
         ensure!(
@@ -726,18 +724,19 @@ pub trait ContentIdExists<T: Trait> {
     fn has_content(id: &T::ContentId) -> bool;
 
     /// Returns the data object for the provided content id.
-    fn get_data_object(id: &T::ContentId) -> Result<DataObject<T>, &'static str>;
+    fn get_data_object(id: &T::ContentId) -> Result<DataObject<T>, Error<T>>;
 }
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn has_content(content_id: &T::ContentId) -> bool {
-        Self::data_object_by_content_id(*content_id).is_some()
+        <DataByContentId<T>>::contains_key(content_id)
     }
 
-    fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
-        match Self::data_object_by_content_id(*content_id) {
-            Some(data) => Ok(data),
-            None => Err(Error::<T>::LiaisonRequired.into()),
+    fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, Error<T>> {
+        if Self::has_content(content_id) {
+            Ok(Self::data_object_by_content_id(*content_id))
+        } else {
+            Err(Error::<T>::CidNotFound.into())
         }
     }
 }
