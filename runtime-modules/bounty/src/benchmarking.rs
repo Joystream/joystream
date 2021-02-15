@@ -399,7 +399,7 @@ benchmarks! {
 
         assert!(WorkEntries::<T>::contains_key(entry_id));
         assert_last_event::<T>(
-            Event::<T>::WorkEntryAnnounced(entry_id, bounty_id, member_id, Some(account_id)).into()
+            Event::<T>::WorkEntryAnnounced(bounty_id, entry_id, member_id, Some(account_id)).into()
         );
     }
 }

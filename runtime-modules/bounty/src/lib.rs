@@ -29,7 +29,6 @@ pub(crate) mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: add max entries limit
 // TODO: add more fine-grained errors.
 // TODO: add bounty milestones module comments
 // TODO: add working stake unstaking period.
@@ -99,6 +98,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Work entry Id type
     type WorkEntryId: From<u32> + Parameter + Default + Copy;
+
+    /// Defines max work entry number for a bounty.
+    type MaxWorkEntryLimit: Get<u32>;
 }
 
 /// Alias type for the BountyParameters.
@@ -441,6 +443,9 @@ decl_error! {
 
         /// Work entry doesn't match the bounty.
         InvalidEntryForBounty, //TODO: test or consider removing in case of bounty-entry double map
+
+        /// Cannot add work entry because of the limit.
+        MaxWorkEntryLimitReached,
     }
 }
 
@@ -451,6 +456,9 @@ decl_module! {
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
+
+        /// Exports const - max work entry number for a bounty.
+        const MaxWorkEntryLimit: u32 = T::MaxWorkEntryLimit::get();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -774,11 +782,18 @@ decl_module! {
 
             let stake = Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
 
+            let work_entry_count = Self::work_entry_count();
+
+            ensure!(
+                work_entry_count < T::MaxWorkEntryLimit::get(),
+                Error::<T>::MaxWorkEntryLimitReached,
+            );
+
             //
             // == MUTATION SAFE ==
             //
 
-            let next_entry_count_value = Self::work_entry_count() + 1;
+            let next_entry_count_value = work_entry_count + 1;
             let entry_id = T::WorkEntryId::from(next_entry_count_value);
 
             // Lock stake balance for bounty if the stake is required.
