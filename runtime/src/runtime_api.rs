@@ -92,6 +92,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
             data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
             data_directory::DEFAULT_GLOBAL_VOUCHER,
+            data_directory::DEFAULT_VOUCHER,
             data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
         );
 

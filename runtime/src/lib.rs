@@ -465,7 +465,6 @@ impl storage::data_directory::Trait for Runtime {
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type DefaultVoucher = DefaultVoucher;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {

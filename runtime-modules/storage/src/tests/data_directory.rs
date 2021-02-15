@@ -91,7 +91,7 @@ fn add_content_size_limit_reached() {
         let content_parameters = ContentParameters {
             content_id: 1,
             type_id: 1234,
-            size: DefaultVoucher::get().size_limit + 1,
+            size: DEFAULT_VOUCHER.size_limit + 1,
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
@@ -111,7 +111,7 @@ fn add_content_objects_limit_reached() {
 
         let mut content = vec![];
 
-        for i in 0..=DefaultVoucher::get().objects_limit {
+        for i in 0..=DEFAULT_VOUCHER.objects_limit {
             let content_parameters = ContentParameters {
                 content_id: i + 1,
                 type_id: 1234,
@@ -356,7 +356,7 @@ fn update_storage_object_owner_voucher_size_limit() {
 
         let owner = StorageObjectOwner::Member(1u64);
 
-        let new_objects_total_size_limit = 1500;
+        let new_objects_total_size_limit = 100;
 
         let res = TestDataDirectory::update_storage_object_owner_voucher_size_limit(
             Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),

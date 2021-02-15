@@ -25,6 +25,7 @@ struct ContentData {
     voucher_size_limit_upper_bound: u64,
     voucher_objects_limit_upper_bound: u64,
     global_voucher: Voucher,
+    default_voucher: Voucher,
     uploading_blocked: bool,
 }
 
@@ -71,6 +72,8 @@ struct EncodedContentData {
     voucher_objects_limit_upper_bound: String,
     /// hex encoded GlobalVoucher
     global_voucher: String,
+    /// hex encoded DefaultVoucher
+    default_voucher: String,
     /// hex encoded UploadingBlocked flag
     uploading_blocked: String,
 }
@@ -108,6 +111,12 @@ impl EncodedContentData {
 
                 Decode::decode(&mut encoded_global_voucher.as_slice()).unwrap()
             },
+            default_voucher: {
+                let encoded_default_voucher = hex::decode(&self.default_voucher[2..].as_bytes())
+                    .expect("failed to parse data_object hex string");
+
+                Decode::decode(&mut encoded_default_voucher.as_slice()).unwrap()
+            },
             uploading_blocked: {
                 let encoded_uploading_blocked =
                     hex::decode(&self.uploading_blocked[2..].as_bytes())
@@ -127,6 +136,7 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
         voucher_size_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
         voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
         global_voucher: DEFAULT_GLOBAL_VOUCHER,
+        default_voucher: DEFAULT_VOUCHER,
         uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
     }
 }
@@ -151,6 +161,7 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
         voucher_size_limit_upper_bound: content.voucher_size_limit_upper_bound,
         voucher_objects_limit_upper_bound: content.voucher_objects_limit_upper_bound,
         global_voucher: content.global_voucher,
+        default_voucher: content.default_voucher,
         uploading_blocked: content.uploading_blocked,
     }
 }

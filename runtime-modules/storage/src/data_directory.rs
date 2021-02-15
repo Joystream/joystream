@@ -23,7 +23,6 @@
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
@@ -43,6 +42,7 @@ use crate::*;
 pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
 pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
 pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(2000000, 2000);
+pub const DEFAULT_VOUCHER: Voucher = Voucher::new(50000, 100);
 pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 
 /// The _Data directory_ main _Trait_.
@@ -66,9 +66,6 @@ pub trait Trait:
 
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
-
-    /// Default content voucher for all actors.
-    type DefaultVoucher: Get<Voucher>;
 }
 
 decl_error! {
@@ -265,11 +262,15 @@ decl_storage! {
         /// Upper bound for the Voucher objects number limit.
         pub VoucherObjectsLimitUpperBound get(fn voucher_objects_limit_upper_bound) config(): u64 = DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND;
 
+        /// Default content voucher for all actors.
+        pub DefaultVoucher get(fn default_voucher) config(): Voucher;
+
         /// Global voucher.
         pub GlobalVoucher get(fn global_voucher) config(): Voucher = DEFAULT_GLOBAL_VOUCHER;
 
         /// If all new uploads blocked
         pub UploadingBlocked get(fn uploading_blocked) config(): bool = DEFAULT_UPLOADING_BLOCKED_STATUS;
+
     }
 }
 
@@ -416,7 +417,7 @@ decl_module! {
                     voucher.set_new_objects_limit(new_voucher_objects_limit);
                 });
             } else {
-                let mut voucher = T::DefaultVoucher::get();
+                let mut voucher = Self::default_voucher();
                 voucher.set_new_objects_limit(new_voucher_objects_limit);
                 <Vouchers<T>>::insert(&abstract_owner, voucher);
             };
@@ -443,7 +444,7 @@ decl_module! {
                     voucher.set_new_size_limit(new_voucher_size_limit);
                 });
             } else {
-                let mut voucher = T::DefaultVoucher::get();
+                let mut voucher = Self::default_voucher();
                 voucher.set_new_size_limit(new_voucher_size_limit);
                 <Vouchers<T>>::insert(&abstract_owner, voucher);
             };
@@ -498,6 +499,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Used to initialize data_directory runtime storage on runtime upgrade
     pub fn initialize_data_directory(
         vouchers: Vec<(
             StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -506,6 +508,7 @@ impl<T: Trait> Module<T> {
         voucher_size_limit_upper_bound: u64,
         voucher_objects_limit_upper_bound: u64,
         global_voucher: Voucher,
+        default_voucher: Voucher,
         uploading_blocked: bool,
     ) {
         for (storage_object_owner, voucher) in vouchers {
@@ -515,6 +518,7 @@ impl<T: Trait> Module<T> {
         <VoucherSizeLimitUpperBound>::put(voucher_size_limit_upper_bound);
         <VoucherObjectsLimitUpperBound>::put(voucher_objects_limit_upper_bound);
         <GlobalVoucher>::put(global_voucher);
+        <DefaultVoucher>::put(default_voucher);
         <UploadingBlocked>::put(uploading_blocked);
     }
 
@@ -536,7 +540,7 @@ impl<T: Trait> Module<T> {
         if <Vouchers<T>>::contains_key(owner) {
             Self::vouchers(owner)
         } else {
-            T::DefaultVoucher::get()
+            Self::default_voucher()
         }
     }
 
@@ -737,7 +741,7 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
         if Self::has_content(content_id) {
             Ok(Self::data_object_by_content_id(*content_id))
         } else {
-            Err(Error::<T>::CidNotFound.into())
+            Err(Error::<T>::CidNotFound)
         }
     }
 }

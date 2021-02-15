@@ -21,6 +21,11 @@ use common::currency::GovernanceCurrency;
 use frame_support::StorageValue;
 use membership;
 
+pub use crate::data_directory::{
+    DEFAULT_GLOBAL_VOUCHER, DEFAULT_UPLOADING_BLOCKED_STATUS, DEFAULT_VOUCHER,
+    DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND, DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+};
+
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
@@ -96,7 +101,7 @@ impl ContentIdExists<Test> for MockContent {
 
     fn get_data_object(
         which: &ContentId<Test>,
-    ) -> Result<data_directory::DataObject<Test>, &'static str> {
+    ) -> Result<data_directory::DataObject<Test>, data_directory::Error<Test>> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
                 type_id: 1,
@@ -110,7 +115,7 @@ impl ContentIdExists<Test> for MockContent {
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
-            _ => Err("nope, missing"),
+            _ => Err(data_directory::Error::<Test>::CidNotFound),
         }
     }
 }
@@ -124,7 +129,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
 }
 
 impl system::Trait for Test {
@@ -207,7 +211,6 @@ impl data_directory::Trait for Test {
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-    type DefaultVoucher = DefaultVoucher;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
@@ -268,6 +271,7 @@ pub struct ExtBuilder {
     voucher_objects_limit_upper_bound: u64,
     voucher_size_limit_upper_bound: u64,
     global_voucher: Voucher,
+    default_voucher: Voucher,
     first_data_object_type_id: u64,
     first_content_id: u64,
     first_relationship_id: u64,
@@ -281,6 +285,7 @@ impl Default for ExtBuilder {
             voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
             voucher_size_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
             global_voucher: DEFAULT_GLOBAL_VOUCHER,
+            default_voucher: DEFAULT_VOUCHER,
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
@@ -330,6 +335,7 @@ impl ExtBuilder {
             voucher_size_limit_upper_bound: self.voucher_size_limit_upper_bound,
             voucher_objects_limit_upper_bound: self.voucher_objects_limit_upper_bound,
             global_voucher: self.global_voucher,
+            default_voucher: self.default_voucher,
             data_object_by_content_id: vec![],
             vouchers: vec![],
             uploading_blocked: self.uploading_blocked,
