@@ -24,7 +24,7 @@ pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
     WorkingGroup(WorkingGroup), // acts through new extrinsic in working group
 }
 
-impl <MemberId, ChannelId, DAOId> Default for StorageObjectOwner<MemberId, ChannelId, DAOId> {
+impl<MemberId, ChannelId, DAOId> Default for StorageObjectOwner<MemberId, ChannelId, DAOId> {
     fn default() -> Self {
         Self::Council
     }

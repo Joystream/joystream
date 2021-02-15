@@ -527,13 +527,13 @@
         }
     },
     "Content": "Vec<ContentParameters>",
-    "Quota": {
+    "Voucher": {
         "size_limit": "u64",
         "objects_limit": "u64",
         "size_used": "u64",
         "objects_used": "u64"
     },
-    "QuotaLimit": "u64",
+    "VoucherLimit": "u64",
     "UploadingStatus": "bool",
     "ProposalId": "u32",
     "ProposalStatus": {

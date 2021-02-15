@@ -89,9 +89,9 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         DataDirectory::initialize_data_directory(
             Vec::new(),
-            data_directory::DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_GLOBAL_QUOTA,
+            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_GLOBAL_VOUCHER,
             data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
         );
 

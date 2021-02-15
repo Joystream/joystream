@@ -15,16 +15,16 @@ struct Content {
     content_id: ContentId,
     data_object: DataObject<Runtime>,
     storage_object_owner: StorageObjectOwner<MemberId, ChannelId, DAOId>,
-    quota: Quota,
+    voucher: Voucher,
 }
 
 #[derive(Decode)]
 struct ContentData {
     /// DataObject(s) and ContentId
     data_objects: Vec<Content>,
-    quota_size_limit_upper_bound: u64,
-    quota_objects_limit_upper_bound: u64,
-    global_quota: Quota,
+    voucher_size_limit_upper_bound: u64,
+    voucher_objects_limit_upper_bound: u64,
+    global_voucher: Voucher,
     uploading_blocked: bool,
 }
 
@@ -36,8 +36,8 @@ struct EncodedContent {
     data_object: String,
     /// hex encoded StorageObjectOwner
     storage_object_owner: String,
-    /// hex encoded Quota
-    quota: String,
+    /// hex encoded Voucher
+    voucher: String,
 }
 
 impl EncodedContent {
@@ -49,14 +49,14 @@ impl EncodedContent {
             .expect("failed to parse data_object hex string");
         let encoded_storage_object_owner = hex::decode(&self.storage_object_owner[2..].as_bytes())
             .expect("failed to parse content_id hex string");
-        let encoded_quota = hex::decode(&self.quota[2..].as_bytes())
+        let encoded_voucher = hex::decode(&self.voucher[2..].as_bytes())
             .expect("failed to parse data_object hex string");
         Content {
             content_id: Decode::decode(&mut encoded_content_id.as_slice()).unwrap(),
             data_object: Decode::decode(&mut encoded_data_object.as_slice()).unwrap(),
             storage_object_owner: Decode::decode(&mut encoded_storage_object_owner.as_slice())
                 .unwrap(),
-            quota: Decode::decode(&mut encoded_quota.as_slice()).unwrap(),
+            voucher: Decode::decode(&mut encoded_voucher.as_slice()).unwrap(),
         }
     }
 }
@@ -65,12 +65,12 @@ impl EncodedContent {
 struct EncodedContentData {
     /// EncodedContent
     data_objects: Vec<EncodedContent>,
-    /// hex encoded QuotaSizeLimitUpperBound
-    quota_size_limit_upper_bound: String,
-    /// hex encoded QuotaObjectsLimitUpperBound
-    quota_objects_limit_upper_bound: String,
-    /// hex encoded GlobalQuota
-    global_quota: String,
+    /// hex encoded VoucherSizeLimitUpperBound
+    voucher_size_limit_upper_bound: String,
+    /// hex encoded VoucherObjectsLimitUpperBound
+    voucher_objects_limit_upper_bound: String,
+    /// hex encoded GlobalVoucher
+    global_voucher: String,
     /// hex encoded UploadingBlocked flag
     uploading_blocked: String,
 }
@@ -88,25 +88,25 @@ impl EncodedContentData {
                 .iter()
                 .map(|data_objects| data_objects.decode())
                 .collect(),
-            quota_size_limit_upper_bound: {
-                let encoded_quota_size_limit_upper_bound =
-                    hex::decode(&self.quota_size_limit_upper_bound[2..].as_bytes())
+            voucher_size_limit_upper_bound: {
+                let encoded_voucher_size_limit_upper_bound =
+                    hex::decode(&self.voucher_size_limit_upper_bound[2..].as_bytes())
                         .expect("failed to parse data_object hex string");
 
-                Decode::decode(&mut encoded_quota_size_limit_upper_bound.as_slice()).unwrap()
+                Decode::decode(&mut encoded_voucher_size_limit_upper_bound.as_slice()).unwrap()
             },
-            quota_objects_limit_upper_bound: {
-                let encoded_quota_objects_limit_upper_bound =
-                    hex::decode(&self.quota_objects_limit_upper_bound[2..].as_bytes())
+            voucher_objects_limit_upper_bound: {
+                let encoded_voucher_objects_limit_upper_bound =
+                    hex::decode(&self.voucher_objects_limit_upper_bound[2..].as_bytes())
                         .expect("failed to parse data_object hex string");
 
-                Decode::decode(&mut encoded_quota_objects_limit_upper_bound.as_slice()).unwrap()
+                Decode::decode(&mut encoded_voucher_objects_limit_upper_bound.as_slice()).unwrap()
             },
-            global_quota: {
-                let encoded_global_quota = hex::decode(&self.global_quota[2..].as_bytes())
+            global_voucher: {
+                let encoded_global_voucher = hex::decode(&self.global_voucher[2..].as_bytes())
                     .expect("failed to parse data_object hex string");
 
-                Decode::decode(&mut encoded_global_quota.as_slice()).unwrap()
+                Decode::decode(&mut encoded_global_voucher.as_slice()).unwrap()
             },
             uploading_blocked: {
                 let encoded_uploading_blocked =
@@ -123,10 +123,10 @@ impl EncodedContentData {
 pub fn empty_data_directory_config() -> DataDirectoryConfig {
     DataDirectoryConfig {
         data_object_by_content_id: vec![],
-        quotas: vec![],
-        quota_size_limit_upper_bound: DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
-        quota_objects_limit_upper_bound: DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
-        global_quota: DEFAULT_GLOBAL_QUOTA,
+        vouchers: vec![],
+        voucher_size_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+        voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+        global_voucher: DEFAULT_GLOBAL_VOUCHER,
         uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
     }
 }
@@ -143,14 +143,14 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
             .iter()
             .map(|object| (object.content_id, object.data_object.clone()))
             .collect(),
-        quotas: content
+        vouchers: content
             .data_objects
             .iter()
-            .map(|object| (object.storage_object_owner.clone(), object.quota))
+            .map(|object| (object.storage_object_owner.clone(), object.voucher))
             .collect(),
-        quota_size_limit_upper_bound: content.quota_size_limit_upper_bound,
-        quota_objects_limit_upper_bound: content.quota_objects_limit_upper_bound,
-        global_quota: content.global_quota,
+        voucher_size_limit_upper_bound: content.voucher_size_limit_upper_bound,
+        voucher_objects_limit_upper_bound: content.voucher_objects_limit_upper_bound,
+        global_voucher: content.global_voucher,
         uploading_blocked: content.uploading_blocked,
     }
 }

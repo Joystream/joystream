@@ -314,13 +314,13 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateContentUploadingStatus: AugmentedSubmittable<(isBlocked: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Updates storage object owner quota objects limit. Requires leader privileges.
+       * Updates storage object owner voucher objects limit. Requires leader privileges.
        **/
-      updateStorageObjectOwnerQuotaObjectsLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newQuotaObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerVoucherObjectsLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Updates storage object owner quota size limit. Requires leader privileges.
+       * Updates storage object owner voucher size limit. Requires leader privileges.
        **/
-      updateStorageObjectOwnerQuotaSizeLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newQuotaSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerVoucherSizeLimit: AugmentedSubmittable<(abstractOwner: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     dataObjectStorageRegistry: {
       /**

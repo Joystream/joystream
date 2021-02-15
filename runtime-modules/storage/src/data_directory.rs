@@ -40,9 +40,9 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
-pub const DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
-pub const DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
-pub const DEFAULT_GLOBAL_QUOTA: Quota = Quota::new(2000000, 2000);
+pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
+pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
+pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(2000000, 2000);
 pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 
 /// The _Data directory_ main _Trait_.
@@ -67,8 +67,8 @@ pub trait Trait:
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
-    /// Default content quota for all actors.
-    type DefaultQuota: Get<Quota>;
+    /// Default content voucher for all actors.
+    type DefaultVoucher: Get<Voucher>;
 }
 
 decl_error! {
@@ -92,23 +92,23 @@ decl_error! {
         /// DataObject Injection Failed. Too Many DataObjects.
         DataObjectsInjectionExceededLimit,
 
-        /// Contant uploading failed. Actor quota objects limit exceeded.
-        QuotaObjectsLimitExceeded,
+        /// Contant uploading failed. Actor voucher objects limit exceeded.
+        VoucherObjectsLimitExceeded,
 
-        /// Contant uploading failed. Actor quota size limit exceeded.
-        QuotaSizeLimitExceeded,
+        /// Contant uploading failed. Actor voucher size limit exceeded.
+        VoucherSizeLimitExceeded,
 
-        /// Quota size limit upper bound exceeded
-        QuotaSizeLimitUpperBoundExceeded,
+        /// Voucher size limit upper bound exceeded
+        VoucherSizeLimitUpperBoundExceeded,
 
-        /// Quota objects limit upper bound exceeded
-        QuotaObjectsLimitUpperBoundExceeded,
+        /// Voucher objects limit upper bound exceeded
+        VoucherObjectsLimitUpperBoundExceeded,
 
-        /// Contant uploading failed. Actor quota size limit exceeded.
-        GlobalQuotaSizeLimitExceeded,
+        /// Contant uploading failed. Actor voucher size limit exceeded.
+        GlobalVoucherSizeLimitExceeded,
 
-        /// Contant uploading failed. Actor quota objects limit exceeded.
-        GlobalQuotaObjectsLimitExceeded,
+        /// Contant uploading failed. Actor voucher objects limit exceeded.
+        GlobalVoucherObjectsLimitExceeded,
 
         /// Content uploading blocked.
         ContentUploadingBlocked,
@@ -184,15 +184,15 @@ pub struct DataObjectInternal<
 }
 
 #[derive(Clone, Copy)]
-pub struct Voucher {
+pub struct Delta {
     pub size: u64,
     pub objects: u64,
 }
 
-/// Uploading quota for StorageObjectOwner
+/// Uploading voucher for StorageObjectOwner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct Quota {
+pub struct Voucher {
     // Total objects size limit per StorageObjectOwner
     pub size_limit: u64,
     // Total objects number limit per StorageObjectOwner
@@ -201,8 +201,8 @@ pub struct Quota {
     pub objects_used: u64,
 }
 
-impl Quota {
-    /// Create new quota with provided size & objects limits
+impl Voucher {
+    /// Create new voucher with provided size & objects limits
     pub const fn new(size_limit: u64, objects_limit: u64) -> Self {
         Self {
             size_limit,
@@ -212,26 +212,26 @@ impl Quota {
         }
     }
 
-    /// Calculate free quota
-    pub fn calculate_voucher(&self) -> Voucher {
-        Voucher {
+    /// Calculate voucher delta
+    pub fn calculate_delta(&self) -> Delta {
+        Delta {
             size: self.size_limit - self.size_used,
             objects: self.objects_limit - self.objects_used,
         }
     }
 
-    pub fn fill_quota(self, voucher: Voucher) -> Self {
+    pub fn fill_voucher(self, voucher_delta: Delta) -> Self {
         Self {
-            size_used: self.size_used + voucher.size,
-            objects_used: self.objects_used + voucher.objects,
+            size_used: self.size_used + voucher_delta.size,
+            objects_used: self.objects_used + voucher_delta.objects,
             ..self
         }
     }
 
-    pub fn release_quota(self, voucher: Voucher) -> Self {
+    pub fn release_voucher(self, voucher_delta: Delta) -> Self {
         Self {
-            size_used: self.size_used - voucher.size,
-            objects_used: self.objects_used - voucher.objects,
+            size_used: self.size_used - voucher_delta.size,
+            objects_used: self.objects_used - voucher_delta.objects,
             ..self
         }
     }
@@ -255,18 +255,18 @@ decl_storage! {
         pub DataByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => DataObject<T>;
 
-        /// Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
-        pub Quotas get(fn quotas) config():
-            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Quota;
+        /// Maps storage owner to it`s voucher. Created when the first upload by the new actor occured.
+        pub Vouchers get(fn vouchers) config():
+            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Voucher;
 
-        /// Upper bound for the Quota size limit.
-        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND;
+        /// Upper bound for the Voucher size limit.
+        pub VoucherSizeLimitUpperBound get(fn voucher_size_limit_upper_bound) config(): u64 = DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND;
 
-        /// Upper bound for the Quota objects number limit.
-        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND;
+        /// Upper bound for the Voucher objects number limit.
+        pub VoucherObjectsLimitUpperBound get(fn voucher_objects_limit_upper_bound) config(): u64 = DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND;
 
-        /// Global quota.
-        pub GlobalQuota get(fn global_quota) config(): Quota = DEFAULT_GLOBAL_QUOTA;
+        /// Global voucher.
+        pub GlobalVoucher get(fn global_voucher) config(): Voucher = DEFAULT_GLOBAL_VOUCHER;
 
         /// If all new uploads blocked
         pub UploadingBlocked get(fn uploading_blocked) config(): bool = DEFAULT_UPLOADING_BLOCKED_STATUS;
@@ -281,7 +281,7 @@ decl_event! {
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
         ContentIds = Vec<ContentId<T>>,
-        QuotaLimit = u64,
+        VoucherLimit = u64,
         UploadingStatus = bool
     {
         /// Emits on adding of the content.
@@ -308,17 +308,17 @@ decl_event! {
         /// - Id of the storage provider.
         ContentRejected(ContentId, StorageProviderId),
 
-        /// Emits when the storage object owner quota size limit update performed.
+        /// Emits when the storage object owner voucher size limit update performed.
         /// Params:
         /// - StorageObjectOwner enum.
-        /// - quota size limit.
-        StorageObjectOwnerQuotaSizeLimitUpdated(StorageObjectOwner, QuotaLimit),
+        /// - voucher size limit.
+        StorageObjectOwnerVoucherSizeLimitUpdated(StorageObjectOwner, VoucherLimit),
 
-        /// Emits when the storage object owner quota objects limit update performed.
+        /// Emits when the storage object owner voucher objects limit update performed.
         /// Params:
         /// - StorageObjectOwner enum.
-        /// - quota objects limit.
-        StorageObjectOwnerQuotaObjectsLimitUpdated(StorageObjectOwner, QuotaLimit),
+        /// - voucher objects limit.
+        StorageObjectOwnerVoucherObjectsLimitUpdated(StorageObjectOwner, VoucherLimit),
 
         /// Emits when the content uploading status update performed.
         /// Params:
@@ -352,14 +352,14 @@ decl_module! {
 
             Self::ensure_content_is_valid(&content)?;
 
-            let owner_quota = Self::get_quota(&owner);
+            let owner_voucher = Self::get_voucher(&owner);
 
-            // Ensure owner quota constraints satisfied.
-            // Calculate upload voucher
-            let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+            // Ensure owner voucher constraints satisfied.
+            // Calculate upload voucher delta
+            let upload_voucher_delta = Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
 
-            // Ensure global quota constraints satisfied.
-            Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
+            // Ensure global voucher constraints satisfied.
+            Self::ensure_global_voucher_constraints_satisfied(upload_voucher_delta)?;
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -368,7 +368,7 @@ decl_module! {
             //
 
             // Let's create the entry then
-            Self::upload_content(owner_quota, upload_voucher, liaison, content.clone(), owner.clone());
+            Self::upload_content(owner_voucher, upload_voucher_delta, liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -397,58 +397,58 @@ decl_module! {
             Self::deposit_event(RawEvent::ContentRemoved(content_ids, owner));
         }
 
-        /// Updates storage object owner quota objects limit. Requires leader privileges.
+        /// Updates storage object owner voucher objects limit. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_object_owner_quota_objects_limit(
+        pub fn update_storage_object_owner_voucher_objects_limit(
             origin,
             abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-            new_quota_objects_limit: u64
+            new_voucher_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
+            ensure!(new_voucher_objects_limit <= Self::voucher_objects_limit_upper_bound(), Error::<T>::VoucherObjectsLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
             //
 
-            if <Quotas<T>>::contains_key(&abstract_owner) {
-                <Quotas<T>>::mutate(&abstract_owner, |quota| {
-                    quota.set_new_objects_limit(new_quota_objects_limit);
+            if <Vouchers<T>>::contains_key(&abstract_owner) {
+                <Vouchers<T>>::mutate(&abstract_owner, |voucher| {
+                    voucher.set_new_objects_limit(new_voucher_objects_limit);
                 });
             } else {
-                let mut quota = T::DefaultQuota::get();
-                quota.set_new_objects_limit(new_quota_objects_limit);
-                <Quotas<T>>::insert(&abstract_owner, quota);
+                let mut voucher = T::DefaultVoucher::get();
+                voucher.set_new_objects_limit(new_voucher_objects_limit);
+                <Vouchers<T>>::insert(&abstract_owner, voucher);
             };
 
-            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaObjectsLimitUpdated(abstract_owner, new_quota_objects_limit));
+            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherObjectsLimitUpdated(abstract_owner, new_voucher_objects_limit));
         }
 
-        /// Updates storage object owner quota size limit. Requires leader privileges.
+        /// Updates storage object owner voucher size limit. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_object_owner_quota_size_limit(
+        pub fn update_storage_object_owner_voucher_size_limit(
             origin,
             abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-            new_quota_size_limit: u64
+            new_voucher_size_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
+            ensure!(new_voucher_size_limit <= Self::voucher_size_limit_upper_bound(), Error::<T>::VoucherSizeLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
             //
 
-            if <Quotas<T>>::contains_key(&abstract_owner) {
-                <Quotas<T>>::mutate(&abstract_owner, |quota| {
-                    quota.set_new_size_limit(new_quota_size_limit);
+            if <Vouchers<T>>::contains_key(&abstract_owner) {
+                <Vouchers<T>>::mutate(&abstract_owner, |voucher| {
+                    voucher.set_new_size_limit(new_voucher_size_limit);
                 });
             } else {
-                let mut quota = T::DefaultQuota::get();
-                quota.set_new_size_limit(new_quota_size_limit);
-                <Quotas<T>>::insert(&abstract_owner, quota);
+                let mut voucher = T::DefaultVoucher::get();
+                voucher.set_new_size_limit(new_voucher_size_limit);
+                <Vouchers<T>>::insert(&abstract_owner, voucher);
             };
 
-            Self::deposit_event(RawEvent::StorageObjectOwnerQuotaSizeLimitUpdated(abstract_owner, new_quota_size_limit));
+            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherSizeLimitUpdated(abstract_owner, new_voucher_size_limit));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -499,22 +499,22 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     pub fn initialize_data_directory(
-        quotas: Vec<(
+        vouchers: Vec<(
             StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-            Quota,
+            Voucher,
         )>,
-        quota_size_limit_upper_bound: u64,
-        quota_objects_limit_upper_bound: u64,
-        global_quota: Quota,
+        voucher_size_limit_upper_bound: u64,
+        voucher_objects_limit_upper_bound: u64,
+        global_voucher: Voucher,
         uploading_blocked: bool,
     ) {
-        for (storage_object_owner, quota) in quotas {
-            <Quotas<T>>::insert(storage_object_owner, quota);
+        for (storage_object_owner, voucher) in vouchers {
+            <Vouchers<T>>::insert(storage_object_owner, voucher);
         }
 
-        <QuotaSizeLimitUpperBound>::put(quota_size_limit_upper_bound);
-        <QuotaObjectsLimitUpperBound>::put(quota_objects_limit_upper_bound);
-        <GlobalQuota>::put(global_quota);
+        <VoucherSizeLimitUpperBound>::put(voucher_size_limit_upper_bound);
+        <VoucherObjectsLimitUpperBound>::put(voucher_objects_limit_upper_bound);
+        <GlobalVoucher>::put(global_voucher);
         <UploadingBlocked>::put(uploading_blocked);
     }
 
@@ -531,12 +531,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Get owner quota if exists, otherwise return default one.
-    fn get_quota(owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>) -> Quota {
-        if <Quotas<T>>::contains_key(owner) {
-            Self::quotas(owner)
+    // Get owner voucher if exists, otherwise return default one.
+    fn get_voucher(owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>) -> Voucher {
+        if <Vouchers<T>>::contains_key(owner) {
+            Self::vouchers(owner)
         } else {
-            T::DefaultQuota::get()
+            T::DefaultVoucher::get()
         }
     }
 
@@ -549,32 +549,32 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensure owner quota constraints satisfied, returns total object length and total size voucher for this upload.
-    fn ensure_owner_quota_constraints_satisfied(
-        owner_quota: Quota,
+    // Ensure owner voucher constraints satisfied, returns total object length and total size voucher delta for this upload.
+    fn ensure_owner_voucher_constraints_satisfied(
+        owner_voucher: Voucher,
         content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<Voucher, Error<T>> {
-        let owner_quota_voucher = owner_quota.calculate_voucher();
+    ) -> Result<Delta, Error<T>> {
+        let owner_voucher_delta = owner_voucher.calculate_delta();
 
-        // Ensure total content length is less or equal then available per given owner quota
+        // Ensure total content length is less or equal then available per given owner voucher
         let content_length = content.len() as u64;
 
         ensure!(
-            owner_quota_voucher.objects >= content_length,
-            Error::<T>::QuotaObjectsLimitExceeded
+            owner_voucher_delta.objects >= content_length,
+            Error::<T>::VoucherObjectsLimitExceeded
         );
 
-        // Ensure total content size is less or equal then available per given owner quota
+        // Ensure total content size is less or equal then available per given owner voucher
         let content_size = content
             .iter()
             .fold(0, |total_size, content| total_size + content.size);
 
         ensure!(
-            owner_quota_voucher.size >= content_size,
-            Error::<T>::QuotaSizeLimitExceeded
+            owner_voucher_delta.size >= content_size,
+            Error::<T>::VoucherSizeLimitExceeded
         );
 
-        Ok(Voucher {
+        Ok(Delta {
             size: content_size,
             objects: content_length,
         })
@@ -595,40 +595,41 @@ impl<T: Trait> Module<T> {
         Ok(content)
     }
 
-    fn calculate_content_voucher(content: Vec<DataObject<T>>) -> Voucher {
+    // Calculates content voucher delta
+    fn calculate_content_voucher(content: Vec<DataObject<T>>) -> Delta {
         let content_length = content.len() as u64;
 
         let content_size = content
             .into_iter()
             .fold(0, |total_size, content| total_size + content.size);
 
-        Voucher {
+        Delta {
             size: content_size,
             objects: content_length,
         }
     }
 
-    // Ensures global quota constraints satisfied.
-    fn ensure_global_quota_constraints_satisfied(upload_voucher: Voucher) -> DispatchResult {
-        let global_quota_voucher = Self::global_quota().calculate_voucher();
+    // Ensures global voucher constraints satisfied.
+    fn ensure_global_voucher_constraints_satisfied(upload_voucher_delta: Delta) -> DispatchResult {
+        let global_voucher_voucher = Self::global_voucher().calculate_delta();
 
         ensure!(
-            global_quota_voucher.objects >= upload_voucher.objects,
-            Error::<T>::GlobalQuotaObjectsLimitExceeded
+            global_voucher_voucher.objects >= upload_voucher_delta.objects,
+            Error::<T>::GlobalVoucherObjectsLimitExceeded
         );
 
         ensure!(
-            global_quota_voucher.size >= upload_voucher.size,
-            Error::<T>::GlobalQuotaSizeLimitExceeded
+            global_voucher_voucher.size >= upload_voucher_delta.size,
+            Error::<T>::GlobalVoucherSizeLimitExceeded
         );
 
         Ok(())
     }
 
-    // Complete content upload, update quotas
+    // Complete content upload, update vouchers
     fn upload_content(
-        owner_quota: Quota,
-        upload_voucher: Voucher,
+        owner_voucher: Voucher,
+        upload_voucher_delta: Delta,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
@@ -647,11 +648,11 @@ impl<T: Trait> Module<T> {
             <DataByContentId<T>>::insert(content.content_id, data);
         }
 
-        // Updade or create owner quota.
-        <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_voucher));
+        // Updade or create owner voucher.
+        <Vouchers<T>>::insert(owner, owner_voucher.fill_voucher(upload_voucher_delta));
 
-        // Update global quota
-        <GlobalQuota>::put(Self::global_quota().fill_quota(upload_voucher));
+        // Update global voucher
+        <GlobalVoucher>::put(Self::global_voucher().fill_voucher(upload_voucher_delta));
     }
 
     // Complete content removal
@@ -666,13 +667,13 @@ impl<T: Trait> Module<T> {
             <DataByContentId<T>>::remove(content_id);
         }
 
-        // Updade owner quota.
-        <Quotas<T>>::mutate(owner, |owner_quota| {
-            owner_quota.release_quota(removal_voucher)
+        // Updade owner voucher.
+        <Vouchers<T>>::mutate(owner, |owner_voucher| {
+            owner_voucher.release_voucher(removal_voucher)
         });
 
-        // Update global quota
-        <GlobalQuota>::put(Self::global_quota().release_quota(removal_voucher));
+        // Update global voucher
+        <GlobalVoucher>::put(Self::global_voucher().release_voucher(removal_voucher));
     }
 
     fn ensure_content_is_valid(
@@ -750,14 +751,15 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
 
         Self::ensure_uploading_is_not_blocked()?;
 
-        let owner_quota = Self::get_quota(&owner);
+        let owner_voucher = Self::get_voucher(&owner);
 
-        // Ensure owner quota constraints satisfied.
+        // Ensure owner voucher constraints satisfied.
         // Calculate upload voucher
-        let upload_voucher = Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+        let upload_voucher =
+            Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
 
-        // Ensure global quota constraints satisfied.
-        Self::ensure_global_quota_constraints_satisfied(upload_voucher)?;
+        // Ensure global voucher constraints satisfied.
+        Self::ensure_global_voucher_constraints_satisfied(upload_voucher)?;
 
         let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -767,7 +769,7 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
 
         // Let's create the entry then
 
-        Self::upload_content(owner_quota, upload_voucher, liaison, content, owner);
+        Self::upload_content(owner_voucher, upload_voucher, liaison, content, owner);
         Ok(())
     }
 
@@ -794,10 +796,10 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         Self::ensure_uploading_is_not_blocked()?;
 
         T::StorageProviderHelper::get_random_storage_provider()?;
-        let owner_quota = Self::get_quota(&owner);
+        let owner_voucher = Self::get_voucher(&owner);
 
-        // Ensure owner quota constraints satisfied.
-        Self::ensure_owner_quota_constraints_satisfied(owner_quota, &content)?;
+        // Ensure owner voucher constraints satisfied.
+        Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
         Self::ensure_content_is_valid(&content)
     }
 

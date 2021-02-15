@@ -11,7 +11,7 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-pub use crate::data_directory::Quota;
+pub use crate::data_directory::Voucher;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
@@ -124,7 +124,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const DefaultQuota: Quota = Quota::new(5000, 50);
+    pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
 }
 
 impl system::Trait for Test {
@@ -207,7 +207,7 @@ impl data_directory::Trait for Test {
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-    type DefaultQuota = DefaultQuota;
+    type DefaultVoucher = DefaultVoucher;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
@@ -265,9 +265,9 @@ impl hiring::Trait for Test {
 }
 
 pub struct ExtBuilder {
-    quota_objects_limit_upper_bound: u64,
-    quota_size_limit_upper_bound: u64,
-    global_quota: Quota,
+    voucher_objects_limit_upper_bound: u64,
+    voucher_size_limit_upper_bound: u64,
+    global_voucher: Voucher,
     first_data_object_type_id: u64,
     first_content_id: u64,
     first_relationship_id: u64,
@@ -278,9 +278,9 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            quota_objects_limit_upper_bound: DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
-            quota_size_limit_upper_bound: DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
-            global_quota: DEFAULT_GLOBAL_QUOTA,
+            voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            voucher_size_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            global_voucher: DEFAULT_GLOBAL_VOUCHER,
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
@@ -316,8 +316,8 @@ impl ExtBuilder {
         self
     }
 
-    pub fn global_quota(mut self, global_quota: Quota) -> Self {
-        self.global_quota = global_quota;
+    pub fn global_voucher(mut self, global_voucher: Voucher) -> Self {
+        self.global_voucher = global_voucher;
         self
     }
 
@@ -327,11 +327,11 @@ impl ExtBuilder {
             .unwrap();
 
         data_directory::GenesisConfig::<Test> {
-            quota_size_limit_upper_bound: self.quota_size_limit_upper_bound,
-            quota_objects_limit_upper_bound: self.quota_objects_limit_upper_bound,
-            global_quota: self.global_quota,
+            voucher_size_limit_upper_bound: self.voucher_size_limit_upper_bound,
+            voucher_objects_limit_upper_bound: self.voucher_objects_limit_upper_bound,
+            global_voucher: self.global_voucher,
             data_object_by_content_id: vec![],
-            quotas: vec![],
+            vouchers: vec![],
             uploading_blocked: self.uploading_blocked,
         }
         .assimilate_storage(&mut t)
