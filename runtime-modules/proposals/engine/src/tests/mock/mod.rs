@@ -347,6 +347,10 @@ impl crate::WeightInfo for () {
     fn cancel_active_and_pending_proposals(_: u32) -> u64 {
         0
     }
+
+    fn emergency_proposal_cancellation() -> Weight {
+        0
+    }
 }
 
 impl ProposalObserver<Test> for () {

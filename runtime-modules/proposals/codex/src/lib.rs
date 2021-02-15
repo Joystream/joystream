@@ -113,6 +113,7 @@ pub trait WeightInfo {
     fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
     fn create_proposal_lock_blog_post(t: u32) -> Weight;
     fn create_proposal_unlock_blog_post() -> Weight;
+    fn create_proposal_emergency_proposal_cancellation(d: u32) -> Weight;
     fn update_working_group_budget_positive_forum() -> Weight;
     fn update_working_group_budget_negative_forum() -> Weight;
     fn update_working_group_budget_positive_storage() -> Weight;
@@ -133,6 +134,7 @@ pub trait Trait:
     + common::Trait
     + council::Trait
     + staking::Trait
+    + proposals_engine::Trait
 {
     /// Proposal Codex module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -261,6 +263,11 @@ pub trait Trait:
 
     /// `Unlock Blog Post` proposal parameters
     type UnlockBlogPostProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Emergency Proposal Cancellation` proposal parameters
+    type EmergencyProposalCancellationProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
@@ -482,6 +489,9 @@ decl_module! {
 
         const UnlockBlogPostProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UnlockBlogPostProposalParameters::get();
+
+        const EmergencyProposalCancellationProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::EmergencyProposalCancellationProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -770,6 +780,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::UnlockBlogPost(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::EmergencyProposalCancellation(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -834,6 +847,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::EditBlogPost(..) => T::EditBlogPostProoposalParamters::get(),
             ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
+            ProposalDetails::EmergencyProposalCancellation(..) => {
+                T::EmergencyProposalCancellationProposalParameters::get()
+            }
         }
     }
 
@@ -1001,6 +1017,12 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::UnlockBlogPost(..) => {
                 WeightInfoCodex::<T>::create_proposal_unlock_blog_post().saturated_into()
+            }
+            ProposalDetails::EmergencyProposalCancellation(..) => {
+                WeightInfoCodex::<T>::create_proposal_emergency_proposal_cancellation(
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
             }
         }
     }

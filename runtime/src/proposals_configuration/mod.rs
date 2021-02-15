@@ -61,6 +61,8 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.lock_blog_post_proposal;
     pub UnlockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.unlock_blog_post_proposal;
+    pub EmergencyProposalCancellationProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.emergency_proposal_cancellation_proposal;
 }
 
 ///////////
@@ -90,6 +92,7 @@ struct AllProposalsParameters {
     pub edit_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub lock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub emergency_proposal_cancellation_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -189,7 +192,8 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), create_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), edit_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
-        init_proposal_parameter_object!(params, jo, unlock_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
+        init_proposal_parameter_object!(params, jo, emergency_proposal_cancellation_proposal);
     }
 
     params
@@ -324,5 +328,7 @@ fn default_parameters() -> AllProposalsParameters {
         edit_blog_post_proposal: defaults::edit_blog_post_proposal(),
         lock_blog_post_proposal: defaults::lock_blog_post_proposal(),
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
+        emergency_proposal_cancellation_proposal:
+            defaults::emergency_proposal_cancellation_proposal(),
     }
 }

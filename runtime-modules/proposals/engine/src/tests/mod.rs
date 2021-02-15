@@ -231,6 +231,27 @@ impl VetoProposalFixture {
     }
 }
 
+struct EmergencyProposalCancellationFixture {
+    origin: RawOrigin<u64>,
+    proposal_id: u32,
+}
+
+impl EmergencyProposalCancellationFixture {
+    fn new(proposal_id: u32) -> Self {
+        EmergencyProposalCancellationFixture {
+            proposal_id,
+            origin: RawOrigin::Root,
+        }
+    }
+
+    fn cancel_and_assert(self, expected_result: DispatchResult) {
+        assert_eq!(
+            ProposalsEngine::emergency_proposal_cancellation(self.origin.into(), self.proposal_id,),
+            expected_result
+        );
+    }
+}
+
 struct VoteGenerator {
     proposal_id: u32,
     current_account_id: u64,
@@ -756,6 +777,90 @@ fn veto_proposal_fails_with_not_existing_proposal() {
 
 #[test]
 fn veto_proposal_fails_with_insufficient_rights() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let veto_proposal = VetoProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
+        veto_proposal.veto_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn emergency_proposal_cancellation_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(10);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(6);
+
+        let cancel_proposal = EmergencyProposalCancellationFixture::new(proposal_id);
+        cancel_proposal.cancel_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Canceled,
+        ));
+
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+    });
+}
+
+#[test]
+fn emergency_proposal_cancellation_fails_with_not_existing_proposal() {
+    initial_test_ext().execute_with(|| {
+        let emergency_proposal = EmergencyProposalCancellationFixture::new(2);
+        emergency_proposal.cancel_and_assert(Err(Error::<Test>::ProposalNotFound.into()));
+    });
+}
+
+#[test]
+fn emergency_proposal_cancellation_fails_before_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let cancel_proposal = EmergencyProposalCancellationFixture::new(proposal_id);
+        cancel_proposal.cancel_and_assert(Err(Error::<Test>::ProposalNotPendingExecution.into()));
+
+        assert!(<crate::Proposals<Test>>::contains_key(proposal_id));
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+    });
+}
+
+#[test]
+fn emergency_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();

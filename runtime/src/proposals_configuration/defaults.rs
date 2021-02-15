@@ -347,3 +347,19 @@ pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Bal
         constitutionality: 1,
     }
 }
+
+// TODO: decide on paramaters
+// Proposal parameters for the 'Emergency Proposal Cancellation' proposal
+pub(crate) fn emergency_proposal_cancellation_proposal() -> ProposalParameters<BlockNumber, Balance>
+{
+    ProposalParameters {
+        voting_period: 10000,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50_000),
+        constitutionality: 1,
+    }
+}

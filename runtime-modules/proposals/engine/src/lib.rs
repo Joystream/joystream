@@ -167,6 +167,7 @@ pub trait WeightInfo {
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
     fn cancel_active_and_pending_proposals(i: u32) -> Weight;
+    fn emergency_proposal_cancellation() -> Weight;
 }
 
 type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
@@ -311,6 +312,9 @@ decl_error! {
 
         /// Proposal is finalized already
         ProposalFinalized,
+
+        /// Proposal is not pending execution
+        ProposalNotPendingExecution,
 
         /// The proposal have been already voted on
         AlreadyVoted,
@@ -538,6 +542,26 @@ decl_module! {
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
+        }
+
+        /// Cancel a proposal within grace period. Must be root.
+        #[weight = WeightInfoEngine::<T>::emergency_proposal_cancellation()]
+        pub fn emergency_proposal_cancellation(origin, proposal_id: T::ProposalId) {
+            ensure_root(origin)?;
+
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
+            let proposal = Self::proposals(proposal_id);
+
+            ensure!(
+                proposal.status.is_pending_execution_proposal(),
+                Error::<T>::ProposalNotPendingExecution
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
 
     }

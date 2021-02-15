@@ -262,6 +262,10 @@ impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
     fn cancel_active_and_pending_proposals(_: u32) -> u64 {
         0
     }
+
+    fn emergency_proposal_cancellation() -> Weight {
+        0
+    }
 }
 
 impl Default for crate::Call<Test> {
@@ -595,6 +599,7 @@ impl crate::Trait for Test {
     type EditBlogPostProoposalParamters = DefaultProposalParameters;
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
+    type EmergencyProposalCancellationProposalParameters = DefaultProposalParameters;
 
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
         call_wg!(working_group<Test>, get_budget)
@@ -870,6 +875,9 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_unlock_blog_post() -> Weight {
+        0
+    }
+    fn create_proposal_emergency_proposal_cancellation(_: u32) -> Weight {
         0
     }
     fn update_working_group_budget_positive_forum() -> Weight {

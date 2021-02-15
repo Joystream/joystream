@@ -313,6 +313,28 @@ benchmarks! {
         );
     }
 
+    create_proposal_emergency_proposal_cancellation {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::EmergencyProposalCancellation(0.into());
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
     create_proposal_create_working_group_lead_opening {
         let i in 1 .. MAX_BYTES;
         let t in ...;
@@ -1129,6 +1151,13 @@ mod tests {
     fn test_unlock_blog_post() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_unlock_blog_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_emergency_proposal_cancellation() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_emergency_proposal_cancellation::<Test>());
         });
     }
 }
