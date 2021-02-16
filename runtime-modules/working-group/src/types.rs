@@ -196,6 +196,9 @@ pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberI
 
     /// When set, describes role stake of the worker/lead.
     pub role_stake_profile: Option<RoleStakeProfile<StakeId, BlockNumber>>,
+
+    /// Raw storage field
+    pub storage: Vec<u8>,
 }
 
 impl<
@@ -218,6 +221,7 @@ impl<
             role_account_id: role_account_id.clone(),
             reward_relationship: reward_relationship.clone(),
             role_stake_profile: role_stake_profile.clone(),
+            storage: Vec::new(),
         }
     }
 }

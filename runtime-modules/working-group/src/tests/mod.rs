@@ -1166,6 +1166,79 @@ fn update_worker_role_account_fails_with_invalid_origin() {
 }
 
 #[test]
+fn update_worker_storage_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let storage_field = vec![0u8].repeat(10);
+
+        let worker_id = fill_default_worker_position();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStorageUpdated(
+            worker_id,
+            storage_field,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(10);
+
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let old_lead = TestWorkingGroup::worker_by_id(worker_id);
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        let new_lead = TestWorkingGroup::worker_by_id(worker_id);
+
+        assert_eq!(
+            new_lead,
+            Worker {
+                storage: storage_field,
+                ..old_lead
+            }
+        );
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let storage_field = vec![0u8].repeat(10);
+
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field)
+                .with_origin(RawOrigin::None);
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::MembershipUnsignedOrigin.into(),
+        ));
+    });
+}
+
+#[test]
 fn update_worker_reward_account_succeeds() {
     build_test_externalities().execute_with(|| {
         /*

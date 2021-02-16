@@ -209,6 +209,12 @@ decl_event!(
         /// - Role account id of the worker.
         WorkerRoleAccountUpdated(WorkerId, AccountId),
 
+        /// Emits on updating the worker storage role.
+        /// Params:
+        /// - Id of the worker.
+        /// - Raw storage field.
+        WorkerStorageUpdated(WorkerId, Vec<u8>),
+
         /// Emits on updating the reward account of the worker.
         /// Params:
         /// - Member id of the worker.
@@ -382,6 +388,34 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
+        }
+
+        /// Update the associated role storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_storage(
+            origin,
+            worker_id: WorkerId<T>,
+            storage: Vec<u8>
+        ) {
+            // Ensuring worker actually exists
+            let worker = Self::ensure_worker_exists(&worker_id)?;
+
+            // Ensure that origin is signed by member with given id.
+            ensure_on_wrapped_error!(
+                membership::Module::<T>::ensure_member_controller_account_signed(origin, &worker.member_id)
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Complete the role storage update
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.storage = storage.clone()
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
         /// Update the reward account associated with a set reward relationship for the active worker.
