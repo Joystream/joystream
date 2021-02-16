@@ -167,7 +167,6 @@ pub trait WeightInfo {
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
     fn cancel_active_and_pending_proposals(i: u32) -> Weight;
-    fn emergency_proposal_cancellation() -> Weight;
 }
 
 type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
@@ -532,38 +531,15 @@ decl_module! {
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(
-                proposal.status.is_active_or_pending_execution(),
-                Error::<T>::ProposalFinalized
-            );
-
+            // Note: we don't need to check if the proposal is active pending execution or
+            // or pending constitutionality since if it in the storage `Proposals` it follows
+            // that it is in one of those states.
             //
             // == MUTATION SAFE ==
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
-
-        /// Cancel a proposal within grace period. Must be root.
-        #[weight = WeightInfoEngine::<T>::emergency_proposal_cancellation()]
-        pub fn emergency_proposal_cancellation(origin, proposal_id: T::ProposalId) {
-            ensure_root(origin)?;
-
-            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
-            let proposal = Self::proposals(proposal_id);
-
-            ensure!(
-                proposal.status.is_pending_execution_proposal(),
-                Error::<T>::ProposalNotPendingExecution
-            );
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
-        }
-
     }
 }
 

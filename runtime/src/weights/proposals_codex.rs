@@ -173,7 +173,7 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(10 as Weight))
     }
-    fn create_proposal_emergency_proposal_cancellation(d: u32) -> Weight {
+    fn create_proposal_veto_proposal(d: u32) -> Weight {
         (1_209_486_000 as Weight)
             .saturating_add((222_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))

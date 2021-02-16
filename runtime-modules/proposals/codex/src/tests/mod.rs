@@ -675,7 +675,7 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
 }
 
 #[test]
-fn create_emergency_proposal_cancellation_common_checks_succeed() {
+fn create_veto_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -695,7 +695,7 @@ fn create_emergency_proposal_cancellation_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let proposal_details = ProposalDetails::EmergencyProposalCancellation(0);
+        let proposal_details = ProposalDetails::VetoProposal(0);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -721,8 +721,7 @@ fn create_emergency_proposal_cancellation_common_checks_succeed() {
                     proposal_details.clone(),
                 )
             },
-            proposal_parameters:
-                <Test as crate::Trait>::EmergencyProposalCancellationProposalParameters::get(),
+            proposal_parameters: <Test as crate::Trait>::VetoProposalProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });

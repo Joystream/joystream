@@ -349,9 +349,8 @@ pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Bal
 }
 
 // TODO: decide on paramaters
-// Proposal parameters for the 'Emergency Proposal Cancellation' proposal
-pub(crate) fn emergency_proposal_cancellation_proposal() -> ProposalParameters<BlockNumber, Balance>
-{
+// Proposal parameters for the 'Veto Proposal' proposal
+pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 10000,
         grace_period: 0,

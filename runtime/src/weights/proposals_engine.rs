@@ -71,9 +71,4 @@ impl proposals_engine::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().writes(2 as Weight))
             .saturating_add(DbWeight::get().writes((9 as Weight).saturating_mul(i as Weight)))
     }
-    fn emergency_proposal_cancellation() -> Weight {
-        (390_477_000 as Weight)
-            .saturating_add(DbWeight::get().reads(4 as Weight))
-            .saturating_add(DbWeight::get().writes(8 as Weight))
-    }
 }

@@ -135,9 +135,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::UnlockBlogPost(post_id) => {
                 Call::Blog(blog::Call::unlock_post(post_id))
             }
-            ProposalDetails::EmergencyProposalCancellation(proposal_id) => Call::ProposalsEngine(
-                proposals_engine::Call::emergency_proposal_cancellation(proposal_id),
-            ),
+            ProposalDetails::VetoProposal(proposal_id) => {
+                Call::ProposalsEngine(proposals_engine::Call::veto_proposal(proposal_id))
+            }
         };
 
         call.encode()

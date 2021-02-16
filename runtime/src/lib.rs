@@ -865,8 +865,7 @@ impl proposals_codex::Trait for Runtime {
     type EditBlogPostProoposalParamters = EditBlogPostProoposalParamters;
     type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
-    type EmergencyProposalCancellationProposalParameters =
-        EmergencyProposalCancellationProposalParameters;
+    type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
         call_wg!(working_group, get_budget)

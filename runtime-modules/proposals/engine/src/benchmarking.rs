@@ -431,35 +431,6 @@ benchmarks! {
         );
     }
 
-    emergency_proposal_cancellation {
-        let (account_ids, proposals) = create_multiple_finalized_proposals::<T>(1, 0, VoteKind::Approve,
-            1, 5);
-
-        assert_eq!(account_ids.len(), 1);
-        let proposal_id = *proposals.last().unwrap();
-        let account_id = account_ids.last().unwrap().clone();
-
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 1);
-
-        run_to_block::<T>(System::<T>::block_number() + One::one());
-
-        let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
-    }: _ (RawOrigin::Root, proposal_id)
-    verify {
-        assert!(!Proposals::<T>::contains_key(proposal_id), "Proposal still in storage");
-
-        assert!(
-            !DispatchableCallCode::<T>::contains_key(proposal_id),
-            "Proposal code still in storage"
-        );
-
-        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 0, "Proposal still active");
-
-        assert_last_event::<T>(
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled).into()
-        );
-    }
-
     veto_proposal {
         let (account_id, _, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
     }: _ (RawOrigin::Root, proposal_id)
@@ -849,13 +820,6 @@ mod tests {
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_emergency_cancellation_proposal() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_emergency_proposal_cancellation::<Test>());
         });
     }
 }

@@ -728,7 +728,7 @@ fn unlock_blog_post_proposal_execution_succeeds() {
 }
 
 #[test]
-fn emergency_proposal_cancellation_proposal_execution_succeeds() {
+fn veto_proposal_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;
         let account_id: [u8; 32] = [member_id; 32];
@@ -772,7 +772,7 @@ fn emergency_proposal_cancellation_proposal_execution_succeeds() {
             ProposalCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
-                ProposalDetails::EmergencyProposalCancellation(proposal_id),
+                ProposalDetails::VetoProposal(proposal_id),
             )
         })
         .with_member_id(member_id as u64)

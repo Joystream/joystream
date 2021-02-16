@@ -119,7 +119,7 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
     UnlockBlogPost(PostId),
 
     /// `Veto Proposal` proposal
-    EmergencyProposalCancellation(ProposalId),
+    VetoProposal(ProposalId),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> Default

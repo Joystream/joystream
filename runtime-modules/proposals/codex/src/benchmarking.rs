@@ -313,14 +313,14 @@ benchmarks! {
         );
     }
 
-    create_proposal_emergency_proposal_cancellation {
+    create_proposal_veto_proposal {
         let t in ...;
         let d in ...;
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::EmergencyProposalCancellation(0.into());
+        let proposal_details = ProposalDetails::VetoProposal(0.into());
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -1155,9 +1155,9 @@ mod tests {
     }
 
     #[test]
-    fn test_create_proposal_emergency_proposal_cancellation() {
+    fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_emergency_proposal_cancellation::<Test>());
+            assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
         });
     }
 }
