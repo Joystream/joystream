@@ -29,7 +29,7 @@ export default async function getContentFromStorageNode({ api, query }: FlowProp
   const contentId = ContentId.decode(registry, dataObjectId)
 
   // Decode data object
-  const dataObject = await api.getDataObjectByContentId(contentId)
+  const dataObject = await api.getDataByContentId(contentId)
 
   assert(dataObject, 'dataObject should not be null')
 
