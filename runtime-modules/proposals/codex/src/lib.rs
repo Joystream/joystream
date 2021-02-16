@@ -91,29 +91,29 @@ pub trait WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight;
     fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight;
     fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_funding_request(i: u32) -> Weight;
-    fn create_proposal_set_max_validator_count(d: u32) -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening() -> Weight;
-    fn create_proposal_update_working_group_budget(d: u32) -> Weight;
+    fn create_proposal_funding_request(i: u32, d: u32) -> Weight;
+    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
+    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
+    fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight;
     fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
-    fn create_proposal_slash_working_group_lead(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_working_group_lead_reward(d: u32) -> Weight;
-    fn create_proposal_terminate_working_group_lead() -> Weight;
-    fn create_proposal_amend_constitution(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_cancel_working_group_lead_opening(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_membership_price() -> Weight;
-    fn create_proposal_set_council_budget_increment() -> Weight;
-    fn create_proposal_set_councilor_reward(t: u32) -> Weight;
+    fn create_proposal_slash_working_group_lead(d: u32) -> Weight;
+    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight;
+    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
+    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight;
+    fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight;
+    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight;
     fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_count() -> Weight;
-    fn create_proposal_set_membership_lead_invitation_quota(t: u32) -> Weight;
-    fn create_proposal_set_referral_cut(t: u32) -> Weight;
+    fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight;
+    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
     fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
     fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
-    fn create_proposal_lock_blog_post(t: u32) -> Weight;
-    fn create_proposal_unlock_blog_post() -> Weight;
-    fn create_proposal_veto_proposal(d: u32) -> Weight;
+    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
+    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
+    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
     fn update_working_group_budget_positive_forum() -> Weight;
     fn update_working_group_budget_negative_forum() -> Weight;
     fn update_working_group_budget_positive_storage() -> Weight;
@@ -907,23 +907,33 @@ impl<T: Trait> Module<T> {
                 )
             }
             ProposalDetails::FundingRequest(params) => {
-                WeightInfoCodex::<T>::create_proposal_funding_request(params.len().saturated_into())
+                WeightInfoCodex::<T>::create_proposal_funding_request(
+                    params.len().saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetMaxValidatorCount(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_max_validator_count(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::CreateWorkingGroupLeadOpening(opening_params) => {
                 WeightInfoCodex::<T>::create_proposal_create_working_group_lead_opening(
                     opening_params.description.len().saturated_into(),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::FillWorkingGroupLeadOpening(..) => {
-                WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening()
+                WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 WeightInfoCodex::<T>::create_proposal_update_working_group_budget(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -935,40 +945,48 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
-                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetWorkingGroupLeadReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_working_group_lead_reward(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::TerminateWorkingGroupLead(..) => {
-                WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead()
+                WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
-                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetMembershipPrice(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_membership_price()
-            }
-            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
-                WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                WeightInfoCodex::<T>::create_proposal_set_membership_price(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
+            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
+                WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    description_length.saturated_into(),
+                )
+            }
             ProposalDetails::SetCouncilBudgetIncrement(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_council_budget_increment()
+                WeightInfoCodex::<T>::create_proposal_set_council_budget_increment(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetCouncilorReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_councilor_reward(
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetInitialInvitationBalance(..) => {
@@ -978,16 +996,20 @@ impl<T: Trait> Module<T> {
                 )
             }
             ProposalDetails::SetInitialInvitationCount(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_initial_invitation_count()
+                WeightInfoCodex::<T>::create_proposal_set_initial_invitation_count(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
-                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetReferralCut(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_referral_cut(
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::CreateBlogPost(header, body) => {
@@ -1009,13 +1031,21 @@ impl<T: Trait> Module<T> {
                 )
             }
             ProposalDetails::LockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_lock_blog_post(title_length.saturated_into())
+                WeightInfoCodex::<T>::create_proposal_lock_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::UnlockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_unlock_blog_post().saturated_into()
+                WeightInfoCodex::<T>::create_proposal_unlock_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
             }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
                 .saturated_into()
