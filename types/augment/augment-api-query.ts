@@ -254,7 +254,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Maps data objects by their content id.
        **/
-      DataByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>>;
+      dataByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>>;
       /**
        * Global voucher.
        **/
