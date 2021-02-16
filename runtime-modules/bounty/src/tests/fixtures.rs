@@ -1,5 +1,5 @@
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
@@ -7,6 +7,7 @@ use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
 };
+use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -199,6 +200,7 @@ impl CreateBountyFixture {
                 creation_params: params.clone(),
                 total_funding: params.creator_funding,
                 milestone: expected_milestone,
+                active_work_entry_count: 0,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -462,6 +464,7 @@ impl AnnounceWorkEntryFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bounty = Bounty::bounties(self.bounty_id);
         let next_entry_count_value = Bounty::work_entry_count() + 1;
         let entry_id: u64 = next_entry_count_value.into();
 
@@ -474,20 +477,40 @@ impl AnnounceWorkEntryFixture {
 
         assert_eq!(actual_result, expected_result);
 
+        let new_bounty = Bounty::bounties(self.bounty_id);
         if actual_result.is_ok() {
             assert_eq!(next_entry_count_value, Bounty::work_entry_count());
-            assert!(<crate::WorkEntries<Test>>::contains_key(&entry_id));
+            assert!(<crate::WorkEntries<Test>>::contains_key(
+                &self.bounty_id,
+                &entry_id
+            ));
 
             let expected_entry = WorkEntry::<Test> {
                 member_id: self.member_id,
-                bounty_id: self.bounty_id,
                 staking_account_id: self.staking_account_id,
+                submitted_at: System::current_block_number(),
             };
 
-            assert_eq!(expected_entry, Bounty::work_entries(entry_id));
+            assert_eq!(
+                expected_entry,
+                Bounty::work_entries(self.bounty_id, entry_id)
+            );
+
+            assert_eq!(
+                new_bounty.active_work_entry_count,
+                old_bounty.active_work_entry_count + 1
+            );
         } else {
             assert_eq!(next_entry_count_value - 1, Bounty::work_entry_count());
-            assert!(!<crate::WorkEntries<Test>>::contains_key(&entry_id));
+            assert!(!<crate::WorkEntries<Test>>::contains_key(
+                &self.bounty_id,
+                &entry_id
+            ));
+
+            assert_eq!(
+                new_bounty.active_work_entry_count,
+                old_bounty.active_work_entry_count
+            );
         }
     }
 }
@@ -526,6 +549,7 @@ impl WithdrawWorkEntryFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bounty = Bounty::bounties(self.bounty_id);
         let actual_result = Bounty::withdraw_work_entry(
             self.origin.clone().into(),
             self.member_id,
@@ -536,7 +560,16 @@ impl WithdrawWorkEntryFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::WorkEntries<Test>>::contains_key(&self.entry_id));
+            assert!(!<crate::WorkEntries<Test>>::contains_key(
+                &self.bounty_id,
+                &self.entry_id
+            ));
+
+            let new_bounty = Bounty::bounties(self.bounty_id);
+            assert_eq!(
+                new_bounty.active_work_entry_count,
+                old_bounty.active_work_entry_count - 1
+            );
         }
     }
 }

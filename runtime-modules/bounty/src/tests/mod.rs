@@ -1589,6 +1589,13 @@ fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
             .with_member_id(member_id)
             .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::MaxWorkEntryLimitReached.into()));
     });
 }
@@ -1738,12 +1745,206 @@ fn withdraw_work_entry_succeeded() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_entry_id(entry_id)
-            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), initial_balance);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkEntryWithdrawn(
             bounty_id, entry_id, member_id,
         ));
+    });
+}
+
+#[test]
+fn withdraw_work_slashes_successfully1() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let creator_funding = 200;
+        let max_amount = 100;
+        let entrant_stake = 100;
+        let work_period = 1000;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(work_period)
+            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: starting_block,
+                reached_on_creation: true,
+            })
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        // Announcing entry with no slashes
+        let member_id1 = 1;
+        let account_id1 = 1;
+
+        increase_account_balance(&account_id1, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_staking_account_id(account_id1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id1 = 1;
+
+        // Announcing entry with half slashing.
+
+        let member_id2 = 2;
+        let account_id2 = 2;
+
+        increase_account_balance(&account_id2, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id2))
+            .with_member_id(member_id2)
+            .with_staking_account_id(account_id2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id2),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id2 = 2;
+
+        // No slashes
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id1), initial_balance);
+
+        // Slashes half.
+        let half_period = work_period / 2;
+        run_to_block(starting_block + half_period);
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id2))
+            .with_member_id(member_id2)
+            .with_entry_id(entry_id2)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id2),
+            initial_balance - entrant_stake / 2
+        );
+    });
+}
+
+#[test]
+fn withdraw_work_slashes_successfully2() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let creator_funding = 200;
+        let max_amount = 100;
+        let entrant_stake = 100;
+        let work_period = 1000;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(work_period)
+            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: starting_block,
+                reached_on_creation: true,
+            })
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        // Announcing entry with 33%
+        let member_id1 = 1;
+        let account_id1 = 1;
+
+        increase_account_balance(&account_id1, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_staking_account_id(account_id1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id1 = 1;
+
+        // Announcing entry with full slashing.
+
+        let member_id2 = 2;
+        let account_id2 = 2;
+
+        increase_account_balance(&account_id2, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id2))
+            .with_member_id(member_id2)
+            .with_staking_account_id(account_id2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id2),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id2 = 2;
+
+        // Slashes half.
+        let one_third_period = work_period / 3;
+        run_to_block(starting_block + one_third_period);
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake / 3
+        );
+
+        // Slashes all.
+        run_to_block(starting_block + work_period);
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id2))
+            .with_member_id(member_id2)
+            .with_entry_id(entry_id2)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id2),
+            initial_balance - entrant_stake
+        );
     });
 }
 
@@ -1832,30 +2033,58 @@ fn withdraw_work_entry_fails_with_invalid_origin() {
     });
 }
 
-// #[test]
-// fn withdraw_work_entry_fails_with_invalid_stage() {
-//     build_test_externalities().execute_with(|| {
-//         CreateBountyFixture::default()
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Ok(()));
-//
-//         let bounty_id = 1;
-//         let member_id = 1;
-//         let account_id = 1;
-//
-//         AnnounceWorkEntryFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_bounty_id(bounty_id)
-//             .call_and_assert(Ok(()));
-//
-//         let entry_id = 1;
-//
-//         WithdrawWorkEntryFixture::default()
-//             .with_entry_id(entry_id)
-//             .with_bounty_id(bounty_id)
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
-//     });
-// }
+#[test]
+fn withdraw_work_entry_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let creator_funding = 200;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let work_period = 10;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_entrant_stake(entrant_stake)
+            .with_expected_milestone(BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: starting_block,
+                reached_on_creation: true,
+            })
+            .with_work_period(work_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id = 1;
+
+        run_to_block(starting_block + work_period + 1);
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}

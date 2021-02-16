@@ -34,7 +34,10 @@ mod benchmarking;
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
 // TODO: double map bounty-entry
-// TODO: add bounty stage test for entry withdrawal
+// TODO: test all stages
+// TODO: refactor all stages
+// TODO: benchmark withdraw_work_entry
+// TODO: add work submissions.
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -286,27 +289,44 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
     /// Bounty current milestone(state). It represents fact known about the bounty, eg.:
     /// it was canceled or max funding amount was reached.
     pub milestone: BountyMilestone<BlockNumber>,
+
+    /// Current active work entry counter.
+    pub active_work_entry_count: u32,
+}
+
+impl<Balance, BlockNumber, MemberId> BountyRecord<Balance, BlockNumber, MemberId> {
+    // Increments bounty active work entry counter.
+    fn increment_active_work_entry_counter(&mut self) {
+        self.active_work_entry_count += 1;
+    }
+
+    // Decrements bounty active work entry counter. Nothing happens on zero counter.
+    fn decrement_active_work_entry_counter(&mut self) {
+        if self.active_work_entry_count > 0 {
+            self.active_work_entry_count -= 1;
+        }
+    }
 }
 
 /// Alias type for the WorkEntry.
 pub type WorkEntry<T> = WorkEntryRecord<
     <T as frame_system::Trait>::AccountId,
     <T as common::Trait>::MemberId,
-    <T as Trait>::BountyId,
+    <T as frame_system::Trait>::BlockNumber,
 >;
 
 /// Work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct WorkEntryRecord<AccountId, MemberId, BountyId> {
+pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
     /// Work entrant member ID.
     pub member_id: MemberId,
 
-    /// Bounty ID .
-    pub bounty_id: BountyId,
-
     /// Optional account ID for staking lock.
     pub staking_account_id: Option<AccountId>,
+
+    /// Work entry submission block.
+    pub submitted_at: BlockNumber,
 }
 
 /// Balance alias for `balances` module.
@@ -333,9 +353,10 @@ decl_storage! {
         /// Count of all bounties that have been created.
         pub BountyCount get(fn bounty_count): u32;
 
-        /// Work entry storage.
-        pub WorkEntries get(fn work_entries) : map hasher(blake2_128_concat)
-            T::WorkEntryId => WorkEntry<T>;
+        /// Work entry storage double map.
+        pub WorkEntries get(fn work_entries): double_map
+            hasher(blake2_128_concat) T::BountyId,
+            hasher(blake2_128_concat) T::WorkEntryId => WorkEntry<T>;
 
         /// Count of all work entries that have been created.
         pub WorkEntryCount get(fn work_entry_count): u32;
@@ -441,9 +462,6 @@ decl_error! {
         /// Work entry doesnt exist.
         WorkEntryDoesntExist,
 
-        /// Work entry doesn't match the bounty.
-        InvalidEntryForBounty, //TODO: test or consider removing in case of bounty-entry double map
-
         /// Cannot add work entry because of the limit.
         MaxWorkEntryLimitReached,
     }
@@ -500,6 +518,7 @@ decl_module! {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
+                active_work_entry_count: 0,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -782,10 +801,8 @@ decl_module! {
 
             let stake = Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
 
-            let work_entry_count = Self::work_entry_count();
-
             ensure!(
-                work_entry_count < T::MaxWorkEntryLimit::get(),
+                bounty.active_work_entry_count < T::MaxWorkEntryLimit::get(),
                 Error::<T>::MaxWorkEntryLimitReached,
             );
 
@@ -793,7 +810,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let next_entry_count_value = work_entry_count + 1;
+            let next_entry_count_value = Self::work_entry_count() + 1;
             let entry_id = T::WorkEntryId::from(next_entry_count_value);
 
             // Lock stake balance for bounty if the stake is required.
@@ -802,14 +819,19 @@ decl_module! {
             }
 
             let entry = WorkEntry::<T> {
-                bounty_id,
                 member_id,
-                staking_account_id: staking_account_id.clone()
+                staking_account_id: staking_account_id.clone(),
+                submitted_at: Self::current_block(),
             };
 
-            <WorkEntries<T>>::insert(entry_id, entry);
+            <WorkEntries<T>>::insert(bounty_id, entry_id, entry);
             WorkEntryCount::mutate(|count| {
                 *count = next_entry_count_value
+            });
+
+            // Increment work entry counter and update bounty record.
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.increment_active_work_entry_counter();
             });
 
             Self::deposit_event(RawEvent::WorkEntryAnnounced(
@@ -838,15 +860,20 @@ decl_module! {
                 Error::<T>::InvalidBountyStage,
             );
 
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
-
-            ensure!(bounty_id == entry.bounty_id, Error::<T>::InvalidEntryForBounty);
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <WorkEntries<T>>::remove(entry_id);
+            Self::unlock_work_entry_stake(&bounty, &entry);
+
+            <WorkEntries<T>>::remove(bounty_id, entry_id);
+
+            // Decrement work entry counter and update bounty record.
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.decrement_active_work_entry_counter();
+            });
 
             Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
         }
@@ -1092,11 +1119,17 @@ impl<T: Trait> Module<T> {
                         BountyStage::Funding { has_contributions }
                     } else {
                         // Funding period expired.
-                        if bounty.total_funding >= bounty.creation_params.min_amount {
-                            // Minimum funding amount reached.
+                        if bounty.total_funding >= bounty.creation_params.min_amount
+                            // Work period is not expired
+                            && now
+                                <= created_at
+                                    + funding_period
+                                    + bounty.creation_params.work_period
+                        // Minimum funding amount reached.
+                        {
                             BountyStage::WorkSubmission
                         } else {
-                            // Funding failed.
+                            // Funding failed or work period ended.
                             BountyStage::Withdrawal {
                                 creator_funds_need_withdrawal: funding_was_provided,
                                 cherry_needs_withdrawal: cherry_is_not_zero && !has_contributions,
@@ -1185,6 +1218,7 @@ impl<T: Trait> Module<T> {
     fn remove_bounty(bounty_id: &T::BountyId) {
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
+        <WorkEntries<T>>::remove_prefix(bounty_id);
 
         // Slash remaining funds.
         let bounty_account_id = Self::bounty_account_id(*bounty_id);
@@ -1309,14 +1343,43 @@ impl<T: Trait> Module<T> {
     }
 
     // Verifies work entry existence and retrieves an entry from the storage.
-    fn ensure_work_entry_exists(entry_id: &T::WorkEntryId) -> Result<WorkEntry<T>, DispatchError> {
+    fn ensure_work_entry_exists(
+        bounty_id: &T::BountyId,
+        entry_id: &T::WorkEntryId,
+    ) -> Result<WorkEntry<T>, DispatchError> {
         ensure!(
-            <WorkEntries<T>>::contains_key(entry_id),
+            <WorkEntries<T>>::contains_key(bounty_id, entry_id),
             Error::<T>::WorkEntryDoesntExist
         );
 
-        let entry = <WorkEntries<T>>::get(entry_id);
+        let entry = <WorkEntries<T>>::get(bounty_id, entry_id);
 
         Ok(entry)
+    }
+
+    // Unlocks the work entry stake.
+    // It also calculates and slashes the stake on work entry withdrawal.
+    // The slashing amount depends on the entry active period.
+    fn unlock_work_entry_stake(bounty: &Bounty<T>, entry: &WorkEntry<T>) {
+        if let Some(staking_account_id) = &entry.staking_account_id {
+            let now = Self::current_block();
+            let staking_balance = bounty.creation_params.entrant_stake;
+
+            let entry_was_active_period = now.saturating_sub(entry.submitted_at);
+
+            let slashing_share = Perbill::from_rational_approximation(
+                entry_was_active_period,
+                bounty.creation_params.work_period,
+            );
+
+            // No more than staking_balance.
+            let slashing_amount = (slashing_share * staking_balance).min(staking_balance);
+
+            if slashing_amount > Zero::zero() {
+                T::StakingHandler::slash(staking_account_id, Some(slashing_amount));
+            }
+
+            T::StakingHandler::unlock(staking_account_id);
+        }
     }
 }
