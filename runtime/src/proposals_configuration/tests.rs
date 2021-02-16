@@ -233,7 +233,7 @@ fn proposal_parameters_are_initialized_unlock_blog_post_proposal() {
 #[test]
 #[ignore]
 fn proposal_parameters_are_initialized_veto_proposal_proposal() {
-    let actual_params = super::UnlockBlogPostProposalParameters::get();
+    let actual_params = super::VetoProposalProposalParameters::get();
 
     assert_eq!(default_proposal_parameters(), actual_params);
 }

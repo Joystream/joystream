@@ -312,9 +312,6 @@ decl_error! {
         /// Proposal is finalized already
         ProposalFinalized,
 
-        /// Proposal is not pending execution
-        ProposalNotPendingExecution,
-
         /// The proposal have been already voted on
         AlreadyVoted,
 
