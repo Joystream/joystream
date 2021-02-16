@@ -395,7 +395,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
       ipfsCid,
     ])
 
-    const dataObject = await this.getApi().DataByContentId(contentId)
+    const dataObject = await this.getApi().dataByContentId(contentId)
     if (!dataObject) {
       this.error('Data object could not be retrieved from chain', { exit: ExitCodes.ApiError })
     }

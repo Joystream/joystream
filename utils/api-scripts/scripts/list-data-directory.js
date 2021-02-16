@@ -12,7 +12,7 @@ const script = async ({ api }) => {
 
   await Promise.all(
     ids.map(async (id) => {
-      let obj = await api.query.dataDirectory.DataByContentId(id)
+      let obj = await api.query.dataDirectory.dataByContentId(id)
       if (obj.isNone) {
         return
       }

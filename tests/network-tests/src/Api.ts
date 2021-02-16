@@ -1791,7 +1791,7 @@ export class Api {
   }
 
   async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.DataByContentId<Option<DataObject>>(contentId)
+    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
   }
 
