@@ -490,6 +490,24 @@ fn invite_member_succeeds() {
 }
 
 #[test]
+fn invite_member_fails_with_existing_invitation_lock() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        InviteMembershipFixture::default().call_and_assert(Ok(()));
+
+        <Test as Trait>::WorkingGroup::set_budget(initial_balance);
+
+        InviteMembershipFixture::default()
+            .with_handle(b"bob2".to_vec())
+            .call_and_assert(Err(Error::<Test>::ConflictingLock.into()));
+    });
+}
+
+#[test]
 fn invite_member_fails_with_insufficient_working_group_balance() {
     build_test_externalities().execute_with(|| {
         let initial_balance = DefaultMembershipPrice::get();

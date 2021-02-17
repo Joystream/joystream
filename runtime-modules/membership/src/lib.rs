@@ -259,6 +259,9 @@ decl_error! {
         /// Cannot invite a member. Working group balance is not sufficient to set the default
         /// balance.
         WorkingGroupBudgetIsNotSufficientForInviting,
+
+        /// Cannot invite a member. The controller account has an existing conflicting lock.
+        ConflictingLock,
     }
 }
 
@@ -657,6 +660,14 @@ decl_module! {
             ensure!(
                 default_invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
+            );
+
+            // Check for existing invitation locks.
+            ensure!(
+                T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
+                    &params.controller_account
+                ),
+                Error::<T>::ConflictingLock,
             );
 
             //

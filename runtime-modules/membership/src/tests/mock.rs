@@ -121,11 +121,12 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
 }
 
 impl LockComparator<u64> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock == InvitedMemberLockId::get() {
+            existing_locks.contains(new_lock)
+        } else {
+            false
+        }
     }
 }
 
