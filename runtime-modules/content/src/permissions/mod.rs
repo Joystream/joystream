@@ -55,7 +55,7 @@ pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
 
-pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Result<(), Error<T>> {
+pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
     ensure!(
         T::is_valid_curator_id(curator_id),
         Error::<T>::CuratorIdInvalid
@@ -67,7 +67,7 @@ pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Result
 pub fn ensure_curator_auth_success<T: Trait>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     ensure!(
         T::is_curator(curator_id, account_id),
         Error::<T>::CuratorAuthFailed
@@ -79,7 +79,7 @@ pub fn ensure_curator_auth_success<T: Trait>(
 pub fn ensure_member_auth_success<T: Trait>(
     member_id: &T::MemberId,
     account_id: &T::AccountId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     ensure!(
         T::is_member(member_id, account_id),
         Error::<T>::MemberAuthFailed
@@ -88,7 +88,7 @@ pub fn ensure_member_auth_success<T: Trait>(
 }
 
 /// Ensure lead authorization performed succesfully
-pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(), Error<T>> {
+pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> DispatchResult {
     ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
     Ok(())
 }
@@ -96,7 +96,7 @@ pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(
 /// Ensure given `Origin` is lead
 pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     let account_id = ensure_signed(origin)?;
-    Ok(ensure_lead_auth_success::<T>(&account_id)?)
+    ensure_lead_auth_success::<T>(&account_id)
 }
 
 pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
@@ -106,11 +106,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     match actor {
         // Lead should use their member or curator role to create or update channels.
         ContentActor::Lead => {
-            ensure!(
-                false,
-                Error::<T>::ActorCannotOwnChannel
-            );
-            Ok(())
+            Err(Error::<T>::ActorCannotOwnChannel.into())
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
@@ -120,16 +116,12 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
                 curator_id,
                 curator_group_id,
                 &sender,
-            )?;
-
-            Ok(())
+            )
         }
         ContentActor::Member(member_id) => {
             let sender = ensure_signed(origin)?;
 
-            ensure_member_auth_success::<T>(member_id, &sender)?;
-
-            Ok(())
+            ensure_member_auth_success::<T>(member_id, &sender)
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
@@ -146,11 +138,7 @@ pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
     // to avoid need for them to add themselves into the group?
     match actor {
         ContentActor::Lead => {
-            ensure!(
-                false,
-                Error::<T>::ActorNotAuthorized
-            );
-            Ok(())
+            Err(Error::<T>::ActorNotAuthorized.into())
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
@@ -199,8 +187,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
     match actor {
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&sender)?;
-            Ok(())
+            ensure_lead_auth_success::<T>(&sender)
         },
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
@@ -213,22 +200,15 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
             )?;
 
             // Curators cannot censor curator group channels
-            match owner {
-                ChannelOwner::CuratorGroup(_curator_group_id) => {
-                    Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels)
-                }
-                _ => Ok(())
-            }?;
-
-            Ok(())
+            if let ChannelOwner::CuratorGroup(_) = owner {
+                Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels.into())
+            } else {
+                Ok(())
+            }
         },
-        ContentActor::Member(_member_id) => {
+        ContentActor::Member(_) => {
             // Members cannot censore channels!
-            ensure!(
-                false,
-                Error::<T>::ActorNotAuthorized
-            );
-            Ok(())
+            Err(Error::<T>::ActorNotAuthorized.into())
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
@@ -245,8 +225,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     match actor {
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&sender)?;
-            Ok(())
+            ensure_lead_auth_success::<T>(&sender)
         },
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
@@ -256,17 +235,11 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
                 curator_id,
                 curator_group_id,
                 &sender,
-            )?;
-
-            Ok(())
+            )
         },
-        ContentActor::Member(_member_id) => {
+        ContentActor::Member(_) => {
             // Members cannot censore channels!
-            ensure!(
-                false,
-                Error::<T>::ActorNotAuthorized
-            );
-            Ok(())
+            Err(Error::<T>::ActorNotAuthorized.into())
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
@@ -278,16 +251,12 @@ pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
-    match actor {
-        ContentActor::Lead => {
-            let sender = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&sender)?;
-            Ok(())
-        }
-        _ => {
-            ensure_root(origin)?;
-            Ok(())
-        }
+    if let ContentActor::Lead = actor {
+        let sender = ensure_signed(origin)?;
+        ensure_lead_auth_success::<T>(&sender)
+    } else {
+        ensure_root(origin)?;
+        Ok(())
     }
 }
 
