@@ -7,6 +7,7 @@ use frame_support::storage::{StorageMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
 
+use crate::default_text_constraint;
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
 use crate::{Error, RawEvent, Worker};
@@ -1232,7 +1233,7 @@ fn update_worker_storage_fails_with_invalid_origin_signed_account() {
             UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field)
                 .with_origin(RawOrigin::Signed(2));
 
-                update_storage_fixture.call_and_assert(Err(
+        update_storage_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
         ));
     });
@@ -1241,17 +1242,52 @@ fn update_worker_storage_fails_with_invalid_origin_signed_account() {
 #[test]
 fn update_worker_storage_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 1;
-        fill_default_worker_position();
-
         let storage_field = vec![0u8].repeat(10);
 
-        let update_storage_fixture =
-            UpdateWorkerStorageFixture::default_with_storage_field(invalid_worker_id, storage_field);
+        fill_default_worker_position();
 
-            update_storage_fixture.call_and_assert(Err(
+        let invalid_worker_id = 1;
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            invalid_worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
         ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_too_long_text() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(default_text_constraint().max() as usize + 1);
+
+        let worker_id = fill_default_worker_position();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture
+            .call_and_assert(Err(DispatchError::Other("WorkerStorageTextTooLong")));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_too_short_text() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let storage_field = vec![0u8].repeat(default_text_constraint().min as usize - 1);
+
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field);
+
+        update_storage_fixture
+            .call_and_assert(Err(DispatchError::Other("WorkerStorageTextTooShort")));
     });
 }
 

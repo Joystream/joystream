@@ -77,10 +77,12 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
+            default_text_constraint,
             default_content_working_group_mint_capacity,
         );
 
         GatewayWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,

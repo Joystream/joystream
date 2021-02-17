@@ -311,6 +311,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_text_constraint: default_text_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
@@ -318,6 +319,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_text_constraint: default_text_constraint,
         }),
         working_group_Instance4: Some(BuilderWorkingGroupConfig {
             phantom: Default::default(),
@@ -325,6 +327,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_text_constraint: default_text_constraint,
         }),
         working_group_Instance5: Some(GatewayWorkingGroupConfig {
             phantom: Default::default(),
@@ -332,6 +335,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_text_constraint: default_text_constraint,
         }),
         content: Some({
             ContentConfig {
