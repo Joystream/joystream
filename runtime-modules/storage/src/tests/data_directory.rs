@@ -91,14 +91,14 @@ fn add_content_size_limit_reached() {
         let content_parameters = ContentParameters {
             content_id: 1,
             type_id: 1234,
-            size: DefaultQuota::get().size_limit + 1,
+            size: DEFAULT_VOUCHER.size_limit + 1,
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
         // Make an attempt to register a content, when uploading is blocked.
         let res =
             TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
-        assert_eq!(res, Err(Error::<Test>::QuotaSizeLimitExceeded.into()));
+        assert_eq!(res, Err(Error::<Test>::VoucherSizeLimitExceeded.into()));
     });
 }
 
@@ -111,7 +111,7 @@ fn add_content_objects_limit_reached() {
 
         let mut content = vec![];
 
-        for i in 0..=DefaultQuota::get().objects_limit {
+        for i in 0..=DEFAULT_VOUCHER.objects_limit {
             let content_parameters = ContentParameters {
                 content_id: i + 1,
                 type_id: 1234,
@@ -123,19 +123,19 @@ fn add_content_objects_limit_reached() {
 
         // Make an attempt to register a content, when uploading is blocked.
         let res = TestDataDirectory::add_content(Origin::signed(sender), owner, content);
-        assert_eq!(res, Err(Error::<Test>::QuotaObjectsLimitExceeded.into()));
+        assert_eq!(res, Err(Error::<Test>::VoucherObjectsLimitExceeded.into()));
     });
 }
 
 #[test]
 fn add_content_global_size_limit_reached() {
-    let global_quota_size_limit = 0;
-    let global_quota_objects_limit = 50;
+    let global_voucher_size_limit = 0;
+    let global_voucher_objects_limit = 50;
 
     ExtBuilder::default()
-        .global_quota(Quota::new(
-            global_quota_size_limit,
-            global_quota_objects_limit,
+        .global_voucher(Voucher::new(
+            global_voucher_size_limit,
+            global_voucher_objects_limit,
         ))
         .build()
         .execute_with(|| {
@@ -146,7 +146,7 @@ fn add_content_global_size_limit_reached() {
             let content_parameters = ContentParameters {
                 content_id: 1,
                 type_id: 1234,
-                size: global_quota_size_limit + 1,
+                size: global_voucher_size_limit + 1,
                 ipfs_content_id: vec![1, 2, 3, 4],
             };
 
@@ -156,19 +156,22 @@ fn add_content_global_size_limit_reached() {
                 owner,
                 vec![content_parameters],
             );
-            assert_eq!(res, Err(Error::<Test>::GlobalQuotaSizeLimitExceeded.into()));
+            assert_eq!(
+                res,
+                Err(Error::<Test>::GlobalVoucherSizeLimitExceeded.into())
+            );
         });
 }
 
 #[test]
 fn add_content_global_objects_limit_reached() {
-    let global_quota_size_limit = 50000;
-    let global_quota_objects_limit = 0;
+    let global_voucher_size_limit = 50000;
+    let global_voucher_objects_limit = 0;
 
     ExtBuilder::default()
-        .global_quota(Quota::new(
-            global_quota_size_limit,
-            global_quota_objects_limit,
+        .global_voucher(Voucher::new(
+            global_voucher_size_limit,
+            global_voucher_objects_limit,
         ))
         .build()
         .execute_with(|| {
@@ -191,7 +194,7 @@ fn add_content_global_objects_limit_reached() {
             );
             assert_eq!(
                 res,
-                Err(Error::<Test>::GlobalQuotaObjectsLimitExceeded.into())
+                Err(Error::<Test>::GlobalVoucherObjectsLimitExceeded.into())
             );
         });
 }
@@ -300,7 +303,7 @@ fn update_content_uploading_status() {
 }
 
 #[test]
-fn update_storage_object_owner_quota_objects_limit() {
+fn update_storage_object_owner_voucher_objects_limit() {
     with_default_mock_builder(|| {
         SetLeadFixture::set_default_lead();
 
@@ -308,7 +311,7 @@ fn update_storage_object_owner_quota_objects_limit() {
 
         let new_objects_limit = 20;
 
-        let res = TestDataDirectory::update_storage_object_owner_quota_objects_limit(
+        let res = TestDataDirectory::update_storage_object_owner_voucher_objects_limit(
             Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
             owner.clone(),
             new_objects_limit,
@@ -317,23 +320,23 @@ fn update_storage_object_owner_quota_objects_limit() {
         assert!(res.is_ok());
 
         assert_eq!(
-            TestDataDirectory::quotas(owner).objects_limit,
+            TestDataDirectory::vouchers(owner).objects_limit,
             new_objects_limit
         );
     });
 }
 
 #[test]
-fn update_storage_object_owner_quota_objects_limit_upper_bound_exceeded() {
+fn update_storage_object_owner_voucher_objects_limit_upper_bound_exceeded() {
     with_default_mock_builder(|| {
         SetLeadFixture::set_default_lead();
 
         let owner = StorageObjectOwner::Member(1u64);
 
-        let new_objects_limit = TestDataDirectory::quota_objects_limit_upper_bound() + 1;
+        let new_objects_limit = TestDataDirectory::voucher_objects_limit_upper_bound() + 1;
 
-        // Make an attempt to update storage object owner quota objects limit, providing value, which exceeds upper bound.
-        let res = TestDataDirectory::update_storage_object_owner_quota_objects_limit(
+        // Make an attempt to update storage object owner voucher objects limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_voucher_objects_limit(
             Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
             owner.clone(),
             new_objects_limit,
@@ -341,21 +344,21 @@ fn update_storage_object_owner_quota_objects_limit_upper_bound_exceeded() {
 
         assert_eq!(
             res,
-            Err(Error::<Test>::QuotaObjectsLimitUpperBoundExceeded.into())
+            Err(Error::<Test>::VoucherObjectsLimitUpperBoundExceeded.into())
         );
     });
 }
 
 #[test]
-fn update_storage_object_owner_quota_size_limit() {
+fn update_storage_object_owner_voucher_size_limit() {
     with_default_mock_builder(|| {
         SetLeadFixture::set_default_lead();
 
         let owner = StorageObjectOwner::Member(1u64);
 
-        let new_objects_total_size_limit = 1500;
+        let new_objects_total_size_limit = 100;
 
-        let res = TestDataDirectory::update_storage_object_owner_quota_size_limit(
+        let res = TestDataDirectory::update_storage_object_owner_voucher_size_limit(
             Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
             owner.clone(),
             new_objects_total_size_limit,
@@ -364,23 +367,23 @@ fn update_storage_object_owner_quota_size_limit() {
         assert!(res.is_ok());
 
         assert_eq!(
-            TestDataDirectory::quotas(owner).size_limit,
+            TestDataDirectory::vouchers(owner).size_limit,
             new_objects_total_size_limit
         );
     });
 }
 
 #[test]
-fn update_storage_object_owner_quota_size_limit_upper_bound_exceeded() {
+fn update_storage_object_owner_voucher_size_limit_upper_bound_exceeded() {
     with_default_mock_builder(|| {
         SetLeadFixture::set_default_lead();
 
         let owner = StorageObjectOwner::Member(1u64);
 
-        let new_objects_total_size_limit = TestDataDirectory::quota_size_limit_upper_bound() + 1;
+        let new_objects_total_size_limit = TestDataDirectory::voucher_size_limit_upper_bound() + 1;
 
-        // Make an attempt to update storage object owner quota size limit, providing value, which exceeds upper bound.
-        let res = TestDataDirectory::update_storage_object_owner_quota_size_limit(
+        // Make an attempt to update storage object owner voucher size limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_voucher_size_limit(
             Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
             owner.clone(),
             new_objects_total_size_limit,
@@ -388,7 +391,7 @@ fn update_storage_object_owner_quota_size_limit_upper_bound_exceeded() {
 
         assert_eq!(
             res,
-            Err(Error::<Test>::QuotaSizeLimitUpperBoundExceeded.into())
+            Err(Error::<Test>::VoucherSizeLimitUpperBoundExceeded.into())
         );
     });
 }

@@ -24,6 +24,12 @@ pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
     WorkingGroup(WorkingGroup), // acts through new extrinsic in working group
 }
 
+impl<MemberId, ChannelId, DAOId> Default for StorageObjectOwner<MemberId, ChannelId, DAOId> {
+    fn default() -> Self {
+        Self::Council
+    }
+}
+
 // To be implemented by current storage data_directory runtime module.
 // Defined in 'common' package
 pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {

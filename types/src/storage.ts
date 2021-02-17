@@ -90,7 +90,7 @@ export class DataObjectType extends JoyStructDecorated({
 
 export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
 
-export class Quota extends JoyStructDecorated({
+export class Voucher extends JoyStructDecorated({
   // Total objects size limit per StorageObjectOwner
   size_limit: u64,
   // Total objects number limit per StorageObjectOwner
@@ -99,7 +99,7 @@ export class Quota extends JoyStructDecorated({
   objects_used: u64,
 }) {}
 
-export class QuotaLimit extends u64 {}
+export class VoucherLimit extends u64 {}
 export class UploadingStatus extends bool {}
 
 export const mediaTypes: RegistryTypes = {
@@ -114,8 +114,8 @@ export const mediaTypes: RegistryTypes = {
   ContentParameters,
   StorageObjectOwner,
   Content,
-  Quota,
-  QuotaLimit,
+  Voucher,
+  VoucherLimit,
   UploadingStatus,
 }
 
