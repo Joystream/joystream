@@ -33,7 +33,7 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::traits::{EnsureOrigin, Get, WithdrawReason};
+use frame_support::traits::{EnsureOrigin, Get};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
@@ -690,7 +690,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         current_cycle_id: &u64,
     ) -> Result<(), Error<T, I>> {
         // Should call after `can_vote`
-        T::StakingHandler::lock_with_reasons(account_id, *stake, WithdrawReason::Transfer.into());
+        T::StakingHandler::lock(account_id, *stake);
 
         // store vote
         Votes::<T, I>::insert(
