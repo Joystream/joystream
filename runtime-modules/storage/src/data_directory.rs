@@ -254,7 +254,7 @@ decl_storage! {
 
         /// Maps storage owner to it`s voucher. Created when the first upload by the new actor occured.
         pub Vouchers get(fn vouchers) config():
-            map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Voucher;
+            map hasher(blake2_128_concat) ObjectOwner<T> => Voucher;
 
         /// Upper bound for the Voucher size limit.
         pub VoucherSizeLimitUpperBound get(fn voucher_size_limit_upper_bound) config(): u64 = DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND;
@@ -277,7 +277,7 @@ decl_storage! {
 decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
-        StorageObjectOwner = StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        StorageObjectOwner = ObjectOwner<T>,
         StorageProviderId = StorageProviderId<T>,
         Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
@@ -342,7 +342,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
-            owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            owner: ObjectOwner<T>,
             content: Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>
         ) {
 
@@ -378,7 +378,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_content(
             origin,
-            owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            owner: ObjectOwner<T>,
             content_ids: Vec<ContentId<T>>
         ) {
 
@@ -402,7 +402,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_object_owner_voucher_objects_limit(
             origin,
-            abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            abstract_owner: ObjectOwner<T>,
             new_voucher_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
@@ -429,7 +429,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_object_owner_voucher_size_limit(
             origin,
-            abstract_owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            abstract_owner: ObjectOwner<T>,
             new_voucher_size_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
@@ -501,10 +501,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     // Used to initialize data_directory runtime storage on runtime upgrade
     pub fn initialize_data_directory(
-        vouchers: Vec<(
-            StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-            Voucher,
-        )>,
+        vouchers: Vec<(ObjectOwner<T>, Voucher)>,
         voucher_size_limit_upper_bound: u64,
         voucher_objects_limit_upper_bound: u64,
         global_voucher: Voucher,
@@ -525,7 +522,7 @@ impl<T: Trait> Module<T> {
     // Ensure given origin can perform operation under specific storage object owner
     fn ensure_storage_object_owner_origin(
         origin: T::Origin,
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: &ObjectOwner<T>,
     ) -> DispatchResult {
         if let StorageObjectOwner::Member(member_id) = owner {
             T::MemberOriginValidator::ensure_actor_origin(origin, *member_id)?;
@@ -536,7 +533,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Get owner voucher if exists, otherwise return default one.
-    fn get_voucher(owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>) -> Voucher {
+    fn get_voucher(owner: &ObjectOwner<T>) -> Voucher {
         if <Vouchers<T>>::contains_key(owner) {
             Self::vouchers(owner)
         } else {
@@ -587,7 +584,7 @@ impl<T: Trait> Module<T> {
     // Ensure content under given content ids can be successfully removed
     fn ensure_content_can_be_removed(
         content_ids: &[T::ContentId],
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: &ObjectOwner<T>,
     ) -> Result<Vec<DataObject<T>>, Error<T>> {
         let mut content = Vec::new();
         for content_id in content_ids {
@@ -636,7 +633,7 @@ impl<T: Trait> Module<T> {
         upload_voucher_delta: Delta,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
-        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: ObjectOwner<T>,
     ) {
         for content in multi_content {
             let data: DataObject<T> = DataObjectInternal {
@@ -661,7 +658,7 @@ impl<T: Trait> Module<T> {
 
     // Complete content removal
     fn delete_content(
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: &ObjectOwner<T>,
         content_ids: &[T::ContentId],
         content: Vec<DataObject<T>>,
     ) {
@@ -748,7 +745,7 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
 
 impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     fn atomically_add_content(
-        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: ObjectOwner<T>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> DispatchResult {
         Self::ensure_content_is_valid(&content)?;
@@ -778,7 +775,7 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     }
 
     fn atomically_remove_content(
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: &ObjectOwner<T>,
         content_ids: &[T::ContentId],
     ) -> DispatchResult {
         // Ensure content under given content ids can be successfully removed
@@ -794,7 +791,7 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     }
 
     fn can_add_content(
-        owner: StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+        owner: ObjectOwner<T>,
         content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
     ) -> DispatchResult {
         Self::ensure_uploading_is_not_blocked()?;
@@ -807,10 +804,7 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         Self::ensure_content_is_valid(&content)
     }
 
-    fn can_remove_content(
-        owner: &StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
-        content_ids: &[ContentId<T>],
-    ) -> DispatchResult {
+    fn can_remove_content(owner: &ObjectOwner<T>, content_ids: &[ContentId<T>]) -> DispatchResult {
         // Ensure content under given content ids can be successfully removed
         Self::ensure_content_can_be_removed(content_ids, &owner)?;
 
