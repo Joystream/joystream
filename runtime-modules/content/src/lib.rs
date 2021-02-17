@@ -1313,9 +1313,8 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn not_implemented() -> Result<(), Error<T>> {
-        ensure!(false, Error::<T>::FeatureNotImplemented);
-        Ok(())
+    fn not_implemented() -> DispatchResult {
+        Err(Error::<T>::FeatureNotImplemented.into())
     }
 }
 

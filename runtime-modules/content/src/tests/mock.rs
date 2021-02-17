@@ -20,8 +20,8 @@ use common::storage::StorageSystem;
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
-pub type ChannelId = <Test as StorageOwnership>::ChannelId;
-pub type DAOId = <Test as StorageOwnership>::DAOId;
+// pub type ChannelId = <Test as StorageOwnership>::ChannelId;
+// pub type DAOId = <Test as StorageOwnership>::DAOId;
 
 /// Origins
 
@@ -43,7 +43,7 @@ pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
 
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
-pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
+// pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
