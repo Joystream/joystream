@@ -1,6 +1,11 @@
 //! This pallet works with crowd funded bounties that allows a member, or the council, to crowd
 //! fund work on projects with a public benefit.
 //!
+//! ### Bounty stages
+//! - Funding - a bounty is being funded.
+//! - WorkSubmission - interested participants can submit their work.
+//! - Withdrawal - all funds can be withdrawn.
+//!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
 //! ### Supported extrinsics:
@@ -8,6 +13,10 @@
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
+//! - [withdraw_member_funding](./struct.Module.html#method.withdraw_member_funding) - withdraw
+//! funding for a failed bounty.
+//! - [withdraw_creator_funding](./struct.Module.html#method.withdraw_creator_funding) - withdraw
+//! funding for a failed or canceled bounty..
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -19,8 +28,8 @@ pub(crate) mod tests;
 mod benchmarking;
 
 // TODO: add max entries limit
-// TODO: benchmark all bounty creation parameters
-// TODO: add assertion for the created bounty object content
+// TODO: add more fine-grained errors.
+// TODO: add bounty milestones module comments
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -31,17 +40,21 @@ pub trait WeightInfo {
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
     fn fund_bounty() -> Weight;
+    fn withdraw_member_funding() -> Weight;
+    fn withdraw_creator_funding_by_council() -> Weight;
+    fn withdraw_creator_funding_by_member() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::Saturating;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::{traits::AccountIdConversion, ModuleId};
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
@@ -51,11 +64,15 @@ use common::MemberId;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_runtime::Perbill;
 
 /// Main pallet-bounty trait.
 pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
+    /// The bounty's module id, used for deriving its sovereign account ID.
+    type ModuleId: Get<ModuleId>;
 
     /// Bounty Id type
     type BountyId: From<u32> + Parameter + Default + Copy;
@@ -134,7 +151,7 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     /// available for people to work on.
     pub min_amount: Balance,
 
-    /// Maximumm funding accepted, if this limit is reached, funding automatically is over.
+    /// Maximum funding accepted, if this limit is reached, funding automatically is over.
     pub max_amount: Balance,
 
     /// Amount of stake required, possibly 0, to enter bounty as entrant.
@@ -176,14 +193,20 @@ impl<MemberId> Default for BountyCreator<MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyStage {
-    /// Bounty founding stage with starting block number.
-    Funding,
-
-    /// A bounty was canceled.
-    Canceled,
+    /// Bounty founding stage.
+    Funding {
+        /// Bounty has already some contributions.
+        has_contributions: bool,
+    },
 
     /// Funding and cherry can be withdrawn.
-    Withdrawal,
+    Withdrawal {
+        /// Creator funds are not withdrawn and greater than zero.
+        creator_funds_need_withdrawal: bool,
+
+        /// Creator cherry is not withdrawn and greater than zero.
+        cherry_needs_withdrawal: bool,
+    },
 
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
@@ -194,19 +217,35 @@ pub enum BountyStage {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
-    Created(BlockNumber),
+    /// Boolean value defines whether the bounty has some funding contributions.
+    Created {
+        /// Bounty creation block.
+        created_at: BlockNumber,
+        /// Bounty has already some contributions.
+        has_contributions: bool,
+    },
 
     /// A bounty was canceled.
     Canceled,
 
-    /// A bounty funding was successful on the provided block.
-    /// The stage is set when the funding exceeded max funding amount.
-    MaxFundingReached(BlockNumber),
+    /// Creator funds (initial funding and/or cherry) were withdrawn.
+    CreatorFundsWithdrawn,
+
+    /// A bounty funding was successful and it exceeded max funding amount.
+    BountyMaxFundingReached {
+        ///  A bounty funding was successful on the provided block.
+        max_funding_reached_at: BlockNumber,
+        /// A bounty reached its maximum allowed contribution on creation.
+        reached_on_creation: bool,
+    },
 }
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
     fn default() -> Self {
-        BountyMilestone::Created(Default::default())
+        BountyMilestone::Created {
+            created_at: Default::default(),
+            has_contributions: false,
+        }
     }
 }
 
@@ -242,8 +281,9 @@ decl_storage! {
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
         /// Double map for bounty funding. It stores member funding for bounties.
-        pub BountyContributions get(fn contribution_by_bounty_by_member): double_map hasher(blake2_128_concat)
-            T::BountyId, hasher(blake2_128_concat) MemberId<T> => BalanceOf<T>;
+        pub BountyContributions get(fn contribution_by_bounty_by_member): double_map
+            hasher(blake2_128_concat) T::BountyId,
+            hasher(blake2_128_concat) MemberId<T> => BalanceOf<T>;
 
         /// Count of all bounties that have been created.
         pub BountyCount get(fn bounty_count): u32;
@@ -271,7 +311,16 @@ decl_event! {
         BountyFunded(BountyId, MemberId, Balance),
 
         /// A bounty has reached its maximum funding amount.
-        MaxFundingReached(BountyId),
+        BountyMaxFundingReached(BountyId),
+
+        /// A member has withdrew the funding.
+        BountyMemberFundingWithdrawal(BountyId, MemberId),
+
+        /// A bounty creator has withdrew the funding.
+        BountyCreatorFundingWithdrawal(BountyId, BountyCreator<MemberId>),
+
+        /// A bounty was removed.
+        BountyRemoved(BountyId),
     }
 }
 
@@ -298,6 +347,18 @@ decl_error! {
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
+
+        /// Funding period is not expired for the bounty.
+        FundingPeriodNotExpired,
+
+        /// A member is not a bounty funder.
+        NotBountyFunder, //TODO change to "no bounty funding found"
+
+        /// There is nothing to withdraw.
+        NothingToWithdraw,
+
+        /// Incorrect funding amount.
+        ZeroFundingAmount,
     }
 }
 
@@ -334,15 +395,21 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty_creator_manager.slash_balance(params.cherry, params.creator_funding);
-
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
+
+            bounty_creator_manager.transfer_funds_to_bounty_account(
+                bounty_id,
+                params.cherry,
+                params.creator_funding
+            )?;
+
+            let created_bounty_milestone = Self::get_bounty_milestone_on_creation(&params);
 
             let bounty = Bounty::<T> {
                 total_funding: params.creator_funding,
                 creation_params: params.clone(),
-                milestone: BountyMilestone::Created(Self::current_block()),
+                milestone: created_bounty_milestone,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -373,8 +440,9 @@ decl_module! {
             bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -404,8 +472,9 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -440,6 +509,8 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
+            ensure!(amount > Zero::zero(), Error::<T>::ZeroFundingAmount);
+
             ensure!(
                 Self::check_balance_for_account(amount, &controller_account_id),
                 Error::<T>::InsufficientBalanceForBounty
@@ -447,7 +518,7 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding),
+                matches!(current_bounty_stage, BountyStage::Funding{..}),
                 Error::<T>::InvalidBountyStage,
             );
 
@@ -455,57 +526,144 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_balance_from_account(amount, &controller_account_id);
+            Self::transfer_funds_to_bounty_account(&controller_account_id, bounty_id, amount)?;
 
             let total_funding = bounty.total_funding.saturating_add(amount);
             let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
+            let new_milestone = Self::get_bounty_milestone_on_funding(
+                    maximum_funding_reached,
+                    bounty.milestone
+            );
 
+            // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.total_funding = total_funding;
-                if  maximum_funding_reached{
-                    bounty.milestone = BountyMilestone::MaxFundingReached(Self::current_block());
-                }
+                bounty.milestone = new_milestone;
             });
 
-            // Previous funding by member.
+            // Update member funding record checking previous funding.
             let funds_so_far = Self::contribution_by_bounty_by_member(bounty_id, member_id);
             let total_funding = funds_so_far.saturating_add(amount);
             <BountyContributions<T>>::insert(bounty_id, member_id, total_funding);
 
+            // Fire events.
             Self::deposit_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
             if  maximum_funding_reached{
-                Self::deposit_event(RawEvent::MaxFundingReached(bounty_id));
+                Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
         }
-    }
-}
 
-impl<T: Trait> Module<T> {
-    // Wrapper-function over System::block_number()
-    fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
-    }
+        /// Withdraw member funding.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_member_funding()]
+        pub fn withdraw_member_funding(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+        ) {
+            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin, member_id,
+            )?;
 
-    // Validates parameters for a bounty creation.
-    fn ensure_create_bounty_parameters_valid(
-        params: &BountyCreationParameters<T>,
-    ) -> DispatchResult {
-        ensure!(
-            params.work_period != Zero::zero(),
-            Error::<T>::WorkPeriodCannotBeZero
-        );
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-        ensure!(
-            params.judging_period != Zero::zero(),
-            Error::<T>::JudgingPeriodCannotBeZero
-        );
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::Withdrawal{..}),
+                Error::<T>::InvalidBountyStage,
+            );
 
-        ensure!(
-            params.min_amount <= params.max_amount,
-            Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
-        );
+            ensure!(
+                <BountyContributions<T>>::contains_key(bounty_id, member_id),
+                Error::<T>::NotBountyFunder,
+            );
 
-        Ok(())
+            let funding_amount = <BountyContributions<T>>::get(bounty_id, member_id);
+            let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding_amount);
+            let withdrawal_amount = funding_amount + cherry_fraction;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::transfer_funds_from_bounty_account(&account_id, bounty_id, withdrawal_amount)?;
+
+            <BountyContributions<T>>::remove(bounty_id, member_id);
+
+            Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
+
+            if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
+                Self::remove_bounty(&bounty_id);
+            }
+        }
+
+        /// Withdraw creator funding.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_creator_funding_by_member()
+              .max(WeightInfoBounty::<T>::withdraw_creator_funding_by_council())]
+        pub fn withdraw_creator_funding(
+            origin,
+            creator: BountyCreator<MemberId<T>>,
+            bounty_id: T::BountyId,
+        ) {
+            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
+                origin,
+                creator.clone(),
+            )?;
+
+            let mut bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            if let BountyStage::Withdrawal {creator_funds_need_withdrawal, cherry_needs_withdrawal} =
+                current_bounty_stage
+            {
+                ensure!(
+                    creator_funds_need_withdrawal || cherry_needs_withdrawal,
+                    Error::<T>::NothingToWithdraw,
+                );
+            } else {
+                return Err(Error::<T>::InvalidBountyStage.into());
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let funding_amount = bounty.creation_params.creator_funding;
+            let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
+
+            bounty_creator_manager.transfer_funds_from_bounty_account(
+                bounty_id,
+                funding_amount,
+                cherry
+            )?;
+
+            bounty.milestone = BountyMilestone::CreatorFundsWithdrawn;
+            <Bounties<T>>::insert(bounty_id, bounty.clone());
+
+            Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
+
+            let new_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            if Self::withdrawal_completed(&new_bounty_stage, &bounty_id) {
+                Self::remove_bounty(&bounty_id);
+            }
+        }
     }
 }
 
@@ -585,51 +743,167 @@ impl<T: Trait> BountyCreatorManager<T> {
         Ok(())
     }
 
-    // Slash a balance for the bounty creation.
-    fn slash_balance(&self, cherry: BalanceOf<T>, creator_funding: BalanceOf<T>) {
+    // Transfer funds for the bounty creation.
+    fn transfer_funds_to_bounty_account(
+        &self,
+        bounty_id: T::BountyId,
+        cherry: BalanceOf<T>,
+        creator_funding: BalanceOf<T>,
+    ) -> DispatchResult {
         let required_balance = cherry + creator_funding;
 
         match self {
             BountyCreatorManager::Council => {
-                BountyCreatorManager::<T>::remove_balance_from_council_budget(required_balance);
+                BountyCreatorManager::<T>::transfer_balance_from_council_budget(
+                    bounty_id,
+                    required_balance,
+                );
             }
             BountyCreatorManager::Member(account_id, _) => {
-                Module::<T>::slash_balance_from_account(required_balance, account_id);
+                Module::<T>::transfer_funds_to_bounty_account(
+                    account_id,
+                    bounty_id,
+                    required_balance,
+                )?;
             }
         }
+
+        Ok(())
     }
 
-    // Remove a balance from the council budget.
-    fn remove_balance_from_council_budget(amount: BalanceOf<T>) {
+    // Restore a balance for the bounty creator.
+    fn transfer_funds_from_bounty_account(
+        &self,
+        bounty_id: T::BountyId,
+        cherry: BalanceOf<T>,
+        creator_funding: BalanceOf<T>,
+    ) -> DispatchResult {
+        let required_balance = cherry + creator_funding;
+
+        match self {
+            BountyCreatorManager::Council => {
+                BountyCreatorManager::<T>::transfer_balance_to_council_budget(
+                    bounty_id,
+                    required_balance,
+                );
+            }
+            BountyCreatorManager::Member(account_id, _) => {
+                Module::<T>::transfer_funds_from_bounty_account(
+                    account_id,
+                    bounty_id,
+                    required_balance,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    // Remove some balance from the council budget and transfer it to the bounty account.
+    fn transfer_balance_from_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
         let budget = T::CouncilBudgetManager::get_budget();
         let new_budget = budget.saturating_sub(amount);
+
+        T::CouncilBudgetManager::set_budget(new_budget);
+
+        let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
+        let _ = balances::Module::<T>::deposit_creating(&bounty_account_id, amount);
+    }
+
+    // Add some balance from the council budget and slash from the bounty account.
+    fn transfer_balance_to_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
+        let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
+        let _ = balances::Module::<T>::slash(&bounty_account_id, amount);
+
+        let budget = T::CouncilBudgetManager::get_budget();
+        let new_budget = budget.saturating_add(amount);
 
         T::CouncilBudgetManager::set_budget(new_budget);
     }
 }
 
 impl<T: Trait> Module<T> {
+    // Wrapper-function over System::block_number()
+    fn current_block() -> T::BlockNumber {
+        <frame_system::Module<T>>::block_number()
+    }
+
+    // Validates parameters for a bounty creation.
+    fn ensure_create_bounty_parameters_valid(
+        params: &BountyCreationParameters<T>,
+    ) -> DispatchResult {
+        ensure!(
+            params.work_period != Zero::zero(),
+            Error::<T>::WorkPeriodCannotBeZero
+        );
+
+        ensure!(
+            params.judging_period != Zero::zero(),
+            Error::<T>::JudgingPeriodCannotBeZero
+        );
+
+        ensure!(
+            params.min_amount <= params.max_amount,
+            Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
+        );
+
+        Ok(())
+    }
+
     // Verifies that member balance is sufficient for a bounty.
     fn check_balance_for_account(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
         balances::Module::<T>::usable_balance(account_id) >= amount
     }
 
-    // Slash a balance from the member controller account.
-    fn slash_balance_from_account(amount: BalanceOf<T>, account_id: &T::AccountId) {
-        let _ = balances::Module::<T>::slash(account_id, amount);
+    // Transfer funds from the member account to the bounty account.
+    fn transfer_funds_to_bounty_account(
+        account_id: &T::AccountId,
+        bounty_id: T::BountyId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let bounty_account_id = Self::bounty_account_id(bounty_id);
+
+        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &bounty_account_id,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        )
+    }
+
+    // Transfer funds from the bounty account to the member account.
+    fn transfer_funds_from_bounty_account(
+        account_id: &T::AccountId,
+        bounty_id: T::BountyId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let bounty_account_id = Self::bounty_account_id(bounty_id);
+
+        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+            &bounty_account_id,
+            account_id,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        )
     }
 
     // Computes the stage of a bounty based on its creation parameters and the current state.
     fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
+        let funding_was_provided = bounty.creation_params.creator_funding != Zero::zero();
+        let cherry_is_not_zero = bounty.creation_params.cherry != Zero::zero();
 
         match bounty.milestone {
-            BountyMilestone::Created(created_at) => {
+            // Funding period. No contributions or some contributions.
+            BountyMilestone::Created {
+                has_contributions,
+                created_at,
+            } => {
                 // Limited funding period.
                 if let Some(funding_period) = bounty.creation_params.funding_period {
                     // Funding period is not over.
                     if created_at + funding_period >= now {
-                        BountyStage::Funding
+                        BountyStage::Funding { has_contributions }
                     } else {
                         // Funding period expired.
                         if bounty.total_funding >= bounty.creation_params.min_amount {
@@ -637,24 +911,41 @@ impl<T: Trait> Module<T> {
                             BountyStage::WorkSubmission
                         } else {
                             // Funding failed.
-                            BountyStage::Withdrawal
+                            BountyStage::Withdrawal {
+                                creator_funds_need_withdrawal: funding_was_provided,
+                                cherry_needs_withdrawal: cherry_is_not_zero && !has_contributions,
+                            }
                         }
                     }
                 } else {
                     // Perpetual funding.
-                    BountyStage::Funding
+                    BountyStage::Funding { has_contributions }
                 }
             }
             // Bounty was canceled or vetoed.
-            BountyMilestone::Canceled => BountyStage::Canceled,
-            BountyMilestone::MaxFundingReached(funding_completed) => {
+            BountyMilestone::Canceled => BountyStage::Withdrawal {
+                creator_funds_need_withdrawal: funding_was_provided,
+                cherry_needs_withdrawal: cherry_is_not_zero,
+            },
+            // It is withdrawal stage and the creator don't expect any withdrawals.
+            BountyMilestone::CreatorFundsWithdrawn => BountyStage::Withdrawal {
+                creator_funds_need_withdrawal: false,
+                cherry_needs_withdrawal: false,
+            },
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+                reached_on_creation,
+            } => {
                 // Work period is not over.
-                if bounty.creation_params.work_period + funding_completed <= now {
+                if bounty.creation_params.work_period + max_funding_reached_at <= now {
                     BountyStage::WorkSubmission
                 } else {
                     // Work period is over.
                     // TODO: change to judging stage when it will be introduced
-                    BountyStage::Withdrawal
+                    BountyStage::Withdrawal {
+                        creator_funds_need_withdrawal: funding_was_provided,
+                        cherry_needs_withdrawal: reached_on_creation && cherry_is_not_zero,
+                    }
                 }
             }
         }
@@ -670,5 +961,128 @@ impl<T: Trait> Module<T> {
         let bounty = <Bounties<T>>::get(bounty_id);
 
         Ok(bounty)
+    }
+
+    // Calculate cherry fraction to reward member for an unsuccessful bounty.
+    // Cherry fraction = cherry * (member funding / total funding).
+    fn get_cherry_fraction_for_member(
+        bounty: &Bounty<T>,
+        funding_amount: BalanceOf<T>,
+    ) -> BalanceOf<T> {
+        //We don't count creator_funding.
+        let total_funding = bounty
+            .total_funding
+            .saturating_sub(bounty.creation_params.creator_funding);
+
+        let funding_share = Perbill::from_rational_approximation(funding_amount, total_funding);
+
+        // cherry share
+        funding_share * bounty.creation_params.cherry
+    }
+
+    // Calculate cherry to withdraw by bounty creator.
+    fn get_cherry_for_creator_withdrawal(bounty: &Bounty<T>, stage: BountyStage) -> BalanceOf<T> {
+        if let BountyStage::Withdrawal {
+            cherry_needs_withdrawal,
+            ..
+        } = stage
+        {
+            if cherry_needs_withdrawal {
+                return bounty.creation_params.cherry;
+            }
+        }
+
+        Zero::zero()
+    }
+
+    // Remove bounty and all related info from the storage.
+    fn remove_bounty(bounty_id: &T::BountyId) {
+        <Bounties<T>>::remove(bounty_id);
+        <BountyContributions<T>>::remove_prefix(bounty_id);
+
+        // Slash remaining funds.
+        let bounty_account_id = Self::bounty_account_id(*bounty_id);
+        let all = balances::Module::<T>::usable_balance(&bounty_account_id);
+        if all != Zero::zero() {
+            let _ = balances::Module::<T>::slash(&bounty_account_id, all);
+        }
+
+        Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
+    }
+
+    // Verifies that the bounty has no pending fund withdrawals left.
+    fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
+        !Self::contributions_exist(bounty_id)
+            && matches!(
+                stage,
+                BountyStage::Withdrawal {
+                    creator_funds_need_withdrawal: false,
+                    cherry_needs_withdrawal: false,
+                }
+            )
+    }
+
+    // Verifies that bounty has some contribution to withdraw.
+    // Should be O(1) because of the single inner call of the next() function of the iterator.
+    pub(crate) fn contributions_exist(bounty_id: &T::BountyId) -> bool {
+        <BountyContributions<T>>::iter_prefix_values(bounty_id)
+            .peekable()
+            .peek()
+            .is_some()
+    }
+
+    // The account ID of a bounty account. Tests require AccountID type to be at least u128.
+    pub(crate) fn bounty_account_id(bounty_id: T::BountyId) -> T::AccountId {
+        T::ModuleId::get().into_sub_account(bounty_id)
+    }
+
+    // Calculates bounty milestone on creation.
+    fn get_bounty_milestone_on_creation(
+        params: &BountyCreationParameters<T>,
+    ) -> BountyMilestone<T::BlockNumber> {
+        let now = Self::current_block();
+
+        // Whether the bounty is fully funded on creation.
+        if params.creator_funding < params.max_amount {
+            BountyMilestone::Created {
+                created_at: now,
+                has_contributions: false, // just created - no contributions
+            }
+        } else {
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: now,
+                reached_on_creation: true,
+            }
+        }
+    }
+
+    // Calculates bounty milestone on member funding.
+    fn get_bounty_milestone_on_funding(
+        maximum_funding_reached: bool,
+        previous_milestone: BountyMilestone<T::BlockNumber>,
+    ) -> BountyMilestone<T::BlockNumber> {
+        let now = Self::current_block();
+
+        if maximum_funding_reached {
+            // Bounty maximum funding reached.
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at: now,
+                reached_on_creation: false, // reached only now
+            }
+        // No previous contributions.
+        } else if let BountyMilestone::Created {
+            created_at,
+            has_contributions: false,
+        } = previous_milestone
+        {
+            // The bounty has some contributions now.
+            BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            }
+        } else {
+            // No changes.
+            previous_milestone
+        }
     }
 }

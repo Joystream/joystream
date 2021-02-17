@@ -9,7 +9,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    ModuleId, Perbill,
 };
 
 use crate::{Module, Trait};
@@ -55,6 +55,7 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
 }
 
 impl frame_system::Trait for Test {
@@ -65,7 +66,7 @@ impl frame_system::Trait for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;
@@ -87,13 +88,14 @@ impl frame_system::Trait for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
+    type ModuleId = BountyModuleId;
     type BountyId = u64;
     type MemberOriginValidator = ();
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
 }
 
-const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
@@ -136,6 +138,15 @@ impl crate::WeightInfo for () {
     fn fund_bounty() -> u64 {
         0
     }
+    fn withdraw_member_funding() -> u64 {
+        0
+    }
+    fn withdraw_creator_funding_by_council() -> u64 {
+        0
+    }
+    fn withdraw_creator_funding_by_member() -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {
@@ -143,17 +154,17 @@ impl common::Trait for Test {
     type ActorId = u64;
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::origin::MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
-        _account_id: u64,
-    ) -> Result<u64, DispatchError> {
+        _member_id: u64,
+    ) -> Result<u128, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
         true
     }
 }
@@ -343,7 +354,7 @@ impl council::Trait for Test {
 }
 
 impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
+    fn is_member_staking_account(_: &u64, _: &u128) -> bool {
         true
     }
 }
