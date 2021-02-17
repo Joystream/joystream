@@ -11,13 +11,14 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-use crate::data_directory::Quota;
+pub use crate::data_directory::Quota;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use common::currency::GovernanceCurrency;
+use frame_support::StorageValue;
 use membership;
 
 mod working_group_mod {
@@ -42,6 +43,33 @@ impl_outer_event! {
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
         system<T>,
+    }
+}
+
+pub const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
+pub const DEFAULT_LEADER_WORKER_ID: u32 = 1;
+
+pub struct SetLeadFixture;
+impl SetLeadFixture {
+    pub fn set_default_lead() {
+        let worker = working_group::Worker {
+            member_id: DEFAULT_LEADER_MEMBER_ID,
+            role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            reward_relationship: None,
+            role_stake_profile: None,
+        };
+
+        // Create the worker.
+        <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
+            DEFAULT_LEADER_WORKER_ID,
+            worker,
+        );
+
+        // Update current lead.
+        <working_group::CurrentLead<Test, StorageWorkingGroupInstance>>::put(
+            DEFAULT_LEADER_WORKER_ID,
+        );
     }
 }
 
@@ -244,18 +272,20 @@ pub struct ExtBuilder {
     first_content_id: u64,
     first_relationship_id: u64,
     first_metadata_id: u64,
+    uploading_blocked: bool,
 }
 
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            quota_objects_limit_upper_bound: 200,
-            quota_size_limit_upper_bound: 20000,
-            global_quota: Quota::new(2000000, 2000),
+            quota_objects_limit_upper_bound: DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
+            quota_size_limit_upper_bound: DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
+            global_quota: DEFAULT_GLOBAL_QUOTA,
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
+            uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
 }
@@ -281,6 +311,16 @@ impl ExtBuilder {
         self
     }
 
+    pub fn uploading_blocked_status(mut self, uploading_blocked: bool) -> Self {
+        self.uploading_blocked = uploading_blocked;
+        self
+    }
+
+    pub fn global_quota(mut self, global_quota: Quota) -> Self {
+        self.global_quota = global_quota;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
@@ -292,7 +332,7 @@ impl ExtBuilder {
             global_quota: self.global_quota,
             data_object_by_content_id: vec![],
             quotas: vec![],
-            uploading_blocked: false,
+            uploading_blocked: self.uploading_blocked,
         }
         .assimilate_storage(&mut t)
         .unwrap();

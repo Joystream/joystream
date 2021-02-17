@@ -40,6 +40,11 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
+pub const DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
+pub const DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
+pub const DEFAULT_GLOBAL_QUOTA: Quota = Quota::new(2000000, 2000);
+pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
+
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
@@ -247,7 +252,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(fn data_object_by_content_id) config():
+        pub DataByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
 
         /// Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
@@ -255,16 +260,16 @@ decl_storage! {
             map hasher(blake2_128_concat) StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>> => Quota;
 
         /// Upper bound for the Quota size limit.
-        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64;
+        pub QuotaSizeLimitUpperBound get(fn quota_size_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND;
 
         /// Upper bound for the Quota objects number limit.
-        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64;
+        pub QuotaObjectsLimitUpperBound get(fn quota_objects_limit_upper_bound) config(): u64 = DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND;
 
         /// Global quota.
-        pub GlobalQuota get(fn global_quota) config(): Quota;
+        pub GlobalQuota get(fn global_quota) config(): Quota = DEFAULT_GLOBAL_QUOTA;
 
         /// If all new uploads blocked
-        pub UploadingBlocked get(fn uploading_blocked) config(): bool;
+        pub UploadingBlocked get(fn uploading_blocked) config(): bool = DEFAULT_UPLOADING_BLOCKED_STATUS;
     }
 }
 
@@ -400,7 +405,7 @@ decl_module! {
             new_quota_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
+            ensure!(new_quota_objects_limit <= Self::quota_objects_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
@@ -427,7 +432,7 @@ decl_module! {
             new_quota_size_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaObjectsLimitUpperBoundExceeded);
+            ensure!(new_quota_size_limit <= Self::quota_size_limit_upper_bound(), Error::<T>::QuotaSizeLimitUpperBoundExceeded);
 
             //
             // == MUTATION SAFE ==
@@ -481,7 +486,7 @@ decl_module! {
 
         /// Locks / unlocks content uploading
         #[weight = 10_000_000] // TODO: adjust weight
-        fn update_content_uploading_status(origin, is_blocked: bool) {
+        pub fn update_content_uploading_status(origin, is_blocked: bool) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             // == MUTATION SAFE ==
@@ -493,6 +498,26 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn initialize_data_directory(
+        quotas: Vec<(
+            StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>,
+            Quota,
+        )>,
+        quota_size_limit_upper_bound: u64,
+        quota_objects_limit_upper_bound: u64,
+        global_quota: Quota,
+        uploading_blocked: bool,
+    ) {
+        for (storage_object_owner, quota) in quotas {
+            <Quotas<T>>::insert(storage_object_owner, quota);
+        }
+
+        <QuotaSizeLimitUpperBound>::put(quota_size_limit_upper_bound);
+        <QuotaObjectsLimitUpperBound>::put(quota_objects_limit_upper_bound);
+        <GlobalQuota>::put(global_quota);
+        <UploadingBlocked>::put(uploading_blocked);
+    }
+
     // Ensure given origin can perform operation under specific storage object owner
     fn ensure_storage_object_owner_origin(
         origin: T::Origin,
@@ -620,14 +645,14 @@ impl<T: Trait> Module<T> {
                 ipfs_content_id: content.ipfs_content_id,
             };
 
-            <DataObjectByContentId<T>>::insert(content.content_id, data);
+            <DataByContentId<T>>::insert(content.content_id, data);
         }
 
         // Updade or create owner quota.
         <Quotas<T>>::insert(owner, owner_quota.fill_quota(upload_voucher));
 
         // Update global quota
-        <GlobalQuota>::mutate(|global_quota| global_quota.fill_quota(upload_voucher));
+        <GlobalQuota>::put(Self::global_quota().fill_quota(upload_voucher));
     }
 
     // Complete content removal
@@ -639,7 +664,7 @@ impl<T: Trait> Module<T> {
         let removal_voucher = Self::calculate_content_voucher(content);
 
         for content_id in content_ids {
-            <DataObjectByContentId<T>>::remove(content_id);
+            <DataByContentId<T>>::remove(content_id);
         }
 
         // Updade owner quota.
@@ -648,7 +673,7 @@ impl<T: Trait> Module<T> {
         });
 
         // Update global quota
-        <GlobalQuota>::mutate(|global_quota| global_quota.release_quota(removal_voucher));
+        <GlobalQuota>::put(Self::global_quota().release_quota(removal_voucher));
     }
 
     fn ensure_content_is_valid(
@@ -661,7 +686,7 @@ impl<T: Trait> Module<T> {
             );
 
             ensure!(
-                !<DataObjectByContentId<T>>::contains_key(&content.content_id),
+                !<DataByContentId<T>>::contains_key(&content.content_id),
                 Error::<T>::DataObjectAlreadyAdded
             );
         }
@@ -683,7 +708,7 @@ impl<T: Trait> Module<T> {
         );
 
         data.liaison_judgement = judgement;
-        <DataObjectByContentId<T>>::insert(content_id, data);
+        <DataByContentId<T>>::insert(content_id, data);
 
         Ok(())
     }
