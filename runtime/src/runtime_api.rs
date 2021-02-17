@@ -59,13 +59,11 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 //     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
 
 // Alias for the builder working group
-pub(crate) type BuilderWorkingGroup<T> =
-    working_group::Module<T, BuilderWorkingGroupInstance>;
+pub(crate) type BuilderWorkingGroup<T> = working_group::Module<T, BuilderWorkingGroupInstance>;
 
 // Alias for the gateway working group
-pub(crate) type GatewayWorkingGroup<T> =
-    working_group::Module<T, GatewayWorkingGroupInstance>;
-    
+pub(crate) type GatewayWorkingGroup<T> = working_group::Module<T, GatewayWorkingGroupInstance>;
+
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
@@ -81,7 +79,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             default_text_constraint,
             default_content_working_group_mint_capacity,
         );
-        
+
         GatewayWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
@@ -91,10 +89,11 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         DataDirectory::initialize_data_directory(
             Vec::new(),
-            data_directory::DEFAULT_QUOTA_SIZE_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_QUOTA_OBJECTS_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_GLOBAL_QUOTA,
-            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS
+            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_GLOBAL_VOUCHER,
+            data_directory::DEFAULT_VOUCHER,
+            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
         );
 
         // TODO: storage / data_directory migration or clear all data objects
