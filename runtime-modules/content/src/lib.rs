@@ -678,36 +678,22 @@ decl_module! {
             // Pick out the assets to be uploaded to storage system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
-            let expected_channel_id = NextChannelId::<T>::get();
+            let channel_id = NextChannelId::<T>::get();
 
-            let object_owner = StorageObjectOwner::<T>::Channel(expected_channel_id);
-
-            // check assets can be uploaded to storage.
-            // update can_add_content() to only take &refrences
-            T::StorageSystem::can_add_content(
-                object_owner.clone(),
-                content_parameters.clone(),
-            )?;
-
-            // TODO:
-            // Enough funds to create channel?
-            // Limit on number of channels per owner?
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
             //
             // == MUTATION SAFE ==
             //
 
-            // TODO: Burn funds from sender account as fee for creating a channel
-
-            // add assets to storage
-            // This should not fail because of prior can_add_content() check!
+            // This should be first mutation
+            // Try add assets to storage
             T::StorageSystem::atomically_add_content(
                 object_owner,
                 content_parameters,
             )?;
 
-            // incase we ever create channels following first get channel_id earlier, get again
-            let channel_id = NextChannelId::<T>::get();
+            // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
             let channel: Channel<T> = ChannelRecord {
@@ -803,6 +789,10 @@ decl_module! {
                 &channel.owner,
             )?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             channel.videos.iter().for_each(|id| {
                 VideoById::<T>::remove(id);
                 Self::deposit_event(RawEvent::VideoDeleted(*id));
@@ -849,7 +839,13 @@ decl_module! {
 
             let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
         }
 
         // The content directory doesn't track individual content ids of assets uploaded for a channel.
@@ -878,7 +874,13 @@ decl_module! {
 
             let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1350,6 +1352,7 @@ decl_event!(
         Channel = Channel<T>,
         ContentParameters = ContentParameters<T>,
         AccountId = <T as system::Trait>::AccountId,
+        ContentId = ContentId<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1370,6 +1373,7 @@ decl_event!(
             ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
         ChannelDeleted(ChannelId),
+        ChannelAssetsRemoved(ChannelId, Vec<ContentId>),
 
         ChannelCensored(ChannelId, Vec<u8> /* rationale */),
         ChannelUncensored(ChannelId, Vec<u8> /* rationale */),
