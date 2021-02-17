@@ -24,7 +24,6 @@ export class ExtrinsicFailedError extends Error {}
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
   private api: Api | null = null
-  forceSkipApiUriPrompt = false
 
   getApi(): Api {
     if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
@@ -44,23 +43,25 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getOriginalApi().createType(typeName, value)
   }
 
-  async init() {
+  async init(skipConnection = false): Promise<void> {
     await super.init()
-    let apiUri: string = this.getPreservedState().apiUri
-    if (!apiUri) {
-      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
-      apiUri = await this.promptForApiUri()
-    }
+    if (!skipConnection) {
+      let apiUri: string = this.getPreservedState().apiUri
+      if (!apiUri) {
+        this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
+        apiUri = await this.promptForApiUri()
+      }
 
-    const { metadataCache } = this.getPreservedState()
-    this.api = await Api.create(apiUri, metadataCache)
+      const { metadataCache } = this.getPreservedState()
+      this.api = await Api.create(apiUri, metadataCache)
 
-    const { genesisHash, runtimeVersion } = this.getOriginalApi()
-    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
-    if (!metadataCache[metadataKey]) {
-      // Add new entry to metadata cache
-      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
-      await this.setPreservedState({ metadataCache })
+      const { genesisHash, runtimeVersion } = this.getOriginalApi()
+      const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+      if (!metadataCache[metadataKey]) {
+        // Add new entry to metadata cache
+        metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+        await this.setPreservedState({ metadataCache })
+      }
     }
   }
 
