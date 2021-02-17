@@ -63,6 +63,7 @@ impl SetLeadFixture {
             role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
             reward_relationship: None,
             role_stake_profile: None,
+            storage: Vec::new(),
         };
 
         // Create the worker.
@@ -401,6 +402,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
         role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
+        storage: Vec::new(),
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

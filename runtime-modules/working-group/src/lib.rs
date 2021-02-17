@@ -397,22 +397,17 @@ decl_module! {
             worker_id: WorkerId<T>,
             storage: Vec<u8>
         ) {
-            // Ensuring worker actually exists
-            let worker = Self::ensure_worker_exists(&worker_id)?;
 
-            // Ensure that origin is signed by member with given id.
-            ensure_on_wrapped_error!(
-                membership::Module::<T>::ensure_member_controller_account_signed(origin, &worker.member_id)
-            )?;
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            let mut worker = Self::ensure_worker_signed(origin, &worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Complete the role storage update
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.storage = storage.clone()
-            });
+            worker.storage = storage.clone();
+            WorkerById::<T, I>::insert(worker_id, worker);
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));

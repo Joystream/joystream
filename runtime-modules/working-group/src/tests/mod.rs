@@ -1222,7 +1222,7 @@ fn update_worker_storage_by_leader_succeeds() {
 }
 
 #[test]
-fn update_worker_storage_fails_with_invalid_origin() {
+fn update_worker_storage_fails_with_invalid_origin_signed_account() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
 
@@ -1230,10 +1230,27 @@ fn update_worker_storage_fails_with_invalid_origin() {
 
         let update_storage_fixture =
             UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field)
-                .with_origin(RawOrigin::None);
+                .with_origin(RawOrigin::Signed(2));
 
-        update_storage_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingGroupInstance>::MembershipUnsignedOrigin.into(),
+                update_storage_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 1;
+        fill_default_worker_position();
+
+        let storage_field = vec![0u8].repeat(10);
+
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(invalid_worker_id, storage_field);
+
+            update_storage_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
