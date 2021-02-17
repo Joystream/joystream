@@ -485,7 +485,6 @@
         "expires_at": "u32"
     },
     "ContentId": "[u8;32]",
-    "ContentIds": "Vec<ContentId>",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
@@ -529,14 +528,22 @@
             "WorkingGroup": "WorkingGroup"
         }
     },
-    "Content": "Vec<ContentParameters>",
-    "Quota": {
+    "ObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Voucher": {
         "size_limit": "u64",
         "objects_limit": "u64",
         "size_used": "u64",
         "objects_used": "u64"
     },
-    "QuotaLimit": "u64",
+    "VoucherLimit": "u64",
     "UploadingStatus": "bool",
     "ProposalId": "u32",
     "ProposalStatus": {

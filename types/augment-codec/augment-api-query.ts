@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Quota, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageObjectOwner, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, WorkerId, WorkerOf } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, ObjectOwner, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, Voucher, WorkerId, WorkerOf } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -309,27 +309,31 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Maps data objects by their content id.
        **/
-      dataByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>>;
+      dataByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<DataObject>>;
       /**
-       * Global quota.
+       * Default content voucher for all actors.
        **/
-      globalQuota: AugmentedQuery<ApiType, () => Observable<Quota>>;
+      defaultVoucher: AugmentedQuery<ApiType, () => Observable<Voucher>>;
       /**
-       * Upper bound for the Quota objects number limit.
+       * Global voucher.
        **/
-      quotaObjectsLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
-      /**
-       * Maps storage owner to it`s quota. Created when the first upload by the new actor occured.
-       **/
-      quotas: AugmentedQuery<ApiType, (arg: StorageObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<Quota>>;
-      /**
-       * Upper bound for the Quota size limit.
-       **/
-      quotaSizeLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
+      globalVoucher: AugmentedQuery<ApiType, () => Observable<Voucher>>;
       /**
        * If all new uploads blocked
        **/
       uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>>;
+      /**
+       * Upper bound for the Voucher objects number limit.
+       **/
+      voucherObjectsLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
+      /**
+       * Maps storage owner to it`s voucher. Created when the first upload by the new actor occured.
+       **/
+      vouchers: AugmentedQuery<ApiType, (arg: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<Voucher>>;
+      /**
+       * Upper bound for the Voucher size limit.
+       **/
+      voucherSizeLimitUpperBound: AugmentedQuery<ApiType, () => Observable<u64>>;
     };
     dataObjectStorageRegistry: {
       /**

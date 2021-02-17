@@ -274,9 +274,6 @@ export interface ClassPermissionsType extends Null {}
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
 
-/** @name Content */
-export interface Content extends Vec<ContentParameters> {}
-
 /** @name ContentActor */
 export interface ContentActor extends Enum {
   readonly isCurator: boolean;
@@ -288,9 +285,6 @@ export interface ContentActor extends Enum {
 
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
-
-/** @name ContentIds */
-export interface ContentIds extends Vec<ContentId> {}
 
 /** @name ContentParameters */
 export interface ContentParameters extends Struct {
@@ -606,6 +600,19 @@ export interface NextAdjustment extends Struct {
 /** @name Nonce */
 export interface Nonce extends Null {}
 
+/** @name ObjectOwner */
+export interface ObjectOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
+}
+
 /** @name Opening */
 export interface Opening extends Struct {
   readonly created: u32;
@@ -911,17 +918,6 @@ export interface ProposalStatus extends Enum {
   readonly isFinalized: boolean;
   readonly asFinalized: Finalized;
 }
-
-/** @name Quota */
-export interface Quota extends Struct {
-  readonly size_limit: u64;
-  readonly objects_limit: u64;
-  readonly size_used: u64;
-  readonly objects_used: u64;
-}
-
-/** @name QuotaLimit */
-export interface QuotaLimit extends u64 {}
 
 /** @name RationaleText */
 export interface RationaleText extends Bytes {}
@@ -1292,6 +1288,17 @@ export interface VotingResults extends Struct {
   readonly rejections: u32;
   readonly slashes: u32;
 }
+
+/** @name Voucher */
+export interface Voucher extends Struct {
+  readonly size_limit: u64;
+  readonly objects_limit: u64;
+  readonly size_used: u64;
+  readonly objects_used: u64;
+}
+
+/** @name VoucherLimit */
+export interface VoucherLimit extends u64 {}
 
 /** @name WaitingToBeingOpeningStageVariant */
 export interface WaitingToBeingOpeningStageVariant extends Struct {
