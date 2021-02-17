@@ -465,6 +465,11 @@ type RawTestEvent = RawEvent<
     Option<ReferenceCounterSideEffects<Runtime>>,
     Option<(EntityId, EntityReferenceCounterSideEffect)>,
     u32,
+    ClassPermissions<CuratorGroupId>,
+    Property<ClassId>,
+    InputPropertyValue<Runtime>,
+    InputValue<Runtime>,
+    OperationType<Runtime>,
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
@@ -476,12 +481,7 @@ pub fn assert_event(tested_event: TestEvent, number_of_events_after_call: usize)
     assert_eq!(System::events().len(), number_of_events_after_call);
 
     // Ensure  last emitted event is equal to expected one
-    assert!(matches!(
-            System::events()
-                .iter()
-                .last(),
-            Some(last_event) if last_event.event == tested_event
-    ));
+    assert_eq!(System::events().iter().last().unwrap().event, tested_event);
 }
 
 pub fn assert_failure(
@@ -557,7 +557,7 @@ pub enum ClassType {
     CuratorGroupDoesNotExist,
 }
 
-pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchResult {
+pub fn get_class_for(class_type: ClassType) -> Class<EntityId, ClassId, CuratorGroupId> {
     let mut class = create_class_with_default_permissions();
     match class_type {
         ClassType::Valid => (),
@@ -606,6 +606,12 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchR
             class.get_permissions_mut().set_maintainers(maintainers);
         }
     };
+
+    class
+}
+
+pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchResult {
+    let class = get_class_for(class_type);
     TestModule::create_class(
         Origin::signed(lead_origin),
         class.get_name().to_owned(),

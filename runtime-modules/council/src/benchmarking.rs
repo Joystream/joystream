@@ -655,7 +655,12 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::NewCandidate(member_id, T::MinCandidateStake::get()).into()
+            RawEvent::NewCandidate(
+                member_id,
+                account_id.clone(),
+                account_id.clone(),
+                T::MinCandidateStake::get()
+            ).into()
         );
     }
 

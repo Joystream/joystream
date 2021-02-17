@@ -364,12 +364,13 @@ benchmarks! {
         let (council, last_id) = elect_council::<T>(1);
         let (account_voter_id, member_voter_id) = council[0].clone();
         let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);
+        let rationale = vec![0u8; i.try_into().unwrap()];
     }: _ (
             RawOrigin::Signed(account_voter_id),
             member_voter_id,
             proposal_id,
             VoteKind::Approve,
-            vec![0u8; i.try_into().unwrap()]
+            rationale.clone()
         )
     verify {
         assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still exist");
@@ -394,7 +395,7 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into()
+            RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve, rationale).into()
         );
     }
 
@@ -426,7 +427,7 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled).into()
+            RawEvent::ProposalCancelled(member_id, proposal_id).into()
         );
     }
 

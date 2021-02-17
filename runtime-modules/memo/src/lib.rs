@@ -22,7 +22,7 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where <T as frame_system::Trait>::AccountId {
-        MemoUpdated(AccountId),
+        MemoUpdated(AccountId, MemoText),
     }
 }
 
@@ -37,8 +37,8 @@ decl_module! {
             ensure!(!<balances::Module<T>>::total_balance(&sender).is_zero(), "account must have a balance");
             ensure!(memo.len() as u32 <= Self::max_memo_length(), "memo too long");
 
-            <Memo<T>>::insert(&sender, memo);
-            Self::deposit_event(RawEvent::MemoUpdated(sender));
+            <Memo<T>>::insert(&sender, memo.clone());
+            Self::deposit_event(RawEvent::MemoUpdated(sender, memo));
         }
     }
 }

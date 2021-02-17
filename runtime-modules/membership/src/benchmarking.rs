@@ -129,7 +129,7 @@ benchmarks! {
             referrer_id: None,
         };
 
-    }: buy_membership(RawOrigin::Signed(account_id.clone()), params)
+    }: buy_membership(RawOrigin::Signed(account_id.clone()), params.clone())
     verify {
 
         // Ensure membership for given member_id is successfully bought
@@ -152,7 +152,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MembershipBought(member_id).into());
+        assert_last_event::<T>(RawEvent::MembershipBought(member_id, params).into());
     }
 
     buy_membership_with_referrer{
@@ -206,7 +206,7 @@ benchmarks! {
 
         let free_balance = Balances::<T>::free_balance(&account_id);
 
-    }: buy_membership(RawOrigin::Signed(account_id.clone()), params)
+    }: buy_membership(RawOrigin::Signed(account_id.clone()), params.clone())
     verify {
 
         // Ensure membership for given member_id is successfully bought
@@ -232,7 +232,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(second_member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MembershipBought(second_member_id).into());
+        assert_last_event::<T>(RawEvent::MembershipBought(second_member_id, params).into());
     }
 
     update_profile{
@@ -271,9 +271,16 @@ benchmarks! {
 
         assert!(!MemberIdByHandleHash::<T>::contains_key(handle));
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated.clone()), member_id);
 
-        assert_last_event::<T>(RawEvent::MemberProfileUpdated(member_id).into());
+        assert_last_event::<T>(RawEvent::MemberProfileUpdated(
+                member_id,
+                None,
+                Some(handle_updated),
+                None,
+                None,
+            ).into()
+        );
     }
 
     update_accounts_none{
@@ -312,7 +319,12 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(member_id).into());
+        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
+                member_id,
+                Some(new_root_account_id),
+                None
+            ).into()
+        );
     }
 
     update_accounts_controller{
@@ -343,7 +355,12 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(member_id).into());
+        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
+                member_id,
+                None,
+                Some(new_controller_account_id)
+            ).into()
+        );
     }
 
     update_accounts_both{
@@ -376,7 +393,12 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(member_id).into());
+        assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
+                member_id,
+                Some(new_root_account_id),
+                Some(new_controller_account_id),
+            ).into()
+        );
     }
 
     set_referral_cut {
@@ -478,7 +500,7 @@ benchmarks! {
 
         let current_wg_budget = T::WorkingGroup::get_budget();
 
-    }: _(RawOrigin::Signed(account_id.clone()), invite_params)
+    }: _(RawOrigin::Signed(account_id.clone()), invite_params.clone())
 
     verify {
 
@@ -503,7 +525,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), invited_membership);
 
-        assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id).into());
+        assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id, invite_params).into());
 
     }
 
@@ -559,7 +581,12 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), membership);
 
-        assert_last_event::<T>(RawEvent::MemberVerificationStatusUpdated(member_id, is_verified).into());
+        assert_last_event::<T>(RawEvent::MemberVerificationStatusUpdated(
+                member_id,
+                is_verified,
+                leader_id,
+            ).into()
+        );
     }
 
     set_leader_invitation_quota {

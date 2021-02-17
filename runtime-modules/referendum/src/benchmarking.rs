@@ -458,7 +458,7 @@ benchmarks_instance! {
                 vote_option,
                 One::one()
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt.clone(), option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
         let cycle_id = 0;
@@ -493,7 +493,7 @@ benchmarks_instance! {
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id, salt).into());
     }
 
     reveal_vote_space_not_in_winners {
@@ -510,7 +510,7 @@ benchmarks_instance! {
                 vote_option,
                 Zero::zero(),
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt.clone(), option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
         let cycle_id = 0;
@@ -537,7 +537,7 @@ benchmarks_instance! {
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id, salt).into());
     }
 
     reveal_vote_space_replace_last_winner {
@@ -554,7 +554,7 @@ benchmarks_instance! {
                 vote_option,
                 One::one(),
             );
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt.clone(), option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
         let cycle_id = 0;
@@ -588,7 +588,7 @@ benchmarks_instance! {
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id, salt).into());
     }
 
     reveal_vote_already_existing {
@@ -608,7 +608,7 @@ benchmarks_instance! {
 
         let old_vote_power = intermediate_winners[i as usize].vote_power;
         let new_vote_power = old_vote_power + T::get_option_power(&option_id);
-    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt, option_id)
+    }: reveal_vote(RawOrigin::Signed(account_id.clone()), salt.clone(), option_id)
     verify {
         let stake = T::MinimumStake::get() + One::one();
         let cycle_id = 0;
@@ -642,7 +642,7 @@ benchmarks_instance! {
             "Vote not revealed",
         );
 
-        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id).into());
+        assert_last_event::<T, I>(RawEvent::VoteRevealed(account_id, option_id, salt).into());
     }
 
     release_vote_stake {

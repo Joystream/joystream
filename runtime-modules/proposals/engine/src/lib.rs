@@ -280,7 +280,14 @@ decl_event!(
         /// - Voter - member id of a voter.
         /// - Id of a proposal.
         /// - Kind of vote.
-        Voted(MemberId, ProposalId, VoteKind),
+        /// - Rationale.
+        Voted(MemberId, ProposalId, VoteKind, Vec<u8>),
+
+        /// Emits on a proposal being cancelled
+        /// Params:
+        /// - Member Id of the proposer
+        /// - Id of the proposal
+        ProposalCancelled(MemberId, ProposalId),
     }
 );
 
@@ -437,13 +444,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or paraemters
         /// # </weight>
-        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().saturated_into())]
+        #[weight = WeightInfoEngine::<T>::vote(rationale.len().saturated_into())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
             proposal_id: T::ProposalId,
             vote: VoteKind,
-            _rationale: Vec<u8>, // we use it on the query node side.
+            rationale: Vec<u8>, // we use it on the query node side.
         ) {
             T::CouncilOriginValidator::ensure_member_consulate(origin, voter_id)?;
 
@@ -470,7 +477,7 @@ decl_module! {
 
             <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
-            Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
+            Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote, rationale));
         }
 
         /// Cancel a proposal by its original proposer.
@@ -502,6 +509,7 @@ decl_module! {
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
+            Self::deposit_event(RawEvent::ProposalCancelled(proposer_id, proposal_id));
         }
 
         /// Veto a proposal. Must be root.

@@ -130,23 +130,31 @@ decl_event!(
        WorkerId = WorkerId<T>,
        <T as frame_system::Trait>::AccountId,
        Balance = BalanceOf<T>,
+       OpeningType = OpeningType,
+       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+       ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
     {
         /// Emits on adding new job opening.
         /// Params:
         /// - Opening id
-        OpeningAdded(OpeningId),
+        /// - Description
+        /// - Opening Type(Lead or Worker)
+        /// - Stake Policy for the opening
+        /// - Reward per block
+        OpeningAdded(OpeningId, Vec<u8>, OpeningType, Option<StakePolicy>, Option<Balance>),
 
         /// Emits on adding the application for the worker opening.
         /// Params:
-        /// - Opening id
+        /// - Opening parameteres
         /// - Application id
-        AppliedOnOpening(OpeningId, ApplicationId),
+        AppliedOnOpening(ApplyOnOpeningParameters, ApplicationId),
 
         /// Emits on filling the job opening.
         /// Params:
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
-        OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap),
+        /// - Applicationd ids used to fill the opening
+        OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>),
 
         /// Emits on setting the group leader.
         /// Params:
@@ -165,23 +173,36 @@ decl_event!(
         /// Emits on exiting the worker.
         /// Params:
         /// - worker id.
+        /// - Rationale.
         WorkerExited(WorkerId),
+
+        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Params:
+        /// - Worker id.
+        /// - Rationale.
+        WorkerLeft(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
         /// - worker id.
-        TerminatedWorker(WorkerId),
+        /// - Penalty.
+        /// - Rationale.
+        TerminatedWorker(WorkerId, Option<Balance>, Option<Vec<u8>>),
 
         /// Emits on terminating the leader.
         /// Params:
         /// - leader worker id.
-        TerminatedLeader(WorkerId),
+        /// - Penalty.
+        /// - Rationale.
+        TerminatedLeader(WorkerId, Option<Balance>, Option<Vec<u8>>),
 
         /// Emits on slashing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
         /// - actual slashed balance.
-        StakeSlashed(WorkerId, Balance),
+        /// - Requested slashed balance.
+        /// - Rationale.
+        StakeSlashed(WorkerId, Balance, Balance, Option<Vec<u8>>),
 
         /// Emits on decreasing the regular worker/lead stake.
         /// Params:
@@ -225,12 +246,15 @@ decl_event!(
         /// Emits on updating the status text of the working group.
         /// Params:
         /// - status text hash
-        StatusTextChanged(Vec<u8>),
+        /// - status text
+        StatusTextChanged(Vec<u8>, Option<Vec<u8>>),
 
-        /// Emits on updating the status text of the working group.
+        /// Emits on budget from the working group being spent
         /// Params:
-        /// - status text hash
-        BudgetSpending(AccountId, Balance),
+        /// - Reciever Account Id.
+        /// - Balance spent.
+        /// - Rationale.
+        BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
     }
 );
 
@@ -296,7 +320,11 @@ decl_module! {
             let mut biggest_number_of_processed_workers = leaving_workers.len();
 
             leaving_workers.iter().for_each(|wi| {
-                Self::remove_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
+                Self::remove_worker(
+                    &wi.worker_id,
+                    &wi.worker,
+                    RawEvent::WorkerExited(wi.worker_id)
+                );
             });
 
             if Self::is_reward_block() {
@@ -350,7 +378,7 @@ decl_module! {
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
-                stake_policy,
+                stake_policy: stake_policy.clone(),
                 reward_per_block,
             };
 
@@ -361,7 +389,13 @@ decl_module! {
             // Update NextOpeningId
             NextOpeningId::<I>::mutate(|id| *id += <OpeningId as One>::one());
 
-            Self::deposit_event(RawEvent::OpeningAdded(new_opening_id));
+            Self::deposit_event(RawEvent::OpeningAdded(
+                    new_opening_id,
+                    description,
+                    opening_type,
+                    stake_policy,
+                    reward_per_block,
+                ));
         }
 
         /// Apply on a worker opening.
@@ -420,7 +454,7 @@ decl_module! {
             let application = Application::<T>::new(
                 &p.role_account_id,
                 &p.reward_account_id,
-                &p.stake_parameters.map(|sp| sp.staking_account_id),
+                &p.stake_parameters.as_ref().map(|sp| sp.staking_account_id.clone()),
                 &p.member_id,
                 hashed_description.as_ref().to_vec(),
             );
@@ -435,7 +469,7 @@ decl_module! {
             NextApplicationId::<I>::mutate(|id| *id += <ApplicationId as One>::one());
 
             // Trigger the event.
-            Self::deposit_event(RawEvent::AppliedOnOpening(p.opening_id, new_application_id));
+            Self::deposit_event(RawEvent::AppliedOnOpening(p, new_application_id));
         }
 
         /// Fill opening for the regular/lead position.
@@ -496,7 +530,11 @@ decl_module! {
             <OpeningById::<T, I>>::remove(opening_id);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
+            Self::deposit_event(RawEvent::OpeningFilled(
+                    opening_id,
+                    application_id_to_worker_id,
+                    successful_application_ids
+                ));
         }
 
         /// Update the associated role account of the active regular worker/lead.
@@ -549,7 +587,7 @@ decl_module! {
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
-            _rationale: Option<Vec<u8>>
+            rationale: Option<Vec<u8>>
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -562,7 +600,11 @@ decl_module! {
             //
 
             if Self::can_leave_immediately(&worker){
-                Self::remove_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
+                Self::remove_worker(
+                    &worker_id,
+                    &worker,
+                    RawEvent::WorkerLeft(worker_id, rationale)
+                );
             } else{
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
                     worker.started_leaving_at = Some(Self::current_block())
@@ -580,12 +622,12 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&_rationale)]
+        #[weight = Module::<T, I>::terminate_role_weight(&rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
             penalty: Option<BalanceOf<T>>,
-            _rationale: Option<Vec<u8>>,
+            rationale: Option<Vec<u8>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -607,15 +649,15 @@ decl_module! {
 
             if let Some(penalty) = penalty {
                 if let Some(staking_account_id) = worker.staking_account_id.clone() {
-                    Self::slash(worker_id, &staking_account_id, Some(penalty));
+                    Self::slash(worker_id, &staking_account_id, penalty, rationale.clone());
                 }
             }
 
             // Trigger the event
             let event = if is_sudo {
-                RawEvent::TerminatedLeader(worker_id)
+                RawEvent::TerminatedLeader(worker_id, penalty, rationale)
             } else {
-                RawEvent::TerminatedWorker(worker_id)
+                RawEvent::TerminatedWorker(worker_id, penalty, rationale)
             };
 
             Self::remove_worker(&worker_id, &worker, event);
@@ -632,12 +674,12 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::slash_stake_weight(&_rationale)]
+        #[weight = Module::<T, I>::slash_stake_weight(&rationale)]
         pub fn slash_stake(
             origin,
             worker_id: WorkerId<T>,
             penalty: BalanceOf<T>,
-            _rationale: Option<Vec<u8>>
+            rationale: Option<Vec<u8>>
         ) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -661,7 +703,7 @@ decl_module! {
             //
 
             if let Some(staking_account_id) = worker.staking_account_id {
-                Self::slash(worker_id, &staking_account_id, Some(penalty))
+                Self::slash(worker_id, &staking_account_id, penalty, rationale)
             }
         }
 
@@ -973,6 +1015,7 @@ decl_module! {
             //
 
             let status_text_hash = status_text
+                .as_ref()
                 .map(|status_text| {
                         let hashed = T::Hashing::hash(&status_text);
 
@@ -984,7 +1027,7 @@ decl_module! {
             <StatusTextHash<I>>::put(status_text_hash.clone());
 
             // Trigger event
-            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash));
+            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash, status_text));
         }
 
         /// Transfers specified amount to any account.
@@ -1023,7 +1066,7 @@ decl_module! {
             Self::pay_from_budget(&account_id, amount);
 
             // Trigger event
-            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount));
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
     }
 }
@@ -1199,10 +1242,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn slash(
         worker_id: WorkerId<T>,
         staking_account_id: &T::AccountId,
-        balance: Option<BalanceOf<T>>,
+        balance: BalanceOf<T>,
+        rationale: Option<Vec<u8>>,
     ) {
-        let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
-        Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
+        let slashed_balance = T::StakingHandler::slash(staking_account_id, Some(balance));
+        Self::deposit_event(RawEvent::StakeSlashed(
+            worker_id,
+            slashed_balance,
+            balance,
+            rationale,
+        ));
     }
 
     // Reward a worker using reward presets and working group budget.

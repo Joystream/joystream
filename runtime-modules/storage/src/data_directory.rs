@@ -159,13 +159,17 @@ decl_event! {
     pub enum Event<T> where
         <T as Trait>::ContentId,
         MemberId = MemberId<T>,
-        StorageProviderId = StorageProviderId<T>
+        StorageProviderId = StorageProviderId<T>,
+        DataObjectTypeId = <T as data_object_type_registry::Trait>::DataObjectTypeId
     {
         /// Emits on adding of the content.
         /// Params:
         /// - Id of the relationship.
         /// - Id of the member.
-        ContentAdded(ContentId, MemberId),
+        /// - Id of the data object type
+        /// - Size of the content
+        /// - IPFS content ID
+        ContentAdded(ContentId, MemberId, DataObjectTypeId, u64, Vec<u8>),
 
         /// Emits when the storage provider accepts a content.
         /// Params:
@@ -225,7 +229,7 @@ decl_module! {
                 owner: member_id,
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
-                ipfs_content_id,
+                ipfs_content_id: ipfs_content_id.clone(),
             };
 
             //
@@ -233,7 +237,13 @@ decl_module! {
             //
 
             <DataObjectByContentId<T>>::insert(&content_id, data);
-            Self::deposit_event(RawEvent::ContentAdded(content_id, member_id));
+            Self::deposit_event(RawEvent::ContentAdded(
+                    content_id,
+                    member_id,
+                    type_id,
+                    size,
+                    ipfs_content_id
+                ));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.

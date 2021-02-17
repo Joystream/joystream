@@ -573,14 +573,16 @@ benchmarks_instance! {
             ),
         };
 
-    }: _ (RawOrigin::Signed(lead_account_id.clone()), apply_on_opening_params)
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), apply_on_opening_params.clone())
     verify {
         assert!(
             ApplicationById::<T, I>::contains_key(0),
             "Application not found"
         );
 
-        assert_last_event::<T, I>(RawEvent::AppliedOnOpening(opening_id, Zero::zero()).into());
+        assert_last_event::<T, I>(
+            RawEvent::AppliedOnOpening(apply_on_opening_params, Zero::zero()).into()
+        );
     }
 
     fill_opening_lead {
@@ -596,7 +598,7 @@ benchmarks_instance! {
 
         let mut successful_application_ids: BTreeSet<ApplicationId> = BTreeSet::new();
         successful_application_ids.insert(application_id);
-    }: fill_opening(RawOrigin::Root, opening_id, successful_application_ids)
+    }: fill_opening(RawOrigin::Root, opening_id, successful_application_ids.clone())
     verify {
         assert!(!OpeningById::<T, I>::contains_key(opening_id), "Opening still not filled");
 
@@ -611,8 +613,11 @@ benchmarks_instance! {
         let mut application_id_to_worker_id = BTreeMap::new();
         application_id_to_worker_id.insert(application_id, worker_id);
 
-        assert_last_event::<T, I>(
-            RawEvent::OpeningFilled(opening_id, application_id_to_worker_id).into()
+        assert_last_event::<T, I>(RawEvent::OpeningFilled(
+                opening_id,
+                application_id_to_worker_id,
+                successful_application_ids
+            ).into()
         );
     }
 
@@ -650,8 +655,11 @@ benchmarks_instance! {
             );
         }
 
-        assert_last_event::<T, I>(
-            RawEvent::OpeningFilled(opening_id, application_id_to_worker_id).into()
+        assert_last_event::<T, I>(RawEvent::OpeningFilled(
+                opening_id,
+                application_id_to_worker_id,
+                successful_application_ids
+            ).into()
         );
     }
 
@@ -719,14 +727,21 @@ benchmarks_instance! {
             Some(lead_id.clone())
         );
         let slashing_amount = One::one();
+        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
     }: _(
         RawOrigin::Signed(lead_id.clone()),
         worker_id,
         slashing_amount,
-        Some(vec![0u8; i.try_into().unwrap()])
+        rationale.clone()
     )
     verify {
-        assert_last_event::<T, I>(RawEvent::StakeSlashed(worker_id, slashing_amount).into());
+        assert_last_event::<T, I>(RawEvent::StakeSlashed(
+                worker_id,
+                slashing_amount,
+                slashing_amount,
+                rationale
+            ).into()
+        );
     }
 
     terminate_role_worker {
@@ -743,15 +758,17 @@ benchmarks_instance! {
         // To be able to pay unpaid reward
         let current_budget = BalanceOf::<T>::max_value();
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+        let penalty = Some(One::one());
+        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
     }: terminate_role(
             RawOrigin::Signed(lead_id.clone()),
             worker_id,
-            Some(One::one()),
-            Some(vec![0u8; i.try_into().unwrap()])
+            penalty,
+            rationale.clone()
         )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(worker_id), "Worker not terminated");
-        assert_last_event::<T, I>(RawEvent::TerminatedWorker(worker_id).into());
+        assert_last_event::<T, I>(RawEvent::TerminatedWorker(worker_id, penalty, rationale).into());
     }
 
     terminate_role_lead {
@@ -762,15 +779,19 @@ benchmarks_instance! {
         let current_budget = BalanceOf::<T>::max_value();
         // To be able to pay unpaid reward
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+        let penalty = Some(One::one());
+        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
     }: terminate_role(
             RawOrigin::Root,
             lead_worker_id,
-            Some(One::one()),
-            Some(vec![0u8; i.try_into().unwrap()])
+            penalty,
+            rationale.clone()
         )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(lead_worker_id), "Worker not terminated");
-        assert_last_event::<T, I>(RawEvent::TerminatedLeader(lead_worker_id).into());
+        assert_last_event::<T, I>(
+            RawEvent::TerminatedLeader(lead_worker_id, penalty, rationale).into()
+        );
     }
 
     // Regular worker is the worst case scenario since the checks
@@ -826,7 +847,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), current_budget, None)
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), Zero::zero(), "Budget not updated");
-        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, current_budget).into());
+        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, current_budget, None).into());
     }
 
     // Regular worker is the worst case scenario since the checks
@@ -864,7 +885,7 @@ benchmarks_instance! {
 
     }: _ (RawOrigin::Signed(lead_id), status_text.clone())
     verify {
-        let status_text_hash = T::Hashing::hash(&status_text.unwrap()).as_ref().to_vec();
+        let status_text_hash = T::Hashing::hash(&status_text.clone().unwrap()).as_ref().to_vec();
 
         assert_eq!(
             WorkingGroup::<T, I>::status_text_hash(),
@@ -872,7 +893,9 @@ benchmarks_instance! {
             "Status text not updated"
         );
 
-        assert_last_event::<T, I>(RawEvent::StatusTextChanged(status_text_hash).into());
+        assert_last_event::<T, I>(
+            RawEvent::StatusTextChanged(status_text_hash, status_text).into()
+        );
     }
 
     update_reward_account {
@@ -917,14 +940,21 @@ benchmarks_instance! {
 
     }: _(
             RawOrigin::Signed(lead_id),
-            description,
+            description.clone(),
             OpeningType::Regular,
-            Some(stake_policy),
+            Some(stake_policy.clone()),
             Some(BalanceOf::<T>::max_value())
         )
     verify {
         assert!(OpeningById::<T, I>::contains_key(1));
-        assert_last_event::<T, I>(RawEvent::OpeningAdded(1).into());
+        assert_last_event::<T, I>(RawEvent::OpeningAdded(
+                1,
+                description,
+                OpeningType::Regular,
+                Some(stake_policy),
+                Some(BalanceOf::<T>::max_value())
+            ).into()
+        );
     }
 
     // This is always worse than leave_role_immediatly
@@ -941,15 +971,16 @@ benchmarks_instance! {
             RawOrigin::Root.into(),
             BalanceOf::<T>::max_value()
         ).unwrap();
+        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
 
     }: leave_role(
             RawOrigin::Signed(caller_id),
             lead_worker_id,
-            Some(vec![0u8; i.try_into().unwrap()])
+            rationale.clone()
         )
     verify {
         assert!(!WorkerById::<T, I>::contains_key(lead_worker_id), "Worker hasn't left");
-        assert_last_event::<T, I>(RawEvent::WorkerExited(lead_worker_id).into());
+        assert_last_event::<T, I>(RawEvent::WorkerLeft(lead_worker_id, rationale).into());
     }
 
     // Generally speaking this seems to be always the best case scenario

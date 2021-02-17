@@ -415,54 +415,56 @@ decl_event!(
         <T as Trait>::PostId,
         ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
+        PrivilegedActor = PrivilegedActor<T>,
+        Poll = Poll<<T as pallet_timestamp::Trait>::Moment, <T as frame_system::Trait>::Hash>,
     {
         /// A category was introduced
-        CategoryCreated(CategoryId),
+        CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
 
         /// A category with given id was updated.
         /// The second argument reflects the new archival status of the category.
-        CategoryUpdated(CategoryId, bool),
+        CategoryUpdated(CategoryId, bool, PrivilegedActor),
 
-        // A category was deleted
-        CategoryDeleted(CategoryId),
+        /// A category was deleted
+        CategoryDeleted(CategoryId, PrivilegedActor),
 
         /// A thread with given id was created.
-        ThreadCreated(ThreadId),
+        ThreadCreated(ThreadId, ForumUserId, CategoryId, Vec<u8>, Vec<u8>, Option<Poll>),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId, Vec<u8>),
+        ThreadModerated(ThreadId, Vec<u8>, PrivilegedActor, CategoryId),
 
         /// A thread with given id was updated.
         /// The second argument reflects the new archival status of the thread.
-        ThreadUpdated(ThreadId, bool),
+        ThreadUpdated(ThreadId, bool, PrivilegedActor, CategoryId),
 
         /// A thread with given id was moderated.
-        ThreadTitleUpdated(ThreadId),
+        ThreadTitleUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
 
         /// A thread was deleted.
-        ThreadDeleted(ThreadId),
+        ThreadDeleted(ThreadId, PrivilegedActor, CategoryId),
 
         /// A thread was moved to new category
-        ThreadMoved(ThreadId, CategoryId),
+        ThreadMoved(ThreadId, CategoryId, PrivilegedActor, CategoryId),
 
         /// Post with given id was created.
-        PostAdded(PostId),
+        PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Vec<u8>),
 
         /// Post with givne id was moderated.
-        PostModerated(PostId, Vec<u8>),
+        PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
-        PostTextUpdated(PostId),
+        PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Vec<u8>),
 
         /// Thumb up post
-        PostReacted(ForumUserId, PostId, PostReactionId),
+        PostReacted(ForumUserId, PostId, PostReactionId, CategoryId, ThreadId),
 
         /// Vote on poll
-        VoteOnPoll(ThreadId, u32),
+        VoteOnPoll(ThreadId, u32, ForumUserId, CategoryId),
 
         /// Sticky thread updated for category
-        CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
+        CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>, PrivilegedActor),
 
         /// An moderator ability to moderate a category and its subcategories updated
         CategoryMembershipOfModeratorUpdated(ModeratorId, CategoryId, bool),
@@ -578,7 +580,12 @@ decl_module! {
             }
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryCreated(next_category_id));
+            Self::deposit_event(RawEvent::CategoryCreated(
+                    next_category_id,
+                    parent_category_id,
+                    title,
+                    description
+                ));
 
             Ok(())
         }
@@ -620,7 +627,9 @@ decl_module! {
             <CategoryById<T>>::mutate(category_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
+            Self::deposit_event(
+                RawEvent::CategoryUpdated(category_id, new_archival_status, actor)
+            );
 
             Ok(())
         }
@@ -662,7 +671,7 @@ decl_module! {
             <CategoryCounter<T>>::mutate(|value| *value -= One::one());
 
             // Store the event
-            Self::deposit_event(RawEvent::CategoryDeleted(category_id));
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id, actor));
 
             Ok(())
         }
@@ -728,7 +737,7 @@ decl_module! {
                 title_hash: T::calculate_hash(&title),
                 author_id: forum_user_id,
                 archived: false,
-                poll,
+                poll: poll.clone(),
                 num_direct_posts: 1,
             };
 
@@ -744,7 +753,16 @@ decl_module! {
             <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(new_thread_id));
+            Self::deposit_event(
+                RawEvent::ThreadCreated(
+                    new_thread_id,
+                    forum_user_id,
+                    category_id,
+                    title,
+                    text,
+                    poll,
+                )
+            );
 
             Ok(())
         }
@@ -781,7 +799,14 @@ decl_module! {
             <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
+            Self::deposit_event(
+                RawEvent::ThreadTitleUpdated(
+                    thread_id,
+                    forum_user_id,
+                    category_id,
+                    new_title,
+                )
+            );
 
             Ok(())
         }
@@ -823,7 +848,12 @@ decl_module! {
             <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadUpdated(thread_id, new_archival_status));
+            Self::deposit_event(RawEvent::ThreadUpdated(
+                    thread_id,
+                    new_archival_status,
+                    actor,
+                    category_id
+                ));
 
             Ok(())
         }
@@ -859,7 +889,11 @@ decl_module! {
             Self::delete_thread_inner(thread.category_id, thread_id);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
+            Self::deposit_event(RawEvent::ThreadDeleted(
+                    thread_id,
+                    actor,
+                    category_id
+                ));
 
             Ok(())
         }
@@ -898,7 +932,9 @@ decl_module! {
             <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
+            Self::deposit_event(
+                RawEvent::ThreadMoved(thread_id, new_category_id, actor, category_id)
+            );
 
             Ok(())
         }
@@ -967,7 +1003,9 @@ decl_module! {
             });
 
             // Store the event
-            Self::deposit_event(RawEvent::VoteOnPoll(thread_id, index));
+            Self::deposit_event(
+                RawEvent::VoteOnPoll(thread_id, index, forum_user_id, category_id)
+            );
 
             Ok(())
         }
@@ -1012,7 +1050,9 @@ decl_module! {
             Self::delete_thread_inner(thread.category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
+            Self::deposit_event(
+                RawEvent::ThreadModerated(thread_id, rationale, actor, category_id)
+            );
 
             Ok(())
         }
@@ -1057,7 +1097,9 @@ decl_module! {
             <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.num_direct_posts += 1);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostAdded(post_id));
+            Self::deposit_event(
+                RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text)
+            );
 
             Ok(())
         }
@@ -1091,7 +1133,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::deposit_event(RawEvent::PostReacted(forum_user_id, post_id, react));
+            Self::deposit_event(
+                RawEvent::PostReacted(forum_user_id, post_id, react, category_id, thread_id)
+            );
 
             Ok(())
         }
@@ -1135,7 +1179,13 @@ decl_module! {
             <PostById<T>>::mutate(post.thread_id, post_id, |p| p.text_hash = text_hash);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post_id));
+            Self::deposit_event(RawEvent::PostTextUpdated(
+                    post_id,
+                    forum_user_id,
+                    category_id,
+                    thread_id,
+                    new_text
+                ));
 
             Ok(())
         }
@@ -1174,7 +1224,9 @@ decl_module! {
             Self::delete_post_inner(category_id, thread_id, post_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
+            Self::deposit_event(
+                RawEvent::PostModerated(post_id, rationale, actor, category_id, thread_id)
+            );
 
             Ok(())
         }
@@ -1215,7 +1267,9 @@ decl_module! {
             <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids.clone());
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryStickyThreadUpdate(category_id, stickied_ids));
+            Self::deposit_event(
+                RawEvent::CategoryStickyThreadUpdate(category_id, stickied_ids, actor)
+            );
 
             Ok(())
         }

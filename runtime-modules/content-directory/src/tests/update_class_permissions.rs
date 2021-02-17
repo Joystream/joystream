@@ -55,16 +55,13 @@ fn update_class_permissions_success() {
 
         // Ensure class permissions updated succesfully
 
-        *class_permissions.get_maintainers_mut() = maintainers;
+        *class_permissions.get_maintainers_mut() = maintainers.clone();
         class_permissions.set_entity_creation_blocked(true);
 
         assert_eq!(
             class_by_id(FIRST_CLASS_ID).get_permissions(),
             class_permissions
         );
-
-        let class_permissions_updated_event =
-            get_test_event(RawEvent::ClassPermissionsUpdated(FIRST_CLASS_ID));
 
         // Ensure number of classes maintained by curator groups updated succesfully.
 
@@ -101,6 +98,14 @@ fn update_class_permissions_success() {
             curator_group_by_id(SECOND_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
             1
         );
+
+        let class_permissions_updated_event = get_test_event(RawEvent::ClassPermissionsUpdated(
+            FIRST_CLASS_ID,
+            None,
+            Some(true),
+            None,
+            Some(maintainers),
+        ));
 
         // Event checked
         assert_event(

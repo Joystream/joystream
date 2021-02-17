@@ -39,7 +39,10 @@ fn buy_membership_succeeds() {
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(next_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(
+            next_member_id,
+            get_alice_membership_parameters(),
+        ));
     });
 }
 
@@ -104,10 +107,10 @@ fn update_profile_succeeds() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            info.name,
-            info.handle,
-            info.avatar_uri,
-            info.about,
+            info.name.clone(),
+            info.handle.clone(),
+            info.avatar_uri.clone(),
+            info.about.clone(),
         ));
 
         let profile = get_membership_by_id(next_member_id);
@@ -118,7 +121,13 @@ fn update_profile_succeeds() {
             get_bob_info().handle_hash.unwrap()
         ));
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(next_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(
+            next_member_id,
+            info.name,
+            info.handle,
+            info.avatar_uri,
+            info.about,
+        ));
     });
 }
 
@@ -174,6 +183,8 @@ fn update_profile_accounts_succeeds() {
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(
             ALICE_MEMBER_ID,
+            Some(ALICE_NEW_ACCOUNT_ID),
+            Some(ALICE_NEW_ACCOUNT_ID),
         ));
     });
 }
@@ -216,6 +227,7 @@ fn update_verification_status_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberVerificationStatusUpdated(
             next_member_id,
             true,
+            UpdateMembershipVerificationFixture::default().worker_id,
         ));
     });
 }
@@ -485,7 +497,10 @@ fn invite_member_succeeds() {
         // Invited member balance locked.
         assert_eq!(0, Balances::usable_balance(&profile.controller_account));
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(bob_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
+            bob_member_id,
+            InviteMembershipFixture::default().get_invite_membership_parameters(),
+        ));
     });
 }
 

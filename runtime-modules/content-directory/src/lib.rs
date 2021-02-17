@@ -534,7 +534,7 @@ decl_module! {
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
                 // Trigger event
-                Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller, entity_creation_voucher))
+                Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller, entity_creation_voucher, class_id))
             } else {
                 // Create new EntityCreationVoucher instance with provided maximum_entities_count
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
@@ -544,7 +544,7 @@ decl_module! {
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
                 // Trigger event
-                Self::deposit_event(RawEvent::EntityCreationVoucherCreated(controller, entity_creation_voucher));
+                Self::deposit_event(RawEvent::EntityCreationVoucherCreated(controller, entity_creation_voucher, class_id));
             }
 
             Ok(())
@@ -586,7 +586,11 @@ decl_module! {
 
             // Create new Class instance from provided values
             let class = Class::new(
-                class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound
+                class_permissions.clone(),
+                name.clone(),
+                description.clone(),
+                maximum_entities_count,
+                default_entity_creation_voucher_upper_bound
             );
 
             let class_id = Self::next_class_id();
@@ -598,7 +602,14 @@ decl_module! {
             <NextClassId<T>>::mutate(|n| *n += T::ClassId::one());
 
             // Trigger event
-            Self::deposit_event(RawEvent::ClassCreated(class_id));
+            Self::deposit_event(RawEvent::ClassCreated(
+                    class_id,
+                    name,
+                    description,
+                    class_permissions,
+                    maximum_entities_count,
+                    default_entity_creation_voucher_upper_bound
+                ));
             Ok(())
         }
 
@@ -711,7 +722,7 @@ decl_module! {
             // Make updated class_permissions from parameters provided
             let updated_class_permissions = Self::make_updated_class_permissions(
                 &class_permissions, updated_any_member, updated_entity_creation_blocked,
-                updated_all_entity_property_values_locked, updated_maintainers
+                updated_all_entity_property_values_locked, updated_maintainers.clone()
             );
 
             // If class_permissions update has been performed
@@ -735,7 +746,13 @@ decl_module! {
                 });
 
                 // Trigger event
-                Self::deposit_event(RawEvent::ClassPermissionsUpdated(class_id));
+                Self::deposit_event(RawEvent::ClassPermissionsUpdated(
+                        class_id,
+                        updated_any_member,
+                        updated_entity_creation_blocked,
+                        updated_all_entity_property_values_locked,
+                        updated_maintainers
+                    ));
             }
 
             Ok(())
@@ -784,10 +801,17 @@ decl_module! {
             //
 
             // Create `Schema` instance from existing and new property ids
-            let schema = Self::create_class_schema(existing_properties, &class_properties, &new_properties);
+            let schema = Self::create_class_schema(
+                existing_properties.clone(),
+                &class_properties,
+                &new_properties
+            );
 
             // Update class properties after new `Schema` added
-            let updated_class_properties = Self::make_updated_class_properties(class_properties, new_properties);
+            let updated_class_properties = Self::make_updated_class_properties(
+                class_properties,
+                new_properties.clone()
+            );
 
             // Update Class properties and schemas
             <ClassById<T>>::mutate(class_id, |class| {
@@ -796,7 +820,12 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id));
+            Self::deposit_event(RawEvent::ClassSchemaAdded(
+                    class_id,
+                    schema_id,
+                    existing_properties,
+                    new_properties
+                ));
 
             Ok(())
         }
@@ -866,7 +895,11 @@ decl_module! {
                 });
 
                 // Trigger event
-                Self::deposit_event(RawEvent::EntityPermissionsUpdated(entity_id));
+                Self::deposit_event(RawEvent::EntityPermissionsUpdated(
+                        entity_id,
+                        updated_frozen,
+                        updated_referenceable
+                    ));
             }
             Ok(())
         }
@@ -939,7 +972,7 @@ decl_module! {
                 new_values_for_existing_properties, &new_controller
             )?;
 
-            let new_output_property_value_references_with_same_owner_flag_set = Self::make_output_property_values(new_property_value_references_with_same_owner_flag_set);
+            let new_output_property_value_references_with_same_owner_flag_set = Self::make_output_property_values(new_property_value_references_with_same_owner_flag_set.clone());
 
             // Compute StoredPropertyValues, which respective Properties have unique flag set
             // (skip PropertyIds, which respective property values under this Entity are default and non required)
@@ -1006,7 +1039,12 @@ decl_module! {
             };
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntityOwnershipTransfered(entity_id, new_controller, entities_inbound_rcs_delta));
+            Self::deposit_event(RawEvent::EntityOwnershipTransfered(
+                    entity_id,
+                    new_controller,
+                    entities_inbound_rcs_delta,
+                    new_property_value_references_with_same_owner_flag_set
+                ));
 
             Ok(())
         }
@@ -1098,7 +1136,7 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntityCreated(actor, entity_id));
+            Self::deposit_event(RawEvent::EntityCreated(actor, entity_id, class_id));
             Ok(())
         }
 
@@ -1220,7 +1258,8 @@ decl_module! {
 
             let entity_property_values = entity.get_values();
 
-            let new_output_property_values = Self::make_output_property_values(new_property_values);
+            let new_output_property_values =
+                Self::make_output_property_values(new_property_values.clone());
 
             // Compute updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
@@ -1264,7 +1303,13 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id, entities_inbound_rcs_delta));
+            Self::deposit_event(RawEvent::EntitySchemaSupportAdded(
+                    actor,
+                    entity_id,
+                    schema_id,
+                    entities_inbound_rcs_delta,
+                    new_property_values
+                ));
             Ok(())
         }
 
@@ -1314,7 +1359,7 @@ decl_module! {
 
             let entity_property_values = entity.get_values();
 
-            let new_output_property_values = Self::make_output_property_values(new_property_values);
+            let new_output_property_values = Self::make_output_property_values(new_property_values.clone());
 
             // Compute StoredPropertyValues, which respective Properties have unique flag set
             // (skip PropertyIds, which respective property values under this Entity are default and non required)
@@ -1361,7 +1406,12 @@ decl_module! {
                 });
 
                 // Trigger event
-                Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id, entities_inbound_rcs_delta));
+                Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(
+                        actor,
+                        entity_id,
+                        entities_inbound_rcs_delta,
+                        new_property_values
+                    ));
             }
 
             Ok(())
@@ -1540,10 +1590,12 @@ decl_module! {
             });
 
             // Trigger event
+            // Note: The first `nonce + T::Nonce::one()` is the new value for the nonce while
+            // the second `nonce` is the input paramer for the extrinsic
             Self::deposit_event(
                 RawEvent::RemovedAtVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector,
-                    nonce + T::Nonce::one(), involved_entity_and_side_effect
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect, nonce,
                 )
             );
 
@@ -1599,7 +1651,7 @@ decl_module! {
             // Insert SingleInputPropertyValue at in_class_schema_property_id into property value vector
             // Get VecInputPropertyValue wrapped in InputPropertyValue
             let property_value_vector_updated = Self::insert_at_index_in_property_vector(
-                property_value_vector.clone(), index_in_property_vector, value
+                property_value_vector.clone(), index_in_property_vector, value.clone()
             );
 
             let class_id = entity.get_class_id();
@@ -1653,7 +1705,7 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::InsertedAtVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector,
-                    nonce + T::Nonce::one(), involved_entity_and_side_effect
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect, value, nonce
                 )
             );
 
@@ -1677,7 +1729,7 @@ decl_module! {
            // Create raw origin
            let raw_origin = origin.into().map_err(|_| Error::<T>::OriginCanNotBeMadeIntoRawOrigin)?;
 
-           for (index, operation_type) in operations.into_iter().enumerate() {
+           for (index, operation_type) in operations.clone().into_iter().enumerate() {
                let origin = T::Origin::from(raw_origin.clone());
                match operation_type {
                    OperationType::CreateEntity(create_entity_operation) => {
@@ -1746,7 +1798,7 @@ decl_module! {
            }
 
            // Trigger event
-           Self::deposit_event(RawEvent::TransactionCompleted(actor));
+           Self::deposit_event(RawEvent::TransactionCompleted(actor, operations));
 
            Ok(())
        }
@@ -2914,6 +2966,11 @@ decl_event!(
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
         SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,
         FailedAt = u32,
+        ClassPermissions = ClassPermissions<<T as Trait>::CuratorGroupId>,
+        Property = Property<<T as Trait>::ClassId>,
+        InputPropertyValue = InputPropertyValue<T>,
+        InputValue = InputValue<T>,
+        OperationType = OperationType<T>,
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
@@ -2922,22 +2979,68 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
         MaintainerAdded(ClassId, CuratorGroupId),
         MaintainerRemoved(ClassId, CuratorGroupId),
-        EntityCreationVoucherUpdated(EntityController, EntityCreationVoucher),
-        EntityCreationVoucherCreated(EntityController, EntityCreationVoucher),
-        ClassCreated(ClassId),
-        ClassPermissionsUpdated(ClassId),
-        ClassSchemaAdded(ClassId, SchemaId),
+        EntityCreationVoucherUpdated(EntityController, EntityCreationVoucher, ClassId),
+        EntityCreationVoucherCreated(EntityController, EntityCreationVoucher, ClassId),
+        ClassCreated(
+            ClassId,
+            Vec<u8>,
+            Vec<u8>,
+            ClassPermissions,
+            EntityId,
+            EntityId,
+        ),
+        ClassPermissionsUpdated(
+            ClassId,
+            Option<bool>,
+            Option<bool>,
+            Option<bool>,
+            Option<BTreeSet<CuratorGroupId>>,
+        ),
+        ClassSchemaAdded(ClassId, SchemaId, BTreeSet<PropertyId>, Vec<Property>),
         ClassSchemaStatusUpdated(ClassId, SchemaId, Status),
-        EntityPermissionsUpdated(EntityId),
-        EntityCreated(Actor, EntityId),
+        EntityPermissionsUpdated(EntityId, Option<bool>, Option<bool>),
+        EntityCreated(Actor, EntityId, ClassId),
         EntityRemoved(Actor, EntityId),
-        EntitySchemaSupportAdded(Actor, EntityId, SchemaId, SideEffects),
-        EntityPropertyValuesUpdated(Actor, EntityId, SideEffects),
+        EntitySchemaSupportAdded(
+            Actor,
+            EntityId,
+            SchemaId,
+            SideEffects,
+            BTreeMap<PropertyId, InputPropertyValue>,
+        ),
+        EntityPropertyValuesUpdated(
+            Actor,
+            EntityId,
+            SideEffects,
+            BTreeMap<PropertyId, InputPropertyValue>,
+        ),
         VectorCleared(Actor, EntityId, PropertyId, SideEffects),
-        RemovedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
-        InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
-        EntityOwnershipTransfered(EntityId, EntityController, SideEffects),
-        TransactionCompleted(Actor),
+        RemovedAtVectorIndex(
+            Actor,
+            EntityId,
+            PropertyId,
+            VecMaxLength,
+            Nonce,
+            SideEffect,
+            Nonce,
+        ),
+        InsertedAtVectorIndex(
+            Actor,
+            EntityId,
+            PropertyId,
+            VecMaxLength,
+            Nonce,
+            SideEffect,
+            InputValue,
+            Nonce,
+        ),
+        EntityOwnershipTransfered(
+            EntityId,
+            EntityController,
+            SideEffects,
+            BTreeMap<PropertyId, InputPropertyValue>,
+        ),
+        TransactionCompleted(Actor, Vec<OperationType>),
         TransactionFailed(Actor, FailedAt),
     }
 );

@@ -25,7 +25,7 @@ fn insert_at_entity_property_vector_success() {
             FIRST_ENTITY_ID,
             SECOND_PROPERTY_ID,
             index_in_property_vector,
-            input_value,
+            input_value.clone(),
             nonce
         ));
 
@@ -61,6 +61,8 @@ fn insert_at_entity_property_vector_success() {
             index_in_property_vector,
             nonce + 1,
             Some((SECOND_ENTITY_ID, side_effect)),
+            input_value,
+            nonce,
         ));
 
         // Last event checked
