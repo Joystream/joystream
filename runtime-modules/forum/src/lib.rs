@@ -455,7 +455,7 @@ decl_event!(
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
-        PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, PostId, Vec<u8>),
+        PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Vec<u8>),
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReactionId, CategoryId, ThreadId),
@@ -1184,7 +1184,6 @@ decl_module! {
                     forum_user_id,
                     category_id,
                     thread_id,
-                    post_id,
                     new_text
                 ));
 

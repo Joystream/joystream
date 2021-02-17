@@ -871,7 +871,6 @@ pub fn edit_post_text_mock(
                 forum_user_id,
                 category_id,
                 thread_id,
-                post_id,
                 new_text
             ))
         );

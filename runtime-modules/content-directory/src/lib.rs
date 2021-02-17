@@ -1590,6 +1590,8 @@ decl_module! {
             });
 
             // Trigger event
+            // Note: The first `nonce + T::Nonce::one()` is the new value for the nonce while
+            // the second `nonce` is the input paramer for the extrinsic
             Self::deposit_event(
                 RawEvent::RemovedAtVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector,
