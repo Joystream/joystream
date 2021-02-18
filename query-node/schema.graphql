@@ -12,31 +12,126 @@ type Block @entity {
   network: Network!
 }
 
+enum MembershipEntryMethod {
+  PAID
+  SCREENING
+  GENESIS
+}
+
 "Stored information about a registered user"
-type Member @entity {
+type Membership @entity {
   "MemberId: runtime identifier for a user"
   id: ID!
 
   "The unique handle chosen by member"
-  handle: String @unique @fulltext(query: "membersByHandle")
+  handle: String! @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
-  avatarUri: String
+  avatarUri: String!
 
   "Short text chosen by member to share information about themselves"
-  about: String
-
-  "Blocknumber when member was registered"
-  registeredAtBlock: Int!
+  about: String!
 
   "Member's controller account id"
-  controllerAccount: Bytes!
+  controllerAccount: String!
 
   "Member's root account id"
-  rootAccount: Bytes!
+  rootAccount: String!
 
-  happenedIn: Block!
+  "Blocknumber when member was registered"
+  registeredAtBlock: Block!
+
+  "Timestamp when member was registered"
+  registeredAtTime: BigInt!
+
+  "How the member was registered"
+  entry: MembershipEntryMethod!
+
+  "The type of subscription the member has purchased if any."
+  subscription: BigInt
 }
+
+# TODO: add description to fields
+# TODO: revise property requirement for the new and existing fields derived from content-metadata-protobuf
+
+type Account @entity {
+  id: ID!
+}
+
+type ChannelCategory @entity {
+  id: ID!
+
+  name: String
+}
+
+type Person @entity {
+  id: ID!
+
+  firstName: String
+
+  middleName: String
+
+  lastName: String
+
+  about: String
+
+  coverPhotoUrl: String
+
+  avatarPhotoUrl: String
+
+  videos: [Video] @derivedFrom(field: "people")
+
+  seasons: [Season] @derivedFrom(field: "people")
+
+  series: [Series] @derivedFrom(field: "people")
+}
+
+type Playlist @entity {
+  id: ID!
+
+  title: String
+
+  videos: [Video]
+}
+
+type Season @entity {
+  id: ID!
+
+  title: String
+
+  description: String
+
+  coverPhoto: String
+
+  people: [Person]
+
+  episodes: [Video]
+
+  series: Series @derivedFrom(field: "seasons")
+}
+
+type Series @entity {
+  id: ID!
+
+  in_channel: Channel!
+
+  title: String
+
+  description: String
+
+  coverPhoto: String
+
+  people: [Person]
+
+  seasons: [Season]
+}
+
+type Asset @entity {
+  id: ID!
+
+  url: String!
+}
+
 
 """
 This type is to keep which entity belongs to which class. This type will be used
@@ -83,6 +178,8 @@ type Channel @entity {
   # or a member. We are not handling events related to curator group so we will not set this field
   # owner: Member!
 
+  category: ChannelCategory
+
   "The title of the Channel"
   handle: String! @fulltext(query: "search")
 
@@ -97,9 +194,6 @@ type Channel @entity {
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean!
-
-  "Flag signaling whether a channel is curated/verified."
-  isCurated: Boolean!
 
   "The primary langauge of the channel's content"
   language: Language
@@ -203,6 +297,24 @@ type HttpMediaLocationEntity @entity {
   happenedIn: Block!
 }
 
+type MediaType @entity {
+  id: ID!
+
+  codecName: String
+
+  container: String
+
+  mimeMediaType: String
+}
+
+type PublishedBeforeJoystream @entity {
+  id: ID!
+
+  isPublished: String
+
+  timestamp: BigInt
+}
+
 type VideoMedia @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -225,6 +337,8 @@ type VideoMedia @entity {
   location: MediaLocation!
 
   locationEntity: MediaLocationEntity
+
+  publishedBeforeJoystream: PublishedBeforeJoystream
 
   happenedIn: Block!
 }
@@ -269,9 +383,6 @@ type Video @entity {
   "Whether the Video is supposed to be publically displayed"
   isPublic: Boolean!
 
-  "Video curation status set by the Curator"
-  isCurated: Boolean!
-
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
@@ -282,7 +393,13 @@ type Video @entity {
   "Is video featured or not"
   isFeatured: Boolean!
 
+  people: [Person]
+
   featured: FeaturedVideo @derivedFrom(field: "video")
+
+  playlists: Playlist @derivedFrom(field: "videos")
+
+  seasons: Season @derivedFrom(field: "episodes")
 }
 
 type JoystreamMediaLocation @variant {
