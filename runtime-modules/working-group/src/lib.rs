@@ -328,7 +328,7 @@ decl_storage! {
         pub WorkerExitRationaleText get(fn worker_exit_rationale_text) : InputValidationLengthConstraint;
 
         /// Worker storage text length limits.
-        pub WorkerStorageText get(fn worker_storage_text) : InputValidationLengthConstraint;
+        pub WorkerStorageText get(fn worker_storage_size) : InputValidationLengthConstraint;
 
         /// Map member id by hiring application id.
         /// Required by StakingEventsHandler callback call to refund the balance on unstaking.
@@ -341,13 +341,13 @@ decl_storage! {
         config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
-        config(worker_storage_text_constraint): InputValidationLengthConstraint;
+        config(worker_storage_size_constraint): InputValidationLengthConstraint;
         build(|config: &GenesisConfig<T, I>| {
             Module::<T, I>::initialize_working_group(
                 config.opening_human_readable_text_constraint,
                 config.worker_application_human_readable_text_constraint,
                 config.worker_exit_rationale_text_constraint,
-                config.worker_storage_text_constraint,
+                config.worker_storage_size_constraint,
                 config.working_group_mint_capacity)
         });
     }
@@ -1367,7 +1367,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_worker_role_storage_text_is_valid(text: &[u8]) -> DispatchResult {
-        Self::worker_storage_text()
+        Self::worker_storage_size()
             .ensure_valid(
                 text.len(),
                 Error::<T, I>::WorkerStorageTextTooShort.into(),
@@ -1379,7 +1379,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /// Creates default text constraint.
 pub fn default_text_constraint() -> InputValidationLengthConstraint {
-    InputValidationLengthConstraint::new(1, 2048)
+    InputValidationLengthConstraint::new(1, 1024)
+}
+
+/// Creates default storage size constraint.
+pub fn default_storage_size_constraint() -> InputValidationLengthConstraint {
+    InputValidationLengthConstraint::new(0, 2048)
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
@@ -1534,7 +1539,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
-        worker_storage_text_constraint: InputValidationLengthConstraint,
+        worker_storage_size_constraint: InputValidationLengthConstraint,
         working_group_mint_capacity: minting::BalanceOf<T>,
     ) {
         // Create a mint.
@@ -1552,7 +1557,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             worker_application_human_readable_text_constraint,
         );
         <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
-        <WorkerStorageText<I>>::put(worker_storage_text_constraint);
+        <WorkerStorageText<I>>::put(worker_storage_size_constraint);
     }
 
     // Set worker id as a leader id.

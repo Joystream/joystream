@@ -167,6 +167,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u64) {
         role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
+        storage: Vec::new(),
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

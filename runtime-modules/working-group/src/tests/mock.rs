@@ -169,7 +169,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
             WORKING_GROUP_CONSTRAINT_MIN,
             WORKING_GROUP_CONSTRAINT_DIFF,
         ),
-        worker_storage_text_constraint: InputValidationLengthConstraint::new(
+        worker_storage_size_constraint: InputValidationLengthConstraint::new(
             WORKING_GROUP_CONSTRAINT_MIN,
             WORKING_GROUP_CONSTRAINT_DIFF,
         ),
