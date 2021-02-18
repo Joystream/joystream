@@ -225,7 +225,8 @@ pub fn testnet_genesis(
 
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
-    let default_storage_size_constraint = node_runtime::working_group::default_storage_size_constraint();
+    let default_storage_size_constraint =
+        node_runtime::working_group::default_storage_size_constraint();
 
     GenesisConfig {
         system: Some(SystemConfig {
