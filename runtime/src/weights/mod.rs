@@ -33,4 +33,5 @@ pub mod proposals_codex;
 pub mod proposals_discussion;
 pub mod proposals_engine;
 pub mod referendum;
+pub mod utilities;
 pub mod working_group;

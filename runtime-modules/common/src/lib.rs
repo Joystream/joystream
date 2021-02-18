@@ -71,6 +71,16 @@ pub struct FundingRequestParameters<Balance, AccountId> {
     pub amount: Balance,
 }
 
+/// Kind of Balance for `Update Working Group Budget`.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
+pub enum BalanceKind {
+    /// Increasing Working Group budget decreasing Council budget
+    Positive,
+    /// Decreasing Working Group budget increasing Council budget
+    Negative,
+}
+
 /// Gathers current block and time information for the runtime.
 /// If this function is used inside a config() at genesis the timestamp will be 0
 /// because the timestamp is actually produced by validators.

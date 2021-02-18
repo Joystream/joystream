@@ -4,8 +4,9 @@
 use super::*;
 
 use common::working_group::WorkingGroup;
+use common::BalanceKind;
 use frame_system::RawOrigin;
-use proposals_codex::{BalanceKind, CreateOpeningParameters};
+use proposals_codex::CreateOpeningParameters;
 use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 

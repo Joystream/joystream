@@ -79,6 +79,7 @@ content-directory = { package = 'pallet-content-directory', default-features = f
 pallet_constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
+utilities = { package = 'pallet-utilities', default-features = false, path = '../runtime-modules/utilities'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -153,6 +154,7 @@ std = [
     'pallet_constitution/std',
     'staking-handler/std',
     'blog/std',
+    'utilities/std'
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
@@ -169,6 +171,7 @@ runtime-benchmarks = [
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",
+    "utilities/runtime-benchmarks",
     "pallet_constitution/runtime-benchmarks",
     "working-group/runtime-benchmarks",
     "forum/runtime-benchmarks",
