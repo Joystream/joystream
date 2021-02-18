@@ -1635,6 +1635,45 @@ fn set_stickied_threads_ok() {
 }
 
 #[test]
+fn set_stickied_threads_fails_with_duplicated_ids() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = forum_lead;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![thread_id, thread_id],
+            Err(Error::<Runtime>::StickiedThreadIdsDuplicates.into()),
+        );
+    });
+}
+
+#[test]
 fn set_stickied_threads_wrong_moderator() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);

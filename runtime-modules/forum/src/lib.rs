@@ -16,6 +16,7 @@ use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
 
 use common::origin::MemberOriginValidator;
@@ -338,6 +339,9 @@ decl_error! {
 
         /// No permissions to update category.
         ModeratorCantUpdateCategory,
+
+        /// Duplicates for the stickied thread id collection.
+        StickiedThreadIdsDuplicates,
 
         // Errors about poll.
 
@@ -1797,9 +1801,19 @@ impl<T: Trait> Module<T> {
         // Ensure actor can moderate the category
         let category = Self::ensure_can_moderate_category(account_id, &actor, &category_id)?;
 
+        // Helps to prevent thread ID duplicates.
+        let mut unique_stickied_ids = BTreeSet::<T::ThreadId>::new();
+
         // Ensure all thread id valid and is under the category
-        for item in stickied_ids {
-            Self::ensure_thread_exists(&category_id, item)?;
+        for thread_id in stickied_ids {
+            // Check for ID duplicates.
+            if unique_stickied_ids.contains(thread_id) {
+                return Err(Error::<T>::StickiedThreadIdsDuplicates);
+            } else {
+                unique_stickied_ids.insert(*thread_id);
+            }
+
+            Self::ensure_thread_exists(&category_id, thread_id)?;
         }
 
         Ok(category)
