@@ -262,6 +262,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const MaxWinnerTargetCount: u64 = 10;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 mod balances_mod {
@@ -443,6 +444,7 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {

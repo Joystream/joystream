@@ -306,11 +306,12 @@ impl membership::Trait for Runtime {
     type WorkingGroup = ();
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
 }
 
 parameter_types! {
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MaxCategoryDepth: u64 = 20;
-
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;

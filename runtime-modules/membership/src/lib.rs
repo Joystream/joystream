@@ -34,7 +34,8 @@
 //! - [update_accounts](./struct.Module.html#method.update_accounts) - updates member accounts.
 //! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
 //! updates member profile verification status.
-//! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) - updates the referral cut.
+//! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) -
+//! updates the referral cut percent value.
 //! - [transfer_invites](./struct.Module.html#method.transfer_invites) - transfers the invites
 //! from one member to another.
 //!
@@ -55,6 +56,7 @@ pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::Perbill;
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
@@ -102,6 +104,9 @@ pub trait Trait:
 
     /// Defines the default membership fee.
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
+
+    /// Defines the maximum percent value of the membership fee for the referral cut.
+    type ReferralCutMaximumPercent: Get<u8>;
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
@@ -262,6 +267,9 @@ decl_error! {
 
         /// Cannot invite a member. The controller account has an existing conflicting lock.
         ConflictingLock,
+
+        /// Cannot set a referral cut percent value. The limit was exceeded.
+        CannotExceedReferralCutPercentLimit,
     }
 }
 
@@ -279,8 +287,8 @@ decl_storage! {
         pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
 
-        /// Referral cut to receive during on buying the membership.
-        pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
+        /// Referral cut percent of the membership fee to receive on buying the membership.
+        pub ReferralCut get(fn referral_cut) : u8;
 
         /// Current membership price.
         pub MembershipPrice get(fn membership_price) : BalanceOf<T> =
@@ -331,7 +339,7 @@ decl_event! {
         MemberProfileUpdated(MemberId),
         MemberAccountsUpdated(MemberId),
         MemberVerificationStatusUpdated(MemberId, bool),
-        ReferralCutUpdated(Balance),
+        ReferralCutUpdated(u8),
         InvitesTransferred(MemberId, MemberId, u32),
         MembershipPriceUpdated(Balance),
         InitialInvitationBalanceUpdated(Balance),
@@ -551,7 +559,7 @@ decl_module! {
             );
         }
 
-        /// Updates membership referral cut. Requires root origin.
+        /// Updates membership referral cut percent value. Requires root origin.
         ///
         /// <weight>
         ///
@@ -561,16 +569,21 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::set_referral_cut()]
-        pub fn set_referral_cut(origin, value: BalanceOf<T>) {
+        pub fn set_referral_cut(origin, percent_value: u8) {
             ensure_root(origin)?;
+
+            ensure!(
+                percent_value <= T::ReferralCutMaximumPercent::get(),
+                Error::<T>::CannotExceedReferralCutPercentLimit
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            <ReferralCut<T>>::put(value);
+            ReferralCut::put(percent_value);
 
-            Self::deposit_event(RawEvent::ReferralCutUpdated(value));
+            Self::deposit_event(RawEvent::ReferralCutUpdated(percent_value));
         }
 
         /// Transfers invites from one member to another.
@@ -1055,12 +1068,15 @@ impl<T: Trait> Module<T> {
         Ok(membership)
     }
 
-    // Calculate current referral bonus. It minimum between membership fee and referral cut.
+    // Calculate current referral bonus as a percent of the membership fee.
     pub(crate) fn get_referral_bonus() -> BalanceOf<T> {
         let membership_fee = Self::membership_price();
         let referral_cut = Self::referral_cut();
 
-        membership_fee.min(referral_cut)
+        let referral_cut = Perbill::from_percent(referral_cut.into()) * membership_fee;
+
+        // Cannot be greater than 100%
+        referral_cut.min(membership_fee)
     }
 
     // Verifies registration of the staking account for ANY member.

@@ -102,7 +102,7 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId> {
     SetMembershipLeadInvitationQuota(u32),
 
     /// `Set Referral Cut` proposal
-    SetReferralCut(Balance),
+    SetReferralCut(u8),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId> Default

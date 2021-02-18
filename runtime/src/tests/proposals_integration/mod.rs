@@ -788,7 +788,7 @@ fn set_referral_cut_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;
         let account_id: [u8; 32] = [member_id; 32];
-        let referral_cut = 500;
+        let referral_cut = 30;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {

@@ -13,6 +13,7 @@ use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
+use sp_arithmetic::Perbill;
 use sp_runtime::DispatchError;
 
 #[test]
@@ -311,14 +312,17 @@ fn referral_bonus_calculated_successfully() {
     build_test_externalities().execute_with(|| {
         // it should take minimum of the referral cut and membership fee
         let membership_fee = DefaultMembershipPrice::get();
-        let diff = 10;
+        let diff = 10u8;
 
-        let referral_cut = membership_fee.saturating_sub(diff);
-        <crate::ReferralCut<Test>>::put(referral_cut);
-        assert_eq!(Membership::get_referral_bonus(), referral_cut);
+        let referral_cut = 100 - diff;
+        <crate::ReferralCut>::put(referral_cut);
+        assert_eq!(
+            Membership::get_referral_bonus(),
+            Perbill::from_percent(referral_cut.into()) * membership_fee
+        );
 
-        let referral_cut = membership_fee.saturating_add(diff);
-        <crate::ReferralCut<Test>>::put(referral_cut);
+        let referral_cut = 100 + diff; // Incorrect value
+        <crate::ReferralCut>::put(referral_cut);
         assert_eq!(Membership::get_referral_bonus(), membership_fee);
     });
 }
@@ -334,6 +338,19 @@ fn set_referral_cut_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::ReferralCutUpdated(
             DEFAULT_REFERRAL_CUT_VALUE,
         ));
+    });
+}
+
+#[test]
+fn set_referral_fails_exceeding_the_limit() {
+    build_test_externalities().execute_with(|| {
+        let invalid_referral_cut_value = ReferralCutMaximumPercent::get() + 1;
+
+        SetReferralCutFixture::default()
+            .with_referral_cut(invalid_referral_cut_value)
+            .call_and_assert(Err(
+                Error::<Test>::CannotExceedReferralCutPercentLimit.into()
+            ));
     });
 }
 

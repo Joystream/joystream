@@ -601,15 +601,14 @@ impl memo::Trait for Runtime {
     type Event = Event;
 }
 
-parameter_types! {
-    pub const MaxObjectsPerInjection: u32 = 100;
-    pub const DefaultMembershipPrice: Balance = 100;
-}
-
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
     type WorkingGroup = StorageWorkingGroup;
+}
+
+parameter_types! {
+    pub const MaxObjectsPerInjection: u32 = 100;
 }
 
 impl storage::data_directory::Trait for Runtime {
@@ -632,6 +631,12 @@ impl common::Trait for Runtime {
     type ActorId = ActorId;
 }
 
+parameter_types! {
+    pub const DefaultMembershipPrice: Balance = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const DefaultInitialInvitationBalance: Balance = 100;
+}
+
 impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
@@ -639,10 +644,10 @@ impl membership::Trait for Runtime {
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
     type WorkingGroup = MembershipWorkingGroup;
     type WeightInfo = weights::membership::WeightInfo;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
 }
 
 parameter_types! {
-    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 5;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
