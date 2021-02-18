@@ -62,8 +62,8 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
     build_test_externalities().execute_with(|| {
         let initial_balance = DefaultMembershipPrice::get();
         let lock_id = LockIdentifier::default();
-        Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
         set_alice_free_balance(initial_balance);
+        Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
 
         assert_dispatch_error_message(
             buy_default_membership_as_alice(),

@@ -37,7 +37,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];

@@ -501,7 +501,7 @@ impl Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
     pub const MaxLocks: u32 = 50;
 }
 

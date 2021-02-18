@@ -68,7 +68,7 @@ impl_outer_event! {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
     pub const MaxWhiteListSize: u32 = 4;

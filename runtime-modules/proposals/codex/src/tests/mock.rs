@@ -161,7 +161,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 

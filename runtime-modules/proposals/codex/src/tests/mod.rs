@@ -306,8 +306,6 @@ fn create_funding_request_proposal_common_checks_succeed() {
 #[test]
 fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(500000, 1);
-
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -353,8 +351,6 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
 #[test]
 fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(500000, 1);
-
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -402,8 +398,6 @@ fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts(
 #[test]
 fn create_funding_request_proposal_call_fails_repeated_account() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(500000, 1);
-
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),

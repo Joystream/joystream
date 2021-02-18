@@ -249,7 +249,6 @@ impl pallet_timestamp::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 0;
     pub const MaxLocks: u32 = 50;
 }
 

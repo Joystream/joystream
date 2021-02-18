@@ -83,7 +83,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
 }
