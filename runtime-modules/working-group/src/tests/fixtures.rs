@@ -298,9 +298,9 @@ impl UpdateWorkerStorageFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let storage = TestWorkingGroup::worker_storage(self.worker_id);
 
-            assert_eq!(worker.storage, self.storage_field);
+            assert_eq!(storage, self.storage_field);
         }
     }
 }
@@ -388,7 +388,6 @@ impl FillWorkerOpeningFixture {
             let reward_relationship = self.reward_policy.clone().map(|_| 0);
 
             let expected_worker = Worker {
-                storage: Vec::new(),
                 member_id: 1,
                 role_account_id: self.role_account_id,
                 reward_relationship,

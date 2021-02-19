@@ -318,6 +318,10 @@ decl_storage! {
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
             WorkerId<T> => WorkerOf<T>;
 
+        /// Maps identifier to corresponding worker storage.
+        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
+
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
@@ -404,7 +408,7 @@ decl_module! {
         ) {
 
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
-            let mut worker = Self::ensure_worker_signed(origin, &worker_id)?;
+            Self::ensure_worker_signed(origin, &worker_id)?;
 
             Self::ensure_worker_role_storage_text_is_valid(&storage)?;
 
@@ -413,8 +417,7 @@ decl_module! {
             //
 
             // Complete the role storage update
-            worker.storage = storage.clone();
-            WorkerById::<T, I>::insert(worker_id, worker);
+            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));

@@ -1201,8 +1201,6 @@ fn update_worker_storage_by_leader_succeeds() {
 
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        let old_lead = TestWorkingGroup::worker_by_id(worker_id);
-
         let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
             worker_id,
             storage_field.clone(),
@@ -1210,15 +1208,9 @@ fn update_worker_storage_by_leader_succeeds() {
 
         update_storage_fixture.call_and_assert(Ok(()));
 
-        let new_lead = TestWorkingGroup::worker_by_id(worker_id);
+        let worker_storage = TestWorkingGroup::worker_storage(worker_id);
 
-        assert_eq!(
-            new_lead,
-            Worker {
-                storage: storage_field,
-                ..old_lead
-            }
-        );
+        assert_eq!(storage_field, worker_storage);
     });
 }
 
