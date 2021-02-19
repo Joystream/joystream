@@ -877,6 +877,7 @@ impl pallet_constitution::Trait for Runtime {
 parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const MaxWorkEntryLimit: u32 = 50;
+    pub const MinCherryLimit: Balance = 10;
 }
 
 impl bounty::Trait for Runtime {
@@ -889,6 +890,7 @@ impl bounty::Trait for Runtime {
     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
     type WorkEntryId = u64;
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
+    type MinCherryLimit = MinCherryLimit;
 }
 
 /// Forum identifier for category

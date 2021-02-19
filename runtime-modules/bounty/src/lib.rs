@@ -33,11 +33,13 @@ mod benchmarking;
 // TODO: add bounty milestones module comments
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
-// TODO: double map bounty-entry
 // TODO: test all stages
 // TODO: refactor all stages
 // TODO: benchmark withdraw_work_entry
 // TODO: add work submissions.
+// TODO: set min cherry limit
+// TODO: set min funding limit
+// TODO: rename withdraw_creator_funding to withdraw_creator_cherry
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -103,7 +105,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
     type WorkEntryId: From<u32> + Parameter + Default + Copy;
 
     /// Defines max work entry number for a bounty.
+    /// It limits further work entries iteration after the judge decision about winners, non-winners
+    /// and "byzantine" (malicious) users.
     type MaxWorkEntryLimit: Get<u32>;
+
+    /// Defines min cherry for a bounty.
+    type MinCherryLimit: Get<BalanceOf<Self>>;
 }
 
 /// Alias type for the BountyParameters.
@@ -247,9 +254,6 @@ pub enum BountyMilestone<BlockNumber> {
     /// A bounty was canceled.
     Canceled,
 
-    /// Creator funds (initial funding and/or cherry) were withdrawn.
-    CreatorFundsWithdrawn,
-
     /// A bounty funding was successful and it exceeded max funding amount.
     BountyMaxFundingReached {
         ///  A bounty funding was successful on the provided block.
@@ -257,6 +261,9 @@ pub enum BountyMilestone<BlockNumber> {
         /// A bounty reached its maximum allowed contribution on creation.
         reached_on_creation: bool,
     },
+
+    /// Creator funds (initial funding and/or cherry) were withdrawn.
+    CreatorFundsWithdrawn,
 }
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
@@ -464,6 +471,9 @@ decl_error! {
 
         /// Cannot add work entry because of the limit.
         MaxWorkEntryLimitReached,
+
+        /// Cherry less then minimum allowed.
+        CherryLessThenMinimumAllowed,
     }
 }
 
@@ -477,6 +487,9 @@ decl_module! {
 
         /// Exports const - max work entry number for a bounty.
         const MaxWorkEntryLimit: u32 = T::MaxWorkEntryLimit::get();
+
+        /// Exports const - min cherry value limit for a bounty.
+        const MinCherryLimit: BalanceOf<T> = T::MinCherryLimit::get();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -1060,6 +1073,11 @@ impl<T: Trait> Module<T> {
             Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
         );
 
+        ensure!(
+            params.cherry >= T::MinCherryLimit::get(),
+            Error::<T>::CherryLessThenMinimumAllowed
+        );
+
         Ok(())
     }
 
@@ -1101,7 +1119,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Computes the stage of a bounty based on its creation parameters and the current state.
-    fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
+    pub(crate) fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
         let funding_was_provided = bounty.creation_params.creator_funding != Zero::zero();
         let cherry_is_not_zero = bounty.creation_params.cherry != Zero::zero();

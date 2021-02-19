@@ -7,20 +7,22 @@ use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
-use crate::tests::fixtures::WithdrawCreatorFundingFixture;
-use crate::tests::mocks::Balances;
+use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
 use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
-    AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture, EventFixture,
-    FundBountyFixture, VetoBountyFixture, WithdrawMemberFundingFixture, WithdrawWorkEntryFixture,
+    set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
+    EventFixture, FundBountyFixture, VetoBountyFixture, WithdrawCreatorFundingFixture,
+    WithdrawMemberFundingFixture, WithdrawWorkEntryFixture,
 };
-use mocks::{build_test_externalities, Bounty, Test, COUNCIL_BUDGET_ACCOUNT_ID};
+use mocks::{build_test_externalities, Balances, Bounty, Test, COUNCIL_BUDGET_ACCOUNT_ID};
 
 #[test]
 fn create_bounty_succeeds() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -35,6 +37,17 @@ fn create_bounty_succeeds() {
             bounty_id,
             create_bounty_fixture.get_bounty_creation_parameters(),
         ));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_insufficient_cherry_value() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_cherry(0)
+            .call_and_assert(Err(Error::<Test>::CherryLessThenMinimumAllowed.into()));
     });
 }
 
@@ -150,6 +163,8 @@ fn create_bounty_fails_with_invalid_origin() {
 #[test]
 fn create_bounty_fails_with_invalid_min_max_amounts() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default()
             .with_min_amount(100)
             .with_max_amount(0)
@@ -162,6 +177,8 @@ fn create_bounty_fails_with_invalid_min_max_amounts() {
 #[test]
 fn create_bounty_fails_with_invalid_periods() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default()
             .with_work_period(0)
             .call_and_assert(Err(Error::<Test>::WorkPeriodCannotBeZero.into()));
@@ -196,6 +213,8 @@ fn create_bounty_fails_with_insufficient_balances() {
 #[test]
 fn cancel_bounty_succeeds() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -262,6 +281,10 @@ fn cancel_bounty_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let member_id = 1;
         let account_id = 1;
+        let initial_balance = 500;
+
+        increase_account_balance(&account_id, initial_balance);
+        set_council_budget(initial_balance);
 
         // Created by council - try to cancel with bad origin
         CreateBountyFixture::default()
@@ -320,6 +343,8 @@ fn cancel_bounty_fails_with_invalid_origin() {
 #[test]
 fn cancel_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         // Test already cancelled bounty.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
@@ -364,6 +389,8 @@ fn cancel_bounty_fails_with_invalid_stage() {
 #[test]
 fn veto_bounty_succeeds() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -393,6 +420,8 @@ fn veto_bounty_fails_with_invalid_bounty_id() {
 #[test]
 fn veto_bounty_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let account_id = 1;
 
         CreateBountyFixture::default()
@@ -411,6 +440,8 @@ fn veto_bounty_fails_with_invalid_origin() {
 #[test]
 fn veto_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         // Test already vetoed bounty.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
@@ -464,6 +495,7 @@ fn fund_bounty_succeeds() {
         let member_id = 1;
         let initial_balance = 500;
         let creator_funding = 100;
+        let cherry = DEFAULT_BOUNTY_CHERRY;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
         increase_total_balance_issuance_using_account_id(
@@ -474,6 +506,7 @@ fn fund_bounty_succeeds() {
         CreateBountyFixture::default()
             .with_max_amount(max_amount)
             .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -497,7 +530,7 @@ fn fund_bounty_succeeds() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            creator_funding + amount
+            creator_funding + amount + cherry
         );
 
         EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
@@ -507,6 +540,8 @@ fn fund_bounty_succeeds() {
 #[test]
 fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -552,12 +587,15 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
 #[test]
 fn multiple_fund_bounty_succeed() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let max_amount = 5000;
         let amount = 100;
         let account_id = 1;
         let member_id = 1;
         let initial_balance = 500;
         let creator_funding = 100;
+        let cherry = DEFAULT_BOUNTY_CHERRY;
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
         increase_total_balance_issuance_using_account_id(
@@ -568,6 +606,7 @@ fn multiple_fund_bounty_succeed() {
         CreateBountyFixture::default()
             .with_max_amount(max_amount)
             .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -593,7 +632,7 @@ fn multiple_fund_bounty_succeed() {
 
         assert_eq!(
             balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            creator_funding + 2 * amount
+            creator_funding + 2 * amount + cherry
         );
     });
 }
@@ -612,6 +651,8 @@ fn fund_bounty_fails_with_invalid_bounty_id() {
 #[test]
 fn fund_bounty_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
@@ -628,6 +669,8 @@ fn fund_bounty_fails_with_invalid_origin() {
 #[test]
 fn fund_bounty_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let member_id = 1;
         let account_id = 1;
         let amount = 100;
@@ -647,6 +690,8 @@ fn fund_bounty_fails_with_insufficient_balance() {
 #[test]
 fn fund_bounty_fails_with_zero_amount() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let member_id = 1;
         let account_id = 1;
         let amount = 0;
@@ -666,6 +711,8 @@ fn fund_bounty_fails_with_zero_amount() {
 #[test]
 fn fund_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let amount = 100;
         let account_id = 1;
         let member_id = 1;
@@ -692,6 +739,8 @@ fn fund_bounty_fails_with_invalid_stage() {
 #[test]
 fn fund_bounty_fails_with_expired_funding_period() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         let amount = 100;
         let account_id = 1;
         let member_id = 1;
@@ -928,6 +977,8 @@ fn withdraw_member_funding_fails_with_invalid_bounty_id() {
 #[test]
 fn withdraw_member_funding_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
@@ -1228,8 +1279,12 @@ fn withdraw_creator_funding_fails_with_invalid_bounty_id() {
 #[test]
 fn withdraw_creator_funding_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
         let member_id = 1;
         let account_id = 1;
+
+        increase_account_balance(&account_id, initial_balance);
+        set_council_budget(initial_balance);
 
         // Created by council - try to cancel with bad origin
         CreateBountyFixture::default()
@@ -1313,6 +1368,8 @@ fn withdraw_creator_funding_fails_with_invalid_origin() {
 #[test]
 fn withdraw_creator_funding_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -1326,19 +1383,6 @@ fn withdraw_creator_funding_fails_with_invalid_stage() {
 #[test]
 fn withdraw_creator_funding_fails_when_nothing_to_withdraw() {
     build_test_externalities().execute_with(|| {
-        // No cherry and no funding.
-        CreateBountyFixture::default().call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorFundingFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::NothingToWithdraw.into()));
-
         let max_amount = 500;
         let funding_amount = 100;
         let initial_balance = 500;
@@ -1359,7 +1403,7 @@ fn withdraw_creator_funding_fails_when_nothing_to_withdraw() {
             .with_funding_period(funding_period)
             .call_and_assert(Ok(()));
 
-        let bounty_id = 2u64;
+        let bounty_id = 1u64;
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -1614,6 +1658,8 @@ fn announce_work_entry_fails_with_invalid_bounty_id() {
 #[test]
 fn announce_work_entry_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
@@ -1630,6 +1676,8 @@ fn announce_work_entry_fails_with_invalid_origin() {
 #[test]
 fn announce_work_entry_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;

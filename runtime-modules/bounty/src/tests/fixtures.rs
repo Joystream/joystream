@@ -2,12 +2,13 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
 };
-use sp_runtime::offchain::storage_lock::BlockNumberProvider;
+use common::council::CouncilBudgetManager;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -19,6 +20,10 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Bounty as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn set_council_budget(new_budget: u64) {
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(new_budget);
 }
 
 pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balance: u64) {
@@ -52,6 +57,7 @@ impl EventFixture {
     }
 }
 
+pub const DEFAULT_BOUNTY_CHERRY: u64 = 10;
 pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
 pub struct CreateBountyFixture {
     origin: RawOrigin<u128>,
@@ -79,7 +85,7 @@ impl CreateBountyFixture {
             max_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
             work_period: 1,
             judging_period: 1,
-            cherry: 0,
+            cherry: DEFAULT_BOUNTY_CHERRY,
             creator_funding: 0,
             expected_milestone: None,
             entrant_stake: 0,
