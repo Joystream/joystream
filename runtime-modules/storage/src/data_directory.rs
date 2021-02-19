@@ -279,9 +279,8 @@ decl_event! {
     pub enum Event<T> where
         StorageObjectOwner = ObjectOwner<T>,
         StorageProviderId = StorageProviderId<T>,
-        Content = Vec<ContentParameters<ContentId<T>, DataObjectTypeId<T>>>,
         ContentId = ContentId<T>,
-        ContentIds = Vec<ContentId<T>>,
+        ContentParameters = ContentParameters<ContentId<T>, DataObjectTypeId<T>>,
         VoucherLimit = u64,
         UploadingStatus = bool
     {
@@ -289,13 +288,13 @@ decl_event! {
         /// Params:
         /// - Content parameters representation.
         /// - StorageObjectOwner enum.
-        ContentAdded(Content, StorageObjectOwner),
+        ContentAdded(Vec<ContentParameters>, StorageObjectOwner),
 
         /// Emits on content removal.
         /// Params:
         /// - Content parameters representation.
         /// - StorageObjectOwner enum.
-        ContentRemoved(ContentIds, StorageObjectOwner),
+        ContentRemoved(Vec<ContentId>, StorageObjectOwner),
 
         /// Emits when the storage provider accepts a content.
         /// Params:

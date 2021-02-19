@@ -12,6 +12,10 @@ pub struct CuratorGroup<T: Trait> {
 
     /// Used to count the number of Channels, given curator group owns
     number_of_channels_owned: u32,
+    // IDEA: Give explicit permissions to:
+    // create new categories
+    // restrict censoring to subset of categories
+    // create curator group channels
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -27,7 +31,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
 
 impl<T: Trait> CuratorGroup<T> {
     /// Check if `CuratorGroup` contains curator under given `curator_id`
-    pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
+    pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
     }
 
@@ -66,7 +70,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator group does not maintain any `Channel`
-    pub fn ensure_curator_group_owns_no_channels(&self) -> Result<(), Error<T>> {
+    pub fn ensure_curator_group_owns_no_channels(&self) -> DispatchResult {
         ensure!(
             self.number_of_channels_owned == 0,
             Error::<T>::CuratorGroupRemovalForbidden
@@ -75,7 +79,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied
-    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> Result<(), Error<T>> {
+    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> DispatchResult {
         ensure!(
             self.curators.len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
             Error::<T>::CuratorsPerGroupLimitReached
@@ -84,12 +88,9 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-    pub fn ensure_curator_in_group_exists(
-        &self,
-        curator_id: &T::CuratorId,
-    ) -> Result<(), Error<T>> {
+    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> DispatchResult {
         ensure!(
-            self.get_curators().contains(curator_id),
+            self.has_curator(curator_id),
             Error::<T>::CuratorIsNotAMemberOfGivenCuratorGroup
         );
         Ok(())
@@ -99,9 +100,9 @@ impl<T: Trait> CuratorGroup<T> {
     pub fn ensure_curator_in_group_does_not_exist(
         &self,
         curator_id: &T::CuratorId,
-    ) -> Result<(), Error<T>> {
+    ) -> DispatchResult {
         ensure!(
-            !self.get_curators().contains(curator_id),
+            !self.has_curator(curator_id),
             Error::<T>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
         Ok(())
@@ -112,7 +113,7 @@ impl<T: Trait> CuratorGroup<T> {
         curator_id: &T::CuratorId,
         curator_group_id: &T::CuratorGroupId,
         account_id: &T::AccountId,
-    ) -> Result<(), Error<T>> {
+    ) -> DispatchResult {
         // Ensure curator authorization performed succesfully
         ensure_curator_auth_success::<T>(curator_id, account_id)?;
 

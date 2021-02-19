@@ -36,7 +36,8 @@ pub trait MembershipTypes: system::Trait {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + Eq;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
@@ -47,7 +48,8 @@ pub trait MembershipTypes: system::Trait {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + Eq;
 }
 
 /// Generic trait for strorage ownership dependent pallets.
