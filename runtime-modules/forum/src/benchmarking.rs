@@ -1420,7 +1420,6 @@ benchmarks! {
                 forum_user_id.saturated_into(),
                 category_id,
                 thread_id,
-                post_id,
                 new_text
             ).into()
         );
