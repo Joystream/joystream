@@ -177,6 +177,7 @@ benchmarks! {
     verify {
         assert_eq!(Balances::<T>::free_balance(&account_id), Zero::zero());
         assert_eq!(Balances::<T>::total_issuance(),  initial_issuance);
+        assert_last_event::<T>(RawEvent::TokensBurned(account_id, One::one()).into());
     }
 }
 

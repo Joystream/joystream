@@ -120,7 +120,7 @@ impl Default for DummyProposalFixture {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
         let dummy_proposal =
-            utilities::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
+            joystream_utility::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {

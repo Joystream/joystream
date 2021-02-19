@@ -22,10 +22,10 @@ constitution = { package = 'pallet-constitution', default-features = false, path
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 blog = { package = 'pallet-blog', default-features = false, path = '../../blog'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
-council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
+council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}

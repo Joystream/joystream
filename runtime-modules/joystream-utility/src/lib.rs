@@ -1,8 +1,20 @@
-//! # Constitution pallet.
-//! `Constitution` pallet for the Joystream platform. Version 1.
-//! It contains current constitution text hash and amendment number in the storage and extrinsic for
-//! setting the new constitution.
+//! # Joystream Utility pallet.
+//! `Utility` pallet for the Joystream platform.
 //!
+//! Different extrinsics that doesn't fit anywhere else
+//!
+//! ## Extrinsics
+//!
+//! - [execute_runtime_upgrade_proposal](./struct.Module.html#method.execute_runtime_upgrade_proposal) - Sets the
+//! runtime code
+//! - [execute_signal_proposal](./struct.Module.html#method.execute_signal_proposal) - prints the proposal to the log
+//! - [update_working_group_budget](./struct.Module.html#method.update_working_group_budget) - Move funds between
+//! council and working group
+//! - [burn_account_tokens](./struct.Module.html#method.burn_account_tokens) - Burns token from account
+//!
+//! ## Dependencies
+//! - [council](../substrate_council_module/index.html)
+//! - [common](../substrate_common_module/index.html)
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -40,7 +52,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + council::Trait {
     type WeightInfo: WeightInfo;
 }
 
-/// Utilities WeightInfo.
+/// Utility WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight;
@@ -99,7 +111,7 @@ decl_event!(
         /// Params:
         /// - Account Id of the burning tokens
         /// - Balance burned from that account
-        AccountBurned(AccountId, Balance),
+        TokensBurned(AccountId, Balance),
     }
 );
 
@@ -120,7 +132,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoUtilities::<T>::execute_signal_proposal(signal.len().saturated_into())] // TODO: adjust weight
+        #[weight = WeightInfoUtilities::<T>::execute_signal_proposal(signal.len().saturated_into())]
         pub fn execute_signal_proposal(
             origin,
             signal: Vec<u8>,
@@ -165,7 +177,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::get_update_working_group_budget_weight(&working_group, &balance_kind)] // TODO: adjust weight
+        #[weight = Module::<T>::get_update_working_group_budget_weight(&working_group, &balance_kind)]
         pub fn update_working_group_budget(
             origin,
             working_group: WorkingGroup,
@@ -204,7 +216,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoUtilities::<T>::burn_account_tokens()]
         pub fn burn_account_tokens(
             origin,
             amount: BalanceOf<T>
@@ -220,7 +232,7 @@ decl_module! {
 
             let _ = Balances::<T>::slash(&account_id, amount);
 
-            Self::deposit_event(RawEvent::AccountBurned(account_id, amount));
+            Self::deposit_event(RawEvent::TokensBurned(account_id, amount));
         }
 
     }

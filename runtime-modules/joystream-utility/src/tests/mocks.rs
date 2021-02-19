@@ -6,8 +6,7 @@ use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use frame_system::RawOrigin;
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
 use sp_runtime::DispatchResult;
 use sp_runtime::{
@@ -16,6 +15,18 @@ use sp_runtime::{
     Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
+
+pub(crate) fn assert_last_event(generic_event: <Test as Trait>::Event) {
+    let events = System::events();
+    let system_event: <Test as frame_system::Trait>::Event = generic_event.into();
+    assert!(
+        events.len() > 0,
+        "If you are checking for last event there must be at least 1 event"
+    );
+
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
+}
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -628,6 +639,7 @@ impl BurnTokensFixture {
                 Balances::<Test>::total_issuance(),
                 initial_balance + self.account_initial_balance - self.burn_balance
             );
+            assert_last_event(RawEvent::TokensBurned(self.account_id, self.burn_balance).into());
         } else {
             assert_eq!(
                 Balances::<Test>::usable_balance(&self.account_id),

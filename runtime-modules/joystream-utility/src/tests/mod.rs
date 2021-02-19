@@ -3,23 +3,11 @@
 pub(crate) mod mocks;
 
 use crate::*;
-use frame_system::{EventRecord, RawOrigin};
-use mocks::{initial_test_ext, BurnTokensFixture, System, Test, Utilities};
+use frame_system::RawOrigin;
+use mocks::{assert_last_event, initial_test_ext, BurnTokensFixture, Test, Utilities};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::DispatchError;
 use strum::IntoEnumIterator;
-
-fn assert_last_event(generic_event: <Test as Trait>::Event) {
-    let events = System::events();
-    let system_event: <Test as frame_system::Trait>::Event = generic_event.into();
-    assert!(
-        events.len() > 0,
-        "If you are checking for last event there must be at least 1 event"
-    );
-
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
-}
 
 #[test]
 fn execute_signal_proposal_fails() {

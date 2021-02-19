@@ -17,12 +17,6 @@
 //! ## Extrinsics
 //!
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal
-//! - [execute_runtime_upgrade_proposal](./struct.Module.html#method.execute_runtime_upgrade_proposal) - Sets the
-//! runtime code
-//! - [execute_signal_proposal](./struct.Module.html#method.execute_signal_proposal) - prints the proposal to the log
-//! - [update_working_group_budget](./struct.Module.html#method.update_working_group_budget) - Move funds between
-//! council and working group
-//!
 //!
 //! ### Dependencies:
 //! - [proposals engine](../substrate_proposals_engine_module/index.html)
