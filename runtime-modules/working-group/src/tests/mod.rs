@@ -1262,7 +1262,7 @@ fn update_worker_storage_fails_with_invalid_worker_id() {
 #[test]
 fn update_worker_storage_fails_with_too_long_text() {
     build_test_externalities().execute_with(|| {
-        let storage_field = vec![0u8].repeat(default_text_constraint().max() as usize + 1);
+        let storage_field = vec![0u8].repeat(default_text_constraint() as usize + 1);
 
         let worker_id = fill_default_worker_position();
 
@@ -1273,21 +1273,6 @@ fn update_worker_storage_fails_with_too_long_text() {
 
         update_storage_fixture
             .call_and_assert(Err(DispatchError::Other("WorkerStorageTextTooLong")));
-    });
-}
-
-#[test]
-fn update_worker_storage_fails_with_too_short_text() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let storage_field = vec![0u8].repeat(default_text_constraint().min as usize - 1);
-
-        let update_storage_fixture =
-            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field);
-
-        update_storage_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerStorageTextTooShort")));
     });
 }
 
