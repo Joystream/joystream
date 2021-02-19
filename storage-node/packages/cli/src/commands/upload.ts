@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios'
 import fs from 'fs'
 import ipfsHash from 'ipfs-only-hash'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import BN from 'bn.js'
 import { Option } from '@polkadot/types/codec'
 import { BaseCommand } from './base'

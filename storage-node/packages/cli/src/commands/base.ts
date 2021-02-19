@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import removeEndingForwardSlash from '@joystream/storage-utils/stripEndingSlash'
-import { ContentId } from '@joystream/types/media'
+import { ContentId } from '@joystream/types/storage'
 
 // Commands base abstract class. Contains reusable methods.
 export abstract class BaseCommand {
