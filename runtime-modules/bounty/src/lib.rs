@@ -168,7 +168,7 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     pub contract_type: AssuranceContractType<MemberId>,
 
     /// Bounty creator: could be a member or a council.
-    pub creator: BountyCreator<MemberId>,
+    pub creator: BountyActor<MemberId>,
 
     /// An mount of funding, possibly 0, provided by the creator which will be split among all other
     /// contributors should the min funding bound not be reached. If reached, cherry is returned to
@@ -201,20 +201,20 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
     pub creator_funding: Balance,
 }
 
-// Helper enum for the bounty management.
+/// Bounty actor to create or fund bounty.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum BountyCreator<MemberId> {
-    // Bounty was created by a council.
+pub enum BountyActor<MemberId> {
+    /// Council creates or funds the bounty.
     Council,
 
-    // Bounty was created by a member.
+    /// Member creates or funds the bounty.
     Member(MemberId),
 }
 
-impl<MemberId> Default for BountyCreator<MemberId> {
+impl<MemberId> Default for BountyActor<MemberId> {
     fn default() -> Self {
-        BountyCreator::Council
+        BountyActor::Council
     }
 }
 
@@ -387,7 +387,7 @@ decl_event! {
         BountyCreated(BountyId, BountyParameters<Balance, BlockNumber, MemberId>),
 
         /// A bounty was canceled.
-        BountyCanceled(BountyId, BountyCreator<MemberId>),
+        BountyCanceled(BountyId, BountyActor<MemberId>),
 
         /// A bounty was vetoed.
         BountyVetoed(BountyId),
@@ -402,7 +402,7 @@ decl_event! {
         BountyMemberFundingWithdrawal(BountyId, MemberId),
 
         /// A bounty creator has withdrew the funding.
-        BountyCreatorFundingWithdrawal(BountyId, BountyCreator<MemberId>),
+        BountyCreatorFundingWithdrawal(BountyId, BountyActor<MemberId>),
 
         /// A bounty was removed.
         BountyRemoved(BountyId),
@@ -434,7 +434,7 @@ decl_error! {
         BountyDoesntExist,
 
         /// Operation can be performed only by a bounty creator.
-        NotBountyCreator,
+        NotBountyActor,
 
         /// Work period cannot be zero.
         WorkPeriodCannotBeZero,
@@ -512,7 +512,7 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
               .max(WeightInfoBounty::<T>::create_bounty_by_council())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
-            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
+            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
                 params.creator.clone()
             )?;
@@ -560,15 +560,15 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
               .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
-        pub fn cancel_bounty(origin, creator: BountyCreator<MemberId<T>>, bounty_id: T::BountyId) {
-            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
+        pub fn cancel_bounty(origin, creator: BountyActor<MemberId<T>>, bounty_id: T::BountyId) {
+            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
                 creator.clone(),
             )?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
+            bounty_creator_manager.validate_actor(&bounty.creation_params.creator)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
@@ -748,17 +748,17 @@ decl_module! {
               .max(WeightInfoBounty::<T>::withdraw_creator_funding_by_council())]
         pub fn withdraw_creator_funding(
             origin,
-            creator: BountyCreator<MemberId<T>>,
+            creator: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
         ) {
-            let bounty_creator_manager = BountyCreatorManager::<T>::get_bounty_creator(
+            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
                 creator.clone(),
             )?;
 
             let mut bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            bounty_creator_manager.validate_creator(&bounty.creation_params.creator)?;
+            bounty_creator_manager.validate_actor(&bounty.creation_params.creator)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
@@ -905,32 +905,32 @@ decl_module! {
 }
 
 // Helper enum for the bounty management.
-enum BountyCreatorManager<T: Trait> {
-    // Bounty was created by a council.
+enum BountyActorManager<T: Trait> {
+    // Bounty was created or funded by a council.
     Council,
 
-    // Bounty was created by a member.
+    // Bounty was created or funded by a member.
     Member(T::AccountId, MemberId<T>),
 }
 
-impl<T: Trait> BountyCreatorManager<T> {
-    // Construct BountyCreator by extrinsic origin and optional member_id.
-    fn get_bounty_creator(
+impl<T: Trait> BountyActorManager<T> {
+    // Construct BountyActor by extrinsic origin and optional member_id.
+    fn get_bounty_actor(
         origin: T::Origin,
-        creator: BountyCreator<MemberId<T>>,
-    ) -> Result<BountyCreatorManager<T>, DispatchError> {
+        creator: BountyActor<MemberId<T>>,
+    ) -> Result<BountyActorManager<T>, DispatchError> {
         match creator {
-            BountyCreator::Member(member_id) => {
+            BountyActor::Member(member_id) => {
                 let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
                     origin, member_id,
                 )?;
 
-                Ok(BountyCreatorManager::Member(account_id, member_id))
+                Ok(BountyActorManager::Member(account_id, member_id))
             }
-            BountyCreator::Council => {
+            BountyActor::Council => {
                 ensure_root(origin)?;
 
-                Ok(BountyCreatorManager::Council)
+                Ok(BountyActorManager::Council)
             }
         }
     }
@@ -944,10 +944,10 @@ impl<T: Trait> BountyCreatorManager<T> {
         let required_balance = cherry + creator_funding;
 
         let balance_is_sufficient = match self {
-            BountyCreatorManager::Council => {
-                BountyCreatorManager::<T>::check_council_budget(required_balance)
+            BountyActorManager::Council => {
+                BountyActorManager::<T>::check_council_budget(required_balance)
             }
-            BountyCreatorManager::Member(account_id, _) => {
+            BountyActorManager::Member(account_id, _) => {
                 Module::<T>::check_balance_for_account(required_balance, account_id)
             }
         };
@@ -965,17 +965,14 @@ impl<T: Trait> BountyCreatorManager<T> {
         T::CouncilBudgetManager::get_budget() >= amount
     }
 
-    // Validate that provided creator relates to the initial BountyCreator.
-    fn validate_creator(&self, creator: &BountyCreator<MemberId<T>>) -> DispatchResult {
-        let initial_creator = match self {
-            BountyCreatorManager::Council => BountyCreator::Council,
-            BountyCreatorManager::Member(_, member_id) => BountyCreator::Member(*member_id),
+    // Validate that provided actor relates to the initial BountyActor.
+    fn validate_actor(&self, actor: &BountyActor<MemberId<T>>) -> DispatchResult {
+        let initial_actor = match self {
+            BountyActorManager::Council => BountyActor::Council,
+            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
         };
 
-        ensure!(
-            initial_creator == creator.clone(),
-            Error::<T>::NotBountyCreator
-        );
+        ensure!(initial_actor == actor.clone(), Error::<T>::NotBountyActor);
 
         Ok(())
     }
@@ -990,13 +987,13 @@ impl<T: Trait> BountyCreatorManager<T> {
         let required_balance = cherry + creator_funding;
 
         match self {
-            BountyCreatorManager::Council => {
-                BountyCreatorManager::<T>::transfer_balance_from_council_budget(
+            BountyActorManager::Council => {
+                BountyActorManager::<T>::transfer_balance_from_council_budget(
                     bounty_id,
                     required_balance,
                 );
             }
-            BountyCreatorManager::Member(account_id, _) => {
+            BountyActorManager::Member(account_id, _) => {
                 Module::<T>::transfer_funds_to_bounty_account(
                     account_id,
                     bounty_id,
@@ -1018,13 +1015,13 @@ impl<T: Trait> BountyCreatorManager<T> {
         let required_balance = cherry + creator_funding;
 
         match self {
-            BountyCreatorManager::Council => {
-                BountyCreatorManager::<T>::transfer_balance_to_council_budget(
+            BountyActorManager::Council => {
+                BountyActorManager::<T>::transfer_balance_to_council_budget(
                     bounty_id,
                     required_balance,
                 );
             }
-            BountyCreatorManager::Member(account_id, _) => {
+            BountyActorManager::Member(account_id, _) => {
                 Module::<T>::transfer_funds_from_bounty_account(
                     account_id,
                     bounty_id,

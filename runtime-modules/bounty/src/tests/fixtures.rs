@@ -6,7 +6,7 @@ use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
-    BountyCreationParameters, BountyCreator, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
+    BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
 };
 use common::council::CouncilBudgetManager;
 
@@ -62,7 +62,7 @@ pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
 pub struct CreateBountyFixture {
     origin: RawOrigin<u128>,
     metadata: Vec<u8>,
-    creator: BountyCreator<u64>,
+    creator: BountyActor<u64>,
     funding_period: Option<u64>,
     min_amount: u64,
     max_amount: u64,
@@ -79,7 +79,7 @@ impl CreateBountyFixture {
         Self {
             origin: RawOrigin::Root,
             metadata: Vec::new(),
-            creator: BountyCreator::Council,
+            creator: BountyActor::Council,
             funding_period: None,
             min_amount: 0,
             max_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
@@ -98,7 +98,7 @@ impl CreateBountyFixture {
 
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
-            creator: BountyCreator::Member(member_id),
+            creator: BountyActor::Member(member_id),
             ..self
         }
     }
@@ -219,7 +219,7 @@ impl CreateBountyFixture {
 
 pub struct CancelBountyFixture {
     origin: RawOrigin<u128>,
-    creator: BountyCreator<u64>,
+    creator: BountyActor<u64>,
     bounty_id: u64,
 }
 
@@ -227,7 +227,7 @@ impl CancelBountyFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Root,
-            creator: BountyCreator::Council,
+            creator: BountyActor::Council,
             bounty_id: 1,
         }
     }
@@ -238,7 +238,7 @@ impl CancelBountyFixture {
 
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
-            creator: BountyCreator::Member(member_id),
+            creator: BountyActor::Member(member_id),
             ..self
         }
     }
@@ -394,7 +394,7 @@ impl WithdrawMemberFundingFixture {
 
 pub struct WithdrawCreatorFundingFixture {
     origin: RawOrigin<u128>,
-    creator: BountyCreator<u64>,
+    creator: BountyActor<u64>,
     bounty_id: u64,
 }
 
@@ -402,7 +402,7 @@ impl WithdrawCreatorFundingFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Root,
-            creator: BountyCreator::Council,
+            creator: BountyActor::Council,
             bounty_id: 1,
         }
     }
@@ -413,7 +413,7 @@ impl WithdrawCreatorFundingFixture {
 
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
-            creator: BountyCreator::Member(member_id),
+            creator: BountyActor::Member(member_id),
             ..self
         }
     }

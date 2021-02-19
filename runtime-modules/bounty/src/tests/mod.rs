@@ -8,7 +8,7 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
-use crate::{BountyCreator, BountyMilestone, Error, RawEvent};
+use crate::{BountyActor, BountyMilestone, Error, RawEvent};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
@@ -228,7 +228,7 @@ fn cancel_bounty_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
             bounty_id,
-            BountyCreator::Council,
+            BountyActor::Council,
         ));
     });
 }
@@ -260,7 +260,7 @@ fn cancel_bounty_by_member_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
             bounty_id,
-            BountyCreator::Member(member_id),
+            BountyActor::Member(member_id),
         ));
     });
 }
@@ -310,7 +310,7 @@ fn cancel_bounty_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(invalid_member_id)
-            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
 
         // Created by a member - try to cancel with bad origin
         CreateBountyFixture::default()
@@ -336,7 +336,7 @@ fn cancel_bounty_fails_with_invalid_origin() {
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
     });
 }
 
@@ -1165,7 +1165,7 @@ fn withdraw_creator_funding_by_council_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
             bounty_id,
-            BountyCreator::Council,
+            BountyActor::Council,
         ));
     });
 }
@@ -1281,7 +1281,7 @@ fn withdraw_creator_funding_by_member_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCreatorFundingWithdrawal(
             bounty_id,
-            BountyCreator::Member(member_id),
+            BountyActor::Member(member_id),
         ));
     });
 }
@@ -1344,7 +1344,7 @@ fn withdraw_creator_funding_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(invalid_member_id)
-            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
 
         // Created by a member - try to cancel with bad origin
         CreateBountyFixture::default()
@@ -1382,7 +1382,7 @@ fn withdraw_creator_funding_fails_with_invalid_origin() {
         WithdrawCreatorFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(Error::<Test>::NotBountyCreator.into()));
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
     });
 }
 
