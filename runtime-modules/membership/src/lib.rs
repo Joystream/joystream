@@ -358,6 +358,16 @@ decl_module! {
 
         fn deposit_event() = default;
 
+        /// Exports const - default membership fee.
+        const DefaultMembershipPrice: BalanceOf<T> = T::DefaultMembershipPrice::get();
+
+        /// Exports const - maximum percent value of the membership fee for the referral cut.
+        const ReferralCutMaximumPercent: u8 = T::ReferralCutMaximumPercent::get();
+
+        /// Exports const - default balance for the invited member.
+        const DefaultInitialInvitationBalance: BalanceOf<T> =
+            T::DefaultInitialInvitationBalance::get();
+
         /// Non-members can buy membership.
         ///
         /// <weight>
