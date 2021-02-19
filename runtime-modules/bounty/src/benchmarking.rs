@@ -1,8 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use frame_benchmarking::{account, benchmarks};
-use frame_support::sp_runtime::traits::Bounded;
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
@@ -18,7 +17,7 @@ use frame_system::Module as System;
 use membership::Module as Membership;
 
 use crate::{
-    BalanceOf, Bounties, BountyCreationParameters, BountyCreator, BountyMilestone, Call, Event,
+    BalanceOf, Bounties, BountyActor, BountyCreationParameters, BountyMilestone, Call, Event,
     Module, Trait, WorkEntries,
 };
 
@@ -60,6 +59,11 @@ fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
+//defines initial balance
+fn initial_balance<T: Trait>() -> T::Balance {
+    1000000.into()
+}
+
 fn member_funded_account<T: Trait + membership::Trait>(
     name: &'static str,
     id: u32,
@@ -68,7 +72,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let handle = handle_from_id::<T>(id);
 
     // Give balance for buying membership
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
 
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
@@ -82,7 +86,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
 
     (account_id, T::MemberId::from(id.saturated_into()))
 }
@@ -134,7 +138,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
-            creator: BountyCreator::Member(member_id),
+            creator: BountyActor::Member(member_id),
             ..Default::default()
         };
 
@@ -153,7 +157,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
-        let creator = BountyCreator::Council;
+        let creator = BountyActor::Council;
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
@@ -183,7 +187,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
-        let creator = BountyCreator::Member(member_id);
+        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
@@ -213,11 +217,15 @@ benchmarks! {
 
     veto_bounty {
         let max_amount: BalanceOf<T> = 1000.into();
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             max_amount,
+            cherry,
             ..Default::default()
         };
 
@@ -236,11 +244,15 @@ benchmarks! {
 
     fund_bounty {
         let max_amount: BalanceOf<T> = 100.into();
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             max_amount,
+            cherry,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -255,13 +267,16 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
     verify {
-        assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value() - amount);
+        assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() - amount);
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
 
     withdraw_member_funding {
         let funding_period = 1;
         let bounty_amount = 200;
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry);
 
         let params = BountyCreationParameters::<T>{
             funding_period: Some(funding_period.into()),
@@ -269,6 +284,7 @@ benchmarks! {
             judging_period: One::one(),
             max_amount: bounty_amount.into(),
             min_amount: bounty_amount.into(),
+            cherry,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -293,7 +309,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id)
     verify {
-        assert_eq!(Balances::<T>::usable_balance(&account_id), T::Balance::max_value());
+        assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() + cherry);
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
@@ -303,7 +319,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
-        let creator = BountyCreator::Council;
+        let creator = BountyActor::Council;
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
@@ -332,7 +348,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        let creator = BountyCreator::Member(member_id);
+        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
@@ -368,9 +384,10 @@ benchmarks! {
     announce_work_entry {
         let max_amount: BalanceOf<T> = 100.into();
         let creator_funding: BalanceOf<T> = 100.into();
+        let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
-        let creator = BountyCreator::Member(member_id);
+        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
@@ -378,6 +395,7 @@ benchmarks! {
             creator_funding,
             creator: creator.clone(),
             max_amount,
+            cherry,
             ..Default::default()
         };
 
@@ -397,7 +415,7 @@ benchmarks! {
     verify {
         let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
 
-        assert!(WorkEntries::<T>::contains_key(entry_id));
+        assert!(WorkEntries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
             Event::<T>::WorkEntryAnnounced(bounty_id, entry_id, member_id, Some(account_id)).into()
         );
