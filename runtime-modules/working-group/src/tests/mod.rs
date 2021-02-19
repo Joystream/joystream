@@ -7,7 +7,7 @@ use frame_support::storage::{StorageMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
 
-use crate::default_text_constraint;
+use crate::default_storage_size_constraint;
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
 use crate::{Error, RawEvent, Worker};
@@ -1262,7 +1262,7 @@ fn update_worker_storage_fails_with_invalid_worker_id() {
 #[test]
 fn update_worker_storage_fails_with_too_long_text() {
     build_test_externalities().execute_with(|| {
-        let storage_field = vec![0u8].repeat(default_text_constraint() as usize + 1);
+        let storage_field = vec![0u8].repeat(default_storage_size_constraint() as usize + 1);
 
         let worker_id = fill_default_worker_position();
 
@@ -1271,8 +1271,9 @@ fn update_worker_storage_fails_with_too_long_text() {
             storage_field.clone(),
         );
 
-        update_storage_fixture
-            .call_and_assert(Err(DispatchError::Other("WorkerStorageTextTooLong")));
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerStorageValueTooLong.into(),
+        ));
     });
 }
 
