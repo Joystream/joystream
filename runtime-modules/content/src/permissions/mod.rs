@@ -134,11 +134,16 @@ pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     // Only owner of a channel can update and delete it.
-    // Should we allow lead to also update and delete curator group owned channels,
-    // to avoid need for them to add themselves into the group?
+    // Lead can update and delete curator group owned channels.
     match actor {
         ContentActor::Lead => {
-            Err(Error::<T>::ActorNotAuthorized.into())
+            let sender = ensure_signed(origin)?;
+            ensure_lead_auth_success::<T>(&sender)?;
+            if let ChannelOwner::CuratorGroup(_) = owner {
+                Ok(())
+            } else {
+                Err(Error::<T>::ActorNotAuthorized.into())
+            }
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
@@ -181,9 +186,8 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Only owner of a channel can update and delete it.
-    // Should we allow lead to also update and delete curator group owned channels,
-    // to avoid need for them to add themselves into the group?
+    // Only lead and curators can censor channels and videos
+    // Only lead can censor curator group owned channels and videos
     match actor {
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
@@ -219,9 +223,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
-    // Only owner of a channel can update and delete it.
-    // Should we allow lead to also update and delete curator group owned channels,
-    // to avoid need for them to add themselves into the group?
+    // Only lead and curators can manage categories
     match actor {
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
