@@ -348,17 +348,16 @@ pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Bal
     }
 }
 
-// TODO: decide on paramaters
 // Proposal parameters for the 'Veto Proposal' proposal
 pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: 10000,
+        voting_period: 72200, // The longest grace period
         grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
+        approval_quorum_percentage: 75,
+        approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(50_000),
-        constitutionality: 1,
+        slashing_threshold_percentage: 66,
+        required_stake: Some(1_000_000),
+        constitutionality: 0,
     }
 }
