@@ -709,6 +709,27 @@ fn fund_bounty_fails_with_zero_amount() {
 }
 
 #[test]
+fn fund_bounty_fails_with_less_than_minimum_amount() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        let member_id = 1;
+        let account_id = 1;
+        let amount = 10;
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test>::FundingLessThenMinimumAllowed.into()));
+    });
+}
+
+#[test]
 fn fund_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
@@ -1197,7 +1218,7 @@ fn withdraw_creator_funding_removes_the_bounty() {
 fn withdraw_creator_funding_by_member_succeeds() {
     build_test_externalities().execute_with(|| {
         let max_amount = 500;
-        let funding_amount = 33;
+        let funding_amount = 66;
         let initial_balance = 500;
         let creator_funding = 100;
         let cherry = 200;

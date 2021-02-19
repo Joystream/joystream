@@ -878,6 +878,7 @@ parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const MaxWorkEntryLimit: u32 = 50;
     pub const MinCherryLimit: Balance = 10;
+    pub const MinFundingLimit: Balance = 10;
 }
 
 impl bounty::Trait for Runtime {
@@ -891,6 +892,7 @@ impl bounty::Trait for Runtime {
     type WorkEntryId = u64;
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
 }
 
 /// Forum identifier for category

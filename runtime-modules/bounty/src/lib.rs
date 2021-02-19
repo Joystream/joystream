@@ -111,6 +111,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Defines min cherry for a bounty.
     type MinCherryLimit: Get<BalanceOf<Self>>;
+
+    /// Defines min funding amount for a bounty.
+    type MinFundingLimit: Get<BalanceOf<Self>>;
 }
 
 /// Alias type for the BountyParameters.
@@ -474,6 +477,9 @@ decl_error! {
 
         /// Cherry less then minimum allowed.
         CherryLessThenMinimumAllowed,
+
+        /// Funding amount less then minimum allowed.
+        FundingLessThenMinimumAllowed,
     }
 }
 
@@ -490,6 +496,9 @@ decl_module! {
 
         /// Exports const - min cherry value limit for a bounty.
         const MinCherryLimit: BalanceOf<T> = T::MinCherryLimit::get();
+
+        /// Exports const - min funding amount limit for a bounty.
+        const MinFundingLimit: BalanceOf<T> = T::MinFundingLimit::get();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -632,6 +641,8 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             ensure!(amount > Zero::zero(), Error::<T>::ZeroFundingAmount);
+
+            ensure!(amount >= T::MinFundingLimit::get(), Error::<T>::FundingLessThenMinimumAllowed);
 
             ensure!(
                 Self::check_balance_for_account(amount, &controller_account_id),

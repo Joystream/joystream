@@ -59,6 +59,7 @@ parameter_types! {
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const MaxWorkEntryLimit: u32 = 2;
     pub const MinCherryLimit: u64 = 10;
+    pub const MinFundingLimit: u64 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -100,6 +101,7 @@ impl Trait for Test {
     type WorkEntryId = u64;
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
