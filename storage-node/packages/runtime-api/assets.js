@@ -2,6 +2,7 @@
 
 const debug = require('debug')('joystream:runtime:assets')
 const { decodeAddress } = require('@polkadot/keyring')
+const { StorageObjectOwner, DataObject } = require('@joystream/types/storage')
 
 function parseContentId(contentId) {
   try {
@@ -31,7 +32,18 @@ class AssetsApi {
    */
   async createDataObject(accountId, memberId, contentId, doTypeId, size, ipfsCid) {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.addContent(memberId, contentId, doTypeId, size, ipfsCid)
+    const owner = {
+      Member: memberId,
+    }
+    const content = [
+      {
+        content_id: contentId,
+        type_id: doTypeId,
+        size,
+        ipfs_content_id: ipfsCid,
+      },
+    ]
+    const tx = this.base.api.tx.dataDirectory.addContent(owner, content)
     await this.base.signAndSend(accountId, tx)
 
     // If the data object constructed properly, we should now be able to return
@@ -40,10 +52,15 @@ class AssetsApi {
   }
 
   /*
-   * Return the Data Object for a contendId
+   * Return the Data Object for a contendId.
+   * Throws if object doesn't exist.
    */
   async getDataObject(contentId) {
     contentId = parseContentId(contentId)
+    const storageSize = await this.base.api.query.dataDirectory.dataByContentId.size(contentId)
+    if (!storageSize) {
+      throw new Error(`No DataObject found for content ID: ${contentId}`)
+    }
     return this.base.api.query.dataDirectory.dataByContentId(contentId)
   }
 
@@ -58,13 +75,7 @@ class AssetsApi {
   async checkLiaisonForDataObject(storageProviderId, contentId) {
     contentId = parseContentId(contentId)
 
-    let obj = await this.getDataObject(contentId)
-
-    if (obj.isNone) {
-      throw new Error(`No DataObject created for content ID: ${contentId}`)
-    }
-
-    obj = obj.unwrap()
+    const obj = await this.getDataObject(contentId)
 
     if (!obj.liaison.eq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`)
@@ -141,10 +152,10 @@ class AssetsApi {
   }
 
   /*
-   * Returns array of know content ids
+   * Returns array of all the content ids in storage
    */
   async getKnownContentIds() {
-    return this.base.api.query.dataDirectory.knownContentIds()
+    return this.base.api.query.dataDirectory.dataByContentId.keys().map(({ args: [contentId] }) => contentId)
   }
 }
 
