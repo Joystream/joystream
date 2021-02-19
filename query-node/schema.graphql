@@ -27,16 +27,16 @@ type Membership @entity {
   handle: String! @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
-  avatarUri: String!
+  avatarUri: String
 
   "Short text chosen by member to share information about themselves"
-  about: String!
+  about: String
 
   "Member's controller account id"
-  controllerAccount: String!
+  controllerAccount: Bytes!
 
   "Member's root account id"
-  rootAccount: String!
+  rootAccount: Bytes!
 
   "Blocknumber when member was registered"
   registeredAtBlock: Block!
@@ -53,10 +53,6 @@ type Membership @entity {
 
 # TODO: add description to fields
 # TODO: revise property requirement for the new and existing fields derived from content-metadata-protobuf
-
-type Account @entity {
-  id: ID!
-}
 
 type ChannelCategory @entity {
   id: ID!
@@ -75,15 +71,15 @@ type Person @entity {
 
   about: String
 
-  coverPhotoUrl: String
+  coverPhotoUrl: Asset
 
-  avatarPhotoUrl: String
+  avatarPhotoUrl: Asset
 
-  videos: [Video] @derivedFrom(field: "people")
+  videos: [Video!] @derivedFrom(field: "people")
 
-  seasons: [Season] @derivedFrom(field: "people")
+  seasons: [Season!] @derivedFrom(field: "people")
 
-  series: [Series] @derivedFrom(field: "people")
+  series: [Series!] @derivedFrom(field: "people")
 }
 
 type Playlist @entity {
@@ -91,7 +87,7 @@ type Playlist @entity {
 
   title: String
 
-  videos: [Video]
+  videos: [Video!]
 }
 
 type Season @entity {
@@ -103,9 +99,9 @@ type Season @entity {
 
   coverPhoto: String
 
-  people: [Person]
+  people: [Person!]
 
-  episodes: [Video]
+  episodes: [Video!]
 
   series: Series @derivedFrom(field: "seasons")
 }
@@ -121,17 +117,38 @@ type Series @entity {
 
   coverPhoto: String
 
-  people: [Person]
+  people: [Person!]
 
-  seasons: [Season]
+  seasons: [Season!]
 }
 
-type Asset @entity {
+union Asset = AssetUrl | AssetStorage
+
+type AssetUrl @variant {
   id: ID!
 
+  "The http url pointing to the media"
   url: String!
+
+  "The port to use when connecting to the http url (defaults to 80)"
+  port: Int
 }
 
+enum AssetStorageUploadStatus {
+  INCOMPLETE_FIRST_UPLOAD
+  INCOMPLETE_LATER_UPLOAD
+  CONFIRMED_UPLOADED
+}
+
+type AssetStorage @variant {
+  id: ID!
+
+  "Id of the data object in the Joystream runtime dataDirectory module"
+  dataObjectId: String! @unique
+
+  "Upload to content directory status"
+  uploadStatus: AssetStorageUploadStatus!
+}
 
 """
 This type is to keep which entity belongs to which class. This type will be used
@@ -181,19 +198,22 @@ type Channel @entity {
   category: ChannelCategory
 
   "The title of the Channel"
-  handle: String! @fulltext(query: "search")
+  title: String! @fulltext(query: "search")
 
   "The description of a Channel"
   description: String!
 
   "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhotoUrl: String
+  coverPhotoUrl: Asset
 
   "Channel's avatar photo."
-  avatarPhotoUrl: String
+  avatarPhotoUrl: Asset
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean!
+
+  "Flag signaling whether a channel is censored."
+  isCensored: Boolean!
 
   "The primary langauge of the channel's content"
   language: Language
@@ -257,90 +277,12 @@ type UserDefinedLicenseEntity @entity {
   happenedIn: Block!
 }
 
-type MediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  # One of the following field will be non-null
-
-  "A reference to HttpMediaLocation"
-  httpMediaLocation: HttpMediaLocationEntity
-
-  "A reference to JoystreamMediaLocation"
-  joystreamMediaLocation: JoystreamMediaLocationEntity
-
-  videoMedia: VideoMedia @derivedFrom(field: "locationEntity")
-
-  happenedIn: Block!
-}
-
-type JoystreamMediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String! @unique
-
-  happenedIn: Block!
-}
-
-type HttpMediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "The http url pointing to the media"
-  url: String!
-
-  "The port to use when connecting to the http url (defaults to 80)"
-  port: Int
-
-  happenedIn: Block!
-}
-
-type MediaType @entity {
-  id: ID!
-
-  codecName: String
-
-  container: String
-
-  mimeMediaType: String
-}
-
 type PublishedBeforeJoystream @entity {
   id: ID!
 
   isPublished: String
 
   timestamp: BigInt
-}
-
-type VideoMedia @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Encoding of the video media object"
-  encoding: VideoMediaEncoding!
-
-  "Video media width in pixels"
-  pixelWidth: Int!
-
-  "Video media height in pixels"
-  pixelHeight: Int!
-
-  "Video media size in bytes"
-  size: Int
-
-  video: Video @derivedFrom(field: "media")
-
-  "Location of the video media object"
-  location: MediaLocation!
-
-  locationEntity: MediaLocationEntity
-
-  publishedBeforeJoystream: PublishedBeforeJoystream
-
-  happenedIn: Block!
 }
 
 type Video @entity {
@@ -371,9 +313,6 @@ type Video @entity {
   "Video's main langauge"
   language: Language
 
-  "Reference to VideoMedia"
-  media: VideoMedia!
-
   "Whether or not Video contains marketing"
   hasMarketing: Boolean
 
@@ -383,17 +322,32 @@ type Video @entity {
   "Whether the Video is supposed to be publically displayed"
   isPublic: Boolean!
 
+  "Flag signaling whether a video is censored."
+  isCensored: Boolean!
+
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
   license: LicenseEntity!
+
+  "Encoding of the video media object"
+  encoding: VideoMediaEncoding!
+
+  "Video media width in pixels"
+  pixelWidth: Int!
+
+  "Video media height in pixels"
+  pixelHeight: Int!
+
+  "Video media size in bytes"
+  size: Int
 
   happenedIn: Block!
 
   "Is video featured or not"
   isFeatured: Boolean!
 
-  people: [Person]
+  people: [Person!]
 
   featured: FeaturedVideo @derivedFrom(field: "video")
 
@@ -401,21 +355,6 @@ type Video @entity {
 
   seasons: Season @derivedFrom(field: "episodes")
 }
-
-type JoystreamMediaLocation @variant {
-  "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String!
-}
-
-type HttpMediaLocation @variant {
-  "The http url pointing to the media"
-  url: String!
-
-  "The port to use when connecting to the http url (defaults to 80)"
-  port: Int
-}
-
-union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
 
 type KnownLicense @variant {
   "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
