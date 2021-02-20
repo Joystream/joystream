@@ -40,4 +40,8 @@ impl content::ContentActorAuthenticator for Runtime {
         )
         .is_ok()
     }
+
+    fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
+        ContentDirectoryWorkingGroup::<Runtime>::ensure_worker_exists(curator_id).is_ok()
+    }
 }
