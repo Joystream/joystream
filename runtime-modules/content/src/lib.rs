@@ -710,7 +710,7 @@ decl_module! {
                 Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
             }
 
-            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
+            Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
 
         // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
@@ -771,7 +771,7 @@ decl_module! {
                 )?;
             }
 
-            Self::deposit_event(RawEvent::ChannelUpdated(channel_id, channel, params));
+            Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -800,12 +800,12 @@ decl_module! {
 
             channel.playlists.iter().for_each(|id| {
                 PlaylistById::<T>::remove(id);
-                Self::deposit_event(RawEvent::PlaylistDeleted(*id));
+                Self::deposit_event(RawEvent::PlaylistDeleted(actor, *id));
             });
 
             channel.series.iter().for_each(|id| {
                 SeriesById::<T>::remove(id);
-                Self::deposit_event(RawEvent::SeriesDeleted(*id));
+                Self::deposit_event(RawEvent::SeriesDeleted(actor, *id));
             });
 
             // If the channel was owned by a curator group, decrement counter
@@ -817,7 +817,7 @@ decl_module! {
             // Self::terminate_channel_transfer_requests(channel_id)
             // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
 
-            Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
+            Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
         }
 
         /// Remove assets of a channel from storage
@@ -845,7 +845,7 @@ decl_module! {
 
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
 
         // The content directory doesn't track individual content ids of assets uploaded for a channel.
@@ -880,7 +880,7 @@ decl_module! {
 
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -912,7 +912,7 @@ decl_module! {
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel);
 
-            Self::deposit_event(RawEvent::ChannelCensored(channel_id, rationale));
+            Self::deposit_event(RawEvent::ChannelCensored(actor, channel_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -942,7 +942,7 @@ decl_module! {
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel);
 
-            Self::deposit_event(RawEvent::ChannelUncensored(channel_id, rationale));
+            Self::deposit_event(RawEvent::ChannelUncensored(actor, channel_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -981,9 +981,9 @@ decl_module! {
                 &actor
             )?;
 
-            let category = Self::ensure_channel_category_exists(&category_id)?;
+            Self::ensure_channel_category_exists(&category_id)?;
 
-            Self::deposit_event(RawEvent::ChannelCategoryUpdated(category_id, category, params));
+            Self::deposit_event(RawEvent::ChannelCategoryUpdated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1001,7 +1001,7 @@ decl_module! {
 
             ChannelCategoryById::<T>::remove(&category_id);
 
-            Self::deposit_event(RawEvent::ChannelCategoryDeleted(category_id));
+            Self::deposit_event(RawEvent::ChannelCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1611,28 +1611,31 @@ decl_event!(
 
         // Channels
         ChannelCreated(
+            Actor,
             ChannelId,
             Channel,
             ChannelCreationParameters<ContentParameters, AccountId>,
         ),
         ChannelUpdated(
+            Actor,
             ChannelId,
             Channel,
             ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
-        ChannelDeleted(ChannelId),
-        ChannelAssetsRemoved(ChannelId, Vec<ContentId>),
+        ChannelDeleted(Actor, ChannelId),
+        ChannelAssetsRemoved(Actor, ChannelId, Vec<ContentId>),
 
-        ChannelCensored(ChannelId, Vec<u8> /* rationale */),
-        ChannelUncensored(ChannelId, Vec<u8> /* rationale */),
+        ChannelCensored(Actor, ChannelId, Vec<u8> /* rationale */),
+        ChannelUncensored(Actor, ChannelId, Vec<u8> /* rationale */),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
+            Actor,
             ChannelOwnershipTransferRequestId,
             ChannelOwnershipTransferRequest,
         ),
-        ChannelOwnershipTransferRequestWithdrawn(ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferRequestWithdrawn(Actor, ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferred(Actor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -1640,12 +1643,8 @@ decl_event!(
             ChannelCategory,
             ChannelCategoryCreationParameters,
         ),
-        ChannelCategoryUpdated(
-            ChannelCategoryId,
-            ChannelCategory,
-            ChannelCategoryUpdateParameters,
-        ),
-        ChannelCategoryDeleted(ChannelCategoryId),
+        ChannelCategoryUpdated(Actor, ChannelCategoryId, ChannelCategoryUpdateParameters),
+        ChannelCategoryDeleted(Actor, ChannelCategoryId),
 
         // Videos
         VideoCategoryCreated(Actor, VideoCategoryId, VideoCategoryCreationParameters),
@@ -1668,36 +1667,40 @@ decl_event!(
         FeaturedVideosSet(Actor, Vec<VideoId>),
 
         // Video Playlists
-        PlaylistCreated(PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(PlaylistId),
+        PlaylistCreated(Actor, PlaylistId, PlaylistCreationParameters),
+        PlaylistUpdated(Actor, PlaylistId, PlaylistUpdateParameters),
+        PlaylistDeleted(Actor, PlaylistId),
 
         // Series
         SeriesCreated(
+            Actor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
         SeriesUpdated(
+            Actor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
-        SeriesDeleted(SeriesId),
+        SeriesDeleted(Actor, SeriesId),
 
         // Persons
         PersonCreated(
+            Actor,
             PersonId,
             Vec<NewAsset>,
             PersonCreationParameters<ContentParameters>,
         ),
         PersonUpdated(
+            Actor,
             PersonId,
             Vec<NewAsset>,
             PersonUpdateParameters<ContentParameters>,
         ),
-        PersonDeleted(PersonId),
+        PersonDeleted(Actor, PersonId),
     }
 );
