@@ -1322,7 +1322,28 @@ decl_module! {
             video_id: T::VideoId,
             rationale: Vec<u8>,
         ) {
-            Self::not_implemented()?;
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::actor_to_channel_owner(&actor)?,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut video = video;
+
+            video.is_censored = true;
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            Self::deposit_event(RawEvent::VideoCensored(actor, video_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1332,7 +1353,28 @@ decl_module! {
             video_id: T::VideoId,
             rationale: Vec<u8>
         ) {
-            Self::not_implemented()?;
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+            &Self::actor_to_channel_owner(&actor)?,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut video = video;
+
+            video.is_censored = false;
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            Self::deposit_event(RawEvent::VideoUncensored(actor, video_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1578,8 +1620,8 @@ decl_event!(
         VideoUpdated(Actor, VideoId, VideoUpdateParameters<ContentParameters>),
         VideoDeleted(Actor, VideoId),
 
-        VideoCensored(VideoId, Vec<u8> /* rationale */),
-        VideoUncensored(VideoId, Vec<u8> /* rationale */),
+        VideoCensored(Actor, VideoId, Vec<u8> /* rationale */),
+        VideoUncensored(Actor, VideoId, Vec<u8> /* rationale */),
 
         // Featured Videos
         FeaturedVideosSet(Actor, Vec<VideoId>),
