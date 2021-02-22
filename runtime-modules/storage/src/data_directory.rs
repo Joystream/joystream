@@ -39,10 +39,10 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
-pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
+pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 100000000;
 pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
-pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(2000000, 2000);
-pub const DEFAULT_VOUCHER: Voucher = Voucher::new(50000, 100);
+pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(200000000, 2000);
+pub const DEFAULT_VOUCHER: Voucher = Voucher::new(5000000, 100);
 pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 
 /// The _Data directory_ main _Trait_.
