@@ -317,7 +317,7 @@ pub struct Video<ChannelId, SeriesId> {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
-    in_series: Option<SeriesId>,
+    pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     is_censored: bool,
     /// Whether the curators have chosen to feature the video or not.
@@ -795,7 +795,7 @@ decl_module! {
 
             channel.videos.iter().for_each(|id| {
                 VideoById::<T>::remove(id);
-                Self::deposit_event(RawEvent::VideoDeleted(*id));
+                Self::deposit_event(RawEvent::VideoDeleted(actor, *id));
             });
 
             channel.playlists.iter().for_each(|id| {
@@ -1143,9 +1143,39 @@ decl_module! {
         pub fn delete_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
+            video_id: T::VideoId,
         ) {
-            Self::not_implemented()?;
+
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::actor_to_channel_owner(&actor)?,
+            )?;
+
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            let channel_id = video.in_channel;
+
+            Self::ensure_video_can_be_removed(video)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove video
+            VideoById::<T>::remove(video_id);
+
+            // Update corresponding channel
+            // Remove recently deleted video from the channel
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                if let Some(index) = channel.videos.iter().position(|x| *x == video_id) {
+                    channel.videos.remove(index);
+                }
+            });
+
+            Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1367,6 +1397,12 @@ impl<T: Trait> Module<T> {
         Ok(VideoById::<T>::get(video_id))
     }
 
+    // Ensure given video is not in season
+    fn ensure_video_can_be_removed(video: Video<T::ChannelId, T::SeriesId>) -> DispatchResult {
+        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
+        Ok(())
+    }
+
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -1511,7 +1547,7 @@ decl_event!(
             VideoCreationParameters<ContentParameters>,
         ),
         VideoUpdated(Actor, VideoId, VideoUpdateParameters<ContentParameters>),
-        VideoDeleted(VideoId),
+        VideoDeleted(Actor, VideoId),
 
         VideoCensored(VideoId, Vec<u8> /* rationale */),
         VideoUncensored(VideoId, Vec<u8> /* rationale */),
