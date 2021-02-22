@@ -8,214 +8,229 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 pub struct WeightInfo;
 impl proposals_codex::WeightInfo for WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight {
-        (14_205_000 as Weight).saturating_add((36_000 as Weight).saturating_mul(i as Weight))
+        (84_026_000 as Weight).saturating_add((145_000 as Weight).saturating_mul(i as Weight))
     }
     fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight {
-        (381_500_000 as Weight)
-            .saturating_add((280_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((4_369_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((56_000 as Weight).saturating_mul(d as Weight))
+        (0 as Weight)
+            .saturating_add((376_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((4_900_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((365_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight {
-        (417_621_000 as Weight)
-            .saturating_add((282_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((2_246_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((47_000 as Weight).saturating_mul(d as Weight))
+        (0 as Weight)
+            .saturating_add((378_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((2_563_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((390_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
-    }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_funding_request(i: u32) -> Weight {
-        (1_073_701_000 as Weight)
-            .saturating_add((20_213_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     // WARNING! Some components were not used: ["t"]
-    fn create_proposal_set_max_validator_count(d: u32) -> Weight {
-        (680_435_000 as Weight)
-            .saturating_add((1_000 as Weight).saturating_mul(d as Weight))
+    fn create_proposal_funding_request(i: u32, d: u32) -> Weight {
+        (859_709_000 as Weight)
+            .saturating_add((19_988_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((160_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(6 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
+    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight {
+        (737_041_000 as Weight)
+            .saturating_add((436_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((232_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(7 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_create_working_group_lead_opening(i: u32) -> Weight {
-        (1_658_073_000 as Weight)
-            .saturating_add((401_000 as Weight).saturating_mul(i as Weight))
+    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight {
+        (714_146_000 as Weight)
+            .saturating_add((667_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((235_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_fill_working_group_lead_opening() -> Weight {
-        (688_697_000 as Weight)
+    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight {
+        (318_298_000 as Weight)
+            .saturating_add((439_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((1_090_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((346_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t"]
-    fn create_proposal_update_working_group_budget(d: u32) -> Weight {
-        (677_232_000 as Weight)
-            .saturating_add((1_000 as Weight).saturating_mul(d as Weight))
+    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight {
+        (735_636_000 as Weight)
+            .saturating_add((518_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((235_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
+    fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight {
+        (751_256_000 as Weight)
+            .saturating_add((235_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((234_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(6 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight {
-        (673_696_000 as Weight)
-            .saturating_add((57_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((1_000 as Weight).saturating_mul(d as Weight))
+        (737_989_000 as Weight)
+            .saturating_add((349_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((236_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
-    }
-    fn create_proposal_slash_working_group_lead(t: u32, d: u32) -> Weight {
-        (665_717_000 as Weight)
-            .saturating_add((416_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((2_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     // WARNING! Some components were not used: ["t"]
-    fn create_proposal_set_working_group_lead_reward(d: u32) -> Weight {
-        (681_995_000 as Weight)
-            .saturating_add((10_000 as Weight).saturating_mul(d as Weight))
+    fn create_proposal_slash_working_group_lead(d: u32) -> Weight {
+        (829_696_000 as Weight)
+            .saturating_add((230_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_terminate_working_group_lead() -> Weight {
-        (672_205_000 as Weight)
+    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight {
+        (692_873_000 as Weight)
+            .saturating_add((1_313_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((237_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    fn create_proposal_amend_constitution(i: u32, t: u32, d: u32) -> Weight {
-        (415_625_000 as Weight)
-            .saturating_add((298_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add((3_229_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((34_000 as Weight).saturating_mul(d as Weight))
+    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight {
+        (319_918_000 as Weight)
+            .saturating_add((9_527_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((324_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    fn create_proposal_cancel_working_group_lead_opening(t: u32, d: u32) -> Weight {
-        (650_522_000 as Weight)
-            .saturating_add((406_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((5_000 as Weight).saturating_mul(d as Weight))
+    // WARNING! Some components were not used: ["t"]
+    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight {
+        (914_780_000 as Weight)
+            .saturating_add((362_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((405_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_set_membership_price() -> Weight {
-        (688_555_000 as Weight)
+    // WARNING! Some components were not used: ["t"]
+    fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight {
+        (837_566_000 as Weight)
+            .saturating_add((217_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_set_council_budget_increment() -> Weight {
-        (677_145_000 as Weight)
+    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight {
+        (700_754_000 as Weight)
+            .saturating_add((788_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((236_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["d"]
-    fn create_proposal_set_councilor_reward(t: u32) -> Weight {
-        (691_635_000 as Weight)
-            .saturating_add((538_000 as Weight).saturating_mul(t as Weight))
+    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight {
+        (729_517_000 as Weight)
+            .saturating_add((446_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((231_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
+    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight {
+        (728_569_000 as Weight)
+            .saturating_add((445_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((231_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(6 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight {
-        (647_455_000 as Weight)
-            .saturating_add((605_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((6_000 as Weight).saturating_mul(d as Weight))
+        (720_097_000 as Weight)
+            .saturating_add((603_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((233_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_set_initial_invitation_count() -> Weight {
-        (708_072_000 as Weight)
+    fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight {
+        (718_767_000 as Weight)
+            .saturating_add((591_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((233_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["d"]
-    fn create_proposal_set_membership_lead_invitation_quota(t: u32) -> Weight {
-        (729_756_000 as Weight)
-            .saturating_add((462_000 as Weight).saturating_mul(t as Weight))
+    // WARNING! Some components were not used: ["t"]
+    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight {
+        (794_786_000 as Weight)
+            .saturating_add((230_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["d"]
-    fn create_proposal_set_referral_cut(t: u32) -> Weight {
-        (669_708_000 as Weight)
-            .saturating_add((263_000 as Weight).saturating_mul(t as Weight))
+    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight {
+        (727_615_000 as Weight)
+            .saturating_add((451_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((235_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight {
         (0 as Weight)
-            .saturating_add((26_565_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((473_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add((389_000 as Weight).saturating_mul(h as Weight))
-            .saturating_add((392_000 as Weight).saturating_mul(b as Weight))
+            .saturating_add((30_282_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((746_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add((323_000 as Weight).saturating_mul(h as Weight))
+            .saturating_add((352_000 as Weight).saturating_mul(b as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight {
-        (0 as Weight)
-            .saturating_add((51_663_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((415_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add((381_000 as Weight).saturating_mul(h as Weight))
-            .saturating_add((408_000 as Weight).saturating_mul(b as Weight))
+        (528_348_000 as Weight)
+            .saturating_add((13_015_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((737_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add((318_000 as Weight).saturating_mul(h as Weight))
+            .saturating_add((356_000 as Weight).saturating_mul(b as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["d"]
-    fn create_proposal_lock_blog_post(t: u32) -> Weight {
-        (732_383_000 as Weight)
-            .saturating_add((13_000 as Weight).saturating_mul(t as Weight))
+    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight {
+        (633_768_000 as Weight)
+            .saturating_add((2_369_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((241_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    // WARNING! Some components were not used: ["t", "d"]
-    fn create_proposal_unlock_blog_post() -> Weight {
-        (670_647_000 as Weight)
+    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight {
+        (742_217_000 as Weight)
+            .saturating_add((523_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((239_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(10 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn update_working_group_budget_positive_forum() -> Weight {
-        (102_611_000 as Weight)
+        (173_903_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_negative_forum() -> Weight {
-        (102_707_000 as Weight)
+        (170_026_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_positive_storage() -> Weight {
-        (102_791_000 as Weight)
+        (168_902_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_negative_storage() -> Weight {
-        (102_502_000 as Weight)
+        (169_381_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_positive_content() -> Weight {
-        (103_375_000 as Weight)
+        (169_707_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_negative_content() -> Weight {
-        (102_741_000 as Weight)
+        (169_606_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_positive_membership() -> Weight {
-        (103_449_000 as Weight)
+        (168_373_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn update_working_group_budget_negative_membership() -> Weight {
-        (102_274_000 as Weight)
+        (169_063_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }

@@ -494,9 +494,9 @@ where
                 let lead_account_id = [self.lead_id as u8; 32].into();
                 set_membership_leader(lead_account_id, self.lead_id);
             }
-
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
         }
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -724,6 +724,66 @@ fn unlock_blog_post_proposal_execution_succeeds() {
         run_to_block(86410);
 
         assert_eq!(Blog::post_by_id(0).is_locked(), false);
+    });
+}
+
+#[test]
+fn veto_proposal_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let proposal_id = ProposalsEngine::proposal_count() + 1;
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::AmendConstitution(vec![0u8]),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        let member_id = 14;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::VetoProposal(proposal_id),
+            )
+        })
+        .with_member_id(member_id as u64)
+        .with_expected_proposal_id(2)
+        .with_setup_enviroment(false);
+
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert!(!proposals_engine::Proposals::<Runtime>::contains_key(1));
     });
 }
 

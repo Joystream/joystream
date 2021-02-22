@@ -528,18 +528,15 @@ decl_module! {
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(
-                proposal.status.is_active_or_pending_execution(),
-                Error::<T>::ProposalFinalized
-            );
-
+            // Note: we don't need to check if the proposal is active pending execution or
+            // or pending constitutionality since if it in the storage `Proposals` it follows
+            // that it is in one of those states.
             //
             // == MUTATION SAFE ==
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
-
     }
 }
 

@@ -716,7 +716,7 @@ fn cancel_proposal_fails_with_insufficient_rights() {
 }
 
 #[test]
-fn veto_proposal_succeeds() {
+fn veto_proposal_succeeds_during_voting_period() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
         run_to_block_and_finalize(starting_block);
@@ -731,6 +731,98 @@ fn veto_proposal_succeeds() {
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        assert!(matches!(
+            <Proposals<Test>>::get(proposal_id).status,
+            ProposalStatus::Active{..}
+        ));
+
+        let veto_proposal = VetoProposalFixture::new(proposal_id);
+        veto_proposal.veto_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Vetoed,
+        ));
+
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+    });
+}
+
+#[test]
+fn veto_proposal_succeeds_during_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(10);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(6);
+
+        assert!(matches!(
+            <Proposals<Test>>::get(proposal_id).status,
+            ProposalStatus::PendingExecution{..}
+        ));
+
+        let veto_proposal = VetoProposalFixture::new(proposal_id);
+        veto_proposal.veto_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Vetoed,
+        ));
+
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+    });
+}
+
+#[test]
+fn veto_proposal_succeeds_during_pending_constitutionality() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(10);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(6);
+
+        assert!(matches!(
+            <Proposals<Test>>::get(proposal_id).status,
+            ProposalStatus::PendingConstitutionality{..}
+        ));
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
@@ -1095,60 +1187,6 @@ fn cancel_pending_constitutionality_proposal_by_runtime() {
         ]);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
-    });
-}
-
-#[test]
-fn proposal_execution_vetoed_successfully_during_the_grace_period() {
-    initial_test_ext().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
-        let dummy_proposal =
-            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
-
-        let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-
-        run_to_block(3);
-
-        let pre_veto_proposal = <crate::Proposals<Test>>::get(proposal_id);
-
-        assert_eq!(
-            pre_veto_proposal,
-            Proposal {
-                parameters: parameters_fixture.params(),
-                proposer_id: 1,
-                activated_at: starting_block,
-                status: ProposalStatus::approved(
-                    ApprovedProposalDecision::PendingExecution,
-                    starting_block + 1
-                ),
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 4,
-                    rejections: 0,
-                    slashes: 0,
-                },
-                exact_execution_block: None,
-                nr_of_council_confirmations: 1,
-                staking_account_id: None,
-            }
-        );
-
-        let veto_proposal = VetoProposalFixture::new(proposal_id);
-        veto_proposal.veto_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
-            proposal_id,
-            ProposalDecision::Vetoed,
-        ));
     });
 }
 
