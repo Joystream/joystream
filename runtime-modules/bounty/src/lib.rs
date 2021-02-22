@@ -13,7 +13,7 @@
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
-//! - [withdraw_member_funding](./struct.Module.html#method.withdraw_member_funding) - withdraw
+//! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
 //! funding for a failed bounty.
 //! - [withdraw_creator_funding](./struct.Module.html#method.withdraw_creator_funding) - withdraw
 //! funding for a failed or canceled bounty.

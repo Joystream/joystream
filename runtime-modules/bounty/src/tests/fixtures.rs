@@ -326,6 +326,13 @@ impl FundBountyFixture {
         }
     }
 
+    pub fn with_council(self) -> Self {
+        Self {
+            funder: BountyActor::Council,
+            ..self
+        }
+    }
+
     pub fn with_bounty_id(self, bounty_id: u64) -> Self {
         Self { bounty_id, ..self }
     }
@@ -379,6 +386,13 @@ impl WithdrawFundingFixture {
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self {
             funder: BountyActor::Member(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_council(self) -> Self {
+        Self {
+            funder: BountyActor::Council,
             ..self
         }
     }

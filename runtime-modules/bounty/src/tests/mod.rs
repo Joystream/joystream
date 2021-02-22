@@ -545,6 +545,58 @@ fn fund_bounty_succeeds_by_member() {
 }
 
 #[test]
+fn fund_bounty_succeeds_by_council() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+        let amount = 100;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = DEFAULT_BOUNTY_CHERRY;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance - amount - cherry - creator_funding
+        );
+
+        assert_eq!(
+            crate::Module::<Test>::contribution_by_bounty_by_actor(bounty_id, BountyActor::Council),
+            amount
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            creator_funding + amount + cherry
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
+            bounty_id,
+            BountyActor::Council,
+            amount,
+        ));
+    });
+}
+
+#[test]
 fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
@@ -849,6 +901,62 @@ fn withdraw_member_funding_succeeds() {
         EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
             bounty_id,
             BountyActor::Member(member_id),
+        ));
+    });
+}
+
+#[test]
+fn withdraw_council_funding_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let max_amount = 500;
+        let amount = 100;
+        let initial_balance = 500;
+        let creator_funding = 100;
+        let cherry = 200;
+        let funding_period = 10;
+
+        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_min_amount(max_amount)
+            .with_funding_period(funding_period)
+            .with_creator_funding(creator_funding)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + starting_block + 1);
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            initial_balance - creator_funding
+        );
+
+        assert_eq!(
+            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            creator_funding
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
+            bounty_id,
+            BountyActor::Council,
         ));
     });
 }
