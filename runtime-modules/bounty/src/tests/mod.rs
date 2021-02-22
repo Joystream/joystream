@@ -14,7 +14,7 @@ use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
     EventFixture, FundBountyFixture, VetoBountyFixture, WithdrawCreatorFundingFixture,
-    WithdrawMemberFundingFixture, WithdrawWorkEntryFixture,
+    WithdrawFundingFixture, WithdrawWorkEntryFixture,
 };
 use mocks::{build_test_externalities, Balances, Bounty, Test, COUNCIL_BUDGET_ACCOUNT_ID};
 
@@ -484,7 +484,7 @@ fn veto_bounty_fails_with_invalid_stage() {
 }
 
 #[test]
-fn fund_bounty_succeeds() {
+fn fund_bounty_succeeds_by_member() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -524,7 +524,10 @@ fn fund_bounty_succeeds() {
         );
 
         assert_eq!(
-            crate::Module::<Test>::contribution_by_bounty_by_member(bounty_id, member_id),
+            crate::Module::<Test>::contribution_by_bounty_by_actor(
+                bounty_id,
+                BountyActor::Member(member_id)
+            ),
             amount
         );
 
@@ -533,7 +536,11 @@ fn fund_bounty_succeeds() {
             creator_funding + amount + cherry
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
+        EventFixture::assert_last_crate_event(RawEvent::BountyFunded(
+            bounty_id,
+            BountyActor::Member(member_id),
+            amount,
+        ));
     });
 }
 
@@ -821,7 +828,7 @@ fn withdraw_member_funding_succeeds() {
 
         run_to_block(funding_period + starting_block + 1);
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(member_id)
             .with_origin(RawOrigin::Signed(account_id))
@@ -839,8 +846,9 @@ fn withdraw_member_funding_succeeds() {
             amount
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyMemberFundingWithdrawal(
-            bounty_id, member_id,
+        EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
+            bounty_id,
+            BountyActor::Member(member_id),
         ));
     });
 }
@@ -890,7 +898,7 @@ fn withdraw_member_funding_with_half_cherry() {
 
         run_to_block(funding_period + starting_block + 1);
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(member_id1)
             .with_origin(RawOrigin::Signed(account_id1))
@@ -908,8 +916,9 @@ fn withdraw_member_funding_with_half_cherry() {
             creator_funding + amount + cherry / 2
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyMemberFundingWithdrawal(
-            bounty_id, member_id1,
+        EventFixture::assert_last_crate_event(RawEvent::BountyFundingWithdrawal(
+            bounty_id,
+            BountyActor::Member(member_id1),
         ));
     });
 }
@@ -974,7 +983,7 @@ fn withdraw_member_funding_removes_bounty() {
             Balances::usable_balance(&Bounty::bounty_account_id(bounty_id))
         );
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(member_id)
             .with_origin(RawOrigin::Signed(account_id))
@@ -989,7 +998,7 @@ fn withdraw_member_funding_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let invalid_bounty_id = 11u64;
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(invalid_bounty_id)
             .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
     });
@@ -1006,7 +1015,7 @@ fn withdraw_member_funding_fails_with_invalid_origin() {
 
         let bounty_id = 1u64;
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
@@ -1044,7 +1053,7 @@ fn withdraw_member_funding_fails_with_invalid_stage() {
             .with_amount(amount)
             .call_and_assert(Ok(()));
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(member_id)
             .with_origin(RawOrigin::Signed(account_id))
@@ -1092,7 +1101,7 @@ fn withdraw_member_funding_fails_with_invalid_bounty_funder() {
         let invalid_account_id = 2;
         let invalid_member_id = 2;
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(invalid_member_id)
             .with_origin(RawOrigin::Signed(invalid_account_id))
@@ -1512,19 +1521,19 @@ fn bounty_removal_succeeds() {
         run_to_block(starting_block + funding_period + 1);
 
         // Withdraw member funding
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(funding_member_id1)
             .with_origin(RawOrigin::Signed(funding_account_id1))
             .call_and_assert(Ok(()));
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(funding_member_id2)
             .with_origin(RawOrigin::Signed(funding_account_id2))
             .call_and_assert(Ok(()));
 
-        WithdrawMemberFundingFixture::default()
+        WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_member_id(funding_member_id3)
             .with_origin(RawOrigin::Signed(funding_account_id3))

@@ -265,13 +265,13 @@ benchmarks! {
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id, amount)
+    }: _ (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id, amount)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() - amount);
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
 
-    withdraw_member_funding {
+    withdraw_funding {
         let funding_period = 1;
         let bounty_amount = 200;
         let cherry: BalanceOf<T> = 100.into();
@@ -300,14 +300,14 @@ benchmarks! {
 
         Bounty::<T>::fund_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id,
+            BountyActor::Member(member_id),
             bounty_id,
             amount
         ).unwrap();
 
         run_to_block::<T>((funding_period + 1).into());
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id, bounty_id)
+    }: _ (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() + cherry);
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
@@ -473,7 +473,7 @@ mod tests {
     #[test]
     fn withdraw_member_funding() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_member_funding::<Test>());
+            assert_ok!(test_benchmark_withdraw_funding::<Test>());
         });
     }
 

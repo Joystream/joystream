@@ -37,8 +37,6 @@ mod benchmarking;
 // TODO: refactor all stages
 // TODO: benchmark withdraw_work_entry
 // TODO: add work submissions.
-// TODO: set min cherry limit
-// TODO: set min funding limit
 // TODO: rename withdraw_creator_funding to withdraw_creator_cherry
 
 /// pallet_bounty WeightInfo.
@@ -355,10 +353,10 @@ decl_storage! {
         /// Bounty storage.
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
-        /// Double map for bounty funding. It stores member funding for bounties.
-        pub BountyContributions get(fn contribution_by_bounty_by_member): double_map
+        /// Double map for bounty funding. It stores a member or council funding for bounties.
+        pub BountyContributions get(fn contribution_by_bounty_by_actor): double_map
             hasher(blake2_128_concat) T::BountyId,
-            hasher(blake2_128_concat) MemberId<T> => BalanceOf<T>;
+            hasher(blake2_128_concat) BountyActor<MemberId<T>> => BalanceOf<T>;
 
         /// Count of all bounties that have been created.
         pub BountyCount get(fn bounty_count): u32;
@@ -392,16 +390,16 @@ decl_event! {
         /// A bounty was vetoed.
         BountyVetoed(BountyId),
 
-        /// A bounty was funded by a member.
-        BountyFunded(BountyId, MemberId, Balance),
+        /// A bounty was funded by a member or a council.
+        BountyFunded(BountyId, BountyActor<MemberId>, Balance),
 
         /// A bounty has reached its maximum funding amount.
         BountyMaxFundingReached(BountyId),
 
-        /// A member has withdrew the funding.
-        BountyMemberFundingWithdrawal(BountyId, MemberId),
+        /// A member or a council has withdrawn the funding.
+        BountyFundingWithdrawal(BountyId, BountyActor<MemberId>),
 
-        /// A bounty creator has withdrew the funding.
+        /// A bounty creator has withdrew the funding (member or council).
         BountyCreatorFundingWithdrawal(BountyId, BountyActor<MemberId>),
 
         /// A bounty was removed.
@@ -517,7 +515,8 @@ decl_module! {
                 params.creator.clone()
             )?;
 
-            bounty_creator_manager.validate_balance_sufficiency(params.cherry, params.creator_funding)?;
+            let required_balance = params.cherry + params.creator_funding;
+            bounty_creator_manager.validate_balance_sufficiency(required_balance)?;
 
             Self::ensure_create_bounty_parameters_valid(&params)?;
 
@@ -528,11 +527,7 @@ decl_module! {
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
-            bounty_creator_manager.transfer_funds_to_bounty_account(
-                bounty_id,
-                params.cherry,
-                params.creator_funding
-            )?;
+            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, required_balance)?;
 
             let created_bounty_milestone = Self::get_bounty_milestone_on_creation(&params);
 
@@ -631,12 +626,14 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::fund_bounty()]
         pub fn fund_bounty(
             origin,
-            member_id: MemberId<T>,
+            funder: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
             amount: BalanceOf<T>
         ) {
-            let controller_account_id =
-                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+            let bounty_funder_manager = BountyActorManager::<T>::get_bounty_actor(
+                origin,
+                funder.clone(),
+            )?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -644,10 +641,7 @@ decl_module! {
 
             ensure!(amount >= T::MinFundingLimit::get(), Error::<T>::FundingLessThenMinimumAllowed);
 
-            ensure!(
-                Self::check_balance_for_account(amount, &controller_account_id),
-                Error::<T>::InsufficientBalanceForBounty
-            );
+            bounty_funder_manager.validate_balance_sufficiency(amount)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
@@ -659,7 +653,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::transfer_funds_to_bounty_account(&controller_account_id, bounty_id, amount)?;
+            bounty_funder_manager.transfer_funds_to_bounty_account(bounty_id, amount)?;
 
             let total_funding = bounty.total_funding.saturating_add(amount);
             let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
@@ -675,18 +669,18 @@ decl_module! {
             });
 
             // Update member funding record checking previous funding.
-            let funds_so_far = Self::contribution_by_bounty_by_member(bounty_id, member_id);
+            let funds_so_far = Self::contribution_by_bounty_by_actor(bounty_id, &funder);
             let total_funding = funds_so_far.saturating_add(amount);
-            <BountyContributions<T>>::insert(bounty_id, member_id, total_funding);
+            <BountyContributions<T>>::insert(bounty_id, funder.clone(), total_funding);
 
             // Fire events.
-            Self::deposit_event(RawEvent::BountyFunded(bounty_id, member_id, amount));
+            Self::deposit_event(RawEvent::BountyFunded(bounty_id, funder, amount));
             if  maximum_funding_reached{
                 Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
         }
 
-        /// Withdraw member funding.
+        /// Withdraw bounty funding by a member or a council.
         /// # <weight>
         ///
         /// ## weight
@@ -695,13 +689,14 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::withdraw_member_funding()]
-        pub fn withdraw_member_funding(
+        pub fn withdraw_funding(
             origin,
-            member_id: MemberId<T>,
+            funder: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
         ) {
-            let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin, member_id,
+            let bounty_funder_manager = BountyActorManager::<T>::get_bounty_actor(
+                origin,
+                funder.clone(),
             )?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
@@ -713,11 +708,11 @@ decl_module! {
             );
 
             ensure!(
-                <BountyContributions<T>>::contains_key(bounty_id, member_id),
+                <BountyContributions<T>>::contains_key(&bounty_id, &funder),
                 Error::<T>::NotBountyFunder,
             );
 
-            let funding_amount = <BountyContributions<T>>::get(bounty_id, member_id);
+            let funding_amount = <BountyContributions<T>>::get(&bounty_id, &funder);
             let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding_amount);
             let withdrawal_amount = funding_amount + cherry_fraction;
 
@@ -725,11 +720,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::transfer_funds_from_bounty_account(&account_id, bounty_id, withdrawal_amount)?;
+            bounty_funder_manager.transfer_funds_from_bounty_account(bounty_id, withdrawal_amount)?;
 
-            <BountyContributions<T>>::remove(bounty_id, member_id);
+            <BountyContributions<T>>::remove(&bounty_id, &funder);
 
-            Self::deposit_event(RawEvent::BountyMemberFundingWithdrawal(bounty_id, member_id));
+            Self::deposit_event(RawEvent::BountyFundingWithdrawal(bounty_id, funder));
 
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
                 Self::remove_bounty(&bounty_id);
@@ -780,11 +775,8 @@ decl_module! {
             let funding_amount = bounty.creation_params.creator_funding;
             let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
 
-            bounty_creator_manager.transfer_funds_from_bounty_account(
-                bounty_id,
-                funding_amount,
-                cherry
-            )?;
+            let required_balance = cherry + funding_amount;
+            bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, required_balance)?;
 
             bounty.milestone = BountyMilestone::CreatorFundsWithdrawn;
             <Bounties<T>>::insert(bounty_id, bounty.clone());
@@ -936,13 +928,7 @@ impl<T: Trait> BountyActorManager<T> {
     }
 
     // Validate balance is sufficient for the bounty
-    fn validate_balance_sufficiency(
-        &self,
-        cherry: BalanceOf<T>,
-        creator_funding: BalanceOf<T>,
-    ) -> DispatchResult {
-        let required_balance = cherry + creator_funding;
-
+    fn validate_balance_sufficiency(&self, required_balance: BalanceOf<T>) -> DispatchResult {
         let balance_is_sufficient = match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::check_council_budget(required_balance)
@@ -981,11 +967,8 @@ impl<T: Trait> BountyActorManager<T> {
     fn transfer_funds_to_bounty_account(
         &self,
         bounty_id: T::BountyId,
-        cherry: BalanceOf<T>,
-        creator_funding: BalanceOf<T>,
+        required_balance: BalanceOf<T>,
     ) -> DispatchResult {
-        let required_balance = cherry + creator_funding;
-
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_from_council_budget(
@@ -1009,11 +992,8 @@ impl<T: Trait> BountyActorManager<T> {
     fn transfer_funds_from_bounty_account(
         &self,
         bounty_id: T::BountyId,
-        cherry: BalanceOf<T>,
-        creator_funding: BalanceOf<T>,
+        required_balance: BalanceOf<T>,
     ) -> DispatchResult {
-        let required_balance = cherry + creator_funding;
-
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_to_council_budget(

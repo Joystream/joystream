@@ -300,7 +300,7 @@ impl VetoBountyFixture {
 
 pub struct FundBountyFixture {
     origin: RawOrigin<u128>,
-    member_id: u64,
+    funder: BountyActor<u64>,
     bounty_id: u64,
     amount: u64,
 }
@@ -309,7 +309,7 @@ impl FundBountyFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
-            member_id: 1,
+            funder: BountyActor::Member(1),
             bounty_id: 1,
             amount: 100,
         }
@@ -320,7 +320,10 @@ impl FundBountyFixture {
     }
 
     pub fn with_member_id(self, member_id: u64) -> Self {
-        Self { member_id, ..self }
+        Self {
+            funder: BountyActor::Member(member_id),
+            ..self
+        }
     }
 
     pub fn with_bounty_id(self, bounty_id: u64) -> Self {
@@ -333,11 +336,11 @@ impl FundBountyFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty_funding =
-            Bounty::contribution_by_bounty_by_member(self.bounty_id, self.member_id);
+            Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
 
         let actual_result = Bounty::fund_bounty(
             self.origin.clone().into(),
-            self.member_id.clone(),
+            self.funder.clone(),
             self.bounty_id.clone(),
             self.amount.clone(),
         );
@@ -345,7 +348,7 @@ impl FundBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         let new_bounty_funding =
-            Bounty::contribution_by_bounty_by_member(self.bounty_id, self.member_id);
+            Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
         if actual_result.is_ok() {
             assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
         } else {
@@ -354,17 +357,17 @@ impl FundBountyFixture {
     }
 }
 
-pub struct WithdrawMemberFundingFixture {
+pub struct WithdrawFundingFixture {
     origin: RawOrigin<u128>,
-    member_id: u64,
+    funder: BountyActor<u64>,
     bounty_id: u64,
 }
 
-impl WithdrawMemberFundingFixture {
+impl WithdrawFundingFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
-            member_id: 1,
+            funder: BountyActor::Member(1),
             bounty_id: 1,
         }
     }
@@ -374,7 +377,10 @@ impl WithdrawMemberFundingFixture {
     }
 
     pub fn with_member_id(self, member_id: u64) -> Self {
-        Self { member_id, ..self }
+        Self {
+            funder: BountyActor::Member(member_id),
+            ..self
+        }
     }
 
     pub fn with_bounty_id(self, bounty_id: u64) -> Self {
@@ -382,9 +388,9 @@ impl WithdrawMemberFundingFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_member_funding(
+        let actual_result = Bounty::withdraw_funding(
             self.origin.clone().into(),
-            self.member_id.clone(),
+            self.funder.clone(),
             self.bounty_id.clone(),
         );
 
