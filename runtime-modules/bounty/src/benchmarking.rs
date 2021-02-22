@@ -383,7 +383,7 @@ benchmarks! {
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
-    withdraw_creator_funding_by_council {
+    withdraw_creator_cherry_by_council {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
 
@@ -407,13 +407,13 @@ benchmarks! {
 
         Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), creator.clone(), bounty_id).unwrap();
 
-    }: withdraw_creator_funding(RawOrigin::Root, creator.clone(), bounty_id)
+    }: withdraw_creator_cherry(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
         assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
-    withdraw_creator_funding_by_member {
+    withdraw_creator_cherry_by_member {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
@@ -445,16 +445,15 @@ benchmarks! {
             bounty_id
         ).unwrap();
 
-    }: withdraw_creator_funding(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
+    }: withdraw_creator_cherry(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
         assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
     announce_work_entry {
-        let max_amount: BalanceOf<T> = 100.into();
-        let creator_funding: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
         let creator = BountyActor::Member(member_id);
@@ -462,9 +461,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            creator_funding,
             creator: creator.clone(),
-            max_amount,
             cherry,
             ..Default::default()
         };
@@ -478,6 +475,13 @@ benchmarks! {
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
+
+        Bounty::<T>::fund_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            creator.clone(),
+            bounty_id,
+            funding_amount
+        ).unwrap();
 
         let (account_id, member_id) = member_funded_account::<T>("member2", 1);
 
@@ -562,16 +566,16 @@ mod tests {
     }
 
     #[test]
-    fn withdraw_creator_funding_by_council() {
+    fn withdraw_creator_cherry_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_creator_funding_by_council::<Test>());
+            assert_ok!(test_benchmark_withdraw_creator_cherry_by_council::<Test>());
         });
     }
 
     #[test]
-    fn withdraw_creator_funding_by_member() {
+    fn withdraw_creator_cherry_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_creator_funding_by_member::<Test>());
+            assert_ok!(test_benchmark_withdraw_creator_cherry_by_member::<Test>());
         });
     }
 

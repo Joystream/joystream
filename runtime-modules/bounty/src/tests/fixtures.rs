@@ -69,7 +69,6 @@ pub struct CreateBountyFixture {
     work_period: u64,
     judging_period: u64,
     cherry: u64,
-    creator_funding: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
 }
@@ -86,7 +85,6 @@ impl CreateBountyFixture {
             work_period: 1,
             judging_period: 1,
             cherry: DEFAULT_BOUNTY_CHERRY,
-            creator_funding: 0,
             expected_milestone: None,
             entrant_stake: 0,
         }
@@ -139,23 +137,9 @@ impl CreateBountyFixture {
         Self { cherry, ..self }
     }
 
-    pub fn with_creator_funding(self, creator_funding: u64) -> Self {
-        Self {
-            creator_funding,
-            ..self
-        }
-    }
-
     pub fn with_entrant_stake(self, entrant_stake: u64) -> Self {
         Self {
             entrant_stake,
-            ..self
-        }
-    }
-
-    pub fn with_expected_milestone(self, milestone: BountyMilestone<u64>) -> Self {
-        Self {
-            expected_milestone: Some(milestone),
             ..self
         }
     }
@@ -169,7 +153,6 @@ impl CreateBountyFixture {
             judging_period: self.judging_period.clone(),
             funding_period: self.funding_period.clone(),
             cherry: self.cherry,
-            creator_funding: self.creator_funding,
             entrant_stake: self.entrant_stake,
             ..Default::default()
         }
@@ -204,7 +187,7 @@ impl CreateBountyFixture {
 
             let expected_bounty = BountyRecord::<u64, u64, u64> {
                 creation_params: params.clone(),
-                total_funding: params.creator_funding,
+                total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
             };
@@ -412,13 +395,13 @@ impl WithdrawFundingFixture {
     }
 }
 
-pub struct WithdrawCreatorFundingFixture {
+pub struct WithdrawCreatorCherryFixture {
     origin: RawOrigin<u128>,
     creator: BountyActor<u64>,
     bounty_id: u64,
 }
 
-impl WithdrawCreatorFundingFixture {
+impl WithdrawCreatorCherryFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Root,
@@ -443,7 +426,7 @@ impl WithdrawCreatorFundingFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_creator_funding(
+        let actual_result = Bounty::withdraw_creator_cherry(
             self.origin.clone().into(),
             self.creator.clone(),
             self.bounty_id.clone(),

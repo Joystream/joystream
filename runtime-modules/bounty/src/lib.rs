@@ -15,8 +15,8 @@
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
 //! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
 //! funding for a failed bounty.
-//! - [withdraw_creator_funding](./struct.Module.html#method.withdraw_creator_funding) - withdraw
-//! funding for a failed or canceled bounty.
+//! - [withdraw_creator_cherry](./struct.Module.html#method.withdraw_creator_cherry) - withdraw
+//! a cherry for a failed or canceled bounty.
 //! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
 //! work entry for a successful bounty.
 
@@ -37,7 +37,8 @@ mod benchmarking;
 // TODO: refactor all stages
 // TODO: benchmark withdraw_work_entry
 // TODO: add work submissions.
-// TODO: rename withdraw_creator_funding to withdraw_creator_cherry
+// TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
+// existing work entries?
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -49,8 +50,8 @@ pub trait WeightInfo {
     fn veto_bounty() -> Weight;
     fn fund_bounty() -> Weight;
     fn withdraw_member_funding() -> Weight;
-    fn withdraw_creator_funding_by_council() -> Weight;
-    fn withdraw_creator_funding_by_member() -> Weight;
+    fn withdraw_creator_cherry_by_council() -> Weight;
+    fn withdraw_creator_cherry_by_member() -> Weight;
     fn announce_work_entry() -> Weight;
 }
 
@@ -194,9 +195,6 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId> {
 
     /// Number of block from end of work period until oracle can no longer decide winners.
     pub judging_period: BlockNumber,
-
-    /// Funds provided by a bounty creator.
-    pub creator_funding: Balance,
 }
 
 /// Bounty actor to create or fund bounty.
@@ -228,9 +226,6 @@ pub enum BountyStage {
 
     /// Funding and cherry can be withdrawn.
     Withdrawal {
-        /// Creator funds are not withdrawn and greater than zero.
-        creator_funds_need_withdrawal: bool,
-
         /// Creator cherry is not withdrawn and greater than zero.
         cherry_needs_withdrawal: bool,
     },
@@ -259,8 +254,6 @@ pub enum BountyMilestone<BlockNumber> {
     BountyMaxFundingReached {
         ///  A bounty funding was successful on the provided block.
         max_funding_reached_at: BlockNumber,
-        /// A bounty reached its maximum allowed contribution on creation.
-        reached_on_creation: bool,
     },
 
     /// Creator funds (initial funding and/or cherry) were withdrawn.
@@ -515,8 +508,7 @@ decl_module! {
                 params.creator.clone()
             )?;
 
-            let required_balance = params.cherry + params.creator_funding;
-            bounty_creator_manager.validate_balance_sufficiency(required_balance)?;
+            bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
 
             Self::ensure_create_bounty_parameters_valid(&params)?;
 
@@ -527,12 +519,15 @@ decl_module! {
             let next_bounty_count_value = Self::bounty_count() + 1;
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
-            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, required_balance)?;
+            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry)?;
 
-            let created_bounty_milestone = Self::get_bounty_milestone_on_creation(&params);
+            let created_bounty_milestone = BountyMilestone::Created {
+                created_at: Self::current_block(),
+                has_contributions: false, // just created - no contributions
+            };
 
             let bounty = Bounty::<T> {
-                total_funding: params.creator_funding,
+                total_funding: Zero::zero(),
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
@@ -739,9 +734,9 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_creator_funding_by_member()
-              .max(WeightInfoBounty::<T>::withdraw_creator_funding_by_council())]
-        pub fn withdraw_creator_funding(
+        #[weight = WeightInfoBounty::<T>::withdraw_creator_cherry_by_member()
+              .max(WeightInfoBounty::<T>::withdraw_creator_cherry_by_council())]
+        pub fn withdraw_creator_cherry(
             origin,
             creator: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
@@ -757,13 +752,8 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            if let BountyStage::Withdrawal {creator_funds_need_withdrawal, cherry_needs_withdrawal} =
-                current_bounty_stage
-            {
-                ensure!(
-                    creator_funds_need_withdrawal || cherry_needs_withdrawal,
-                    Error::<T>::NothingToWithdraw,
-                );
+            if let BountyStage::Withdrawal {cherry_needs_withdrawal } = current_bounty_stage {
+                ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
             } else {
                 return Err(Error::<T>::InvalidBountyStage.into());
             };
@@ -772,11 +762,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let funding_amount = bounty.creation_params.creator_funding;
             let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
 
-            let required_balance = cherry + funding_amount;
-            bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, required_balance)?;
+            bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, cherry)?;
 
             bounty.milestone = BountyMilestone::CreatorFundsWithdrawn;
             <Bounties<T>>::insert(bounty_id, bounty.clone());
@@ -1109,7 +1097,6 @@ impl<T: Trait> Module<T> {
     // Computes the stage of a bounty based on its creation parameters and the current state.
     pub(crate) fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
-        let funding_was_provided = bounty.creation_params.creator_funding != Zero::zero();
         let cherry_is_not_zero = bounty.creation_params.cherry != Zero::zero();
 
         match bounty.milestone {
@@ -1137,7 +1124,6 @@ impl<T: Trait> Module<T> {
                         } else {
                             // Funding failed or work period ended.
                             BountyStage::Withdrawal {
-                                creator_funds_need_withdrawal: funding_was_provided,
                                 cherry_needs_withdrawal: cherry_is_not_zero && !has_contributions,
                             }
                         }
@@ -1149,17 +1135,14 @@ impl<T: Trait> Module<T> {
             }
             // Bounty was canceled or vetoed.
             BountyMilestone::Canceled => BountyStage::Withdrawal {
-                creator_funds_need_withdrawal: funding_was_provided,
                 cherry_needs_withdrawal: cherry_is_not_zero,
             },
             // It is withdrawal stage and the creator don't expect any withdrawals.
             BountyMilestone::CreatorFundsWithdrawn => BountyStage::Withdrawal {
-                creator_funds_need_withdrawal: false,
                 cherry_needs_withdrawal: false,
             },
             BountyMilestone::BountyMaxFundingReached {
                 max_funding_reached_at,
-                reached_on_creation,
             } => {
                 // Work period is not over.
                 if now <= max_funding_reached_at + bounty.creation_params.work_period {
@@ -1168,8 +1151,7 @@ impl<T: Trait> Module<T> {
                     // Work period is over.
                     // TODO: change to judging stage when it will be introduced
                     BountyStage::Withdrawal {
-                        creator_funds_need_withdrawal: funding_was_provided,
-                        cherry_needs_withdrawal: reached_on_creation && cherry_is_not_zero,
+                        cherry_needs_withdrawal: cherry_is_not_zero,
                     }
                 }
             }
@@ -1194,12 +1176,8 @@ impl<T: Trait> Module<T> {
         bounty: &Bounty<T>,
         funding_amount: BalanceOf<T>,
     ) -> BalanceOf<T> {
-        //We don't count creator_funding.
-        let total_funding = bounty
-            .total_funding
-            .saturating_sub(bounty.creation_params.creator_funding);
-
-        let funding_share = Perbill::from_rational_approximation(funding_amount, total_funding);
+        let funding_share =
+            Perbill::from_rational_approximation(funding_amount, bounty.total_funding);
 
         // cherry share
         funding_share * bounty.creation_params.cherry
@@ -1209,7 +1187,6 @@ impl<T: Trait> Module<T> {
     fn get_cherry_for_creator_withdrawal(bounty: &Bounty<T>, stage: BountyStage) -> BalanceOf<T> {
         if let BountyStage::Withdrawal {
             cherry_needs_withdrawal,
-            ..
         } = stage
         {
             if cherry_needs_withdrawal {
@@ -1242,7 +1219,6 @@ impl<T: Trait> Module<T> {
             && matches!(
                 stage,
                 BountyStage::Withdrawal {
-                    creator_funds_need_withdrawal: false,
                     cherry_needs_withdrawal: false,
                 }
             )
@@ -1262,26 +1238,6 @@ impl<T: Trait> Module<T> {
         T::ModuleId::get().into_sub_account(bounty_id)
     }
 
-    // Calculates bounty milestone on creation.
-    fn get_bounty_milestone_on_creation(
-        params: &BountyCreationParameters<T>,
-    ) -> BountyMilestone<T::BlockNumber> {
-        let now = Self::current_block();
-
-        // Whether the bounty is fully funded on creation.
-        if params.creator_funding < params.max_amount {
-            BountyMilestone::Created {
-                created_at: now,
-                has_contributions: false, // just created - no contributions
-            }
-        } else {
-            BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at: now,
-                reached_on_creation: true,
-            }
-        }
-    }
-
     // Calculates bounty milestone on member funding.
     fn get_bounty_milestone_on_funding(
         maximum_funding_reached: bool,
@@ -1293,7 +1249,6 @@ impl<T: Trait> Module<T> {
             // Bounty maximum funding reached.
             BountyMilestone::BountyMaxFundingReached {
                 max_funding_reached_at: now,
-                reached_on_creation: false, // reached only now
             }
         // No previous contributions.
         } else if let BountyMilestone::Created {

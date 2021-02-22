@@ -44,12 +44,12 @@ impl bounty::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
-    fn withdraw_creator_funding_by_council() -> Weight {
+    fn withdraw_creator_cherry_by_council() -> Weight {
         (567_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
-    fn withdraw_creator_funding_by_member() -> Weight {
+    fn withdraw_creator_cherry_by_member() -> Weight {
         (841_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
