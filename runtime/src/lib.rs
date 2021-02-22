@@ -156,10 +156,10 @@ impl frame_system::Trait for Runtime {
     type SystemWeightInfo = weights::frame_system::WeightInfo;
 }
 
-impl pallet_utility::Trait for Runtime {
+impl substrate_utility::Trait for Runtime {
     type Event = Event;
     type Call = Call;
-    type WeightInfo = weights::pallet_utility::WeightInfo;
+    type WeightInfo = weights::substrate_utility::WeightInfo;
 }
 
 parameter_types! {
@@ -827,10 +827,10 @@ impl proposals_discussion::Trait for Runtime {
     type WeightInfo = weights::proposals_discussion::WeightInfo;
 }
 
-impl utility::Trait for Runtime {
+impl joystream_utility::Trait for Runtime {
     type Event = Event;
 
-    type WeightInfo = weights::utility::WeightInfo;
+    type WeightInfo = weights::joystream_utility::WeightInfo;
 
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
         call_wg!(working_group, get_budget)
@@ -932,7 +932,7 @@ construct_runtime!(
     {
         // Substrate
         System: frame_system::{Module, Call, Storage, Config, Event<T>},
-        Utility: pallet_utility::{Module, Call, Event},
+        Utility: substrate_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
@@ -957,7 +957,7 @@ construct_runtime!(
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
-        JoystreamUtility: utility::{Module, Call, Event<T>},
+        JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

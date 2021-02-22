@@ -6,7 +6,7 @@
 use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 pub struct WeightInfo;
-impl utility::WeightInfo for WeightInfo {
+impl joystream_utility::WeightInfo for WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight {
         (81_623_000 as Weight).saturating_add((162_000 as Weight).saturating_mul(i as Weight))
     }

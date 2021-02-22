@@ -1,7 +1,7 @@
 //! # Joystream Utility pallet.
 //! `Utility` pallet for the Joystream platform.
 //!
-//! Different extrinsics that doesn't fit anywhere else
+//! A stateless module with Joystream operations helpers.
 //!
 //! ## Extrinsics
 //!
