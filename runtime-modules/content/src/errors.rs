@@ -61,6 +61,9 @@ decl_error! {
         /// Channel must have been deleted
         ChannelMustNotExist,
 
+        /// Video does not exist
+        VideoDoesNotExist,
+
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels
     }

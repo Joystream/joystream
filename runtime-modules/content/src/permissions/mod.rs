@@ -128,7 +128,7 @@ pub fn ensure_actor_authorized_to_create_channel_assets<T: Trait>(
     }
 }
 
-pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_update_or_delete_channel_assets<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,

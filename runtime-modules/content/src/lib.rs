@@ -314,7 +314,7 @@ pub struct VideoUpdateParameters<ContentParameters> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Video<ChannelId, SeriesId> {
-    in_channel: ChannelId,
+    pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
     in_series: Option<SeriesId>,
@@ -724,7 +724,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -783,7 +783,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -831,7 +831,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -1052,16 +1052,16 @@ decl_module! {
 
             let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             // This should be first mutation
             // Try add assets to storage
             T::StorageSystem::atomically_add_content(
                 object_owner,
                 content_parameters,
             )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             let video: Video<T::ChannelId, T::SeriesId> = Video {
                 in_channel: channel_id,
@@ -1084,7 +1084,7 @@ decl_module! {
                 channel.videos.push(video_id);
             });
 
-            Self::deposit_event(RawEvent::VideoCreated(channel_id, video_id, params));
+            Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
 
         }
 
@@ -1092,10 +1092,51 @@ decl_module! {
         pub fn update_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
+            video_id: T::VideoId,
             params: VideoUpdateParameters<ContentParameters<T>>,
         ) {
-            Self::not_implemented()?;
+            // check that video exists, retrieve corresponding channel id.
+            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
+
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::actor_to_channel_owner(&actor)?,
+            )?;
+
+            // Pick out the assets to be uploaded to storage system
+            let new_assets = if let Some(assets) = &params.assets {
+                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+
+                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+                // check assets can be uploaded to storage.
+                // update can_add_content() to only take &refrences
+                T::StorageSystem::can_add_content(
+                    object_owner.clone(),
+                    upload_parameters.clone(),
+                )?;
+
+                Some((upload_parameters, object_owner))
+            } else {
+                None
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // add assets to storage
+            // This should not fail because of prior can_add_content() check!
+            if let Some((upload_parameters, object_owner)) = new_assets {
+                T::StorageSystem::atomically_add_content(
+                    object_owner,
+                    upload_parameters,
+                )?;
+            }
+
+            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1316,6 +1357,16 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
+    fn ensure_video_exists(
+        video_id: &T::VideoId,
+    ) -> Result<Video<T::ChannelId, T::SeriesId>, Error<T>> {
+        ensure!(
+            VideoById::<T>::contains_key(video_id),
+            Error::<T>::VideoDoesNotExist
+        );
+        Ok(VideoById::<T>::get(video_id))
+    }
+
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -1380,6 +1431,11 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
+        Actor = ContentActor<
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            <T as ContentActorAuthenticator>::CuratorId,
+            <T as MembershipTypes>::MemberId,
+        >,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
@@ -1449,11 +1505,12 @@ decl_event!(
         VideoCategoryDeleted(VideoCategoryId),
 
         VideoCreated(
+            Actor,
             ChannelId,
             VideoId,
             VideoCreationParameters<ContentParameters>,
         ),
-        VideoUpdated(VideoId, VideoUpdateParameters<ContentParameters>),
+        VideoUpdated(Actor, VideoId, VideoUpdateParameters<ContentParameters>),
         VideoDeleted(VideoId),
 
         VideoCensored(VideoId, Vec<u8> /* rationale */),
