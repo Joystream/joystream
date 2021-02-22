@@ -319,9 +319,9 @@ pub struct Video<ChannelId, SeriesId> {
     // - prevent removing a video if it is in a season (because order is important)
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
-    is_censored: bool,
+    pub is_censored: bool,
     /// Whether the curators have chosen to feature the video or not.
-    is_featured: bool,
+    pub is_featured: bool,
 }
 
 /// Information about the plyalist being created.
@@ -1215,8 +1215,29 @@ decl_module! {
             list: Vec<T::VideoId>
         ) {
             // can only be set by lead
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::actor_to_channel_owner(&actor)?,
+            )?;
 
-            Self::not_implemented()?;
+            Self::ensure_videos_exist(&list)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update videos featured status
+            for video_id in &list {
+                let mut video = Self::video_by_id(video_id);
+                if !video.is_featured {
+                    video.is_featured = true;
+                    <VideoById<T>>::insert(video_id, video);
+                }
+            }
+
+            Self::deposit_event(RawEvent::FeaturedVideosSet(actor, list));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1387,6 +1408,14 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
+    fn ensure_videos_exist(list: &[T::VideoId]) -> DispatchResult {
+        for video_id in list {
+            Self::ensure_video_exists(video_id)?;
+        }
+
+        Ok(())
+    }
+
     fn ensure_video_exists(
         video_id: &T::VideoId,
     ) -> Result<Video<T::ChannelId, T::SeriesId>, Error<T>> {
@@ -1553,7 +1582,7 @@ decl_event!(
         VideoUncensored(VideoId, Vec<u8> /* rationale */),
 
         // Featured Videos
-        FeaturedVideosSet(Vec<VideoId>),
+        FeaturedVideosSet(Actor, Vec<VideoId>),
 
         // Video Playlists
         PlaylistCreated(PlaylistId, PlaylistCreationParameters),
