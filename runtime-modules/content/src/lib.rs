@@ -1246,26 +1246,57 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoCategoryCreationParameters,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let category_id = Self::next_video_category_id();
+            NextVideoCategoryId::<T>::mutate(|id| *id += T::VideoCategoryId::one());
+
+            let category = VideoCategory {};
+            VideoCategoryById::<T>::insert(category_id, category.clone());
+
+            Self::deposit_event(RawEvent::VideoCategoryCreated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
+            category_id: T::VideoCategoryId,
             params: VideoCategoryUpdateParameters,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_video_category_exists(&category_id)?;
+
+            Self::deposit_event(RawEvent::VideoCategoryUpdated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
+            category_id: T::VideoCategoryId,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_video_category_exists(&category_id)?;
+
+            VideoCategoryById::<T>::remove(&category_id);
+
+            Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1484,6 +1515,16 @@ impl<T: Trait> Module<T> {
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
     }
 
+    fn ensure_video_category_exists(
+        video_category_id: &T::VideoCategoryId,
+    ) -> Result<VideoCategory, Error<T>> {
+        ensure!(
+            VideoCategoryById::<T>::contains_key(video_category_id),
+            Error::<T>::CategoryDoesNotExist
+        );
+        Ok(VideoCategoryById::<T>::get(video_category_id))
+    }
+
     fn pick_content_parameters_from_assets(
         assets: &[NewAsset<ContentParameters<T>>],
     ) -> Vec<ContentParameters<T>> {
@@ -1607,9 +1648,9 @@ decl_event!(
         ChannelCategoryDeleted(ChannelCategoryId),
 
         // Videos
-        VideoCategoryCreated(VideoCategoryId, VideoCategoryCreationParameters),
-        VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
-        VideoCategoryDeleted(VideoCategoryId),
+        VideoCategoryCreated(Actor, VideoCategoryId, VideoCategoryCreationParameters),
+        VideoCategoryUpdated(Actor, VideoCategoryId, VideoCategoryUpdateParameters),
+        VideoCategoryDeleted(Actor, VideoCategoryId),
 
         VideoCreated(
             Actor,
