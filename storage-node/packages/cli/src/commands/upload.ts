@@ -108,7 +108,7 @@ export class UploadCommand extends BaseCommand {
   // Creates the DataObject in the runtime.
   private async createContent(p: AddContentParams): Promise<DataObject> {
     try {
-      const dataObject: Option<DataObject> = await this.api.assets.createDataObject(
+      const dataObject: DataObject = await this.api.assets.createDataObject(
         p.accountId,
         p.memberId,
         p.contentId,
@@ -117,11 +117,7 @@ export class UploadCommand extends BaseCommand {
         p.ipfsCid
       )
 
-      if (dataObject.isNone) {
-        this.fail('Cannot create data object: got None object')
-      }
-
-      return dataObject.unwrap()
+      return dataObject
     } catch (err) {
       this.fail(`Cannot create data object: ${err}`)
     }

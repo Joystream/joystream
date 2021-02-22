@@ -149,11 +149,11 @@ function getStorage(runtimeApi, { ipfsHost }) {
     resolve_content_id: async (contentId) => {
       // Resolve via API
       const obj = await runtimeApi.assets.getDataObject(contentId)
-      if (!obj || obj.isNone) {
+      if (!obj) {
         return
       }
       // if obj.liaison_judgement !== Accepted .. throw ?
-      return obj.unwrap().ipfs_content_id.toString()
+      return obj.ipfs_content_id.toString()
     },
     ipfsHost,
   }

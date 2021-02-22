@@ -59,7 +59,8 @@ class AssetsApi {
     contentId = parseContentId(contentId)
     const storageSize = await this.base.api.query.dataDirectory.dataByContentId.size(contentId)
     if (!storageSize) {
-      throw new Error(`No DataObject found for content ID: ${contentId}`)
+      // throw new Error(`No DataObject found for content ID: ${contentId}`)
+      return null
     }
     return this.base.api.query.dataDirectory.dataByContentId(contentId)
   }
@@ -77,12 +78,16 @@ class AssetsApi {
 
     const obj = await this.getDataObject(contentId)
 
+    if (!obj) {
+      throw new Error(`No DataObject found for content ID: ${contentId}`)
+    }
+
     if (!obj.liaison.eq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`)
     }
 
     if (obj.liaison_judgement.type !== 'Pending') {
-      throw new Error(`Expected Pending judgement, but found: ${obj.liaison_judgement.type}`)
+      throw new Error(`Content upload has already been processed.`)
     }
 
     return obj
@@ -155,7 +160,8 @@ class AssetsApi {
    * Returns array of all the content ids in storage
    */
   async getKnownContentIds() {
-    return this.base.api.query.dataDirectory.dataByContentId.keys().map(({ args: [contentId] }) => contentId)
+    const keys = await this.base.api.query.dataDirectory.dataByContentId.keys()
+    return keys.map(({ args: [contentId] }) => contentId)
   }
 }
 

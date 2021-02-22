@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { assert } from 'chai'
-import { ContentId } from '@joystream/types/media'
+import { ContentId } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
 
 import { FlowProps } from '../../Flow'

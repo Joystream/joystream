@@ -102,7 +102,7 @@ class StorageWriteStream extends Transform {
     this.temp.write(chunk)
 
     // Try to detect file type during streaming.
-    if (!this.fileInfo && this.buf < fileType.minimumBytes) {
+    if (!this.fileInfo && this.buf.byteLength < fileType.minimumBytes) {
       this.buf = Buffer.concat([this.buf, chunk])
 
       if (this.buf >= fileType.minimumBytes) {

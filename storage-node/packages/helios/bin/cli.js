@@ -48,7 +48,7 @@ async function assetRelationshipState(api, contentId, providers) {
     })
   )
 
-  return [activeRelationships.filter((active) => active).length, dataObject.unwrap().liaison_judgement]
+  return [activeRelationships.filter((active) => active).length, dataObject.liaison_judgement]
 }
 
 // HTTP HEAD with axios all known content ids on each provider

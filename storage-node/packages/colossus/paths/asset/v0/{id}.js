@@ -27,6 +27,8 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
+const PROCESS_UPLOAD_BALANCE = 3
+
 module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
   const proxy = ipfsProxy.createProxy(storage, ipfsHttpGatewayUrl)
@@ -52,6 +54,16 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         return
       }
 
+      // TODO: Do early filter on content_length..(do not wait for fileInfo)
+      // ensure it equals the data object claimed size, and less than max allowed by
+      // node policy.
+
+      // get content_length from request
+      // const fileSizesEqual = dataObject.size_in_bytes.eq(content_length)
+      // if (!fileSizesEqual) {
+      //   return res.status(403).send({ message: 'Upload size does not match expected size of content' })
+      // }
+
       const id = req.params.id // content id
 
       // First check if we're the liaison for the name, otherwise we can bail
@@ -60,15 +72,13 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
       const providerId = runtime.storageProviderId
       let dataObject
       try {
-        debug('calling checkLiaisonForDataObject')
         dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id)
-        debug('called checkLiaisonForDataObject')
       } catch (err) {
         errorHandler(res, err, 403)
         return
       }
 
-      const sufficientBalance = await runtime.providerHasMinimumBalance(3)
+      const sufficientBalance = await runtime.providerHasMinimumBalance(PROCESS_UPLOAD_BALANCE)
 
       if (!sufficientBalance) {
         errorHandler(res, 'Insufficient balance to process upload!', 503)
@@ -92,11 +102,13 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         }
 
+        // May occurs before entire stream is processed, at the end of stream
+        // or possibly never.
         stream.on('fileInfo', async (info) => {
           try {
             debug('Detected file info:', info)
 
-            // Filter
+            // Filter allowed content types
             const filterResult = filter({}, req.headers, info.mimeType)
             if (filterResult.code !== 200) {
               debug('Rejecting content', filterResult.message)
@@ -105,13 +117,13 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
 
               // Reject the content
               await runtime.assets.rejectContent(roleAddress, providerId, id)
-              return
-            }
-            debug('Content accepted.')
-            accepted = true
+            } else {
+              debug('Content accepted.')
+              accepted = true
 
-            // We may have to commit the stream.
-            possiblyCommit()
+              // We may have to commit the stream.
+              possiblyCommit()
+            }
           } catch (err) {
             errorHandler(res, err)
           }
@@ -161,12 +173,12 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
       }
     },
 
-    async get(req, res) {
-      proxy(req, res)
+    async get(req, res, next) {
+      proxy(req, res, next)
     },
 
-    async head(req, res) {
-      proxy(req, res)
+    async head(req, res, next) {
+      proxy(req, res, next)
     },
   }
 

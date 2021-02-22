@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
-const { ContentId } = require('@joystream/types/media')
+const { ContentId } = require('@joystream/types/storage')
 // The number of concurrent sync sessions allowed. Must be greater than zero.
 const MAX_CONCURRENT_SYNC_ITEMS = 20
 
