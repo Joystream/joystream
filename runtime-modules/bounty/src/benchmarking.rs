@@ -4,7 +4,7 @@ use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
-use sp_arithmetic::traits::One;
+use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::SaturatedConversion;
 use sp_std::boxed::Box;
 use sp_std::vec;
@@ -242,7 +242,7 @@ benchmarks! {
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
-    fund_bounty {
+    fund_bounty_by_member {
         let max_amount: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
 
@@ -265,13 +265,40 @@ benchmarks! {
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
-    }: _ (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id, amount)
+    }: fund_bounty (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id, amount)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() - amount);
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
 
-    withdraw_funding {
+    fund_bounty_by_council {
+        let max_amount: BalanceOf<T> = 100.into();
+        let cherry: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry + max_amount);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            max_amount,
+            cherry,
+            ..Default::default()
+        };
+        // should reach default max bounty funding amount
+        let amount: BalanceOf<T> = 100.into();
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+    }: fund_bounty (RawOrigin::Root, BountyActor::Council, bounty_id, amount)
+    verify {
+        assert_eq!(T::CouncilBudgetManager::get_budget(), Zero::zero());
+        assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
+    }
+
+    withdraw_funding_by_member {
         let funding_period = 1;
         let bounty_amount = 200;
         let cherry: BalanceOf<T> = 100.into();
@@ -298,18 +325,61 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
 
+        let funder = BountyActor::Member(member_id);
+
         Bounty::<T>::fund_bounty(
             RawOrigin::Signed(account_id.clone()).into(),
-            BountyActor::Member(member_id),
+            funder.clone(),
             bounty_id,
             amount
         ).unwrap();
 
         run_to_block::<T>((funding_period + 1).into());
 
-    }: _ (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id)
+    }: withdraw_funding (RawOrigin::Signed(account_id.clone()), funder, bounty_id)
     verify {
         assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() + cherry);
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
+    }
+
+    withdraw_funding_by_council {
+        let funding_period = 1;
+        let bounty_amount = 200;
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+
+        T::CouncilBudgetManager::set_budget(cherry + funding_amount);
+
+        let params = BountyCreationParameters::<T>{
+            funding_period: Some(funding_period.into()),
+            work_period: One::one(),
+            judging_period: One::one(),
+            max_amount: bounty_amount.into(),
+            min_amount: bounty_amount.into(),
+            cherry,
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        let funder = BountyActor::Council;
+
+        Bounty::<T>::fund_bounty(
+            RawOrigin::Root.into(),
+            funder.clone(),
+            bounty_id,
+            funding_amount
+        ).unwrap();
+
+        run_to_block::<T>((funding_period + 1).into());
+
+    }: withdraw_funding(RawOrigin::Root, funder, bounty_id)
+    verify {
+        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + funding_amount);
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
@@ -464,16 +534,30 @@ mod tests {
     }
 
     #[test]
-    fn fund_bounty() {
+    fn fund_bounty_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fund_bounty::<Test>());
+            assert_ok!(test_benchmark_fund_bounty_by_member::<Test>());
         });
     }
 
     #[test]
-    fn withdraw_member_funding() {
+    fn fund_bounty_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funding::<Test>());
+            assert_ok!(test_benchmark_fund_bounty_by_council::<Test>());
+        });
+    }
+
+    #[test]
+    fn withdraw_funding_by_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_funding_by_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn withdraw_funding_by_council() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_funding_by_council::<Test>());
         });
     }
 
