@@ -58,7 +58,7 @@ class AssetsApi {
   async getDataObject(contentId) {
     contentId = parseContentId(contentId)
     const storageSize = await this.base.api.query.dataDirectory.dataByContentId.size(contentId)
-    if (!storageSize) {
+    if (storageSize.eq(0)) {
       // throw new Error(`No DataObject found for content ID: ${contentId}`)
       return null
     }

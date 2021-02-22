@@ -41,10 +41,4 @@ describe('Balances', () => {
     expect(await api.balances.hasMinimumBalanceOf(key.address, 0)).to.be.true
     expect(await api.balances.hasMinimumBalanceOf(key.address, 1)).to.be.false
   })
-
-  it('returns the base transaction fee of the chain', async () => {
-    const fee = await api.balances.baseTransactionFee()
-    // >= 0 comparison works
-    expect(fee.cmpn(0)).to.be.at.least(0)
-  })
 })
