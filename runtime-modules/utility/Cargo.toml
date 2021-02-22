@@ -1,5 +1,5 @@
 [package]
-name = 'joystream-utility'
+name = 'utility'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'

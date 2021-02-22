@@ -827,10 +827,10 @@ impl proposals_discussion::Trait for Runtime {
     type WeightInfo = weights::proposals_discussion::WeightInfo;
 }
 
-impl joystream_utility::Trait for Runtime {
+impl utility::Trait for Runtime {
     type Event = Event;
 
-    type WeightInfo = weights::joystream_utility::WeightInfo;
+    type WeightInfo = weights::utility::WeightInfo;
 
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
         call_wg!(working_group, get_budget)
@@ -957,7 +957,7 @@ construct_runtime!(
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
-        JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
+        JoystreamUtility: utility::{Module, Call, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

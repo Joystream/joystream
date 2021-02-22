@@ -386,7 +386,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
             add_benchmark!(params, batches, blog, Blog);
-            add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
+            add_benchmark!(params, batches, utility, JoystreamUtility);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
