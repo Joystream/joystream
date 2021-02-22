@@ -194,7 +194,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
-    videos: Vec<VideoId>,
+    pub videos: Vec<VideoId>,
     /// The playlists under this channel
     playlists: Vec<PlaylistId>,
     /// The series under this channel
@@ -667,7 +667,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
-            ensure_actor_authorized_to_create_channel::<T>(
+            ensure_actor_authorized_to_create_channel_assets::<T>(
                 origin,
                 &actor,
             )?;
@@ -1040,7 +1040,52 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_create_channel_assets::<T>(
+                origin,
+                &actor,
+            )?;
+
+            // Pick out the assets to be uploaded to storage system
+            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
+
+            let video_id = NextVideoId::<T>::get();
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This should be first mutation
+            // Try add assets to storage
+            T::StorageSystem::atomically_add_content(
+                object_owner,
+                content_parameters,
+            )?;
+
+            let video: Video<T::ChannelId, T::SeriesId> = Video {
+                in_channel: channel_id,
+                // keep track of which season the video is in if it is an 'episode'
+                // - prevent removing a video if it is in a season (because order is important)
+                in_series: None,
+                /// Whether the curators have censored the video or not.
+                is_censored: false,
+                /// Whether the curators have chosen to feature the video or not.
+                is_featured: false,
+            };
+
+            VideoById::<T>::insert(video_id, video.clone());
+
+            // Only increment next video id if adding content was successful
+            NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
+
+            // Add recently added video id to the channel
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.videos.push(video_id);
+            });
+
+            Self::deposit_event(RawEvent::VideoCreated(channel_id, video_id, params));
+
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1403,7 +1448,11 @@ decl_event!(
         VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(VideoCategoryId),
 
-        VideoCreated(VideoId, VideoCreationParameters<ContentParameters>),
+        VideoCreated(
+            ChannelId,
+            VideoId,
+            VideoCreationParameters<ContentParameters>,
+        ),
         VideoUpdated(VideoId, VideoUpdateParameters<ContentParameters>),
         VideoDeleted(VideoId),
 

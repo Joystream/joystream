@@ -99,7 +99,7 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     ensure_lead_auth_success::<T>(&account_id)
 }
 
-pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_create_channel_assets<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
