@@ -163,6 +163,22 @@ class AssetsApi {
     const keys = await this.base.api.query.dataDirectory.dataByContentId.keys()
     return keys.map(({ args: [contentId] }) => contentId)
   }
+
+  /*
+   * Returns array of all content ids in storage where liaison judgement was Accepted
+   */
+  async getAcceptedContentIds() {
+    const entries = await this.base.api.query.dataDirectory.dataByContentId.entries()
+    return entries
+      .filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
+      .map(
+        ([
+          {
+            args: [contentId],
+          },
+        ]) => contentId
+      )
+  }
 }
 
 module.exports = {
