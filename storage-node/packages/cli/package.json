@@ -48,7 +48,7 @@
     "@joystream/service-discovery": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
     "@joystream/types": "^0.16.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "meow": "^5.0.0",

@@ -2,6 +2,7 @@ import axios from 'axios'
 import chalk from 'chalk'
 import fs from 'fs'
 import { BaseCommand } from './base'
+import { MAX_CONTENT_LENGTH } from './consts'
 
 // Download command class. Validates input parameters and execute the logic for asset downloading.
 export class DownloadCommand extends BaseCommand {
@@ -60,6 +61,8 @@ export class DownloadCommand extends BaseCommand {
         url: assetUrl,
         method: 'GET',
         responseType: 'stream',
+        // max length of response
+        maxContentLength: MAX_CONTENT_LENGTH,
       })
 
       response.data.pipe(writer)
