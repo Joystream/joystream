@@ -216,14 +216,6 @@ type UserDefinedLicenseEntity @entity {
   happenedIn: Block!
 }
 
-type PublishedBeforeJoystream @entity {
-  id: ID!
-
-  isPublished: String
-
-  publishedAt: DateTime
-}
-
 type Video @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -256,7 +248,7 @@ type Video @entity {
   hasMarketing: Boolean
 
   "If the Video was published on other platform before beeing published on Joystream - the original publication date"
-  publishedBeforeJoystream: Int
+  publishedBeforeJoystream: DateTime
 
   "Whether the Video is supposed to be publically displayed"
   isPublic: Boolean
