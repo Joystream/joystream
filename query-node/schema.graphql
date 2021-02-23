@@ -1,3 +1,8 @@
+# temporary type used before `DateTime` type is working
+type DateTime @entity {
+  timestamp: BigInt!
+}
+
 enum Network {
   BABYLON
   ALEXANDRIA
@@ -8,7 +13,7 @@ type Block @entity {
   "Block number as a string"
   id: ID!
   block: Int!
-  timestamp: BigInt!
+  executedAt: DateTime!
   network: Network!
 }
 
@@ -42,7 +47,7 @@ type Membership @entity {
   registeredAtBlock: Block!
 
   "Timestamp when member was registered"
-  registeredAtTime: BigInt!
+  registeredAtTime: DateTime!
 
   "How the member was registered"
   entry: MembershipEntryMethod!
@@ -60,68 +65,6 @@ type ChannelCategory @entity {
   name: String
 }
 
-type Person @entity {
-  id: ID!
-
-  firstName: String
-
-  middleName: String
-
-  lastName: String
-
-  about: String
-
-  coverPhotoUrl: Asset
-
-  avatarPhotoUrl: Asset
-
-  videos: [Video!] @derivedFrom(field: "people")
-
-  seasons: [Season!] @derivedFrom(field: "people")
-
-  series: [Series!] @derivedFrom(field: "people")
-}
-
-type Playlist @entity {
-  id: ID!
-
-  title: String
-
-  videos: [Video!]
-}
-
-type Season @entity {
-  id: ID!
-
-  title: String
-
-  description: String
-
-  coverPhoto: String
-
-  people: [Person!]
-
-  episodes: [Video!]
-
-  series: Series @derivedFrom(field: "seasons")
-}
-
-type Series @entity {
-  id: ID!
-
-  in_channel: Channel!
-
-  title: String
-
-  description: String
-
-  coverPhoto: String
-
-  people: [Person!]
-
-  seasons: [Season!]
-}
-
 union Asset = AssetUrl | AssetStorage
 
 type AssetUrl @variant {
@@ -129,9 +72,6 @@ type AssetUrl @variant {
 
   "The http url pointing to the media"
   url: String!
-
-  "The port to use when connecting to the http url (defaults to 80)"
-  port: Int
 }
 
 enum AssetStorageUploadStatus {
@@ -181,8 +121,7 @@ type Language @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  name: String!
-  code: String!
+  iso: String!
 
   happenedIn: Block!
 }
@@ -198,10 +137,10 @@ type Channel @entity {
   category: ChannelCategory
 
   "The title of the Channel"
-  title: String! @fulltext(query: "search")
+  title: String @fulltext(query: "search")
 
   "The description of a Channel"
-  description: String!
+  description: String
 
   "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
   coverPhotoUrl: Asset
@@ -210,7 +149,7 @@ type Channel @entity {
   avatarPhotoUrl: Asset
 
   "Flag signaling whether a channel is public."
-  isPublic: Boolean!
+  isPublic: Boolean
 
   "Flag signaling whether a channel is censored."
   isCensored: Boolean!
@@ -282,7 +221,7 @@ type PublishedBeforeJoystream @entity {
 
   isPublished: String
 
-  timestamp: BigInt
+  publishedAt: DateTime
 }
 
 type Video @entity {
@@ -293,22 +232,22 @@ type Video @entity {
   channel: Channel!
 
   "Reference to a video category"
-  category: Category!
+  category: Category
 
   "The title of the video"
-  title: String! @fulltext(query: "search")
+  title: String @fulltext(query: "search")
 
   "The description of the Video"
-  description: String!
+  description: String
 
   "Video duration in seconds"
-  duration: Int!
+  duration: Int
 
   "Video's skippable intro duration in seconds"
   skippableIntroDuration: Int
 
   "Video thumbnail url (recommended ratio: 16:9)"
-  thumbnailUrl: String!
+  thumbnailUrl: String
 
   "Video's main langauge"
   language: Language
@@ -320,24 +259,24 @@ type Video @entity {
   publishedBeforeJoystream: Int
 
   "Whether the Video is supposed to be publically displayed"
-  isPublic: Boolean!
+  isPublic: Boolean
 
   "Flag signaling whether a video is censored."
   isCensored: Boolean!
 
   "Whether the Video contains explicit material."
-  isExplicit: Boolean!
+  isExplicit: Boolean
 
-  license: LicenseEntity!
+  license: LicenseEntity
 
   "Encoding of the video media object"
-  encoding: VideoMediaEncoding!
+  encoding: VideoMediaEncoding
 
   "Video media width in pixels"
-  pixelWidth: Int!
+  pixelWidth: Int
 
   "Video media height in pixels"
-  pixelHeight: Int!
+  pixelHeight: Int
 
   "Video media size in bytes"
   size: Int
@@ -347,13 +286,7 @@ type Video @entity {
   "Is video featured or not"
   isFeatured: Boolean!
 
-  people: [Person!]
-
   featured: FeaturedVideo @derivedFrom(field: "video")
-
-  playlists: Playlist @derivedFrom(field: "videos")
-
-  seasons: Season @derivedFrom(field: "episodes")
 }
 
 type KnownLicense @variant {
