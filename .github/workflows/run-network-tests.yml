@@ -223,3 +223,9 @@ jobs:
               echo "Upload test failed, will retry"
             fi
           done
+          # Wait for storage-node to set status Accepted on uploaded content
+          sleep 6
+          cd utils/api-scripts/
+          # Assume only one accepted data object was created
+          CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
+          yarn storage-cli download http://localhost:3001 ${CONTENT_ID} ./download.png
