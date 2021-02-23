@@ -2,8 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 mod errors;
 mod permissions;
@@ -24,13 +24,18 @@ pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
-// use sp_std::vec;
+use sp_std::vec;
 use sp_std::vec::Vec;
 use system::ensure_signed;
 
-pub use common::storage::{ContentParameters as ContentParametersRecord, StorageSystem};
+pub use common::storage::{
+    ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
+    StorageSystem,
+};
+
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
+    working_group::WorkingGroup,
     MembershipTypes, StorageOwnership, Url,
 };
 
@@ -39,6 +44,12 @@ pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
 
 pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, DataObjectTypeId<T>>;
+
+pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
+    <T as MembershipTypes>::MemberId,
+    <T as StorageOwnership>::ChannelId,
+    <T as StorageOwnership>::DAOId,
+>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -129,6 +140,16 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     // Native DAO owns the channel
     Dao(DAOId),
 }
+
+// simplification type
+pub(crate) type ActorToChannelOwnerResult<T> = Result<
+    ChannelOwner<
+        <T as MembershipTypes>::MemberId,
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as StorageOwnership>::DAOId,
+    >,
+    Error<T>,
+>;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
@@ -225,21 +246,25 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ContentParameters> {
+pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
     meta: Vec<u8>,
+    /// optional reward account
+    reward_account: Option<AccountId>,
 }
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<ContentParameters> {
+pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     /// Assets referenced by metadata
     assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
+    /// If set, updates the reward account of the channel
+    reward_account: Option<Option<AccountId>>,
 }
 
 /// A category that videos can belong to.
@@ -494,7 +519,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_curator_group(
             origin,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -513,7 +538,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
-            Ok(())
         }
 
         /// Remove curator group under given `curator_group_id` from runtime storage
@@ -521,7 +545,7 @@ decl_module! {
         pub fn delete_curator_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -536,13 +560,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-
             // Remove curator group under given curator group id from runtime storage
             <CuratorGroupById<T>>::remove(curator_group_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupDeleted(curator_group_id));
-            Ok(())
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -551,7 +573,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             is_active: bool,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -570,7 +592,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupStatusSet(curator_group_id, is_active));
-            Ok(())
         }
 
         /// Add curator to curator group under given `curator_group_id`
@@ -579,13 +600,16 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            // Ensure that curator_id is infact a worker in content working group
+            ensure_is_valid_curator_id::<T>(&curator_id)?;
 
             // Ensure max number of curators per group limit not reached yet
             curator_group.ensure_max_number_of_curators_limit_not_reached()?;
@@ -604,7 +628,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id));
-            Ok(())
         }
 
         /// Remove curator from a given curator group
@@ -613,7 +636,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
-        ) -> DispatchResult {
+        ) {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
@@ -635,189 +658,477 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
-            Ok(())
         }
 
+        // TODO: Add Option<reward_account> to ChannelCreationParameters ?
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-            params: ChannelCreationParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
+        ) {
+            ensure_actor_authorized_to_create_channel::<T>(
+                origin,
+                &actor,
+            )?;
+
+            // The channel owner will be..
+            let channel_owner = Self::actor_to_channel_owner(&actor)?;
+
+            // Pick out the assets to be uploaded to storage system
+            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
+
+            let channel_id = NextChannelId::<T>::get();
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This should be first mutation
+            // Try add assets to storage
+            T::StorageSystem::atomically_add_content(
+                object_owner,
+                content_parameters,
+            )?;
+
+            // Only increment next channel id if adding content was successful
+            NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
+
+            let channel: Channel<T> = ChannelRecord {
+                owner: channel_owner.clone(),
+                videos: vec![],
+                playlists: vec![],
+                series: vec![],
+                is_censored: false,
+                reward_account: params.reward_account.clone(),
+            };
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            if let ChannelOwner::CuratorGroup(curator_group_id) = channel_owner {
+                Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
+            }
+
+            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
         }
 
+        // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+            params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            // Pick out the assets to be uploaded to storage system
+            let new_assets = if let Some(assets) = &params.assets {
+                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+
+                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+                // check assets can be uploaded to storage.
+                // update can_add_content() to only take &refrences
+                T::StorageSystem::can_add_content(
+                    object_owner.clone(),
+                    upload_parameters.clone(),
+                )?;
+
+                Some((upload_parameters, object_owner))
+            } else {
+                None
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            // Maybe update the reward account
+            if let Some(reward_account) = &params.reward_account {
+                channel.reward_account = reward_account.clone();
+            }
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel.clone());
+
+            // add assets to storage
+            // This should not fail because of prior can_add_content() check!
+            if let Some((upload_parameters, object_owner)) = new_assets {
+                T::StorageSystem::atomically_add_content(
+                    object_owner,
+                    upload_parameters,
+                )?;
+            }
+
+            Self::deposit_event(RawEvent::ChannelUpdated(channel_id, channel, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            channel.videos.iter().for_each(|id| {
+                VideoById::<T>::remove(id);
+                Self::deposit_event(RawEvent::VideoDeleted(*id));
+            });
+
+            channel.playlists.iter().for_each(|id| {
+                PlaylistById::<T>::remove(id);
+                Self::deposit_event(RawEvent::PlaylistDeleted(*id));
+            });
+
+            channel.series.iter().for_each(|id| {
+                SeriesById::<T>::remove(id);
+                Self::deposit_event(RawEvent::SeriesDeleted(*id));
+            });
+
+            // If the channel was owned by a curator group, decrement counter
+            if let ChannelOwner::CuratorGroup(curator_group_id) = channel.owner {
+                Self::decrement_number_of_channels_owned_by_curator_group(curator_group_id);
+            }
+
+            // TODO: Remove any channel transfer requests and refund requester
+            // Self::terminate_channel_transfer_requests(channel_id)
+            // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
+
+            Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
+        }
+
+        /// Remove assets of a channel from storage
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_channel_assets(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            assets: Vec<ContentId<T>>,
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+        }
+
+        // The content directory doesn't track individual content ids of assets uploaded for a channel.
+        // A channel owner can manage their storage usage with remove_channel_assets(). However when they choose
+        // to delete their channel they may leave behind some assets if not explicitly removed.
+        // So the 'lead' can and should occasionally dispatch this call to cleanup and recover storage capacity of
+        // deleted channels.
+        /// Lead utility to remove assets of a deleted channel from storage
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_deleted_channel_assets(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            assets: Vec<ContentId<T>>,
+        ) {
+            ensure_actor_authorized_to_delete_stale_assets::<T>(
+                origin,
+                &actor
+            )?;
+
+            // Ensure channel does not exist
+            ensure!(
+                !ChannelById::<T>::contains_key(channel_id),
+                Error::<T>::ChannelMustNotExist
+            );
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn censor_channel(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            rationale: Vec<u8>,
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            channel.is_censored = true;
+
+            // TODO: unset the reward account ? so no revenue can be earned for censored channels?
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel);
+
+            Self::deposit_event(RawEvent::ChannelCensored(channel_id, rationale));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn uncensor_channel(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            rationale: Vec<u8>,
+        ) {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut channel = channel;
+
+            channel.is_censored = false;
+
+            // Update the channel
+            ChannelById::<T>::insert(channel_id, channel);
+
+            Self::deposit_event(RawEvent::ChannelUncensored(channel_id, rationale));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            params: ChannelCategoryCreationParameters,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let category_id = Self::next_channel_category_id();
+            NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
+
+            let category = ChannelCategory {};
+            ChannelCategoryById::<T>::insert(category_id, category.clone());
+
+            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, category, params));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category_id: T::ChannelCategoryId,
+            params: ChannelCategoryUpdateParameters,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            let category = Self::ensure_channel_category_exists(&category_id)?;
+
+            Self::deposit_event(RawEvent::ChannelCategoryUpdated(category_id, category, params));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel_category(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            category_id: T::ChannelCategoryId,
+        ) {
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_channel_category_exists(&category_id)?;
+
+            ChannelCategoryById::<T>::remove(&category_id);
+
+            Self::deposit_event(RawEvent::ChannelCategoryDeleted(category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn request_channel_transfer(
             origin,
-            new_owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
-            channel_id: T::ChannelId,
-            payment: BalanceOf<T>,
-        ) -> DispatchResult {
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            request: ChannelOwnershipTransferRequest<T>,
+        ) {
             // requester must be new_owner
-            Ok(())
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_channel_transfer_request(
             origin,
             request_id: T::ChannelOwnershipTransferRequestId,
-        ) -> DispatchResult {
+        ) {
             // origin must be original requester (ie. proposed new channel owner)
-            Ok(())
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             request_id: T::ChannelOwnershipTransferRequestId,
-        ) -> DispatchResult {
+        ) {
             // only current owner of channel can approve
-            Ok(())
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video: T::VideoId,
             params: VideoUpdateParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video: T::VideoId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: PlaylistCreationParameters,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             playlist: T::PlaylistId,
             params: PlaylistUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_playlist(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             playlist: T::PlaylistId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_featured_videos(
             origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             list: Vec<T::VideoId>
-        ) -> DispatchResult {
+        ) {
             // can only be set by lead
-            Ok(())
+
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoCategoryCreationParameters,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::VideoCategoryId,
             params: VideoCategoryUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video_category(
             origin,
-            curator: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             category: T::VideoCategoryId,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_channel_category(
-            origin,
-            curator: T::CuratorId,
-            params: ChannelCategoryCreationParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_category(
-            origin,
-            curator: T::CuratorId,
-            category: T::ChannelCategoryId,
-            params: ChannelCategoryUpdateParameters,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_channel_category(
-            origin,
-            curator: T::CuratorId,
-            category: T::ChannelCategoryId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -825,8 +1136,8 @@ decl_module! {
             origin,
             actor: PersonActor<T::MemberId, T::CuratorId>,
             params: PersonCreationParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -835,8 +1146,8 @@ decl_module! {
             actor: PersonActor<T::MemberId, T::CuratorId>,
             person: T::PersonId,
             params: PersonUpdateParameters<ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -844,143 +1155,97 @@ decl_module! {
             origin,
             actor: PersonActor<T::MemberId, T::CuratorId>,
             person: T::PersonId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_person_to_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             person: T::PersonId
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_person_from_video(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn censor_video(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             rationale: Vec<u8>,
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn censor_channel(
-            origin,
-            curator_id: T::CuratorId,
-            channel_id: T::ChannelId,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn uncensor_video(
             origin,
-            curator_id: T::CuratorId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             rationale: Vec<u8>
-        ) -> DispatchResult {
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncensor_channel(
-            origin,
-            curator_id: T::CuratorId,
-            channel_id: T::ChannelId,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             params: SeriesParameters<T::VideoId, ContentParameters<T>>,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_series(
             origin,
-            owner: ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             series: T::SeriesId,
-        ) -> DispatchResult {
-            Ok(())
+        ) {
+            Self::not_implemented()?;
         }
     }
 }
 
 impl<T: Trait> Module<T> {
-    // TODO: make this private again after used in module
-    /// Increment number of channels, maintained by each curator group
-    pub fn increment_number_of_channels_owned_by_curator_groups(
-        curator_group_ids: BTreeSet<T::CuratorGroupId>,
-    ) {
-        curator_group_ids.into_iter().for_each(|curator_group_id| {
-            Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
-        });
-    }
-
-    // TODO: make this private again after used in module
-    /// Decrement number of channels, maintained by each curator group
-    pub fn decrement_number_of_channels_owned_by_curator_groups(
-        curator_group_ids: BTreeSet<T::CuratorGroupId>,
-    ) {
-        curator_group_ids.into_iter().for_each(|curator_group_id| {
-            Self::decrement_number_of_channels_owned_by_curator_group(curator_group_id);
-        });
-    }
-
-    // TODO: make this private again after used in module
-    /// Increment number of channels, maintained by curator group
-    pub fn increment_number_of_channels_owned_by_curator_group(
-        curator_group_id: T::CuratorGroupId,
-    ) {
+    /// Increment number of channels, owned by curator group
+    fn increment_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
         <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
             curator_group.increment_number_of_channels_owned_count();
         });
     }
 
-    // TODO: make this private again after used in module
-    /// Decrement number of channels, maintained by curator group
-    pub fn decrement_number_of_channels_owned_by_curator_group(
-        curator_group_id: T::CuratorGroupId,
-    ) {
+    /// Decrement number of channels, owned by curator group
+    fn decrement_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
         <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
             curator_group.decrement_number_of_channels_owned_count();
         });
     }
 
     /// Ensure `CuratorGroup` under given id exists
-    pub fn ensure_curator_group_under_given_id_exists(
+    fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
     ) -> Result<(), Error<T>> {
         ensure!(
@@ -991,22 +1256,65 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `CuratorGroup` under given id exists, return corresponding one
-    pub fn ensure_curator_group_exists(
+    fn ensure_curator_group_exists(
         curator_group_id: &T::CuratorGroupId,
     ) -> Result<CuratorGroup<T>, Error<T>> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
     }
 
-    /// Ensure all `CuratorGroup`'s under given ids exist
-    pub fn ensure_curator_groups_exist(
-        curator_groups: &BTreeSet<T::CuratorGroupId>,
-    ) -> Result<(), Error<T>> {
-        for curator_group in curator_groups {
-            // Ensure CuratorGroup under given id exists
-            Self::ensure_curator_group_exists(curator_group)?;
+    fn ensure_channel_exists(channel_id: &T::ChannelId) -> Result<Channel<T>, Error<T>> {
+        ensure!(
+            ChannelById::<T>::contains_key(channel_id),
+            Error::<T>::ChannelDoesNotExist
+        );
+        Ok(ChannelById::<T>::get(channel_id))
+    }
+
+    fn ensure_channel_category_exists(
+        channel_category_id: &T::ChannelCategoryId,
+    ) -> Result<ChannelCategory, Error<T>> {
+        ensure!(
+            ChannelCategoryById::<T>::contains_key(channel_category_id),
+            Error::<T>::CategoryDoesNotExist
+        );
+        Ok(ChannelCategoryById::<T>::get(channel_category_id))
+    }
+
+    fn pick_content_parameters_from_assets(
+        assets: &[NewAsset<ContentParameters<T>>],
+    ) -> Vec<ContentParameters<T>> {
+        assets
+            .iter()
+            .filter_map(|asset| match asset {
+                NewAsset::Upload(content_parameters) => Some(content_parameters.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn actor_to_channel_owner(
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> ActorToChannelOwnerResult<T> {
+        match actor {
+            // Lead should use their member or curator role to create channels
+            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
+            ContentActor::Curator(
+                curator_group_id,
+                _curator_id
+            ) => {
+                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
+            }
+            ContentActor::Member(member_id) => {
+                Ok(ChannelOwner::Member(*member_id))
+            }
+            // TODO:
+            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
         }
-        Ok(())
+    }
+
+    fn not_implemented() -> DispatchResult {
+        Err(Error::<T>::FeatureNotImplemented.into())
     }
 }
 
@@ -1032,17 +1340,18 @@ decl_event!(
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as StorageOwnership>::ChannelId,
-        MemberId = <T as MembershipTypes>::MemberId,
         NewAsset = NewAsset<ContentParameters<T>>,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
         SeriesId = <T as Trait>::SeriesId,
         PersonId = <T as Trait>::PersonId,
-        DAOId = <T as StorageOwnership>::DAOId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
+        Channel = Channel<T>,
         ContentParameters = ContentParameters<T>,
+        AccountId = <T as system::Trait>::AccountId,
+        ContentId = ContentId<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1054,16 +1363,16 @@ decl_event!(
         // Channels
         ChannelCreated(
             ChannelId,
-            ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-            Vec<NewAsset>,
-            ChannelCreationParameters<ContentParameters>,
+            Channel,
+            ChannelCreationParameters<ContentParameters, AccountId>,
         ),
         ChannelUpdated(
             ChannelId,
-            Vec<NewAsset>,
-            ChannelUpdateParameters<ContentParameters>,
+            Channel,
+            ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
         ChannelDeleted(ChannelId),
+        ChannelAssetsRemoved(ChannelId, Vec<ContentId>),
 
         ChannelCensored(ChannelId, Vec<u8> /* rationale */),
         ChannelUncensored(ChannelId, Vec<u8> /* rationale */),
@@ -1077,8 +1386,16 @@ decl_event!(
         ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),
 
         // Channel Categories
-        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
-        ChannelCategoryUpdated(ChannelCategoryUpdateParameters),
+        ChannelCategoryCreated(
+            ChannelCategoryId,
+            ChannelCategory,
+            ChannelCategoryCreationParameters,
+        ),
+        ChannelCategoryUpdated(
+            ChannelCategoryId,
+            ChannelCategory,
+            ChannelCategoryUpdateParameters,
+        ),
         ChannelCategoryDeleted(ChannelCategoryId),
 
         // Videos
@@ -1086,16 +1403,8 @@ decl_event!(
         VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(VideoCategoryId),
 
-        VideoCreated(
-            VideoId,
-            Vec<NewAsset>,
-            VideoCreationParameters<ContentParameters>,
-        ),
-        VideoUpdated(
-            VideoId,
-            Vec<NewAsset>,
-            VideoUpdateParameters<ContentParameters>,
-        ),
+        VideoCreated(VideoId, VideoCreationParameters<ContentParameters>),
+        VideoUpdated(VideoId, VideoUpdateParameters<ContentParameters>),
         VideoDeleted(VideoId),
 
         VideoCensored(VideoId, Vec<u8> /* rationale */),
