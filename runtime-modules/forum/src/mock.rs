@@ -906,6 +906,10 @@ pub fn vote_on_poll_mock(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::VoteOnPoll(thread_id, index,))
         );
+        assert!(TestForumModule::poll_votes_by_thread_id_by_forum_user_id(
+            &thread_id,
+            &forum_user_id
+        ));
     };
     thread_id
 }

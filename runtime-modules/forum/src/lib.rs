@@ -360,6 +360,9 @@ decl_error! {
         /// Poll data committed after poll expired.
         PollCommitExpired,
 
+        /// Forum user has already voted.
+        AlreadyVotedOnPoll,
+
         // Error data migration
 
         /// data migration not done yet.
@@ -407,6 +410,11 @@ decl_storage! {
 
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(fn data_migration_done) config(): bool;
+
+        /// Unique thread poll voters. This private double map prevents double voting.
+        PollVotes get(fn poll_votes_by_thread_id_by_forum_user_id): double_map
+            hasher(blake2_128_concat) T::ThreadId,
+            hasher(blake2_128_concat) ForumUserId<T> => bool;
     }
 }
 
@@ -937,7 +945,7 @@ decl_module! {
             let category_id = thread.category_id;
 
             // Make sure poll exist
-            let poll = Self::ensure_vote_is_valid(thread, index)?;
+            let poll = Self::ensure_vote_is_valid(thread, index, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -969,6 +977,9 @@ decl_module! {
                     ..(value.clone())
                 }
             });
+
+            // Update unique votes collection.
+            <PollVotes<T>>::insert(&thread_id, &forum_user_id, true);
 
             // Store the event
             Self::deposit_event(RawEvent::VoteOnPoll(thread_id, index));
@@ -1257,6 +1268,9 @@ impl<T: Trait> Module<T> {
 
         // Delete all thread's posts
         <PostById<T>>::remove_prefix(thread_id);
+
+        // Remove all thread poll votes.
+        <PollVotes<T>>::remove_prefix(thread_id);
 
         // decrease category's thread counter
         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
@@ -1823,9 +1837,17 @@ impl<T: Trait> Module<T> {
     fn ensure_vote_is_valid(
         thread: Thread<ForumUserId<T>, T::CategoryId, T::Moment, T::Hash>,
         index: u32,
+        thread_id: &T::ThreadId,
+        forum_user_id: &ForumUserId<T>,
     ) -> Result<Poll<T::Moment, T::Hash>, Error<T>> {
         // Ensure poll exists
         let poll = thread.poll.ok_or(Error::<T>::PollNotExist)?;
+
+        // No previous votes for a forum user.
+        ensure!(
+            !Self::poll_votes_by_thread_id_by_forum_user_id(thread_id, forum_user_id),
+            Error::<T>::AlreadyVotedOnPoll
+        );
 
         // Poll not expired
         if poll.end_time < <pallet_timestamp::Module<T>>::now() {

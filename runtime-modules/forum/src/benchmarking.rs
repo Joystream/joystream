@@ -848,6 +848,15 @@ benchmarks! {
             text.clone(), text.clone(), poll
         );
 
+        // Add poll voting.
+        Module::<T>::vote_on_poll(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            forum_user_id.saturated_into(),
+            category_id,
+            thread_id,
+            0
+        ).unwrap();
+
         let mut category = Module::<T>::category_by_id(category_id);
 
         for _ in 0..<<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() - 1 {
@@ -863,6 +872,7 @@ benchmarks! {
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
+        assert_eq!(<PollVotes<T>>::iter_prefix_values(&thread_id).count(), 0);
 
         assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
     }
@@ -891,6 +901,15 @@ benchmarks! {
 
         let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
 
+        // Add poll voting.
+        Module::<T>::vote_on_poll(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            forum_user_id.saturated_into(),
+            category_id,
+            thread_id,
+            0
+        ).unwrap();
+
         // Set up category membership of moderator.
         Module::<T>::update_category_membership_of_moderator(
             RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
@@ -911,6 +930,7 @@ benchmarks! {
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(<PostById<T>>::iter_prefix_values(thread_id).count(), 0);
+        assert_eq!(<PollVotes<T>>::iter_prefix_values(&thread_id).count(), 0);
 
         assert_last_event::<T>(RawEvent::ThreadDeleted(thread_id).into());
     }
@@ -1082,6 +1102,7 @@ benchmarks! {
         }
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+        assert!(<PollVotes<T>>::get(thread_id, forum_user_id.saturated_into::<ForumUserId<T>>()));
 
         assert_last_event::<T>(RawEvent::VoteOnPoll(thread_id, j - 1).into());
     }

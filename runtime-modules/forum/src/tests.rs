@@ -983,7 +983,7 @@ fn delete_thread() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            None,
+            Some(generate_poll(10)),
             Ok(()),
         );
 
@@ -995,6 +995,18 @@ fn delete_thread() {
             good_post_text(),
             Ok(()),
         );
+
+        vote_on_poll_mock(
+            FORUM_LEAD_ORIGIN.clone(),
+            forum_lead,
+            thread_id,
+            category_id,
+            1,
+            Ok(()),
+        );
+
+        // check poll votes exist.
+        assert!(<PollVotes<Runtime>>::contains_key(thread_id, forum_lead));
 
         update_category_membership_of_moderator_mock(
             origin.clone(),
@@ -1039,6 +1051,9 @@ fn delete_thread() {
 
         // check thread's post was deleted
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
+
+        // check poll voting data was deleted
+        assert!(!<PollVotes<Runtime>>::contains_key(thread_id, post_id));
 
         // check category's thread count was decreased
         assert_eq!(
@@ -1264,6 +1279,49 @@ fn vote_on_poll_origin() {
             );
         });
     }
+}
+
+#[test]
+fn vote_on_poll_fails_on_double_voting() {
+    let expiration_diff = 10;
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            FORUM_LEAD_ORIGIN.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            FORUM_LEAD_ORIGIN.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            Some(generate_poll(expiration_diff)),
+            Ok(()),
+        );
+
+        vote_on_poll_mock(
+            FORUM_LEAD_ORIGIN.clone(),
+            forum_lead,
+            thread_id,
+            category_id,
+            1,
+            Ok(()),
+        );
+
+        vote_on_poll_mock(
+            FORUM_LEAD_ORIGIN.clone(),
+            forum_lead,
+            thread_id,
+            category_id,
+            1,
+            Err(Error::<Runtime>::AlreadyVotedOnPoll.into()),
+        );
+    });
 }
 
 #[test]
