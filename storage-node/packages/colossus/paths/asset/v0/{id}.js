@@ -32,7 +32,19 @@ const PROCESS_UPLOAD_BALANCE = 3
 
 module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
-  const proxy = ipfsProxy.createProxy(storage, ipfsHttpGatewayUrl)
+  const proxy = ipfsProxy.createProxy(ipfsHttpGatewayUrl)
+
+  const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
+    // make sure id exists and was Accepted only then proxy
+    const dataObject = await runtime.assets.getDataObject(req.params.id)
+
+    if (dataObject && dataObject.liaison_judgement.type === 'Accepted') {
+      req.params.ipfs_content_id = dataObject.ipfs_content_id.toString()
+      proxy(req, res, next)
+    } else {
+      res.status(404).send({ message: 'Content not found' })
+    }
+  }
 
   const doc = {
     // parameters for all operations in this path
@@ -183,11 +195,11 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
     },
 
     async get(req, res, next) {
-      proxy(req, res, next)
+      proxyAcceptedContentToIpfsGateway(req, res, next)
     },
 
     async head(req, res, next) {
-      proxy(req, res, next)
+      proxyAcceptedContentToIpfsGateway(req, res, next)
     },
   }
 
