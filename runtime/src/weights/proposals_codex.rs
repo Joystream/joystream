@@ -7,9 +7,6 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 pub struct WeightInfo;
 impl proposals_codex::WeightInfo for WeightInfo {
-    fn execute_signal_proposal(i: u32) -> Weight {
-        (84_026_000 as Weight).saturating_add((145_000 as Weight).saturating_mul(i as Weight))
-    }
     fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight {
         (0 as Weight)
             .saturating_add((376_000 as Weight).saturating_mul(i as Weight))
@@ -193,45 +190,5 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add((239_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn update_working_group_budget_positive_forum() -> Weight {
-        (173_903_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_negative_forum() -> Weight {
-        (170_026_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_positive_storage() -> Weight {
-        (168_902_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_negative_storage() -> Weight {
-        (169_381_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_positive_content() -> Weight {
-        (169_707_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_negative_content() -> Weight {
-        (169_606_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_positive_membership() -> Weight {
-        (168_373_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
-    }
-    fn update_working_group_budget_negative_membership() -> Weight {
-        (169_063_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
     }
 }

@@ -17,6 +17,7 @@ members = [
 	"runtime-modules/constitution",
 	"runtime-modules/staking-handler",
     "runtime-modules/blog",
+    "runtime-modules/utility",
 	"node",
 	"utils/chain-spec-builder/"
 ]

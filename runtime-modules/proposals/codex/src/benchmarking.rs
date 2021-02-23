@@ -2,6 +2,8 @@
 use super::*;
 use crate::Module as Codex;
 use balances::Module as Balances;
+use common::working_group::WorkingGroup;
+use common::BalanceKind;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
@@ -159,53 +161,12 @@ fn create_proposal_verify<T: Trait>(
     );
 }
 
-fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
-    Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
-
-    T::set_working_group_budget(group, BalanceOf::<T>::from(budget));
-
-    assert_eq!(
-        Council::<T>::budget(),
-        BalanceOf::<T>::from(budget),
-        "Council budget not updated"
-    );
-
-    assert_eq!(
-        T::get_working_group_budget(group),
-        BalanceOf::<T>::from(budget),
-        "Working Group budget not updated"
-    );
-}
-
-fn assert_new_budgets<T: Trait>(
-    new_budget_council: u32,
-    new_budget_working_group: u32,
-    group: WorkingGroup,
-) {
-    assert_eq!(
-        Council::<T>::budget(),
-        BalanceOf::<T>::from(new_budget_council),
-        "Council budget not updated"
-    );
-
-    assert_eq!(
-        T::get_working_group_budget(group),
-        BalanceOf::<T>::from(new_budget_working_group),
-        "Working Group budget not updated"
-    );
-}
-
 benchmarks! {
-    where_clause { where T: membership::Trait }
+    where_clause { where T: membership::Trait, T: council::Trait }
     _ {
         let t in 1 .. T::TitleMaxLength::get() => ();
         let d in 1 .. T::DescriptionMaxLength::get() => ();
     }
-
-    // Note: No verify since there is no side effect to test
-    execute_signal_proposal {
-        let i in 1 .. MAX_BYTES;
-    }: _(RawOrigin::Root, vec![0u8; i.try_into().unwrap()])
 
     create_proposal_signal {
         let i in 1 .. MAX_BYTES;
@@ -823,97 +784,6 @@ benchmarks! {
         );
     }
 
-    update_working_group_budget_positive_forum {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Forum,
-        One::one(),
-        BalanceKind::Positive
-    )
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Forum);
-    }
-
-    update_working_group_budget_negative_forum {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Forum,
-        One::one(),
-        BalanceKind::Negative
-    )
-    verify{
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Forum);
-    }
-
-    update_working_group_budget_positive_storage {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Storage,
-        One::one(),
-        BalanceKind::Positive
-    )
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Storage);
-    }
-
-    update_working_group_budget_negative_storage {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Storage,
-        One::one(),
-        BalanceKind::Negative
-    )
-    verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Storage);
-    }
-
-    update_working_group_budget_positive_content {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Content,
-        One::one(),
-        BalanceKind::Positive
-    )
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Content);
-    }
-
-    update_working_group_budget_negative_content {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Content, One::one(),
-    BalanceKind::Negative)
-    verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Content);
-    }
-
-    update_working_group_budget_positive_membership {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Membership,
-        One::one(),
-        BalanceKind::Positive
-    )
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Membership);
-    }
-
-    update_working_group_budget_negative_membership {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
-    }: update_working_group_budget(
-        RawOrigin::Root,
-        WorkingGroup::Membership,
-        One::one(),
-        BalanceKind::Negative
-    )
-    verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Membership);
-    }
 }
 
 #[cfg(test)]
@@ -921,13 +791,6 @@ mod tests {
     use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
-
-    #[test]
-    fn test_execute_signal_proposal() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_execute_signal_proposal::<Test>());
-        });
-    }
 
     #[test]
     fn test_create_proposal_signal() {
@@ -1063,66 +926,6 @@ mod tests {
     fn test_create_proposal_set_referral_cut() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_set_referral_cut::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_positive_forum() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_forum::<
-                Test,
-            >());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_forum() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_forum::<
-                Test,
-            >());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_positive_storage() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_storage::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_storage() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_storage::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_positive_content() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_content::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_content() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_content::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_positive_membership() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_membership::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_membership() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_membership::<Test>());
         });
     }
 

@@ -2380,7 +2380,8 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility",
+ "pallet-utility 1.0.0",
+ "pallet-utility 2.0.0",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -4292,6 +4293,31 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-council",
+ "pallet-membership",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "pallet-working-group",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "strum 0.19.5",
 ]
 
 [[package]]

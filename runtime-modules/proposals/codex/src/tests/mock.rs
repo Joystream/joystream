@@ -16,9 +16,7 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
 
-use crate::BalanceOf;
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
-use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
@@ -548,24 +546,6 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
     }
 }
 
-macro_rules! call_wg {
-    ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
-        match $working_group {
-            WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentDirectoryWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Storage =>
-                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Forum =>
-                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-
-            WorkingGroup::Membership =>
-                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
-        }
-    }};
-}
-
 impl crate::Trait for Test {
     type Event = TestEvent;
     type MembershipOriginValidator = ();
@@ -596,14 +576,6 @@ impl crate::Trait for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
-
-    fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Test> {
-        call_wg!(working_group<Test>, get_budget)
-    }
-
-    fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Test>) {
-        call_wg!(working_group<Test>, set_budget, budget)
-    }
 }
 
 parameter_types! {
@@ -798,9 +770,6 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
 }
 
 impl crate::WeightInfo for () {
-    fn execute_signal_proposal(_: u32) -> Weight {
-        0
-    }
     fn create_proposal_signal(_: u32, _: u32, _: u32) -> Weight {
         0
     }
@@ -874,30 +843,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_forum() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_forum() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_storage() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_storage() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_content() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_content() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_membership() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_membership() -> Weight {
         0
     }
 }

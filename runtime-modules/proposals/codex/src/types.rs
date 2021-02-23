@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
+use common::BalanceKind;
 use common::FundingRequestParameters;
 
 use working_group::StakePolicy;
@@ -26,16 +27,6 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
 >;
-
-/// Kind of Balance for `Update Working Group Budget`.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
-pub enum BalanceKind {
-    /// Increasing Working Group budget decreasing Council budget
-    Positive,
-    /// Decreasing Working Group budget increasing Council budget
-    Negative,
-}
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

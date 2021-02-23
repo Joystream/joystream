@@ -156,10 +156,10 @@ impl frame_system::Trait for Runtime {
     type SystemWeightInfo = weights::frame_system::WeightInfo;
 }
 
-impl pallet_utility::Trait for Runtime {
+impl substrate_utility::Trait for Runtime {
     type Event = Event;
     type Call = Call;
-    type WeightInfo = weights::pallet_utility::WeightInfo;
+    type WeightInfo = weights::substrate_utility::WeightInfo;
 }
 
 parameter_types! {
@@ -806,6 +806,17 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
 }
 
+macro_rules! call_wg {
+    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
+        match $working_group {
+            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+        }
+    }};
+}
+
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type AuthorOriginValidator = Members;
@@ -816,19 +827,21 @@ impl proposals_discussion::Trait for Runtime {
     type WeightInfo = weights::proposals_discussion::WeightInfo;
 }
 
-parameter_types! {
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+impl joystream_utility::Trait for Runtime {
+    type Event = Event;
+
+    type WeightInfo = weights::joystream_utility::WeightInfo;
+
+    fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
+        call_wg!(working_group, get_budget)
+    }
+    fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
+        call_wg!(working_group, set_budget, budget)
+    }
 }
 
-macro_rules! call_wg {
-    ($working_group:ident, $function:ident $(,$x:expr)*) => {{
-        match $working_group {
-            WorkingGroup::Content => <ContentDirectoryWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-        }
-    }};
+parameter_types! {
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
@@ -867,12 +880,6 @@ impl proposals_codex::Trait for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
-    fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
-        call_wg!(working_group, get_budget)
-    }
-    fn set_working_group_budget(working_group: WorkingGroup, budget: Balance) {
-        call_wg!(working_group, set_budget, budget)
-    }
 }
 
 impl pallet_constitution::Trait for Runtime {
@@ -925,7 +932,7 @@ construct_runtime!(
     {
         // Substrate
         System: frame_system::{Module, Call, Storage, Config, Event<T>},
-        Utility: pallet_utility::{Module, Call, Event},
+        Utility: substrate_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
@@ -950,6 +957,7 @@ construct_runtime!(
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
+        JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
