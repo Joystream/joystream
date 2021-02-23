@@ -9,54 +9,69 @@ pub struct WeightInfo;
 impl bounty::WeightInfo for WeightInfo {
     // WARNING! Some components were not used: ["i"]
     fn create_bounty_by_council() -> Weight {
-        (1_216_147_000 as Weight)
+        (451_767_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     // WARNING! Some components were not used: ["i"]
     fn create_bounty_by_member() -> Weight {
-        (706_684_000 as Weight)
+        (697_516_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn cancel_bounty_by_council() -> Weight {
-        (301_000_000 as Weight)
+        (285_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn cancel_bounty_by_member() -> Weight {
-        (396_000_000 as Weight)
+        (379_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn veto_bounty() -> Weight {
-        (299_000_000 as Weight)
+        (292_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
-    fn fund_bounty() -> Weight {
-        (923_000_000 as Weight)
+    fn fund_bounty_by_member() -> Weight {
+        (812_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
-    fn withdraw_member_funding() -> Weight {
-        (812_000_000 as Weight)
+    fn fund_bounty_by_council() -> Weight {
+        (549_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(4 as Weight))
+            .saturating_add(DbWeight::get().writes(4 as Weight))
+    }
+    fn withdraw_funding_by_member() -> Weight {
+        (859_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
+    fn withdraw_funding_by_council() -> Weight {
+        (630_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(5 as Weight))
+            .saturating_add(DbWeight::get().writes(4 as Weight))
+    }
     fn withdraw_creator_cherry_by_council() -> Weight {
-        (567_000_000 as Weight)
+        (592_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn withdraw_creator_cherry_by_member() -> Weight {
-        (841_000_000 as Weight)
+        (776_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn announce_work_entry() -> Weight {
-        (350_000_000 as Weight)
+        (456_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
-            .saturating_add(DbWeight::get().writes(2 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
+    }
+    fn withdraw_work_entry() -> Weight {
+        (620_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(5 as Weight))
+            .saturating_add(DbWeight::get().writes(4 as Weight))
     }
 }

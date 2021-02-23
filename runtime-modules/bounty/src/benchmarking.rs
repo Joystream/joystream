@@ -494,6 +494,57 @@ benchmarks! {
             Event::<T>::WorkEntryAnnounced(bounty_id, entry_id, member_id, Some(account_id)).into()
         );
     }
+
+    withdraw_work_entry {
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        let creator = BountyActor::Member(member_id);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            creator: creator.clone(),
+            cherry,
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            params,
+            Vec::new()
+        ).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        Bounty::<T>::fund_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            creator.clone(),
+            bounty_id,
+            funding_amount
+        ).unwrap();
+
+        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+
+        Bounty::<T>::announce_work_entry(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            bounty_id,
+            Some(account_id.clone())
+        ).unwrap();
+
+        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id)
+    verify {
+        assert!(!WorkEntries::<T>::contains_key(bounty_id, entry_id));
+        assert_last_event::<T>(
+            Event::<T>::WorkEntryWithdrawn(bounty_id, entry_id, member_id).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -583,6 +634,13 @@ mod tests {
     fn announce_work_entry() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_announce_work_entry::<Test>());
+        });
+    }
+
+    #[test]
+    fn withdraw_work_entry() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_work_entry::<Test>());
         });
     }
 }

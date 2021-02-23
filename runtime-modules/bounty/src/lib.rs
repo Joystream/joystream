@@ -19,6 +19,8 @@
 //! a cherry for a failed or canceled bounty.
 //! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
 //! work entry for a successful bounty.
+//! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
+//! work entry for a bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -35,7 +37,6 @@ mod benchmarking;
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
 // TODO: refactor all stages
-// TODO: benchmark withdraw_work_entry
 // TODO: add work submissions.
 // TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
 // existing work entries?
@@ -48,11 +49,14 @@ pub trait WeightInfo {
     fn cancel_bounty_by_member() -> Weight;
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
-    fn fund_bounty() -> Weight;
-    fn withdraw_member_funding() -> Weight;
+    fn fund_bounty_by_member() -> Weight;
+    fn fund_bounty_by_council() -> Weight;
+    fn withdraw_funding_by_member() -> Weight;
+    fn withdraw_funding_by_council() -> Weight;
     fn withdraw_creator_cherry_by_council() -> Weight;
     fn withdraw_creator_cherry_by_member() -> Weight;
     fn announce_work_entry() -> Weight;
+    fn withdraw_work_entry() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -618,7 +622,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::fund_bounty()]
+        #[weight = WeightInfoBounty::<T>::fund_bounty_by_member()
+              .max(WeightInfoBounty::<T>::fund_bounty_by_council())]
         pub fn fund_bounty(
             origin,
             funder: BountyActor<MemberId<T>>,
@@ -683,7 +688,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_member_funding()]
+        #[weight = WeightInfoBounty::<T>::withdraw_funding_by_member()
+              .max(WeightInfoBounty::<T>::withdraw_funding_by_council())]
         pub fn withdraw_funding(
             origin,
             funder: BountyActor<MemberId<T>>,
@@ -847,7 +853,14 @@ decl_module! {
         }
 
         /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
-        #[weight = 100000000]
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_work_entry()]
         pub fn withdraw_work_entry(
             origin,
             member_id: MemberId<T>,

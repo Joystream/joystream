@@ -129,10 +129,10 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
 }
 
 impl crate::WeightInfo for () {
-    fn create_bounty_by_member() -> u64 {
+    fn create_bounty_by_council() -> u64 {
         0
     }
-    fn create_bounty_by_council() -> u64 {
+    fn create_bounty_by_member() -> u64 {
         0
     }
     fn cancel_bounty_by_member() -> u64 {
@@ -144,10 +144,16 @@ impl crate::WeightInfo for () {
     fn veto_bounty() -> u64 {
         0
     }
-    fn fund_bounty() -> u64 {
+    fn fund_bounty_by_member() -> u64 {
         0
     }
-    fn withdraw_member_funding() -> u64 {
+    fn fund_bounty_by_council() -> u64 {
+        0
+    }
+    fn withdraw_funding_by_member() -> u64 {
+        0
+    }
+    fn withdraw_funding_by_council() -> u64 {
         0
     }
     fn withdraw_creator_cherry_by_council() -> u64 {
@@ -157,6 +163,9 @@ impl crate::WeightInfo for () {
         0
     }
     fn announce_work_entry() -> u64 {
+        0
+    }
+    fn withdraw_work_entry() -> u64 {
         0
     }
 }
