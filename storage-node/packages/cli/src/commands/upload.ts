@@ -116,10 +116,15 @@ export class UploadCommand extends BaseCommand {
 
       return dataObject
     } catch (err) {
-      if (err.dispatchError && err.dispatchError.isModule) {
-        const error = err.dispatchError.asModule
-        const { name, documentation } = this.api.api.registry.findMetaError(error)
-        this.fail(`Cannot create data object: ${name} ${documentation}`)
+      if (err.dispatchError) {
+        if (err.dispatchError.isModule) {
+          const error = err.dispatchError.asModule
+          const { name, documentation } = this.api.api.registry.findMetaError(error)
+          this.fail(`Cannot create data object: ${name} ${documentation}`)
+        } else {
+          const error = err.dispatchError.toString()
+          this.fail(`Cannot create data object: ${error}`)
+        }
       } else {
         this.fail(`Cannot create data object: ${err}`)
       }
