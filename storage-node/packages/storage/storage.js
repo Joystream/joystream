@@ -107,7 +107,7 @@ class StorageWriteStream extends Transform {
 
       if (this.buf >= fileType.minimumBytes) {
         const info = fileType(this.buf)
-        // No info? We can try again at the end of the stream.
+        // No info? We will try again at the end of the stream.
         if (info) {
           this.fileInfo = fixFileInfo(info)
           this.emit('fileInfo', this.fileInfo)
@@ -122,7 +122,10 @@ class StorageWriteStream extends Transform {
     debug('Flushing temporary stream:', this.temp.path)
     this.temp.end()
 
+    // TODO: compute ipfs hash and include it in emitted event fileInfo
+
     // Since we're finished, we can try to detect the file type again.
+    // If we don't find type we should still emit with some indication of detection error.
     if (!this.fileInfo) {
       const read = fs.createReadStream(this.temp.path)
       fileType
@@ -133,6 +136,7 @@ class StorageWriteStream extends Transform {
         })
         .catch((err) => {
           debug('Error trying to detect file type at end-of-stream:', err)
+          this.emit('fileInfo', null)
         })
     }
 
@@ -143,7 +147,6 @@ class StorageWriteStream extends Transform {
    * Commit this stream to the IPFS backend.
    */
   commit() {
-    // Create a read stream from the temp file.
     if (!this.temp) {
       throw new Error('Cannot commit a temporary stream that does not exist. Did you call cleanup()?')
     }

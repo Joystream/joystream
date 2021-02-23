@@ -54,20 +54,9 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         return
       }
 
-      // TODO: Do early filter on content_length..(do not wait for fileInfo)
-      // ensure it equals the data object claimed size, and less than max allowed by
-      // node policy.
-
-      // get content_length from request
-      // const fileSizesEqual = dataObject.size_in_bytes.eq(content_length)
-      // if (!fileSizesEqual) {
-      //   return res.status(403).send({ message: 'Upload size does not match expected size of content' })
-      // }
-
       const id = req.params.id // content id
 
-      // First check if we're the liaison for the name, otherwise we can bail
-      // out already.
+      // Check if we're the liaison for the content
       const roleAddress = runtime.identities.key.address
       const providerId = runtime.storageProviderId
       let dataObject
@@ -75,6 +64,21 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id)
       } catch (err) {
         errorHandler(res, err, 403)
+        return
+      }
+
+      // Early filtering on content_length..do not wait for fileInfo
+      // ensure its less than max allowed by node policy.
+      const filterResult = filter({}, req.headers)
+
+      if (filterResult.code !== 200) {
+        errorHandler(res, new Error(filterResult.message), filterResult.code)
+        return
+      }
+
+      // Ensure content_length from request equals size in data object.
+      if (!dataObject.size_in_bytes.eq(filterResult.content_length)) {
+        errorHandler(res, new Error('Content Length does not match expected size of content'), 403)
         return
       }
 
@@ -102,13 +106,23 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         }
 
-        // May occurs before entire stream is processed, at the end of stream
-        // or possibly never.
+        // May be emitted before entire stream is processed. If there was an error detecting the
+        // file info at end of stream info will be null.
         stream.on('fileInfo', async (info) => {
           try {
             debug('Detected file info:', info)
 
+            if (!info) {
+              // Do not process unknown content.
+              debug('Failed to detect content type!')
+              stream.end()
+              res.status(403).send({ message: 'Uknown content type' })
+              return
+            }
+
             // Filter allowed content types
+            // == We haven't computed ipfs hash yet so is it really fair to reject content?
+            // == It may not be the real uploader doing the upload!
             const filterResult = filter({}, req.headers, info.mimeType)
             if (filterResult.code !== 200) {
               debug('Rejecting content', filterResult.message)
@@ -129,6 +143,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
+        // `finish` comes before `fileInfo` event if file info detection happened at end of stream.
         stream.on('finish', () => {
           try {
             finished = true
@@ -139,7 +154,6 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         })
 
         stream.on('committed', async (hash) => {
-          console.log('commited', dataObject)
           try {
             if (hash !== dataObject.ipfs_content_id.toString()) {
               debug('Rejecting content. IPFS hash does not match value in objectId')
