@@ -168,6 +168,9 @@ impl crate::WeightInfo for () {
     fn withdraw_work_entry() -> u64 {
         0
     }
+    fn submit_work(_i: u32) -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

@@ -5,7 +5,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::SaturatedConversion;
+use sp_runtime::traits::{Hash, SaturatedConversion};
 use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -545,6 +545,64 @@ benchmarks! {
             Event::<T>::WorkEntryWithdrawn(bounty_id, entry_id, member_id).into()
         );
     }
+
+    submit_work {
+        let i in 0 .. MAX_BYTES;
+        let work_data = vec![0u8].repeat(i as usize);
+
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
+        let creator = BountyActor::Member(member_id);
+
+        let params = BountyCreationParameters::<T>{
+            work_period: One::one(),
+            judging_period: One::one(),
+            creator: creator.clone(),
+            cherry,
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            params,
+            Vec::new()
+        ).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        assert!(Bounties::<T>::contains_key(bounty_id));
+
+        Bounty::<T>::fund_bounty(
+            RawOrigin::Signed(account_id.clone()).into(),
+            creator.clone(),
+            bounty_id,
+            funding_amount
+        ).unwrap();
+
+        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+
+        Bounty::<T>::announce_work_entry(
+            RawOrigin::Signed(account_id.clone()).into(),
+            member_id,
+            bounty_id,
+            Some(account_id.clone())
+        ).unwrap();
+
+        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id, work_data.clone())
+    verify {
+        let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+        let hashed = T::Hashing::hash(&work_data);
+        let work_data_hash = hashed.as_ref().to_vec();
+
+        assert_eq!(entry.last_submitted_work, Some(work_data_hash));
+        assert_last_event::<T>(
+            Event::<T>::WorkSubmitted(bounty_id, entry_id, member_id, work_data).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -641,6 +699,13 @@ mod tests {
     fn withdraw_work_entry() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_work_entry::<Test>());
+        });
+    }
+
+    #[test]
+    fn submit_work() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_submit_work::<Test>());
         });
     }
 }

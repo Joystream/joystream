@@ -3,6 +3,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
+use sp_runtime::traits::Hash;
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
@@ -498,6 +499,7 @@ impl AnnounceWorkEntryFixture {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
                 submitted_at: System::current_block_number(),
+                last_submitted_work: None,
             };
 
             assert_eq!(
@@ -579,6 +581,70 @@ impl WithdrawWorkEntryFixture {
                 new_bounty.active_work_entry_count,
                 old_bounty.active_work_entry_count - 1
             );
+        }
+    }
+}
+
+pub struct SubmitWorkFixture {
+    origin: RawOrigin<u128>,
+    entry_id: u64,
+    bounty_id: u64,
+    member_id: u64,
+    work_data: Vec<u8>,
+}
+
+impl SubmitWorkFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            entry_id: 1,
+            bounty_id: 1,
+            member_id: 1,
+            work_data: Vec::new(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_entry_id(self, entry_id: u64) -> Self {
+        Self { entry_id, ..self }
+    }
+
+    pub fn with_work_data(self, work_data: Vec<u8>) -> Self {
+        Self { work_data, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_entry = Bounty::work_entries(self.bounty_id, self.entry_id);
+        let actual_result = Bounty::submit_work(
+            self.origin.clone().into(),
+            self.member_id,
+            self.bounty_id,
+            self.entry_id,
+            self.work_data.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_entry = Bounty::work_entries(self.bounty_id, self.entry_id);
+
+        if actual_result.is_ok() {
+            let hashed = <Test as frame_system::Trait>::Hashing::hash(&self.work_data);
+            let work_data_hash = hashed.as_ref().to_vec();
+
+            assert_eq!(new_entry.last_submitted_work, Some(work_data_hash));
+        } else {
+            assert_eq!(new_entry, old_entry);
         }
     }
 }

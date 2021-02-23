@@ -21,6 +21,7 @@
 //! work entry for a successful bounty.
 //! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
 //! work entry for a bounty.
+//! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -37,7 +38,6 @@ mod benchmarking;
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
 // TODO: refactor all stages
-// TODO: add work submissions.
 // TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
 // existing work entries?
 
@@ -57,6 +57,7 @@ pub trait WeightInfo {
     fn withdraw_creator_cherry_by_member() -> Weight;
     fn announce_work_entry() -> Weight;
     fn withdraw_work_entry() -> Weight;
+    fn submit_work(i: u32) -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -66,9 +67,12 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
-use sp_arithmetic::traits::Saturating;
-use sp_arithmetic::traits::Zero;
-use sp_runtime::{traits::AccountIdConversion, ModuleId};
+use sp_arithmetic::traits::{Saturating, Zero};
+use sp_runtime::SaturatedConversion;
+use sp_runtime::{
+    traits::{AccountIdConversion, Hash},
+    ModuleId,
+};
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
@@ -332,6 +336,9 @@ pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
 
     /// Work entry submission block.
     pub submitted_at: BlockNumber,
+
+    /// Last submitted work data hash.
+    pub last_submitted_work: Option<Vec<u8>>,
 }
 
 /// Balance alias for `balances` module.
@@ -416,6 +423,14 @@ decl_event! {
         /// - created entry ID
         /// - entrant member ID
         WorkEntryWithdrawn(BountyId, WorkEntryId, MemberId),
+
+        /// Submit work.
+        /// Params:
+        /// - bounty ID
+        /// - created entry ID
+        /// - entrant member ID
+        /// - work data (description, URL, BLOB, etc.)
+        WorkSubmitted(BountyId, WorkEntryId, MemberId, Vec<u8>),
     }
 }
 
@@ -832,6 +847,7 @@ decl_module! {
                 member_id,
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
+                last_submitted_work: None,
             };
 
             <WorkEntries<T>>::insert(bounty_id, entry_id, entry);
@@ -893,6 +909,49 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
+        }
+
+        /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight =  WeightInfoBounty::<T>::submit_work(work_data.len().saturated_into())]
+        pub fn submit_work(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+            entry_id: T::WorkEntryId,
+            work_data: Vec<u8>
+        ) {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::WorkSubmission),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let hashed = T::Hashing::hash(&work_data);
+            let work_data_hash = hashed.as_ref().to_vec();
+
+            // Update entry
+            <WorkEntries<T>>::mutate(bounty_id, entry_id, |entry| {
+                entry.last_submitted_work = Some(work_data_hash);
+            });
+
+            Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
         }
     }
 }
