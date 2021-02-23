@@ -86,7 +86,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
       const sufficientBalance = await runtime.providerHasMinimumBalance(PROCESS_UPLOAD_BALANCE)
 
       if (!sufficientBalance) {
-        errorHandler(res, 'Insufficient balance to process upload!', 503)
+        errorHandler(res, 'Server has insufficient balance to process upload.', 503)
         return
       }
 
@@ -96,6 +96,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
       try {
         stream = await storage.open(id, 'w')
 
+        // Wether we are aborting early because of early file detection not passing filter
         let aborted = false
 
         // Early file info detection so we can abort early on.. but we do not reject
@@ -117,7 +118,6 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
-        // `finish` comes before `fileInfo` event if file info detection happened at end of stream.
         stream.on('finish', async () => {
           if (!aborted) {
             try {

@@ -52,14 +52,14 @@ class AssetsApi {
   }
 
   /*
-   * Return the Data Object for a contendId.
-   * Throws if object doesn't exist.
+   * Returns the Data Object for a contendId.
+   * Returns null if it doesn't exist.
    */
   async getDataObject(contentId) {
     contentId = parseContentId(contentId)
+    // check if contentId key exists in map
     const storageSize = await this.base.api.query.dataDirectory.dataByContentId.size(contentId)
     if (storageSize.eq(0)) {
-      // throw new Error(`No DataObject found for content ID: ${contentId}`)
       return null
     }
     return this.base.api.query.dataDirectory.dataByContentId(contentId)
