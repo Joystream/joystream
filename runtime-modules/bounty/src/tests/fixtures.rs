@@ -10,7 +10,7 @@ use sp_std::iter::FromIterator;
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    RawEvent, WorkEntry,
+    OracleJudgement, OracleJudgementOf, RawEvent, WorkEntry,
 };
 use common::council::CouncilBudgetManager;
 
@@ -45,7 +45,15 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, u64, u64, u128, BountyCreationParameters<Test>>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            u64,
+            u64,
+            u128,
+            BountyCreationParameters<Test>,
+            OracleJudgementOf<Test>,
+        >,
     ) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
@@ -78,6 +86,7 @@ pub struct CreateBountyFixture {
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
     contract_type: AssuranceContractType<u64>,
+    oracle: BountyActor<u64>,
 }
 
 impl CreateBountyFixture {
@@ -95,6 +104,7 @@ impl CreateBountyFixture {
             expected_milestone: None,
             entrant_stake: 0,
             contract_type: AssuranceContractType::Open,
+            oracle: BountyActor::Council,
         }
     }
 
@@ -105,6 +115,13 @@ impl CreateBountyFixture {
     pub fn with_creator_member_id(self, member_id: u64) -> Self {
         Self {
             creator: BountyActor::Member(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_oracle_member_id(self, member_id: u64) -> Self {
+        Self {
+            oracle: BountyActor::Member(member_id),
             ..self
         }
     }
@@ -172,6 +189,7 @@ impl CreateBountyFixture {
             cherry: self.cherry,
             entrant_stake: self.entrant_stake,
             contract_type: self.contract_type.clone(),
+            oracle: self.oracle.clone(),
             ..Default::default()
         }
     }
@@ -208,6 +226,7 @@ impl CreateBountyFixture {
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
+                judgement: None,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -662,6 +681,63 @@ impl SubmitWorkFixture {
             assert_eq!(new_entry.last_submitted_work, Some(work_data_hash));
         } else {
             assert_eq!(new_entry, old_entry);
+        }
+    }
+}
+
+pub struct SubmitJudgementFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+    oracle: BountyActor<u64>,
+    judgement: OracleJudgement<u64>,
+}
+
+impl SubmitJudgementFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            bounty_id: 1,
+            oracle: BountyActor::Council,
+            judgement: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_oracle_member_id(self, member_id: u64) -> Self {
+        Self {
+            oracle: BountyActor::Member(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_judgement(self, judgement: OracleJudgement<u64>) -> Self {
+        Self { judgement, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bounty = Bounty::bounties(self.bounty_id);
+        let actual_result = Bounty::submit_oracle_judgement(
+            self.origin.clone().into(),
+            self.oracle.clone(),
+            self.bounty_id,
+            self.judgement.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_bounty = Bounty::bounties(self.bounty_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(new_bounty.judgement, Some(self.judgement.clone()));
+        } else {
+            assert_eq!(new_bounty, old_bounty);
         }
     }
 }

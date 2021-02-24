@@ -4,6 +4,7 @@
 //! ### Bounty stages
 //! - Funding - a bounty is being funded.
 //! - WorkSubmission - interested participants can submit their work.
+//! - Judgement - working periods ended and the oracle should provide their judgement.
 //! - Withdrawal - all funds can be withdrawn.
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
@@ -22,6 +23,8 @@
 //! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
 //! work entry for a bounty.
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
+//! - [submit_oracle_judgement](./struct.Module.html#method.submit_oracle_judgement) - submits an
+//! oracle judgement for a bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -130,23 +133,6 @@ pub type BountyCreationParameters<T> = BountyParameters<
     <T as common::Trait>::MemberId,
 >;
 
-/// Defines who will be the oracle of the work submissions.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
-pub enum OracleType<MemberId> {
-    /// Specific member will be the oracle.
-    Member(MemberId),
-
-    /// Council will become an oracle.
-    Council,
-}
-
-impl<MemberId> Default for OracleType<MemberId> {
-    fn default() -> Self {
-        OracleType::Council
-    }
-}
-
 /// Defines who can submit the work.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -169,7 +155,7 @@ impl<MemberId: Ord> Default for AssuranceContractType<MemberId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     /// Origin that will select winner(s), is either a given member or a council.
-    pub oracle: OracleType<MemberId>,
+    pub oracle: BountyActor<MemberId>,
 
     /// Contract type defines who can submit the work.
     pub contract_type: AssuranceContractType<MemberId>,
@@ -205,14 +191,14 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     pub judging_period: BlockNumber,
 }
 
-/// Bounty actor to create or fund bounty.
+/// Bounty actor to perform operations for a bounty.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyActor<MemberId> {
-    /// Council creates or funds the bounty.
+    /// Council performs operations for a bounty.
     Council,
 
-    /// Member creates or funds the bounty.
+    /// Member performs operations for a bounty.
     Member(MemberId),
 }
 
@@ -232,14 +218,17 @@ pub enum BountyStage {
         has_contributions: bool,
     },
 
+    /// A bounty has gathered necessary funds and ready to accept work submissions.
+    WorkSubmission,
+
+    /// Working periods ended and the oracle should provide their judgement.
+    Judgement,
+
     /// Funding and cherry can be withdrawn.
     Withdrawal {
         /// Creator cherry is not withdrawn and greater than zero.
         cherry_needs_withdrawal: bool,
     },
-
-    /// A bounty has gathered necessary funds and ready to accept work submissions.
-    WorkSubmission,
 }
 
 /// Defines current bounty state.
@@ -301,6 +290,9 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
 
     /// Current active work entry counter.
     pub active_work_entry_count: u32,
+
+    /// Oracle judgement for the bounty.
+    pub judgement: Option<OracleJudgement<MemberId>>,
 }
 
 impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
@@ -352,6 +344,21 @@ struct RequiredStakeInfo<T: Trait> {
     account_id: T::AccountId,
 }
 
+/// OracleJudgement alias.
+pub type OracleJudgementOf<T> = OracleJudgement<MemberId<T>>;
+
+/// Work entry.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct OracleJudgement<MemberId: Ord> {
+    /// Work accepted for this users and they split bounty funding.
+    pub winners: BTreeSet<MemberId>,
+
+    /// Legitimate entrants, yet not winning, which results in them being able to withdraw
+    /// their full stake.
+    pub ligitimate_participants: BTreeSet<MemberId>,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
         /// Bounty storage.
@@ -384,6 +391,7 @@ decl_event! {
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::AccountId,
         BountyCreationParameters = BountyCreationParameters<T>,
+        OracleJudgement = OracleJudgementOf<T>,
     {
         /// A bounty was created.
         BountyCreated(BountyId, BountyCreationParameters),
@@ -431,6 +439,13 @@ decl_event! {
         /// - entrant member ID
         /// - work data (description, URL, BLOB, etc.)
         WorkSubmitted(BountyId, WorkEntryId, MemberId, Vec<u8>),
+
+        /// Submit oracle judgement.
+        /// Params:
+        /// - bounty ID
+        /// - oracle
+        /// - judgement data
+        OracleJudgementSubmitted(BountyId, BountyActor<MemberId>, OracleJudgement),
     }
 }
 
@@ -561,6 +576,7 @@ decl_module! {
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
+                judgement: None,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -924,11 +940,12 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
         }
 
-        /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
+        /// Submit work for a bounty.
         /// # <weight>
         ///
         /// ## weight
-        /// `O (1)`
+        /// `O (N)`
+        /// - `N` is the work_data length,
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -965,6 +982,50 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
+        }
+
+        /// Submits an oracle judgement for a bounty.
+        #[weight =  1000000] // TODO adjust weight
+        pub fn submit_oracle_judgement(
+            origin,
+            creator: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+            judgement: OracleJudgement<MemberId<T>>,
+        ) {
+            let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
+                origin,
+                creator.clone(),
+            )?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            bounty_oracle_manager.validate_actor(&bounty.creation_params.oracle)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            ensure!(
+                matches!(current_bounty_stage, BountyStage::Judgement),
+                Error::<T>::InvalidBountyStage,
+            );
+
+            // TODO: check for judgement doesn't exist.
+
+            // TODO: check that judgement matches the work entries.
+
+            // TODO: should we allow a judgement to select legitimate or winners work entries without work submissions?
+
+            // TODO: check for judgement doesn't break max entry limits.
+
+            // TODO: consider judgement milestone?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update bounty record.
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.judgement = Some(judgement.clone());
+            });
+            Self::deposit_event(RawEvent::OracleJudgementSubmitted(bounty_id, creator, judgement));
         }
     }
 }

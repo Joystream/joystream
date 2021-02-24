@@ -13,7 +13,7 @@ use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
-    EventFixture, FundBountyFixture, SubmitWorkFixture, VetoBountyFixture,
+    EventFixture, FundBountyFixture, SubmitJudgementFixture, SubmitWorkFixture, VetoBountyFixture,
     WithdrawCreatorCherryFixture, WithdrawFundingFixture, WithdrawWorkEntryFixture,
 };
 use mocks::{
@@ -2414,6 +2414,149 @@ fn submit_work_fails_with_invalid_stage() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+// #[test]
+// fn cancel_bounty_by_council_succeeds() {
+//     build_test_externalities().execute_with(|| {
+//         set_council_budget(500);
+//
+//         let starting_block = 1;
+//         run_to_block(starting_block);
+//
+//         CreateBountyFixture::default().call_and_assert(Ok(()));
+//
+//         let bounty_id = 1u64;
+//
+//         CancelBountyFixture::default()
+//             .with_bounty_id(bounty_id)
+//             .call_and_assert(Ok(()));
+//
+//         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
+//             bounty_id,
+//             BountyActor::Council,
+//         ));
+//     });
+// }
+//
+// #[test]
+// fn cancel_bounty_by_member_succeeds() {
+//     build_test_externalities().execute_with(|| {
+//         let starting_block = 1;
+//         run_to_block(starting_block);
+//
+//         let member_id = 1;
+//         let account_id = 1;
+//         let initial_balance = 500;
+//
+//         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+//
+//         CreateBountyFixture::default()
+//             .with_origin(RawOrigin::Signed(account_id))
+//             .with_creator_member_id(member_id)
+//             .call_and_assert(Ok(()));
+//
+//         let bounty_id = 1u64;
+//
+//         CancelBountyFixture::default()
+//             .with_origin(RawOrigin::Signed(account_id))
+//             .with_creator_member_id(member_id)
+//             .with_bounty_id(bounty_id)
+//             .call_and_assert(Ok(()));
+//
+//         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
+//             bounty_id,
+//             BountyActor::Member(member_id),
+//         ));
+//     });
+// }
+
+#[test]
+fn submit_judgement_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bounty_id = 11u64;
+
+        SubmitJudgementFixture::default()
+            .with_bounty_id(invalid_bounty_id)
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn submit_judgement_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+        let initial_balance = 500;
+
+        increase_account_balance(&account_id, initial_balance);
+        set_council_budget(initial_balance);
+
+        // Oracle is set to a council - try to submit judgement with bad origin
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+        SubmitJudgementFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        // Oracle is set to a member - try to submit judgement with invalid member_id
+        CreateBountyFixture::default()
+            .with_oracle_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 2u64;
+        let invalid_member_id = 2;
+
+        SubmitJudgementFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_oracle_member_id(invalid_member_id)
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
+
+        // Oracle is set to a member - try to submit judgement with bad origin
+        CreateBountyFixture::default()
+            .with_oracle_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 3u64;
+
+        SubmitJudgementFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        // Oracle is set to a member - try to submit judgement as a council
+        CreateBountyFixture::default()
+            .with_oracle_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 4u64;
+
+        SubmitJudgementFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
+    });
+}
+
+#[test]
+fn submit_judgement_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        // Test already cancelled bounty.
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        SubmitJudgementFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });
