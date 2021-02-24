@@ -24,8 +24,8 @@ rustup install 1.46.0
 rustup default 1.46.0
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
-    sudo apt-get install -y docker.io docker-compose
+    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev
+    sudo apt-get install -y docker.io docker-compose containerd runc
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install b2sum gnu-tar jq curl
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
@@ -34,10 +34,10 @@ fi
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
-# After installing volta the .profile and .bash_profile are updated
-# to add it to the PATH, so we start new shell to use it
-env bash -c "volta install node@12"
-env bash -c "volta install yarn"
-env bash -c "volta install npx"
+# source env variables added by Volta
+source ~/.bashrc || :
+source ~/.bash_profile || :
 
-echo "Open a new terminal to start using newly installed tools"
+volta install node@12
+volta install yarn
+volta install npx
