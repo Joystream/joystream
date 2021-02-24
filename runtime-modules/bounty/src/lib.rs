@@ -924,11 +924,12 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
         }
 
-        /// Withdraw work entry for a bounty. Existing stake could be partially slashed.
+        /// Submit work for a bounty.
         /// # <weight>
         ///
         /// ## weight
-        /// `O (1)`
+        /// `O (N)`
+        /// - `N` is the work_data length,
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
