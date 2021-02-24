@@ -24,7 +24,7 @@ rustup install 1.46.0
 rustup default 1.46.0
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev
+    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
     sudo apt-get install -y docker.io docker-compose containerd runc
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install b2sum gnu-tar jq curl
