@@ -56,17 +56,17 @@ type Membership @entity {
   subscription: BigInt
 }
 
-# TODO: add description to fields
-# TODO: revise property requirement for the new and existing fields derived from content-metadata-protobuf
-
+"Category of media channel"
 type ChannelCategory @entity {
   id: ID!
 
   name: String
 }
 
+"Storage asset"
 union Asset = AssetUrl | AssetStorage
 
+"Asset stored at an external source"
 type AssetUrl @variant {
   id: ID!
 
@@ -74,20 +74,84 @@ type AssetUrl @variant {
   url: String!
 }
 
-enum AssetStorageUploadStatus {
-  INCOMPLETE_FIRST_UPLOAD
-  INCOMPLETE_LATER_UPLOAD
-  CONFIRMED_UPLOADED
+"Asset was never fully uploaded."
+type AssetNeverProvided @variant {
+  happenedIn: Block!
 }
+
+"Asset was deleted and is no longer available."
+type AssetDeleted @variant {
+  happenedIn: Block!
+}
+
+"Status of an asset upload"
+type AssetUploadStatus @variant {
+  """
+  Data object in upload life-cycle.
+  If this is deleted, then set oldDataObject in its place if it is set and not rejected, otherwise union goes to Deleted.
+  """
+  dataObject: AssetDataObject!
+
+  """
+  Possible prior data object which was in some stage of upload life-cycle when new one was initiated.
+  If accepted, then apps may chose to use old in place of new before it is accepted.
+  If this is deleted, then set to null.
+  """
+  oldDataObject: AssetDataObject
+}
+
+union AssetStorageUploadStatus = AssetNeverProvided | AssetDeleted | AssetUploadStatus
 
 type AssetStorage @variant {
   id: ID!
 
-  "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String! @unique
-
   "Upload to content directory status"
   uploadStatus: AssetStorageUploadStatus!
+}
+
+"The decision of the storage provider when it acts as liaison"
+enum LiaisonJudgement {
+  "Content awaits for a judgment"
+  PENDING,
+
+  "Content accepted"
+  ACCEPTED,
+
+  "Content rejected"
+  REJECTED,
+}
+
+"Manages content ids, type and storage provider decision about it"
+type AssetDataObject @entity {
+  "Content owner"
+  owner: AssetOwner!
+
+  "Content added at"
+  addedAt: Block!
+
+  "Content type id"
+  type_id: Int!
+
+  "Content size in bytes"
+  size: BigInt!
+
+  "Storage provider id of the liaison"
+  liaisonId: BigInt!
+
+  "Storage provider as liaison judgment"
+  liaisonJudgement: LiaisonJudgement!
+
+  "IPFS content id"
+  ipfsContentId: String!
+}
+
+"Owner type for storage object"
+enum AssetOwner {
+  MEMBER
+  CHANNEL
+  DAO
+  COUNCIL
+  WORKING_GROUP
 }
 
 """
