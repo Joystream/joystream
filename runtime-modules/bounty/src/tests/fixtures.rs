@@ -4,10 +4,13 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 use sp_runtime::traits::Hash;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter::FromIterator;
 
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
-    BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, RawEvent, WorkEntry,
+    AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
+    RawEvent, WorkEntry,
 };
 use common::council::CouncilBudgetManager;
 
@@ -41,7 +44,9 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64, u64, u128>) {
+    pub fn assert_last_crate_event(
+        expected_raw_event: RawEvent<u64, u64, u64, u64, u128, BountyCreationParameters<Test>>,
+    ) {
         let converted_event = TestEvent::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -72,6 +77,7 @@ pub struct CreateBountyFixture {
     cherry: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
+    contract_type: AssuranceContractType<u64>,
 }
 
 impl CreateBountyFixture {
@@ -88,6 +94,7 @@ impl CreateBountyFixture {
             cherry: DEFAULT_BOUNTY_CHERRY,
             expected_milestone: None,
             entrant_stake: 0,
+            contract_type: AssuranceContractType::Open,
         }
     }
 
@@ -145,6 +152,15 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_closed_contract(self, member_ids: Vec<u64>) -> Self {
+        let member_id_set = BTreeSet::from_iter(member_ids.into_iter());
+
+        Self {
+            contract_type: AssuranceContractType::Closed(member_id_set),
+            ..self
+        }
+    }
+
     pub fn get_bounty_creation_parameters(&self) -> BountyCreationParameters<Test> {
         BountyCreationParameters::<Test> {
             creator: self.creator.clone(),
@@ -155,6 +171,7 @@ impl CreateBountyFixture {
             funding_period: self.funding_period.clone(),
             cherry: self.cherry,
             entrant_stake: self.entrant_stake,
+            contract_type: self.contract_type.clone(),
             ..Default::default()
         }
     }

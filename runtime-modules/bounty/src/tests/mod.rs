@@ -1606,6 +1606,48 @@ fn announce_work_entry_succeeded() {
 }
 
 #[test]
+fn announce_work_entry_failed_with_closed_contract() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        let closed_contract_member_ids = vec![2, 3];
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_closed_contract(closed_contract_member_ids)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let member_id = 1;
+        let account_id = 1;
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::CannotSubmitWorkToClosedContractBounty.into()
+            ));
+    });
+}
+
+#[test]
 fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;

@@ -72,6 +72,7 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash},
     ModuleId,
 };
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
@@ -149,15 +150,15 @@ impl<MemberId> Default for OracleType<MemberId> {
 /// Defines who can submit the work.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AssuranceContractType<MemberId> {
+pub enum AssuranceContractType<MemberId: Ord> {
     /// Anyone can submit the work.
     Open,
 
     /// Only specific members can submit the work.
-    Closed(Vec<MemberId>),
+    Closed(BTreeSet<MemberId>),
 }
 
-impl<MemberId> Default for AssuranceContractType<MemberId> {
+impl<MemberId: Ord> Default for AssuranceContractType<MemberId> {
     fn default() -> Self {
         AssuranceContractType::Open
     }
@@ -166,7 +167,7 @@ impl<MemberId> Default for AssuranceContractType<MemberId> {
 /// Defines parameters for the bounty creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct BountyParameters<Balance, BlockNumber, MemberId> {
+pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     /// Origin that will select winner(s), is either a given member or a council.
     pub oracle: OracleType<MemberId>,
 
@@ -286,7 +287,7 @@ pub type Bounty<T> = BountyRecord<
 /// Crowdfunded bounty record.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct BountyRecord<Balance, BlockNumber, MemberId> {
+pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
     /// Bounty creation parameters.
     pub creation_params: BountyParameters<Balance, BlockNumber, MemberId>,
 
@@ -302,7 +303,7 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId> {
     pub active_work_entry_count: u32,
 }
 
-impl<Balance, BlockNumber, MemberId> BountyRecord<Balance, BlockNumber, MemberId> {
+impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
     // Increments bounty active work entry counter.
     fn increment_active_work_entry_counter(&mut self) {
         self.active_work_entry_count += 1;
@@ -381,11 +382,11 @@ decl_event! {
         <T as Trait>::WorkEntryId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::BlockNumber,
         <T as frame_system::Trait>::AccountId,
+        BountyCreationParameters = BountyCreationParameters<T>,
     {
         /// A bounty was created.
-        BountyCreated(BountyId, BountyParameters<Balance, BlockNumber, MemberId>),
+        BountyCreated(BountyId, BountyCreationParameters),
 
         /// A bounty was canceled.
         BountyCanceled(BountyId, BountyActor<MemberId>),
@@ -489,6 +490,10 @@ decl_error! {
 
         /// Funding amount less then minimum allowed.
         FundingLessThenMinimumAllowed,
+
+        /// Incompatible assurance contract type for a member: cannot submit work to the 'closed
+        /// assurance' bounty contract.
+        CannotSubmitWorkToClosedContractBounty,
     }
 }
 
@@ -829,6 +834,8 @@ decl_module! {
                 bounty.active_work_entry_count < T::MaxWorkEntryLimit::get(),
                 Error::<T>::MaxWorkEntryLimitReached,
             );
+
+            Self::ensure_valid_contract_type(&bounty, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1413,5 +1420,19 @@ impl<T: Trait> Module<T> {
 
             T::StakingHandler::unlock(staking_account_id);
         }
+    }
+
+    // Validates the contract type for a bounty
+    fn ensure_valid_contract_type(bounty: &Bounty<T>, member_id: &MemberId<T>) -> DispatchResult {
+        if let AssuranceContractType::Closed(ref valid_members) =
+            bounty.creation_params.contract_type
+        {
+            ensure!(
+                valid_members.contains(member_id),
+                Error::<T>::CannotSubmitWorkToClosedContractBounty
+            );
+        }
+
+        Ok(())
     }
 }
