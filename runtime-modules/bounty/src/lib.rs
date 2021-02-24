@@ -32,7 +32,6 @@ pub(crate) mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: add more fine-grained errors.
 // TODO: add bounty milestones module comments
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
@@ -461,8 +460,8 @@ decl_error! {
         /// Funding period is not expired for the bounty.
         FundingPeriodNotExpired,
 
-        /// A member is not a bounty funder.
-        NotBountyFunder, //TODO change to "no bounty funding found"
+        /// Cannot found bounty contribution.
+        NoBountyContributionFound,
 
         /// There is nothing to withdraw.
         NothingToWithdraw,
@@ -725,7 +724,7 @@ decl_module! {
 
             ensure!(
                 <BountyContributions<T>>::contains_key(&bounty_id, &funder),
-                Error::<T>::NotBountyFunder,
+                Error::<T>::NoBountyContributionFound,
             );
 
             let funding_amount = <BountyContributions<T>>::get(&bounty_id, &funder);

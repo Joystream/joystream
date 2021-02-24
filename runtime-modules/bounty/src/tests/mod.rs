@@ -1132,7 +1132,7 @@ fn withdraw_member_funding_fails_with_invalid_bounty_funder() {
             .with_bounty_id(bounty_id)
             .with_member_id(invalid_member_id)
             .with_origin(RawOrigin::Signed(invalid_account_id))
-            .call_and_assert(Err(Error::<Test>::NotBountyFunder.into()));
+            .call_and_assert(Err(Error::<Test>::NoBountyContributionFound.into()));
     });
 }
 
