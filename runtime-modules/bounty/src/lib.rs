@@ -264,7 +264,7 @@ pub enum BountyMilestone<BlockNumber> {
         max_funding_reached_at: BlockNumber,
     },
 
-    /// Creator funds (initial funding and/or cherry) were withdrawn.
+    /// Creator cherry was withdrawn.
     CreatorFundsWithdrawn,
 }
 
