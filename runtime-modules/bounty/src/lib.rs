@@ -494,6 +494,13 @@ decl_error! {
         /// Incompatible assurance contract type for a member: cannot submit work to the 'closed
         /// assurance' bounty contract.
         CannotSubmitWorkToClosedContractBounty,
+
+        /// Cannot create a 'closed assurance contract' bounty with empty member list.
+        ClosedContractMemberListIsEmpty,
+
+        /// Cannot create a 'closed assurance contract' bounty with member list larger
+        /// than allowed max work entry limit.
+        ClosedContractMemberListIsTooLarge,
     }
 }
 
@@ -531,9 +538,9 @@ decl_module! {
                 params.creator.clone()
             )?;
 
-            bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
-
             Self::ensure_create_bounty_parameters_valid(&params)?;
+
+            bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
 
             //
             // == MUTATION SAFE ==
@@ -1131,6 +1138,18 @@ impl<T: Trait> Module<T> {
             params.cherry >= T::MinCherryLimit::get(),
             Error::<T>::CherryLessThenMinimumAllowed
         );
+
+        if let AssuranceContractType::Closed(ref member_ids) = params.contract_type {
+            ensure!(
+                !member_ids.is_empty(),
+                Error::<T>::ClosedContractMemberListIsEmpty
+            );
+
+            ensure!(
+                member_ids.len() <= T::MaxWorkEntryLimit::get().saturated_into(),
+                Error::<T>::ClosedContractMemberListIsTooLarge
+            );
+        }
 
         Ok(())
     }

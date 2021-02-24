@@ -16,7 +16,9 @@ use fixtures::{
     EventFixture, FundBountyFixture, SubmitWorkFixture, VetoBountyFixture,
     WithdrawCreatorCherryFixture, WithdrawFundingFixture, WithdrawWorkEntryFixture,
 };
-use mocks::{build_test_externalities, Balances, Bounty, Test, COUNCIL_BUDGET_ACCOUNT_ID};
+use mocks::{
+    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, Test, COUNCIL_BUDGET_ACCOUNT_ID,
+};
 
 #[test]
 fn create_bounty_succeeds() {
@@ -37,6 +39,23 @@ fn create_bounty_succeeds() {
             bounty_id,
             create_bounty_fixture.get_bounty_creation_parameters(),
         ));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_invalid_closed_contract() {
+    build_test_externalities().execute_with(|| {
+        CreateBountyFixture::default()
+            .with_closed_contract(Vec::new())
+            .call_and_assert(Err(Error::<Test>::ClosedContractMemberListIsEmpty.into()));
+
+        let large_member_id_list: Vec<u64> = (1..(MaxWorkEntryLimit::get() + 10))
+            .map(|x| x.into())
+            .collect();
+
+        CreateBountyFixture::default()
+            .with_closed_contract(large_member_id_list)
+            .call_and_assert(Err(Error::<Test>::ClosedContractMemberListIsTooLarge.into()));
     });
 }
 
