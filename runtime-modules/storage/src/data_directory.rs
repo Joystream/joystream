@@ -111,7 +111,10 @@ decl_error! {
         ContentUploadingBlocked,
 
         /// Provided owner should be equal o the data object owner under given content id
-        OwnersAreNotEqual
+        OwnersAreNotEqual,
+
+        /// No storage provider available to service the request
+        NoProviderAvailable
     }
 }
 
@@ -716,7 +719,7 @@ impl<T: Trait> Module<T> {
 /// Provides random storage provider id. We use it when assign the content to the storage provider.
 pub trait StorageProviderHelper<T: Trait> {
     /// Provides random storage provider id.
-    fn get_random_storage_provider() -> Result<StorageProviderId<T>, &'static str>;
+    fn get_random_storage_provider() -> Result<StorageProviderId<T>, Error<T>>;
 }
 
 /// Content access helper.
