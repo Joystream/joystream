@@ -98,6 +98,8 @@ type AssetUploadStatus @variant {
   If this is deleted, then set to null.
   """
   oldDataObject: AssetDataObject
+
+  happenedIn: Block!
 }
 
 union AssetStorageUploadStatus = AssetNeverProvided | AssetDeleted | AssetUploadStatus
