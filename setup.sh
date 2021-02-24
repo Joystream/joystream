@@ -2,6 +2,14 @@
 
 set -e
 
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
+    sudo apt-get install -y docker.io docker-compose containerd runc
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    brew install b2sum gnu-tar jq curl
+    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
+fi
+
 # If OS is supported will install build tools for rust and substrate.
 # Skips installing substrate itself and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
@@ -22,14 +30,6 @@ rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
 # So we need to stick with an older version until we update substrate
 rustup install 1.46.0
 rustup default 1.46.0
-
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
-    sudo apt-get install -y docker.io docker-compose containerd runc
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install b2sum gnu-tar jq curl
-    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
-fi
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
