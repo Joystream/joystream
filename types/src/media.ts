@@ -1,6 +1,5 @@
 import { Option, Vec as Vector, BTreeMap, u64, bool, Text, Null } from '@polkadot/types'
-import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash } from './common'
-import { MemberId } from './members'
+import { BlockAndTime, MemberId, JoyEnum, JoyStructDecorated, Hash } from './common'
 import { StorageProviderId } from './working-group' // this should be in discovery really
 import { randomAsU8a } from '@polkadot/util-crypto'
 import { encodeAddress, decodeAddress } from '@polkadot/keyring'
