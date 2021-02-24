@@ -187,6 +187,7 @@ type Language @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
+  "Language identifier ISO 639-1"
   iso: String!
 
   happenedIn: Block!
