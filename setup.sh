@@ -3,15 +3,24 @@
 set -e
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # code build tools
+    sudo apt-get update
     sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
+    # docker
     sudo apt-get install -y docker.io docker-compose containerd runc
 elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # install brew package manager
+    if ! which brew >/dev/null 2>&1; then
+		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+	fi
+    # install additional packages
+    brew update
     brew install b2sum gnu-tar jq curl
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
 fi
 
 # If OS is supported will install build tools for rust and substrate.
-# Skips installing substrate itself and subkey
+# Skips installation of substrate and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
