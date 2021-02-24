@@ -161,12 +161,12 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
       }
     },
 
-    async get(req, res) {
-      proxy(req, res)
+    async get(req, res, next) {
+      proxy(req, res, next)
     },
 
-    async head(req, res) {
-      proxy(req, res)
+    async head(req, res, next) {
+      proxy(req, res, next)
     },
   }
 
