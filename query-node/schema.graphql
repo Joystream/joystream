@@ -244,16 +244,6 @@ type Category @entity {
   happenedIn: Block!
 }
 
-"Encoding and containers"
-type VideoMediaEncoding @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  name: String!
-
-  happenedIn: Block!
-}
-
 type KnownLicenseEntity @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -329,7 +319,13 @@ type Video @entity {
   license: LicenseEntity
 
   "Encoding of the video media object"
-  encoding: VideoMediaEncoding
+  codecName: String
+
+  "Media container format"
+  container: String
+
+  "Content MIME type"
+  mimeMediaType: String
 
   "Video media width in pixels"
   pixelWidth: Int
