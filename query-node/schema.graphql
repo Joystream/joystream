@@ -315,7 +315,7 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean
 
-  license: LicenseEntity
+  license: License
 
   "Encoding of the video media object"
   codecName: String
@@ -346,37 +346,18 @@ type Video @entity {
   featured: FeaturedVideo @derivedFrom(field: "video")
 }
 
-type KnownLicense @variant {
-  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
-  code: String!
-
-  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
-  name: String
-
-  "Short description of the license conditions"
-  description: String
-
-  "An url pointing to full license content"
-  url: String
-}
-
-type UserDefinedLicense @variant {
-  "Custom license content"
-  content: String!
-}
-
-union License = KnownLicense | UserDefinedLicense
-
-type LicenseEntity @entity {
+type License @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  type: License!
+  "License code defined by Joystream"
+  code: Int
 
   "Attribution (if required by the license)"
   attribution: String
 
-  happenedIn: Block!
+  "Custom license content"
+  custom_text: String
 }
 
 type FeaturedVideo @entity {
