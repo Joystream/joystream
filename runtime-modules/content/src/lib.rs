@@ -1215,11 +1215,9 @@ decl_module! {
             list: Vec<T::VideoId>
         ) {
             // can only be set by lead
-            ensure_actor_authorized_update_channel_and_videos::<T>(
+            ensure_actor_authorized_to_set_featured_videos::<T>(
                 origin,
                 &actor,
-                // The channel owner will be..
-                &Self::actor_to_channel_owner(&actor)?,
             )?;
 
             Self::ensure_videos_exist(&list)?;

@@ -182,6 +182,20 @@ pub fn ensure_actor_authorized_update_channel_and_videos<T: Trait>(
     }
 }
 
+// Enure actor can update or delete channels and videos
+pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    // Only Lead authorized to set featured videos
+    if let ContentActor::Lead = actor {
+        let sender = ensure_signed(origin)?;
+        ensure_lead_auth_success::<T>(&sender)
+    } else {
+        Err(Error::<T>::ActorNotAuthorized.into())
+    }
+}
+
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
