@@ -1074,7 +1074,7 @@ decl_module! {
                 is_featured: false,
             };
 
-            VideoById::<T>::insert(video_id, video.clone());
+            VideoById::<T>::insert(video_id, video);
 
             // Only increment next video id if adding content was successful
             NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
@@ -1259,7 +1259,7 @@ decl_module! {
             NextVideoCategoryId::<T>::mutate(|id| *id += T::VideoCategoryId::one());
 
             let category = VideoCategory {};
-            VideoCategoryById::<T>::insert(category_id, category.clone());
+            VideoCategoryById::<T>::insert(category_id, category);
 
             Self::deposit_event(RawEvent::VideoCategoryCreated(actor, category_id, params));
         }
