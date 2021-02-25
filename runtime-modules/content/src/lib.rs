@@ -1579,7 +1579,7 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
-        Actor = ContentActor<
+        ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
             <T as ContentActorAuthenticator>::CuratorId,
             <T as MembershipTypes>::MemberId,
@@ -1611,31 +1611,31 @@ decl_event!(
 
         // Channels
         ChannelCreated(
-            Actor,
+            ContentActor,
             ChannelId,
             Channel,
             ChannelCreationParameters<ContentParameters, AccountId>,
         ),
         ChannelUpdated(
-            Actor,
+            ContentActor,
             ChannelId,
             Channel,
             ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
-        ChannelDeleted(Actor, ChannelId),
-        ChannelAssetsRemoved(Actor, ChannelId, Vec<ContentId>),
+        ChannelDeleted(ContentActor, ChannelId),
+        ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
-        ChannelCensored(Actor, ChannelId, Vec<u8> /* rationale */),
-        ChannelUncensored(Actor, ChannelId, Vec<u8> /* rationale */),
+        ChannelCensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
+        ChannelUncensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
-            Actor,
+            ContentActor,
             ChannelOwnershipTransferRequestId,
             ChannelOwnershipTransferRequest,
         ),
-        ChannelOwnershipTransferRequestWithdrawn(Actor, ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(Actor, ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferRequestWithdrawn(ContentActor, ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferred(ContentActor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -1643,64 +1643,76 @@ decl_event!(
             ChannelCategory,
             ChannelCategoryCreationParameters,
         ),
-        ChannelCategoryUpdated(Actor, ChannelCategoryId, ChannelCategoryUpdateParameters),
-        ChannelCategoryDeleted(Actor, ChannelCategoryId),
+        ChannelCategoryUpdated(
+            ContentActor,
+            ChannelCategoryId,
+            ChannelCategoryUpdateParameters,
+        ),
+        ChannelCategoryDeleted(ContentActor, ChannelCategoryId),
 
         // Videos
-        VideoCategoryCreated(Actor, VideoCategoryId, VideoCategoryCreationParameters),
-        VideoCategoryUpdated(Actor, VideoCategoryId, VideoCategoryUpdateParameters),
-        VideoCategoryDeleted(Actor, VideoCategoryId),
+        VideoCategoryCreated(
+            ContentActor,
+            VideoCategoryId,
+            VideoCategoryCreationParameters,
+        ),
+        VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
+        VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
         VideoCreated(
-            Actor,
+            ContentActor,
             ChannelId,
             VideoId,
             VideoCreationParameters<ContentParameters>,
         ),
-        VideoUpdated(Actor, VideoId, VideoUpdateParameters<ContentParameters>),
-        VideoDeleted(Actor, VideoId),
+        VideoUpdated(
+            ContentActor,
+            VideoId,
+            VideoUpdateParameters<ContentParameters>,
+        ),
+        VideoDeleted(ContentActor, VideoId),
 
-        VideoCensored(Actor, VideoId, Vec<u8> /* rationale */),
-        VideoUncensored(Actor, VideoId, Vec<u8> /* rationale */),
+        VideoCensored(ContentActor, VideoId, Vec<u8> /* rationale */),
+        VideoUncensored(ContentActor, VideoId, Vec<u8> /* rationale */),
 
         // Featured Videos
-        FeaturedVideosSet(Actor, Vec<VideoId>),
+        FeaturedVideosSet(ContentActor, Vec<VideoId>),
 
         // Video Playlists
-        PlaylistCreated(Actor, PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(Actor, PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(Actor, PlaylistId),
+        PlaylistCreated(ContentActor, PlaylistId, PlaylistCreationParameters),
+        PlaylistUpdated(ContentActor, PlaylistId, PlaylistUpdateParameters),
+        PlaylistDeleted(ContentActor, PlaylistId),
 
         // Series
         SeriesCreated(
-            Actor,
+            ContentActor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
         SeriesUpdated(
-            Actor,
+            ContentActor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
-        SeriesDeleted(Actor, SeriesId),
+        SeriesDeleted(ContentActor, SeriesId),
 
         // Persons
         PersonCreated(
-            Actor,
+            ContentActor,
             PersonId,
             Vec<NewAsset>,
             PersonCreationParameters<ContentParameters>,
         ),
         PersonUpdated(
-            Actor,
+            ContentActor,
             PersonId,
             Vec<NewAsset>,
             PersonUpdateParameters<ContentParameters>,
         ),
-        PersonDeleted(Actor, PersonId),
+        PersonDeleted(ContentActor, PersonId),
     }
 );
