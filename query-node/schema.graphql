@@ -340,16 +340,29 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean
 
+  "License under the video is published"
   license: License
 
+  "Reference to video asset"
+  media: Asset
+
+  "Video file metadata"
+  metadata: VideoMetadata
+
+  happenedIn: Block!
+
+  "Is video featured or not"
+  isFeatured: Boolean!
+
+  featured: FeaturedVideo @derivedFrom(field: "video")
+}
+
+type VideoMetadata @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
   "Encoding of the video media object"
-  codecName: String
-
-  "Media container format"
-  container: String
-
-  "Content MIME type"
-  mimeMediaType: String
+  encoding: VideoMediaEncoding
 
   "Video media width in pixels"
   pixelWidth: Int
@@ -360,15 +373,20 @@ type Video @entity {
   "Video media size in bytes"
   size: Int
 
-  "Reference to video asset"
-  media: Asset
+  video: Video @derivedFrom(field: "metadata")
 
   happenedIn: Block!
+}
 
-  "Is video featured or not"
-  isFeatured: Boolean!
+type VideoMediaEncoding @entity {
+  "Encoding of the video media object"
+  codecName: String
 
-  featured: FeaturedVideo @derivedFrom(field: "video")
+  "Media container format"
+  container: String
+
+  "Content MIME type"
+  mimeMediaType: String
 }
 
 type License @entity {
