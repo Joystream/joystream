@@ -171,6 +171,10 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
       withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
@@ -308,6 +312,10 @@ declare module '@polkadot/api/types/submittable' {
        * Update the associated role account of the active worker/lead.
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
@@ -567,6 +575,10 @@ declare module '@polkadot/api/types/submittable' {
        * Update the associated role account of the active worker/lead.
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
@@ -1318,6 +1330,10 @@ declare module '@polkadot/api/types/submittable' {
        * Update the associated role account of the active worker/lead.
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
