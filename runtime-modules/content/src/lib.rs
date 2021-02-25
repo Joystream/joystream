@@ -1102,7 +1102,7 @@ decl_module! {
                 origin,
                 &actor,
                 // The channel owner will be..
-                &Self::actor_to_channel_owner(&actor)?,
+                &Self::channel_by_id(channel_id).owner,
             )?;
 
             // Pick out the assets to be uploaded to storage system
@@ -1146,17 +1146,17 @@ decl_module! {
             video_id: T::VideoId,
         ) {
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
-                origin,
-                &actor,
-                // The channel owner will be..
-                &Self::actor_to_channel_owner(&actor)?,
-            )?;
-
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             let channel_id = video.in_channel;
+
+            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::channel_by_id(channel_id).owner,
+            )?;
 
             Self::ensure_video_can_be_removed(video)?;
 
@@ -1360,7 +1360,7 @@ decl_module! {
                 origin,
                 &actor,
                 // The channel owner will be..
-                &Self::actor_to_channel_owner(&actor)?,
+                &Self::channel_by_id(video.in_channel).owner,
             )?;
 
             //
@@ -1391,7 +1391,7 @@ decl_module! {
                 origin,
                 &actor,
                 // The channel owner will be..
-            &Self::actor_to_channel_owner(&actor)?,
+                &Self::channel_by_id(video.in_channel).owner,
             )?;
 
             //
