@@ -71,12 +71,17 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
         content::Module::<Runtime>::on_runtime_upgrade();
 
         let default_text_constraint = crate::working_group::default_text_constraint();
+
+        let default_storage_size_constraint =
+            crate::working_group::default_storage_size_constraint();
+
         let default_content_working_group_mint_capacity = 0;
 
         BuilderWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
+            default_storage_size_constraint,
             default_content_working_group_mint_capacity,
         );
 
@@ -84,6 +89,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
+            default_storage_size_constraint,
             default_content_working_group_mint_capacity,
         );
 
