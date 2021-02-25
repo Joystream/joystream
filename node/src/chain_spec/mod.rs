@@ -225,6 +225,9 @@ pub fn testnet_genesis(
 
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
+    let default_storage_size_constraint =
+        node_runtime::working_group::default_storage_size_constraint();
+
     GenesisConfig {
         system: Some(SystemConfig {
             code: WASM_BINARY.to_vec(),
@@ -311,6 +314,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
@@ -318,6 +322,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance4: Some(BuilderWorkingGroupConfig {
             phantom: Default::default(),
@@ -325,6 +330,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance5: Some(GatewayWorkingGroupConfig {
             phantom: Default::default(),
@@ -332,6 +338,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         content: Some({
             ContentConfig {

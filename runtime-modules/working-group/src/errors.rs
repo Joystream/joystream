@@ -84,6 +84,9 @@ decl_error! {
         /// Worker exit rationale text is too short.
         WorkerExitRationaleTextTooShort,
 
+        /// Worker storage text is too long.
+        WorkerStorageValueTooLong,
+
         /// Signer is not worker role account.
         SignerIsNotWorkerRoleAccount,
 
