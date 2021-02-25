@@ -153,13 +153,38 @@ type AssetDataObject @entity {
 }
 
 "Owner type for storage object"
-enum AssetOwner {
-  MEMBER
-  CHANNEL
-  DAO
-  COUNCIL
-  WORKING_GROUP
+union AssetOwner = AssetOwnerMember | AssetOwnerChannel | AssetOwnerDao | AssetOwnerCouncil | AssetOwnerWorkingGroup
+
+"Asset owned by a member"
+type AssetOwnerMember @variant {
+  "Member identifier"
+  memberId: BigInt!
 }
+
+"Asset owned by a channel"
+type AssetOwnerChannel @variant {
+  "Channel identifier"
+  channel: Channel!
+}
+
+"Asset owned by a DAO"
+type AssetOwnerDao @variant {
+  "DAO identifier"
+  daoId: BigInt!
+}
+
+"Asset owned by the Council"
+type AssetOwnerCouncil @variant {
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int!
+}
+
+"Asset owned by a WorkingGroup"
+type AssetOwnerWorkingGroup @variant {
+  "Working group identifier"
+  workingGroupId: BigInt!
+}
+
 
 """
 This type is to keep which entity belongs to which class. This type will be used
