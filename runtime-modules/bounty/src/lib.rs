@@ -254,7 +254,7 @@ pub enum BountyMilestone<BlockNumber> {
     },
 
     /// Creator cherry was withdrawn.
-    CreatorFundsWithdrawn,
+    CreatorCherryWithdrawn,
 }
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
@@ -814,7 +814,7 @@ decl_module! {
 
             bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, cherry)?;
 
-            bounty.milestone = BountyMilestone::CreatorFundsWithdrawn;
+            bounty.milestone = BountyMilestone::CreatorCherryWithdrawn;
             <Bounties<T>>::insert(bounty_id, bounty.clone());
 
             Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
@@ -1253,7 +1253,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Computes the stage of a bounty based on its creation parameters and the current state.
-    pub(crate) fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
+    pub(crate) fn get_bounty_stage2(bounty: &Bounty<T>) -> BountyStage {
         let now = Self::current_block();
         let cherry_is_not_zero = bounty.creation_params.cherry != Zero::zero();
 
@@ -1296,7 +1296,7 @@ impl<T: Trait> Module<T> {
                 cherry_needs_withdrawal: cherry_is_not_zero,
             },
             // It is withdrawal stage and the creator don't expect any withdrawals.
-            BountyMilestone::CreatorFundsWithdrawn => BountyStage::Withdrawal {
+            BountyMilestone::CreatorCherryWithdrawn => BountyStage::Withdrawal {
                 cherry_needs_withdrawal: false,
             },
             BountyMilestone::BountyMaxFundingReached {
@@ -1514,5 +1514,129 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+}
+
+impl<T: Trait> Module<T> {
+    // Computes the stage of a bounty based on its creation parameters and the current state.
+    pub(crate) fn get_bounty_stage(bounty: &Bounty<T>) -> BountyStage {
+        Self::is_funding_stage(bounty)
+            .or_else(|| Self::is_work_submission_stage(bounty))
+            .or_else(|| Self::is_judgment_stage(bounty))
+            .unwrap_or_else(|| Self::withdrawal_stage(bounty))
+    }
+
+    fn is_funding_stage(bounty: &Bounty<T>) -> Option<BountyStage> {
+        if let BountyMilestone::Created {
+            has_contributions,
+            created_at,
+        } = bounty.milestone
+        {
+            let funding_stage = BountyStage::Funding { has_contributions };
+
+            // Limited funding period.
+            if let Some(funding_period) = bounty.creation_params.funding_period {
+                // Funding period is not over.
+                if created_at + funding_period >= Self::current_block() {
+                    return Some(funding_stage);
+                }
+            } else {
+                // Perpetual funding.
+                return Some(funding_stage);
+            }
+        }
+
+        None
+    }
+
+    fn is_work_submission_stage(bounty: &Bounty<T>) -> Option<BountyStage> {
+        let now = Self::current_block();
+
+        match bounty.milestone {
+            // Funding period. No contributions or some contributions.
+            BountyMilestone::Created { created_at, .. } => {
+                // Limited funding period.
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    let funding_period_expired = created_at + funding_period < now;
+                    let minimum_funding_reached =
+                        bounty.total_funding >= bounty.creation_params.min_amount;
+                    let working_period_is_not_expired =
+                        now <= created_at + funding_period + bounty.creation_params.work_period;
+
+                    if minimum_funding_reached
+                        && funding_period_expired
+                        && working_period_is_not_expired
+                    {
+                        return Some(BountyStage::WorkSubmission);
+                    }
+                }
+            }
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            } => {
+                // Work period is not over.
+                if now <= max_funding_reached_at + bounty.creation_params.work_period {
+                    return Some(BountyStage::WorkSubmission);
+                }
+            }
+            _ => return None,
+        }
+
+        None
+    }
+
+    fn is_judgment_stage(bounty: &Bounty<T>) -> Option<BountyStage> {
+        None
+    }
+
+    fn withdrawal_stage(bounty: &Bounty<T>) -> BountyStage {
+        let now = Self::current_block();
+
+        let default_stage = BountyStage::Withdrawal {
+            cherry_needs_withdrawal: true,
+        };
+
+        match bounty.milestone {
+            // Funding period. No contributions or some contributions.
+            BountyMilestone::Created {
+                has_contributions,
+                created_at,
+            } => {
+                // Limited funding period.
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    let minimum_funding_reached =
+                        bounty.total_funding >= bounty.creation_params.min_amount;
+                    let working_period_is_expired =
+                        now > created_at + funding_period + bounty.creation_params.work_period;
+
+                    if !minimum_funding_reached || working_period_is_expired {
+                        return BountyStage::Withdrawal {
+                            cherry_needs_withdrawal: !has_contributions,
+                        };
+                    }
+                }
+            }
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            } => {
+                let working_period_is_expired =
+                    now > max_funding_reached_at + bounty.creation_params.work_period;
+
+                if working_period_is_expired {
+                    // TODO: change to judging stage when it will be introduced
+                    return default_stage;
+                }
+            }
+            // Bounty was canceled or vetoed.
+            BountyMilestone::Canceled => return default_stage,
+            // It is withdrawal stage and the creator don't expect any withdrawals.
+            BountyMilestone::CreatorCherryWithdrawn => {
+                return BountyStage::Withdrawal {
+                    cherry_needs_withdrawal: false,
+                }
+            }
+        }
+
+        default_stage
     }
 }

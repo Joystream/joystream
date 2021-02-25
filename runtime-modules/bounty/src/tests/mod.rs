@@ -6,9 +6,13 @@ pub(crate) mod mocks;
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
+use sp_std::collections::btree_set::BTreeSet;
 
 use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
-use crate::{BountyActor, BountyMilestone, Error, RawEvent};
+use crate::{
+    BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage, Error,
+    OracleJudgement, RawEvent,
+};
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
@@ -2420,6 +2424,75 @@ fn submit_work_fails_with_invalid_stage() {
 }
 
 // #[test]
+// fn submit_judgement_for_council_succeeded() {
+//     build_test_externalities().execute_with(|| {
+//         let starting_block = 1;
+//         run_to_block(starting_block);
+//
+//         let initial_balance = 500;
+//         let max_amount = 100;
+//         let entrant_stake = 37;
+//         let working_period = 1;
+//
+//         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+//
+//         CreateBountyFixture::default()
+//             .with_max_amount(max_amount)
+//             .with_entrant_stake(entrant_stake)
+//             .with_work_period(working_period)
+//             .call_and_assert(Ok(()));
+//
+//         let bounty_id = 1;
+//         let member_id = 1;
+//         let account_id = 1;
+//
+//         FundBountyFixture::default()
+//             .with_bounty_id(bounty_id)
+//             .with_amount(max_amount)
+//             .with_council()
+//             .with_origin(RawOrigin::Root)
+//             .call_and_assert(Ok(()));
+//
+//         increase_account_balance(&account_id, initial_balance);
+//
+//         AnnounceWorkEntryFixture::default()
+//             .with_origin(RawOrigin::Signed(account_id))
+//             .with_member_id(member_id)
+//             .with_staking_account_id(account_id)
+//             .with_bounty_id(bounty_id)
+//             .call_and_assert(Ok(()));
+//
+//         let entry_id = 1;
+//
+//         let work_data = b"Work submitted".to_vec();
+//         SubmitWorkFixture::default()
+//             .with_origin(RawOrigin::Signed(account_id))
+//             .with_member_id(member_id)
+//             .with_entry_id(entry_id)
+//             .with_work_data(work_data.clone())
+//             .call_and_assert(Ok(()));
+//
+//         run_to_block(starting_block + working_period + 1);
+//
+//         let judgement = OracleJudgement {
+//             winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
+//             ligitimate_participants: BTreeSet::new(),
+//         };
+//
+//         SubmitJudgementFixture::default()
+//             .with_bounty_id(bounty_id)
+//             .with_judgement(judgement.clone())
+//             .call_and_assert(Ok(()));
+//
+//         EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
+//             bounty_id,
+//             BountyActor::Council,
+//             judgement,
+//         ));
+//     });
+// }
+
+// #[test]
 // fn cancel_bounty_by_council_succeeds() {
 //     build_test_externalities().execute_with(|| {
 //         set_council_budget(500);
@@ -2559,5 +2632,237 @@ fn submit_judgement_fails_with_invalid_stage() {
         SubmitJudgementFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+    });
+}
+
+#[test]
+fn validate_funding_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+
+        // Perpetual funding period
+        // No contributions.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: None,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: false
+            }
+        );
+
+        // Has contributions
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: None,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: true
+            }
+        );
+
+        // Limited funding period
+        let funding_period = 10;
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            ..Default::default()
+        };
+
+        run_to_block(created_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: false
+            }
+        );
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            ..Default::default()
+        };
+
+        run_to_block(created_at + 2);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: true
+            }
+        );
+    });
+}
+
+#[test]
+fn validate_work_submission_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+        let work_period = 10;
+        let min_funding_amount = 100;
+
+        // Perpetual funding period
+        let params = BountyCreationParameters::<Test> {
+            funding_period: Some(funding_period),
+            work_period,
+            min_amount: min_funding_amount,
+            ..Default::default()
+        };
+
+        let bounty = BountyRecord {
+            creation_params: params.clone(),
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            total_funding: min_funding_amount,
+            ..Default::default()
+        };
+
+        run_to_block(created_at + funding_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+
+        let max_funding_reached_at = 30;
+
+        let bounty = BountyRecord {
+            creation_params: params,
+            milestone: BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            },
+            ..Default::default()
+        };
+
+        run_to_block(max_funding_reached_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+    });
+}
+
+#[test]
+fn validate_withdrawal_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+        let work_period = 10;
+        let total_amount = 50;
+        let min_funding_amount = 100;
+
+        // Expired funding period with not enough funding.
+        // Has contributions.
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            total_funding: total_amount,
+            ..Default::default()
+        };
+
+        run_to_block(created_at + funding_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
+        // No contributions.
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            total_funding: total_amount,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: true
+            }
+        );
+
+        // Canceled bounty
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::Canceled,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: true
+            }
+        );
+
+        // Creator cherry was withdrawn.
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::CreatorCherryWithdrawn,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
     });
 }
