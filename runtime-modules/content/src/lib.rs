@@ -667,7 +667,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
-            ensure_actor_authorized_to_create_channel_assets::<T>(
+            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
                 origin,
                 &actor,
             )?;
@@ -724,7 +724,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -783,7 +783,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -831,7 +831,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -1040,7 +1040,7 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) {
-            ensure_actor_authorized_to_create_channel_assets::<T>(
+            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
                 origin,
                 &actor,
             )?;
@@ -1098,7 +1098,7 @@ decl_module! {
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
@@ -1151,7 +1151,7 @@ decl_module! {
 
             let channel_id = video.in_channel;
 
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
@@ -1215,7 +1215,7 @@ decl_module! {
             list: Vec<T::VideoId>
         ) {
             // can only be set by lead
-            ensure_actor_authorized_to_update_or_delete_channel_assets::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
