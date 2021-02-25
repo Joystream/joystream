@@ -60,7 +60,12 @@ type Membership @entity {
 type ChannelCategory @entity {
   id: ID!
 
-  name: String
+  "The name of the category"
+  name: String @fulltext(query: "channelCategoriesByName")
+
+  channels: [Channel!] @derivedFrom(field: "category")
+
+  happenedIn: Block!
 }
 
 "Storage asset"
@@ -209,11 +214,11 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
-  "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhotoUrl: Asset
+  "Channel's cover (background) photo. Recommended ratio: 16:9."
+  coverPhoto: Asset
 
   "Channel's avatar photo."
-  avatarPhotoUrl: Asset
+  avatarPhoto: Asset
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean
@@ -229,15 +234,12 @@ type Channel @entity {
   happenedIn: Block!
 }
 
-type Category @entity {
+type VideoCategory @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
   "The name of the category"
-  name: String! @unique @fulltext(query: "categoriesByName")
-
-  "The description of the category"
-  description: String
+  name: String @fulltext(query: "videoCategoriesByName")
 
   videos: [Video!] @derivedFrom(field: "category")
 
@@ -281,7 +283,7 @@ type Video @entity {
   channel: Channel!
 
   "Reference to a video category"
-  category: Category
+  category: VideoCategory
 
   "The title of the video"
   title: String @fulltext(query: "search")
@@ -292,11 +294,8 @@ type Video @entity {
   "Video duration in seconds"
   duration: Int
 
-  "Video's skippable intro duration in seconds"
-  skippableIntroDuration: Int
-
-  "Video thumbnail url (recommended ratio: 16:9)"
-  thumbnailUrl: String
+  "Video thumbnail (recommended ratio: 16:9)"
+  thumbnail: Asset
 
   "Video's main langauge"
   language: Language
@@ -335,6 +334,9 @@ type Video @entity {
 
   "Video media size in bytes"
   size: Int
+
+  "Reference to video asset"
+  media: Asset
 
   happenedIn: Block!
 
