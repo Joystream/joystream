@@ -150,6 +150,9 @@ type AssetDataObject @entity {
 
   "IPFS content id"
   ipfsContentId: String!
+
+  "Joystream runtime content"
+  joystreamContentId: String!
 }
 
 "Owner type for storage object"
