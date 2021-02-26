@@ -2849,6 +2849,7 @@ fn validate_judgement_bounty_stage() {
 fn validate_withdrawal_bounty_stage() {
     build_test_externalities().execute_with(|| {
         let created_at = 10;
+        let max_funding_reached_at = 10;
         let funding_period = 10;
         let judging_period = 10;
         let work_period = 10;
@@ -2858,7 +2859,6 @@ fn validate_withdrawal_bounty_stage() {
 
         // Expired funding period with not enough funding.
         // Has contributions.
-
         let bounty = BountyRecord {
             creation_params: BountyCreationParameters::<Test> {
                 funding_period: Some(funding_period),
@@ -2882,8 +2882,8 @@ fn validate_withdrawal_bounty_stage() {
                 cherry_needs_withdrawal: false
             }
         );
-        // No contributions.
 
+        // No work submissions.
         let bounty = BountyRecord {
             creation_params: BountyCreationParameters::<Test> {
                 funding_period: Some(funding_period),
@@ -2891,13 +2891,14 @@ fn validate_withdrawal_bounty_stage() {
                 min_amount: min_funding_amount,
                 ..Default::default()
             },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: false,
+            milestone: BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
             },
             total_funding: total_amount,
             ..Default::default()
         };
+
+        System::set_block_number(max_funding_reached_at + work_period + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),

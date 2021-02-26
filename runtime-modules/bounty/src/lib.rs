@@ -41,6 +41,7 @@ mod benchmarking;
 // TODO: test all stages
 // TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
 // existing work entries?
+// TODO: make sure cherry goes back to creator on successful bounty.
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -1501,7 +1502,7 @@ impl<T: Trait> Module<T> {
 
         sc.is_funding_stage()
             .or_else(|| sc.is_work_submission_stage())
-            .or_else(|| sc.is_judgment_stage())
+            .or_else(|| sc.is_judgement_stage())
             .unwrap_or_else(|| sc.withdrawal_stage())
     }
 }
@@ -1583,7 +1584,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Calculates judgement stage of the bounty.
     // Returns None if conditions are not met.
-    fn is_judgment_stage(&self) -> Option<BountyStage> {
+    fn is_judgement_stage(&self) -> Option<BountyStage> {
         // Can be judged only if there are work submissions.
         if let BountyMilestone::WorkSubmitted {
             work_period_started_at,
@@ -1591,10 +1592,10 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         {
             let work_period_expired = self.work_period_expired(work_period_started_at);
 
-            let judgment_period_is_not_expired =
+            let judgement_period_is_not_expired =
                 !self.judgement_period_expired(work_period_started_at);
 
-            if work_period_expired && judgment_period_is_not_expired {
+            if work_period_expired && judgement_period_is_not_expired {
                 return Some(BountyStage::Judgement);
             }
         }
@@ -1649,10 +1650,10 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             } => {
                 let work_period_expired = self.work_period_expired(work_period_started_at);
 
-                let judgment_period_is_expired =
+                let judgement_period_is_expired =
                     self.judgement_period_expired(work_period_started_at);
 
-                if work_period_expired && judgment_period_is_expired {
+                if work_period_expired && judgement_period_is_expired {
                     return default_stage;
                 }
             }
