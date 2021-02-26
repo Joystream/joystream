@@ -34,7 +34,7 @@ import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntit
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import Debugger from 'debug'
 
 export enum WorkingGroups {

@@ -214,7 +214,7 @@ impl data_directory::Trait for Test {
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, &'static str> {
+    fn get_random_storage_provider() -> Result<u32, data_directory::Error<Test>> {
         Ok(1)
     }
 }

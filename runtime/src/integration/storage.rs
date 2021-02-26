@@ -7,7 +7,7 @@ use crate::{ActorId, Runtime};
 pub struct StorageProviderHelper;
 
 impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProviderHelper {
-    fn get_random_storage_provider() -> Result<ActorId, &'static str> {
+    fn get_random_storage_provider() -> Result<ActorId, storage::data_directory::Error<Runtime>> {
         let ids = crate::StorageWorkingGroup::get_all_worker_ids();
 
         let live_ids: Vec<ActorId> = ids
@@ -16,7 +16,7 @@ impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProvider
             .collect();
 
         if live_ids.is_empty() {
-            Err("No valid storage provider found.")
+            Err(storage::data_directory::Error::<Runtime>::NoProviderAvailable)
         } else {
             let index = Self::random_index(live_ids.len());
             Ok(live_ids[index])

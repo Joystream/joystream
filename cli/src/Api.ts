@@ -49,7 +49,7 @@ import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
 import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
 import _ from 'lodash'
 

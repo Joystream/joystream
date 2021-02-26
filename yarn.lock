@@ -2262,20 +2262,6 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@joystream/types@^0.14.0":
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.14.0.tgz#3f243fb736d3cdd3dae90a90274c7a767fc96b75"
-  integrity sha512-t9LibCVM5j0NY2OQOXCGkZFFf1pbnQ9ccv0ZXMK7CfseRDwPtAlF/jVQUQQ03PAAGOKFWJQUenFUhPAbt6wKtg==
-  dependencies:
-    "@polkadot/api" "1.26.1"
-    "@polkadot/keyring" "^3.0.1"
-    "@polkadot/types" "1.26.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@joystream/types@link:types":
   version "0.16.0"
   dependencies:
@@ -7251,7 +7237,7 @@ axios@^0.18.0, axios@^0.18.1:
     follow-redirects "1.5.10"
     is-buffer "^2.0.2"
 
-axios@^0.19.0, axios@^0.19.2:
+axios@^0.19.0:
   version "0.19.2"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27"
   integrity sha512-fjgm5MvRHLhx+osE2xoekY70AhARk3a6hkN+3Io1jc00jtquGvxYlKlsFUhmUET0V5te6CcZI7lcv2Ym61mjHA==

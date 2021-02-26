@@ -43,4 +43,5 @@ You can run scripts that are found in the [./scripts/](./scripts) folder:
 
 ```sh
 yarn script example
+yarn script test-transfer
 ```
