@@ -99,12 +99,12 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     ensure_lead_auth_success::<T>(&account_id)
 }
 
-pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_create_channels_and_videos_assets<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     match actor {
-        // Lead should use their member or curator role to create or update channels.
+        // Lead should use their member or curator role to create or update channel assets.
         ContentActor::Lead => {
             Err(Error::<T>::ActorCannotOwnChannel.into())
         }
@@ -128,13 +128,14 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     }
 }
 
-pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
+// Enure actor can update or delete channels and videos
+pub fn ensure_actor_authorized_update_channel_and_videos<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
-    // Only owner of a channel can update and delete it.
-    // Lead can update and delete curator group owned channels.
+    // Only owner of a channel can update and delete channel assets.
+    // Lead can update and delete curator group owned channel assets.
     match actor {
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
@@ -178,6 +179,20 @@ pub fn ensure_actor_authorized_to_update_or_delete_channel<T: Trait>(
         }
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
+    }
+}
+
+// Enure actor can update or delete channels and videos
+pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    // Only Lead authorized to set featured videos
+    if let ContentActor::Lead = actor {
+        let sender = ensure_signed(origin)?;
+        ensure_lead_auth_success::<T>(&sender)
+    } else {
+        Err(Error::<T>::ActorNotAuthorized.into())
     }
 }
 
