@@ -194,7 +194,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
-    videos: Vec<VideoId>,
+    pub videos: Vec<VideoId>,
     /// The playlists under this channel
     playlists: Vec<PlaylistId>,
     /// The series under this channel
@@ -314,14 +314,12 @@ pub struct VideoUpdateParameters<ContentParameters> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Video<ChannelId, SeriesId> {
-    in_channel: ChannelId,
+    pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
-    in_series: Option<SeriesId>,
+    pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
-    is_censored: bool,
-    /// Whether the curators have chosen to feature the video or not.
-    is_featured: bool,
+    pub is_censored: bool,
 }
 
 /// Information about the plyalist being created.
@@ -667,7 +665,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
-            ensure_actor_authorized_to_create_channel::<T>(
+            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
                 origin,
                 &actor,
             )?;
@@ -710,7 +708,7 @@ decl_module! {
                 Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
             }
 
-            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
+            Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
 
         // Include Option<AccountId> in ChannelUpdateParameters to update reward_account
@@ -724,7 +722,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -771,7 +769,7 @@ decl_module! {
                 )?;
             }
 
-            Self::deposit_event(RawEvent::ChannelUpdated(channel_id, channel, params));
+            Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -783,7 +781,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -795,17 +793,17 @@ decl_module! {
 
             channel.videos.iter().for_each(|id| {
                 VideoById::<T>::remove(id);
-                Self::deposit_event(RawEvent::VideoDeleted(*id));
+                Self::deposit_event(RawEvent::VideoDeleted(actor, *id));
             });
 
             channel.playlists.iter().for_each(|id| {
                 PlaylistById::<T>::remove(id);
-                Self::deposit_event(RawEvent::PlaylistDeleted(*id));
+                Self::deposit_event(RawEvent::PlaylistDeleted(actor, *id));
             });
 
             channel.series.iter().for_each(|id| {
                 SeriesById::<T>::remove(id);
-                Self::deposit_event(RawEvent::SeriesDeleted(*id));
+                Self::deposit_event(RawEvent::SeriesDeleted(actor, *id));
             });
 
             // If the channel was owned by a curator group, decrement counter
@@ -817,7 +815,7 @@ decl_module! {
             // Self::terminate_channel_transfer_requests(channel_id)
             // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
 
-            Self::deposit_event(RawEvent::ChannelDeleted(channel_id));
+            Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
         }
 
         /// Remove assets of a channel from storage
@@ -831,7 +829,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_or_delete_channel::<T>(
+            ensure_actor_authorized_update_channel_and_videos::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -845,7 +843,7 @@ decl_module! {
 
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
 
         // The content directory doesn't track individual content ids of assets uploaded for a channel.
@@ -880,7 +878,7 @@ decl_module! {
 
             T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(channel_id, assets));
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -912,7 +910,7 @@ decl_module! {
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel);
 
-            Self::deposit_event(RawEvent::ChannelCensored(channel_id, rationale));
+            Self::deposit_event(RawEvent::ChannelCensored(actor, channel_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -942,7 +940,7 @@ decl_module! {
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel);
 
-            Self::deposit_event(RawEvent::ChannelUncensored(channel_id, rationale));
+            Self::deposit_event(RawEvent::ChannelUncensored(actor, channel_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -981,9 +979,9 @@ decl_module! {
                 &actor
             )?;
 
-            let category = Self::ensure_channel_category_exists(&category_id)?;
+            Self::ensure_channel_category_exists(&category_id)?;
 
-            Self::deposit_event(RawEvent::ChannelCategoryUpdated(category_id, category, params));
+            Self::deposit_event(RawEvent::ChannelCategoryUpdated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1001,7 +999,7 @@ decl_module! {
 
             ChannelCategoryById::<T>::remove(&category_id);
 
-            Self::deposit_event(RawEvent::ChannelCategoryDeleted(category_id));
+            Self::deposit_event(RawEvent::ChannelCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1040,26 +1038,140 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
+                origin,
+                &actor,
+            )?;
+
+            // Pick out the assets to be uploaded to storage system
+            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
+
+            let video_id = NextVideoId::<T>::get();
+
+            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+            // This should be first mutation
+            // Try add assets to storage
+            T::StorageSystem::atomically_add_content(
+                object_owner,
+                content_parameters,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let video: Video<T::ChannelId, T::SeriesId> = Video {
+                in_channel: channel_id,
+                // keep track of which season the video is in if it is an 'episode'
+                // - prevent removing a video if it is in a season (because order is important)
+                in_series: None,
+                /// Whether the curators have censored the video or not.
+                is_censored: false,
+            };
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Only increment next video id if adding content was successful
+            NextVideoId::<T>::mutate(|id| *id += T::VideoId::one());
+
+            // Add recently added video id to the channel
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.videos.push(video_id);
+            });
+
+            Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
+
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
+            video_id: T::VideoId,
             params: VideoUpdateParameters<ContentParameters<T>>,
         ) {
-            Self::not_implemented()?;
+            // check that video exists, retrieve corresponding channel id.
+            let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
+
+            ensure_actor_authorized_update_channel_and_videos::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::channel_by_id(channel_id).owner,
+            )?;
+
+            // Pick out the assets to be uploaded to storage system
+            let new_assets = if let Some(assets) = &params.assets {
+                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+
+                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+
+                // check assets can be uploaded to storage.
+                // update can_add_content() to only take &refrences
+                T::StorageSystem::can_add_content(
+                    object_owner.clone(),
+                    upload_parameters.clone(),
+                )?;
+
+                Some((upload_parameters, object_owner))
+            } else {
+                None
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // add assets to storage
+            // This should not fail because of prior can_add_content() check!
+            if let Some((upload_parameters, object_owner)) = new_assets {
+                T::StorageSystem::atomically_add_content(
+                    object_owner,
+                    upload_parameters,
+                )?;
+            }
+
+            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video: T::VideoId,
+            video_id: T::VideoId,
         ) {
-            Self::not_implemented()?;
+
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            let channel_id = video.in_channel;
+
+            ensure_actor_authorized_update_channel_and_videos::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::channel_by_id(channel_id).owner,
+            )?;
+
+            Self::ensure_video_can_be_removed(video)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove video
+            VideoById::<T>::remove(video_id);
+
+            // Update corresponding channel
+            // Remove recently deleted video from the channel
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                if let Some(index) = channel.videos.iter().position(|x| *x == video_id) {
+                    channel.videos.remove(index);
+                }
+            });
+
+            Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1099,8 +1211,16 @@ decl_module! {
             list: Vec<T::VideoId>
         ) {
             // can only be set by lead
+            ensure_actor_authorized_to_set_featured_videos::<T>(
+                origin,
+                &actor,
+            )?;
 
-            Self::not_implemented()?;
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::FeaturedVideosSet(actor, list));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1109,26 +1229,57 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: VideoCategoryCreationParameters,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let category_id = Self::next_video_category_id();
+            NextVideoCategoryId::<T>::mutate(|id| *id += T::VideoCategoryId::one());
+
+            let category = VideoCategory {};
+            VideoCategoryById::<T>::insert(category_id, category);
+
+            Self::deposit_event(RawEvent::VideoCategoryCreated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
+            category_id: T::VideoCategoryId,
             params: VideoCategoryUpdateParameters,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_video_category_exists(&category_id)?;
+
+            Self::deposit_event(RawEvent::VideoCategoryUpdated(actor, category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category: T::VideoCategoryId,
+            category_id: T::VideoCategoryId,
         ) {
-            Self::not_implemented()?;
+            ensure_actor_authorized_to_manage_categories::<T>(
+                origin,
+                &actor
+            )?;
+
+            Self::ensure_video_category_exists(&category_id)?;
+
+            VideoCategoryById::<T>::remove(&category_id);
+
+            Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1185,7 +1336,28 @@ decl_module! {
             video_id: T::VideoId,
             rationale: Vec<u8>,
         ) {
-            Self::not_implemented()?;
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::channel_by_id(video.in_channel).owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut video = video;
+
+            video.is_censored = true;
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            Self::deposit_event(RawEvent::VideoCensored(actor, video_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1195,7 +1367,28 @@ decl_module! {
             video_id: T::VideoId,
             rationale: Vec<u8>
         ) {
-            Self::not_implemented()?;
+            // check that video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            ensure_actor_authorized_to_censor::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &Self::channel_by_id(video.in_channel).owner,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut video = video;
+
+            video.is_censored = false;
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            Self::deposit_event(RawEvent::VideoUncensored(actor, video_id, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1271,6 +1464,22 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
+    fn ensure_video_exists(
+        video_id: &T::VideoId,
+    ) -> Result<Video<T::ChannelId, T::SeriesId>, Error<T>> {
+        ensure!(
+            VideoById::<T>::contains_key(video_id),
+            Error::<T>::VideoDoesNotExist
+        );
+        Ok(VideoById::<T>::get(video_id))
+    }
+
+    // Ensure given video is not in season
+    fn ensure_video_can_be_removed(video: Video<T::ChannelId, T::SeriesId>) -> DispatchResult {
+        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
+        Ok(())
+    }
+
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
     ) -> Result<ChannelCategory, Error<T>> {
@@ -1279,6 +1488,16 @@ impl<T: Trait> Module<T> {
             Error::<T>::CategoryDoesNotExist
         );
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
+    }
+
+    fn ensure_video_category_exists(
+        video_category_id: &T::VideoCategoryId,
+    ) -> Result<VideoCategory, Error<T>> {
+        ensure!(
+            VideoCategoryById::<T>::contains_key(video_category_id),
+            Error::<T>::CategoryDoesNotExist
+        );
+        Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
     fn pick_content_parameters_from_assets(
@@ -1335,6 +1554,11 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
+        ContentActor = ContentActor<
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            <T as ContentActorAuthenticator>::CuratorId,
+            <T as MembershipTypes>::MemberId,
+        >,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
@@ -1362,28 +1586,31 @@ decl_event!(
 
         // Channels
         ChannelCreated(
+            ContentActor,
             ChannelId,
             Channel,
             ChannelCreationParameters<ContentParameters, AccountId>,
         ),
         ChannelUpdated(
+            ContentActor,
             ChannelId,
             Channel,
             ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
-        ChannelDeleted(ChannelId),
-        ChannelAssetsRemoved(ChannelId, Vec<ContentId>),
+        ChannelDeleted(ContentActor, ChannelId),
+        ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
-        ChannelCensored(ChannelId, Vec<u8> /* rationale */),
-        ChannelUncensored(ChannelId, Vec<u8> /* rationale */),
+        ChannelCensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
+        ChannelUncensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
+            ContentActor,
             ChannelOwnershipTransferRequestId,
             ChannelOwnershipTransferRequest,
         ),
-        ChannelOwnershipTransferRequestWithdrawn(ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferRequestWithdrawn(ContentActor, ChannelOwnershipTransferRequestId),
+        ChannelOwnershipTransferred(ContentActor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -1392,58 +1619,75 @@ decl_event!(
             ChannelCategoryCreationParameters,
         ),
         ChannelCategoryUpdated(
+            ContentActor,
             ChannelCategoryId,
-            ChannelCategory,
             ChannelCategoryUpdateParameters,
         ),
-        ChannelCategoryDeleted(ChannelCategoryId),
+        ChannelCategoryDeleted(ContentActor, ChannelCategoryId),
 
         // Videos
-        VideoCategoryCreated(VideoCategoryId, VideoCategoryCreationParameters),
-        VideoCategoryUpdated(VideoCategoryId, VideoCategoryUpdateParameters),
-        VideoCategoryDeleted(VideoCategoryId),
+        VideoCategoryCreated(
+            ContentActor,
+            VideoCategoryId,
+            VideoCategoryCreationParameters,
+        ),
+        VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
+        VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
-        VideoCreated(VideoId, VideoCreationParameters<ContentParameters>),
-        VideoUpdated(VideoId, VideoUpdateParameters<ContentParameters>),
-        VideoDeleted(VideoId),
+        VideoCreated(
+            ContentActor,
+            ChannelId,
+            VideoId,
+            VideoCreationParameters<ContentParameters>,
+        ),
+        VideoUpdated(
+            ContentActor,
+            VideoId,
+            VideoUpdateParameters<ContentParameters>,
+        ),
+        VideoDeleted(ContentActor, VideoId),
 
-        VideoCensored(VideoId, Vec<u8> /* rationale */),
-        VideoUncensored(VideoId, Vec<u8> /* rationale */),
+        VideoCensored(ContentActor, VideoId, Vec<u8> /* rationale */),
+        VideoUncensored(ContentActor, VideoId, Vec<u8> /* rationale */),
 
         // Featured Videos
-        FeaturedVideosSet(Vec<VideoId>),
+        FeaturedVideosSet(ContentActor, Vec<VideoId>),
 
         // Video Playlists
-        PlaylistCreated(PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(PlaylistId),
+        PlaylistCreated(ContentActor, PlaylistId, PlaylistCreationParameters),
+        PlaylistUpdated(ContentActor, PlaylistId, PlaylistUpdateParameters),
+        PlaylistDeleted(ContentActor, PlaylistId),
 
         // Series
         SeriesCreated(
+            ContentActor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
         SeriesUpdated(
+            ContentActor,
             SeriesId,
             Vec<NewAsset>,
             SeriesParameters<VideoId, ContentParameters>,
             Series,
         ),
-        SeriesDeleted(SeriesId),
+        SeriesDeleted(ContentActor, SeriesId),
 
         // Persons
         PersonCreated(
+            ContentActor,
             PersonId,
             Vec<NewAsset>,
             PersonCreationParameters<ContentParameters>,
         ),
         PersonUpdated(
+            ContentActor,
             PersonId,
             Vec<NewAsset>,
             PersonUpdateParameters<ContentParameters>,
         ),
-        PersonDeleted(PersonId),
+        PersonDeleted(ContentActor, PersonId),
     }
 );
