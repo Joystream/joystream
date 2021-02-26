@@ -85,13 +85,13 @@ const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
 // Max validator count for the 'set validator count' proposal
-const MAX_VALIDATOR_COUNT: u32 = 100;
+const MAX_VALIDATOR_COUNT: u32 = 300;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
 // council_size max value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 20;
+const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 40;
 // candidacy_limit min value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MIN_VALUE: u32 = 25;
+const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MIN_VALUE: u32 = 50;
 // candidacy_limit max value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MAX_VALUE: u32 = 100;
 // min_voting_stake min value for the 'set election parameters' proposal
