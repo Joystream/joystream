@@ -27,12 +27,12 @@
     "node": ">=12.18.0"
   },
   "volta": {
-    "extends": "../package.json"
+    "extends": "../../package.json"
   },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
     "lint": "eslint --ext .js,.ts . && tsc --noEmit --pretty",
-    "build": "rm tsconfig.tsbuildinfo || tsc --build"
+    "build": "(rm tsconfig.tsbuildinfo || :) && tsc --build"
   },
   "bin": {
     "storage-cli": "./bin/cli.js"

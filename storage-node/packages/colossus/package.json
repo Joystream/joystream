@@ -32,7 +32,7 @@
     "node": ">=12.18.0"
   },
   "volta": {
-    "extends": "../package.json"
+    "extends": "../../package.json"
   },
   "scripts": {
     "test": "mocha 'test/**/*.js'",
