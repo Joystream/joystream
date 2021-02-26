@@ -28,7 +28,11 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-const PROCESS_UPLOAD_BALANCE = 3
+// The maximum total estimated balance that will be spent submitting transactions
+// by the node following processing one upload. Here we assume 3 transactions with
+// base transaction fee = 1. In future this estimate will need to be more accurate
+// and derived from weight to fee calculation.
+const PROCESS_UPLOAD_TX_COSTS = 3
 
 module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
@@ -95,7 +99,10 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         return
       }
 
-      const sufficientBalance = await runtime.providerHasMinimumBalance(PROCESS_UPLOAD_BALANCE)
+      // Ensure we have minimum blance to successfully update state on chain after processing
+      // upload. Due to the node handling concurrent uploads this check will not always guarantee
+      // at the point when transactions are sent that the balance will still be sufficient.
+      const sufficientBalance = await runtime.providerHasMinimumBalance(PROCESS_UPLOAD_TX_COSTS)
 
       if (!sufficientBalance) {
         errorHandler(res, 'Server has insufficient balance to process upload.', 503)
