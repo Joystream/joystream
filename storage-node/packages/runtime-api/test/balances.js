@@ -31,7 +31,7 @@ describe('Balances', () => {
   })
 
   it('returns free balance for an account', async () => {
-    const balance = await api.balances.freeBalance(key.address)
+    const balance = await api.balances.availableBalance(key.address)
     // Should be exactly zero
     expect(balance.cmpn(0)).to.equal(0)
   })
