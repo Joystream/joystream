@@ -320,8 +320,6 @@ pub struct Video<ChannelId, SeriesId> {
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
-    /// Whether the curators have chosen to feature the video or not.
-    pub is_featured: bool,
 }
 
 /// Information about the plyalist being created.
@@ -1070,8 +1068,6 @@ decl_module! {
                 in_series: None,
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
-                /// Whether the curators have chosen to feature the video or not.
-                is_featured: false,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1220,20 +1216,9 @@ decl_module! {
                 &actor,
             )?;
 
-            Self::ensure_videos_exist(&list)?;
-
             //
             // == MUTATION SAFE ==
             //
-
-            // Update videos featured status
-            for video_id in &list {
-                let mut video = Self::video_by_id(video_id);
-                if !video.is_featured {
-                    video.is_featured = true;
-                    <VideoById<T>>::insert(video_id, video);
-                }
-            }
 
             Self::deposit_event(RawEvent::FeaturedVideosSet(actor, list));
         }
@@ -1477,14 +1462,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelDoesNotExist
         );
         Ok(ChannelById::<T>::get(channel_id))
-    }
-
-    fn ensure_videos_exist(list: &[T::VideoId]) -> DispatchResult {
-        for video_id in list {
-            Self::ensure_video_exists(video_id)?;
-        }
-
-        Ok(())
     }
 
     fn ensure_video_exists(
