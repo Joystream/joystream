@@ -21,7 +21,8 @@ use fixtures::{
     WithdrawCreatorCherryFixture, WithdrawFundingFixture, WithdrawWorkEntryFixture,
 };
 use mocks::{
-    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, Test, COUNCIL_BUDGET_ACCOUNT_ID,
+    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, System, Test,
+    COUNCIL_BUDGET_ACCOUNT_ID,
 };
 
 #[test]
@@ -2423,74 +2424,82 @@ fn submit_work_fails_with_invalid_stage() {
     });
 }
 
-// #[test]
-// fn submit_judgement_for_council_succeeded() {
-//     build_test_externalities().execute_with(|| {
-//         let starting_block = 1;
-//         run_to_block(starting_block);
-//
-//         let initial_balance = 500;
-//         let max_amount = 100;
-//         let entrant_stake = 37;
-//         let working_period = 1;
-//
-//         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
-//
-//         CreateBountyFixture::default()
-//             .with_max_amount(max_amount)
-//             .with_entrant_stake(entrant_stake)
-//             .with_work_period(working_period)
-//             .call_and_assert(Ok(()));
-//
-//         let bounty_id = 1;
-//         let member_id = 1;
-//         let account_id = 1;
-//
-//         FundBountyFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_amount(max_amount)
-//             .with_council()
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Ok(()));
-//
-//         increase_account_balance(&account_id, initial_balance);
-//
-//         AnnounceWorkEntryFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_staking_account_id(account_id)
-//             .with_bounty_id(bounty_id)
-//             .call_and_assert(Ok(()));
-//
-//         let entry_id = 1;
-//
-//         let work_data = b"Work submitted".to_vec();
-//         SubmitWorkFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_entry_id(entry_id)
-//             .with_work_data(work_data.clone())
-//             .call_and_assert(Ok(()));
-//
-//         run_to_block(starting_block + working_period + 1);
-//
-//         let judgement = OracleJudgement {
-//             winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
-//             legitimate_participants: BTreeSet::new(),
-//         };
-//
-//         SubmitJudgementFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_judgement(judgement.clone())
-//             .call_and_assert(Ok(()));
-//
-//         EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
-//             bounty_id,
-//             BountyActor::Council,
-//             judgement,
-//         ));
-//     });
-// }
+#[test]
+fn submit_judgement_for_council_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let working_period = 10;
+        let judging_period = 10;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(working_period)
+            .with_judging_period(judging_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + working_period + 1);
+
+        let judgement = OracleJudgement {
+            winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
+            legitimate_participants: BTreeSet::new(),
+        };
+
+        let bounty = Bounty::bounties(bounty_id);
+
+        println!("{:?}", Bounty::current_block());
+        println!("{:?}", bounty);
+        println!("{:?}", Bounty::get_bounty_stage(&bounty));
+
+        SubmitJudgementFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgement(judgement.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
+            bounty_id,
+            BountyActor::Council,
+            judgement,
+        ));
+    });
+}
 
 // #[test]
 // fn cancel_bounty_by_council_succeeds() {
@@ -2696,7 +2705,7 @@ fn validate_funding_bounty_stage() {
             ..Default::default()
         };
 
-        run_to_block(created_at + 1);
+        System::set_block_number(created_at + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
@@ -2717,7 +2726,7 @@ fn validate_funding_bounty_stage() {
             ..Default::default()
         };
 
-        run_to_block(created_at + 2);
+        System::set_block_number(created_at + 2);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
@@ -2734,9 +2743,11 @@ fn validate_work_submission_bounty_stage() {
         let created_at = 10;
         let funding_period = 10;
         let work_period = 10;
+        let judging_period = 10;
         let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
 
-        // Perpetual funding period
+        // Limited funding period
         let params = BountyCreationParameters::<Test> {
             funding_period: Some(funding_period),
             work_period,
@@ -2754,13 +2765,14 @@ fn validate_work_submission_bounty_stage() {
             ..Default::default()
         };
 
-        run_to_block(created_at + funding_period + 1);
+        System::set_block_number(created_at + funding_period + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::WorkSubmission
         );
 
+        // Max funding reached.
         let max_funding_reached_at = 30;
 
         let bounty = BountyRecord {
@@ -2771,7 +2783,29 @@ fn validate_work_submission_bounty_stage() {
             ..Default::default()
         };
 
-        run_to_block(max_funding_reached_at + 1);
+        System::set_block_number(max_funding_reached_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+
+        // Work period is not expired.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(work_period_started_at + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
@@ -2781,13 +2815,46 @@ fn validate_work_submission_bounty_stage() {
 }
 
 #[test]
-fn validate_withdrawal_bounty_stage() {
+fn validate_judgement_bounty_stage() {
     build_test_externalities().execute_with(|| {
         let created_at = 10;
         let funding_period = 10;
         let work_period = 10;
+        let judging_period = 10;
+        let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
+
+        // Work period is not expired.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(work_period_started_at + work_period + 1);
+
+        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgement);
+    });
+}
+
+#[test]
+fn validate_withdrawal_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+        let judging_period = 10;
+        let work_period = 10;
         let total_amount = 50;
         let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
 
         // Expired funding period with not enough funding.
         // Has contributions.
@@ -2807,7 +2874,7 @@ fn validate_withdrawal_bounty_stage() {
             ..Default::default()
         };
 
-        run_to_block(created_at + funding_period + 1);
+        System::set_block_number(created_at + funding_period + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
@@ -2831,6 +2898,31 @@ fn validate_withdrawal_bounty_stage() {
             total_funding: total_amount,
             ..Default::default()
         };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: true
+            }
+        );
+
+        // Judging period has passed.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            total_funding: min_funding_amount,
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + funding_period + work_period + judging_period + 1);
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),

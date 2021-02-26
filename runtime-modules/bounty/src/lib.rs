@@ -39,7 +39,6 @@ mod benchmarking;
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
-// TODO: refactor all stages
 // TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
 // existing work entries?
 
@@ -251,6 +250,12 @@ pub enum BountyMilestone<BlockNumber> {
     BountyMaxFundingReached {
         ///  A bounty funding was successful on the provided block.
         max_funding_reached_at: BlockNumber,
+    },
+
+    /// Some work was submitted for a bounty..
+    WorkSubmitted {
+        ///  Starting block for the work period.
+        work_period_started_at: BlockNumber,
     },
 
     /// Creator cherry was withdrawn.
@@ -981,6 +986,13 @@ decl_module! {
                 entry.last_submitted_work = Some(work_data_hash);
             });
 
+            let new_milestone = Self::get_bounty_milestone_on_work_submitting(&bounty);
+
+            // Update bounty record.
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.milestone = new_milestone;
+            });
+
             Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
         }
 
@@ -1173,7 +1185,7 @@ impl<T: Trait> BountyActorManager<T> {
 
 impl<T: Trait> Module<T> {
     // Wrapper-function over System::block_number()
-    fn current_block() -> T::BlockNumber {
+    pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
     }
 
@@ -1362,6 +1374,33 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Calculates bounty milestone on work submitting.
+    fn get_bounty_milestone_on_work_submitting(
+        bounty: &Bounty<T>,
+    ) -> BountyMilestone<T::BlockNumber> {
+        let previous_milestone = bounty.milestone.clone();
+
+        match bounty.milestone.clone() {
+            BountyMilestone::Created { created_at, .. } => {
+                // Limited funding period.
+                if let Some(funding_period) = bounty.creation_params.funding_period {
+                    return BountyMilestone::WorkSubmitted {
+                        work_period_started_at: created_at + funding_period,
+                    };
+                }
+
+                // Unlimited funding period.
+                previous_milestone
+            }
+            BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            } => BountyMilestone::WorkSubmitted {
+                work_period_started_at: max_funding_reached_at,
+            },
+            _ => previous_milestone,
+        }
+    }
+
     // Validates stake on announcing the work entry.
     fn validate_entrant_stake(
         bounty: &Bounty<T>,
@@ -1461,9 +1500,9 @@ impl<T: Trait> Module<T> {
         };
 
         sc.is_funding_stage()
-            .or_else(||sc.is_work_submission_stage())
-            .or_else(||sc.is_judgment_stage())
-            .unwrap_or_else(||sc.withdrawal_stage())
+            .or_else(|| sc.is_work_submission_stage())
+            .or_else(|| sc.is_judgment_stage())
+            .unwrap_or_else(|| sc.withdrawal_stage())
     }
 }
 
@@ -1476,26 +1515,19 @@ struct BountyStageCalculator<'a, T: Trait> {
 }
 
 impl<'a, T: Trait> BountyStageCalculator<'a, T> {
-
     // Calculates funding stage of the bounty.
     // Returns None if conditions are not met.
     fn is_funding_stage(&self) -> Option<BountyStage> {
+        // Bounty was created. There can be some contributions. Funding period is not over.
         if let BountyMilestone::Created {
             has_contributions,
             created_at,
         } = self.bounty.milestone.clone()
         {
-            let funding_stage = BountyStage::Funding { has_contributions };
+            let funding_period_is_not_expired = !self.funding_period_expired(created_at);
 
-            // Limited funding period.
-            if let Some(funding_period) = self.bounty.creation_params.funding_period {
-                // Funding period is not over.
-                if created_at + funding_period >= self.now {
-                    return Some(funding_stage);
-                }
-            } else {
-                // Perpetual funding.
-                return Some(funding_stage);
+            if funding_period_is_not_expired {
+                return Some(BountyStage::Funding { has_contributions });
             }
         }
 
@@ -1506,15 +1538,14 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Returns None if conditions are not met.
     fn is_work_submission_stage(&self) -> Option<BountyStage> {
         match self.bounty.milestone.clone() {
-            // Funding period. No contributions or some contributions.
+            // Funding period is over. Minimum funding reached. Work period is not expired.
             BountyMilestone::Created { created_at, .. } => {
                 // Limited funding period.
                 if let Some(funding_period) = self.bounty.creation_params.funding_period {
-                    let funding_period_expired = created_at + funding_period < self.now;
-                    let minimum_funding_reached =
-                        self.bounty.total_funding >= self.bounty.creation_params.min_amount;
-                    let working_period_is_not_expired = self.now
-                        <= created_at + funding_period + self.bounty.creation_params.work_period;
+                    let minimum_funding_reached = self.minimum_funding_reached();
+                    let funding_period_expired = self.funding_period_expired(created_at);
+                    let working_period_is_not_expired =
+                        !self.work_period_expired(created_at + funding_period);
 
                     if minimum_funding_reached
                         && funding_period_expired
@@ -1524,11 +1555,23 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                     }
                 }
             }
+            // Maximum funding reached. Work period is not expired.
             BountyMilestone::BountyMaxFundingReached {
                 max_funding_reached_at,
             } => {
-                // Work period is not over.
-                if self.now <= max_funding_reached_at + self.bounty.creation_params.work_period {
+                let work_period_is_not_expired = !self.work_period_expired(max_funding_reached_at);
+
+                if work_period_is_not_expired {
+                    return Some(BountyStage::WorkSubmission);
+                }
+            }
+            // Work in progress. Work period is not expired.
+            BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            } => {
+                let work_period_is_not_expired = !self.work_period_expired(work_period_started_at);
+
+                if work_period_is_not_expired {
                     return Some(BountyStage::WorkSubmission);
                 }
             }
@@ -1541,6 +1584,21 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Calculates judgement stage of the bounty.
     // Returns None if conditions are not met.
     fn is_judgment_stage(&self) -> Option<BountyStage> {
+        // Can be judged only if there are work submissions.
+        if let BountyMilestone::WorkSubmitted {
+            work_period_started_at,
+        } = self.bounty.milestone
+        {
+            let work_period_expired = self.work_period_expired(work_period_started_at);
+
+            let judgment_period_is_not_expired =
+                !self.judgement_period_expired(work_period_started_at);
+
+            if work_period_expired && judgment_period_is_not_expired {
+                return Some(BountyStage::Judgement);
+            }
+        }
+
         None
     }
 
@@ -1552,33 +1610,28 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         };
 
         match self.bounty.milestone.clone() {
-            // Funding period. No contributions or some contributions.
+            // Funding period. No contributions or not enough contributions.
             BountyMilestone::Created {
                 has_contributions,
                 created_at,
             } => {
-                // Limited funding period.
-                if let Some(funding_period) = self.bounty.creation_params.funding_period {
-                    let minimum_funding_reached =
-                        self.bounty.total_funding >= self.bounty.creation_params.min_amount;
-                    let working_period_is_expired = self.now
-                        > created_at + funding_period + self.bounty.creation_params.work_period;
+                let funding_period_expired = self.funding_period_expired(created_at);
 
-                    if !minimum_funding_reached || working_period_is_expired {
-                        return BountyStage::Withdrawal {
-                            cherry_needs_withdrawal: !has_contributions,
-                        };
-                    }
+                let minimum_funding_is_not_reached = !self.minimum_funding_reached();
+
+                if minimum_funding_is_not_reached && funding_period_expired {
+                    return BountyStage::Withdrawal {
+                        cherry_needs_withdrawal: !has_contributions,
+                    };
                 }
             }
+            // No work submitted.
             BountyMilestone::BountyMaxFundingReached {
                 max_funding_reached_at,
             } => {
-                let working_period_is_expired =
-                    self.now > max_funding_reached_at + self.bounty.creation_params.work_period;
+                let work_period_expired = self.work_period_expired(max_funding_reached_at);
 
-                if working_period_is_expired {
-                    // TODO: change to judging stage when it will be introduced
+                if work_period_expired {
                     return default_stage;
                 }
             }
@@ -1590,8 +1643,51 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                     cherry_needs_withdrawal: false,
                 }
             }
+            // Work submitted but no judgement.
+            BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            } => {
+                let work_period_expired = self.work_period_expired(work_period_started_at);
+
+                let judgment_period_is_expired =
+                    self.judgement_period_expired(work_period_started_at);
+
+                if work_period_expired && judgment_period_is_expired {
+                    return default_stage;
+                }
+            }
         }
 
         default_stage
+    }
+
+    // Checks whether the minimum funding reached for the bounty.
+    fn minimum_funding_reached(&self) -> bool {
+        self.bounty.total_funding >= self.bounty.creation_params.min_amount
+    }
+
+    // Checks whether the work period expired by now starting from the provided block number.
+    fn work_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
+        work_period_started_at + self.bounty.creation_params.work_period < self.now
+    }
+
+    // Checks whether the funding period expired by now starting from the provided block number.
+    fn funding_period_expired(&self, created_at: T::BlockNumber) -> bool {
+        // Limited funding period
+        if let Some(funding_period) = self.bounty.creation_params.funding_period {
+            return created_at + funding_period < self.now;
+        }
+
+        // Unlimited funding period
+        false
+    }
+
+    // Checks whether the judgement period expired by now when work period start from the provided
+    // block number.
+    fn judgement_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
+        work_period_started_at
+            + self.bounty.creation_params.work_period
+            + self.bounty.creation_params.judging_period
+            < self.now
     }
 }
