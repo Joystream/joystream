@@ -41,8 +41,13 @@ export abstract class BaseCommand {
   }
 
   // Shows the error message and ends the process with error code.
-  protected fail(message: string) {
+  protected fail(message: string): void {
     console.log(chalk.red(message))
     process.exit(1)
+  }
+
+  protected maxContentSize(): number {
+    // Maximum content length for the assets (files)
+    return 2000 * 1024 * 1024
   }
 }

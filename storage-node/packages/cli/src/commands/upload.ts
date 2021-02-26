@@ -8,7 +8,6 @@ import { DiscoveryClient } from '@joystream/service-discovery'
 import Debug from 'debug'
 import chalk from 'chalk'
 import { aliceKeyPair } from './dev'
-import { MAX_CONTENT_LENGTH } from './consts'
 const debug = Debug('joystream:storage-cli:upload')
 
 // Defines the necessary parameters for the AddContent runtime tx.
@@ -146,8 +145,8 @@ export class UploadCommand extends BaseCommand {
           'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
           'Content-Length': fileSize.toString(),
         },
-        // max length of body in put request
-        maxBodyLength: MAX_CONTENT_LENGTH,
+        // max length of body in PUT request
+        maxBodyLength: this.maxContentSize(),
       }
       await axios.put(assetUrl, file, config)
 
