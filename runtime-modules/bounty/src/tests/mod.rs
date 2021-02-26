@@ -2476,7 +2476,7 @@ fn submit_work_fails_with_invalid_stage() {
 //
 //         let judgement = OracleJudgement {
 //             winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
-//             ligitimate_participants: BTreeSet::new(),
+//             legitimate_participants: BTreeSet::new(),
 //         };
 //
 //         SubmitJudgementFixture::default()
