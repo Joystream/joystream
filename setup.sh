@@ -11,8 +11,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # install brew package manager
     if ! which brew >/dev/null 2>&1; then
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-	fi
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+    fi
     # install additional packages
     brew update
     brew install b2sum gnu-tar jq curl
@@ -44,9 +44,12 @@ rustup default 1.46.0
 curl https://get.volta.sh | bash
 
 # source env variables added by Volta
-source ~/.bashrc || :
-source ~/.bash_profile || :
+source source ~/.bash_profile || ~/.profile || source ~/.bashrc || :
 
 volta install node@12
 volta install yarn
 volta install npx
+
+echo "Starting new terminal/shell session to make newly installed tools available."
+
+exec bash -l
