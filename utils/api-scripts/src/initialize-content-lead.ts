@@ -1,7 +1,7 @@
 import { types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from '../src/helpers/extrinsics'
+import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 
 async function main() {
   // Init api
@@ -22,7 +22,7 @@ async function main() {
     .toArray()[0]
     ?.toNumber()
 
-  // Only buy membership if LEAD_URI is not provided
+  // Only buy membership if LEAD_URI is not provided - ie for Alice
   if (memberId === undefined && process.env.LEAD_URI) {
     throw new Error('Make sure Controller key LEAD_URI is for a member')
   }
@@ -37,10 +37,11 @@ async function main() {
     )
   }
 
-  console.log(`Making member id: ${memberId} the content lead.`)
-
   // Create a new lead opening
-  if ((await api.query.contentDirectoryWorkingGroup.currentLead()).isNone) {
+  if ((await api.query.contentDirectoryWorkingGroup.currentLead()).isSome) {
+    console.log('Curators lead already exists, aborting...')
+  } else {
+    console.log(`Making member id: ${memberId} the content lead.`)
     const newOpeningId = (await api.query.contentDirectoryWorkingGroup.nextOpeningId()).toNumber()
     const newApplicationId = (await api.query.contentDirectoryWorkingGroup.nextApplicationId()).toNumber()
     // Create curator lead opening
@@ -95,8 +96,6 @@ async function main() {
     )
 
     await txHelper.sendAndCheck(SudoKeyPair, extrinsics, 'Failed to initialize Content Curators Lead!')
-  } else {
-    console.log('Curators lead already exists, skipping...')
   }
 }
 

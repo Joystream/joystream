@@ -145,12 +145,10 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
-      - name: Ensure tests are runnable
-        run: yarn workspace @joystream/cd-schemas checks --quiet
       - name: Start chain
         run: docker-compose up -d joystream-node
       - name: Initialize the content directory
-        run: yarn workspace @joystream/cd-schemas initialize:dev
+        run: yarn workspace api-scripts initialize-content-lead
 
   query_node:
     name: Query Node Integration Tests
