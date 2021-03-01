@@ -23,7 +23,7 @@ describe('Video Metadata', () => {
     meta.setIsExplicit(false)
     meta.setVideo(0)
     meta.setThumbnailPhoto(1)
-    meta.setCategory(101)
+    meta.setCategoriesList([101, 102])
 
     assert.deepEqual(meta.toObject(), {
       title,
@@ -49,7 +49,7 @@ describe('Video Metadata', () => {
       thumbnailPhoto: 1,
       video: 0,
       personsList: [],
-      category: 101,
+      categoriesList: [101, 102],
     })
 
     // sanity check - encoding / decoding works
