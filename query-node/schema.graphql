@@ -188,32 +188,6 @@ type AssetOwnerWorkingGroup @variant {
   workingGroupId: BigInt!
 }
 
-
-"""
-This type is to keep which entity belongs to which class. This type will be used
-by EntityCreated event. When a new schema support added to an Entity we will get the
-class name from this table.
-We need this because we can't create a database row (Channel, Video etc) without
-with empty fields.
-"""
-type ClassEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "The class id of this entity"
-  classId: Int!
-
-  happenedIn: Block!
-}
-
-"Keep track of the next entity id"
-type NextEntityId @entity {
-  "Constant field is set to '1'"
-  id: ID!
-
-  nextId: Int!
-}
-
 #### High Level Derivative Entities ####
 
 type Language @entity {
@@ -270,35 +244,6 @@ type VideoCategory @entity {
   name: String @fulltext(query: "videoCategoriesByName")
 
   videos: [Video!] @derivedFrom(field: "category")
-
-  happenedIn: Block!
-}
-
-type KnownLicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
-  code: String! @unique
-
-  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
-  name: String
-
-  "Short description of the license conditions"
-  description: String
-
-  "An url pointing to full license content"
-  url: String
-
-  happenedIn: Block!
-}
-
-type UserDefinedLicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Custom license content"
-  content: String!
 
   happenedIn: Block!
 }
