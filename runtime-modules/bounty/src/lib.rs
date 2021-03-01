@@ -522,6 +522,13 @@ decl_error! {
         /// Cannot create a 'closed assurance contract' bounty with member list larger
         /// than allowed max work entry limit.
         ClosedContractMemberListIsTooLarge,
+
+        /// Judgement decision member_id collections exceeded the maximum entry limit.
+        InvalidJudgementCollectionLength,
+
+        /// Judgement contains the same member_id in `winner` and `legitimate_participants`
+        /// collections.
+        DuplicatedMembersInJudgement,
     }
 }
 
@@ -1020,14 +1027,11 @@ decl_module! {
                 Error::<T>::InvalidBountyStage,
             );
 
+            Self::validate_judgement(&judgement)?;
+
             // TODO: check that judgement doesn't exist.
 
             // TODO: check that judgement matches the work entries.
-
-            // TODO: should we allow a judgement to select legitimate or winners work entries without work submissions?
-            // NO!!!
-
-            // TODO: check for judgement doesn't break max entry limits.
 
             // TODO: consider judgement milestone?
 
@@ -1504,6 +1508,32 @@ impl<T: Trait> Module<T> {
             .or_else(|| sc.is_work_submission_stage())
             .or_else(|| sc.is_judgement_stage())
             .unwrap_or_else(|| sc.withdrawal_stage())
+    }
+
+    // Validates oracle judgement.
+    fn validate_judgement(judgement: &OracleJudgement<MemberId<T>>) -> DispatchResult {
+        let selected_workers_number =
+            judgement.winners.len() + judgement.legitimate_participants.len();
+
+        // Check collections length.
+        ensure!(
+            selected_workers_number <= T::MaxWorkEntryLimit::get().saturated_into(),
+            Error::<T>::InvalidJudgementCollectionLength
+        );
+
+        let unique_selected_workers_number = judgement
+            .winners
+            .clone()
+            .union(&judgement.legitimate_participants)
+            .count();
+
+        // Check for duplicates.
+        ensure!(
+            selected_workers_number == unique_selected_workers_number,
+            Error::<T>::DuplicatedMembersInJudgement
+        );
+
+        Ok(())
     }
 }
 
