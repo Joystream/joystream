@@ -38,10 +38,10 @@ type Membership @entity {
   about: String
 
   "Member's controller account id"
-  controllerAccount: Bytes!
+  controllerAccount: String!
 
   "Member's root account id"
-  rootAccount: Bytes!
+  rootAccount: String!
 
   "Blocknumber when member was registered"
   registeredAtBlock: Block!
