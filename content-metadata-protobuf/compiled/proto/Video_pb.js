@@ -814,7 +814,7 @@ proto.MediaType.prototype.hasMimeMediaType = function() {
  * @private {!Array<number>}
  * @const
  */
-proto.VideoMetadata.repeatedFields_ = [15];
+proto.VideoMetadata.repeatedFields_ = [15,16];
 
 
 
@@ -862,7 +862,7 @@ proto.VideoMetadata.toObject = function(includeInstance, msg) {
     isPublic: (f = jspb.Message.getBooleanField(msg, 13)) == null ? undefined : f,
     isExplicit: (f = jspb.Message.getBooleanField(msg, 14)) == null ? undefined : f,
     personsList: (f = jspb.Message.getRepeatedField(msg, 15)) == null ? undefined : f,
-    category: (f = jspb.Message.getField(msg, 16)) == null ? undefined : f
+    categoriesList: (f = jspb.Message.getRepeatedField(msg, 16)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -965,8 +965,10 @@ proto.VideoMetadata.deserializeBinaryFromReader = function(msg, reader) {
       }
       break;
     case 16:
-      var value = /** @type {number} */ (reader.readUint64());
-      msg.setCategory(value);
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addCategories(values[i]);
+      }
       break;
     default:
       reader.skipField();
@@ -1105,9 +1107,9 @@ proto.VideoMetadata.serializeBinaryToWriter = function(message, writer) {
       f
     );
   }
-  f = /** @type {number} */ (jspb.Message.getField(message, 16));
-  if (f != null) {
-    writer.writeUint64(
+  f = message.getCategoriesList();
+  if (f.length > 0) {
+    writer.writePackedUint64(
       16,
       f
     );
@@ -1660,38 +1662,39 @@ proto.VideoMetadata.prototype.clearPersonsList = function() {
 
 
 /**
- * optional uint64 category = 16;
- * @return {number}
+ * repeated uint64 categories = 16;
+ * @return {!Array<number>}
  */
-proto.VideoMetadata.prototype.getCategory = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 16, 0));
+proto.VideoMetadata.prototype.getCategoriesList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 16));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.VideoMetadata} returns this
+ */
+proto.VideoMetadata.prototype.setCategoriesList = function(value) {
+  return jspb.Message.setField(this, 16, value || []);
 };
 
 
 /**
  * @param {number} value
+ * @param {number=} opt_index
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.setCategory = function(value) {
-  return jspb.Message.setField(this, 16, value);
+proto.VideoMetadata.prototype.addCategories = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 16, value, opt_index);
 };
 
 
 /**
- * Clears the field making it undefined.
+ * Clears the list making it empty but non-null.
  * @return {!proto.VideoMetadata} returns this
  */
-proto.VideoMetadata.prototype.clearCategory = function() {
-  return jspb.Message.setField(this, 16, undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.VideoMetadata.prototype.hasCategory = function() {
-  return jspb.Message.getField(this, 16) != null;
+proto.VideoMetadata.prototype.clearCategoriesList = function() {
+  return this.setCategoriesList([]);
 };
 
 

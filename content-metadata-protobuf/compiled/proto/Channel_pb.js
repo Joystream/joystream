@@ -27,7 +27,7 @@ goog.exportSymbol('proto.ChannelMetadata', null, global);
  * @constructor
  */
 proto.ChannelMetadata = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.ChannelMetadata.repeatedFields_, null);
 };
 goog.inherits(proto.ChannelMetadata, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -58,6 +58,13 @@ if (goog.DEBUG && !COMPILED) {
    */
   proto.ChannelCategoryMetadata.displayName = 'proto.ChannelCategoryMetadata';
 }
+
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.ChannelMetadata.repeatedFields_ = [7];
 
 
 
@@ -96,7 +103,7 @@ proto.ChannelMetadata.toObject = function(includeInstance, msg) {
     language: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
     coverPhoto: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
     avatarPhoto: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f,
-    category: (f = jspb.Message.getField(msg, 7)) == null ? undefined : f
+    categoriesList: (f = jspb.Message.getRepeatedField(msg, 7)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -158,8 +165,10 @@ proto.ChannelMetadata.deserializeBinaryFromReader = function(msg, reader) {
       msg.setAvatarPhoto(value);
       break;
     case 7:
-      var value = /** @type {number} */ (reader.readUint64());
-      msg.setCategory(value);
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedUint64() : [reader.readUint64()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addCategories(values[i]);
+      }
       break;
     default:
       reader.skipField();
@@ -232,9 +241,9 @@ proto.ChannelMetadata.serializeBinaryToWriter = function(message, writer) {
       f
     );
   }
-  f = /** @type {number} */ (jspb.Message.getField(message, 7));
-  if (f != null) {
-    writer.writeUint64(
+  f = message.getCategoriesList();
+  if (f.length > 0) {
+    writer.writePackedUint64(
       7,
       f
     );
@@ -459,38 +468,39 @@ proto.ChannelMetadata.prototype.hasAvatarPhoto = function() {
 
 
 /**
- * optional uint64 category = 7;
- * @return {number}
+ * repeated uint64 categories = 7;
+ * @return {!Array<number>}
  */
-proto.ChannelMetadata.prototype.getCategory = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
+proto.ChannelMetadata.prototype.getCategoriesList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 7));
+};
+
+
+/**
+ * @param {!Array<number>} value
+ * @return {!proto.ChannelMetadata} returns this
+ */
+proto.ChannelMetadata.prototype.setCategoriesList = function(value) {
+  return jspb.Message.setField(this, 7, value || []);
 };
 
 
 /**
  * @param {number} value
+ * @param {number=} opt_index
  * @return {!proto.ChannelMetadata} returns this
  */
-proto.ChannelMetadata.prototype.setCategory = function(value) {
-  return jspb.Message.setField(this, 7, value);
+proto.ChannelMetadata.prototype.addCategories = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 7, value, opt_index);
 };
 
 
 /**
- * Clears the field making it undefined.
+ * Clears the list making it empty but non-null.
  * @return {!proto.ChannelMetadata} returns this
  */
-proto.ChannelMetadata.prototype.clearCategory = function() {
-  return jspb.Message.setField(this, 7, undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.ChannelMetadata.prototype.hasCategory = function() {
-  return jspb.Message.getField(this, 7) != null;
+proto.ChannelMetadata.prototype.clearCategoriesList = function() {
+  return this.setCategoriesList([]);
 };
 
 

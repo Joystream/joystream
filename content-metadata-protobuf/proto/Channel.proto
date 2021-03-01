@@ -18,8 +18,8 @@ message ChannelMetadata {
     // index into external [assets array](#.Assets)
     optional uint32 avatar_photo  = 6;
 
-    // Channel Category Id
-    optional uint64 category = 7;
+    // Categories which the channel belongs to
+    repeated uint64 categories = 7 [packed=true];
 }
 
 message ChannelCategoryMetadata {

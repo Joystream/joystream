@@ -161,7 +161,7 @@ proto.PlaylistMetadata.serializeBinaryToWriter = function(message, writer) {
   }
   f = message.getVideosList();
   if (f.length > 0) {
-    writer.writeRepeatedUint64(
+    writer.writePackedUint64(
       2,
       f
     );

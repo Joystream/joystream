@@ -43,7 +43,7 @@ yarn && yarn build
 ### Generating docs
 
 ```
-yarn generate-docs
+yarn generate-doc
 ```
 
 ### Tests
