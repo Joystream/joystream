@@ -298,7 +298,7 @@ type Video @entity {
   media: Asset
 
   "Video file metadata"
-  metadata: VideoMetadata
+  mediaMetadata: VideoMediaMetadata
 
   happenedIn: Block!
 
@@ -308,7 +308,7 @@ type Video @entity {
   featured: FeaturedVideo @derivedFrom(field: "video")
 }
 
-type VideoMetadata @entity {
+type VideoMediaMetadata @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
@@ -324,7 +324,7 @@ type VideoMetadata @entity {
   "Video media size in bytes"
   size: Int
 
-  video: Video @derivedFrom(field: "metadata")
+  video: Video @derivedFrom(field: "mediaMetadata")
 
   happenedIn: Block!
 }
