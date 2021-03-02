@@ -10,7 +10,7 @@ use sp_std::iter::FromIterator;
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    OracleJudgement, OracleJudgementOf, RawEvent, WorkEntry,
+    OracleJudgement, OracleJudgementOf, OracleWorkEntryJudgement, RawEvent, WorkEntry,
 };
 use common::council::CouncilBudgetManager;
 
@@ -60,6 +60,22 @@ impl EventFixture {
         Self::assert_last_global_event(converted_event)
     }
 
+    pub fn contains_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            u64,
+            u64,
+            u128,
+            BountyCreationParameters<Test>,
+            OracleJudgementOf<Test>,
+        >,
+    ) {
+        let converted_event = TestEvent::bounty(expected_raw_event);
+
+        Self::contains_global_event(converted_event)
+    }
+
     pub fn assert_last_global_event(expected_event: TestEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
@@ -68,6 +84,16 @@ impl EventFixture {
         };
 
         assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+
+    fn contains_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert!(System::events().iter().any(|ev| *ev == expected_event));
     }
 }
 
@@ -226,7 +252,6 @@ impl CreateBountyFixture {
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
-                judgement: None,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -536,6 +561,7 @@ impl AnnounceWorkEntryFixture {
                 staking_account_id: self.staking_account_id,
                 submitted_at: System::current_block_number(),
                 last_submitted_work: None,
+                oracle_judgement_result: OracleWorkEntryJudgement::Legit,
             };
 
             assert_eq!(
@@ -735,7 +761,15 @@ impl SubmitJudgementFixture {
         let new_bounty = Bounty::bounties(self.bounty_id);
 
         if actual_result.is_ok() {
-            assert_eq!(new_bounty.judgement, Some(self.judgement.clone()));
+            assert_eq!(
+                new_bounty.milestone,
+                BountyMilestone::JudgementSubmitted {
+                    successful_bounty: self
+                        .judgement
+                        .iter()
+                        .any(|(_, j)| *j == OracleWorkEntryJudgement::Winner)
+                }
+            );
         } else {
             assert_eq!(new_bounty, old_bounty);
         }

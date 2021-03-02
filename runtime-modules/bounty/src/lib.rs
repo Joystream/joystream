@@ -39,9 +39,14 @@ mod benchmarking;
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
-// TODO: Does no work entries mean "failed bounty" with cherry loss? Or no work submissions with
-// existing work entries?
 // TODO: make sure cherry goes back to creator on successful bounty.
+// TODO: withdraw member funding if there is no judgement.
+// TODO: withdraw funds for winners.
+// TODO - open question:
+/* if you just store winners and to_be_slashed, and you do no iteration even on
+these sets, but instead require active action from everyone, then you may perhaps not even need to
+limit the set size? You could store thousands of ids in either of those values without impacting
+read io speed, as we have seen, so could be fine. */
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -75,6 +80,7 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash},
     ModuleId,
 };
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -112,7 +118,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
     type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
 
     /// Work entry Id type
-    type WorkEntryId: From<u32> + Parameter + Default + Copy;
+    type WorkEntryId: From<u32> + Parameter + Default + Copy + Ord;
 
     /// Defines max work entry number for a bounty.
     /// It limits further work entries iteration after the judge decision about winners, non-winners
@@ -253,10 +259,16 @@ pub enum BountyMilestone<BlockNumber> {
         max_funding_reached_at: BlockNumber,
     },
 
-    /// Some work was submitted for a bounty..
+    /// Some work was submitted for a bounty.
     WorkSubmitted {
         ///  Starting block for the work period.
         work_period_started_at: BlockNumber,
+    },
+
+    /// A judgement was submitted for a bounty.
+    JudgementSubmitted {
+        /// The bounty judgement contains at least a single winner.
+        successful_bounty: bool,
     },
 
     /// Creator cherry was withdrawn.
@@ -296,9 +308,6 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
 
     /// Current active work entry counter.
     pub active_work_entry_count: u32,
-
-    /// Oracle judgement for the bounty.
-    pub judgement: Option<OracleJudgement<MemberId>>,
 }
 
 impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
@@ -337,6 +346,29 @@ pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
 
     /// Last submitted work data hash.
     pub last_submitted_work: Option<Vec<u8>>,
+
+    /// Oracle judgement for the work entry.
+    pub oracle_judgement_result: OracleWorkEntryJudgement,
+}
+
+/// Defines the oracle judgement for the work entry.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
+pub enum OracleWorkEntryJudgement {
+    /// The work entry is selected as a winner.
+    Winner,
+
+    /// The work entry is not selected as a winner but no penalties applies.
+    Legit,
+
+    /// The work entry is considered harmful. The stake will be slashed.
+    Rejected,
+}
+
+impl Default for OracleWorkEntryJudgement {
+    fn default() -> Self {
+        Self::Legit
+    }
 }
 
 /// Balance alias for `balances` module.
@@ -350,20 +382,11 @@ struct RequiredStakeInfo<T: Trait> {
     account_id: T::AccountId,
 }
 
-/// OracleJudgement alias.
-pub type OracleJudgementOf<T> = OracleJudgement<MemberId<T>>;
+/// An alias for the OracleJudgement.
+pub type OracleJudgementOf<T> = OracleJudgement<<T as Trait>::WorkEntryId>;
 
-/// Work entry.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OracleJudgement<MemberId: Ord> {
-    /// Work accepted for this users and they split bounty funding.
-    pub winners: BTreeSet<MemberId>,
-
-    /// Legitimate entrants, yet not winning, which results in them being able to withdraw
-    /// their full stake.
-    pub legitimate_participants: BTreeSet<MemberId>,
-}
+/// The collection of the oracle judgements for the work entries.
+pub type OracleJudgement<WorkEntryId> = BTreeMap<WorkEntryId, OracleWorkEntryJudgement>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -437,6 +460,12 @@ decl_event! {
         /// - created entry ID
         /// - entrant member ID
         WorkEntryWithdrawn(BountyId, WorkEntryId, MemberId),
+
+        /// Work entry was slashed.
+        /// Params:
+        /// - bounty ID
+        /// - created entry ID
+        WorkEntrySlashed(BountyId, WorkEntryId),
 
         /// Submit work.
         /// Params:
@@ -522,13 +551,6 @@ decl_error! {
         /// Cannot create a 'closed assurance contract' bounty with member list larger
         /// than allowed max work entry limit.
         ClosedContractMemberListIsTooLarge,
-
-        /// Judgement decision member_id collections exceeded the maximum entry limit.
-        InvalidJudgementCollectionLength,
-
-        /// Judgement contains the same member_id in `winner` and `legitimate_participants`
-        /// collections.
-        DuplicatedMembersInJudgement,
     }
 }
 
@@ -589,7 +611,6 @@ decl_module! {
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
-                judgement: None,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -890,6 +911,8 @@ decl_module! {
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
                 last_submitted_work: None,
+                // The default initial value.
+                oracle_judgement_result: OracleWorkEntryJudgement::Legit,
             };
 
             <WorkEntries<T>>::insert(bounty_id, entry_id, entry);
@@ -943,12 +966,7 @@ decl_module! {
 
             Self::unlock_work_entry_stake(&bounty, &entry);
 
-            <WorkEntries<T>>::remove(bounty_id, entry_id);
-
-            // Decrement work entry counter and update bounty record.
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.decrement_active_work_entry_counter();
-            });
+            Self::remove_work_entry(&bounty_id, &entry_id);
 
             Self::deposit_event(RawEvent::WorkEntryWithdrawn(bounty_id, entry_id, member_id));
         }
@@ -1010,7 +1028,7 @@ decl_module! {
             origin,
             creator: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgement: OracleJudgement<MemberId<T>>,
+            judgement: OracleJudgement<T::WorkEntryId>,
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
@@ -1027,13 +1045,7 @@ decl_module! {
                 Error::<T>::InvalidBountyStage,
             );
 
-            Self::validate_judgement(&judgement)?;
-
-            // TODO: check that judgement doesn't exist.
-
-            // TODO: check that judgement matches the work entries.
-
-            // TODO: consider judgement milestone?
+            let successful_bounty = Self::validate_judgement(&bounty_id, &judgement)?;
 
             //
             // == MUTATION SAFE ==
@@ -1041,8 +1053,29 @@ decl_module! {
 
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.judgement = Some(judgement.clone());
+                bounty.milestone = BountyMilestone::JudgementSubmitted {
+                    successful_bounty
+                };
             });
+
+            // Judgements triage.
+            for (entry_id, work_entry_judgement) in judgement.iter() {
+                // Update work entries for winners and legitimate participants.
+                if *work_entry_judgement != OracleWorkEntryJudgement::Rejected{
+                    <WorkEntries<T>>::mutate(bounty_id, entry_id, |entry| {
+                        entry.oracle_judgement_result = *work_entry_judgement;
+                    });
+                } else {
+                    let entry = Self::work_entries(bounty_id, entry_id);
+
+                    Self::slash_work_entry_stake(&entry);
+
+                    Self::remove_work_entry(&bounty_id, &entry_id);
+
+                    Self::deposit_event(RawEvent::WorkEntrySlashed(bounty_id, *entry_id));
+                }
+            }
+
             Self::deposit_event(RawEvent::OracleJudgementSubmitted(bounty_id, creator, judgement));
         }
     }
@@ -1483,6 +1516,13 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Slashed the work entry stake.
+    fn slash_work_entry_stake(entry: &WorkEntry<T>) {
+        if let Some(staking_account_id) = &entry.staking_account_id {
+            T::StakingHandler::slash(staking_account_id, None);
+        }
+    }
+
     // Validates the contract type for a bounty
     fn ensure_valid_contract_type(bounty: &Bounty<T>, member_id: &MemberId<T>) -> DispatchResult {
         if let AssuranceContractType::Closed(ref valid_members) =
@@ -1511,29 +1551,34 @@ impl<T: Trait> Module<T> {
     }
 
     // Validates oracle judgement.
-    fn validate_judgement(judgement: &OracleJudgement<MemberId<T>>) -> DispatchResult {
-        let selected_workers_number =
-            judgement.winners.len() + judgement.legitimate_participants.len();
+    fn validate_judgement(
+        bounty_id: &T::BountyId,
+        judgement: &OracleJudgement<T::WorkEntryId>,
+    ) -> Result<bool, DispatchError> {
+        // Check work entry existence.
+        for (entry_id, _) in judgement.iter() {
+            ensure!(
+                <WorkEntries<T>>::contains_key(bounty_id, entry_id),
+                Error::<T>::WorkEntryDoesntExist
+            );
+        }
 
-        // Check collections length.
-        ensure!(
-            selected_workers_number <= T::MaxWorkEntryLimit::get().saturated_into(),
-            Error::<T>::InvalidJudgementCollectionLength
-        );
+        // Lookup for any winners in the judgement.
+        let successful_bounty = judgement
+            .iter()
+            .any(|(_, j)| *j == OracleWorkEntryJudgement::Winner);
 
-        let unique_selected_workers_number = judgement
-            .winners
-            .clone()
-            .union(&judgement.legitimate_participants)
-            .count();
+        Ok(successful_bounty)
+    }
 
-        // Check for duplicates.
-        ensure!(
-            selected_workers_number == unique_selected_workers_number,
-            Error::<T>::DuplicatedMembersInJudgement
-        );
+    // Removes the work entry and decrements active entry count in a bounty.
+    fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::WorkEntryId) {
+        <WorkEntries<T>>::remove(bounty_id, entry_id);
 
-        Ok(())
+        // Decrement work entry counter and update bounty record.
+        <Bounties<T>>::mutate(bounty_id, |bounty| {
+            bounty.decrement_active_work_entry_counter();
+        });
     }
 }
 
@@ -1636,8 +1681,8 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Calculates withdrawal stage of the bounty.
     // Returns None if conditions are not met.
     fn withdrawal_stage(&self) -> BountyStage {
-        let default_stage = BountyStage::Withdrawal {
-            cherry_needs_withdrawal: true,
+        let failed_bounty_withdrawal = BountyStage::Withdrawal {
+            cherry_needs_withdrawal: false, // no cherry withdrawal on failed bounty
         };
 
         match self.bounty.milestone.clone() {
@@ -1663,12 +1708,16 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                 let work_period_expired = self.work_period_expired(max_funding_reached_at);
 
                 if work_period_expired {
-                    return default_stage;
+                    return failed_bounty_withdrawal;
                 }
             }
-            // Bounty was canceled or vetoed.
-            BountyMilestone::Canceled => return default_stage,
-            // It is withdrawal stage and the creator don't expect any withdrawals.
+            // Bounty was canceled or vetoed. Allow cherry withdrawal.
+            BountyMilestone::Canceled => {
+                return BountyStage::Withdrawal {
+                    cherry_needs_withdrawal: true,
+                }
+            }
+            // It is withdrawal stage and the creator cherry has been already withdrawn.
             BountyMilestone::CreatorCherryWithdrawn => {
                 return BountyStage::Withdrawal {
                     cherry_needs_withdrawal: false,
@@ -1684,12 +1733,18 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                     self.judgement_period_expired(work_period_started_at);
 
                 if work_period_expired && judgement_period_is_expired {
-                    return default_stage;
+                    return failed_bounty_withdrawal;
+                }
+            }
+            // The bounty judgment was submitted.
+            BountyMilestone::JudgementSubmitted { successful_bounty } => {
+                return BountyStage::Withdrawal {
+                    cherry_needs_withdrawal: successful_bounty,
                 }
             }
         }
 
-        default_stage
+        failed_bounty_withdrawal
     }
 
     // Checks whether the minimum funding reached for the bounty.

@@ -57,7 +57,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const BountyLockId: [u8; 8] = [12; 8];
-    pub const MaxWorkEntryLimit: u32 = 2;
+    pub const MaxWorkEntryLimit: u32 = 3;
     pub const MinCherryLimit: u64 = 10;
     pub const MinFundingLimit: u64 = 50;
 }

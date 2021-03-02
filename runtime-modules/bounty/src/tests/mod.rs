@@ -3,15 +3,16 @@
 pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
+use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
-use sp_std::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
 use crate::{
     BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage, Error,
-    OracleJudgement, RawEvent,
+    OracleWorkEntryJudgement, RawEvent, WorkEntries,
 };
 use common::council::CouncilBudgetManager;
 use fixtures::{
@@ -24,6 +25,336 @@ use mocks::{
     build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, System, Test,
     COUNCIL_BUDGET_ACCOUNT_ID,
 };
+
+#[test]
+fn validate_funding_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+
+        // Perpetual funding period
+        // No contributions.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: None,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: false
+            }
+        );
+
+        // Has contributions
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: None,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: true
+            }
+        );
+
+        // Limited funding period
+        let funding_period = 10;
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: false
+            }
+        );
+
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + 2);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Funding {
+                has_contributions: true
+            }
+        );
+    });
+}
+
+#[test]
+fn validate_work_submission_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+        let work_period = 10;
+        let judging_period = 10;
+        let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
+
+        // Limited funding period
+        let params = BountyCreationParameters::<Test> {
+            funding_period: Some(funding_period),
+            work_period,
+            min_amount: min_funding_amount,
+            ..Default::default()
+        };
+
+        let bounty = BountyRecord {
+            creation_params: params.clone(),
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            total_funding: min_funding_amount,
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + funding_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+
+        // Max funding reached.
+        let max_funding_reached_at = 30;
+
+        let bounty = BountyRecord {
+            creation_params: params,
+            milestone: BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(max_funding_reached_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+
+        // Work period is not expired.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(work_period_started_at + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::WorkSubmission
+        );
+    });
+}
+
+#[test]
+fn validate_judgement_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+        let work_period = 10;
+        let judging_period = 10;
+        let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
+
+        // Work period is not expired.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(work_period_started_at + work_period + 1);
+
+        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgement);
+    });
+}
+
+#[test]
+fn validate_withdrawal_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let max_funding_reached_at = 10;
+        let funding_period = 10;
+        let judging_period = 10;
+        let work_period = 10;
+        let total_amount = 50;
+        let min_funding_amount = 100;
+        let work_period_started_at = created_at + funding_period;
+
+        // Expired funding period with not enough funding.
+        // Has contributions.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: true,
+            },
+            total_funding: total_amount,
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + funding_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
+
+        // No work submissions.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::BountyMaxFundingReached {
+                max_funding_reached_at,
+            },
+            total_funding: total_amount,
+            ..Default::default()
+        };
+
+        System::set_block_number(max_funding_reached_at + work_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
+
+        // Judging period has passed.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_period: Some(funding_period),
+                work_period,
+                judging_period,
+                min_amount: min_funding_amount,
+                ..Default::default()
+            },
+            milestone: BountyMilestone::WorkSubmitted {
+                work_period_started_at,
+            },
+            total_funding: min_funding_amount,
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + funding_period + work_period + judging_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
+
+        // Canceled bounty
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::Canceled,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: true
+            }
+        );
+
+        // Judging was submitted.
+        let successful_bounty = true;
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::JudgementSubmitted { successful_bounty },
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: successful_bounty
+            }
+        );
+
+        // Creator cherry was withdrawn.
+        let bounty = BountyRecord {
+            milestone: BountyMilestone::CreatorCherryWithdrawn,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::Withdrawal {
+                cherry_needs_withdrawal: false
+            }
+        );
+    });
+}
 
 #[test]
 fn create_bounty_succeeds() {
@@ -1720,6 +2051,13 @@ fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
             .with_member_id(member_id)
             .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::MaxWorkEntryLimitReached.into()));
     });
 }
@@ -2425,7 +2763,7 @@ fn submit_work_fails_with_invalid_stage() {
 }
 
 #[test]
-fn submit_judgement_by_council_succeeded() {
+fn submit_judgement_by_council_succeeded_with_complex_judgement() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2456,6 +2794,7 @@ fn submit_judgement_by_council_succeeded() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
+        // First work entry
         increase_account_balance(&account_id, initial_balance);
 
         AnnounceWorkEntryFixture::default()
@@ -2465,28 +2804,97 @@ fn submit_judgement_by_council_succeeded() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
-        let entry_id = 1;
+        let entry_id1 = 1u64;
 
         let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
-            .with_entry_id(entry_id)
+            .with_entry_id(entry_id1)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        // Second work entry
+        let member_id = 2;
+        let account_id = 2;
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id2 = 2u64;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id2)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        // Third work entry
+        let member_id = 3;
+        let account_id = 3;
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id3 = 3u64;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id3)
             .with_work_data(work_data.clone())
             .call_and_assert(Ok(()));
 
         run_to_block(starting_block + working_period + 1);
 
-        let judgement = OracleJudgement {
-            winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
-            legitimate_participants: BTreeSet::new(),
-        };
+        // Judgement
+        let judgement = vec![
+            (entry_id1, OracleWorkEntryJudgement::Winner),
+            (entry_id2, OracleWorkEntryJudgement::Legit),
+            (entry_id3, OracleWorkEntryJudgement::Rejected),
+        ]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        assert!(<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
+        assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
         SubmitJudgementFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgement(judgement.clone())
             .call_and_assert(Ok(()));
 
+        assert_eq!(
+            Bounty::work_entries(bounty_id, entry_id1).oracle_judgement_result,
+            OracleWorkEntryJudgement::Winner
+        );
+        assert_eq!(
+            Bounty::work_entries(bounty_id, entry_id2).oracle_judgement_result,
+            OracleWorkEntryJudgement::Legit
+        );
+        assert!(!<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
+        assert_eq!(
+            Balances::total_balance(&account_id),
+            initial_balance - entrant_stake
+        );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrySlashed(bounty_id, entry_id3));
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
             bounty_id,
             BountyActor::Council,
@@ -2551,10 +2959,10 @@ fn submit_judgement_by_member_succeeded() {
 
         run_to_block(starting_block + working_period + 1);
 
-        let judgement = OracleJudgement {
-            winners: vec![member_id].iter().cloned().collect::<BTreeSet<u64>>(),
-            legitimate_participants: BTreeSet::new(),
-        };
+        let judgement = vec![entry_id]
+            .iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgement::Winner))
+            .collect::<BTreeMap<_, _>>();
 
         SubmitJudgementFixture::default()
             .with_bounty_id(bounty_id)
@@ -2660,322 +3068,6 @@ fn submit_judgement_fails_with_invalid_stage() {
 }
 
 #[test]
-fn validate_funding_bounty_stage() {
-    build_test_externalities().execute_with(|| {
-        let created_at = 10;
-
-        // Perpetual funding period
-        // No contributions.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: None,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: false,
-            },
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Funding {
-                has_contributions: false
-            }
-        );
-
-        // Has contributions
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: None,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: true,
-            },
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Funding {
-                has_contributions: true
-            }
-        );
-
-        // Limited funding period
-        let funding_period = 10;
-
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: false,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Funding {
-                has_contributions: false
-            }
-        );
-
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: true,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + 2);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Funding {
-                has_contributions: true
-            }
-        );
-    });
-}
-
-#[test]
-fn validate_work_submission_bounty_stage() {
-    build_test_externalities().execute_with(|| {
-        let created_at = 10;
-        let funding_period = 10;
-        let work_period = 10;
-        let judging_period = 10;
-        let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
-
-        // Limited funding period
-        let params = BountyCreationParameters::<Test> {
-            funding_period: Some(funding_period),
-            work_period,
-            min_amount: min_funding_amount,
-            ..Default::default()
-        };
-
-        let bounty = BountyRecord {
-            creation_params: params.clone(),
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: true,
-            },
-            total_funding: min_funding_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + funding_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::WorkSubmission
-        );
-
-        // Max funding reached.
-        let max_funding_reached_at = 30;
-
-        let bounty = BountyRecord {
-            creation_params: params,
-            milestone: BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(max_funding_reached_at + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::WorkSubmission
-        );
-
-        // Work period is not expired.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                work_period,
-                judging_period,
-                min_amount: min_funding_amount,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(work_period_started_at + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::WorkSubmission
-        );
-    });
-}
-
-#[test]
-fn validate_judgement_bounty_stage() {
-    build_test_externalities().execute_with(|| {
-        let created_at = 10;
-        let funding_period = 10;
-        let work_period = 10;
-        let judging_period = 10;
-        let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
-
-        // Work period is not expired.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                work_period,
-                judging_period,
-                min_amount: min_funding_amount,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
-            ..Default::default()
-        };
-
-        System::set_block_number(work_period_started_at + work_period + 1);
-
-        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgement);
-    });
-}
-
-#[test]
-fn validate_withdrawal_bounty_stage() {
-    build_test_externalities().execute_with(|| {
-        let created_at = 10;
-        let max_funding_reached_at = 10;
-        let funding_period = 10;
-        let judging_period = 10;
-        let work_period = 10;
-        let total_amount = 50;
-        let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
-
-        // Expired funding period with not enough funding.
-        // Has contributions.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                work_period,
-                min_amount: min_funding_amount,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: true,
-            },
-            total_funding: total_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + funding_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
-            }
-        );
-
-        // No work submissions.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                work_period,
-                min_amount: min_funding_amount,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            },
-            total_funding: total_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(max_funding_reached_at + work_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: true
-            }
-        );
-
-        // Judging period has passed.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_period: Some(funding_period),
-                work_period,
-                judging_period,
-                min_amount: min_funding_amount,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
-            total_funding: min_funding_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + funding_period + work_period + judging_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: true
-            }
-        );
-
-        // Canceled bounty
-        let bounty = BountyRecord {
-            milestone: BountyMilestone::Canceled,
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: true
-            }
-        );
-
-        // Creator cherry was withdrawn.
-        let bounty = BountyRecord {
-            milestone: BountyMilestone::CreatorCherryWithdrawn,
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
-            }
-        );
-    });
-}
-
-#[test]
 fn submit_judgement_fails_with_invalid_judgement() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -3028,30 +3120,15 @@ fn submit_judgement_fails_with_invalid_judgement() {
 
         run_to_block(starting_block + working_period + 1);
 
-        let winners = vec![member_id].iter().cloned().collect::<BTreeSet<u64>>();
-        let judgement = OracleJudgement {
-            winners: winners.clone(),
-            legitimate_participants: winners,
-        };
+        let invalid_entry_id = 1111u64;
+        let judgement = vec![invalid_entry_id]
+            .iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgement::Winner))
+            .collect::<BTreeMap<_, _>>();
 
         SubmitJudgementFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgement(judgement.clone())
-            .call_and_assert(Err(Error::<Test>::DuplicatedMembersInJudgement.into()));
-
-        let large_winners_set = (1..(MaxWorkEntryLimit::get() + 10))
-            .map(|x| x.into())
-            .into_iter()
-            .collect::<BTreeSet<u64>>();
-
-        let judgement = OracleJudgement {
-            winners: large_winners_set,
-            legitimate_participants: BTreeSet::new(),
-        };
-
-        SubmitJudgementFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgement(judgement.clone())
-            .call_and_assert(Err(Error::<Test>::InvalidJudgementCollectionLength.into()));
+            .with_judgement(judgement)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
     });
 }
