@@ -21,7 +21,7 @@ events:
 calls:
   - members.buyMembership
   - members.addScreenedMember
-outDir: ./generated/types
+outDir: ./mappings/generated/types
 customTypes:
   lib: '@joystream/types/augment/all/types'
   typedefsLoc: '../types/augment/all/defs.json'
