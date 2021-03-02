@@ -74,7 +74,7 @@ services:
       - .env
     environment:
       - DB_HOST=db
-      - DB_NAME=${PROCESSOR_DB_NAME}
+      - DB_NAME=${DB_NAME}
     ports:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on: 
@@ -93,7 +93,7 @@ services:
     environment:
       - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:${WARTHOG_APP_PORT}/graphql
       - TYPEORM_HOST=db
-      - TYPEORM_DATABASE=${PROCESSOR_DB_NAME}
+      - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
     depends_on:
