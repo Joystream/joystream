@@ -1,9 +1,14 @@
 version: '0.1'
+description: Joystream query-node manifest file for sumer
+repository: https://github.com/Joystream/joystream
 dataSource:
   kind: substrate 
   chain: joystream
   indexerVersion: '0.1.6'
+entities:
+  - mappings/lib/generated/**/*.model.js
 metadata:
+  # TODO: update source and blockHash for sumer release
   source: wss://babylon-sub-1.joystream.app/staging/rpc
   blockHash: '0x206a6cca31333cb19ee120cde7455e13eea368ec3f6176d0cd48698228410489'
 events:
@@ -20,9 +25,6 @@ outDir: ./generated/types
 customTypes:
   lib: '@joystream/types/augment/all/types'
   typedefsLoc: '../types/augment/all/defs.json'
-entities:
-  - mappings/lib/generated/**/*.model.js
-
 mappings:
   hydraCommonVersion: '0.0.3'
     # process only blocks with height >= 1M 
