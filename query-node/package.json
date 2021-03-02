@@ -1,48 +1,54 @@
 {
-	"name": "query-node-root",
-	"version": "1.0.0",
-	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
-	"scripts": {
-		"build": "./build.sh",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"clean": "rm -rf ./generated",
-		"processor:start": "hydra-processor run -m manifest.yml -e ../.env",
-		"server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
-		"server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
-		"configure": "(cd ./generated/graphql-server && yarn config:dev)",
-		"db:up": "(cd ../ && docker-compose up -d db)",
-		"db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
-		"db:prepare": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync)",
-		"db:processor:migrate": "hydra-processor migrate --env ../.env",
-		"db:migrate": "./db-migrate.sh",
-		"bootstrap": "hydra-cli codegen --createDb",
-		"codegen:all": "hydra-cli codegen",
-		"db:schema:migrate": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
-		"db:indexer:migrate": "(cd ./generated/indexer && yarn db:migrate)",
-		"codegen:server": "yarn hydra-cli codegen --no-install --no-processor",
-		"integration-tests": "./run-tests.sh",
-		"docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
-		"docker:db:up": "docker-compose up -d db",
-		"docker:db:migrate": "docker run --env-file .env --env DB_HOST=db --env TYPEORM_HOST=db --network container:${PWD##*/}_db_1 hydra-kit:latest yarn db:migrate",
-		"docker:up": "docker-compose up -d"
-	},
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"@dzlzv/hydra-cli": "2.0.0-beta",
-		"@dzlzv/hydra-processor": "0.1.1",
-		"@dzlzv/hydra-typegen": "0.0.3-1"
-	},
-	"dependencies": {
-		"@joystream/types": "^0.14.0",
-		"@types/bn.js": "^4.11.6",
-		"@types/debug": "^4.1.5",
-		"bn.js": "^5.1.2",
-		"debug": "^4.2.0",
-		"dotenvi": "^0.9.1",
-		"tslib": "^2.0.0"
-	},
-	"volta": {
+  "name": "query-node-root",
+  "private": "true",
+  "version": "0.0.0",
+  "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
+  "workspaces": [
+    "./generated/*",
+    "./mappings"
+  ],
+  "scripts": {
+    "build": "yarn clean && yarn codegen",
+    "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
+    "lint": "echo \"Skippinng\"",
+    "clean": "rm -rf ./generated",
+    "clean:query-node": "rm -rf ./generated/graphql-server",
+    "processor:start": "DEBUG=${DEBUG} hydra-processor run -e ../.env",
+    "query-node:start:dev": "yarn workspace query-node start:dev",
+    "query-node:start:prod": "yarn workspace query-node start:prod",
+    "query-node:configure": "yarn workspace query-node config:dev",
+    "db:up": "yarn docker:db:up",
+    "db:create": "yarn workspace query-node db:create",
+    "db:drop": "yarn workspace query-node db:drop",
+    "db:prepare": "yarn workspace query-node db:create && yarn workspace query-node db:sync",
+    "db:schema:migrate": "yarn workspace query-node db:migrate",
+    "db:processor:migrate": "hydra-processor migrate --env ../.env",
+    "db:migrate": "yarn db:schema:migrate && yarn db:processor:migrate",
+    "db:bootstrap": "yarn db:create && yarn db:prepare && yarn db:migrate",
+    "bootstrap": "yarn codegen && yarn db:drop && yarn db:bootstrap",
+    "codegen": "hydra-cli codegen",
+    "codegen:noinstall": "hydra-cli codegen --no-install",
+    "typegen:configure": "NODE_URL=${NODE_URL:-ws://localhost:9000} envsub typegen.template.yml typegen.yml",
+    "typegen": "rm -rf ./mappings/generated && hydra-typegen typegen manifest.yml --debug",
+    "mappings:build": "yarn workspace query-node-mappings build",
+    "docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
+    "docker:db:up": "(cd ../ && docker-compose up -d db)",
+    "docker:db:migrate": "docker run --env-file .env --env DB_HOST=db --env TYPEORM_HOST=db --network container:${PWD##*/}_db_1 hydra-kit:latest yarn db:migrate",
+    "docker:up": "docker-compose up -d"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tslib": "^2.0.0",
+    "@types/bn.js": "^4.11.6",
+    "bn.js": "^5.1.2"
+  },
+  "devDependencies": {
+    "@dzlzv/hydra-cli": "2.0.0-beta",
+    "@dzlzv/hydra-processor": "0.1.1",
+    "@dzlzv/hydra-typegen": "0.0.3-1"
+  },
+  "volta": {
 		"extends": "../package.json"
 	}
 }
