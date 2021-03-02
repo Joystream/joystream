@@ -204,6 +204,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
           'Content-Length': fileSize.toString(),
         },
         maxContentLength: MAX_FILE_SIZE,
+        maxBodyLength: MAX_FILE_SIZE,
       }
       await axios.put(uploadUrl, fileStream, config)
       cli.action.stop()
@@ -395,7 +396,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
       ipfsCid,
     ])
 
-    const dataObject = await this.getApi().dataObjectByContentId(contentId)
+    const dataObject = await this.getApi().dataByContentId(contentId)
     if (!dataObject) {
       this.error('Data object could not be retrieved from chain', { exit: ExitCodes.ApiError })
     }

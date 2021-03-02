@@ -59,7 +59,7 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
-use storage::data_directory::Quota;
+use storage::data_directory::Voucher;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
@@ -71,7 +71,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 10,
+    spec_version: 11,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -453,7 +453,7 @@ impl memo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const DefaultQuota: Quota = Quota::new(5000, 50);
+    pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -465,7 +465,6 @@ impl storage::data_directory::Trait for Runtime {
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type DefaultQuota = DefaultQuota;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {

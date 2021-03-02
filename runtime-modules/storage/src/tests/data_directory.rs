@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use crate::data_directory::Error;
 use common::storage::StorageObjectOwner;
 use frame_support::dispatch::DispatchError;
 use system::RawOrigin;
@@ -46,10 +47,352 @@ fn add_content_fails_with_invalid_origin() {
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
-        // Register a content with 1234 bytes of type 1, which should be recognized.
+        // Make an attempt to register a content with 1234 bytes of type 1, which should be recognized.
         let res =
             TestDataDirectory::add_content(RawOrigin::Root.into(), owner, vec![content_parameters]);
         assert_eq!(res, Err(DispatchError::Other("Bad origin")));
+    });
+}
+
+#[test]
+fn add_content_uploading_blocked() {
+    ExtBuilder::default()
+        .uploading_blocked_status(true)
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(res, Err(Error::<Test>::ContentUploadingBlocked.into()));
+        });
+}
+
+#[test]
+fn add_content_size_limit_reached() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let content_parameters = ContentParameters {
+            content_id: 1,
+            type_id: 1234,
+            size: DEFAULT_VOUCHER.size_limit + 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Make an attempt to register a content, when uploading is blocked.
+        let res =
+            TestDataDirectory::add_content(Origin::signed(sender), owner, vec![content_parameters]);
+        assert_eq!(res, Err(Error::<Test>::VoucherSizeLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn add_content_objects_limit_reached() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let mut content = vec![];
+
+        for i in 0..=DEFAULT_VOUCHER.objects_limit {
+            let content_parameters = ContentParameters {
+                content_id: i + 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+            content.push(content_parameters);
+        }
+
+        // Make an attempt to register a content, when uploading is blocked.
+        let res = TestDataDirectory::add_content(Origin::signed(sender), owner, content);
+        assert_eq!(res, Err(Error::<Test>::VoucherObjectsLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn add_content_global_size_limit_reached() {
+    let global_voucher_size_limit = 0;
+    let global_voucher_objects_limit = 50;
+
+    ExtBuilder::default()
+        .global_voucher(Voucher::new(
+            global_voucher_size_limit,
+            global_voucher_objects_limit,
+        ))
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: global_voucher_size_limit + 1,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(
+                res,
+                Err(Error::<Test>::GlobalVoucherSizeLimitExceeded.into())
+            );
+        });
+}
+
+#[test]
+fn add_content_global_objects_limit_reached() {
+    let global_voucher_size_limit = 50000;
+    let global_voucher_objects_limit = 0;
+
+    ExtBuilder::default()
+        .global_voucher(Voucher::new(
+            global_voucher_size_limit,
+            global_voucher_objects_limit,
+        ))
+        .build()
+        .execute_with(|| {
+            let sender = 1u64;
+
+            let owner = StorageObjectOwner::Member(1u64);
+
+            let content_parameters = ContentParameters {
+                content_id: 1,
+                type_id: 1234,
+                size: 0,
+                ipfs_content_id: vec![1, 2, 3, 4],
+            };
+
+            // Make an attempt to register a content, when uploading is blocked.
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                owner,
+                vec![content_parameters],
+            );
+            assert_eq!(
+                res,
+                Err(Error::<Test>::GlobalVoucherObjectsLimitExceeded.into())
+            );
+        });
+}
+
+#[test]
+fn delete_content() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let content_id = 1;
+
+        let content_parameters = ContentParameters {
+            content_id,
+            type_id: 1234,
+            size: 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+
+        TestDataDirectory::add_content(
+            Origin::signed(sender),
+            owner.clone(),
+            vec![content_parameters],
+        )
+        .unwrap();
+
+        let res =
+            TestDataDirectory::remove_content(Origin::signed(sender), owner, vec![content_id]);
+
+        assert!(res.is_ok());
+    });
+}
+
+#[test]
+fn delete_content_id_not_found() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let content_id = 1;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        // Make an attempt to remove content under non existent id
+        let res =
+            TestDataDirectory::remove_content(Origin::signed(sender), owner, vec![content_id]);
+
+        assert_eq!(res, Err(Error::<Test>::CidNotFound.into()));
+    });
+}
+
+#[test]
+fn delete_content_owners_are_not_equal() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let second_owner = StorageObjectOwner::Member(10u64);
+
+        let content_id = 1;
+
+        let content_parameters = ContentParameters {
+            content_id,
+            type_id: 1234,
+            size: 1,
+            ipfs_content_id: vec![1, 2, 3, 4],
+        };
+
+        // Register a content with 1234 bytes of type 1, which should be recognized.
+
+        TestDataDirectory::add_content(
+            Origin::signed(sender),
+            owner.clone(),
+            vec![content_parameters],
+        )
+        .unwrap();
+
+        // Make an attempt to remove content, providing a wrong origin
+        let res = TestDataDirectory::remove_content(
+            Origin::signed(sender),
+            second_owner,
+            vec![content_id],
+        );
+
+        assert_eq!(res, Err(Error::<Test>::OwnersAreNotEqual.into()));
+    });
+}
+
+#[test]
+fn update_content_uploading_status() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let res = TestDataDirectory::update_content_uploading_status(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            true,
+        );
+
+        assert!(res.is_ok());
+
+        assert_eq!(TestDataDirectory::uploading_blocked(), true);
+    });
+}
+
+#[test]
+fn update_storage_object_owner_voucher_objects_limit() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_limit = 20;
+
+        let res = TestDataDirectory::update_storage_object_owner_voucher_objects_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_limit,
+        );
+
+        assert!(res.is_ok());
+
+        assert_eq!(
+            TestDataDirectory::vouchers(owner).objects_limit,
+            new_objects_limit
+        );
+    });
+}
+
+#[test]
+fn update_storage_object_owner_voucher_objects_limit_upper_bound_exceeded() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_limit = TestDataDirectory::voucher_objects_limit_upper_bound() + 1;
+
+        // Make an attempt to update storage object owner voucher objects limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_voucher_objects_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_limit,
+        );
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::VoucherObjectsLimitUpperBoundExceeded.into())
+        );
+    });
+}
+
+#[test]
+fn update_storage_object_owner_voucher_size_limit() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_total_size_limit = 100;
+
+        let res = TestDataDirectory::update_storage_object_owner_voucher_size_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_total_size_limit,
+        );
+
+        assert!(res.is_ok());
+
+        assert_eq!(
+            TestDataDirectory::vouchers(owner).size_limit,
+            new_objects_total_size_limit
+        );
+    });
+}
+
+#[test]
+fn update_storage_object_owner_voucher_size_limit_upper_bound_exceeded() {
+    with_default_mock_builder(|| {
+        SetLeadFixture::set_default_lead();
+
+        let owner = StorageObjectOwner::Member(1u64);
+
+        let new_objects_total_size_limit = TestDataDirectory::voucher_size_limit_upper_bound() + 1;
+
+        // Make an attempt to update storage object owner voucher size limit, providing value, which exceeds upper bound.
+        let res = TestDataDirectory::update_storage_object_owner_voucher_size_limit(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            owner.clone(),
+            new_objects_total_size_limit,
+        );
+
+        assert_eq!(
+            res,
+            Err(Error::<Test>::VoucherSizeLimitUpperBoundExceeded.into())
+        );
     });
 }
 

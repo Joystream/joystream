@@ -81,7 +81,9 @@
     "WorkingGroup": {
         "_enum": [
             "Storage",
-            "Content"
+            "Content",
+            "Builder",
+            "Gateway"
         ]
     },
     "SlashingTerms": {
@@ -526,14 +528,22 @@
             "WorkingGroup": "WorkingGroup"
         }
     },
-    "Content": "Vec<ContentParameters>",
-    "Quota": {
+    "ObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Voucher": {
         "size_limit": "u64",
         "objects_limit": "u64",
         "size_used": "u64",
         "objects_used": "u64"
     },
-    "QuotaLimit": "u64",
+    "VoucherLimit": "u64",
     "UploadingStatus": "bool",
     "ProposalId": "u32",
     "ProposalStatus": {
@@ -727,11 +737,13 @@
     },
     "ChannelCreationParameters": {
         "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
+        "meta": "Bytes",
+        "reward_account": "Option<GenericAccountId>"
     },
     "ChannelUpdateParameters": {
         "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Bytes"
+        "new_meta": "Option<Bytes>",
+        "reward_account": "Option<Option<GenericAccountId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {

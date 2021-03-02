@@ -10,9 +10,12 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
+use crate::{BuilderWorkingGroupInstance, DataDirectory, GatewayWorkingGroupInstance};
+
 use crate::constants::PRIMARY_PROBABILITY;
+
 use crate::{
-    content, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
+    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
     GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
@@ -55,11 +58,43 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 // pub type Executive =
 //     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
 
+// Alias for the builder working group
+pub(crate) type BuilderWorkingGroup<T> = working_group::Module<T, BuilderWorkingGroupInstance>;
+
+// Alias for the gateway working group
+pub(crate) type GatewayWorkingGroup<T> = working_group::Module<T, GatewayWorkingGroupInstance>;
+
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         content::Module::<Runtime>::on_runtime_upgrade();
+
+        let default_text_constraint = crate::working_group::default_text_constraint();
+        let default_content_working_group_mint_capacity = 0;
+
+        BuilderWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        GatewayWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        DataDirectory::initialize_data_directory(
+            Vec::new(),
+            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_GLOBAL_VOUCHER,
+            data_directory::DEFAULT_VOUCHER,
+            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
+        );
 
         // TODO: storage / data_directory migration or clear all data objects
 

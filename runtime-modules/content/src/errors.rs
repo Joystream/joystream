@@ -4,6 +4,8 @@ use frame_support::decl_error;
 decl_error! {
     /// Content directory errors
     pub enum Error for Module<T: Trait> {
+        /// Feature Not Implemented
+        FeatureNotImplemented,
 
         // Curator Management Errors
         // -------------------------
@@ -26,11 +28,11 @@ decl_error! {
         /// Curator group is not active
         CuratorGroupIsNotActive,
 
+        /// Curator id is not a worker id in content working group
+        CuratorIdInvalid,
+
         // Authentication Errors
         // ---------------------
-
-        /// Origin cannot be made into raw origin
-        OriginCanNotBeMadeIntoRawOrigin,
 
         /// Lead authentication failed
         LeadAuthFailed,
@@ -43,5 +45,23 @@ decl_error! {
 
         /// Expected root or signed origin
         BadOrigin,
+
+        /// Operation cannot be perfomed with this Actor
+        ActorNotAuthorized,
+
+        /// This content actor cannot own a channel
+        ActorCannotOwnChannel,
+
+        /// A Channel or Video Category does not exist.
+        CategoryDoesNotExist,
+
+        /// Channel does not exist
+        ChannelDoesNotExist,
+
+        /// Channel must have been deleted
+        ChannelMustNotExist,
+
+        /// Curators can only censor non-curator group owned channels
+        CannotCensoreCuratorGroupOwnedChannels
     }
 }
