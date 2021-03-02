@@ -107,6 +107,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const MinimumStakeForOpening: u32 = 50;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -118,6 +119,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl LockComparator<u64> for Test {

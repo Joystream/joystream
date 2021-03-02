@@ -2,7 +2,7 @@
 use super::*;
 use balances::Module as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Module as System;
@@ -12,7 +12,7 @@ use sp_runtime::traits::Bounded;
 use sp_std::collections::btree_set::BTreeSet;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    WorkerById,
+    StakeParameters, StakePolicy, WorkerById,
 };
 
 // We create this trait because we need to be compatible with the runtime
@@ -182,7 +182,13 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
         add_opening_origin.clone(),
         vec![],
         *job_opening_type,
-        None,
+        StakePolicy {
+            stake_amount:
+                <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumStakeForOpening::get(
+                ),
+            leaving_unstaking_period: <T as
+                working_group::Trait<ForumWorkingGroupInstance>>::MinUnstakingPeriodLimit::get() + One::one(),
+        },
         Some(One::one()),
     )
     .unwrap();
@@ -210,7 +216,10 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
             role_account_id: applicant_id.clone(),
             reward_account_id: applicant_id.clone(),
             description: vec![],
-            stake_parameters: None,
+            stake_parameters: StakeParameters {
+                stake: <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumStakeForOpening::get(),
+                staking_account_id: applicant_id.clone()
+            },
         },
     )
     .unwrap();

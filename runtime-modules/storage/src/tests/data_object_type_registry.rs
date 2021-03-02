@@ -15,7 +15,7 @@ impl SetLeadFixture {
         let worker = working_group::Worker::<Test> {
             member_id: DEFAULT_LEADER_MEMBER_ID,
             role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
-            staking_account_id: None,
+            staking_account_id: DEFAULT_LEADER_ACCOUNT_ID,
             reward_account_id: DEFAULT_LEADER_ACCOUNT_ID,
             started_leaving_at: None,
             job_unstaking_period: 0,

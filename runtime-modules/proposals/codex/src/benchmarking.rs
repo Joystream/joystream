@@ -4,7 +4,7 @@ use crate::Module as Codex;
 use balances::Module as Balances;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -162,7 +162,12 @@ fn create_proposal_verify<T: Trait>(
 }
 
 benchmarks! {
-    where_clause { where T: membership::Trait, T: council::Trait }
+    where_clause {
+        where T: membership::Trait,
+        T: council::Trait,
+        T: working_group::Trait<working_group::Instance1>
+    }
+
     _ {
         let t in 1 .. T::TitleMaxLength::get() => ();
         let d in 1 .. T::DescriptionMaxLength::get() => ();
@@ -307,7 +312,12 @@ benchmarks! {
         let proposal_details = ProposalDetails::CreateWorkingGroupLeadOpening(
             CreateOpeningParameters {
                 description: vec![0u8; i.try_into().unwrap()],
-                stake_policy: None,
+                stake_policy: working_group::StakePolicy {
+                    stake_amount:
+                        <T as working_group::Trait<working_group::Instance1>>
+                            ::MinimumStakeForOpening::get(),
+                    leaving_unstaking_period: Zero::zero(),
+                },
                 reward_per_block: None,
                 group: WorkingGroup::Forum,
         });

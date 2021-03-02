@@ -213,6 +213,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId1: [u8; 8] = [1; 8];
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const MinimumStakeForOpening: u32 = 50;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -225,6 +226,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {
@@ -348,7 +350,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u64) {
     let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        staking_account_id: None,
+        staking_account_id: 1,
         reward_account_id: role_account_id,
         started_leaving_at: None,
         job_unstaking_period: 0,
