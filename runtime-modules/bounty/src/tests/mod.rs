@@ -12,13 +12,13 @@ use sp_std::collections::btree_map::BTreeMap;
 use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
 use crate::{
     BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage, Error,
-    OracleWorkEntryJudgement, RawEvent, WorkEntries,
+    OracleWorkEntryJudgment, RawEvent, WorkEntries,
 };
 use common::council::CouncilBudgetManager;
 use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
-    EventFixture, FundBountyFixture, SubmitJudgementFixture, SubmitWorkFixture, VetoBountyFixture,
+    EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, VetoBountyFixture,
     WithdrawCreatorCherryFixture, WithdrawFundingFixture, WithdrawWorkEntryFixture,
 };
 use mocks::{
@@ -197,7 +197,7 @@ fn validate_work_submission_bounty_stage() {
 }
 
 #[test]
-fn validate_judgement_bounty_stage() {
+fn validate_judgment_bounty_stage() {
     build_test_externalities().execute_with(|| {
         let created_at = 10;
         let funding_period = 10;
@@ -223,7 +223,7 @@ fn validate_judgement_bounty_stage() {
 
         System::set_block_number(work_period_started_at + work_period + 1);
 
-        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgement);
+        assert_eq!(Bounty::get_bounty_stage(&bounty), BountyStage::Judgment);
     });
 }
 
@@ -330,7 +330,7 @@ fn validate_withdrawal_bounty_stage() {
         // Judging was submitted.
         let successful_bounty = true;
         let bounty = BountyRecord {
-            milestone: BountyMilestone::JudgementSubmitted { successful_bounty },
+            milestone: BountyMilestone::JudgmentSubmitted { successful_bounty },
             ..Default::default()
         };
 
@@ -2763,7 +2763,7 @@ fn submit_work_fails_with_invalid_stage() {
 }
 
 #[test]
-fn submit_judgement_by_council_succeeded_with_complex_judgement() {
+fn submit_judgment_by_council_succeeded_with_complex_judgment() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2862,11 +2862,11 @@ fn submit_judgement_by_council_succeeded_with_complex_judgement() {
 
         run_to_block(starting_block + working_period + 1);
 
-        // Judgement
-        let judgement = vec![
-            (entry_id1, OracleWorkEntryJudgement::Winner),
-            (entry_id2, OracleWorkEntryJudgement::Legit),
-            (entry_id3, OracleWorkEntryJudgement::Rejected),
+        // Judgment
+        let judgment = vec![
+            (entry_id1, OracleWorkEntryJudgment::Winner),
+            (entry_id2, OracleWorkEntryJudgment::Legit),
+            (entry_id3, OracleWorkEntryJudgment::Rejected),
         ]
         .iter()
         .cloned()
@@ -2875,18 +2875,18 @@ fn submit_judgement_by_council_succeeded_with_complex_judgement() {
         assert!(<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgement(judgement.clone())
+            .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::work_entries(bounty_id, entry_id1).oracle_judgement_result,
-            OracleWorkEntryJudgement::Winner
+            Bounty::work_entries(bounty_id, entry_id1).oracle_judgment_result,
+            OracleWorkEntryJudgment::Winner
         );
         assert_eq!(
-            Bounty::work_entries(bounty_id, entry_id2).oracle_judgement_result,
-            OracleWorkEntryJudgement::Legit
+            Bounty::work_entries(bounty_id, entry_id2).oracle_judgment_result,
+            OracleWorkEntryJudgment::Legit
         );
         assert!(!<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(
@@ -2895,16 +2895,16 @@ fn submit_judgement_by_council_succeeded_with_complex_judgement() {
         );
 
         EventFixture::contains_crate_event(RawEvent::WorkEntrySlashed(bounty_id, entry_id3));
-        EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
+        EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Council,
-            judgement,
+            judgment,
         ));
     });
 }
 
 #[test]
-fn submit_judgement_by_member_succeeded() {
+fn submit_judgment_by_member_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2959,39 +2959,39 @@ fn submit_judgement_by_member_succeeded() {
 
         run_to_block(starting_block + working_period + 1);
 
-        let judgement = vec![entry_id]
+        let judgment = vec![entry_id]
             .iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgement::Winner))
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
             .collect::<BTreeMap<_, _>>();
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
             .with_oracle_member_id(oracle_member_id)
-            .with_judgement(judgement.clone())
+            .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::OracleJudgementSubmitted(
+        EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Member(oracle_member_id),
-            judgement,
+            judgment,
         ));
     });
 }
 
 #[test]
-fn submit_judgement_fails_with_invalid_bounty_id() {
+fn submit_judgment_fails_with_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let invalid_bounty_id = 11u64;
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(invalid_bounty_id)
             .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
     });
 }
 
 #[test]
-fn submit_judgement_fails_with_invalid_origin() {
+fn submit_judgment_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let member_id = 1;
         let account_id = 1;
@@ -3000,18 +3000,18 @@ fn submit_judgement_fails_with_invalid_origin() {
         increase_account_balance(&account_id, initial_balance);
         set_council_budget(initial_balance);
 
-        // Oracle is set to a council - try to submit judgement with bad origin
+        // Oracle is set to a council - try to submit judgment with bad origin
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
 
-        // Oracle is set to a member - try to submit judgement with invalid member_id
+        // Oracle is set to a member - try to submit judgment with invalid member_id
         CreateBountyFixture::default()
             .with_oracle_member_id(member_id)
             .call_and_assert(Ok(()));
@@ -3019,32 +3019,32 @@ fn submit_judgement_fails_with_invalid_origin() {
         let bounty_id = 2u64;
         let invalid_member_id = 2;
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(account_id))
             .with_oracle_member_id(invalid_member_id)
             .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
 
-        // Oracle is set to a member - try to submit judgement with bad origin
+        // Oracle is set to a member - try to submit judgment with bad origin
         CreateBountyFixture::default()
             .with_oracle_member_id(member_id)
             .call_and_assert(Ok(()));
 
         let bounty_id = 3u64;
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
 
-        // Oracle is set to a member - try to submit judgement as a council
+        // Oracle is set to a member - try to submit judgment as a council
         CreateBountyFixture::default()
             .with_oracle_member_id(member_id)
             .call_and_assert(Ok(()));
 
         let bounty_id = 4u64;
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
@@ -3052,7 +3052,7 @@ fn submit_judgement_fails_with_invalid_origin() {
 }
 
 #[test]
-fn submit_judgement_fails_with_invalid_stage() {
+fn submit_judgment_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
@@ -3061,14 +3061,14 @@ fn submit_judgement_fails_with_invalid_stage() {
 
         let bounty_id = 1u64;
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
     });
 }
 
 #[test]
-fn submit_judgement_fails_with_invalid_judgement() {
+fn submit_judgment_fails_with_invalid_judgment() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -3121,14 +3121,14 @@ fn submit_judgement_fails_with_invalid_judgement() {
         run_to_block(starting_block + working_period + 1);
 
         let invalid_entry_id = 1111u64;
-        let judgement = vec![invalid_entry_id]
+        let judgment = vec![invalid_entry_id]
             .iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgement::Winner))
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
             .collect::<BTreeMap<_, _>>();
 
-        SubmitJudgementFixture::default()
+        SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgement(judgement)
+            .with_judgment(judgment)
             .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
     });
 }

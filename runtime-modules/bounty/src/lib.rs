@@ -4,7 +4,7 @@
 //! ### Bounty stages
 //! - Funding - a bounty is being funded.
 //! - WorkSubmission - interested participants can submit their work.
-//! - Judgement - working periods ended and the oracle should provide their judgement.
+//! - Judgment - working periods ended and the oracle should provide their judgment.
 //! - Withdrawal - all funds can be withdrawn.
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
@@ -23,8 +23,8 @@
 //! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
 //! work entry for a bounty.
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
-//! - [submit_oracle_judgement](./struct.Module.html#method.submit_oracle_judgement) - submits an
-//! oracle judgement for a bounty.
+//! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
+//! oracle judgment for a bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -40,7 +40,7 @@ mod benchmarking;
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
 // TODO: make sure cherry goes back to creator on successful bounty.
-// TODO: withdraw member funding if there is no judgement.
+// TODO: withdraw member funding if there is no judgment.
 // TODO: withdraw funds for winners.
 // TODO - open question:
 /* if you just store winners and to_be_slashed, and you do no iteration even on
@@ -227,8 +227,8 @@ pub enum BountyStage {
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
 
-    /// Working periods ended and the oracle should provide their judgement.
-    Judgement,
+    /// Working periods ended and the oracle should provide their judgment.
+    Judgment,
 
     /// Funding and cherry can be withdrawn.
     Withdrawal {
@@ -265,9 +265,9 @@ pub enum BountyMilestone<BlockNumber> {
         work_period_started_at: BlockNumber,
     },
 
-    /// A judgement was submitted for a bounty.
-    JudgementSubmitted {
-        /// The bounty judgement contains at least a single winner.
+    /// A judgment was submitted for a bounty.
+    JudgmentSubmitted {
+        /// The bounty judgment contains at least a single winner.
         successful_bounty: bool,
     },
 
@@ -347,14 +347,14 @@ pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
     /// Last submitted work data hash.
     pub last_submitted_work: Option<Vec<u8>>,
 
-    /// Oracle judgement for the work entry.
-    pub oracle_judgement_result: OracleWorkEntryJudgement,
+    /// Oracle judgment for the work entry.
+    pub oracle_judgment_result: OracleWorkEntryJudgment,
 }
 
-/// Defines the oracle judgement for the work entry.
+/// Defines the oracle judgment for the work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
-pub enum OracleWorkEntryJudgement {
+pub enum OracleWorkEntryJudgment {
     /// The work entry is selected as a winner.
     Winner,
 
@@ -365,7 +365,7 @@ pub enum OracleWorkEntryJudgement {
     Rejected,
 }
 
-impl Default for OracleWorkEntryJudgement {
+impl Default for OracleWorkEntryJudgment {
     fn default() -> Self {
         Self::Legit
     }
@@ -382,11 +382,11 @@ struct RequiredStakeInfo<T: Trait> {
     account_id: T::AccountId,
 }
 
-/// An alias for the OracleJudgement.
-pub type OracleJudgementOf<T> = OracleJudgement<<T as Trait>::WorkEntryId>;
+/// An alias for the OracleJudgment.
+pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::WorkEntryId>;
 
-/// The collection of the oracle judgements for the work entries.
-pub type OracleJudgement<WorkEntryId> = BTreeMap<WorkEntryId, OracleWorkEntryJudgement>;
+/// The collection of the oracle judgments for the work entries.
+pub type OracleJudgment<WorkEntryId> = BTreeMap<WorkEntryId, OracleWorkEntryJudgment>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -420,7 +420,7 @@ decl_event! {
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::AccountId,
         BountyCreationParameters = BountyCreationParameters<T>,
-        OracleJudgement = OracleJudgementOf<T>,
+        OracleJudgment = OracleJudgmentOf<T>,
     {
         /// A bounty was created.
         BountyCreated(BountyId, BountyCreationParameters),
@@ -475,12 +475,12 @@ decl_event! {
         /// - work data (description, URL, BLOB, etc.)
         WorkSubmitted(BountyId, WorkEntryId, MemberId, Vec<u8>),
 
-        /// Submit oracle judgement.
+        /// Submit oracle judgment.
         /// Params:
         /// - bounty ID
         /// - oracle
-        /// - judgement data
-        OracleJudgementSubmitted(BountyId, BountyActor<MemberId>, OracleJudgement),
+        /// - judgment data
+        OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment),
     }
 }
 
@@ -912,7 +912,7 @@ decl_module! {
                 submitted_at: Self::current_block(),
                 last_submitted_work: None,
                 // The default initial value.
-                oracle_judgement_result: OracleWorkEntryJudgement::Legit,
+                oracle_judgment_result: OracleWorkEntryJudgment::Legit,
             };
 
             <WorkEntries<T>>::insert(bounty_id, entry_id, entry);
@@ -1022,13 +1022,13 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
         }
 
-        /// Submits an oracle judgement for a bounty.
+        /// Submits an oracle judgment for a bounty.
         #[weight =  1000000] // TODO adjust weight
-        pub fn submit_oracle_judgement(
+        pub fn submit_oracle_judgment(
             origin,
             creator: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgement: OracleJudgement<T::WorkEntryId>,
+            judgment: OracleJudgment<T::WorkEntryId>,
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
@@ -1041,11 +1041,11 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
-                matches!(current_bounty_stage, BountyStage::Judgement),
+                matches!(current_bounty_stage, BountyStage::Judgment),
                 Error::<T>::InvalidBountyStage,
             );
 
-            let successful_bounty = Self::validate_judgement(&bounty_id, &judgement)?;
+            let successful_bounty = Self::validate_judgment(&bounty_id, &judgment)?;
 
             //
             // == MUTATION SAFE ==
@@ -1053,17 +1053,17 @@ decl_module! {
 
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.milestone = BountyMilestone::JudgementSubmitted {
+                bounty.milestone = BountyMilestone::JudgmentSubmitted {
                     successful_bounty
                 };
             });
 
-            // Judgements triage.
-            for (entry_id, work_entry_judgement) in judgement.iter() {
+            // Judgments triage.
+            for (entry_id, work_entry_judgment) in judgment.iter() {
                 // Update work entries for winners and legitimate participants.
-                if *work_entry_judgement != OracleWorkEntryJudgement::Rejected{
+                if *work_entry_judgment != OracleWorkEntryJudgment::Rejected{
                     <WorkEntries<T>>::mutate(bounty_id, entry_id, |entry| {
-                        entry.oracle_judgement_result = *work_entry_judgement;
+                        entry.oracle_judgment_result = *work_entry_judgment;
                     });
                 } else {
                     let entry = Self::work_entries(bounty_id, entry_id);
@@ -1076,7 +1076,7 @@ decl_module! {
                 }
             }
 
-            Self::deposit_event(RawEvent::OracleJudgementSubmitted(bounty_id, creator, judgement));
+            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, creator, judgment));
         }
     }
 }
@@ -1546,27 +1546,27 @@ impl<T: Trait> Module<T> {
 
         sc.is_funding_stage()
             .or_else(|| sc.is_work_submission_stage())
-            .or_else(|| sc.is_judgement_stage())
+            .or_else(|| sc.is_judgment_stage())
             .unwrap_or_else(|| sc.withdrawal_stage())
     }
 
-    // Validates oracle judgement.
-    fn validate_judgement(
+    // Validates oracle judgment.
+    fn validate_judgment(
         bounty_id: &T::BountyId,
-        judgement: &OracleJudgement<T::WorkEntryId>,
+        judgment: &OracleJudgment<T::WorkEntryId>,
     ) -> Result<bool, DispatchError> {
         // Check work entry existence.
-        for (entry_id, _) in judgement.iter() {
+        for (entry_id, _) in judgment.iter() {
             ensure!(
                 <WorkEntries<T>>::contains_key(bounty_id, entry_id),
                 Error::<T>::WorkEntryDoesntExist
             );
         }
 
-        // Lookup for any winners in the judgement.
-        let successful_bounty = judgement
+        // Lookup for any winners in the judgment.
+        let successful_bounty = judgment
             .iter()
-            .any(|(_, j)| *j == OracleWorkEntryJudgement::Winner);
+            .any(|(_, j)| *j == OracleWorkEntryJudgment::Winner);
 
         Ok(successful_bounty)
     }
@@ -1657,9 +1657,9 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         None
     }
 
-    // Calculates judgement stage of the bounty.
+    // Calculates judgment stage of the bounty.
     // Returns None if conditions are not met.
-    fn is_judgement_stage(&self) -> Option<BountyStage> {
+    fn is_judgment_stage(&self) -> Option<BountyStage> {
         // Can be judged only if there are work submissions.
         if let BountyMilestone::WorkSubmitted {
             work_period_started_at,
@@ -1667,11 +1667,11 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         {
             let work_period_expired = self.work_period_expired(work_period_started_at);
 
-            let judgement_period_is_not_expired =
-                !self.judgement_period_expired(work_period_started_at);
+            let judgment_period_is_not_expired =
+                !self.judgment_period_expired(work_period_started_at);
 
-            if work_period_expired && judgement_period_is_not_expired {
-                return Some(BountyStage::Judgement);
+            if work_period_expired && judgment_period_is_not_expired {
+                return Some(BountyStage::Judgment);
             }
         }
 
@@ -1723,21 +1723,21 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                     cherry_needs_withdrawal: false,
                 }
             }
-            // Work submitted but no judgement.
+            // Work submitted but no judgment.
             BountyMilestone::WorkSubmitted {
                 work_period_started_at,
             } => {
                 let work_period_expired = self.work_period_expired(work_period_started_at);
 
-                let judgement_period_is_expired =
-                    self.judgement_period_expired(work_period_started_at);
+                let judgment_period_is_expired =
+                    self.judgment_period_expired(work_period_started_at);
 
-                if work_period_expired && judgement_period_is_expired {
+                if work_period_expired && judgment_period_is_expired {
                     return failed_bounty_withdrawal;
                 }
             }
             // The bounty judgment was submitted.
-            BountyMilestone::JudgementSubmitted { successful_bounty } => {
+            BountyMilestone::JudgmentSubmitted { successful_bounty } => {
                 return BountyStage::Withdrawal {
                     cherry_needs_withdrawal: successful_bounty,
                 }
@@ -1768,9 +1768,9 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         false
     }
 
-    // Checks whether the judgement period expired by now when work period start from the provided
+    // Checks whether the judgment period expired by now when work period start from the provided
     // block number.
-    fn judgement_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
+    fn judgment_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
         work_period_started_at
             + self.bounty.creation_params.work_period
             + self.bounty.creation_params.judging_period
