@@ -2,11 +2,12 @@
 
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::{StorageDoubleMap, StorageMap};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::{Hash, SaturatedConversion};
+use sp_runtime::traits::Hash;
 use sp_std::boxed::Box;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -18,7 +19,7 @@ use membership::Module as Membership;
 
 use crate::{
     BalanceOf, Bounties, BountyActor, BountyCreationParameters, BountyMilestone, Call, Event,
-    Module, Trait, WorkEntries,
+    Module, OracleWorkEntryJudgment, Trait, WorkEntries,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -84,11 +85,66 @@ fn member_funded_account<T: Trait + membership::Trait>(
         referrer_id: None,
     };
 
+    let new_member_id = Membership::<T>::members_created();
+
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
 
-    (account_id, T::MemberId::from(id.saturated_into()))
+    (account_id, new_member_id)
+}
+
+fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
+    bounty_id: &T::BountyId,
+    index: u32,
+) -> T::WorkEntryId {
+    let membership_index = 1000 + index;
+    let (account_id, member_id) = member_funded_account::<T>("work entrants", membership_index);
+
+    Bounty::<T>::announce_work_entry(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        *bounty_id,
+        Some(account_id.clone()),
+    )
+    .unwrap();
+
+    let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+
+    let work_data = b"work_data".to_vec();
+
+    Bounty::<T>::submit_work(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        *bounty_id,
+        entry_id,
+        work_data,
+    )
+    .unwrap();
+
+    entry_id
+}
+
+fn create_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
+    let funding_amount = params.max_amount;
+
+    T::CouncilBudgetManager::set_budget(params.cherry + funding_amount);
+
+    Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+    let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+    assert!(Bounties::<T>::contains_key(bounty_id));
+
+    Bounty::<T>::fund_bounty(
+        RawOrigin::Root.into(),
+        BountyActor::Council,
+        bounty_id,
+        funding_amount,
+    )
+    .unwrap();
+
+    bounty_id
 }
 
 const MAX_BYTES: u32 = 50000;
@@ -603,6 +659,186 @@ benchmarks! {
             Event::<T>::WorkSubmitted(bounty_id, entry_id, member_id, work_data).into()
         );
     }
+
+    submit_oracle_judgment_by_council_all_winners {
+        let i in 1 .. T::MaxWorkEntryLimit::get();
+
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let oracle = BountyActor::Council;
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: BountyActor::Council,
+            cherry,
+            max_amount: funding_amount,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_funded_bounty::<T>(params);
+
+        let entry_ids = (0..i)
+            .into_iter()
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .collect::<Vec<_>>();
+
+        let judgment = entry_ids.iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .collect::<BTreeMap<_, _>>();
+
+        run_to_block::<T>((work_period + One::one()).into());
+
+    }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
+    verify {
+        for entry_id in entry_ids {
+            let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+            assert_eq!(entry.oracle_judgment_result, OracleWorkEntryJudgment::Winner);
+        }
+        assert_last_event::<T>(
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+        );
+    }
+
+    submit_oracle_judgment_by_council_all_rejected {
+        let i in 1 .. T::MaxWorkEntryLimit::get();
+
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let oracle = BountyActor::Council;
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: BountyActor::Council,
+            cherry,
+            max_amount: funding_amount,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_funded_bounty::<T>(params);
+
+        let entry_ids = (0..i)
+            .into_iter()
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .collect::<Vec<_>>();
+
+        let judgment = entry_ids.iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
+            .collect::<BTreeMap<_, _>>();
+
+        run_to_block::<T>((work_period + One::one()).into());
+
+    }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
+    verify {
+        for entry_id in entry_ids {
+            assert!(!<WorkEntries<T>>::contains_key(bounty_id, entry_id));
+        }
+        assert_last_event::<T>(
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+        );
+    }
+
+    submit_oracle_judgment_by_member_all_winners {
+        let i in 1 .. T::MaxWorkEntryLimit::get();
+
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let work_period: T::BlockNumber = One::one();
+        let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
+        let oracle = BountyActor::Member(oracle_member_id);
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: BountyActor::Council,
+            cherry,
+            max_amount: funding_amount,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_funded_bounty::<T>(params);
+
+        let entry_ids = (0..i)
+            .into_iter()
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .collect::<Vec<_>>();
+
+        let judgment = entry_ids.iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .collect::<BTreeMap<_, _>>();
+
+        run_to_block::<T>((work_period + One::one()).into());
+
+    }: submit_oracle_judgment(
+        RawOrigin::Signed(oracle_account_id),
+        oracle.clone(),
+        bounty_id,
+        judgment.clone()
+    )
+    verify {
+        for entry_id in entry_ids {
+            let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+            assert_eq!(entry.oracle_judgment_result, OracleWorkEntryJudgment::Winner);
+        }
+        assert_last_event::<T>(
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+        );
+    }
+
+    submit_oracle_judgment_by_member_all_rejected {
+        let i in 1 .. T::MaxWorkEntryLimit::get();
+
+        let work_period: T::BlockNumber = One::one();
+        let cherry: BalanceOf<T> = 100.into();
+        let funding_amount: BalanceOf<T> = 100.into();
+        let work_period: T::BlockNumber = One::one();
+        let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
+        let oracle = BountyActor::Member(oracle_member_id);
+
+        let params = BountyCreationParameters::<T> {
+            work_period,
+            judging_period: One::one(),
+            creator: BountyActor::Council,
+            cherry,
+            max_amount: funding_amount,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        let bounty_id = create_funded_bounty::<T>(params);
+
+        let entry_ids = (0..i)
+            .into_iter()
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .collect::<Vec<_>>();
+
+        let judgment = entry_ids.iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
+            .collect::<BTreeMap<_, _>>();
+
+        run_to_block::<T>((work_period + One::one()).into());
+
+    }: submit_oracle_judgment(
+        RawOrigin::Signed(oracle_account_id),
+        oracle.clone(),
+        bounty_id,
+        judgment.clone()
+    )
+    verify {
+        for entry_id in entry_ids {
+            assert!(!<WorkEntries<T>>::contains_key(bounty_id, entry_id));
+        }
+        assert_last_event::<T>(
+            Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -706,6 +942,34 @@ mod tests {
     fn submit_work() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_submit_work::<Test>());
+        });
+    }
+
+    #[test]
+    fn submit_oracle_judgment_by_council_all_winners() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_submit_oracle_judgment_by_council_all_winners::<Test>());
+        });
+    }
+
+    #[test]
+    fn submit_oracle_judgment_by_council_all_rejected() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_submit_oracle_judgment_by_council_all_rejected::<Test>());
+        });
+    }
+
+    #[test]
+    fn submit_oracle_judgment_by_member_all_winners() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_submit_oracle_judgment_by_member_all_winners::<Test>());
+        });
+    }
+
+    #[test]
+    fn submit_oracle_judgment_by_member_all_rejected() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_submit_oracle_judgment_by_member_all_rejected::<Test>());
         });
     }
 }

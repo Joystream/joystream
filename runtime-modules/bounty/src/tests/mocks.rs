@@ -171,6 +171,18 @@ impl crate::WeightInfo for () {
     fn submit_work(_i: u32) -> u64 {
         0
     }
+    fn submit_oracle_judgment_by_council_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_council_all_rejected(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

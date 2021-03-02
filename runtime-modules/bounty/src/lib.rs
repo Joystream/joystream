@@ -65,6 +65,10 @@ pub trait WeightInfo {
     fn announce_work_entry() -> Weight;
     fn withdraw_work_entry() -> Weight;
     fn submit_work(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_council_all_winners(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_council_all_rejected(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
+    fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -1023,16 +1027,24 @@ decl_module! {
         }
 
         /// Submits an oracle judgment for a bounty.
-        #[weight =  1000000] // TODO adjust weight
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (N)`
+        /// - `N` is the work_data length,
+        /// - db:
+        ///    - `O(N)`
+        /// # </weight>
+        #[weight = Module::<T>::submit_oracle_judgement_weight(&judgment)]
         pub fn submit_oracle_judgment(
             origin,
-            creator: BountyActor<MemberId<T>>,
+            oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
             judgment: OracleJudgment<T::WorkEntryId>,
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
-                creator.clone(),
+                oracle.clone(),
             )?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
@@ -1076,7 +1088,7 @@ decl_module! {
                 }
             }
 
-            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, creator, judgment));
+            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
         }
     }
 }
@@ -1579,6 +1591,28 @@ impl<T: Trait> Module<T> {
         <Bounties<T>>::mutate(bounty_id, |bounty| {
             bounty.decrement_active_work_entry_counter();
         });
+    }
+
+    // Calculates weight for submit_oracle_judgement extrinsic.
+    fn submit_oracle_judgement_weight(judgement: &OracleJudgmentOf<T>) -> Weight {
+        let collection_length: u32 = judgement.len().saturated_into();
+
+        WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_winners(collection_length)
+            .max(
+                WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_rejected(
+                    collection_length,
+                ),
+            )
+            .max(
+                WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_winners(
+                    collection_length,
+                ),
+            )
+            .max(
+                WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_rejected(
+                    collection_length,
+                ),
+            )
     }
 }
 
