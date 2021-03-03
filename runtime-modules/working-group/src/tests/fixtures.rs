@@ -259,7 +259,7 @@ impl ApplyOnOpeningFixture {
                 staking_account_id: self.stake_parameters.staking_account_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
-                opening_id: 1,
+                opening_id: self.opening_id,
             };
 
             assert_eq!(actual_application, expected_application);

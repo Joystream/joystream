@@ -69,13 +69,22 @@ fn add_opening_fails_with_bad_origin() {
 }
 
 #[test]
-fn add_opening_fails_with_zero_stake() {
+fn add_opening_fails_with_less_than_minimum_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
             stake_amount: 0,
-            leaving_unstaking_period: 0,
+            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
+        });
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::BelowMinimumStakes.into(),
+        ));
+
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: <Test as Trait>::MinimumStakeForOpening::get() - 1,
+            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
         });
 
         add_opening_fixture.call_and_assert(Err(
@@ -313,6 +322,31 @@ fn fill_opening_fails_with_bad_origin() {
                 .with_origin(RawOrigin::None);
 
         fill_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn fill_opening_fails_with_application_for_other_opening() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        let filling_opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(apply_opening_id);
+
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(filling_opening_id, vec![application_id]);
+
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::ApplicationsNotForOpening.into(),
+        ));
     });
 }
 
