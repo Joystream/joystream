@@ -8,7 +8,7 @@
     "./mappings"
   ],
   "scripts": {
-    "build": "yarn clean && yarn codegen",
+    "build": "./build.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
     "lint": "echo \"Skippinng\"",
     "clean": "rm -rf ./generated",
