@@ -34,8 +34,6 @@ docker-compose up -d graphql-server
 # Starting up processor will bring up all services it depends on
 docker-compose up -d processor
 
-yarn workspace @joystream/cd-schemas initialize:dev
-
 # Fixes Error: No active storage providers available
 echo "Waiting for ipfs name registration"
 sleep 120
