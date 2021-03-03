@@ -103,6 +103,7 @@ mod tests {
                 Some(b"handle".to_vec()),
                 None,
                 None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -131,6 +132,7 @@ mod tests {
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
                 Some(b"handle".to_vec()),
+                None,
                 None,
                 None,
             )
@@ -164,6 +166,7 @@ mod tests {
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id,
                 Some(b"handle".to_vec()),
+                None,
                 None,
                 None,
             )

@@ -10,10 +10,10 @@ pub(crate) mod mock;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, Get, LockableCurrency, WithdrawReason};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, Member, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -65,6 +65,10 @@ pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
         + MaybeSerialize
         + PartialEq
         + Ord;
+
+    /// The maximum amount of initial funds that may be endowed to new members added by
+    /// screening authority. If set to zero, no initial balance can be given.
+    type ScreenedMemberMaxInitialBalance: Get<BalanceOf<Self>>;
 }
 
 const FIRST_PAID_TERMS_ID: u8 = 1;
@@ -259,6 +263,8 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
+        const ScreenedMemberMaxInitialBalance: BalanceOf<T> = T::ScreenedMemberMaxInitialBalance::get();
+
         /// Non-members can buy membership
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
@@ -406,13 +412,18 @@ decl_module! {
             }
         }
 
+        /// Screened members are awarded a initial locked balance that can only be slashed or used
+        /// for fees, and is not transferable. The screening authority must ensure that the provided
+        /// new_member_account was verified to avoid applying locks arbitrarily to accounts not controlled
+        /// by the member.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_screened_member(
             origin,
             new_member_account: T::AccountId,
             handle: Option<Vec<u8>>,
             avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
+            about: Option<Vec<u8>>,
+            initial_balance: Option<BalanceOf<T>>,
         ) {
             // ensure sender is screening authority
             let sender = ensure_signed(origin)?;
@@ -429,6 +440,38 @@ decl_module! {
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
+            if let Some(initial_balance) = initial_balance {
+                ensure!(
+                    T::ScreenedMemberMaxInitialBalance::get() >= initial_balance,
+                    "InitialBalanceExceedsMaxInitialBalance"
+                );
+
+                // Only allow "new" accounts with 0 balance
+                ensure!(
+                    T::Currency::free_balance(&new_member_account).is_zero(),
+                    "OnlyNewAccountsCanBeUsedForScreenedMembers"
+                );
+
+                ensure!(
+                    system::Module::<T>::account_nonce(&new_member_account).is_zero(),
+                    "OnlyNewAccountsCanBeUsedForScreenedMembers"
+                );
+
+                // Check account nonce
+
+                // Set a lock to prevent transfers of the amount that will be endowed
+                T::Currency::set_lock(
+                    *b"faucet00",
+                    &new_member_account,
+                    initial_balance,
+                    WithdrawReason::Transfer.into(),
+                );
+
+                // Endow the new member account with an amount to get started
+                T::Currency::deposit_creating(&new_member_account, initial_balance);
+            };
+
+            // cannot fail because of prior check_user_registration_info
             let member_id = Self::insert_member(
                 &new_member_account,
                 &new_member_account,
