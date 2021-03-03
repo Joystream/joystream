@@ -324,7 +324,6 @@ export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 export interface CuratorGroup extends Struct {
   readonly curators: Vec<CuratorId>;
   readonly active: bool;
-  readonly number_of_channels_owned: u32;
 }
 
 /** @name CuratorGroupId */

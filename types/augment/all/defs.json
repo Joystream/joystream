@@ -696,8 +696,7 @@
     "CuratorGroupId": "u64",
     "CuratorGroup": {
         "curators": "Vec<CuratorId>",
-        "active": "bool",
-        "number_of_channels_owned": "u32"
+        "active": "bool"
     },
     "ContentActor": {
         "_enum": {

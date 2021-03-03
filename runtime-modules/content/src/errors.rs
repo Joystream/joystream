@@ -58,9 +58,6 @@ decl_error! {
         /// Channel does not exist
         ChannelDoesNotExist,
 
-        /// Channel must have been deleted
-        ChannelMustNotExist,
-
         /// Video does not exist
         VideoDoesNotExist,
 

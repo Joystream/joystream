@@ -538,33 +538,6 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorGroupCreated(curator_group_id));
         }
 
-        /// Remove curator group under given `curator_group_id` from runtime storage
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_curator_group(
-            origin,
-            curator_group_id: T::CuratorGroupId,
-        ) {
-
-            // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
-
-            // Ensure CuratorGroup under given curator_group_id exists
-            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
-
-            // We should previously ensure that curator_group  owns no channels to be able to remove it
-            curator_group.ensure_curator_group_owns_no_channels()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Remove curator group under given curator group id from runtime storage
-            <CuratorGroupById<T>>::remove(curator_group_id);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupDeleted(curator_group_id));
-        }
-
         /// Set `is_active` status for curator group under given `curator_group_id`
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_curator_group_status(
@@ -695,7 +668,7 @@ decl_module! {
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
             let channel: Channel<T> = ChannelRecord {
-                owner: channel_owner.clone(),
+                owner: channel_owner,
                 videos: vec![],
                 playlists: vec![],
                 series: vec![],
@@ -703,10 +676,6 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
-
-            if let ChannelOwner::CuratorGroup(curator_group_id) = channel_owner {
-                Self::increment_number_of_channels_owned_by_curator_group(curator_group_id);
-            }
 
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
@@ -772,52 +741,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_channel(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-        ) {
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            ensure_actor_authorized_update_channel_and_videos::<T>(
-                origin,
-                &actor,
-                &channel.owner,
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            channel.videos.iter().for_each(|id| {
-                VideoById::<T>::remove(id);
-                Self::deposit_event(RawEvent::VideoDeleted(actor, *id));
-            });
-
-            channel.playlists.iter().for_each(|id| {
-                PlaylistById::<T>::remove(id);
-                Self::deposit_event(RawEvent::PlaylistDeleted(actor, *id));
-            });
-
-            channel.series.iter().for_each(|id| {
-                SeriesById::<T>::remove(id);
-                Self::deposit_event(RawEvent::SeriesDeleted(actor, *id));
-            });
-
-            // If the channel was owned by a curator group, decrement counter
-            if let ChannelOwner::CuratorGroup(curator_group_id) = channel.owner {
-                Self::decrement_number_of_channels_owned_by_curator_group(curator_group_id);
-            }
-
-            // TODO: Remove any channel transfer requests and refund requester
-            // Self::terminate_channel_transfer_requests(channel_id)
-            // Self::deposit_event(RawEvent::ChannelOwnershipTransferRequestCancelled());
-
-            Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
-        }
-
         /// Remove assets of a channel from storage
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_channel_assets(
@@ -834,41 +757,6 @@ decl_module! {
                 &actor,
                 &channel.owner,
             )?;
-
-            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
-
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
-        }
-
-        // The content directory doesn't track individual content ids of assets uploaded for a channel.
-        // A channel owner can manage their storage usage with remove_channel_assets(). However when they choose
-        // to delete their channel they may leave behind some assets if not explicitly removed.
-        // So the 'lead' can and should occasionally dispatch this call to cleanup and recover storage capacity of
-        // deleted channels.
-        /// Lead utility to remove assets of a deleted channel from storage
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_deleted_channel_assets(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            assets: Vec<ContentId<T>>,
-        ) {
-            ensure_actor_authorized_to_delete_stale_assets::<T>(
-                origin,
-                &actor
-            )?;
-
-            // Ensure channel does not exist
-            ensure!(
-                !ChannelById::<T>::contains_key(channel_id),
-                Error::<T>::ChannelMustNotExist
-            );
 
             let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
@@ -1423,20 +1311,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    /// Increment number of channels, owned by curator group
-    fn increment_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
-        <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-            curator_group.increment_number_of_channels_owned_count();
-        });
-    }
-
-    /// Decrement number of channels, owned by curator group
-    fn decrement_number_of_channels_owned_by_curator_group(curator_group_id: T::CuratorGroupId) {
-        <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-            curator_group.decrement_number_of_channels_owned_count();
-        });
-    }
-
     /// Ensure `CuratorGroup` under given id exists
     fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
@@ -1579,7 +1453,6 @@ decl_event!(
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
-        CuratorGroupDeleted(CuratorGroupId),
         CuratorGroupStatusSet(CuratorGroupId, bool /* active status */),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
@@ -1597,7 +1470,6 @@ decl_event!(
             Channel,
             ChannelUpdateParameters<ContentParameters, AccountId>,
         ),
-        ChannelDeleted(ContentActor, ChannelId),
         ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
         ChannelCensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
