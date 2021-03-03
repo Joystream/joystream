@@ -676,7 +676,7 @@ fn cancel_bounty_fails_with_invalid_stage() {
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
 
         // Test bounty that was funded.
         let max_amount = 500;
@@ -702,7 +702,7 @@ fn cancel_bounty_fails_with_invalid_stage() {
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 
@@ -773,7 +773,7 @@ fn veto_bounty_fails_with_invalid_stage() {
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
 
         // Test bounty that was funded.
         let max_amount = 500;
@@ -799,7 +799,7 @@ fn veto_bounty_fails_with_invalid_stage() {
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 
@@ -1125,7 +1125,7 @@ fn fund_bounty_fails_with_invalid_stage() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
     });
 }
 
@@ -1153,7 +1153,9 @@ fn fund_bounty_fails_with_expired_funding_period() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
+            ));
     });
 }
 
@@ -1441,7 +1443,7 @@ fn withdraw_member_funding_fails_with_invalid_stage() {
             .with_bounty_id(bounty_id)
             .with_member_id(member_id)
             .with_origin(RawOrigin::Signed(account_id))
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 
@@ -1751,7 +1753,7 @@ fn withdraw_creator_cherry_fails_with_invalid_stage() {
 
         WithdrawCreatorCherryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 
@@ -2102,7 +2104,7 @@ fn announce_work_entry_fails_with_invalid_stage() {
 
         AnnounceWorkEntryFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 
@@ -2560,7 +2562,7 @@ fn withdraw_work_entry_fails_with_invalid_stage() {
             .with_member_id(member_id)
             .with_entry_id(entry_id)
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
     });
 }
 
@@ -2758,7 +2760,7 @@ fn submit_work_fails_with_invalid_stage() {
             .with_member_id(member_id)
             .with_entry_id(entry_id)
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
     });
 }
 
@@ -3063,7 +3065,7 @@ fn submit_judgment_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidBountyStage.into()));
+            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 }
 

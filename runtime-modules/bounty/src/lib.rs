@@ -35,8 +35,6 @@ pub(crate) mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: introduce fine-grained bounty stage errors.
-// TODO: add bounty milestones module comments
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
 // TODO: test all stages
@@ -221,7 +219,7 @@ impl<MemberId> Default for BountyActor<MemberId> {
 
 /// Defines current bounty stage.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
 pub enum BountyStage {
     /// Bounty founding stage.
     Funding {
@@ -507,8 +505,17 @@ decl_error! {
         /// Judging period cannot be zero.
         JudgingPeriodCannotBeZero,
 
-        /// Invalid bounty stage for the operation.
-        InvalidBountyStage,
+        /// Unexpected bounty stage for an operation: Funding.
+        InvalidStageUnexpectedFunding,
+
+        /// Unexpected bounty stage for an operation: WorkSubmission.
+        InvalidStageUnexpectedWorkSubmission,
+
+        /// Unexpected bounty stage for an operation: Judgment.
+        InvalidStageUnexpectedJudgment,
+
+        /// Unexpected bounty stage for an operation: Withdrawal.
+        InvalidStageUnexpectedWithdrawal,
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
@@ -647,10 +654,10 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
-                Error::<T>::InvalidBountyStage,
-            );
+            Self::ensure_bounty_stage(
+                current_bounty_stage,
+                BountyStage::Funding { has_contributions: false }
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -679,10 +686,10 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::Funding { has_contributions: false }),
-                Error::<T>::InvalidBountyStage,
-            );
+            Self::ensure_bounty_stage(
+                current_bounty_stage,
+                BountyStage::Funding { has_contributions: false }
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -727,7 +734,7 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
                 matches!(current_bounty_stage, BountyStage::Funding{..}),
-                Error::<T>::InvalidBountyStage,
+                Self::unexpected_bounty_stage_error(current_bounty_stage),
             );
 
             //
@@ -786,7 +793,7 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
                 matches!(current_bounty_stage, BountyStage::Withdrawal{..}),
-                Error::<T>::InvalidBountyStage,
+                Self::unexpected_bounty_stage_error(current_bounty_stage),
             );
 
             ensure!(
@@ -842,7 +849,7 @@ decl_module! {
             if let BountyStage::Withdrawal {cherry_needs_withdrawal } = current_bounty_stage {
                 ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
             } else {
-                return Err(Error::<T>::InvalidBountyStage.into());
+                return Err(Self::unexpected_bounty_stage_error(current_bounty_stage));
             };
 
             //
@@ -885,10 +892,8 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::WorkSubmission),
-                Error::<T>::InvalidBountyStage,
-            );
+
+            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
             let stake = Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
 
@@ -958,10 +963,8 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::WorkSubmission),
-                Error::<T>::InvalidBountyStage,
-            );
+
+            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
@@ -998,10 +1001,8 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::WorkSubmission),
-                Error::<T>::InvalidBountyStage,
-            );
+
+            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
             Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
@@ -1053,10 +1054,8 @@ decl_module! {
             bounty_oracle_manager.validate_actor(&bounty.creation_params.oracle)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::Judgment),
-                Error::<T>::InvalidBountyStage,
-            );
+
+            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::Judgment)?;
 
             let successful_bounty = Self::validate_judgment(&bounty_id, &judgment)?;
 
@@ -1614,6 +1613,29 @@ impl<T: Trait> Module<T> {
                     collection_length,
                 ),
             )
+    }
+
+    // Bounty stage validator.
+    fn ensure_bounty_stage(
+        actual_stage: BountyStage,
+        expected_stage: BountyStage,
+    ) -> DispatchResult {
+        ensure!(
+            actual_stage == expected_stage,
+            Self::unexpected_bounty_stage_error(actual_stage)
+        );
+
+        Ok(())
+    }
+
+    // Provides fined-grained errors for a bounty stages
+    fn unexpected_bounty_stage_error(unexpected_stage: BountyStage) -> DispatchError {
+        match unexpected_stage {
+            BountyStage::Funding { .. } => Error::<T>::InvalidStageUnexpectedFunding.into(),
+            BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
+            BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
+            BountyStage::Withdrawal { .. } => Error::<T>::InvalidStageUnexpectedWithdrawal.into(),
+        }
     }
 }
 
