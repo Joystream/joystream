@@ -44,7 +44,7 @@
     "bn.js": "^5.1.2"
   },
   "devDependencies": {
-    "@dzlzv/hydra-cli": "2.0.0-beta",
+    "@dzlzv/hydra-cli": "2.1.0-beta.2",
     "@dzlzv/hydra-processor": "0.1.1",
     "@dzlzv/hydra-typegen": "0.0.3-1"
   },
