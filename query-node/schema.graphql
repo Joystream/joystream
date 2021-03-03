@@ -63,7 +63,7 @@ type ChannelCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
 
-  channels: [Channel!] @derivedFrom(field: "categories")
+  channels: [Channel!] @derivedFrom(field: "category")
 
   happenedIn: Block!
 }
@@ -208,7 +208,7 @@ type Channel @entity {
   # or a member. We are not handling events related to curator group so we will not set this field
   # owner: Member!
 
-  categories: [ChannelCategory!]
+  category: ChannelCategory
 
   "Reward account where revenue is sent if set."
   rewardAccount: String
@@ -246,7 +246,7 @@ type VideoCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
 
-  videos: [Video!] @derivedFrom(field: "categories")
+  videos: [Video!] @derivedFrom(field: "category")
 
   happenedIn: Block!
 }
@@ -259,7 +259,7 @@ type Video @entity {
   channel: Channel!
 
   "Reference to a video category"
-  categories: [VideoCategory!]
+  category: VideoCategory
 
   "The title of the video"
   title: String @fulltext(query: "search")
