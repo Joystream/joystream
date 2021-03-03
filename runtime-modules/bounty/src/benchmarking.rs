@@ -510,36 +510,18 @@ benchmarks! {
     announce_work_entry {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-
-        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            creator: creator.clone(),
+            max_amount: funding_amount,
             cherry,
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            params,
-            Vec::new()
-        ).unwrap();
+        let bounty_id = create_funded_bounty::<T>(params);
 
-        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
-
-        assert!(Bounties::<T>::contains_key(bounty_id));
-
-        Bounty::<T>::fund_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            creator.clone(),
-            bounty_id,
-            funding_amount
-        ).unwrap();
-
-        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, Some(account_id.clone()))
     verify {
@@ -554,36 +536,18 @@ benchmarks! {
     withdraw_work_entry {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-
-        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            creator: creator.clone(),
             cherry,
+            max_amount: funding_amount,
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            params,
-            Vec::new()
-        ).unwrap();
+        let bounty_id = create_funded_bounty::<T>(params);
 
-        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
-
-        assert!(Bounties::<T>::contains_key(bounty_id));
-
-        Bounty::<T>::fund_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            creator.clone(),
-            bounty_id,
-            funding_amount
-        ).unwrap();
-
-        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),
@@ -608,36 +572,18 @@ benchmarks! {
 
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-
-        let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            creator: creator.clone(),
             cherry,
+            max_amount: funding_amount,
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            params,
-            Vec::new()
-        ).unwrap();
+        let bounty_id = create_funded_bounty::<T>(params);
 
-        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
-
-        assert!(Bounties::<T>::contains_key(bounty_id));
-
-        Bounty::<T>::fund_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            creator.clone(),
-            bounty_id,
-            funding_amount
-        ).unwrap();
-
-        let (account_id, member_id) = member_funded_account::<T>("member2", 1);
+        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),

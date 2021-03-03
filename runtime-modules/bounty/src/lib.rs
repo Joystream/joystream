@@ -35,6 +35,7 @@ pub(crate) mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+// TODO: introduce fine-grained bounty stage errors.
 // TODO: add bounty milestones module comments
 // TODO: add working stake unstaking period.
 // TODO: prevent bounty removal with active entries
