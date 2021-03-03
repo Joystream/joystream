@@ -217,11 +217,7 @@ impl working_group::WeightInfo for Weights {
         unimplemented!()
     }
 
-    fn leave_role_immediatly() -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role_later() -> u64 {
+    fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
 }

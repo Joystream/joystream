@@ -1,5 +1,5 @@
 {
-    "weight_coefficient": 2,
+    "weight_coefficient": 0.00000016,
     "issuance": 250000000,
     "length_coefficient": 1,
     "min_market_cap": 1250000,

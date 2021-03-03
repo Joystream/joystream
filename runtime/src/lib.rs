@@ -697,7 +697,10 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
-    pub const MinimumStakeForOpening: u32 = 100;
+    // This should be more costly than `add_opening` fee with the current configuration
+    // the base cost of `add_opening` in tokens is 193. And has a very slight slope
+    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    pub const MinimumStakeForOpening: u32 = 2000;
 }
 
 // Staking managers type aliases.

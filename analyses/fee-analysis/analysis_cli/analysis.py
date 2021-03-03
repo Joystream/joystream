@@ -63,7 +63,7 @@ def calc_total_price_given_params(extrinsic, weight_coeff, market_cap, issuance,
 
 
 def calc_total_fee(extrinsic, weight_coeff, length_coeff, params, lengths, weights):
-    return weight_to_fee(calc_weight(weights[extrinsic], extrinsic, params) + EXTRINSIC_BASE_WEIGHT, weight_coeff) + \
+    return weight_to_fee(calc_weight(weights[extrinsic], extrinsic, params), weight_coeff) + \
         length_to_fee(lengths.get(extrinsic, 0), length_coeff)
 
 

@@ -905,10 +905,7 @@ benchmarks_instance! {
         );
     }
 
-    // Generally speaking this seems to be always the best case scenario
-    // but since it's so obviously a different branch I think it's a good idea
-    // to leave this branch and use tha max between these 2
-    leave_role_later {
+    leave_role {
         let i in 0 .. MAX_BYTES;
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(
@@ -937,9 +934,9 @@ mod tests {
     use frame_support::assert_ok;
 
     #[test]
-    fn test_leave_role_later() {
+    fn test_leave_role() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_leave_role_later::<Test>());
+            assert_ok!(test_benchmark_leave_role::<Test>());
         });
     }
 

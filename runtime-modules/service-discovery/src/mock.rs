@@ -293,10 +293,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn add_opening(_: u32) -> Weight {
         0
     }
-    fn leave_role_immediatly() -> Weight {
-        0
-    }
-    fn leave_role_later() -> Weight {
+    fn leave_role(_: u32) -> Weight {
         0
     }
 }

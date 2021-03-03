@@ -87,8 +87,7 @@ pub trait WeightInfo {
     fn update_reward_account() -> Weight;
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
-    fn leave_role_immediatly() -> Weight;
-    fn leave_role_later() -> Weight;
+    fn leave_role(i: u32) -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -601,8 +600,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::leave_role_immediatly()
-            .max(WeightInfoWorkingGroup::<T, I>::leave_role_later())]
+        #[weight = Module::<T, I>::leave_role_weight(&rationale)]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
@@ -1075,6 +1073,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         .max(WeightInfoWorkingGroup::<T, I>::on_initialize_leaving(
             workers,
         ))
+    }
+
+    // Calculate weight for `leave_role`
+    fn leave_role_weight(rationale: &Option<Vec<u8>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::leave_role(
+            rationale
+                .as_ref()
+                .map(|rationale| rationale.len().saturated_into())
+                .unwrap_or_default(),
+        )
     }
 
     // Calculate weights for terminate_role

@@ -582,7 +582,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount: Balance = 100;
+        let stake_amount: Balance = 10_000;
 
         increase_total_balance_issuance_using_account_id(account_id.into(), 1_500_000);
 
@@ -728,7 +728,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount: Balance = 100;
+        let stake_amount: Balance = 10_000;
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1196,7 +1196,7 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount = 100_u128;
+        let stake_amount = 100_000_u128;
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1334,7 +1334,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount = 100_u128;
+        let stake_amount = 100_000_u128;
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1343,15 +1343,10 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
-        let stake_parameters =
-            StakeParameters {
-                stake: <Runtime as working_group::Trait<
-                    MembershipWorkingGroupInstance,
-                >>::MinimumStakeForOpening::get()
-                .into(),
-                staking_account_id: account_id.into(),
-            }
-        ;
+        let stake_parameters = StakeParameters {
+            stake: stake_amount.into(),
+            staking_account_id: account_id.into(),
+        };
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 

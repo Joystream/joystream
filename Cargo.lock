@@ -4338,7 +4338,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "4.0.1"
+version = "4.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
