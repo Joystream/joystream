@@ -94,6 +94,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
@@ -102,6 +103,13 @@ impl Trait for Test {
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
     type MinFundingLimit = MinFundingLimit;
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u128) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -366,34 +374,21 @@ pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Trait for Test {
     type Event = TestEvent;
-
     type Referendum = referendum::Module<Test, ReferendumInstance>;
-
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
-
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
-
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
-
     type BudgetRefillPeriod = BudgetRefillPeriod;
-
     type StakingAccountValidator = ();
     type WeightInfo = CouncilWeightInfo;
+    type MemberOriginValidator = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
-
-    type MemberOriginValidator = ();
-}
-
-impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u128) -> bool {
-        true
-    }
 }
 
 pub struct CouncilWeightInfo;
@@ -450,22 +445,15 @@ parameter_types! {
 
 impl referendum::Trait<ReferendumInstance> for Test {
     type Event = TestEvent;
-
     type MaxSaltLength = MaxSaltLength;
-
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
-
     type VotePower = u64;
-
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
-
     type MinimumStake = MinimumVotingStake;
-
     type WeightInfo = ReferendumWeightInfo;
-
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(

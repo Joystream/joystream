@@ -40,7 +40,6 @@ mod stages;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: ensure the stake belongs to a member
 // TODO: ensure document compatibility
 // TODO: full successful test with all withdrawals
 // TODO: make sure cherry goes back to creator on successful bounty.
@@ -107,7 +106,7 @@ use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
 use common::origin::MemberOriginValidator;
-use common::MemberId;
+use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
@@ -120,6 +119,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 
     /// Bounty Id type
     type BountyId: From<u32> + Parameter + Default + Copy;
+
+    /// Validates staking account ownership for a member.
+    type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member ID and origin combination.
     type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -596,6 +598,9 @@ decl_error! {
         /// Cannot create a 'closed assurance contract' bounty with member list larger
         /// than allowed max work entry limit.
         ClosedContractMemberListIsTooLarge,
+
+        /// Staking account doesn't belong to a member.
+        InvalidStakingAccountForMember,
     }
 }
 
@@ -925,7 +930,11 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            let stake = Self::validate_entrant_stake(&bounty, staking_account_id.clone())?;
+            let stake = Self::validate_entrant_stake(
+                member_id,
+                &bounty,
+                staking_account_id.clone()
+            )?;
 
             ensure!(
                 bounty.active_work_entry_count < T::MaxWorkEntryLimit::get(),
@@ -1407,15 +1416,22 @@ impl<T: Trait> Module<T> {
 
     // Validates stake on announcing the work entry.
     fn validate_entrant_stake(
+        member_id: MemberId<T>,
         bounty: &Bounty<T>,
         staking_account_id: Option<T::AccountId>,
     ) -> Result<Option<RequiredStakeInfo<T>>, DispatchError> {
         let staking_balance = bounty.creation_params.entrant_stake;
 
-        //TODO: ensure the stake belongs to a member
-
         if staking_balance != Zero::zero() {
             if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingAccountValidator::is_member_staking_account(
+                        &member_id,
+                        &staking_account_id
+                    ),
+                    Error::<T>::InvalidStakingAccountForMember
+                );
+
                 ensure!(
                     T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
                     Error::<T>::ConflictingStakes

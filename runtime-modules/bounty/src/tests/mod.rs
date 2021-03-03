@@ -10,6 +10,7 @@ use sp_runtime::DispatchError;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::fixtures::DEFAULT_BOUNTY_CHERRY;
+use crate::tests::mocks::STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER;
 use crate::{
     BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage, Error,
     OracleWorkEntryJudgment, RawEvent, WorkEntries,
@@ -2152,6 +2153,13 @@ fn announce_work_entry_fails_with_invalid_staking_data() {
             .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStakingAccountForMember.into()));
 
         increase_account_balance(&account_id, initial_balance);
 
