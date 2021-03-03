@@ -10,7 +10,7 @@ use sp_std::iter::FromIterator;
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    OracleJudgment, OracleJudgmentOf, OracleWorkEntryJudgment, RawEvent, WorkEntry,
+    OracleJudgmentOf, OracleWorkEntryJudgment, RawEvent, WorkEntry,
 };
 use common::council::CouncilBudgetManager;
 
@@ -502,6 +502,7 @@ pub struct AnnounceWorkEntryFixture {
     origin: RawOrigin<u128>,
     bounty_id: u64,
     member_id: u64,
+    reward_account_id: u128,
     staking_account_id: Option<u128>,
 }
 
@@ -511,6 +512,7 @@ impl AnnounceWorkEntryFixture {
             origin: RawOrigin::Signed(1),
             bounty_id: 1,
             member_id: 1,
+            reward_account_id: 1,
             staking_account_id: None,
         }
     }
@@ -543,6 +545,7 @@ impl AnnounceWorkEntryFixture {
             self.origin.clone().into(),
             self.member_id,
             self.bounty_id,
+            self.reward_account_id,
             self.staking_account_id.clone(),
         );
 
@@ -559,6 +562,7 @@ impl AnnounceWorkEntryFixture {
             let expected_entry = WorkEntry::<Test> {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
+                reward_account_id: self.reward_account_id,
                 submitted_at: System::current_block_number(),
                 last_submitted_work: None,
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,
@@ -715,7 +719,7 @@ pub struct SubmitJudgmentFixture {
     origin: RawOrigin<u128>,
     bounty_id: u64,
     oracle: BountyActor<u64>,
-    judgment: OracleJudgment<u64>,
+    judgment: OracleJudgmentOf<Test>,
 }
 
 impl SubmitJudgmentFixture {
@@ -743,7 +747,7 @@ impl SubmitJudgmentFixture {
         }
     }
 
-    pub fn with_judgment(self, judgment: OracleJudgment<u64>) -> Self {
+    pub fn with_judgment(self, judgment: OracleJudgmentOf<Test>) -> Self {
         Self { judgment, ..self }
     }
 
@@ -764,10 +768,7 @@ impl SubmitJudgmentFixture {
             assert_eq!(
                 new_bounty.milestone,
                 BountyMilestone::JudgmentSubmitted {
-                    successful_bounty: self
-                        .judgment
-                        .iter()
-                        .any(|(_, j)| *j == OracleWorkEntryJudgment::Winner)
+                    successful_bounty: Bounty::judgment_has_winners(&self.judgment)
                 }
             );
         } else {

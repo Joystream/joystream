@@ -40,6 +40,7 @@ mod stages;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+// TODO: ensure the stake belongs to a member
 // TODO: ensure document compatibility
 // TODO: full successful test with all withdrawals
 // TODO: make sure cherry goes back to creator on successful bounty.
@@ -52,6 +53,10 @@ mod benchmarking;
 these sets, but instead require active action from everyone, then you may perhaps not even need to
 limit the set size? You could store thousands of ids in either of those values without impacting
 read io speed, as we have seen, so could be fine. */
+// TODO - open question: should we have exactly 100% reward distribution for the winners?
+// we could allow less than 100% but what to do with the rest of the bounty pool?
+// It could be a problem because the remaining sum could be very low to be an incentive to withdraw
+// for funders. Should we introduce a remaining sum threshold that affects the "burning decision"?
 
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -340,17 +345,21 @@ pub type WorkEntry<T> = WorkEntryRecord<
     <T as frame_system::Trait>::AccountId,
     <T as common::Trait>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
+    BalanceOf<T>,
 >;
 
 /// Work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
+pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber, Balance> {
     /// Work entrant member ID.
     pub member_id: MemberId,
 
     /// Optional account ID for staking lock.
     pub staking_account_id: Option<AccountId>,
+
+    /// Account ID for reward.
+    pub reward_account_id: AccountId,
 
     /// Work entry submission block.
     pub submitted_at: BlockNumber,
@@ -359,15 +368,15 @@ pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber> {
     pub last_submitted_work: Option<Vec<u8>>,
 
     /// Oracle judgment for the work entry.
-    pub oracle_judgment_result: OracleWorkEntryJudgment,
+    pub oracle_judgment_result: OracleWorkEntryJudgment<Balance>,
 }
 
 /// Defines the oracle judgment for the work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
-pub enum OracleWorkEntryJudgment {
+pub enum OracleWorkEntryJudgment<Balance> {
     /// The work entry is selected as a winner.
-    Winner,
+    Winner { reward: Balance },
 
     /// The work entry is not selected as a winner but no penalties applies.
     Legit,
@@ -376,9 +385,16 @@ pub enum OracleWorkEntryJudgment {
     Rejected,
 }
 
-impl Default for OracleWorkEntryJudgment {
+impl<Balance> Default for OracleWorkEntryJudgment<Balance> {
     fn default() -> Self {
         Self::Legit
+    }
+}
+
+impl<Balance> OracleWorkEntryJudgment<Balance> {
+    // Work entry judgment helper. Returns true for winners.
+    pub(crate) fn is_winner(&self) -> bool {
+        matches!(*self, Self::Winner { .. })
     }
 }
 
@@ -394,10 +410,11 @@ struct RequiredStakeInfo<T: Trait> {
 }
 
 /// An alias for the OracleJudgment.
-pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::WorkEntryId>;
+pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::WorkEntryId, BalanceOf<T>>;
 
 /// The collection of the oracle judgments for the work entries.
-pub type OracleJudgment<WorkEntryId> = BTreeMap<WorkEntryId, OracleWorkEntryJudgment>;
+pub type OracleJudgment<WorkEntryId, Balance> =
+    BTreeMap<WorkEntryId, OracleWorkEntryJudgment<Balance>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -462,8 +479,9 @@ decl_event! {
         /// - bounty ID
         /// - created entry ID
         /// - entrant member ID
+        /// - reward account ID
         /// - optional staking account ID
-        WorkEntryAnnounced(BountyId, WorkEntryId, MemberId, Option<AccountId>),
+        WorkEntryAnnounced(BountyId, WorkEntryId, MemberId, AccountId, Option<AccountId>),
 
         /// Work entry was withdrawn.
         /// Params:
@@ -896,6 +914,7 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
+            reward_account_id: T::AccountId,
             staking_account_id: Option<T::AccountId>,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
@@ -929,6 +948,7 @@ decl_module! {
 
             let entry = WorkEntry::<T> {
                 member_id,
+                reward_account_id: reward_account_id.clone(),
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
                 last_submitted_work: None,
@@ -950,6 +970,7 @@ decl_module! {
                 bounty_id,
                 entry_id,
                 member_id,
+                reward_account_id,
                 staking_account_id,
             ));
         }
@@ -1053,7 +1074,7 @@ decl_module! {
             origin,
             oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgment: OracleJudgment<T::WorkEntryId>,
+            judgment: OracleJudgment<T::WorkEntryId, BalanceOf<T>>
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
@@ -1068,7 +1089,10 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::Judgment)?;
 
-            let successful_bounty = Self::validate_judgment(&bounty_id, &judgment)?;
+            Self::validate_judgment(&bounty_id, &judgment)?;
+
+            // Lookup for any winners in the judgment.
+            let successful_bounty = Self::judgment_has_winners(&judgment);
 
             //
             // == MUTATION SAFE ==
@@ -1127,14 +1151,25 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // TODO: reward
+            // Claim the winner reward.
+            if let OracleWorkEntryJudgment::Winner { reward } = entry.oracle_judgment_result {
+                Self::transfer_funds_from_bounty_account(
+                    &entry.reward_account_id,
+                    bounty_id,
+                    reward
+                )?;
+            }
 
+            // Unstake the full work entry state.
             Self::unlock_work_entry_stake(&bounty, &entry);
 
+            // Delete the work entry record from the storage.
             Self::remove_work_entry(&bounty_id, &entry_id);
 
+            // Fire an event.
             Self::deposit_event(RawEvent::WorkEntrantFundsWithdrawn(bounty_id, entry_id, member_id));
 
+            // Remove the bounty in case of the last withdrawal operation.
             if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
                 Self::remove_bounty(&bounty_id);
             }
@@ -1377,6 +1412,8 @@ impl<T: Trait> Module<T> {
     ) -> Result<Option<RequiredStakeInfo<T>>, DispatchError> {
         let staking_balance = bounty.creation_params.entrant_stake;
 
+        //TODO: ensure the stake belongs to a member
+
         if staking_balance != Zero::zero() {
             if let Some(staking_account_id) = staking_account_id {
                 ensure!(
@@ -1484,8 +1521,8 @@ impl<T: Trait> Module<T> {
     // Validates oracle judgment.
     fn validate_judgment(
         bounty_id: &T::BountyId,
-        judgment: &OracleJudgment<T::WorkEntryId>,
-    ) -> Result<bool, DispatchError> {
+        judgment: &OracleJudgmentOf<T>,
+    ) -> DispatchResult {
         // Check work entry existence.
         for (entry_id, _) in judgment.iter() {
             ensure!(
@@ -1494,12 +1531,10 @@ impl<T: Trait> Module<T> {
             );
         }
 
-        // Lookup for any winners in the judgment.
-        let successful_bounty = judgment
-            .iter()
-            .any(|(_, j)| *j == OracleWorkEntryJudgment::Winner);
+        //TODO: validate judgement winner ratio
+        //TODO: check non-zero winner ratio
 
-        Ok(successful_bounty)
+        Ok(())
     }
 
     // Removes the work entry and decrements active entry count in a bounty.
@@ -1567,5 +1602,10 @@ impl<T: Trait> Module<T> {
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::Withdrawal { .. } => Error::<T>::InvalidStageUnexpectedWithdrawal.into(),
         }
+    }
+
+    // Oracle judgment helper. Returns true if a judgement contains at least one winner.
+    pub(crate) fn judgment_has_winners(judgment: &OracleJudgmentOf<T>) -> bool {
+        judgment.iter().any(|(_, j)| j.is_winner())
     }
 }

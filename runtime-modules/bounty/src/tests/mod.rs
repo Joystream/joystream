@@ -26,6 +26,8 @@ use mocks::{
     COUNCIL_BUDGET_ACCOUNT_ID,
 };
 
+const DEFAULT_WINNER_REWARD: u64 = 10;
+
 #[test]
 fn validate_funding_bounty_stage() {
     build_test_externalities().execute_with(|| {
@@ -1957,6 +1959,7 @@ fn announce_work_entry_succeeded() {
             entry_id,
             bounty_id,
             member_id,
+            account_id,
             Some(account_id),
         ));
     });
@@ -2866,7 +2869,12 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 
         // Judgment
         let judgment = vec![
-            (entry_id1, OracleWorkEntryJudgment::Winner),
+            (
+                entry_id1,
+                OracleWorkEntryJudgment::Winner {
+                    reward: DEFAULT_WINNER_REWARD,
+                },
+            ),
             (entry_id2, OracleWorkEntryJudgment::Legit),
             (entry_id3, OracleWorkEntryJudgment::Rejected),
         ]
@@ -2884,7 +2892,9 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 
         assert_eq!(
             Bounty::work_entries(bounty_id, entry_id1).oracle_judgment_result,
-            OracleWorkEntryJudgment::Winner
+            OracleWorkEntryJudgment::Winner {
+                reward: DEFAULT_WINNER_REWARD
+            }
         );
         assert_eq!(
             Bounty::work_entries(bounty_id, entry_id2).oracle_judgment_result,
@@ -2963,7 +2973,14 @@ fn submit_judgment_by_member_succeeded() {
 
         let judgment = vec![entry_id]
             .iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: DEFAULT_WINNER_REWARD,
+                    },
+                )
+            })
             .collect::<BTreeMap<_, _>>();
 
         SubmitJudgmentFixture::default()
@@ -3125,7 +3142,14 @@ fn submit_judgment_fails_with_invalid_judgment() {
         let invalid_entry_id = 1111u64;
         let judgment = vec![invalid_entry_id]
             .iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: DEFAULT_WINNER_REWARD,
+                    },
+                )
+            })
             .collect::<BTreeMap<_, _>>();
 
         SubmitJudgmentFixture::default()

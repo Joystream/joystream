@@ -107,6 +107,7 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id,
         *bounty_id,
+        account_id.clone(),
         Some(account_id.clone()),
     )
     .unwrap();
@@ -535,13 +536,25 @@ benchmarks! {
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
-    }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, Some(account_id.clone()))
+    }: _(
+        RawOrigin::Signed(account_id.clone()),
+        member_id,
+        bounty_id,
+        account_id.clone(),
+        Some(account_id.clone())
+    )
     verify {
         let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
 
         assert!(WorkEntries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
-            Event::<T>::WorkEntryAnnounced(bounty_id, entry_id, member_id, Some(account_id)).into()
+            Event::<T>::WorkEntryAnnounced(
+                bounty_id,
+                entry_id,
+                member_id,
+                account_id.clone(),
+                Some(account_id)
+            ).into()
         );
     }
 
@@ -567,6 +580,7 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
+            account_id.clone(),
             Some(account_id.clone())
         ).unwrap();
 
@@ -603,6 +617,7 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
+            account_id.clone(),
             Some(account_id.clone())
         ).unwrap();
 
@@ -645,8 +660,9 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
+        let winner_reward: BalanceOf<T> = 10.into();
         let judgment = entry_ids.iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();
 
         run_to_block::<T>((work_period + One::one()).into());
@@ -655,7 +671,10 @@ benchmarks! {
     verify {
         for entry_id in entry_ids {
             let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
-            assert_eq!(entry.oracle_judgment_result, OracleWorkEntryJudgment::Winner);
+            assert_eq!(
+                entry.oracle_judgment_result,
+                OracleWorkEntryJudgment::Winner {reward : winner_reward}
+            );
         }
         assert_last_event::<T>(
             Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
@@ -730,8 +749,9 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
+        let winner_reward: BalanceOf<T> = 10.into();
         let judgment = entry_ids.iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner))
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();
 
         run_to_block::<T>((work_period + One::one()).into());
@@ -745,7 +765,10 @@ benchmarks! {
     verify {
         for entry_id in entry_ids {
             let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
-            assert_eq!(entry.oracle_judgment_result, OracleWorkEntryJudgment::Winner);
+            assert_eq!(
+                entry.oracle_judgment_result,
+                OracleWorkEntryJudgment::Winner {reward : winner_reward}
+            );
         }
         assert_last_event::<T>(
             Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
