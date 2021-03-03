@@ -6,8 +6,10 @@ use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
+use sp_runtime::SaturatedConversion;
 use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -18,8 +20,8 @@ use frame_system::Module as System;
 use membership::Module as Membership;
 
 use crate::{
-    BalanceOf, Bounties, BountyActor, BountyCreationParameters, BountyMilestone, Call, Event,
-    Module, OracleWorkEntryJudgment, Trait, WorkEntries,
+    AssuranceContractType, BalanceOf, Bounties, BountyActor, BountyCreationParameters,
+    BountyMilestone, Call, Event, Module, OracleWorkEntryJudgment, Trait, WorkEntries,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -510,12 +512,22 @@ benchmarks! {
     announce_work_entry {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
+        let stake: BalanceOf<T> = 100.into();
+
+        let member_ids = (0.. T::MaxWorkEntryLimit::get())
+            .into_iter()
+            .map(|id| id.saturated_into())
+            .collect::<BTreeSet<T::MemberId>>();
+
+        let contract_type = AssuranceContractType::Closed(member_ids);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             max_amount: funding_amount,
             cherry,
+            contract_type,
+            entrant_stake: stake,
             ..Default::default()
         };
 
@@ -536,12 +548,14 @@ benchmarks! {
     withdraw_work_entry {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
+        let stake: BalanceOf<T> = 100.into();
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
             max_amount: funding_amount,
+            entrant_stake: stake,
             ..Default::default()
         };
 
