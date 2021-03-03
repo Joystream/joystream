@@ -25,6 +25,8 @@
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
 //! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
 //! oracle judgment for a bounty.
+//! - [withdraw_work_entrant_funds](./struct.Module.html#method.withdraw_work_entrant_funds) -
+//! withdraw work entrant funds.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -35,10 +37,11 @@ pub(crate) mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: add working stake unstaking period.
-// TODO: prevent bounty removal with active entries
-// TODO: test all stages
+// TODO: ensure document compatibility
+// TODO: full successful test with all withdrawals
 // TODO: make sure cherry goes back to creator on successful bounty.
+// TODO: add working stake unstaking period.
+// TODO: test all stages
 // TODO: withdraw member funding if there is no judgment.
 // TODO: withdraw funds for winners.
 // TODO - open question:
@@ -460,14 +463,14 @@ decl_event! {
         /// Work entry was withdrawn.
         /// Params:
         /// - bounty ID
-        /// - created entry ID
+        /// - entry ID
         /// - entrant member ID
         WorkEntryWithdrawn(BountyId, WorkEntryId, MemberId),
 
         /// Work entry was slashed.
         /// Params:
         /// - bounty ID
-        /// - created entry ID
+        /// - entry ID
         WorkEntrySlashed(BountyId, WorkEntryId),
 
         /// Submit work.
@@ -484,6 +487,13 @@ decl_event! {
         /// - oracle
         /// - judgment data
         OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment),
+
+        /// Work entry was slashed.
+        /// Params:
+        /// - bounty ID
+        /// - entry ID
+        /// - entrant member ID
+        WorkEntrantFundsWithdrawn(BountyId, WorkEntryId, MemberId),
     }
 }
 
@@ -791,10 +801,7 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            ensure!(
-                matches!(current_bounty_stage, BountyStage::Withdrawal{..}),
-                Self::unexpected_bounty_stage_error(current_bounty_stage),
-            );
+            Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
 
             ensure!(
                 <BountyContributions<T>>::contains_key(&bounty_id, &funder),
@@ -846,11 +853,10 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            if let BountyStage::Withdrawal {cherry_needs_withdrawal } = current_bounty_stage {
-                ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
-            } else {
-                return Err(Self::unexpected_bounty_stage_error(current_bounty_stage));
-            };
+            let cherry_needs_withdrawal =
+                Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+
+            ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
 
             //
             // == MUTATION SAFE ==
@@ -1089,6 +1095,44 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
+        }
+
+        /// Withdraw work entrant funds.
+        /// Both legitimate participants and winners get their stake unlocked. Winners also get a
+        /// bounty reward.
+        #[weight = 1000000] // TODO: adjust weight and its comment
+        pub fn withdraw_work_entrant_funds(
+            origin,
+            member_id: MemberId<T>,
+            bounty_id: T::BountyId,
+            entry_id: T::WorkEntryId,
+        ) {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // TODO: reward
+
+            Self::unlock_work_entry_stake(&bounty, &entry);
+
+            Self::remove_work_entry(&bounty_id, &entry_id);
+
+            Self::deposit_event(RawEvent::WorkEntrantFundsWithdrawn(bounty_id, entry_id, member_id));
+
+            if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
+                Self::remove_bounty(&bounty_id);
+            }
         }
     }
 }
@@ -1373,6 +1417,7 @@ impl<T: Trait> Module<T> {
     // Verifies that the bounty has no pending fund withdrawals left.
     fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
         !Self::contributions_exist(bounty_id)
+            && !Self::work_entries_exist(bounty_id)
             && matches!(
                 stage,
                 BountyStage::Withdrawal {
@@ -1384,6 +1429,15 @@ impl<T: Trait> Module<T> {
     // Verifies that bounty has some contribution to withdraw.
     // Should be O(1) because of the single inner call of the next() function of the iterator.
     pub(crate) fn contributions_exist(bounty_id: &T::BountyId) -> bool {
+        <BountyContributions<T>>::iter_prefix_values(bounty_id)
+            .peekable()
+            .peek()
+            .is_some()
+    }
+
+    // Verifies that bounty has some work entries to withdraw.
+    // Should be O(1) because of the single inner call of the next() function of the iterator.
+    pub(crate) fn work_entries_exist(bounty_id: &T::BountyId) -> bool {
         <BountyContributions<T>>::iter_prefix_values(bounty_id)
             .peekable()
             .peek()
@@ -1626,6 +1680,18 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Bounty withdrawal stage validator. Returns `cherry_needs_withdrawal` flag.
+    fn ensure_bounty_withdrawal_stage(actual_stage: BountyStage) -> Result<bool, DispatchError> {
+        if let BountyStage::Withdrawal {
+            cherry_needs_withdrawal,
+        } = actual_stage
+        {
+            Ok(cherry_needs_withdrawal)
+        } else {
+            Err(Self::unexpected_bounty_stage_error(actual_stage))
+        }
     }
 
     // Provides fined-grained errors for a bounty stages
