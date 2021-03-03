@@ -34,6 +34,9 @@
 #[cfg(test)]
 pub(crate) mod tests;
 
+mod actors;
+mod stages;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
@@ -75,17 +78,24 @@ pub trait WeightInfo {
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
+pub(crate) use actors::BountyActorManager;
+pub(crate) use stages::BountyStageCalculator;
+
+use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{Saturating, Zero};
-use sp_runtime::SaturatedConversion;
 use sp_runtime::{
     traits::{AccountIdConversion, Hash},
     ModuleId,
 };
+use sp_runtime::{Perbill, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
@@ -94,11 +104,6 @@ use common::council::CouncilBudgetManager;
 use common::origin::MemberOriginValidator;
 use common::MemberId;
 use staking_handler::StakingHandler;
-
-use codec::{Decode, Encode};
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-use sp_runtime::Perbill;
 
 /// Main pallet-bounty trait.
 pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
@@ -1137,146 +1142,6 @@ decl_module! {
     }
 }
 
-// Helper enum for the bounty management.
-enum BountyActorManager<T: Trait> {
-    // Bounty was created or funded by a council.
-    Council,
-
-    // Bounty was created or funded by a member.
-    Member(T::AccountId, MemberId<T>),
-}
-
-impl<T: Trait> BountyActorManager<T> {
-    // Construct BountyActor by extrinsic origin and optional member_id.
-    fn get_bounty_actor(
-        origin: T::Origin,
-        creator: BountyActor<MemberId<T>>,
-    ) -> Result<BountyActorManager<T>, DispatchError> {
-        match creator {
-            BountyActor::Member(member_id) => {
-                let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                    origin, member_id,
-                )?;
-
-                Ok(BountyActorManager::Member(account_id, member_id))
-            }
-            BountyActor::Council => {
-                ensure_root(origin)?;
-
-                Ok(BountyActorManager::Council)
-            }
-        }
-    }
-
-    // Validate balance is sufficient for the bounty
-    fn validate_balance_sufficiency(&self, required_balance: BalanceOf<T>) -> DispatchResult {
-        let balance_is_sufficient = match self {
-            BountyActorManager::Council => {
-                BountyActorManager::<T>::check_council_budget(required_balance)
-            }
-            BountyActorManager::Member(account_id, _) => {
-                Module::<T>::check_balance_for_account(required_balance, account_id)
-            }
-        };
-
-        ensure!(
-            balance_is_sufficient,
-            Error::<T>::InsufficientBalanceForBounty
-        );
-
-        Ok(())
-    }
-
-    // Verifies that council budget is sufficient for a bounty.
-    fn check_council_budget(amount: BalanceOf<T>) -> bool {
-        T::CouncilBudgetManager::get_budget() >= amount
-    }
-
-    // Validate that provided actor relates to the initial BountyActor.
-    fn validate_actor(&self, actor: &BountyActor<MemberId<T>>) -> DispatchResult {
-        let initial_actor = match self {
-            BountyActorManager::Council => BountyActor::Council,
-            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
-        };
-
-        ensure!(initial_actor == actor.clone(), Error::<T>::NotBountyActor);
-
-        Ok(())
-    }
-
-    // Transfer funds for the bounty creation.
-    fn transfer_funds_to_bounty_account(
-        &self,
-        bounty_id: T::BountyId,
-        required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
-        match self {
-            BountyActorManager::Council => {
-                BountyActorManager::<T>::transfer_balance_from_council_budget(
-                    bounty_id,
-                    required_balance,
-                );
-            }
-            BountyActorManager::Member(account_id, _) => {
-                Module::<T>::transfer_funds_to_bounty_account(
-                    account_id,
-                    bounty_id,
-                    required_balance,
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-
-    // Restore a balance for the bounty creator.
-    fn transfer_funds_from_bounty_account(
-        &self,
-        bounty_id: T::BountyId,
-        required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
-        match self {
-            BountyActorManager::Council => {
-                BountyActorManager::<T>::transfer_balance_to_council_budget(
-                    bounty_id,
-                    required_balance,
-                );
-            }
-            BountyActorManager::Member(account_id, _) => {
-                Module::<T>::transfer_funds_from_bounty_account(
-                    account_id,
-                    bounty_id,
-                    required_balance,
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-
-    // Remove some balance from the council budget and transfer it to the bounty account.
-    fn transfer_balance_from_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
-        let budget = T::CouncilBudgetManager::get_budget();
-        let new_budget = budget.saturating_sub(amount);
-
-        T::CouncilBudgetManager::set_budget(new_budget);
-
-        let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::deposit_creating(&bounty_account_id, amount);
-    }
-
-    // Add some balance from the council budget and slash from the bounty account.
-    fn transfer_balance_to_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
-        let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::slash(&bounty_account_id, amount);
-
-        let budget = T::CouncilBudgetManager::get_budget();
-        let new_budget = budget.saturating_add(amount);
-
-        T::CouncilBudgetManager::set_budget(new_budget);
-    }
-}
-
 impl<T: Trait> Module<T> {
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
@@ -1702,201 +1567,5 @@ impl<T: Trait> Module<T> {
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::Withdrawal { .. } => Error::<T>::InvalidStageUnexpectedWithdrawal.into(),
         }
-    }
-}
-
-// Bounty stage helper.
-struct BountyStageCalculator<'a, T: Trait> {
-    // current block number
-    now: T::BlockNumber,
-    // bounty object
-    bounty: &'a Bounty<T>,
-}
-
-impl<'a, T: Trait> BountyStageCalculator<'a, T> {
-    // Calculates funding stage of the bounty.
-    // Returns None if conditions are not met.
-    fn is_funding_stage(&self) -> Option<BountyStage> {
-        // Bounty was created. There can be some contributions. Funding period is not over.
-        if let BountyMilestone::Created {
-            has_contributions,
-            created_at,
-        } = self.bounty.milestone.clone()
-        {
-            let funding_period_is_not_expired = !self.funding_period_expired(created_at);
-
-            if funding_period_is_not_expired {
-                return Some(BountyStage::Funding { has_contributions });
-            }
-        }
-
-        None
-    }
-
-    // Calculates work submission stage of the bounty.
-    // Returns None if conditions are not met.
-    fn is_work_submission_stage(&self) -> Option<BountyStage> {
-        match self.bounty.milestone.clone() {
-            // Funding period is over. Minimum funding reached. Work period is not expired.
-            BountyMilestone::Created { created_at, .. } => {
-                // Limited funding period.
-                if let Some(funding_period) = self.bounty.creation_params.funding_period {
-                    let minimum_funding_reached = self.minimum_funding_reached();
-                    let funding_period_expired = self.funding_period_expired(created_at);
-                    let working_period_is_not_expired =
-                        !self.work_period_expired(created_at + funding_period);
-
-                    if minimum_funding_reached
-                        && funding_period_expired
-                        && working_period_is_not_expired
-                    {
-                        return Some(BountyStage::WorkSubmission);
-                    }
-                }
-            }
-            // Maximum funding reached. Work period is not expired.
-            BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            } => {
-                let work_period_is_not_expired = !self.work_period_expired(max_funding_reached_at);
-
-                if work_period_is_not_expired {
-                    return Some(BountyStage::WorkSubmission);
-                }
-            }
-            // Work in progress. Work period is not expired.
-            BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            } => {
-                let work_period_is_not_expired = !self.work_period_expired(work_period_started_at);
-
-                if work_period_is_not_expired {
-                    return Some(BountyStage::WorkSubmission);
-                }
-            }
-            _ => return None,
-        }
-
-        None
-    }
-
-    // Calculates judgment stage of the bounty.
-    // Returns None if conditions are not met.
-    fn is_judgment_stage(&self) -> Option<BountyStage> {
-        // Can be judged only if there are work submissions.
-        if let BountyMilestone::WorkSubmitted {
-            work_period_started_at,
-        } = self.bounty.milestone
-        {
-            let work_period_expired = self.work_period_expired(work_period_started_at);
-
-            let judgment_period_is_not_expired =
-                !self.judgment_period_expired(work_period_started_at);
-
-            if work_period_expired && judgment_period_is_not_expired {
-                return Some(BountyStage::Judgment);
-            }
-        }
-
-        None
-    }
-
-    // Calculates withdrawal stage of the bounty.
-    // Returns None if conditions are not met.
-    fn withdrawal_stage(&self) -> BountyStage {
-        let failed_bounty_withdrawal = BountyStage::Withdrawal {
-            cherry_needs_withdrawal: false, // no cherry withdrawal on failed bounty
-        };
-
-        match self.bounty.milestone.clone() {
-            // Funding period. No contributions or not enough contributions.
-            BountyMilestone::Created {
-                has_contributions,
-                created_at,
-            } => {
-                let funding_period_expired = self.funding_period_expired(created_at);
-
-                let minimum_funding_is_not_reached = !self.minimum_funding_reached();
-
-                if minimum_funding_is_not_reached && funding_period_expired {
-                    return BountyStage::Withdrawal {
-                        cherry_needs_withdrawal: !has_contributions,
-                    };
-                }
-            }
-            // No work submitted.
-            BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            } => {
-                let work_period_expired = self.work_period_expired(max_funding_reached_at);
-
-                if work_period_expired {
-                    return failed_bounty_withdrawal;
-                }
-            }
-            // Bounty was canceled or vetoed. Allow cherry withdrawal.
-            BountyMilestone::Canceled => {
-                return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: true,
-                }
-            }
-            // It is withdrawal stage and the creator cherry has been already withdrawn.
-            BountyMilestone::CreatorCherryWithdrawn => {
-                return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: false,
-                }
-            }
-            // Work submitted but no judgment.
-            BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            } => {
-                let work_period_expired = self.work_period_expired(work_period_started_at);
-
-                let judgment_period_is_expired =
-                    self.judgment_period_expired(work_period_started_at);
-
-                if work_period_expired && judgment_period_is_expired {
-                    return failed_bounty_withdrawal;
-                }
-            }
-            // The bounty judgment was submitted.
-            BountyMilestone::JudgmentSubmitted { successful_bounty } => {
-                return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: successful_bounty,
-                }
-            }
-        }
-
-        failed_bounty_withdrawal
-    }
-
-    // Checks whether the minimum funding reached for the bounty.
-    fn minimum_funding_reached(&self) -> bool {
-        self.bounty.total_funding >= self.bounty.creation_params.min_amount
-    }
-
-    // Checks whether the work period expired by now starting from the provided block number.
-    fn work_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
-        work_period_started_at + self.bounty.creation_params.work_period < self.now
-    }
-
-    // Checks whether the funding period expired by now starting from the provided block number.
-    fn funding_period_expired(&self, created_at: T::BlockNumber) -> bool {
-        // Limited funding period
-        if let Some(funding_period) = self.bounty.creation_params.funding_period {
-            return created_at + funding_period < self.now;
-        }
-
-        // Unlimited funding period
-        false
-    }
-
-    // Checks whether the judgment period expired by now when work period start from the provided
-    // block number.
-    fn judgment_period_expired(&self, work_period_started_at: T::BlockNumber) -> bool {
-        work_period_started_at
-            + self.bounty.creation_params.work_period
-            + self.bounty.creation_params.judging_period
-            < self.now
     }
 }
