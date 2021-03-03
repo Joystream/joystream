@@ -7,7 +7,7 @@ pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, ExistenceRequirement};
+use frame_support::traits::ExistenceRequirement;
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
@@ -37,7 +37,9 @@ pub type ForumUserId<T> = common::MemberId<T>;
 type WeightInfoForum<T> = <T as Trait>::WeightInfo;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <<T as Trait>::Currency as frame_support::traits::Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::Balance;
 
 /// Alias for the thread
 pub type ThreadOf<T> = Thread<
@@ -80,9 +82,7 @@ pub trait WeightInfo {
     fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
 }
 
-pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::Trait + balances::Trait
-{
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type CategoryId: Parameter
@@ -131,10 +131,14 @@ pub trait Trait:
 
     /// Base deposit for any thread (note: thread creation also needs a `PostDeposit` since
     /// creating a thread means also creating a post)
-    type BasePayOffForThreadCleanUp: Get<Self::Balance>;
+    type BasePayOffForThreadCleanUp: Get<
+        <Self::Currency as frame_support::traits::Currency<Self::AccountId>>::Balance,
+    >;
 
     /// Deposit needed to create a post
-    type PostDeposit: Get<Self::Balance>;
+    type PostDeposit: Get<
+        <Self::Currency as frame_support::traits::Currency<Self::AccountId>>::Balance,
+    >;
 
     /// Maximum depth for nested categories
     type MaxCategoryDepth: Get<u64>;
@@ -157,6 +161,8 @@ pub trait Trait:
         common::MemberId<Self>,
         Self::AccountId,
     >;
+
+    type Currency: frame_support::traits::Currency<Self::AccountId>;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
@@ -1331,12 +1337,15 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
-        let _ = <balances::Module<T> as Currency<T::AccountId>>::slash(&thread_account_id, amount);
+        let _ = <T::Currency as frame_support::traits::Currency<T::AccountId>>::slash(
+            &thread_account_id,
+            amount,
+        );
     }
 
     fn pay_off(thread_id: T::ThreadId, amount: BalanceOf<T>, account_id: &T::AccountId) {
         let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        let _ = <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        let _ = <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
             amount,
@@ -1350,7 +1359,7 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
     ) {
         let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        let _ = <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        let _ = <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
             amount,
@@ -1907,7 +1916,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_enough_balance(balance: BalanceOf<T>, account_id: &T::AccountId) -> bool {
-        balances::Module::<T>::usable_balance(account_id) >= balance
+        <T::Currency as frame_support::traits::Currency<T::AccountId>>::free_balance(account_id)
+            >= balance
     }
 
     fn ensure_can_add_post(
