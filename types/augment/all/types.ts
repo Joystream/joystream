@@ -324,7 +324,6 @@ export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 export interface CuratorGroup extends Struct {
   readonly curators: Vec<CuratorId>;
   readonly active: bool;
-  readonly number_of_channels_owned: u32;
 }
 
 /** @name CuratorGroupId */
@@ -1239,7 +1238,6 @@ export interface Video extends Struct {
   readonly in_channel: ChannelId;
   readonly in_series: Option<SeriesId>;
   readonly is_censored: bool;
-  readonly is_featured: bool;
 }
 
 /** @name VideoCategory */

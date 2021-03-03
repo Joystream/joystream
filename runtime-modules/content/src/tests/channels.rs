@@ -176,23 +176,6 @@ fn members_can_manage_channels() {
             Error::<Test>::ActorNotAuthorized
         );
 
-        // Member cannot delete a channel they do not own
-        assert_err!(
-            Content::delete_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id_2
-            ),
-            Error::<Test>::ActorNotAuthorized
-        );
-
-        // Delete channel
-        assert_ok!(Content::delete_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id_1
-        ));
-
         // TODO: assert emitted events...
     })
 }

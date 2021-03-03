@@ -1,7 +1,7 @@
 /* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
-// yarn workspace api-scripts script list-data-directory
+// yarn workspace api-scripts script get-first-content-id
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
@@ -9,23 +9,15 @@
 
 const script = async ({ api }) => {
   const entries = await api.query.dataDirectory.dataByContentId.entries()
-
-  console.error(`Data Directory contains ${entries.length} objects`)
-
   const acceptedEntries = entries.filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
-
-  acceptedEntries.forEach(
-    ([
+  if (acceptedEntries.length) {
+    const [
       {
         args: [id],
       },
-      obj,
-    ]) => {
-      console.log(`contentId: ${api.createType('ContentId', id).encode()}, ipfs: ${obj.ipfs_content_id}`)
-    }
-  )
-
-  console.error(`Data Directory contains ${acceptedEntries.length} Accepted objects`)
+    ] = acceptedEntries[0]
+    console.log(`${api.createType('ContentId', id).encode()}`)
+  }
 }
 
 if (typeof module === 'undefined') {

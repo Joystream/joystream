@@ -214,7 +214,7 @@ impl data_directory::Trait for Test {
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, &'static str> {
+    fn get_random_storage_provider() -> Result<u32, data_directory::Error<Test>> {
         Ok(1)
     }
 }
@@ -233,12 +233,17 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 impl stake::Trait for Test {

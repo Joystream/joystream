@@ -39,10 +39,10 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
-pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 20000;
+pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 100000000;
 pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
-pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(2000000, 2000);
-pub const DEFAULT_VOUCHER: Voucher = Voucher::new(50000, 100);
+pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(200000000, 2000);
+pub const DEFAULT_VOUCHER: Voucher = Voucher::new(5000000, 100);
 pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 
 /// The _Data directory_ main _Trait_.
@@ -111,7 +111,10 @@ decl_error! {
         ContentUploadingBlocked,
 
         /// Provided owner should be equal o the data object owner under given content id
-        OwnersAreNotEqual
+        OwnersAreNotEqual,
+
+        /// No storage provider available to service the request
+        NoProviderAvailable
     }
 }
 
@@ -716,7 +719,7 @@ impl<T: Trait> Module<T> {
 /// Provides random storage provider id. We use it when assign the content to the storage provider.
 pub trait StorageProviderHelper<T: Trait> {
     /// Provides random storage provider id.
-    fn get_random_storage_provider() -> Result<StorageProviderId<T>, &'static str>;
+    fn get_random_storage_provider() -> Result<StorageProviderId<T>, Error<T>>;
 }
 
 /// Content access helper.

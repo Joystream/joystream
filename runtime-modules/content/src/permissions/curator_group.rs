@@ -9,13 +9,6 @@ pub struct CuratorGroup<T: Trait> {
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
-
-    /// Used to count the number of Channels, given curator group owns
-    number_of_channels_owned: u32,
-    // IDEA: Give explicit permissions to:
-    // create new categories
-    // restrict censoring to subset of categories
-    // create curator group channels
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -24,7 +17,6 @@ impl<T: Trait> Default for CuratorGroup<T> {
             curators: BTreeSet::new(),
             // default curator group status right after creation
             active: false,
-            number_of_channels_owned: 0,
         }
     }
 }
@@ -40,10 +32,6 @@ impl<T: Trait> CuratorGroup<T> {
         self.active
     }
 
-    pub fn get_number_of_channels_owned(&self) -> u32 {
-        self.number_of_channels_owned
-    }
-
     /// Set `CuratorGroup` status as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.active = is_active
@@ -57,25 +45,6 @@ impl<T: Trait> CuratorGroup<T> {
     /// Retrieve set of all curator_ids related to `CuratorGroup` by mutable  reference
     pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
         &mut self.curators
-    }
-
-    /// Increment number of channels `CuratorGroup` owns
-    pub fn increment_number_of_channels_owned_count(&mut self) {
-        self.number_of_channels_owned += 1;
-    }
-
-    /// Decrement number of channels `CuratorGroup` owns
-    pub fn decrement_number_of_channels_owned_count(&mut self) {
-        self.number_of_channels_owned -= 1;
-    }
-
-    /// Ensure curator group does not maintain any `Channel`
-    pub fn ensure_curator_group_owns_no_channels(&self) -> DispatchResult {
-        ensure!(
-            self.number_of_channels_owned == 0,
-            Error::<T>::CuratorGroupRemovalForbidden
-        );
-        Ok(())
     }
 
     /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied

@@ -58,8 +58,11 @@ decl_error! {
         /// Channel does not exist
         ChannelDoesNotExist,
 
-        /// Channel must have been deleted
-        ChannelMustNotExist,
+        /// Video does not exist
+        VideoDoesNotExist,
+
+        /// Video in season can`t be removed (because order is important)
+        VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels

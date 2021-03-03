@@ -1,7 +1,7 @@
 /* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
-// yarn script example
+// yarn workspace api-scripts script example
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js

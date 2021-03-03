@@ -71,7 +71,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 11,
+    spec_version: 13,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -473,12 +473,17 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u128 = 5000;
+}
+
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = ActorId;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 impl forum::Trait for Runtime {

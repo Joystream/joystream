@@ -24,7 +24,6 @@ export class NewAsset extends JoyEnum({
 export class CuratorGroup extends JoyStructDecorated({
   curators: JoyBTreeSet(CuratorId),
   active: bool,
-  number_of_channels_owned: u32,
 }) {}
 
 export class ContentActor extends JoyEnum({
@@ -95,7 +94,6 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Option.with(SeriesId),
   is_censored: bool,
-  is_featured: bool,
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
