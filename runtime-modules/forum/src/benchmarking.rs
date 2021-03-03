@@ -26,7 +26,7 @@ pub trait CreateAccountId {
     fn create_account_id(id: u32) -> Self;
 }
 
-impl CreateAccountId for u64 {
+impl CreateAccountId for u128 {
     fn create_account_id(id: u32) -> Self {
         id.into()
     }
@@ -731,7 +731,7 @@ benchmarks! {
 
         assert_eq!(
             Balances::<T>::free_balance(&caller_id),
-            initial_balance - T::StartingCleanupPayOff::get() - T::PostDeposit::get(),
+            initial_balance - T::BasePayOffForThreadCleanUp::get() - T::PostDeposit::get(),
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -740,7 +740,6 @@ benchmarks! {
 
         // Ensure initial post added successfully
         let new_post = Post {
-            thread_id: next_thread_id,
             text_hash: T::calculate_hash(&text),
             author_id: forum_user_id.saturated_into(),
         };
@@ -754,9 +753,7 @@ benchmarks! {
             author_id: forum_user_id.saturated_into(),
             archived: false,
             poll: poll.clone(),
-            // initial posts number
-            num_direct_posts: 1,
-            cleanup_pay_off: T::StartingCleanupPayOff::get() + T::PostDeposit::get(),
+            cleanup_pay_off: T::BasePayOffForThreadCleanUp::get() + T::PostDeposit::get(),
             posts
         };
 
@@ -933,7 +930,7 @@ benchmarks! {
         assert_eq!(
             Balances::<T>::free_balance(&caller_id),
             initial_balance +
-            T::StartingCleanupPayOff::get() +
+            T::BasePayOffForThreadCleanUp::get() +
             T::Balance::from(max_posts_in_thread.try_into().unwrap()) * T::PostDeposit::get()
         );
 
@@ -999,7 +996,7 @@ benchmarks! {
         assert_eq!(
             Balances::<T>::free_balance(&caller_id),
             initial_balance +
-            T::StartingCleanupPayOff::get() +
+            T::BasePayOffForThreadCleanUp::get() +
             T::Balance::from(max_posts_in_thread.try_into().unwrap()) * T::PostDeposit::get()
         );
 
@@ -1349,6 +1346,9 @@ benchmarks! {
 
         let j in 0 .. MAX_BYTES;
 
+        let k in 0 ..
+            (<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread::get() - 2) as u32;
+
         let text = vec![0u8].repeat(j as usize);
 
         // Generate categories tree
@@ -1359,6 +1359,17 @@ benchmarks! {
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize), None
         );
+
+        for _ in 0 .. k {
+            add_thread_post::<T>(
+                caller_id.clone(),
+                forum_user_id.saturated_into(),
+                category_id,
+                thread_id,
+                vec![0u8],
+            );
+        }
+
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
         let post_id = Module::<T>::next_post_id();
 
@@ -1372,13 +1383,10 @@ benchmarks! {
 
         // Ensure initial post added successfully
         let new_post = Post {
-            thread_id,
             text_hash: T::calculate_hash(&text),
             author_id: forum_user_id.saturated_into(),
         };
 
-        // Ensure thread posts counter updated successfully
-        thread.num_direct_posts += 1;
         thread.posts.insert(post_id, new_post);
         thread.cleanup_pay_off += T::PostDeposit::get();
 
@@ -1522,8 +1530,6 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, post_id, rationale.clone())
     verify {
-        // Ensure post was removed successfully
-        thread.num_direct_posts -= 1;
         thread.posts.remove(&post_id);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
@@ -1576,8 +1582,6 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, post_id, rationale.clone())
     verify {
-        // Ensure post was removed successfully
-        thread.num_direct_posts -= 1;
         thread.posts.remove(&post_id);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 

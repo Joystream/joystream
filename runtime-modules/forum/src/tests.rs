@@ -646,9 +646,7 @@ fn create_thread_balance() {
     with_test_externalities(|| {
         balances::Module::<Runtime>::make_free_balance_be(
             &forum_lead,
-            <Runtime as Trait>::StartingCleanupPayOff::get()
-                + <Runtime as Trait>::PostDeposit::get()
-                - 1,
+            BalanceOf::<Runtime>::max_value(),
         );
 
         let category_id = create_category_mock(
@@ -658,7 +656,8 @@ fn create_thread_balance() {
             good_category_description(),
             Ok(()),
         );
-        create_thread_mock(
+
+        let first_thread_id = create_thread_mock(
             FORUM_LEAD_ORIGIN,
             forum_lead,
             forum_lead,
@@ -666,7 +665,28 @@ fn create_thread_balance() {
             good_thread_title(),
             good_thread_text(),
             None,
-            Err(Error::<Runtime>::InsufficientBalanceForThreadCreation.into()),
+            Ok(()),
+        );
+
+        let second_thread_id = create_thread_mock(
+            FORUM_LEAD_ORIGIN,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let first_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
+            <Runtime as Trait>::ModuleId::get().into_sub_account(first_thread_id);
+        let second_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
+            <Runtime as Trait>::ModuleId::get().into_sub_account(second_thread_id);
+
+        assert_ne!(
+            first_state_cleanup_treasury_account,
+            second_state_cleanup_treasury_account
         );
     });
 }
@@ -1088,7 +1108,7 @@ fn delete_thread() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::StartingCleanupPayOff::get();
+        current_balance -= <Runtime as Trait>::BasePayOffForThreadCleanUp::get();
         current_balance -= <Runtime as Trait>::PostDeposit::get();
 
         assert_eq!(
@@ -1582,7 +1602,7 @@ fn add_post_balance() {
         balances::Module::<Runtime>::make_free_balance_be(
             &forum_lead,
             <Runtime as Trait>::PostDeposit::get()
-                + <Runtime as Trait>::StartingCleanupPayOff::get(),
+                + <Runtime as Trait>::BasePayOffForThreadCleanUp::get(),
         );
         let category_id = create_category_mock(
             origin.clone(),

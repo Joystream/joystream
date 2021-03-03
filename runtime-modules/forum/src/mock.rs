@@ -57,7 +57,7 @@ impl frame_system::Trait for Runtime {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;
@@ -95,8 +95,8 @@ impl balances::Trait for Runtime {
 }
 
 impl common::Trait for Runtime {
-    type MemberId = u64;
-    type ActorId = u64;
+    type MemberId = u128;
+    type ActorId = u128;
 }
 
 parameter_types! {
@@ -317,7 +317,7 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
-    pub const StartingCleanupPayOff: u64 = 100;
+    pub const BasePayOffForThreadCleanUp: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
 }
@@ -344,7 +344,7 @@ impl Trait for Runtime {
     type MapLimits = MapLimits;
     type WorkingGroup = ();
     type MemberOriginValidator = ();
-    type StartingCleanupPayOff = StartingCleanupPayOff;
+    type BasePayOffForThreadCleanUp = BasePayOffForThreadCleanUp;
     type PostDeposit = PostDeposit;
 
     type ModuleId = ForumModuleId;
@@ -356,11 +356,11 @@ impl Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::origin::MemberOriginValidator<Origin, u128, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
-        member_id: u64,
-    ) -> Result<u64, DispatchError> {
+        member_id: u128,
+    ) -> Result<u128, DispatchError> {
         let account_id = ensure_signed(origin).unwrap();
         ensure!(
             Self::is_member_controller_account(&member_id, &account_id),
@@ -369,7 +369,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
         Ok(account_id)
     }
 
-    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+    fn is_member_controller_account(member_id: &u128, account_id: &u128) -> bool {
         let allowed_accounts = [
             FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
@@ -529,7 +529,7 @@ pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as frame_system::Trait>::Account
 pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_2_ORIGIN_ID);
 
 const EXTRA_MODERATOR_COUNT: usize = 5;
-pub const EXTRA_MODERATORS: [u64; EXTRA_MODERATOR_COUNT] = [125, 126, 127, 128, 129];
+pub const EXTRA_MODERATORS: [u128; EXTRA_MODERATOR_COUNT] = [125, 126, 127, 128, 129];
 
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
@@ -675,7 +675,7 @@ pub fn create_thread_mock(
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
             initial_balance
-                - <Runtime as Trait>::StartingCleanupPayOff::get()
+                - <Runtime as Trait>::BasePayOffForThreadCleanUp::get()
                 - <Runtime as Trait>::PostDeposit::get()
         );
     } else {

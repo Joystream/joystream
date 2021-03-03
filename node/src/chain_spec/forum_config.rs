@@ -12,7 +12,7 @@ type CategoryId = <Runtime as forum::Trait>::CategoryId;
 type ForumUserId = forum::ForumUserId<Runtime>;
 type ModeratorId = forum::ModeratorId<Runtime>;
 type Hash = H256;
-type PostOf = Post<ForumUserId, ThreadId, Hash>;
+type PostOf = Post<ForumUserId, Hash>;
 
 type ThreadOf = (
     CategoryId,
@@ -23,7 +23,7 @@ type ThreadOf = (
 #[derive(Decode)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, H256>)>,
-    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, H256>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, H256>)>,
     threads: Vec<ThreadOf>,
     category_by_moderator: Vec<(CategoryId, ModeratorId, ())>,
     data_migration_done: bool,

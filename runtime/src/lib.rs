@@ -650,7 +650,7 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 20;
     pub const MaxPollAlternativesNumber: u64 = 20;
-    pub const StartingCleanupPayOff: u64 = 30;
+    pub const BasePayOffForThreadCleanUp: u64 = 30;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
 }
@@ -674,7 +674,7 @@ impl forum::Trait for Runtime {
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
-    type StartingCleanupPayOff = StartingCleanupPayOff;
+    type BasePayOffForThreadCleanUp = BasePayOffForThreadCleanUp;
     type PostDeposit = PostDeposit;
     type ModuleId = ForumModuleId;
 

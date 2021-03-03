@@ -46,7 +46,7 @@ pub type ThreadOf<T> = Thread<
     <T as pallet_timestamp::Trait>::Moment,
     <T as frame_system::Trait>::Hash,
     <T as Trait>::PostId,
-    Post<ForumUserId<T>, <T as Trait>::ThreadId, <T as frame_system::Trait>::Hash>,
+    Post<ForumUserId<T>, <T as frame_system::Trait>::Hash>,
     BalanceOf<T>,
 >;
 
@@ -131,7 +131,7 @@ pub trait Trait:
 
     /// Base deposit for any thread (note: thread creation also needs a `PostDeposit` since
     /// creating a thread means also creating a post)
-    type StartingCleanupPayOff: Get<Self::Balance>;
+    type BasePayOffForThreadCleanUp: Get<Self::Balance>;
 
     /// Deposit needed to create a post
     type PostDeposit: Get<Self::Balance>;
@@ -212,10 +212,7 @@ pub struct Poll<Timestamp, Hash> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Post<ForumUserId, ThreadId, Hash> {
-    /// Id of thread to which this post corresponds.
-    pub thread_id: ThreadId,
-
+pub struct Post<ForumUserId, Hash> {
     /// Hash of current text
     pub text_hash: Hash,
 
@@ -241,9 +238,6 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash, PostId: sp_std::cmp::Or
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
-
-    /// Number of posts in thread, needed for map limit checks
-    pub num_direct_posts: u32,
 
     /// Post in thread
     pub posts: BTreeMap<PostId, Post>,
@@ -768,7 +762,7 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
 
-            let cleanup_pay_off = T::StartingCleanupPayOff::get();
+            let cleanup_pay_off = T::BasePayOffForThreadCleanUp::get();
 
             // Build a new thread
             let new_thread = Thread {
@@ -777,7 +771,6 @@ decl_module! {
                 author_id: forum_user_id,
                 archived: false,
                 poll: poll.clone(),
-                num_direct_posts: 0,
                 posts: BTreeMap::new(),
                 cleanup_pay_off,
             };
@@ -788,7 +781,7 @@ decl_module! {
             });
 
             // Reserve cleanup pay off in the thread account
-            Self::transfer_to_thread_account(cleanup_pay_off, new_thread_id, &account_id);
+            Self::transfer_to_state_cleanup_treasury_account(cleanup_pay_off, new_thread_id, &account_id);
 
             // Add inital post to thread
             let _ = Self::add_new_post(&account_id, new_thread_id, category_id, &text, forum_user_id);
@@ -1135,7 +1128,7 @@ decl_module! {
 
             // Ensure map limits are not reached
             Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPostsInThread>(
-                thread.num_direct_posts as u64,
+                thread.posts.len().saturated_into(),
             )?;
 
             //
@@ -1342,24 +1335,24 @@ impl<T: Trait> Module<T> {
     }
 
     fn pay_off(thread_id: T::ThreadId, amount: BalanceOf<T>, account_id: &T::AccountId) {
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
         let _ = <balances::Module<T> as Currency<T::AccountId>>::transfer(
-            &thread_account_id,
+            &state_cleanup_treasury_account,
             account_id,
             amount,
             ExistenceRequirement::AllowDeath,
         );
     }
 
-    fn transfer_to_thread_account(
+    fn transfer_to_state_cleanup_treasury_account(
         amount: BalanceOf<T>,
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) {
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
         let _ = <balances::Module<T> as Currency<T::AccountId>>::transfer(
             account_id,
-            &thread_account_id,
+            &state_cleanup_treasury_account,
             amount,
             ExistenceRequirement::KeepAlive,
         );
@@ -1371,24 +1364,22 @@ impl<T: Trait> Module<T> {
         category_id: T::CategoryId,
         text: &[u8],
         author_id: ForumUserId<T>,
-    ) -> (T::PostId, Post<ForumUserId<T>, T::ThreadId, T::Hash>) {
+    ) -> (T::PostId, Post<ForumUserId<T>, T::Hash>) {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
 
         // Build a post
         let new_post = Post {
-            thread_id,
             text_hash: T::calculate_hash(text),
             author_id,
         };
 
         let mut thread = <ThreadById<T>>::get(category_id, thread_id);
         thread.posts.insert(new_post_id, new_post.clone());
-        thread.num_direct_posts += 1;
 
         let post_deposit = T::PostDeposit::get();
         thread.cleanup_pay_off = thread.cleanup_pay_off.saturating_add(post_deposit);
-        Self::transfer_to_thread_account(post_deposit, thread_id, &account_id);
+        Self::transfer_to_state_cleanup_treasury_account(post_deposit, thread_id, &account_id);
 
         <ThreadById<T>>::insert(category_id, thread_id, thread);
 
@@ -1409,7 +1400,6 @@ impl<T: Trait> Module<T> {
     fn delete_post_inner(category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) {
         // Decrease thread's post counter
         <ThreadById<T>>::mutate(category_id, thread_id, |thread| {
-            thread.num_direct_posts -= 1;
             thread.posts.remove(&post_id);
         });
     }
@@ -1444,7 +1434,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::Hash>, Error<T>> {
         // Make sure post exists
         let post = Self::ensure_post_exists(category_id, thread_id, post_id)?;
 
@@ -1458,7 +1448,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::Hash>, Error<T>> {
         if !<ThreadById<T>>::contains_key(category_id, thread_id) {
             return Err(Error::<T>::PostDoesNotExist);
         }
@@ -1478,7 +1468,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<Post<ForumUserId<T>, T::Hash>, Error<T>> {
         // Ensure the moderator can moderate the category
         Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
 
@@ -1907,7 +1897,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         // The balance for creation of thread is the base cost plus the cost of a single post
-        let minimum_balance = T::StartingCleanupPayOff::get() + T::PostDeposit::get();
+        let minimum_balance = T::BasePayOffForThreadCleanUp::get() + T::PostDeposit::get();
         ensure!(
             Self::ensure_enough_balance(minimum_balance, &account_id),
             Error::<T>::InsufficientBalanceForThreadCreation
