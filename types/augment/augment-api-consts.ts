@@ -66,6 +66,9 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       maxWorkerNumberLimit: AugmentedConst<u32>;
     };
+    members: {
+      screenedMemberMaxInitialBalance: AugmentedConst<BalanceOf>;
+    };
     proposalsCodex: {
       /**
        * Exports max wasm code length of the runtime upgrade proposal const.

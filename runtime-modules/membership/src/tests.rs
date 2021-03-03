@@ -4,6 +4,7 @@ use super::genesis;
 use super::mock::*;
 
 use frame_support::*;
+// use sp_core::traits;
 
 fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
@@ -253,6 +254,7 @@ fn add_screened_member() {
             <crate::ScreeningAuthority<Test>>::put(&screening_authority);
 
             let next_member_id = Members::members_created();
+            let endownment = ScreenedMemberMaxInitialBalance::get() - 1;
 
             let info = get_alice_info();
             assert_ok!(Members::add_screened_member(
@@ -260,7 +262,8 @@ fn add_screened_member() {
                 ALICE_ACCOUNT_ID,
                 info.handle,
                 info.avatar_uri,
-                info.about
+                info.about,
+                Some(endownment),
             ));
 
             let profile = get_membership_by_id(next_member_id);
@@ -272,6 +275,26 @@ fn add_screened_member() {
                 crate::EntryMethod::Screening(screening_authority),
                 profile.entry
             );
+            assert_eq!(Balances::free_balance(ALICE_ACCOUNT_ID), endownment);
+
+            // Transfer should fail because of balance lock
+            assert_err!(
+                Balances::transfer(Origin::signed(ALICE_ACCOUNT_ID), screening_authority, 1),
+                balances::Error::<Test, _>::LiquidityRestrictions
+            );
+
+            // .. but we should be able to slash
+            assert!(Balances::can_slash(&ALICE_ACCOUNT_ID, 1));
+
+            // Deposit more funds to have a surplus above lock limit
+            let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, 10);
+
+            // If free balance above lock limit, transfers should be possible
+            assert_ok!(Balances::transfer(
+                Origin::signed(ALICE_ACCOUNT_ID),
+                screening_authority,
+                1
+            ));
         });
 }
 
