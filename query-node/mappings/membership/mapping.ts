@@ -51,11 +51,20 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
       await db.save<Membership>(member)
     }
     
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-      const { text, memberId } = new Members.ChangeMemberAboutTextCall(event_).args
-    
-      const member = await getMemberById(db, memberId)
-      member.about = convertBytesToString(text)
-      await db.save<Membership>(member)
-    }
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+    const { text, memberId } = new Members.ChangeMemberAboutTextCall(event_).args
+
+    const member = await getMemberById(db, memberId)
+    member.about = convertBytesToString(text)
+    await db.save<Membership>(member)
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+    const { uri, memberId } = new Members.ChangeMemberAvatarCall(event_).args
+  
+    const member = await getMemberById(db, memberId)
+    member.avatarUri = convertBytesToString(uri)
+    await db.save<Membership>(member)
+  }
