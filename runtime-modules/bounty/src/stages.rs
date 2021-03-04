@@ -1,3 +1,6 @@
+//! This module contains the BountyStageCalculator - a bounty stage calculation helper.
+//! It allows to get a bounty stage based on the current bounty state and the current system block.
+
 use crate::{Bounty, BountyMilestone, BountyStage, Trait};
 
 // Bounty stage helper.

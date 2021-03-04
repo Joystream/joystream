@@ -9,24 +9,33 @@
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
-//! ### Supported extrinsics:
+//! ### Supported extrinsics
 //! - [create_bounty](./struct.Module.html#method.create_bounty) - creates a bounty
+//!
+//! #### Funding stage
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
-//! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
-//! funding for a failed bounty.
-//! - [withdraw_creator_cherry](./struct.Module.html#method.withdraw_creator_cherry) - withdraw
-//! a cherry for a failed or canceled bounty.
+//!
+//! #### Work submission stage
 //! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
 //! work entry for a successful bounty.
 //! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
 //! work entry for a bounty.
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
+//!
+//! #### Judgment stage
 //! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
 //! oracle judgment for a bounty.
+//!
+//! #### Withdrawal stage
 //! - [withdraw_work_entrant_funds](./struct.Module.html#method.withdraw_work_entrant_funds) -
 //! withdraw work entrant funds.
+//! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
+//! funding for a failed bounty.
+//! - [withdraw_creator_cherry](./struct.Module.html#method.withdraw_creator_cherry) - withdraw
+//! a cherry for a failed or canceled bounty.
+
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -605,6 +614,7 @@ decl_error! {
 }
 
 decl_module! {
+    /// Bounty pallet Substrate Module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
@@ -828,6 +838,7 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
+            // TODO: ensure unsuccessful bounty.
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
 

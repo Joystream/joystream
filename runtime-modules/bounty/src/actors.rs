@@ -1,3 +1,8 @@
+//! This module contains the BountyActorManager - a bounty actor management helper.
+//! It simplifies the interface of dealing with two different actor types: members and council.
+//! BountyActorManager contains methods to validate actor origin, transfer funds to/from the bounty
+//! account, etc.
+
 use crate::{BalanceOf, BountyActor, Error, Module, Trait};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
