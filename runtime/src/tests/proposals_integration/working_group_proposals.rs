@@ -7,6 +7,7 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use frame_system::RawOrigin;
 use proposals_codex::CreateOpeningParameters;
+use sp_std::convert::TryInto;
 use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 
@@ -492,10 +493,15 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                     description: Vec::new(),
                     stake_parameters:
                         StakeParameters {
-                            stake: <Runtime as working_group::Trait<
-                                MembershipWorkingGroupInstance,
-                            >>::MinimumStakeForOpening::get()
-                            .into(),
+                            stake:
+                                T::Balance::from(
+                                    <Runtime as working_group::Trait<
+                                        MembershipWorkingGroupInstance,
+                                    >>::MinimumStakeForOpening::get(
+                                    )
+                                    .try_into()
+                                    .unwrap(),
+                                ),
                             staking_account_id: account_id.into(),
                         },
                 },

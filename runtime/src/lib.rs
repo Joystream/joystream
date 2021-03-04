@@ -700,7 +700,7 @@ parameter_types! {
     // This should be more costly than `add_opening` fee with the current configuration
     // the base cost of `add_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const MinimumStakeForOpening: u32 = 2000;
+    pub const MinimumStakeForOpening: Balance = 2000;
 }
 
 // Staking managers type aliases.

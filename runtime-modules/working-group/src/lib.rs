@@ -430,10 +430,12 @@ decl_module! {
                   Error::<T, I>::InvalidStakingAccountForMember
             );
 
-              ensure!(
-                  T::StakingHandler::is_account_free_of_conflicting_stakes(&p.stake_parameters.staking_account_id),
-                  Error::<T, I>::ConflictStakesOnAccount
-              );
+            ensure!(
+              T::StakingHandler::is_account_free_of_conflicting_stakes(
+                  &p.stake_parameters.staking_account_id
+              ),
+              Error::<T, I>::ConflictStakesOnAccount
+            );
 
               ensure!(
                   T::StakingHandler::is_enough_balance_for_stake(
@@ -521,10 +523,12 @@ decl_module! {
                 checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
 
             // Check that all applications are for the intended opening
-            if !checked_applications_info.iter()
-                .all(|info| info.application.opening_id == opening_id) {
-                return Err(Error::<T, I>::ApplicationsNotForOpening.into());
-            }
+            ensure!(
+                checked_applications_info.iter()
+                .all(|info| info.application.opening_id == opening_id),
+                Error::<T, I>::ApplicationsNotForOpening
+            );
+
 
             // Check for a single application for a leader.
             if matches!(opening.opening_type, OpeningType::Leader) {
