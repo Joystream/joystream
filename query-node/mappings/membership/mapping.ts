@@ -33,3 +33,29 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
       })
       await db.save<Block>(block)
     }
+
+    const member = new Membership({
+        id: memberId.toString(),
+        rootAccount: accountId.toString(),
+        controllerAccount: accountId.toString(),
+        handle: convertBytesToString(handle.unwrap()),
+        about: convertBytesToString(about.unwrap()),
+        avatarUri: convertBytesToString(avatarUri.unwrap()),
+        registeredAtBlock: block,
+        // TODO: upgrade indexer-lib which support block timestamp: substrateEvent.timestamp
+        registeredAtTime: new Date(),
+        entry: EntryMethod.PAID, // TODO?: callArgs.paidTermsId
+        suspended: false,
+      })
+    
+      await db.save<Membership>(member)
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+      const { text, memberId } = new Members.ChangeMemberAboutTextCall(event_).args
+    
+      const member = await getMemberById(db, memberId)
+      member.about = convertBytesToString(text)
+      await db.save<Membership>(member)
+    }
