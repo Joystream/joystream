@@ -32,6 +32,9 @@
   "engines": {
     "node": ">=12.18.0"
   },
+  "volta": {
+    "extends": "../../package.json"
+  },
   "scripts": {
     "test": "mocha 'test/**/*.js' --exit",
     "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
@@ -46,7 +49,7 @@
   },
   "dependencies": {
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.14.0",
+    "@joystream/types": "^0.16.0",
     "@polkadot/api": "^1.26.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",

@@ -7,6 +7,8 @@ pub mod data_object_type_registry;
 
 mod tests;
 
+pub use common::storage::StorageObjectOwner;
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -30,3 +32,6 @@ pub(crate) type DataObjectTypeId<T> = <T as common::StorageOwnership>::DataObjec
 
 /// Storage provider is a worker from the working group module.
 pub type StorageProviderId<T> = working_group::WorkerId<T>;
+
+/// Alias for StorageObjectOwner
+pub type ObjectOwner<T> = StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>;

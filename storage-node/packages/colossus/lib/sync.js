@@ -20,12 +20,12 @@
 
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
-const { ContentId } = require('@joystream/types/media')
+const { ContentId } = require('@joystream/types/storage')
 // The number of concurrent sync sessions allowed. Must be greater than zero.
 const MAX_CONCURRENT_SYNC_ITEMS = 20
 
 async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
-  const knownEncodedContentIds = (await api.assets.getKnownContentIds()).map((id) => id.encode())
+  const knownEncodedContentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
 
   // Select ids which we have not yet fully synced
   const needsSync = knownEncodedContentIds
@@ -155,7 +155,7 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
 
     await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
 
-    // Only update on chain state if not in anonymous mode
+    // Only update on-chain state if not in anonymous mode
     if (!flags.anonymous) {
       const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
       await setRelationshipsReady({ api, relationshipIds })

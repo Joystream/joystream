@@ -32,6 +32,12 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       existentialDeposit: AugmentedConst<Balance>;
     };
+    builderWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: AugmentedConst<u32>;
+    };
     content: {
       /**
        * Exports const -  max number of curators per group
@@ -44,12 +50,6 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       maxWorkerNumberLimit: AugmentedConst<u32>;
     };
-    dataDirectory: {
-      /**
-       * Maximum objects allowed per inject_data_objects() transaction
-       **/
-      maxObjectsPerInjection: AugmentedConst<u32>;
-    };
     finalityTracker: {
       /**
        * The delay after which point things become suspicious. Default is 1000.
@@ -59,6 +59,15 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        * The number of recent samples to keep from this chain. Default is 101.
        **/
       windowSize: AugmentedConst<BlockNumber>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: AugmentedConst<u32>;
+    };
+    members: {
+      screenedMemberMaxInitialBalance: AugmentedConst<BalanceOf>;
     };
     proposalsCodex: {
       /**

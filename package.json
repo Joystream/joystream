@@ -21,7 +21,6 @@
     "pioneer",
     "pioneer/packages/*",
     "utils/api-scripts",
-    "content-directory-schemas",
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",

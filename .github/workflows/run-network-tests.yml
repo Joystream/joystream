@@ -145,12 +145,10 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
-      - name: Ensure tests are runnable
-        run: yarn workspace @joystream/cd-schemas checks --quiet
       - name: Start chain
         run: docker-compose up -d joystream-node
       - name: Initialize the content directory
-        run: yarn workspace @joystream/cd-schemas initialize:dev
+        run: yarn workspace api-scripts initialize-content-lead
 
   query_node:
     name: Query Node Integration Tests
@@ -223,3 +221,9 @@ jobs:
               echo "Upload test failed, will retry"
             fi
           done
+          # Wait for storage-node to set status Accepted on uploaded content
+          sleep 6
+          cd utils/api-scripts/
+          # Assume only one accepted data object was created
+          CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
+          yarn storage-cli download http://localhost:3001 ${CONTENT_ID} ./download.png

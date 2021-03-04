@@ -11,14 +11,20 @@ use sp_runtime::{
 };
 
 use crate::data_directory::ContentIdExists;
-use crate::data_directory::Quota;
+pub use crate::data_directory::Voucher;
 pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::ContentId;
 pub use crate::StorageWorkingGroupInstance;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use common::currency::GovernanceCurrency;
+use frame_support::StorageValue;
 use membership;
+
+pub use crate::data_directory::{
+    DEFAULT_GLOBAL_VOUCHER, DEFAULT_UPLOADING_BLOCKED_STATUS, DEFAULT_VOUCHER,
+    DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND, DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+};
 
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
@@ -45,6 +51,33 @@ impl_outer_event! {
     }
 }
 
+pub const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
+pub const DEFAULT_LEADER_WORKER_ID: u32 = 1;
+
+pub struct SetLeadFixture;
+impl SetLeadFixture {
+    pub fn set_default_lead() {
+        let worker = working_group::Worker {
+            member_id: DEFAULT_LEADER_MEMBER_ID,
+            role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            reward_relationship: None,
+            role_stake_profile: None,
+        };
+
+        // Create the worker.
+        <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
+            DEFAULT_LEADER_WORKER_ID,
+            worker,
+        );
+
+        // Update current lead.
+        <working_group::CurrentLead<Test, StorageWorkingGroupInstance>>::put(
+            DEFAULT_LEADER_WORKER_ID,
+        );
+    }
+}
+
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
 pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
 pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
@@ -68,7 +101,7 @@ impl ContentIdExists<Test> for MockContent {
 
     fn get_data_object(
         which: &ContentId<Test>,
-    ) -> Result<data_directory::DataObject<Test>, &'static str> {
+    ) -> Result<data_directory::DataObject<Test>, data_directory::Error<Test>> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
                 type_id: 1,
@@ -82,7 +115,7 @@ impl ContentIdExists<Test> for MockContent {
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
-            _ => Err("nope, missing"),
+            _ => Err(data_directory::Error::<Test>::CidNotFound),
         }
     }
 }
@@ -96,7 +129,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const DefaultQuota: Quota = Quota::new(5000, 50);
 }
 
 impl system::Trait for Test {
@@ -179,11 +211,10 @@ impl data_directory::Trait for Test {
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-    type DefaultQuota = DefaultQuota;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, &'static str> {
+    fn get_random_storage_provider() -> Result<u32, data_directory::Error<Test>> {
         Ok(1)
     }
 }
@@ -202,12 +233,17 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 impl stake::Trait for Test {
@@ -237,25 +273,29 @@ impl hiring::Trait for Test {
 }
 
 pub struct ExtBuilder {
-    quota_objects_limit_upper_bound: u64,
-    quota_size_limit_upper_bound: u64,
-    global_quota: Quota,
+    voucher_objects_limit_upper_bound: u64,
+    voucher_size_limit_upper_bound: u64,
+    global_voucher: Voucher,
+    default_voucher: Voucher,
     first_data_object_type_id: u64,
     first_content_id: u64,
     first_relationship_id: u64,
     first_metadata_id: u64,
+    uploading_blocked: bool,
 }
 
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            quota_objects_limit_upper_bound: 200,
-            quota_size_limit_upper_bound: 20000,
-            global_quota: Quota::new(2000000, 2000),
+            voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            voucher_size_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            global_voucher: DEFAULT_GLOBAL_VOUCHER,
+            default_voucher: DEFAULT_VOUCHER,
             first_data_object_type_id: 1,
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
+            uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
 }
@@ -281,18 +321,29 @@ impl ExtBuilder {
         self
     }
 
+    pub fn uploading_blocked_status(mut self, uploading_blocked: bool) -> Self {
+        self.uploading_blocked = uploading_blocked;
+        self
+    }
+
+    pub fn global_voucher(mut self, global_voucher: Voucher) -> Self {
+        self.global_voucher = global_voucher;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
         data_directory::GenesisConfig::<Test> {
-            quota_size_limit_upper_bound: self.quota_size_limit_upper_bound,
-            quota_objects_limit_upper_bound: self.quota_objects_limit_upper_bound,
-            global_quota: self.global_quota,
+            voucher_size_limit_upper_bound: self.voucher_size_limit_upper_bound,
+            voucher_objects_limit_upper_bound: self.voucher_objects_limit_upper_bound,
+            global_voucher: self.global_voucher,
+            default_voucher: self.default_voucher,
             data_object_by_content_id: vec![],
-            quotas: vec![],
-            uploading_blocked: false,
+            vouchers: vec![],
+            uploading_blocked: self.uploading_blocked,
         }
         .assimilate_storage(&mut t)
         .unwrap();

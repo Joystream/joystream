@@ -1,4 +1,4 @@
-import { Option, Vec, BTreeMap, u64, bool, Text, Null, Bytes } from '@polkadot/types'
+import { BTreeMap, u64, bool, Text, Null, Bytes } from '@polkadot/types'
 import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DAOId, WorkingGroup } from './common'
 import { MemberId } from './members'
 import { StorageProviderId } from './working-group' // this should be in discovery really
@@ -29,9 +29,6 @@ export class ContentId extends Hash {
 export class DataObjectTypeId extends u64 {}
 export class DataObjectStorageRelationshipId extends u64 {}
 
-export class VecContentId extends Vec.with(ContentId) {}
-export class OptionVecContentId extends Option.with(VecContentId) {}
-
 export const LiaisonJudgementDef = {
   Pending: Null,
   Accepted: Null,
@@ -59,8 +56,6 @@ export class ContentParameters extends JoyStructDecorated({
     return this.get('size') as u64
   }
 }
-
-export class Content extends Vec.with(ContentParameters) {}
 
 export class DataObject extends JoyStructDecorated({
   owner: StorageObjectOwner,
@@ -90,7 +85,7 @@ export class DataObjectType extends JoyStructDecorated({
 
 export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
 
-export class Quota extends JoyStructDecorated({
+export class Voucher extends JoyStructDecorated({
   // Total objects size limit per StorageObjectOwner
   size_limit: u64,
   // Total objects number limit per StorageObjectOwner
@@ -99,7 +94,8 @@ export class Quota extends JoyStructDecorated({
   objects_used: u64,
 }) {}
 
-export class QuotaLimit extends u64 {}
+// These types names only in the data_directory Events, do they really need a type name alias?
+export class VoucherLimit extends u64 {}
 export class UploadingStatus extends bool {}
 
 export const mediaTypes: RegistryTypes = {
@@ -113,9 +109,9 @@ export const mediaTypes: RegistryTypes = {
   DataObjectsMap,
   ContentParameters,
   StorageObjectOwner,
-  Content,
-  Quota,
-  QuotaLimit,
+  ObjectOwner: StorageObjectOwner,
+  Voucher,
+  VoucherLimit,
   UploadingStatus,
 }
 

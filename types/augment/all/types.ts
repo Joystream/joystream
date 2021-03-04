@@ -210,6 +210,7 @@ export interface ChannelContentType extends Null {}
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
+  readonly reward_account: Option<GenericAccountId>;
 }
 
 /** @name ChannelCurationStatus */
@@ -245,7 +246,8 @@ export interface ChannelPublicationStatus extends Null {}
 /** @name ChannelUpdateParameters */
 export interface ChannelUpdateParameters extends Struct {
   readonly assets: Option<Vec<NewAsset>>;
-  readonly new_meta: Bytes;
+  readonly new_meta: Option<Bytes>;
+  readonly reward_account: Option<Option<GenericAccountId>>;
 }
 
 /** @name ChildPositionInParentCategory */
@@ -271,9 +273,6 @@ export interface ClassPermissionsType extends Null {}
 
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
-
-/** @name Content */
-export interface Content extends Vec<ContentParameters> {}
 
 /** @name ContentActor */
 export interface ContentActor extends Enum {
@@ -325,7 +324,6 @@ export interface CuratorApplicationIdToCuratorIdMap extends Null {}
 export interface CuratorGroup extends Struct {
   readonly curators: Vec<CuratorId>;
   readonly active: bool;
-  readonly number_of_channels_owned: u32;
 }
 
 /** @name CuratorGroupId */
@@ -600,6 +598,19 @@ export interface NextAdjustment extends Struct {
 
 /** @name Nonce */
 export interface Nonce extends Null {}
+
+/** @name ObjectOwner */
+export interface ObjectOwner extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+  readonly isDao: boolean;
+  readonly asDao: DAOId;
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
+}
 
 /** @name Opening */
 export interface Opening extends Struct {
@@ -906,17 +917,6 @@ export interface ProposalStatus extends Enum {
   readonly isFinalized: boolean;
   readonly asFinalized: Finalized;
 }
-
-/** @name Quota */
-export interface Quota extends Struct {
-  readonly size_limit: u64;
-  readonly objects_limit: u64;
-  readonly size_used: u64;
-  readonly objects_used: u64;
-}
-
-/** @name QuotaLimit */
-export interface QuotaLimit extends u64 {}
 
 /** @name RationaleText */
 export interface RationaleText extends Bytes {}
@@ -1238,7 +1238,6 @@ export interface Video extends Struct {
   readonly in_channel: ChannelId;
   readonly in_series: Option<SeriesId>;
   readonly is_censored: bool;
-  readonly is_featured: bool;
 }
 
 /** @name VideoCategory */
@@ -1288,6 +1287,17 @@ export interface VotingResults extends Struct {
   readonly slashes: u32;
 }
 
+/** @name Voucher */
+export interface Voucher extends Struct {
+  readonly size_limit: u64;
+  readonly objects_limit: u64;
+  readonly size_used: u64;
+  readonly objects_used: u64;
+}
+
+/** @name VoucherLimit */
+export interface VoucherLimit extends u64 {}
+
 /** @name WaitingToBeingOpeningStageVariant */
 export interface WaitingToBeingOpeningStageVariant extends Struct {
   readonly begins_at_block: u32;
@@ -1308,6 +1318,8 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
+  readonly isBuilder: boolean;
+  readonly isGateway: boolean;
 }
 
 /** @name WorkingGroupUnstaker */

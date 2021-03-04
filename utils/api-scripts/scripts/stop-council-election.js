@@ -1,11 +1,12 @@
 /* global api, hashing, keyring, types, util, joy, window */
 
 // run this script with:
-// yarn script testTransfer
+// yarn workspace api-scripts script stop-council-election
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
 //
+// requires nicaea release+
 
 const script = async ({ api, keyring }) => {
   const sudoAddress = (await api.query.sudo.key()).toString()
@@ -18,8 +19,14 @@ const script = async ({ api, keyring }) => {
     sudo = sudoAddress
   }
 
-  const transfer = api.tx.balances.transfer(sudoAddress, 100)
-  await transfer.signAndSend(sudo)
+  const tx = api.tx.councilElection.forceStopElection()
+
+  const nonce = (await api.query.system.account(sudoAddress)).nonce
+  const sudoTx = api.tx.sudo.sudo(tx)
+  const signed = sudoTx.sign(sudo, { nonce })
+  await signed.send()
+
+  console.log(`sent tx with nonce: ${nonce.toNumber()}, tx hash: ${signed.hash}`)
 }
 
 if (typeof module === 'undefined') {

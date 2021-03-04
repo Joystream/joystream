@@ -8,7 +8,7 @@ import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { flags } from '@oclif/command'
 import fs from 'fs'
 import ExitCodes from '../../ExitCodes'
-import { ContentId } from '@joystream/types/media'
+import { ContentId } from '@joystream/types/storage'
 import ipfsHash from 'ipfs-only-hash'
 import { cli } from 'cli-ux'
 import axios, { AxiosRequestConfig } from 'axios'
@@ -204,6 +204,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
           'Content-Length': fileSize.toString(),
         },
         maxContentLength: MAX_FILE_SIZE,
+        maxBodyLength: MAX_FILE_SIZE,
       }
       await axios.put(uploadUrl, fileStream, config)
       cli.action.stop()
@@ -395,7 +396,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
       ipfsCid,
     ])
 
-    const dataObject = await this.getApi().dataObjectByContentId(contentId)
+    const dataObject = await this.getApi().dataByContentId(contentId)
     if (!dataObject) {
       this.error('Data object could not be retrieved from chain', { exit: ExitCodes.ApiError })
     }

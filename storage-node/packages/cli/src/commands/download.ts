@@ -42,7 +42,7 @@ export class DownloadCommand extends BaseCommand {
   }
 
   // Command executor.
-  async run() {
+  async run(): Promise<void> {
     // Checks for input parameters, shows usage if they are invalid.
     if (!this.assertParameters()) return
 
@@ -60,6 +60,8 @@ export class DownloadCommand extends BaseCommand {
         url: assetUrl,
         method: 'GET',
         responseType: 'stream',
+        // max length of response
+        maxContentLength: this.maxContentSize(),
       })
 
       response.data.pipe(writer)

@@ -32,9 +32,9 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
+import { InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import Debugger from 'debug'
 
 export enum WorkingGroups {
@@ -1790,17 +1790,8 @@ export class Api {
     return this.sendContentDirectoryTransaction(updateOperations)
   }
 
-  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
-  }
-
-  public async initializeContentDirectory(): Promise<void> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
-    if (!lead) {
-      throw new Error('No Lead is set for storage wokring group')
-    }
-    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
-    return initializeContentDir(this.api, leadKeyPair)
   }
 }

@@ -24,7 +24,6 @@ export class NewAsset extends JoyEnum({
 export class CuratorGroup extends JoyStructDecorated({
   curators: JoyBTreeSet(CuratorId),
   active: bool,
-  number_of_channels_owned: u32,
 }) {}
 
 export class ContentActor extends JoyEnum({
@@ -51,11 +50,13 @@ export class Channel extends JoyStructDecorated({
 export class ChannelCreationParameters extends JoyStructDecorated({
   assets: Vec.with(NewAsset),
   meta: Bytes,
+  reward_account: Option.with(AccountId),
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
   assets: Option.with(Vec.with(NewAsset)),
-  new_meta: Bytes,
+  new_meta: Option.with(Bytes),
+  reward_account: Option.with(Option.with(AccountId)),
 }) {}
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
@@ -93,7 +94,6 @@ export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
   in_series: Option.with(SeriesId),
   is_censored: bool,
-  is_featured: bool,
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({

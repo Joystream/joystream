@@ -147,7 +147,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
 // Using sudo to create initial storage lead and worker with given keys taken from env variables.
 // Used to quickly setup a storage provider on a new chain before a council is ready.
 const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise<any> => {
-  if (api.workers.getLeadRoleAccount()) {
+  if (await api.workers.getLeadRoleAccount()) {
     throw new Error('The Storage Lead is already set!')
   }
 

@@ -15,8 +15,8 @@ export default class ApiSetUri extends ApiCommandBase {
   ]
 
   async init() {
-    this.forceSkipApiUriPrompt = true
-    await super.init()
+    // Pass "skipConnection" arg to prevent command from exiting if current api uri is invalid
+    await super.init(true)
   }
 
   async run() {

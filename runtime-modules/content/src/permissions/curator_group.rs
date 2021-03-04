@@ -9,9 +9,6 @@ pub struct CuratorGroup<T: Trait> {
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
-
-    /// Used to count the number of Channels, given curator group owns
-    number_of_channels_owned: u32,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -20,24 +17,19 @@ impl<T: Trait> Default for CuratorGroup<T> {
             curators: BTreeSet::new(),
             // default curator group status right after creation
             active: false,
-            number_of_channels_owned: 0,
         }
     }
 }
 
 impl<T: Trait> CuratorGroup<T> {
     /// Check if `CuratorGroup` contains curator under given `curator_id`
-    pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
+    pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
     }
 
     /// Check if `CuratorGroup` is active
     pub fn is_active(&self) -> bool {
         self.active
-    }
-
-    pub fn get_number_of_channels_owned(&self) -> u32 {
-        self.number_of_channels_owned
     }
 
     /// Set `CuratorGroup` status as provided
@@ -55,27 +47,8 @@ impl<T: Trait> CuratorGroup<T> {
         &mut self.curators
     }
 
-    /// Increment number of channels `CuratorGroup` owns
-    pub fn increment_number_of_channels_owned_count(&mut self) {
-        self.number_of_channels_owned += 1;
-    }
-
-    /// Decrement number of channels `CuratorGroup` owns
-    pub fn decrement_number_of_channels_owned_count(&mut self) {
-        self.number_of_channels_owned -= 1;
-    }
-
-    /// Ensure curator group does not maintain any `Channel`
-    pub fn ensure_curator_group_owns_no_channels(&self) -> Result<(), Error<T>> {
-        ensure!(
-            self.number_of_channels_owned == 0,
-            Error::<T>::CuratorGroupRemovalForbidden
-        );
-        Ok(())
-    }
-
     /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied
-    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> Result<(), Error<T>> {
+    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> DispatchResult {
         ensure!(
             self.curators.len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
             Error::<T>::CuratorsPerGroupLimitReached
@@ -84,12 +57,9 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-    pub fn ensure_curator_in_group_exists(
-        &self,
-        curator_id: &T::CuratorId,
-    ) -> Result<(), Error<T>> {
+    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> DispatchResult {
         ensure!(
-            self.get_curators().contains(curator_id),
+            self.has_curator(curator_id),
             Error::<T>::CuratorIsNotAMemberOfGivenCuratorGroup
         );
         Ok(())
@@ -99,9 +69,9 @@ impl<T: Trait> CuratorGroup<T> {
     pub fn ensure_curator_in_group_does_not_exist(
         &self,
         curator_id: &T::CuratorId,
-    ) -> Result<(), Error<T>> {
+    ) -> DispatchResult {
         ensure!(
-            !self.get_curators().contains(curator_id),
+            !self.has_curator(curator_id),
             Error::<T>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
         Ok(())
@@ -112,7 +82,7 @@ impl<T: Trait> CuratorGroup<T> {
         curator_id: &T::CuratorId,
         curator_group_id: &T::CuratorGroupId,
         account_id: &T::AccountId,
-    ) -> Result<(), Error<T>> {
+    ) -> DispatchResult {
         // Ensure curator authorization performed succesfully
         ensure_curator_auth_success::<T>(curator_id, account_id)?;
 
