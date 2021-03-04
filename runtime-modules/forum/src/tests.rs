@@ -3,6 +3,7 @@
 use super::*;
 use crate::mock::*;
 use frame_support::assert_err;
+use frame_support::traits::Currency;
 
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.

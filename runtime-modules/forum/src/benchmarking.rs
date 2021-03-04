@@ -15,6 +15,10 @@ use working_group::{
     WorkerById,
 };
 
+type CurrencyBalance<T> = <<T as Trait>::Currency as frame_support::traits::Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::Balance;
+
 // We create this trait because we need to be compatible with the runtime
 // in the mock for tests. In that case we need to be able to have `membership_id == account_id`
 // We can't create an account from an `u32` or from a memberhsip_dd,
@@ -724,13 +728,13 @@ benchmarks! {
 
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
-        let initial_balance = Balances::<T>::free_balance(&caller_id);
+        let initial_balance = T::Currency::free_balance(&caller_id);
 
     }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll.clone())
     verify {
 
         assert_eq!(
-            Balances::<T>::free_balance(&caller_id),
+            T::Currency::free_balance(&caller_id),
             initial_balance - T::BasePayOffForThreadCleanUp::get() - T::PostDeposit::get(),
         );
 
@@ -922,16 +926,18 @@ benchmarks! {
             add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
         }
 
-        let initial_balance = Balances::<T>::free_balance(&caller_id);
+        let initial_balance = T::Currency::free_balance(&caller_id);
     }: delete_thread(RawOrigin::Signed(caller_id.clone()), PrivilegedActor::Lead, category_id, thread_id)
     verify {
 
         // Ensure that balance is paid off
         assert_eq!(
-            Balances::<T>::free_balance(&caller_id),
+            T::Currency::free_balance(&caller_id),
             initial_balance +
             T::BasePayOffForThreadCleanUp::get() +
-            T::Balance::from(max_posts_in_thread.try_into().unwrap()) * T::PostDeposit::get()
+            CurrencyBalance::<T>::from(
+                max_posts_in_thread.try_into().unwrap()
+            ) * T::PostDeposit::get()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -988,16 +994,17 @@ benchmarks! {
             add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
         }
 
-        let initial_balance = Balances::<T>::free_balance(&caller_id);
+        let initial_balance = T::Currency::free_balance(&caller_id);
 
     }: delete_thread(RawOrigin::Signed(caller_id.clone()), PrivilegedActor::Moderator(moderator_id), category_id, thread_id)
     verify {
         // Ensure that balance is paid off
         assert_eq!(
-            Balances::<T>::free_balance(&caller_id),
+            T::Currency::free_balance(&caller_id),
             initial_balance +
             T::BasePayOffForThreadCleanUp::get() +
-            T::Balance::from(max_posts_in_thread.try_into().unwrap()) * T::PostDeposit::get()
+            CurrencyBalance::<T>::from(max_posts_in_thread.try_into().unwrap()) *
+            T::PostDeposit::get()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -1373,11 +1380,11 @@ benchmarks! {
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
         let post_id = Module::<T>::next_post_id();
 
-        let initial_balance = Balances::<T>::free_balance(&caller_id);
+        let initial_balance = T::Currency::free_balance(&caller_id);
     }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
     verify {
         assert_eq!(
-            Balances::<T>::free_balance(&caller_id),
+            T::Currency::free_balance(&caller_id),
             initial_balance - T::PostDeposit::get()
         );
 
