@@ -620,17 +620,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if Self::can_leave_immediately(&worker){
-                Self::remove_worker(
-                    &worker_id,
-                    &worker,
-                    RawEvent::WorkerLeft(worker_id, rationale)
-                );
-            } else{
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.started_leaving_at = Some(Self::current_block())
-                });
-            }
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.started_leaving_at = Some(Self::current_block())
+            });
         }
 
         /// Terminate the active worker by the lead.
@@ -1370,19 +1362,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Check whether current block is a reward block.
         current_block % reward_period.into() == Zero::zero()
-    }
-
-    // Defines whether the worker staking parameters allow to leave without unstaking period.
-    fn can_leave_immediately(worker: &Worker<T>) -> bool {
-        if worker.job_unstaking_period == Zero::zero() {
-            return true;
-        }
-
-        if T::StakingHandler::current_stake(&worker.staking_account_id) == Zero::zero() {
-            return true;
-        }
-
-        false
     }
 
     // Sets the working group budget.
