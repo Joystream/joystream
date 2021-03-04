@@ -74,3 +74,11 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: S
     member.handle = convertBytesToString(handle)
     await db.save<Membership>(member)
 }
+
+export async function members_MemberSetRootAccount(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+    const { newRootAccount, memberId } = new Members.SetRootAccountCall(event_).args
+  
+    const member = await getMemberById(db, memberId)
+    member.rootAccount = newRootAccount.toString()
+    await db.save<Membership>(member)
+  }
