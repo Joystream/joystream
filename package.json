@@ -23,6 +23,7 @@
     "utils/api-scripts",
     "content-directory-schemas",
     "query-node",
+    "query-node/mappings",
     "query-node/generated/*",
     "content-metadata-protobuf"
   ],
