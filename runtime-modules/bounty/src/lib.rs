@@ -256,9 +256,9 @@ pub enum BountyStage {
     /// Working periods ended and the oracle should provide their judgment.
     Judgment,
 
-    /// Funding and cherry can be withdrawn.
+    /// Creator cherry can be withdrawn.
     Withdrawal {
-        /// Creator cherry is not withdrawn and greater than zero.
+        /// Creator cherry is not withdrawn.
         cherry_needs_withdrawal: bool,
     },
 }
@@ -1029,7 +1029,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::unlock_work_entry_stake(&bounty, &entry);
+            Self::unlock_work_entry_stake_with_possible_penalty(&bounty, &entry);
 
             Self::remove_work_entry(&bounty_id, &entry_id);
 
@@ -1171,7 +1171,6 @@ decl_module! {
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
-
             //
             // == MUTATION SAFE ==
             //
@@ -1186,7 +1185,9 @@ decl_module! {
             }
 
             // Unstake the full work entry state.
-            Self::unlock_work_entry_stake(&bounty, &entry);
+            if let Some(staking_account_id) = &entry.staking_account_id {
+                T::StakingHandler::unlock(staking_account_id);
+            }
 
             // Delete the work entry record from the storage.
             Self::remove_work_entry(&bounty_id, &entry_id);
@@ -1493,7 +1494,7 @@ impl<T: Trait> Module<T> {
     // Unlocks the work entry stake.
     // It also calculates and slashes the stake on work entry withdrawal.
     // The slashing amount depends on the entry active period.
-    fn unlock_work_entry_stake(bounty: &Bounty<T>, entry: &WorkEntry<T>) {
+    fn unlock_work_entry_stake_with_possible_penalty(bounty: &Bounty<T>, entry: &WorkEntry<T>) {
         if let Some(staking_account_id) = &entry.staking_account_id {
             let now = Self::current_block();
             let staking_balance = bounty.creation_params.entrant_stake;

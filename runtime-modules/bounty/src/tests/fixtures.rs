@@ -776,3 +776,62 @@ impl SubmitJudgmentFixture {
         }
     }
 }
+
+pub struct WithdrawWorkEntrantFundsFixture {
+    origin: RawOrigin<u128>,
+    entry_id: u64,
+    bounty_id: u64,
+    member_id: u64,
+}
+
+impl WithdrawWorkEntrantFundsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            entry_id: 1,
+            bounty_id: 1,
+            member_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_entry_id(self, entry_id: u64) -> Self {
+        Self { entry_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bounty = Bounty::bounties(self.bounty_id);
+        let actual_result = Bounty::withdraw_work_entrant_funds(
+            self.origin.clone().into(),
+            self.member_id,
+            self.bounty_id,
+            self.entry_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::WorkEntries<Test>>::contains_key(
+                &self.bounty_id,
+                &self.entry_id
+            ));
+
+            let new_bounty = Bounty::bounties(self.bounty_id);
+            assert_eq!(
+                new_bounty.active_work_entry_count,
+                old_bounty.active_work_entry_count - 1
+            );
+        }
+    }
+}
