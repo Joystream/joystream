@@ -37,6 +37,6 @@ docker-compose up -d graphql-server
 docker-compose up -d processor
 
 echo "press Ctrl+C to shutdown"
-
-# Start a dev instance of pioneer and wait for exit
-docker-compose up pioneer
+while true; do 
+  read
+done

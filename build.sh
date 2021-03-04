@@ -4,8 +4,8 @@ set -e
 
 yarn
 yarn workspace @joystream/types build
-yarn workspace @joystream/cli build
 yarn workspace query-node-root build
+yarn workspace @joystream/cli build
 yarn workspace storage-node build
 # Not strictly needed during development, we run "yarn workspace pioneer start" to start
 # a dev instance, but will show highlight build issues
@@ -16,7 +16,7 @@ then
   echo "docker-compose not found, skipping docker build!"
 else
   # Build joystream/apps docker image
-  docker-compose build pioneer
+  docker-compose build colossus
 
   # Optionally build joystream/node docker image
   # TODO: Try to fetch a cached joystream/node image
