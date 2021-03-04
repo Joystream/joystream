@@ -13,3 +13,7 @@ async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Members
     if (!member) throw Error(`Member(${id}) not found`)
     return member
   }
+
+function convertBytesToString(b: Bytes): string {
+    return Buffer.from(b.toU8a(true)).toString()
+}
