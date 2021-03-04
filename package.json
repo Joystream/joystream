@@ -22,6 +22,7 @@
     "pioneer/packages/*",
     "utils/api-scripts",
     "query-node",
+    "query-node/mappings",
     "query-node/generated/*",
     "content-metadata-protobuf"
   ],

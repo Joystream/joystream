@@ -2,9 +2,9 @@
 
 use super::genesis;
 use super::mock::*;
+use crate::*;
 
 use frame_support::*;
-// use sp_core::traits;
 
 fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
@@ -12,12 +12,6 @@ fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     } else {
         panic!("member profile not created");
     }
-}
-
-fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
-    assert!(result.is_err());
-    let message = result.err().unwrap();
-    assert_eq!(message, expected_message);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -150,9 +144,9 @@ fn buy_membership_fails_without_enough_balance() {
             let initial_balance = DEFAULT_FEE - 1;
             set_alice_free_balance(initial_balance);
 
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "not enough balance to buy membership",
+                Error::<Test>::NotEnoughBalanceToBuyMembership,
             );
         });
 }
@@ -174,9 +168,9 @@ fn new_memberships_allowed_flag() {
 
             crate::NewMembershipsAllowed::put(false);
 
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "new members not allowed",
+                Error::<Test>::NewMembershipsNotAllowed,
             );
         });
 }
@@ -201,9 +195,9 @@ fn unique_handles() {
             <crate::MemberIdByHandle<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "handle already registered",
+                Error::<Test>::HandleAlreadyRegistered,
             );
         });
 }

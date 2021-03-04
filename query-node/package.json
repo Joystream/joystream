@@ -1,12 +1,7 @@
 {
   "name": "query-node-root",
-  "private": "true",
   "version": "0.0.0",
   "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
-  "workspaces": [
-    "./generated/*",
-    "./mappings"
-  ],
   "scripts": {
     "build": "./build.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
