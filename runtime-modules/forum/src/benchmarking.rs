@@ -735,7 +735,7 @@ benchmarks! {
 
         assert_eq!(
             T::Currency::free_balance(&caller_id),
-            initial_balance - T::BasePayOffForThreadCleanUp::get() - T::PostDeposit::get(),
+            initial_balance - T::ThreadDeposit::get() - T::PostDeposit::get(),
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -757,7 +757,7 @@ benchmarks! {
             author_id: forum_user_id.saturated_into(),
             archived: false,
             poll: poll.clone(),
-            cleanup_pay_off: T::BasePayOffForThreadCleanUp::get() + T::PostDeposit::get(),
+            cleanup_pay_off: T::ThreadDeposit::get() + T::PostDeposit::get(),
             posts
         };
 
@@ -934,7 +934,7 @@ benchmarks! {
         assert_eq!(
             T::Currency::free_balance(&caller_id),
             initial_balance +
-            T::BasePayOffForThreadCleanUp::get() +
+            T::ThreadDeposit::get() +
             CurrencyBalance::<T>::from(
                 max_posts_in_thread.try_into().unwrap()
             ) * T::PostDeposit::get()
@@ -1002,7 +1002,7 @@ benchmarks! {
         assert_eq!(
             T::Currency::free_balance(&caller_id),
             initial_balance +
-            T::BasePayOffForThreadCleanUp::get() +
+            T::ThreadDeposit::get() +
             CurrencyBalance::<T>::from(max_posts_in_thread.try_into().unwrap()) *
             T::PostDeposit::get()
         );

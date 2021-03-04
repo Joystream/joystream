@@ -1109,7 +1109,7 @@ fn delete_thread() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::BasePayOffForThreadCleanUp::get();
+        current_balance -= <Runtime as Trait>::ThreadDeposit::get();
         current_balance -= <Runtime as Trait>::PostDeposit::get();
 
         assert_eq!(
@@ -1602,8 +1602,7 @@ fn add_post_balance() {
     with_test_externalities(|| {
         balances::Module::<Runtime>::make_free_balance_be(
             &forum_lead,
-            <Runtime as Trait>::PostDeposit::get()
-                + <Runtime as Trait>::BasePayOffForThreadCleanUp::get(),
+            <Runtime as Trait>::PostDeposit::get() + <Runtime as Trait>::ThreadDeposit::get(),
         );
         let category_id = create_category_mock(
             origin.clone(),

@@ -131,7 +131,7 @@ pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
 
     /// Base deposit for any thread (note: thread creation also needs a `PostDeposit` since
     /// creating a thread means also creating a post)
-    type BasePayOffForThreadCleanUp: Get<
+    type ThreadDeposit: Get<
         <Self::Currency as frame_support::traits::Currency<Self::AccountId>>::Balance,
     >;
 
@@ -768,7 +768,7 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
 
-            let cleanup_pay_off = T::BasePayOffForThreadCleanUp::get();
+            let cleanup_pay_off = T::ThreadDeposit::get();
 
             // Build a new thread
             let new_thread = Thread {
@@ -1906,7 +1906,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         // The balance for creation of thread is the base cost plus the cost of a single post
-        let minimum_balance = T::BasePayOffForThreadCleanUp::get() + T::PostDeposit::get();
+        let minimum_balance = T::ThreadDeposit::get() + T::PostDeposit::get();
         ensure!(
             Self::ensure_enough_balance(minimum_balance, &account_id),
             Error::<T>::InsufficientBalanceForThreadCreation

@@ -317,7 +317,7 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
-    pub const BasePayOffForThreadCleanUp: u64 = 100;
+    pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
 }
@@ -344,7 +344,7 @@ impl Trait for Runtime {
     type MapLimits = MapLimits;
     type WorkingGroup = ();
     type MemberOriginValidator = ();
-    type BasePayOffForThreadCleanUp = BasePayOffForThreadCleanUp;
+    type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
 
     type ModuleId = ForumModuleId;
@@ -676,7 +676,7 @@ pub fn create_thread_mock(
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
             initial_balance
-                - <Runtime as Trait>::BasePayOffForThreadCleanUp::get()
+                - <Runtime as Trait>::ThreadDeposit::get()
                 - <Runtime as Trait>::PostDeposit::get()
         );
     } else {
