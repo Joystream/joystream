@@ -263,7 +263,8 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
+                cherry_needs_withdrawal: false,
+                bounty_was_successful: false
             }
         );
 
@@ -287,7 +288,8 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
+                cherry_needs_withdrawal: false,
+                bounty_was_successful: false
             }
         );
 
@@ -312,7 +314,8 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
+                cherry_needs_withdrawal: false,
+                bounty_was_successful: false
             }
         );
 
@@ -325,7 +328,8 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: true
+                cherry_needs_withdrawal: true,
+                bounty_was_successful: false,
             }
         );
 
@@ -339,20 +343,25 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: successful_bounty
+                cherry_needs_withdrawal: successful_bounty,
+                bounty_was_successful: successful_bounty
             }
         );
 
+        let bounty_was_successful = true;
         // Creator cherry was withdrawn.
         let bounty = BountyRecord {
-            milestone: BountyMilestone::CreatorCherryWithdrawn,
+            milestone: BountyMilestone::CreatorCherryWithdrawn {
+                bounty_was_successful,
+            },
             ..Default::default()
         };
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false
+                cherry_needs_withdrawal: false,
+                bounty_was_successful
             }
         );
     });

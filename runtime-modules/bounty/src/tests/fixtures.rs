@@ -827,11 +827,13 @@ impl WithdrawWorkEntrantFundsFixture {
                 &self.entry_id
             ));
 
-            let new_bounty = Bounty::bounties(self.bounty_id);
-            assert_eq!(
-                new_bounty.active_work_entry_count,
-                old_bounty.active_work_entry_count - 1
-            );
+            if <crate::Bounties<Test>>::contains_key(self.bounty_id) {
+                let new_bounty = Bounty::bounties(self.bounty_id);
+                assert_eq!(
+                    new_bounty.active_work_entry_count,
+                    old_bounty.active_work_entry_count - 1
+                );
+            }
         }
     }
 }

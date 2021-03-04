@@ -260,6 +260,9 @@ pub enum BountyStage {
     Withdrawal {
         /// Creator cherry is not withdrawn.
         cherry_needs_withdrawal: bool,
+
+        /// Indicates bounty success.
+        bounty_was_successful: bool,
     },
 }
 
@@ -298,7 +301,10 @@ pub enum BountyMilestone<BlockNumber> {
     },
 
     /// Creator cherry was withdrawn.
-    CreatorCherryWithdrawn,
+    CreatorCherryWithdrawn {
+        /// Indicates bounty success.
+        bounty_was_successful: bool,
+    },
 }
 
 impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
@@ -897,7 +903,7 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            let cherry_needs_withdrawal =
+            let (cherry_needs_withdrawal, bounty_was_successful) =
                 Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
 
             ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
@@ -910,7 +916,7 @@ decl_module! {
 
             bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, cherry)?;
 
-            bounty.milestone = BountyMilestone::CreatorCherryWithdrawn;
+            bounty.milestone = BountyMilestone::CreatorCherryWithdrawn { bounty_was_successful };
             <Bounties<T>>::insert(bounty_id, bounty.clone());
 
             Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
@@ -1314,6 +1320,7 @@ impl<T: Trait> Module<T> {
     fn get_cherry_for_creator_withdrawal(bounty: &Bounty<T>, stage: BountyStage) -> BalanceOf<T> {
         if let BountyStage::Withdrawal {
             cherry_needs_withdrawal,
+            ..
         } = stage
         {
             if cherry_needs_withdrawal {
@@ -1342,14 +1349,31 @@ impl<T: Trait> Module<T> {
 
     // Verifies that the bounty has no pending fund withdrawals left.
     fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
-        !Self::contributions_exist(bounty_id)
-            && !Self::work_entries_exist(bounty_id)
-            && matches!(
-                stage,
-                BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: false,
-                }
-            )
+        if let BountyStage::Withdrawal {
+            cherry_needs_withdrawal,
+            bounty_was_successful,
+        } = *stage
+        {
+            if cherry_needs_withdrawal {
+                // Pending creator cherry withdrawal.
+                return false;
+            }
+
+            let has_no_contributions = !Self::contributions_exist(bounty_id);
+            let has_no_work_entries = !Self::work_entries_exist(bounty_id);
+
+            if bounty_was_successful {
+                // All work entrants withdrew their stakes and rewards.
+                return has_no_work_entries;
+            } else {
+                // All work entrants withdrew their stakes and all funders withdrew cherry and
+                // provided funds.
+                return has_no_contributions && has_no_work_entries;
+            }
+        }
+
+        // Not withdrawal stage
+        false
     }
 
     // Verifies that bounty has some contribution to withdraw.
@@ -1364,7 +1388,7 @@ impl<T: Trait> Module<T> {
     // Verifies that bounty has some work entries to withdraw.
     // Should be O(1) because of the single inner call of the next() function of the iterator.
     pub(crate) fn work_entries_exist(bounty_id: &T::BountyId) -> bool {
-        <BountyContributions<T>>::iter_prefix_values(bounty_id)
+        <WorkEntries<T>>::iter_prefix_values(bounty_id)
             .peekable()
             .peek()
             .is_some()
@@ -1630,12 +1654,15 @@ impl<T: Trait> Module<T> {
     }
 
     // Bounty withdrawal stage validator. Returns `cherry_needs_withdrawal` flag.
-    fn ensure_bounty_withdrawal_stage(actual_stage: BountyStage) -> Result<bool, DispatchError> {
+    fn ensure_bounty_withdrawal_stage(
+        actual_stage: BountyStage,
+    ) -> Result<(bool, bool), DispatchError> {
         if let BountyStage::Withdrawal {
             cherry_needs_withdrawal,
+            bounty_was_successful,
         } = actual_stage
         {
-            Ok(cherry_needs_withdrawal)
+            Ok((cherry_needs_withdrawal, bounty_was_successful))
         } else {
             Err(Self::unexpected_bounty_stage_error(actual_stage))
         }
