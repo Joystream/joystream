@@ -36,7 +36,6 @@
 //! - [withdraw_creator_cherry](./struct.Module.html#method.withdraw_creator_cherry) - withdraw
 //! a cherry for a failed or canceled bounty.
 
-
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -610,6 +609,12 @@ decl_error! {
 
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
+
+        /// Cannot set zero reward for winners.
+        ZeroWinnerReward,
+
+        /// Cannot set total reward for winners greater than total bounty funding.
+        TotalRewardGreaterThanTotalFunding,
     }
 }
 
@@ -1109,7 +1114,7 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::Judgment)?;
 
-            Self::validate_judgment(&bounty_id, &judgment)?;
+            Self::validate_judgment(&bounty_id, &bounty, &judgment)?;
 
             // Lookup for any winners in the judgment.
             let successful_bounty = Self::judgment_has_winners(&judgment);
@@ -1548,18 +1553,32 @@ impl<T: Trait> Module<T> {
     // Validates oracle judgment.
     fn validate_judgment(
         bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
         judgment: &OracleJudgmentOf<T>,
     ) -> DispatchResult {
-        // Check work entry existence.
-        for (entry_id, _) in judgment.iter() {
+        // Total judgment reward accumulator.
+        let mut reward_sum_from_judgment: BalanceOf<T> = Zero::zero();
+
+        // Validate all work entry judgements.
+        for (entry_id, work_entry_judgment) in judgment.iter() {
+            if let OracleWorkEntryJudgment::Winner { reward } = work_entry_judgment {
+                // Check for zero reward.
+                ensure!(*reward != Zero::zero(), Error::<T>::ZeroWinnerReward);
+
+                // Check for invalid total sum.
+                reward_sum_from_judgment += *reward;
+                ensure!(
+                    reward_sum_from_judgment <= bounty.total_funding,
+                    Error::<T>::TotalRewardGreaterThanTotalFunding
+                );
+            }
+
+            // Check work entry existence.
             ensure!(
                 <WorkEntries<T>>::contains_key(bounty_id, entry_id),
                 Error::<T>::WorkEntryDoesntExist
             );
         }
-
-        //TODO: validate judgement winner ratio
-        //TODO: check non-zero winner ratio
 
         Ok(())
     }

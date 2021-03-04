@@ -3147,6 +3147,7 @@ fn submit_judgment_fails_with_invalid_judgment() {
 
         run_to_block(starting_block + working_period + 1);
 
+        // Invalid entry_id
         let invalid_entry_id = 1111u64;
         let judgment = vec![invalid_entry_id]
             .iter()
@@ -3164,5 +3165,43 @@ fn submit_judgment_fails_with_invalid_judgment() {
             .with_bounty_id(bounty_id)
             .with_judgment(judgment)
             .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
+
+        // Zero reward for winners.
+        let invalid_reward = 0;
+        let judgment = vec![entry_id]
+            .iter()
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: invalid_reward,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Err(Error::<Test>::ZeroWinnerReward.into()));
+
+        // Winner reward greater than total bounty funding.
+        let invalid_reward = max_amount * 2;
+        let judgment = vec![entry_id]
+            .iter()
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: invalid_reward,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Err(Error::<Test>::TotalRewardGreaterThanTotalFunding.into()));
     });
 }
