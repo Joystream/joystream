@@ -794,6 +794,7 @@ impl proposals_engine::Trait for Runtime {
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = weights::proposals_engine::WeightInfo;
+    type StakingAccountValidator = Members;
 }
 
 impl Default for Call {
