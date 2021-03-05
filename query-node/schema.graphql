@@ -5,6 +5,12 @@ enum Network {
   ROME
 }
 
+enum EntryMethod {
+  PAID
+  SCREENING
+  GENESIS
+}
+
 type Block @entity {
   "Block number as a string"
   id: ID!
