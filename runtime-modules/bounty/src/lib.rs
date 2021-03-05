@@ -621,6 +621,9 @@ decl_error! {
 
         /// Cannot set total reward for winners greater than total bounty funding.
         TotalRewardGreaterThanTotalFunding,
+
+        /// Cannot withdraw funds from a successful bounty.
+        CannotWithdrawFundsOnSuccessfulBounty,
     }
 }
 
@@ -849,9 +852,10 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            // TODO: ensure unsuccessful bounty.
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+            let (_, successful_bounty) = Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+
+            ensure!(!successful_bounty, Error::<T>::CannotWithdrawFundsOnSuccessfulBounty);
 
             ensure!(
                 <BountyContributions<T>>::contains_key(&bounty_id, &funder),

@@ -1505,6 +1505,90 @@ fn withdraw_member_funding_fails_with_invalid_bounty_funder() {
 }
 
 #[test]
+fn withdraw_member_funding_fails_with_successful_bounty() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let winner_reward = 50;
+        let entrant_stake = 37;
+        let work_period = 1;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_work_period(work_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let member_id1 = 1;
+        let account_id1 = 1;
+        increase_account_balance(&account_id1, initial_balance);
+
+        // Winner
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_staking_account_id(account_id1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id1 = 1;
+
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id1,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward,
+            },
+        );
+
+        run_to_block(starting_block + work_period + 1);
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
+
+        WithdrawCreatorCherryFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(
+                Error::<Test>::CannotWithdrawFundsOnSuccessfulBounty.into()
+            ));
+    });
+}
+
+#[test]
 fn withdraw_creator_cherry_by_council_succeeds() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
@@ -3352,147 +3436,146 @@ fn withdraw_work_entrant_funds_succeeded() {
     });
 }
 
-// #[test]
-// fn withdraw_work_entry_fails_with_invalid_bounty_id() {
-//     build_test_externalities().execute_with(|| {
-//         let invalid_bounty_id = 11u64;
-//
-//         WithdrawWorkEntryFixture::default()
-//             .with_bounty_id(invalid_bounty_id)
-//             .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
-//     });
-// }
-//
-// #[test]
-// fn withdraw_work_entry_fails_with_invalid_entry_id() {
-//     build_test_externalities().execute_with(|| {
-//         let starting_block = 1;
-//         run_to_block(starting_block);
-//
-//         let initial_balance = 500;
-//         let max_amount = 100;
-//         let entrant_stake = 37;
-//
-//         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
-//
-//         CreateBountyFixture::default()
-//             .with_max_amount(max_amount)
-//             .with_entrant_stake(entrant_stake)
-//             .call_and_assert(Ok(()));
-//
-//         let bounty_id = 1;
-//
-//         FundBountyFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_amount(max_amount)
-//             .with_council()
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Ok(()));
-//
-//         let invalid_entry_id = 11u64;
-//
-//         WithdrawWorkEntryFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_entry_id(invalid_entry_id)
-//             .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
-//     });
-// }
-//
-// #[test]
-// fn withdraw_work_entry_fails_with_invalid_origin() {
-//     build_test_externalities().execute_with(|| {
-//         let starting_block = 1;
-//         run_to_block(starting_block);
-//
-//         let initial_balance = 500;
-//         let max_amount = 100;
-//
-//         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
-//
-//         CreateBountyFixture::default()
-//             .with_max_amount(max_amount)
-//             .call_and_assert(Ok(()));
-//
-//         let bounty_id = 1;
-//         let member_id = 1;
-//         let account_id = 1;
-//
-//         FundBountyFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_amount(max_amount)
-//             .with_council()
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Ok(()));
-//
-//         AnnounceWorkEntryFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_bounty_id(bounty_id)
-//             .call_and_assert(Ok(()));
-//
-//         let entry_id = 1;
-//
-//         WithdrawWorkEntryFixture::default()
-//             .with_entry_id(entry_id)
-//             .with_bounty_id(bounty_id)
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Err(DispatchError::BadOrigin));
-//     });
-// }
-//
-// #[test]
-// fn withdraw_work_entry_fails_with_invalid_stage() {
-//     build_test_externalities().execute_with(|| {
-//         let starting_block = 1;
-//         run_to_block(starting_block);
-//
-//         let initial_balance = 500;
-//         let max_amount = 100;
-//         let entrant_stake = 37;
-//         let work_period = 10;
-//
-//         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
-//
-//         CreateBountyFixture::default()
-//             .with_max_amount(max_amount)
-//             .with_entrant_stake(entrant_stake)
-//             .with_work_period(work_period)
-//             .call_and_assert(Ok(()));
-//
-//         let bounty_id = 1;
-//         let member_id = 1;
-//         let account_id = 1;
-//
-//         FundBountyFixture::default()
-//             .with_bounty_id(bounty_id)
-//             .with_amount(max_amount)
-//             .with_council()
-//             .with_origin(RawOrigin::Root)
-//             .call_and_assert(Ok(()));
-//
-//         increase_account_balance(&account_id, initial_balance);
-//
-//         AnnounceWorkEntryFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_staking_account_id(account_id)
-//             .with_bounty_id(bounty_id)
-//             .call_and_assert(Ok(()));
-//
-//         assert_eq!(
-//             Balances::usable_balance(&account_id),
-//             initial_balance - entrant_stake
-//         );
-//
-//         let entry_id = 1;
-//
-//         run_to_block(starting_block + work_period + 1);
-//
-//         WithdrawWorkEntryFixture::default()
-//             .with_origin(RawOrigin::Signed(account_id))
-//             .with_member_id(member_id)
-//             .with_entry_id(entry_id)
-//             .with_bounty_id(bounty_id)
-//             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
-//     });
-// }
+#[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_bounty_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bounty_id = 11u64;
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_bounty_id(invalid_bounty_id)
+            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
+    });
+}
+
+#[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        run_to_block(100);
+
+        let invalid_entry_id = 11u64;
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_entry_id(invalid_entry_id)
+            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
+    });
+}
+
+#[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let work_period = 10;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(work_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+
+        run_to_block(starting_block + 1);
+
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
+            ));
+    });
+}
