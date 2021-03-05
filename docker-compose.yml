@@ -79,7 +79,7 @@ services:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on: 
       - db
-    command: ["workspace", "query-node-root", "server:start:prod"]
+    command: ["workspace", "query-node-root", "query-node:start:prod"]
 
   processor:
     image: joystream/apps
@@ -95,7 +95,7 @@ services:
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     depends_on:
       - hydra-indexer-gateway
     command: ["workspace", "query-node-root", "processor:start"]
@@ -152,11 +152,3 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
-  # pioneer:
-  #   image: joystream/apps
-  #   build:
-  #     context: .
-  #     dockerfile: apps.Dockerfile
-  #   ports:
-  #     - "127.0.0.1:3000:3000"
-  #   command: workspace pioneer start

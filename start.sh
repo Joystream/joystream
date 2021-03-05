@@ -34,10 +34,14 @@ yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
 # Startup all query-node infrastructure services
+export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
 docker-compose up -d graphql-server
 docker-compose up -d processor
 
-echo "press Ctrl+C to shutdown"
+echo "press Ctrl+C to shutdown the development network"
+echo 'run: `yarn workspace pioneer start` in a separate terminal to bring up an instance of pioneer and \
+point your browser to http://localhost:3000/ to access the UI
+'
 while true; do 
   read
 done
