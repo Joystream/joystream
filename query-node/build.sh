@@ -11,19 +11,10 @@ set +a
 
 yarn clean
 
-# We generate the code for each service separately to be able to specify
-# separate database names.
+yarn codegen:noinstall
 
-# Build indexer customizing DB name
-DB_NAME=${INDEXER_DB_NAME} yarn codegen:indexer
-
-# Build graphql-server customizing DB name
-DB_NAME=${PROCESSOR_DB_NAME} yarn codegen:server
-
-# We run yarn again to ensure processor and indexer dependencies are installed
+# We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
 
 ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
-
-yarn tsc --build tsconfig.json
