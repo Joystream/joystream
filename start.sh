@@ -26,6 +26,8 @@ docker-compose up -d joystream-node
 # Configure a dev storage node and start storage node
 DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 docker-compose up -d colossus
+# Create a new content directory lead
+yarn workspace api-scripts initialize-content-lead
 
 ## Query Node Infrastructure
 # Initialize a new database for the query node infrastructure
