@@ -152,3 +152,10 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
+  pioneer:
+    image: joystream/pioneer
+    build:
+      context: .
+      dockerfile: pioneer.Dockerfile
+    ports:
+      - "127.0.0.1:3000:80"

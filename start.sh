@@ -41,9 +41,8 @@ export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
 docker-compose up -d graphql-server
 docker-compose up -d processor
 
-echo 'run: `yarn workspace pioneer start` in a separate terminal to bring up an instance of pioneer and
-point your browser to http://localhost:3000/ to access the UI
-'
+docker-compose up -d pioneer
+
 echo "use Ctrl+C to shutdown the development network."
 
 while true; do 

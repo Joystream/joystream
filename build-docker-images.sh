@@ -12,9 +12,12 @@ fi
 echo "Building 'joystream/apps' docker image..."
 docker-compose build colossus
 
+# Build the pioneer docker image
+echo "Building pioneer docker image"
+docker-compose build pioneer
+
 if [[ "$SKIP_JOYSTREAM_NODE" = 1 || "$SKIP_JOYSTREAM_NODE" = "true" ]]; then
   echo "Skipping build of joystream/node docker image."
-  exit 0
 else
   # TODO: Try to fetch a cached joystream/node image
   # if one is found matching code shasum instead of building
