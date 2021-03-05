@@ -1,10 +1,11 @@
 import BN from 'bn.js'
-import { Bytes } from '@polkadot/types'
+import { Bytes, bool } from '@polkadot/types'
 import { MemberId } from '@joystream/types/src/common'
 import { DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-indexer-lib/lib'
 
 import { Members } from '../../generated/types'
 import { Membership } from '../../generated/graphql-server/src/modules/membership/membership.model'
+import { EntryMethod } from '../../generated/graphql-server/src/modules/enums/enums'
 import { Block, Network } from '../../generated/graphql-server/src/modules/block/block.model'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
@@ -44,6 +45,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
         inviteCount: new BN(memberId),
         registeredAtBlock: block,
         registeredAtTime: new Date(),
+        entry: EntryMethod.PAID, 
         suspended: false,
       })
     
