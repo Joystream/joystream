@@ -48,8 +48,6 @@ type Membership @entity {
 
   "Root account in SS58 encoding."
   rootAccount: String!
-
-  happenedIn: Block!
 }
 
 """

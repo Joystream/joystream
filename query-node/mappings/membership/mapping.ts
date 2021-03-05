@@ -28,7 +28,6 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
       block = new Block({
         network: Network.BABYLON,
         block: event_.blockNumber,
-        // TODO: upgrade indexer-lib which support block timestamp: substrateEvent.timestamp
         timestamp: new BN(Date.now()),
       })
       await db.save<Block>(block)
@@ -41,10 +40,12 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
         handle: convertBytesToString(handle.unwrap()),
         about: convertBytesToString(about.unwrap()),
         avatarUri: convertBytesToString(avatarUri.unwrap()),
+        isVerified: Boolean,
+        isFoundingMember: Boolean,
+        inviteCount: BigInt,
         registeredAtBlock: block,
-        // TODO: upgrade indexer-lib which support block timestamp: substrateEvent.timestamp
         registeredAtTime: new Date(),
-        entry: EntryMethod.PAID, // TODO?: callArgs.paidTermsId
+        entry: EntryMethod.PAID, 
         suspended: false,
       })
     
