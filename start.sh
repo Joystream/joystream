@@ -2,7 +2,8 @@
 set -e
 
 # Run a complete joystream development network on your machine using docker.
-# Make sure to run build.sh prior to running this script.
+# Make sure to run build-docker-images.sh prior to running this script to use
+# the local build.
 
 set -a
 . .env
@@ -40,10 +41,11 @@ export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
 docker-compose up -d graphql-server
 docker-compose up -d processor
 
-echo "press Ctrl+C to shutdown the development network"
-echo 'run: `yarn workspace pioneer start` in a separate terminal to bring up an instance of pioneer and \
+echo 'run: `yarn workspace pioneer start` in a separate terminal to bring up an instance of pioneer and
 point your browser to http://localhost:3000/ to access the UI
 '
+echo "use Ctrl+C to shutdown the development network."
+
 while true; do 
   read
 done
