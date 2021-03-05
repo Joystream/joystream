@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "7.12.0"
+version = "7.13.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",

@@ -506,6 +506,7 @@ pub fn setup_members(count: u8) {
             Some(handle.to_vec()),
             None,
             None,
+            None,
         )
         .unwrap();
     }
