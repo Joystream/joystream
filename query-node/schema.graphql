@@ -14,7 +14,7 @@ type Block @entity {
 }
 
 "Stored information about a registered user"
-type Member @entity {
+type Membership @entity {
   "MemberId: runtime identifier for a user"
   id: ID!
 
@@ -41,7 +41,7 @@ type Member @entity {
   inviteCount: BigInt!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: Int!
+  registeredAtBlock: Block!
 
   "Member controller in SS58 encoding."
   controllerAccount: String!
