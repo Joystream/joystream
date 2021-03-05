@@ -48,23 +48,6 @@ mod stages;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-// TODO: ensure document compatibility
-// TODO: full successful test with all withdrawals
-// TODO: make sure cherry goes back to creator on successful bounty.
-// TODO: add working stake unstaking period.
-// TODO: test all stages
-// TODO: withdraw member funding if there is no judgment.
-// TODO: withdraw funds for winners.
-// TODO - open question:
-/* if you just store winners and to_be_slashed, and you do no iteration even on
-these sets, but instead require active action from everyone, then you may perhaps not even need to
-limit the set size? You could store thousands of ids in either of those values without impacting
-read io speed, as we have seen, so could be fine. */
-// TODO - open question: should we have exactly 100% reward distribution for the winners?
-// we could allow less than 100% but what to do with the rest of the bounty pool?
-// It could be a problem because the remaining sum could be very low to be an incentive to withdraw
-// for funders. Should we introduce a remaining sum threshold that affects the "burning decision"?
-
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
