@@ -191,6 +191,9 @@ impl crate::WeightInfo for () {
     fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
         0
     }
+    fn withdraw_work_entrant_funds() -> u64 {
+        0
+    }
 }
 
 impl common::Trait for Test {

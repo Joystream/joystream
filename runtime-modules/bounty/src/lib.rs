@@ -86,6 +86,7 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_council_all_rejected(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight;
+    fn withdraw_work_entrant_funds() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
@@ -1164,7 +1165,14 @@ decl_module! {
         /// Withdraw work entrant funds.
         /// Both legitimate participants and winners get their stake unlocked. Winners also get a
         /// bounty reward.
-        #[weight = 1000000] // TODO: adjust weight and its comment
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_work_entrant_funds()]
         pub fn withdraw_work_entrant_funds(
             origin,
             member_id: MemberId<T>,
