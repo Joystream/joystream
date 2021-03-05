@@ -344,6 +344,19 @@ fn create_dummy_proposal_succeeds() {
 }
 
 #[test]
+fn create_dummy_proposal_fails_with_incorrect_staking_account() {
+    initial_test_ext().execute_with(|| {
+        let parameters_fixture = ProposalParametersFixture::default().with_required_stake(100);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_stake(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER)
+            .with_parameters(parameters_fixture.params());
+
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::InvalidStakingAccountForMember.into()));
+    });
+}
+
+#[test]
 fn vote_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();

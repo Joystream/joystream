@@ -45,13 +45,19 @@ fn assert_last_event(generic_event: <Test as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
-where
+struct ProposalTestFixture<
+    InsufficientRightsCall,
+    InvalidStakeAccountCall,
+    EmptyStakeCall,
+    SuccessfulCall,
+> where
     InsufficientRightsCall: Fn() -> DispatchResult,
+    InvalidStakeAccountCall: Fn() -> DispatchResult,
     EmptyStakeCall: Fn() -> DispatchResult,
     SuccessfulCall: Fn() -> DispatchResult,
 {
     insufficient_rights_call: InsufficientRightsCall,
+    invalid_stake_account_call: InvalidStakeAccountCall,
     empty_stake_call: EmptyStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
@@ -59,10 +65,16 @@ where
     general_proposal_parameters: GeneralProposalParameters<Test>,
 }
 
-impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
-    ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
+impl<InsufficientRightsCall, InvalidStakeAccountCall, EmptyStakeCall, SuccessfulCall>
+    ProposalTestFixture<
+        InsufficientRightsCall,
+        InvalidStakeAccountCall,
+        EmptyStakeCall,
+        SuccessfulCall,
+    >
 where
     InsufficientRightsCall: Fn() -> DispatchResult,
+    InvalidStakeAccountCall: Fn() -> DispatchResult,
     EmptyStakeCall: Fn() -> DispatchResult,
     SuccessfulCall: Fn() -> DispatchResult,
 {
@@ -77,6 +89,13 @@ where
         assert_eq!(
             (self.insufficient_rights_call)(),
             Err(DispatchError::BadOrigin)
+        );
+    }
+
+    fn check_call_for_invalid_stake_account(&self) {
+        assert_eq!(
+            (self.invalid_stake_account_call)(),
+            Err(proposals_engine::Error::<Test>::InvalidStakingAccountForMember.into())
         );
     }
 
@@ -106,6 +125,7 @@ where
     pub fn check_all(&self) {
         self.check_call_for_insufficient_rights();
         self.check_for_invalid_stakes();
+        self.check_call_for_invalid_stake_account();
         self.check_for_successful_call();
     }
 }
@@ -120,6 +140,14 @@ fn create_signal_proposal_common_checks_succeed() {
             title: b"title".to_vec(),
             description: b"body".to_vec(),
             staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
             exact_execution_block: None,
         };
 
@@ -140,6 +168,13 @@ fn create_signal_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -198,6 +233,13 @@ fn create_runtime_upgrade_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -215,6 +257,13 @@ fn create_runtime_upgrade_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -274,6 +323,13 @@ fn create_funding_request_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -300,6 +356,13 @@ fn create_funding_request_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -464,6 +527,14 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -481,6 +552,13 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -518,6 +596,14 @@ fn create_veto_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -535,6 +621,13 @@ fn create_veto_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -609,6 +702,14 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -636,6 +737,13 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -682,6 +790,14 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -708,6 +824,13 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -754,6 +877,14 @@ fn run_create_update_working_group_budget_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -772,6 +903,13 @@ fn run_create_update_working_group_budget_proposal_common_checks_succeed(
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -818,6 +956,14 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -840,6 +986,13 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     decrease_lead_stake_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
@@ -893,6 +1046,14 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let slash_lead_details = ProposalDetails::SlashWorkingGroupLead(0, 10, working_group);
 
         let proposal_details = ProposalDetails::SlashWorkingGroupLead(10, 10, working_group);
@@ -905,6 +1066,13 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     slash_lead_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
@@ -1068,6 +1236,14 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1089,6 +1265,14 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     set_lead_reward_details.clone(),
+                )
+            },
+
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
@@ -1134,6 +1318,14 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1158,6 +1350,13 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1203,6 +1402,14 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::AmendConstitution(b"constitution text".to_vec());
 
         let proposal_fixture = ProposalTestFixture {
@@ -1212,6 +1419,13 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1256,6 +1470,14 @@ fn create_set_council_budget_increment_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetCouncilBudgetIncrement(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1265,6 +1487,13 @@ fn create_set_council_budget_increment_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1317,6 +1546,14 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let opening_id = 0;
         let proposal_details =
             ProposalDetails::CancelWorkingGroupLeadOpening(opening_id, working_group);
@@ -1328,6 +1565,13 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1374,6 +1618,14 @@ fn create_set_councilor_reward_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetCouncilorReward(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1383,6 +1635,13 @@ fn create_set_councilor_reward_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1428,6 +1687,14 @@ fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetInitialInvitationBalance(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1437,6 +1704,13 @@ fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1482,6 +1756,14 @@ fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetInitialInvitationCount(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1491,6 +1773,13 @@ fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1536,6 +1825,14 @@ fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetMembershipLeadInvitationQuota(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1545,6 +1842,13 @@ fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
@@ -1590,6 +1894,14 @@ fn create_set_referral_cut_common_checks_succeed() {
             exact_execution_block: None,
         };
 
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
         let proposal_details = ProposalDetails::SetReferralCut(100);
 
         let proposal_fixture = ProposalTestFixture {
@@ -1599,6 +1911,13 @@ fn create_set_referral_cut_common_checks_succeed() {
                 ProposalCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
