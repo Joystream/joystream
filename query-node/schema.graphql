@@ -1,3 +1,4 @@
+"A blockchain genesis block."
 enum Network {
   BABYLON
   ALEXANDRIA
@@ -21,19 +22,32 @@ type Member @entity {
   handle: String @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
+  #avatar: StorageAssetStatus!
   avatarUri: String
 
   "Short text chosen by member to share information about themselves"
   about: String
 
+  "Whether member is verified."
+  isVerified: Boolean!
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
+
+  "Accounts bounded to membership."
+  boundAccounts: [String!]
+
+  "Number of invites member has."
+  inviteCount: BigInt!
+
   "Blocknumber when member was registered"
   registeredAtBlock: Int!
 
-  "Member's controller account id"
-  controllerAccount: Bytes!
+  "Member controller in SS58 encoding."
+  controllerAccount: String!
 
-  "Member's root account id"
-  rootAccount: Bytes!
+  "Root account in SS58 encoding."
+  rootAccount: String!
 
   happenedIn: Block!
 }
