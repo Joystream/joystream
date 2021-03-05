@@ -148,9 +148,18 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
     entry_id
 }
 
-fn create_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
-    let funding_amount = params.max_amount;
+fn create_max_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
+    create_funded_bounty::<T>(params.clone(), params.max_amount)
+}
 
+fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
+    create_funded_bounty::<T>(params.clone(), params.min_amount)
+}
+
+fn create_funded_bounty<T: Trait>(
+    params: BountyCreationParameters<T>,
+    funding_amount: BalanceOf<T>,
+) -> T::BountyId {
     T::CouncilBudgetManager::set_budget(params.cherry + funding_amount);
 
     Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -552,7 +561,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
@@ -592,7 +601,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
@@ -620,16 +629,28 @@ benchmarks! {
 
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
+        let max_amount: BalanceOf<T> = 10000.into();
+
+        let work_period: T::BlockNumber = One::one();
+        let judging_period: T::BlockNumber = One::one();
+        let funding_period: T::BlockNumber = One::one();
 
         let params = BountyCreationParameters::<T>{
-            work_period: One::one(),
-            judging_period: One::one(),
+            work_period,
+            judging_period,
+            funding_period: Some(funding_period),
             cherry,
-            max_amount: funding_amount,
+            min_amount: funding_amount,
+            max_amount,
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_min_funded_bounty::<T>(params);
+
+        run_to_block::<T>((funding_period + One::one()).into());
+
+        let bounty = Bounty::<T>::bounties(bounty_id);
+        assert!(matches!(bounty.milestone, BountyMilestone::Created { has_contributions: true, ..}));
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 1);
 
@@ -673,7 +694,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let entry_ids = (0..i)
             .into_iter()
@@ -719,7 +740,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let entry_ids = (0..i)
             .into_iter()
@@ -762,7 +783,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let entry_ids = (0..i)
             .into_iter()
@@ -815,7 +836,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let entry_ids = (0..i)
             .into_iter()
@@ -864,7 +885,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        let bounty_id = create_funded_bounty::<T>(params);
+        let bounty_id = create_max_funded_bounty::<T>(params);
 
         let (work_account_id, work_member_id) = member_funded_account::<T>("work entrants", 0);
 
