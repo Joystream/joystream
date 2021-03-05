@@ -30,6 +30,7 @@ docker-compose up -d colossus
 ## Query Node Infrastructure
 # Initialize a new database for the query node infrastructure
 docker-compose up -d db
+yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
 # Startup all query-node infrastructure services

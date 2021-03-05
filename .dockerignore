@@ -8,9 +8,3 @@ query-node/lib
 pioneer/
 cli/
 tests/
-
-# It is generally a good idea not to ignore the yarn.lock file
-# Including it helps to get a more deterministic build.
-# However as we don't want to include some package from the workspace
-# we don't want their dependencies as baggage.
-yarn.lock

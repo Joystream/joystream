@@ -26,9 +26,9 @@ After cloning the repo run the following initialization scripts:
 ./setup.sh
 
 # Install npm package dependencies and build project
-yarn && yarn build
+yarn build
 
-# run some tests
+# run some tests on runtime
 yarn cargo-checks
 ```
 

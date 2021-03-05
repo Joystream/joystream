@@ -33,6 +33,7 @@ trap cleanup EXIT
 docker-compose up -d db
 
 # Migrate the databases
+yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
 docker-compose up -d graphql-server

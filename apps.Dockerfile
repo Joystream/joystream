@@ -5,7 +5,7 @@ COPY . /joystream
 
 # Do not set NODE_ENV=production until after running yarn install
 # to ensure dev dependencies are installed.
-RUN yarn
+RUN yarn --forzen-lockfile
 
 # Pioneer is the 'heaviest' package in terms of dependencies
 # RUN yarn workspace pioneer build

@@ -5,7 +5,8 @@ set -e
 yarn
 yarn workspace @joystream/types build
 yarn workspace query-node-root build
-yarn workspace @joystream/cli build
+# uncomment when updated
+# yarn workspace @joystream/cli build
 yarn workspace storage-node build
 # Not strictly needed during development, we run "yarn workspace pioneer start" to start
 # a dev instance, but will show highlight build issues
