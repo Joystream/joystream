@@ -89,7 +89,7 @@ const MAX_VALIDATOR_COUNT: u32 = 300;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
 // council_size max value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 40;
+const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 20;
 // candidacy_limit min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MIN_VALUE: u32 = 50;
 // candidacy_limit max value for the 'set election parameters' proposal

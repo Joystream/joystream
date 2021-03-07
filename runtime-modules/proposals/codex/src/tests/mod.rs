@@ -367,7 +367,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
             Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
-        election_parameters.council_size = 41;
+        election_parameters.council_size = 21;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
