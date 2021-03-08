@@ -12,18 +12,21 @@ RUN yarn workspace @joystream/types build
 RUN yarn workspace query-node-root build
 RUN yarn workspace storage-node build
 
-# Remove files that are not needed after build.
-# We will re-fetch only dependencies needed for running the apps.
-RUN rm -fr node_modules/
-RUN rm -fr .git/
+# Second stage to reduce image size, enable it when
+# all packages have correctly identified what is a devDependency and what is not.
+# It will reduce the image size by about 500MB (down from 2.2GB to 1.7GB)
 
-FROM node:12
-WORKDIR /joystream
-COPY --from=builder /joystream/ /joystream/
+# # Remove files that are not needed after build.
+# # We will re-fetch only dependencies needed for running the apps.
+# RUN rm -fr node_modules/
+# RUN rm -fr .git/
 
-# Skip installing devDependencies, since we have already built the packages.
-# Important to make sure packages have correctly identified what is a devDependency and what is not.
-ENV NODE_ENV=production
-RUN yarn install --forzen-lockfile --production
+# FROM node:12
+# WORKDIR /joystream
+# COPY --from=builder /joystream/ /joystream/
+
+# # Skip installing devDependencies, since we have already built the packages.
+# ENV NODE_ENV=production
+# RUN yarn install --forzen-lockfile --production
 
 ENTRYPOINT [ "yarn" ]
