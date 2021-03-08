@@ -1,0 +1,21 @@
+{
+  "name": "query-node-mappings",
+  "version": "0.0.1",
+  "description": "Mappings for hydra-processor",
+  "main": "lib/mappings/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "lint": "echo \"Skippinng\"",
+    "clean": "rm -rf lib"
+  },
+  "dependencies": {
+    "@dzlzv/hydra-common": "0.0.3",
+    "@polkadot/types": "~2.10.2-7",
+    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
+  },
+  "devDependencies": {
+    "ts-node": "^9.0.0",
+    "typescript": "^3.8"
+  }
+}
