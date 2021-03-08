@@ -43,7 +43,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -650,6 +650,9 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 20;
     pub const MaxPollAlternativesNumber: u64 = 20;
+    pub const ThreadDeposit: u64 = 30;
+    pub const PostDeposit: u64 = 10;
+    pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
 }
 
 pub struct MapLimits;
@@ -671,6 +674,10 @@ impl forum::Trait for Runtime {
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
+    type ThreadDeposit = ThreadDeposit;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ForumModuleId;
+
     type MapLimits = MapLimits;
     type WeightInfo = weights::forum::WeightInfo;
 
@@ -680,6 +687,8 @@ impl forum::Trait for Runtime {
 
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
+
+    type Currency = Balances;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
