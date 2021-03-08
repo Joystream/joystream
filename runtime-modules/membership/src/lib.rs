@@ -257,6 +257,9 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error<T>;
+
         fn deposit_event() = default;
 
         const ScreenedMemberMaxInitialBalance: BalanceOf<T> = T::ScreenedMemberMaxInitialBalance::get();
