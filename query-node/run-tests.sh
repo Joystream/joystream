@@ -7,10 +7,6 @@ cd $SCRIPT_PATH
 # Only run codegen if no generated files found
 [ ! -d "generated/" ] && yarn build
 
-# Make sure typeorm is available.. it get removed when yarn is run again
-# typeorm commandline is used by db:migrate step below.
-ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
-
 set -a
 . ../.env
 set +a

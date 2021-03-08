@@ -18,5 +18,3 @@ yarn mappings:build
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
-
-ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
