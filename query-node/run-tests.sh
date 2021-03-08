@@ -24,6 +24,7 @@ function cleanup() {
     (echo "## Processor Logs ##" && docker logs joystream_processor_1 --tail 50) || :
     (echo "## Indexer Logs ##" && docker logs joystream_indexer_1 --tail 50) || :
     (echo "## Indexer API Gateway Logs ##" && docker logs joystream_hydra-indexer-gateway_1 --tail 50) || :
+    (echo "## Graphql Server Logs ##" && docker logs joystream_graphql-server_1 --tail 50) || :
     docker-compose down -v
 }
 
