@@ -3,9 +3,9 @@ syntax = "proto2";
 /// Content parameters for the asset to be uploaded
 message Upload {    
     optional uint64 content_id = 1;
-    optional uint64 type_id = 1;
-    optional uint64 size = 1;
-    optional bytes ipfs_content_id = 1;
+    optional uint64 type_id = 2;
+    optional uint64 size = 3;
+    optional bytes ipfs_content_id = 4;
 }
 
 /// Represents multiple urls
