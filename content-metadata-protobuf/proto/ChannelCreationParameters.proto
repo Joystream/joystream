@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+/// Content parameters for the asset to be uploaded
+message Upload {    
+    optional uint64 content_id = 1;
+    optional uint64 type_id = 1;
+    optional uint64 size = 1;
+    optional bytes ipfs_content_id = 1;
+}
+
+/// Represents multiple urls
+message Urls {
+    repeated bytes urls = 1;
+}
+
+/// Specifies how a new asset will be provided on creating and updating
+message NewAssetMetadata {
+    oneof new_asset {
+        /// Upload to the storage system
+        Upload upload = 1;
+        /// Multiple url strings pointing at an asset
+        Urls urls = 2;
+    }
+}
+
+/// Represents an array of new assets metadata
+message AssetsMetadata {
+    repeated NewAssetMetadata new_asset = 1;
+}
+
+message ChannelCreationParametersMetadata {
+    /// Assets referenced by metadata
+    optional AssetsMetadata assets = 1;
+    /// Metadata about the channel.
+    optional bytes meta = 2;
+    /// Metadata about the channel.
+    optional bytes reward_account = 3;
+}

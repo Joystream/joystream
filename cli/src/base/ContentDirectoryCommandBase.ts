@@ -57,17 +57,14 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     await this.getRequiredLead()
   }
 
-  async getCuratorContext(classNames: string[] = []): Promise<Actor> {
+  async getCuratorContext(): Promise<Actor> {
     const curator = await this.getRequiredWorker()
-    const classes = await Promise.all(classNames.map(async (cName) => (await this.classEntryByNameOrId(cName))[1]))
-    const classMaintainers = classes.map(({ class_permissions: permissions }) => permissions.maintainers.toArray())
 
     const groups = await this.getApi().availableCuratorGroups()
     const availableGroupIds = groups
       .filter(
-        ([groupId, group]) =>
+        ([_, group]) =>
           group.active.valueOf() &&
-          classMaintainers.every((maintainers) => maintainers.some((m) => m.eq(groupId))) &&
           group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
       )
       .map(([id]) => id)
@@ -75,8 +72,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     let groupId: number
     if (!availableGroupIds.length) {
       this.error(
-        'You do not have the required maintainer access to at least one of the following classes: ' +
-          classNames.join(', '),
+        'You do not have the curator access!',
         { exit: ExitCodes.AccessDenied }
       )
     } else if (availableGroupIds.length === 1) {
