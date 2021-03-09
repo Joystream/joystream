@@ -39,9 +39,9 @@
     "bn.js": "^5.1.2"
   },
   "devDependencies": {
-    "@dzlzv/hydra-cli": "2.1.0-beta.2",
-    "@dzlzv/hydra-processor": "0.1.1",
-    "@dzlzv/hydra-typegen": "0.0.3-1"
+    "@dzlzv/hydra-cli": "2.0.1-beta.3",
+    "@dzlzv/hydra-processor": "2.0.1-beta.3",
+    "@dzlzv/hydra-typegen": "2.0.1-beta.3"
   },
   "volta": {
 		"extends": "../package.json"
