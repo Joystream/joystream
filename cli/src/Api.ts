@@ -47,10 +47,10 @@ import { MemberId, Membership } from '@joystream/types/members'
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
 import { Stake, StakeId } from '@joystream/types/stake'
 
-import { InputValidationLengthConstraint } from '@joystream/types/common'
-import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/storage'
-import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
+import { InputValidationLengthConstraint, ChannelId, Url } from '@joystream/types/common'
+import {  CuratorGroup, CuratorGroupId, Channel, Video, VideoId } from '@joystream/types/content'
+import { DataObject } from '@joystream/types/storage'
+import { ServiceProviderRecord,  } from '@joystream/types/discovery'
 import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -59,7 +59,7 @@ const DEFAULT_DECIMALS = new BN(12)
 // Mapping of working group to api module
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Builder]: 'builderWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 }
@@ -67,7 +67,7 @@ export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
-  private _cdClassesCache: [ClassId, Class][] | null = null
+  private _cdClassesCache: [ChannelId, Channel][] | null = null
 
   private constructor(originalApi: ApiPromise) {
     this._api = originalApi
@@ -495,41 +495,41 @@ export default class Api {
   }
 
   // Content directory
-  async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
+  async availableChannels(useCache = true): Promise<[ChannelId, Channel][]> {
     return useCache && this._cdClassesCache
       ? this._cdClassesCache
-      : (this._cdClassesCache = await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById))
+      : (this._cdClassesCache = await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById))
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
-    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.contentDirectory.curatorGroupById)
+    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.content.curatorGroupById)
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.curatorGroupById<CuratorGroup>(id) : null
+    const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
+    return exists ? await this._api.query.content.curatorGroupById<CuratorGroup>(id) : null
   }
 
   async nextCuratorGroupId(): Promise<number> {
-    return (await this._api.query.contentDirectory.nextCuratorGroupId<CuratorGroupId>()).toNumber()
+    return (await this._api.query.content.nextCuratorGroupId<CuratorGroupId>()).toNumber()
   }
 
-  async classById(id: number): Promise<Class | null> {
-    const c = await this._api.query.contentDirectory.classById<Class>(id)
+  async channelById(channelId: number): Promise<Channel | null> {
+    const c = await this._api.query.content.channelById<Channel>(channelId)
     return c.isEmpty ? null : c
   }
 
-  async entitiesByClassId(classId: number): Promise<[EntityId, Entity][]> {
-    const entityEntries = await this.entriesByIds<EntityId, Entity>(this._api.query.contentDirectory.entityById)
-    return entityEntries.filter(([, entity]) => entity.class_id.toNumber() === classId)
+  async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
+    const videoEntries = await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
+    return videoEntries.filter(([, video]) => video.in_channel.toNumber() === channelId)
   }
 
-  async entityById(id: number): Promise<Entity | null> {
-    const exists = !!(await this._api.query.contentDirectory.entityById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
+  async videoById(videoId: number): Promise<Video | null> {
+    const exists = !!(await this._api.query.content.entityById.size(videoId)).toNumber()
+    return exists ? await this._api.query.content.videoById<Video>(videoId) : null
   }
 
-  async dataByContentId(contentId: ContentId): Promise<DataObject | null> {
+  async dataByContentId(contentId: number): Promise<DataObject | null> {
     const dataObject = await this._api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
   }
