@@ -787,10 +787,20 @@ decl_module! {
             });
 
             // Reserve cleanup pay off in the thread account
-            Self::transfer_to_state_cleanup_treasury_account(cleanup_pay_off, new_thread_id, &account_id);
+            Self::transfer_to_state_cleanup_treasury_account(
+                cleanup_pay_off,
+                new_thread_id,
+                &account_id
+            )?;
 
             // Add inital post to thread
-            let _ = Self::add_new_post(&account_id, new_thread_id, category_id, &text, forum_user_id);
+            let _ = Self::add_new_post(
+                &account_id,
+                new_thread_id,
+                category_id,
+                &text,
+                forum_user_id
+            )?;
 
             // Update next thread id
             <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -932,7 +942,7 @@ decl_module! {
             //
 
             // Pay off to thread deleter
-            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id);
+            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
 
             // Delete thread
             Self::delete_thread_inner(thread.category_id, thread_id);
@@ -1148,7 +1158,7 @@ decl_module! {
                     category_id,
                     text.as_slice(),
                     forum_user_id
-                );
+                )?;
 
             // Generate event
             Self::deposit_event(
@@ -1343,28 +1353,32 @@ impl<T: Trait> Module<T> {
         );
     }
 
-    fn pay_off(thread_id: T::ThreadId, amount: BalanceOf<T>, account_id: &T::AccountId) {
+    fn pay_off(
+        thread_id: T::ThreadId,
+        amount: BalanceOf<T>,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
         let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        let _ = <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
+        <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
             amount,
             ExistenceRequirement::AllowDeath,
-        );
+        )
     }
 
     fn transfer_to_state_cleanup_treasury_account(
         amount: BalanceOf<T>,
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
-    ) {
+    ) -> DispatchResult {
         let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        let _ = <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
+        <T::Currency as frame_support::traits::Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
             amount,
             ExistenceRequirement::KeepAlive,
-        );
+        )
     }
 
     pub fn add_new_post(
@@ -1373,7 +1387,7 @@ impl<T: Trait> Module<T> {
         category_id: T::CategoryId,
         text: &[u8],
         author_id: ForumUserId<T>,
-    ) -> (T::PostId, Post<ForumUserId<T>, T::Hash>) {
+    ) -> Result<(T::PostId, Post<ForumUserId<T>, T::Hash>), sp_runtime::DispatchError> {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
 
@@ -1388,14 +1402,14 @@ impl<T: Trait> Module<T> {
 
         let post_deposit = T::PostDeposit::get();
         thread.cleanup_pay_off = thread.cleanup_pay_off.saturating_add(post_deposit);
-        Self::transfer_to_state_cleanup_treasury_account(post_deposit, thread_id, &account_id);
+        Self::transfer_to_state_cleanup_treasury_account(post_deposit, thread_id, &account_id)?;
 
         <ThreadById<T>>::insert(category_id, thread_id, thread);
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
-        (new_post_id, new_post)
+        Ok((new_post_id, new_post))
     }
 
     fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
