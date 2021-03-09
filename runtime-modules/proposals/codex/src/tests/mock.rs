@@ -222,6 +222,15 @@ impl proposals_engine::Trait for Test {
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
     type WeightInfo = MockProposalsEngineWeight;
+    type StakingAccountValidator = ();
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
 }
 
 impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
@@ -354,7 +363,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -435,7 +444,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -447,7 +456,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -459,7 +468,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -620,12 +629,6 @@ impl council::Trait for Test {
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 
     type MemberOriginValidator = ();
-}
-
-impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
-    }
 }
 
 pub struct CouncilWeightInfo;

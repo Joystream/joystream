@@ -74,6 +74,12 @@ fn add_opening(
             1_500_000,
         );
 
+        set_staking_account(
+            account_id.clone().into(),
+            staking_account_id.clone().into(),
+            member_id,
+        );
+
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
             member_id: member_id.into(),
             title: b"title".to_vec(),
