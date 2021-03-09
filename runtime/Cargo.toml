@@ -53,7 +53,7 @@ pallet-staking = { package = 'pallet-staking', default-features = false, git = '
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-pallet-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
@@ -78,6 +78,8 @@ proposals-codex = { package = 'pallet-proposals-codex', default-features = false
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 pallet_constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
+blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
+joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -133,7 +135,7 @@ std = [
     'pallet-sudo/std',
     'pallet-im-online/std',
     'pallet-offences/std',
-    'pallet-utility/std',
+    'substrate-utility/std',
 
     # Joystream
     'common/std',
@@ -151,6 +153,8 @@ std = [
     'content-directory/std',
     'pallet_constitution/std',
     'staking-handler/std',
+    'blog/std',
+    'joystream-utility/std'
 ]
 runtime-benchmarks = [
     "frame-system/runtime-benchmarks",
@@ -163,16 +167,18 @@ runtime-benchmarks = [
     "frame-benchmarking",
     "frame-system-benchmarking",
     "pallet-session-benchmarking",
-    "pallet-utility/runtime-benchmarks",
+    "substrate-utility/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",
+    "joystream-utility/runtime-benchmarks",
     "pallet_constitution/runtime-benchmarks",
     "working-group/runtime-benchmarks",
     "forum/runtime-benchmarks",
     "membership/runtime-benchmarks",
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
+    "blog/runtime-benchmarks",
     "hex-literal",
 ]
 

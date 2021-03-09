@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build && yarn workspace @joystream/cli build",
+    "postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build",
+    "build-joystream-cli": "yarn workspace @joystream/cli build",
     "build": "./build.sh",
     "start": "./start.sh",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
@@ -26,22 +27,28 @@
     "query-node/generated/*"
   ],
   "resolutions": {
-    "@polkadot/api": "1.26.1",
-    "@polkadot/api-contract": "1.26.1",
-    "@polkadot/keyring": "^3.0.1",
-    "@polkadot/types": "1.26.1",
-    "@polkadot/util": "^3.0.1",
-    "@polkadot/util-crypto": "^3.0.1",
-    "@polkadot/wasm-crypto": "^1.2.1",
+    "@polkadot/api": "2.4.1",
+    "@polkadot/api-derive": "2.4.1",
+    "@polkadot/api-contract": "2.4.1",
+    "@polkadot/keyring": "3.6.1",
+    "@polkadot/networks": "3.6.1",
+    "@polkadot/types": "2.4.1",
+    "@polkadot/types-known": "2.4.1",
+    "@polkadot/util": "3.6.1",
+    "@polkadot/util-crypto": "3.6.1",
+    "@polkadot/wasm-crypto": "1.4.1",
+    "@polkadot/rpc-core": "2.4.1",
+    "@polkadot/rpc-provider": "2.4.1",
+    "@polkadot/metadata": "2.4.1",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
-    "@dzlzv/hydra-indexer-lib": "0.0.22-legacy.1.26.1"
+    "@dzlzv/hydra-indexer-lib": "0.0.18-alpha.2"
   },
   "devDependencies": {
     "eslint": "^7.6.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2"
+    "prettier": "2.2.1"
   },
   "husky": {
     "hooks": {

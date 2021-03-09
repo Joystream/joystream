@@ -9,8 +9,7 @@
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
 //! encodes extrinsic calls from dependency modules in order to create proposals inside the `engine`
-//! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
-//! `ProposalDetailsByProposalId` map.
+//! module.
 //!
 //! To create a proposal you need to call the extrinsic `create_proposal` with the `ProposalDetails` variant
 //! corresponding to the proposal you want to create. [See the possible details with their proposal](./enum.ProposalDetails.html)
@@ -18,12 +17,6 @@
 //! ## Extrinsics
 //!
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal
-//! - [execute_runtime_upgrade_proposal](./struct.Module.html#method.execute_runtime_upgrade_proposal) - Sets the
-//! runtime code
-//! - [execute_signal_proposal](./struct.Module.html#method.execute_signal_proposal) - prints the proposal to the log
-//! - [update_working_group_budget](./struct.Module.html#method.update_working_group_budget) - Move funds between
-//! council and working group
-//!
 //!
 //! ### Dependencies:
 //! - [proposals engine](../substrate_proposals_engine_module/index.html)
@@ -55,29 +48,23 @@ mod benchmarking;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
-use frame_support::weights::{DispatchClass, Weight};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
-use frame_system::ensure_root;
+use frame_support::weights::Weight;
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use sp_arithmetic::traits::Zero;
-use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
-use sp_std::vec::Vec;
 
-pub use crate::types::{
-    BalanceKind, CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams,
-    ProposalDetails, ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
-};
 use common::origin::MemberOriginValidator;
 use common::MemberId;
-use council::Module as Council;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
-
-use common::working_group::WorkingGroup;
+pub use types::{
+    CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
+    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
+};
 
 // Max allowed value for 'Funding Request' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
@@ -89,35 +76,31 @@ const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
 /// Proposal codex WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn execute_signal_proposal(i: u32) -> Weight;
     fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_runtime_upgrade(i: u32, t: u32) -> Weight;
-    fn create_proposal_funding_request() -> Weight;
-    fn create_proposal_set_max_validator_count() -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening() -> Weight;
+    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_funding_request(i: u32, d: u32) -> Weight;
+    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
+    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
+    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
     fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight;
-    fn create_proposal_decrease_working_group_lead_stake(d: u32) -> Weight;
-    fn create_proposal_slash_working_group_lead() -> Weight;
-    fn create_proposal_set_working_group_lead_reward(t: u32) -> Weight;
-    fn create_proposal_terminate_working_group_lead(t: u32) -> Weight;
-    fn create_proposal_amend_constitution(i: u32, t: u32) -> Weight;
+    fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
+    fn create_proposal_slash_working_group_lead(d: u32) -> Weight;
+    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight;
+    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
+    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight;
     fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight;
     fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
     fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_councilor_reward(d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_balance(d: u32) -> Weight;
+    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight;
+    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
     fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_membership_lead_invitation_quota() -> Weight;
-    fn create_proposal_set_referral_cut(t: u32) -> Weight;
-    fn update_working_group_budget_positive_forum() -> Weight;
-    fn update_working_group_budget_negative_forum() -> Weight;
-    fn update_working_group_budget_positive_storage() -> Weight;
-    fn update_working_group_budget_negative_storage() -> Weight;
-    fn update_working_group_budget_positive_content() -> Weight;
-    fn update_working_group_budget_negative_content() -> Weight;
-    fn update_working_group_budget_positive_membership() -> Weight;
-    fn update_working_group_budget_negative_membership() -> Weight;
+    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight;
+    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
+    fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
+    fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
+    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
+    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
+    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -128,9 +111,12 @@ pub trait Trait:
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + common::Trait
-    + council::Trait
     + staking::Trait
+    + proposals_engine::Trait
 {
+    /// Proposal Codex module event type.
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
         Self::Origin,
@@ -242,11 +228,24 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// Gets the budget of the given WorkingGroup
-    fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Self>;
+    /// `Create Blog Post` proposal parameters
+    type CreateBlogPostProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 
-    /// Sets the budget for the given WorkingGroup
-    fn set_working_group_budget(working_group: WorkingGroup, budget: BalanceOf<Self>);
+    /// `Edit Blog Post` proposal parameters
+    type EditBlogPostProoposalParamters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Lock Blog Post` proposal parameters
+    type LockBlogPostProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Unlock Blog Post` proposal parameters
+    type UnlockBlogPostProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Veto Proposal` proposal parameters
+    type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -255,6 +254,19 @@ pub type GeneralProposalParameters<T> = GeneralProposalParams<
     <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
 >;
+
+decl_event! {
+    pub enum Event<T> where
+        GeneralProposalParameters = GeneralProposalParameters<T>,
+        ProposalDetailsOf = ProposalDetailsOf<T>,
+    {
+        /// A proposal was created
+        /// Params:
+        /// - General proposal parameter. Parameters shared by all proposals
+        /// - Proposal Details. Parameter of proposal with a variant for each kind of proposal
+        ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+    }
+}
 
 decl_error! {
     /// Codex module predefined errors
@@ -327,9 +339,6 @@ decl_storage! {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
-
-        /// Map proposal id to proposal details
-        pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
     }
 }
 
@@ -338,6 +347,8 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
+
+        fn deposit_event() = default;
 
         /// Exports 'Set Max Validator Count' proposal parameters.
         const SetMaxValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
@@ -416,6 +427,22 @@ decl_module! {
         const SetReferralCutProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetReferralCutProposalParameters::get();
 
+        const CreateBlogPostProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::CreateBlogPostProposalParameters::get();
+
+        const EditBlogPostProoposalParamters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::EditBlogPostProoposalParamters::get();
+
+        const LockBlogPostProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::LockBlogPostProposalParameters::get();
+
+        const UnlockBlogPostProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UnlockBlogPostProposalParameters::get();
+
+        const VetoProposalProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
+
+
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
         /// <weight>
@@ -441,6 +468,10 @@ decl_module! {
             Self::ensure_details_checks(&proposal_details)?;
 
             let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
+            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
+            // since the encode trait takes a reference to `self`.
+            // (Note: this is an useful change since this could be a ~3MB copy in the case of
+            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             let account_id =
@@ -455,6 +486,7 @@ decl_module! {
                 &general_proposal_parameters.description,
                 general_proposal_parameters.staking_account_id.clone(),
                 general_proposal_parameters.exact_execution_block,
+                general_proposal_parameters.member_id,
             )?;
 
             let initial_thread_mode = ThreadMode::Open;
@@ -469,9 +501,9 @@ decl_module! {
                 account_id,
                 proposer_id: general_proposal_parameters.member_id,
                 proposal_parameters,
-                title: general_proposal_parameters.title,
-                description: general_proposal_parameters.description,
-                staking_account_id: general_proposal_parameters.staking_account_id,
+                title: general_proposal_parameters.title.clone(),
+                description: general_proposal_parameters.description.clone(),
+                staking_account_id: general_proposal_parameters.staking_account_id.clone(),
                 encoded_dispatchable_call_code: proposal_code,
                 exact_execution_block: general_proposal_parameters.exact_execution_block,
             };
@@ -480,91 +512,9 @@ decl_module! {
                 <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
-            <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
+
+            Self::deposit_event(RawEvent::ProposalCreated(general_proposal_parameters, proposal_details));
         }
-
-// *************** Extrinsic to execute
-
-        /// Signal proposal extrinsic. Should be used as callable object to pass to the `engine` module.
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (S)` where:
-        /// - `S` is the length of the signal
-        /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoCodex::<T>::execute_signal_proposal(signal.len().saturated_into())]
-        pub fn execute_signal_proposal(
-            origin,
-            signal: Vec<u8>,
-        ) {
-            ensure_root(origin)?;
-
-            // Signal proposal stub: no code implied.
-        }
-
-        /// Runtime upgrade proposal extrinsic.
-        /// Should be used as callable object to pass to the `engine` module.
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (C)` where:
-        /// - `C` is the length of `wasm`
-        /// However, we treat this as a full block as `frame_system::Module::set_code` does
-        /// # </weight>
-        #[weight = (T::MaximumBlockWeight::get(), DispatchClass::Operational)]
-        pub fn execute_runtime_upgrade_proposal(
-            origin,
-            wasm: Vec<u8>,
-        ) {
-            ensure_root(origin.clone())?;
-
-            print("Runtime upgrade proposal execution started.");
-
-            <frame_system::Module<T>>::set_code(origin, wasm)?;
-
-            print("Runtime upgrade proposal execution finished.");
-        }
-
-        /// Update working group budget
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (1)` Doesn't depend on the state or parameters
-        /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = Module::<T>::get_update_working_group_budget_weight(&working_group, &balance_kind)]
-        pub fn update_working_group_budget(
-            origin,
-            working_group: WorkingGroup,
-            amount: BalanceOf<T>,
-            balance_kind: BalanceKind,
-        ) {
-            ensure_root(origin.clone())?;
-
-
-            let wg_budget = T::get_working_group_budget(working_group);
-            let current_budget = Council::<T>::budget();
-
-            match balance_kind {
-                BalanceKind::Positive => {
-                    ensure!(amount<=current_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
-
-                    T::set_working_group_budget(working_group, wg_budget.saturating_add(amount));
-                    Council::<T>::set_budget(origin, current_budget - amount)?;
-                },
-                BalanceKind::Negative => {
-                    ensure!(amount <= wg_budget, Error::<T>::InsufficientFundsForBudgetUpdate);
-
-                    T::set_working_group_budget(working_group, wg_budget - amount);
-                    Council::<T>::set_budget(origin, current_budget.saturating_add(amount))?;
-                }
-            }
-        }
-
     }
 }
 
@@ -679,6 +629,21 @@ impl<T: Trait> Module<T> {
             ProposalDetails::SetReferralCut(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::CreateBlogPost(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::EditBlogPost(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::LockBlogPost(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::UnlockBlogPost(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::VetoProposal(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -739,43 +704,11 @@ impl<T: Trait> Module<T> {
                 T::SetMembershipLeadInvitationQuotaProposalParameters::get()
             }
             ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
-        }
-    }
-
-    // Returns the weigt for update_working_group_budget extrinsic according to parameters
-    fn get_update_working_group_budget_weight(
-        group: &WorkingGroup,
-        balance_kind: &BalanceKind,
-    ) -> Weight {
-        match balance_kind {
-            BalanceKind::Positive => match group {
-                WorkingGroup::Forum => {
-                    WeightInfoCodex::<T>::update_working_group_budget_positive_forum()
-                }
-                WorkingGroup::Storage => {
-                    WeightInfoCodex::<T>::update_working_group_budget_positive_storage()
-                }
-                WorkingGroup::Content => {
-                    WeightInfoCodex::<T>::update_working_group_budget_positive_content()
-                }
-                WorkingGroup::Membership => {
-                    WeightInfoCodex::<T>::update_working_group_budget_positive_membership()
-                }
-            },
-            BalanceKind::Negative => match group {
-                WorkingGroup::Forum => {
-                    WeightInfoCodex::<T>::update_working_group_budget_negative_forum()
-                }
-                WorkingGroup::Storage => {
-                    WeightInfoCodex::<T>::update_working_group_budget_negative_storage()
-                }
-                WorkingGroup::Membership => {
-                    WeightInfoCodex::<T>::update_working_group_budget_negative_membership()
-                }
-                WorkingGroup::Content => {
-                    WeightInfoCodex::<T>::update_working_group_budget_negative_content()
-                }
-            },
+            ProposalDetails::CreateBlogPost(..) => T::CreateBlogPostProposalParameters::get(),
+            ProposalDetails::EditBlogPost(..) => T::EditBlogPostProoposalParamters::get(),
+            ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
+            ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
+            ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
         }
     }
 
@@ -796,22 +729,33 @@ impl<T: Trait> Module<T> {
                 WeightInfoCodex::<T>::create_proposal_runtime_upgrade(
                     blob.len().saturated_into(),
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
-            ProposalDetails::FundingRequest(..) => {
-                WeightInfoCodex::<T>::create_proposal_funding_request()
+            ProposalDetails::FundingRequest(params) => {
+                WeightInfoCodex::<T>::create_proposal_funding_request(
+                    params.len().saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetMaxValidatorCount(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_max_validator_count()
+                WeightInfoCodex::<T>::create_proposal_set_max_validator_count(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::CreateWorkingGroupLeadOpening(opening_params) => {
                 WeightInfoCodex::<T>::create_proposal_create_working_group_lead_opening(
                     opening_params.description.len().saturated_into(),
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::FillWorkingGroupLeadOpening(..) => {
-                WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening()
+                WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 WeightInfoCodex::<T>::create_proposal_update_working_group_budget(
@@ -821,26 +765,31 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::DecreaseWorkingGroupLeadStake(..) => {
                 WeightInfoCodex::<T>::create_proposal_decrease_working_group_lead_stake(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
-                WeightInfoCodex::<T>::create_proposal_slash_working_group_lead()
+                WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetWorkingGroupLeadReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_working_group_lead_reward(
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::TerminateWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead(
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
-                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetMembershipPrice(..) => {
@@ -862,11 +811,13 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SetCouncilorReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_councilor_reward(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_initial_invitation_balance(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -877,12 +828,53 @@ impl<T: Trait> Module<T> {
                 )
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota()
+                WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
+                    description_length.saturated_into(),
+                )
             }
             ProposalDetails::SetReferralCut(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_referral_cut(
                     title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
+            }
+            ProposalDetails::CreateBlogPost(header, body) => {
+                WeightInfoCodex::<T>::create_proposal_create_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                    header.len().saturated_into(),
+                    body.len().saturated_into(),
+                )
+            }
+            ProposalDetails::EditBlogPost(_, header, body) => {
+                let header_len = header.as_ref().map_or(0, |h| h.len());
+                let body_len = body.as_ref().map_or(0, |b| b.len());
+                WeightInfoCodex::<T>::create_proposal_edit_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                    header_len.saturated_into(),
+                    body_len.saturated_into(),
+                )
+            }
+            ProposalDetails::LockBlogPost(..) => {
+                WeightInfoCodex::<T>::create_proposal_lock_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+            }
+            ProposalDetails::UnlockBlogPost(..) => {
+                WeightInfoCodex::<T>::create_proposal_unlock_blog_post(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::VetoProposal(..) => {
+                WeightInfoCodex::<T>::create_proposal_veto_proposal(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
             }
         }
     }
@@ -891,7 +883,6 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> ProposalObserver<T> for Module<T> {
     fn proposal_removed(proposal_id: &<T as proposals_engine::Trait>::ProposalId) {
         <ThreadIdByProposalId<T>>::remove(proposal_id);
-        <ProposalDetailsByProposalId<T>>::remove(proposal_id);
 
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 

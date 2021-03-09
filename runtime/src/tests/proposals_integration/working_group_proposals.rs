@@ -4,8 +4,10 @@
 use super::*;
 
 use common::working_group::WorkingGroup;
+use common::BalanceKind;
 use frame_system::RawOrigin;
-use proposals_codex::{BalanceKind, CreateOpeningParameters};
+use proposals_codex::CreateOpeningParameters;
+use sp_std::convert::TryInto;
 use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 
@@ -24,7 +26,7 @@ type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
 fn add_opening(
     member_id: MemberId,
     account_id: [u8; 32],
-    stake_policy: Option<working_group::StakePolicy<BlockNumber, Balance>>,
+    stake_policy: working_group::StakePolicy<BlockNumber, Balance>,
     sequence_number: u32, // action sequence number to align with other actions
     group: WorkingGroup,
 ) -> u64 {
@@ -70,6 +72,12 @@ fn add_opening(
         increase_total_balance_issuance_using_account_id(
             staking_account_id.clone().into(),
             1_500_000,
+        );
+
+        set_staking_account(
+            account_id.clone().into(),
+            staking_account_id.clone().into(),
+            member_id,
         );
 
         let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -395,7 +403,19 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
         ));
 
         let opening_id: working_group::OpeningId =
-            add_opening(member_id, account_id, None, 1, working_group).into();
+            add_opening(
+                member_id,
+                account_id,
+                StakePolicy {
+                    stake_amount: <Runtime as working_group::Trait<
+                        MembershipWorkingGroupInstance,
+                    >>::MinimumStakeForOpening::get() as u128,
+                    leaving_unstaking_period: 1_000_000,
+                },
+                1,
+                working_group,
+            )
+            .into();
 
         // Check for expected opening id.
         assert_eq!(opening_id, next_opening_id);
@@ -449,22 +469,49 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     common::MemberId<T>: From<u64>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: u64 = 1;
+        let member_id: u64 = 14;
         let account_id: [u8; 32] = [member_id as u8; 32];
 
-        let opening_id = add_opening(member_id, account_id, None, 1, working_group);
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
-        let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
-            RawOrigin::Signed(account_id.into()).into(),
-            working_group::ApplyOnOpeningParameters::<T> {
-                member_id: member_id.into(),
-                opening_id,
-                role_account_id: account_id.into(),
-                reward_account_id: account_id.into(),
-                description: Vec::new(),
-                stake_parameters: None,
-            },
-        );
+        let opening_id =
+            add_opening(
+                member_id,
+                account_id,
+                StakePolicy {
+                    stake_amount: <Runtime as working_group::Trait<
+                        MembershipWorkingGroupInstance,
+                    >>::MinimumStakeForOpening::get() as u128,
+                    leaving_unstaking_period: 1_000_000,
+                },
+                1,
+                working_group,
+            );
+
+        let apply_result =
+            WorkingGroupInstance::<T, I>::apply_on_opening(
+                RawOrigin::Signed(account_id.into()).into(),
+                working_group::ApplyOnOpeningParameters::<T> {
+                    member_id: member_id.into(),
+                    opening_id,
+                    role_account_id: account_id.into(),
+                    reward_account_id: account_id.into(),
+                    description: Vec::new(),
+                    stake_parameters:
+                        StakeParameters {
+                            stake:
+                                T::Balance::from(
+                                    <Runtime as working_group::Trait<
+                                        MembershipWorkingGroupInstance,
+                                    >>::MinimumStakeForOpening::get(
+                                    )
+                                    .try_into()
+                                    .unwrap(),
+                                ),
+                            staking_account_id: account_id.into(),
+                        },
+                },
+            );
 
         assert_eq!(apply_result, Ok(()));
 
@@ -547,26 +594,24 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount: Balance = 100;
+        let stake_amount: Balance = 10_000;
 
         increase_total_balance_issuance_using_account_id(account_id.into(), 1_500_000);
 
-        let stake_policy = Some(working_group::StakePolicy {
+        let stake_policy = working_group::StakePolicy {
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
-        });
+        };
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
         let staking_account_id: [u8; 32] = [22u8; 32];
         increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
         set_staking_account(account_id.into(), staking_account_id.into(), member_id);
-        let stake_parameters = Some(
-            StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
-                stake: stake_amount.into(),
-                staking_account_id: staking_account_id.into(),
-            },
-        );
+        let stake_parameters = StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
+            stake: stake_amount.into(),
+            staking_account_id: staking_account_id.into(),
+        };
 
         let old_balance = Balances::usable_balance(&account_id.into());
 
@@ -605,9 +650,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
 
         assert_eq!(
-            WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id)
-                .staking_account_id
-                .unwrap(),
+            WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id).staking_account_id,
             staking_account_id.into()
         );
 
@@ -697,12 +740,12 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount: Balance = 100;
+        let stake_amount: Balance = 10_000;
 
-        let stake_policy = Some(working_group::StakePolicy {
+        let stake_policy = working_group::StakePolicy {
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
-        });
+        };
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -712,12 +755,10 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         let staking_account_id: [u8; 32] = [33u8; 32];
         increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
         set_staking_account(account_id.into(), staking_account_id.into(), member_id);
-        let stake_parameters = Some(
-            StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
-                stake: stake_amount.into(),
-                staking_account_id: staking_account_id.into(),
-            },
-        );
+        let stake_parameters = StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
+            stake: stake_amount.into(),
+            staking_account_id: staking_account_id.into(),
+        };
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -875,13 +916,37 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        let member_id: MemberId = 14;
         let account_id: [u8; 32] = [member_id as u8; 32];
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         let funding = 999999;
         let mint_capacity = 5_000_000;
 
-        let opening_id = add_opening(member_id, account_id, None, 1, working_group);
+        let opening_id =
+            add_opening(
+                member_id,
+                account_id,
+                StakePolicy {
+                    stake_amount: <Runtime as working_group::Trait<
+                        MembershipWorkingGroupInstance,
+                    >>::MinimumStakeForOpening::get() as u128,
+                    leaving_unstaking_period: 1_000_000,
+                },
+                1,
+                working_group,
+            );
+
+        let stake_parameters =
+            StakeParameters {
+                stake: <Runtime as working_group::Trait<
+                    MembershipWorkingGroupInstance,
+                >>::MinimumStakeForOpening::get()
+                .into(),
+                staking_account_id: account_id.into(),
+            }
+        ;
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -891,7 +956,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
                 role_account_id: account_id.into(),
                 reward_account_id: account_id.into(),
                 description: Vec::new(),
-                stake_parameters: None,
+                stake_parameters,
             },
         );
 
@@ -999,12 +1064,34 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
+        let member_id: MemberId = 14;
         let account_id: [u8; 32] = [member_id as u8; 32];
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
-        let opening_id = add_opening(member_id, account_id, None, 1, working_group);
+        let stake_parameters =
+            StakeParameters {
+                stake: <Runtime as working_group::Trait<
+                    MembershipWorkingGroupInstance,
+                >>::MinimumStakeForOpening::get()
+                .into(),
+                staking_account_id: account_id.into(),
+            }
+        ;
+
+        let opening_id =
+            add_opening(
+                member_id,
+                account_id,
+                StakePolicy {
+                    stake_amount: <Runtime as working_group::Trait<
+                        MembershipWorkingGroupInstance,
+                    >>::MinimumStakeForOpening::get() as u128,
+                    leaving_unstaking_period: 1_000_000,
+                },
+                1,
+                working_group,
+            );
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -1014,7 +1101,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
                 role_account_id: account_id.into(),
                 reward_account_id: account_id.into(),
                 description: Vec::new(),
-                stake_parameters: None,
+                stake_parameters,
             },
         );
 
@@ -1121,21 +1208,19 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount = 100_u128;
+        let stake_amount = 100_000_u128;
 
-        let stake_policy = Some(working_group::StakePolicy {
+        let stake_policy = working_group::StakePolicy {
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
-        });
+        };
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
-        let stake_parameters = Some(
-            StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
-                stake: stake_amount.into(),
-                staking_account_id: account_id.into(),
-            },
-        );
+        let stake_parameters = StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
+            stake: stake_amount.into(),
+            staking_account_id: account_id.into(),
+        };
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
@@ -1261,21 +1346,19 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let member_id: MemberId = 14;
 
         let account_id: [u8; 32] = [member_id as u8; 32];
-        let stake_amount = 100_u128;
+        let stake_amount = 100_000_u128;
 
-        let stake_policy = Some(working_group::StakePolicy {
+        let stake_policy = working_group::StakePolicy {
             stake_amount,
             leaving_unstaking_period: 45000, // more than min value
-        });
+        };
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
-        let stake_parameters = Some(
-            StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
-                stake: stake_amount.into(),
-                staking_account_id: account_id.into(),
-            },
-        );
+        let stake_parameters = StakeParameters {
+            stake: stake_amount.into(),
+            staking_account_id: account_id.into(),
+        };
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 

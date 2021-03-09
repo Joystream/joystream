@@ -87,8 +87,7 @@ pub trait WeightInfo {
     fn update_reward_account() -> Weight;
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
-    fn leave_role_immediatly() -> Weight;
-    fn leave_role_later() -> Weight;
+    fn leave_role(i: u32) -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -118,6 +117,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Minimum stake required for an opening
+    type MinimumStakeForOpening: Get<Self::Balance>;
 }
 
 decl_event!(
@@ -130,23 +132,31 @@ decl_event!(
        WorkerId = WorkerId<T>,
        <T as frame_system::Trait>::AccountId,
        Balance = BalanceOf<T>,
+       OpeningType = OpeningType,
+       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+       ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
     {
         /// Emits on adding new job opening.
         /// Params:
         /// - Opening id
-        OpeningAdded(OpeningId),
+        /// - Description
+        /// - Opening Type(Lead or Worker)
+        /// - Stake Policy for the opening
+        /// - Reward per block
+        OpeningAdded(OpeningId, Vec<u8>, OpeningType, StakePolicy, Option<Balance>),
 
         /// Emits on adding the application for the worker opening.
         /// Params:
-        /// - Opening id
+        /// - Opening parameteres
         /// - Application id
-        AppliedOnOpening(OpeningId, ApplicationId),
+        AppliedOnOpening(ApplyOnOpeningParameters, ApplicationId),
 
         /// Emits on filling the job opening.
         /// Params:
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
-        OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap),
+        /// - Applicationd ids used to fill the opening
+        OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>),
 
         /// Emits on setting the group leader.
         /// Params:
@@ -165,23 +175,36 @@ decl_event!(
         /// Emits on exiting the worker.
         /// Params:
         /// - worker id.
+        /// - Rationale.
         WorkerExited(WorkerId),
+
+        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Params:
+        /// - Worker id.
+        /// - Rationale.
+        WorkerLeft(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
         /// - worker id.
-        TerminatedWorker(WorkerId),
+        /// - Penalty.
+        /// - Rationale.
+        TerminatedWorker(WorkerId, Option<Balance>, Option<Vec<u8>>),
 
         /// Emits on terminating the leader.
         /// Params:
         /// - leader worker id.
-        TerminatedLeader(WorkerId),
+        /// - Penalty.
+        /// - Rationale.
+        TerminatedLeader(WorkerId, Option<Balance>, Option<Vec<u8>>),
 
         /// Emits on slashing the regular worker/lead stake.
         /// Params:
         /// - regular worker/lead id.
         /// - actual slashed balance.
-        StakeSlashed(WorkerId, Balance),
+        /// - Requested slashed balance.
+        /// - Rationale.
+        StakeSlashed(WorkerId, Balance, Balance, Option<Vec<u8>>),
 
         /// Emits on decreasing the regular worker/lead stake.
         /// Params:
@@ -225,12 +248,15 @@ decl_event!(
         /// Emits on updating the status text of the working group.
         /// Params:
         /// - status text hash
-        StatusTextChanged(Vec<u8>),
+        /// - status text
+        StatusTextChanged(Vec<u8>, Option<Vec<u8>>),
 
-        /// Emits on updating the status text of the working group.
+        /// Emits on budget from the working group being spent
         /// Params:
-        /// - status text hash
-        BudgetSpending(AccountId, Balance),
+        /// - Reciever Account Id.
+        /// - Balance spent.
+        /// - Rationale.
+        BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
     }
 );
 
@@ -296,7 +322,11 @@ decl_module! {
             let mut biggest_number_of_processed_workers = leaving_workers.len();
 
             leaving_workers.iter().for_each(|wi| {
-                Self::remove_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
+                Self::remove_worker(
+                    &wi.worker_id,
+                    &wi.worker,
+                    RawEvent::WorkerExited(wi.worker_id)
+                );
             });
 
             if Self::is_reward_block() {
@@ -330,7 +360,7 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: OpeningType,
-            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
+            stake_policy: StakePolicy<T::BlockNumber, BalanceOf<T>>,
             reward_per_block: Option<BalanceOf<T>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
@@ -350,7 +380,7 @@ decl_module! {
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
-                stake_policy,
+                stake_policy: stake_policy.clone(),
                 reward_per_block,
             };
 
@@ -361,7 +391,13 @@ decl_module! {
             // Update NextOpeningId
             NextOpeningId::<I>::mutate(|id| *id += <OpeningId as One>::one());
 
-            Self::deposit_event(RawEvent::OpeningAdded(new_opening_id));
+            Self::deposit_event(RawEvent::OpeningAdded(
+                    new_opening_id,
+                    description,
+                    opening_type,
+                    stake_policy,
+                    reward_per_block,
+                ));
         }
 
         /// Apply on a worker opening.
@@ -380,39 +416,40 @@ decl_module! {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(p.opening_id)?;
 
             // Ensure that proposed stake is enough for the opening.
             checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake_parameters)?;
 
             // Checks external conditions for staking.
-            if let Some(sp) = p.stake_parameters.clone() {
-                ensure!(
-                    T::StakingAccountValidator::is_member_staking_account(
-                        &p.member_id,
-                        &sp.staking_account_id
-                    ),
-                    Error::<T, I>::InvalidStakingAccountForMember
-                );
+            ensure!(
+                  T::StakingAccountValidator::is_member_staking_account(
+                      &p.member_id,
+                      &p.stake_parameters.staking_account_id
+                  ),
+                  Error::<T, I>::InvalidStakingAccountForMember
+            );
 
-                ensure!(
-                    T::StakingHandler::is_account_free_of_conflicting_stakes(&sp.staking_account_id),
-                    Error::<T, I>::ConflictStakesOnAccount
-                );
+            ensure!(
+              T::StakingHandler::is_account_free_of_conflicting_stakes(
+                  &p.stake_parameters.staking_account_id
+              ),
+              Error::<T, I>::ConflictStakesOnAccount
+            );
 
-                ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(&sp.staking_account_id, sp.stake),
-                    Error::<T, I>::InsufficientBalanceToCoverStake
-                );
-            }
+              ensure!(
+                  T::StakingHandler::is_enough_balance_for_stake(
+                    &p.stake_parameters.staking_account_id,
+                    p.stake_parameters.stake
+                  ),
+                  Error::<T, I>::InsufficientBalanceToCoverStake
+              );
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(sp) = p.stake_parameters.clone() {
-                T::StakingHandler::lock(&sp.staking_account_id, sp.stake);
-            }
+            T::StakingHandler::lock(&p.stake_parameters.staking_account_id, p.stake_parameters.stake);
 
             let hashed_description = T::Hashing::hash(&p.description);
 
@@ -420,8 +457,9 @@ decl_module! {
             let application = Application::<T>::new(
                 &p.role_account_id,
                 &p.reward_account_id,
-                &p.stake_parameters.map(|sp| sp.staking_account_id),
+                &p.stake_parameters.staking_account_id,
                 &p.member_id,
+                p.opening_id,
                 hashed_description.as_ref().to_vec(),
             );
 
@@ -435,7 +473,7 @@ decl_module! {
             NextApplicationId::<I>::mutate(|id| *id += <ApplicationId as One>::one());
 
             // Trigger the event.
-            Self::deposit_event(RawEvent::AppliedOnOpening(p.opening_id, new_application_id));
+            Self::deposit_event(RawEvent::AppliedOnOpening(p, new_application_id));
         }
 
         /// Fill opening for the regular/lead position.
@@ -449,7 +487,9 @@ decl_module! {
         ///    - O(A)
         /// # </weight>
         #[weight =
-            WeightInfoWorkingGroup::<T, I>::fill_opening_worker(successful_application_ids.len().saturated_into())
+            WeightInfoWorkingGroup::<T, I>::fill_opening_worker(
+                successful_application_ids.len().saturated_into()
+            )
             .max(WeightInfoWorkingGroup::<T, I>::fill_opening_lead())
         ]
         pub fn fill_opening(
@@ -458,13 +498,14 @@ decl_module! {
             successful_application_ids: BTreeSet<ApplicationId>,
         ) {
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(opening_id)?;
 
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
 
             // Ensure we're not exceeding the maximum worker number.
             let potential_worker_number =
                 Self::active_worker_count() + (successful_application_ids.len() as u32);
+
             ensure!(
                 potential_worker_number <= T::MaxWorkerNumberLimit::get(),
                 Error::<T, I>::MaxActiveWorkerNumberExceeded
@@ -472,14 +513,29 @@ decl_module! {
 
             // Cannot hire a lead when another leader exists.
             if matches!(opening.opening_type, OpeningType::Leader) {
-                ensure!(!<CurrentLead<T,I>>::exists(), Error::<T, I>::CannotHireLeaderWhenLeaderExists);
+                ensure!(
+                    !<CurrentLead<T,I>>::exists(),
+                    Error::<T, I>::CannotHireLeaderWhenLeaderExists
+                );
             }
 
-            let checked_applications_info = checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
+            let checked_applications_info =
+                checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
+
+            // Check that all applications are for the intended opening
+            ensure!(
+                checked_applications_info.iter()
+                .all(|info| info.application.opening_id == opening_id),
+                Error::<T, I>::ApplicationsNotForOpening
+            );
+
 
             // Check for a single application for a leader.
             if matches!(opening.opening_type, OpeningType::Leader) {
-                ensure!(successful_application_ids.len() == 1, Error::<T, I>::CannotHireMultipleLeaders);
+                ensure!(
+                    successful_application_ids.len() == 1,
+                    Error::<T, I>::CannotHireMultipleLeaders
+                );
             }
 
             //
@@ -496,7 +552,11 @@ decl_module! {
             <OpeningById::<T, I>>::remove(opening_id);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
+            Self::deposit_event(RawEvent::OpeningFilled(
+                    opening_id,
+                    application_id_to_worker_id,
+                    successful_application_ids
+                ));
         }
 
         /// Update the associated role account of the active regular worker/lead.
@@ -544,12 +604,11 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::leave_role_immediatly()
-            .max(WeightInfoWorkingGroup::<T, I>::leave_role_later())]
+        #[weight = Module::<T, I>::leave_role_weight(&rationale)]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
-            _rationale: Option<Vec<u8>>
+            rationale: Option<Vec<u8>>
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
@@ -561,13 +620,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if Self::can_leave_immediately(&worker){
-                Self::remove_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
-            } else{
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.started_leaving_at = Some(Self::current_block())
-                });
-            }
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.started_leaving_at = Some(Self::current_block())
+            });
         }
 
         /// Terminate the active worker by the lead.
@@ -580,12 +635,12 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&_rationale)]
+        #[weight = Module::<T, I>::terminate_role_weight(&rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
             penalty: Option<BalanceOf<T>>,
-            _rationale: Option<Vec<u8>>,
+            rationale: Option<Vec<u8>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -593,29 +648,19 @@ decl_module! {
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
-            if penalty.is_some() {
-                // Ensure worker has a stake.
-                ensure!(
-                    worker.staking_account_id.is_some(),
-                    Error::<T, I>::CannotChangeStakeWithoutStakingAccount
-                );
-            }
-
             //
             // == MUTATION SAFE ==
             //
 
             if let Some(penalty) = penalty {
-                if let Some(staking_account_id) = worker.staking_account_id.clone() {
-                    Self::slash(worker_id, &staking_account_id, Some(penalty));
-                }
+                Self::slash(worker_id, &worker.staking_account_id, penalty, rationale.clone());
             }
 
             // Trigger the event
             let event = if is_sudo {
-                RawEvent::TerminatedLeader(worker_id)
+                RawEvent::TerminatedLeader(worker_id, penalty, rationale)
             } else {
-                RawEvent::TerminatedWorker(worker_id)
+                RawEvent::TerminatedWorker(worker_id, penalty, rationale)
             };
 
             Self::remove_worker(&worker_id, &worker, event);
@@ -632,24 +677,18 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::slash_stake_weight(&_rationale)]
+        #[weight = Module::<T, I>::slash_stake_weight(&rationale)]
         pub fn slash_stake(
             origin,
             worker_id: WorkerId<T>,
             penalty: BalanceOf<T>,
-            _rationale: Option<Vec<u8>>
+            rationale: Option<Vec<u8>>
         ) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
-
-            // Ensure worker has a stake.
-            ensure!(
-                worker.staking_account_id.is_some(),
-                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
-            );
 
             ensure!(
                 penalty != <BalanceOf<T>>::zero(),
@@ -660,9 +699,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(staking_account_id) = worker.staking_account_id {
-                Self::slash(worker_id, &staking_account_id, Some(penalty))
-            }
+            Self::slash(worker_id, &worker.staking_account_id, penalty, rationale)
         }
 
         /// Decreases the regular worker/lead stake and returns the remainder to the
@@ -684,12 +721,6 @@ decl_module! {
 
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
-            // Ensure worker has a stake.
-            ensure!(
-                worker.staking_account_id.is_some(),
-                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
-            );
-
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
@@ -700,30 +731,26 @@ decl_module! {
             );
 
             // Ensure enough stake to decrease.
-            if let Some(staking_account_id) = worker.staking_account_id.clone(){
-                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
+            let current_stake = T::StakingHandler::current_stake(&worker.staking_account_id);
 
-                ensure!(
-                    current_stake > stake_balance_delta,
-                    Error::<T, I>::CannotDecreaseStakeDeltaGreaterThanStake
-                );
-            }
+            ensure!(
+                current_stake > stake_balance_delta,
+                Error::<T, I>::CannotDecreaseStakeDeltaGreaterThanStake
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-             if let Some(staking_account_id) = worker.staking_account_id{
-                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
+            let current_stake = T::StakingHandler::current_stake(&worker.staking_account_id);
 
-                // Cannot possibly overflow because of the already performed check.
-                let new_stake = current_stake.saturating_sub(stake_balance_delta);
+            // Cannot possibly overflow because of the already performed check.
+            let new_stake = current_stake.saturating_sub(stake_balance_delta);
 
-                // This external module call both checks and mutates the state.
-                T::StakingHandler::set_stake(&staking_account_id, new_stake)?;
+            // This external module call both checks and mutates the state.
+            T::StakingHandler::set_stake(&worker.staking_account_id, new_stake)?;
 
-                Self::deposit_event(RawEvent::StakeDecreased(worker_id, stake_balance_delta));
-            }
+            Self::deposit_event(RawEvent::StakeDecreased(worker_id, stake_balance_delta));
         }
 
         /// Increases the regular worker/lead stake, demands a worker origin.
@@ -744,38 +771,31 @@ decl_module! {
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
-            // Ensure worker has a stake.
-            ensure!(
-                worker.staking_account_id.is_some(),
-                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
-            );
-
             ensure!(
                 stake_balance_delta != <BalanceOf<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            if let Some(staking_account_id) = worker.staking_account_id.clone() {
-                ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, stake_balance_delta),
-                    Error::<T, I>::InsufficientBalanceToCoverStake
-                );
-            }
+            ensure!(
+                T::StakingHandler::is_enough_balance_for_stake(
+                    &worker.staking_account_id,
+                    stake_balance_delta
+                ),
+                Error::<T, I>::InsufficientBalanceToCoverStake
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(staking_account_id) = worker.staking_account_id {
-                let current_stake = T::StakingHandler::current_stake(&staking_account_id);
+            let current_stake = T::StakingHandler::current_stake(&worker.staking_account_id);
 
-                let new_stake = current_stake.saturating_add(stake_balance_delta);
+            let new_stake = current_stake.saturating_add(stake_balance_delta);
 
-                // This external module call both checks and mutates the state.
-                T::StakingHandler::set_stake(&staking_account_id, new_stake)?;
+            // This external module call both checks and mutates the state.
+            T::StakingHandler::set_stake(&worker.staking_account_id, new_stake)?;
 
-                Self::deposit_event(RawEvent::StakeIncreased(worker_id, stake_balance_delta));
-            }
+            Self::deposit_event(RawEvent::StakeIncreased(worker_id, stake_balance_delta));
         }
 
         /// Withdraw the worker application. Can be done by the worker only.
@@ -808,9 +828,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(staking_account_id) = application_info.application.staking_account_id.clone() {
-                T::StakingHandler::unlock(&staking_account_id);
-            }
+            T::StakingHandler::unlock(&application_info.application.staking_account_id);
+
             // Remove an application.
             <ApplicationById<T, I>>::remove(application_info.application_id);
 
@@ -834,7 +853,7 @@ decl_module! {
             opening_id: OpeningId,
         ) {
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(opening_id)?;
 
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
 
@@ -973,6 +992,7 @@ decl_module! {
             //
 
             let status_text_hash = status_text
+                .as_ref()
                 .map(|status_text| {
                         let hashed = T::Hashing::hash(&status_text);
 
@@ -984,7 +1004,7 @@ decl_module! {
             <StatusTextHash<I>>::put(status_text_hash.clone());
 
             // Trigger event
-            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash));
+            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash, status_text));
         }
 
         /// Transfers specified amount to any account.
@@ -1023,7 +1043,7 @@ decl_module! {
             Self::pay_from_budget(&account_id, amount);
 
             // Trigger event
-            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount));
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
     }
 }
@@ -1049,6 +1069,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         .max(WeightInfoWorkingGroup::<T, I>::on_initialize_leaving(
             workers,
         ))
+    }
+
+    // Calculate weight for `leave_role`
+    fn leave_role_weight(rationale: &Option<Vec<u8>>) -> Weight {
+        WeightInfoWorkingGroup::<T, I>::leave_role(
+            rationale
+                .as_ref()
+                .map(|rationale| rationale.len().saturated_into())
+                .unwrap_or_default(),
+        )
     }
 
     // Calculate weights for terminate_role
@@ -1131,10 +1161,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             &application_info.application.role_account_id,
             &application_info.application.reward_account_id,
             &application_info.application.staking_account_id,
-            opening
-                .stake_policy
-                .as_ref()
-                .map_or(Zero::zero(), |sp| sp.leaving_unstaking_period),
+            opening.stake_policy.leaving_unstaking_period,
             opening.reward_per_block,
             Self::current_block(),
         );
@@ -1188,9 +1215,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        if let Some(staking_account_id) = worker.staking_account_id.clone() {
-            T::StakingHandler::unlock(&staking_account_id);
-        }
+        T::StakingHandler::unlock(&worker.staking_account_id);
 
         Self::deposit_event(event);
     }
@@ -1199,10 +1224,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn slash(
         worker_id: WorkerId<T>,
         staking_account_id: &T::AccountId,
-        balance: Option<BalanceOf<T>>,
+        balance: BalanceOf<T>,
+        rationale: Option<Vec<u8>>,
     ) {
-        let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
-        Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
+        let slashed_balance = T::StakingHandler::slash(staking_account_id, Some(balance));
+        Self::deposit_event(RawEvent::StakeSlashed(
+            worker_id,
+            slashed_balance,
+            balance,
+            rationale,
+        ));
     }
 
     // Reward a worker using reward presets and working group budget.
@@ -1331,21 +1362,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Check whether current block is a reward block.
         current_block % reward_period.into() == Zero::zero()
-    }
-
-    // Defines whether the worker staking parameters allow to leave without unstaking period.
-    fn can_leave_immediately(worker: &Worker<T>) -> bool {
-        if worker.job_unstaking_period == Zero::zero() {
-            return true;
-        }
-
-        if let Some(staking_account_id) = worker.staking_account_id.clone() {
-            if T::StakingHandler::current_stake(&staking_account_id) == Zero::zero() {
-                return true;
-            }
-        }
-
-        false
     }
 
     // Sets the working group budget.

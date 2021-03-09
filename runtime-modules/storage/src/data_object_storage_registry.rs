@@ -123,7 +123,12 @@ decl_event! {
         /// Params:
         /// - Id of the relationship.
         /// - Current state of the relationship (True=Active).
-        DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
+        /// - Id of the storage provider
+        DataObjectStorageRelationshipReadyUpdated(
+            DataObjectStorageRelationshipId,
+            bool,
+            StorageProviderId
+        ),
     }
 }
 
@@ -229,7 +234,9 @@ impl<T: Trait> Module<T> {
         // Update DOSR and fire event.
         <Relationships<T>>::insert(id, dosr);
         Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(
-            id, ready,
+            id,
+            ready,
+            storage_provider_id,
         ));
 
         Ok(())

@@ -762,7 +762,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         assert_eq!(
             Module::<Runtime>::reveal_vote(
                 InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(origin),
-                salt,
+                salt.clone(),
                 vote_option_index,
             ),
             expected_result,
@@ -780,7 +780,8 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .event,
             TestEvent::event_mod_DefaultInstance(RawEvent::VoteRevealed(
                 account_id,
-                vote_option_index
+                vote_option_index,
+                salt
             ))
         );
     }

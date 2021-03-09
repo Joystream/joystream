@@ -2351,6 +2351,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
+ "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-content-directory",
@@ -2379,7 +2380,8 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility",
+ "pallet-utility 1.0.0",
+ "pallet-utility 2.0.0",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -3735,6 +3737,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-blog"
+version = "3.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-common"
 version = "4.0.0"
 dependencies = [
@@ -3955,12 +3977,13 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "4.0.1"
+version = "4.0.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-council",
@@ -4274,6 +4297,31 @@ dependencies = [
 
 [[package]]
 name = "pallet-utility"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-council",
+ "pallet-membership",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "pallet-working-group",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "strum 0.19.5",
+]
+
+[[package]]
+name = "pallet-utility"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=a200cdb93c6af5763b9c7bf313fa708764ac88ca#a200cdb93c6af5763b9c7bf313fa708764ac88ca"
 dependencies = [
@@ -4290,7 +4338,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

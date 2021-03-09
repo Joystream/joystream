@@ -2,58 +2,35 @@ import { Codec, RegistryTypes } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
-import roles from './roles'
 import forum from './forum'
-import stake from './stake'
-import mint from './mint'
-import recurringRewards from './recurring-rewards'
-import hiring from './hiring'
-import contentWorkingGroup from './content-working-group'
 import workingGroup from './working-group'
 import discovery from './discovery'
 import media from './media'
 import proposals from './proposals'
 import contentDirectory from './content-directory'
+import referendum from './referendum'
+import constitution from './constitution'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
+
 import BN from 'bn.js'
 
-export {
-  common,
-  members,
-  council,
-  roles,
-  forum,
-  stake,
-  mint,
-  recurringRewards,
-  hiring,
-  contentWorkingGroup,
-  workingGroup,
-  discovery,
-  media,
-  proposals,
-  contentDirectory,
-}
+export { common, members, council, forum, workingGroup, discovery, media, proposals, contentDirectory }
 
 export const types: RegistryTypes = {
   ...common,
   ...members,
   ...council,
-  ...roles,
   ...forum,
-  ...stake,
-  ...mint,
-  ...recurringRewards,
-  ...hiring,
-  ...contentWorkingGroup,
   ...workingGroup,
   ...discovery,
   ...media,
   ...proposals,
   ...contentDirectory,
+  ...referendum,
+  ...constitution,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)

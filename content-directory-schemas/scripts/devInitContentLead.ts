@@ -32,7 +32,14 @@ async function main() {
     memberId = (await api.query.members.nextMemberId()).toNumber()
     await txHelper.sendAndCheck(
       LeadKeyPair,
-      [api.tx.members.buyMembership(0, 'alice', null, null)],
+      [
+        api.tx.members.buyMembership({
+          root_account: LeadKeyPair.address,
+          controller_account: LeadKeyPair.address,
+          name: 'Alice',
+          handle: 'Alice',
+        }),
+      ],
       'Failed to setup member account'
     )
   }
@@ -47,16 +54,7 @@ async function main() {
     console.log('Perparing Create Curator Lead Opening extrinsic...')
     await txHelper.sendAndCheck(
       SudoKeyPair,
-      [
-        sudo(
-          api.tx.contentDirectoryWorkingGroup.addOpening(
-            { CurrentBlock: null }, // activate_at
-            { max_review_period_length: 9999 }, // OpeningPolicyCommitment
-            'bootstrap curator opening', // human_readable_text
-            'Leader' // opening_type
-          )
-        ),
-      ],
+      [sudo(api.tx.contentDirectoryWorkingGroup.addOpening('init-alice-lead', 'Leader', null, null))],
       'Failed to create Content Curators Lead opening!'
     )
 
@@ -65,31 +63,27 @@ async function main() {
     await txHelper.sendAndCheck(
       LeadKeyPair,
       [
-        api.tx.contentDirectoryWorkingGroup.applyOnOpening(
-          memberId, // member id
-          newOpeningId, // opening id
-          LeadKeyPair.address, // address
-          null, // opt role stake
-          null, // opt appl. stake
-          'bootstrap curator opening' // human_readable_text
-        ),
+        api.tx.contentDirectoryWorkingGroup.applyOnOpening({
+          member_id: memberId,
+          opening_id: newOpeningId,
+          role_account_id: LeadKeyPair.address,
+          reward_account_id: LeadKeyPair.address,
+          description: 'api-examples curator opening appl.',
+          stake_parameters: null,
+        }),
       ],
       'Failed to apply on lead opening!'
     )
 
     const extrinsics: SubmittableExtrinsic<'promise'>[] = []
-    // Begin review period
-    console.log('Perparing Begin Applicant Review extrinsic...')
-    extrinsics.push(sudo(api.tx.contentDirectoryWorkingGroup.beginApplicantReview(newOpeningId)))
 
     // Fill opening
     console.log('Perparing Fill Opening extrinsic...')
     extrinsics.push(
       sudo(
         api.tx.contentDirectoryWorkingGroup.fillOpening(
-          newOpeningId, // opening id
-          api.createType('ApplicationIdSet', [newApplicationId]), // succesful applicants
-          null // reward policy
+          newOpeningId,
+          api.createType('ApplicationIdSet', [newApplicationId])
         )
       )
     )

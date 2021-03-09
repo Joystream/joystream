@@ -29,7 +29,7 @@ pub trait Trait: frame_system::Trait {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + Eq;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
@@ -62,13 +62,23 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 
 /// Parameters for the 'Funding Request' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct FundingRequestParameters<Balance, AccountId> {
     /// Single reciever account of funding request
     pub account: AccountId,
 
     /// Amount of funds the account will recieve
     pub amount: Balance,
+}
+
+/// Kind of Balance for `Update Working Group Budget`.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
+pub enum BalanceKind {
+    /// Increasing Working Group budget decreasing Council budget
+    Positive,
+    /// Decreasing Working Group budget increasing Council budget
+    Negative,
 }
 
 /// Gathers current block and time information for the runtime.

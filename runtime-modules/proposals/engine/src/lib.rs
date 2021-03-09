@@ -101,6 +101,7 @@
 //!                 &description,
 //!                 None,
 //!                 None,
+//!                 proposer_id,
 //!             )?;
 //!
 //!             let creation_parameters = ProposalCreationParameters {
@@ -152,7 +153,7 @@ use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::{CouncilOriginValidator, MemberOriginValidator};
-use common::MemberId;
+use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
 /// Proposals engine WeightInfo.
@@ -227,6 +228,9 @@ pub trait Trait:
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Validates staking account ownership for a member.
+    type StakingAccountValidator: common::StakingAccountValidator<Self>;
 }
 
 /// Proposal state change observer.
@@ -280,7 +284,14 @@ decl_event!(
         /// - Voter - member id of a voter.
         /// - Id of a proposal.
         /// - Kind of vote.
-        Voted(MemberId, ProposalId, VoteKind),
+        /// - Rationale.
+        Voted(MemberId, ProposalId, VoteKind, Vec<u8>),
+
+        /// Emits on a proposal being cancelled
+        /// Params:
+        /// - Member Id of the proposer
+        /// - Id of the proposal
+        ProposalCancelled(MemberId, ProposalId),
     }
 );
 
@@ -346,6 +357,9 @@ decl_error! {
 
         /// The conflicting stake discovered. Cannot stake.
         ConflictingStakes,
+
+        /// Staking account doesn't belong to a member.
+        InvalidStakingAccountForMember,
     }
 }
 
@@ -437,13 +451,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or paraemters
         /// # </weight>
-        #[weight = WeightInfoEngine::<T>::vote(_rationale.len().saturated_into())]
+        #[weight = WeightInfoEngine::<T>::vote(rationale.len().saturated_into())]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
             proposal_id: T::ProposalId,
             vote: VoteKind,
-            _rationale: Vec<u8>, // we use it on the query node side.
+            rationale: Vec<u8>, // we use it on the query node side.
         ) {
             T::CouncilOriginValidator::ensure_member_consulate(origin, voter_id)?;
 
@@ -470,7 +484,7 @@ decl_module! {
 
             <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
-            Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
+            Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote, rationale));
         }
 
         /// Cancel a proposal by its original proposer.
@@ -502,6 +516,7 @@ decl_module! {
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
+            Self::deposit_event(RawEvent::ProposalCancelled(proposer_id, proposal_id));
         }
 
         /// Veto a proposal. Must be root.
@@ -520,18 +535,15 @@ decl_module! {
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(
-                proposal.status.is_active_or_pending_execution(),
-                Error::<T>::ProposalFinalized
-            );
-
+            // Note: we don't need to check if the proposal is active pending execution or
+            // or pending constitutionality since if it in the storage `Proposals` it follows
+            // that it is in one of those states.
             //
             // == MUTATION SAFE ==
             //
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
-
     }
 }
 
@@ -551,6 +563,7 @@ impl<T: Trait> Module<T> {
             &creation_params.description,
             creation_params.staking_account_id.clone(),
             creation_params.exact_execution_block,
+            creation_params.proposer_id,
         )?;
 
         //
@@ -606,6 +619,7 @@ impl<T: Trait> Module<T> {
         description: &[u8],
         staking_account_id: Option<T::AccountId>,
         exact_execution_block: Option<T::BlockNumber>,
+        member_id: T::MemberId,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
         ensure!(
@@ -644,6 +658,14 @@ impl<T: Trait> Module<T> {
 
         if let Some(stake_balance) = parameters.required_stake {
             if let Some(staking_account_id) = staking_account_id {
+                ensure!(
+                    T::StakingAccountValidator::is_member_staking_account(
+                        &member_id,
+                        &staking_account_id
+                    ),
+                    Error::<T>::InvalidStakingAccountForMember
+                );
+
                 ensure!(
                     T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
                     Error::<T>::ConflictingStakes

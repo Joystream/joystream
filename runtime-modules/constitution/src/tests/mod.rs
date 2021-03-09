@@ -92,10 +92,11 @@ fn amend_contitution_succeeds() {
         let hashed = <Test as frame_system::Trait>::Hashing::hash(&text);
         let hash = hashed.as_ref().to_vec();
 
-        let amend_constitution_fixture = AmendConstitutionFixture::default().with_text(text);
+        let amend_constitution_fixture =
+            AmendConstitutionFixture::default().with_text(text.clone());
         amend_constitution_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(Event::ConstutionAmended(hash));
+        EventFixture::assert_last_crate_event(Event::ConstutionAmended(hash, text));
     });
 }
 

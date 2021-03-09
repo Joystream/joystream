@@ -1,16 +1,17 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
-use crate::tests::mock::TestWorkingGroup;
+use crate::tests::mock::{Test, TestWorkingGroup};
 use crate::types::StakeParameters;
-use crate::{OpeningType, StakePolicy};
+use crate::{OpeningType, StakePolicy, Trait};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
-    stake_parameters: Option<StakeParameters<u64, u64>>,
+    stake_parameters: StakeParameters<u64, u64>,
     worker_handle: Vec<u8>,
     origin: RawOrigin<u64>,
     member_id: u64,
@@ -19,10 +20,11 @@ struct HiringWorkflowApplication {
 pub struct HiringWorkflow {
     opening_type: OpeningType,
     expected_result: DispatchResult,
-    stake_policy: Option<StakePolicy<u64, u64>>,
+    stake_policy: StakePolicy<u64, u64>,
     reward_per_block: Option<u64>,
     applications: Vec<HiringWorkflowApplication>,
     setup_environment: bool,
+    initial_balance: u64,
 }
 
 impl Default for HiringWorkflow {
@@ -30,16 +32,27 @@ impl Default for HiringWorkflow {
         Self {
             opening_type: OpeningType::Regular,
             expected_result: Ok(()),
-            stake_policy: None,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
             reward_per_block: None,
             applications: Vec::new(),
             setup_environment: true,
+            initial_balance: <Test as Trait>::MinimumStakeForOpening::get() + 1,
         }
     }
 }
 
 impl HiringWorkflow {
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
         Self {
             stake_policy,
             ..self
@@ -81,7 +94,7 @@ impl HiringWorkflow {
     }
 
     pub fn add_application(self, worker_handle: Vec<u8>) -> Self {
-        self.add_application_full(worker_handle, RawOrigin::Signed(1), 1, Some(1))
+        self.add_application_full(worker_handle, RawOrigin::Signed(2), 2, 2)
     }
 
     pub fn add_application_full(
@@ -89,16 +102,12 @@ impl HiringWorkflow {
         worker_handle: Vec<u8>,
         origin: RawOrigin<u64>,
         member_id: u64,
-        staking_account_id: Option<u64>,
+        staking_account_id: u64,
     ) -> Self {
-        let stake_parameters = staking_account_id.map(|staking_account_id| StakeParameters {
-            stake: self
-                .stake_policy
-                .clone()
-                .map(|policy| policy.stake_amount)
-                .unwrap_or_default(),
+        let stake_parameters = StakeParameters {
+            stake: self.stake_policy.stake_amount,
             staking_account_id,
-        });
+        };
 
         let mut applications = self.applications;
         applications.push(HiringWorkflowApplication {
@@ -118,6 +127,10 @@ impl HiringWorkflow {
         if matches!(self.opening_type, OpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         } else {
+            balances::Module::<Test>::make_free_balance_be(
+                &1,
+                <Test as Trait>::MinimumStakeForOpening::get() + 1,
+            );
             //         setup_members(6);
         }
     }
@@ -164,6 +177,7 @@ impl HiringWorkflow {
                 ApplyOnOpeningFixture::default_for_opening_id(opening_id)
                     .with_stake_parameters(application.stake_parameters)
                     .with_text(application.worker_handle)
+                    .with_initial_balance(self.initial_balance)
                     .with_origin(application.origin, application.member_id);
 
             let application_id = apply_on_worker_opening_fixture.call()?;

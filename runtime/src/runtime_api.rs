@@ -294,6 +294,8 @@ impl_runtime_apis! {
             use crate::ImOnline;
             use crate::Council;
             use crate::Referendum;
+            use crate::Blog;
+            use crate::JoystreamUtility;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -329,7 +331,6 @@ impl_runtime_apis! {
                     member_id: <Runtime as common::Trait>::MemberId,
                 ) -> <Runtime as common::Trait>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
-                        working_group::benchmarking::StakingRole::WithStakes,
                         working_group::OpeningType::Leader,
                         opening_id,
                         None,
@@ -368,7 +369,7 @@ impl_runtime_apis! {
 
             // Frame benchmarks
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-            add_benchmark!(params, batches, pallet_utility, Utility);
+            add_benchmark!(params, batches, substrate_utility, Utility);
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
             add_benchmark!(params, batches, pallet_im_online, ImOnline);
@@ -383,6 +384,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
+            add_benchmark!(params, batches, blog, Blog);
+            add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

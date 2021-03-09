@@ -151,7 +151,7 @@ class WorkersApi {
    * new opening id.
    */
   async devAddStorageOpening(info) {
-    const openTx = this.devMakeAddOpeningTx('Worker', info)
+    const openTx = this.devMakeAddOpeningTx('Regular', info)
     return this.devSubmitAddOpeningTx(openTx, await this.getLeadRoleAccount())
   }
 
@@ -159,8 +159,8 @@ class WorkersApi {
    * Add a new storage working group lead opening using sudo account. Returns the
    * new opening id.
    */
-  async devAddStorageLeadOpening(info) {
-    const openTx = this.devMakeAddOpeningTx('Leader', info)
+  async devAddStorageLeadOpening() {
+    const openTx = this.devMakeAddOpeningTx('Leader')
     const sudoTx = this.base.api.tx.sudo.sudo(openTx)
     return this.devSubmitAddOpeningTx(sudoTx, await this.base.identities.getSudoAccount())
   }
@@ -168,19 +168,8 @@ class WorkersApi {
   /*
    * Constructs an addOpening tx of openingType
    */
-  devMakeAddOpeningTx(openingType, info) {
-    return this.base.api.tx.storageWorkingGroup.addOpening(
-      'CurrentBlock',
-      {
-        application_rationing_policy: {
-          max_active_applicants: 1,
-        },
-        max_review_period_length: 10,
-        // default values for everything else..
-      },
-      info || 'dev-opening',
-      openingType
-    )
+  devMakeAddOpeningTx(openingType) {
+    return this.base.api.tx.storageWorkingGroup.addOpening('bootstrap-dev-' + openingType, openingType, null, null)
   }
 
   /*
@@ -200,14 +189,14 @@ class WorkersApi {
    * Apply on an opening, returns the application id.
    */
   async devApplyOnOpening(openingId, memberId, memberAccount, roleAccount) {
-    const applyTx = this.base.api.tx.storageWorkingGroup.applyOnOpening(
-      memberId,
-      openingId,
-      roleAccount,
-      null,
-      null,
-      `colossus-${memberId}`
-    )
+    const applyTx = this.base.api.tx.storageWorkingGroup.applyOnOpening({
+      member_id: memberId,
+      opening_id: openingId,
+      role_account_id: roleAccount,
+      reward_account_id: roleAccount,
+      description: `colossus-${memberId}`,
+      stake_parameters: null,
+    })
 
     return this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
       module: 'storageWorkingGroup',
@@ -215,30 +204,6 @@ class WorkersApi {
       type: 'ApplicationId',
       index: 1,
     })
-  }
-
-  /*
-   * Move lead opening to review state using sudo account
-   */
-  async devBeginLeadOpeningReview(openingId) {
-    const beginReviewTx = this.devMakeBeginOpeningReviewTx(openingId)
-    const sudoTx = this.base.api.tx.sudo.sudo(beginReviewTx)
-    return this.base.signAndSend(await this.base.identities.getSudoAccount(), sudoTx)
-  }
-
-  /*
-   * Move a storage opening to review state using lead account
-   */
-  async devBeginStorageOpeningReview(openingId) {
-    const beginReviewTx = this.devMakeBeginOpeningReviewTx(openingId)
-    return this.base.signAndSend(await this.getLeadRoleAccount(), beginReviewTx)
-  }
-
-  /*
-   * Constructs a beingApplicantReview tx for openingId, which puts an opening into the review state
-   */
-  devMakeBeginOpeningReviewTx(openingId) {
-    return this.base.api.tx.storageWorkingGroup.beginApplicantReview(openingId)
   }
 
   /*
@@ -264,7 +229,7 @@ class WorkersApi {
    * Constructs a FillOpening transaction
    */
   devMakeFillOpeningTx(openingId, applicationId) {
-    return this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId], null)
+    return this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId])
   }
 
   /*

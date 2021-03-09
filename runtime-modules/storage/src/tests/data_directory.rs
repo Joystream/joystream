@@ -62,13 +62,17 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
             0,
             vec![1, 2, 3, 4],
         );
+
         assert!(res.is_ok());
 
-        let (content_id, _) = match System::events().last().unwrap().event {
+        let (content_id, _) = match &System::events().last().unwrap().event {
             MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
-            )) => (content_id, creator),
+                _,
+                _,
+                _,
+            )) => (content_id.clone(), creator.clone()),
             _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
         };
 
@@ -127,11 +131,14 @@ fn accept_content_as_liaison() {
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
-        let (content_id, creator) = match System::events().last().unwrap().event {
+        let (content_id, creator) = match &System::events().last().unwrap().event {
             MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
-            )) => (content_id, creator),
+                _,
+                _,
+                _,
+            )) => (content_id.clone(), creator.clone()),
             _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
         };
         assert_ne!(creator, 0xdeadbeefu64);
@@ -182,6 +189,9 @@ fn reject_content_as_liaison() {
             MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
+                _,
+                _,
+                _,
             )) => (content_id, creator),
             _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
         };

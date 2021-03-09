@@ -46,9 +46,13 @@ fn transfer_entity_ownership_success() {
             .get_permissions_ref()
             .controller_is_equal_to(&new_controller));
 
-        let entity_ownership_transfered_event = get_test_event(
-            RawEvent::EntityOwnershipTransfered(FIRST_ENTITY_ID, new_controller, None),
-        );
+        let entity_ownership_transfered_event =
+            get_test_event(RawEvent::EntityOwnershipTransfered(
+                FIRST_ENTITY_ID,
+                new_controller,
+                None,
+                BTreeMap::new(),
+            ));
 
         // Last event checked
         assert_event(

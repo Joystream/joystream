@@ -5,13 +5,14 @@
 mod working_group_proposals;
 
 use crate::tests::run_to_block;
-use crate::{MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
+use working_group::{StakeParameters, StakePolicy};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Currency;
@@ -35,6 +36,7 @@ pub type ProposalCodex = proposals_codex::Module<Runtime>;
 pub type Council = council::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
+pub type Blog = blog::Module<Runtime, BlogInstance>;
 
 fn setup_members(count: u8) {
     for i in 0..count {
@@ -119,7 +121,7 @@ impl Default for DummyProposalFixture {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
         let dummy_proposal =
-            proposals_codex::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
+            joystream_utility::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -454,7 +456,12 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         RawOrigin::Root.into(),
         vec![0u8],
         working_group::OpeningType::Leader,
-        None,
+        StakePolicy {
+            stake_amount:
+                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get(
+                ) as u128,
+            leaving_unstaking_period: 1000000,
+        },
         None,
     )
     .unwrap();
@@ -465,7 +472,11 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         role_account_id: lead_account_id.clone(),
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
-        stake_parameters: None,
+        stake_parameters: StakeParameters {
+            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get() as
+                u128,
+            staking_account_id: lead_account_id.clone(),
+        },
     };
 
     MembershipWorkingGroup::apply_on_opening(
@@ -490,12 +501,18 @@ where
             setup_members(15);
             setup_council(0);
             if self.set_member_lead {
-                let lead_account_id = [self.lead_id as u8; 32].into();
-                set_membership_leader(lead_account_id, self.lead_id);
-            }
+                let lead_account_id = [self.lead_id as u8; 32];
 
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
+                increase_total_balance_issuance_using_account_id(
+                    lead_account_id.clone().into(),
+                    1_500_000,
+                );
+
+                set_membership_leader(lead_account_id.into(), self.lead_id);
+            }
         }
+
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -575,6 +592,214 @@ fn funding_request_proposal_execution_succeeds() {
         run_to_block(86410);
 
         assert_eq!(Balances::free_balance(target_account_id), funding);
+    });
+}
+
+#[test]
+fn create_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_count(), 0);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        run_to_block(86410);
+
+        assert_eq!(Blog::post_count(), 1);
+    });
+}
+
+#[test]
+fn edit_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        run_to_block(86410);
+
+        assert!(Blog::post_by_id(post_id) == blog::Post::new(&vec![1u8], &vec![0u8]));
+    });
+}
+
+#[test]
+fn lock_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::LockBlogPost(post_id),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_by_id(post_id).is_locked(), false);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        run_to_block(86410);
+
+        assert_eq!(Blog::post_by_id(post_id).is_locked(), true);
+    });
+}
+
+#[test]
+fn unlock_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+        Blog::lock_post(RawOrigin::Root.into(), post_id).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::UnlockBlogPost(post_id),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_by_id(0).is_locked(), true);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        run_to_block(86410);
+
+        assert_eq!(Blog::post_by_id(0).is_locked(), false);
+    });
+}
+
+#[test]
+fn veto_proposal_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let council_budget = 5_000_000;
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let proposal_id = ProposalsEngine::proposal_count() + 1;
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::AmendConstitution(vec![0u8]),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        let member_id = 14;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                general_proposal_parameters,
+                ProposalDetails::VetoProposal(proposal_id),
+            )
+        })
+        .with_member_id(member_id as u64)
+        .with_expected_proposal_id(2)
+        .with_setup_enviroment(false);
+
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert!(!proposals_engine::Proposals::<Runtime>::contains_key(1));
     });
 }
 

@@ -108,6 +108,7 @@ parameter_types! {
     pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MinimumStakeForOpening: u32 = 50;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -119,6 +120,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl LockComparator<u64> for Test {
@@ -218,11 +220,7 @@ impl working_group::WeightInfo for Weights {
         unimplemented!()
     }
 
-    fn leave_role_immediatly() -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role_later() -> u64 {
+    fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
 }
@@ -313,6 +311,7 @@ pub const WORKING_GROUP_BUDGET: u64 = 100;
 
 thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+    pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
@@ -351,7 +350,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
-        Some(ALICE_MEMBER_ID)
+        LEAD_SET.with(|lead_set| {
+            if *lead_set.borrow() {
+                Some(ALICE_MEMBER_ID)
+            } else {
+                None
+            }
+        })
     }
 
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
@@ -402,6 +407,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.membership_config = Some(membership_config);
         self
     }
+
     pub fn build(self) -> sp_io::TestExternalities {
         // Add system
         let mut t = self
@@ -418,6 +424,14 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
         t.into()
     }
+
+    pub fn with_lead(self) -> Self {
+        LEAD_SET.with(|lead_set| {
+            *lead_set.borrow_mut() = true;
+        });
+
+        self
+    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
@@ -433,6 +447,7 @@ pub fn build_test_externalities_with_initial_members(
                 .members(initial_members)
                 .build(),
         )
+        .with_lead()
         .build()
 }
 

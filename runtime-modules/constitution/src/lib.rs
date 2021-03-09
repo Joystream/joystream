@@ -56,7 +56,8 @@ decl_event! {
         /// Emits on constitution amendment.
         /// Parameters:
         /// - constitution text hash
-        ConstutionAmended(Vec<u8>),
+        /// - constitution text
+        ConstutionAmended(Vec<u8>, Vec<u8>),
     }
 }
 
@@ -87,7 +88,7 @@ decl_module! {
 
             Constitution::put(constitution);
 
-            Self::deposit_event(Event::ConstutionAmended(hash));
+            Self::deposit_event(Event::ConstutionAmended(hash, constitution_text));
         }
     }
 }

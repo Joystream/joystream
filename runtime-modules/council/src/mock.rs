@@ -991,8 +991,8 @@ where
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
-                staking_account_id,
-                reward_account_id,
+                staking_account_id.clone(),
+                reward_account_id.clone(),
                 stake
             ),
             expected_result,
@@ -1007,7 +1007,12 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::NewCandidate(member_id.into(), stake.into())),
+            TestEvent::event_mod(RawEvent::NewCandidate(
+                member_id.into(),
+                staking_account_id.into(),
+                reward_account_id.into(),
+                stake.into()
+            )),
         );
     }
 

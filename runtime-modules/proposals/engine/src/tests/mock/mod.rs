@@ -311,6 +311,15 @@ impl crate::Trait for Test {
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
     type WeightInfo = ();
+    type StakingAccountValidator = ();
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
 }
 
 impl crate::WeightInfo for () {
