@@ -103,6 +103,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
+    pub const MinimumStakeForOpening: u32 = 50;
 }
 
 // The forum working group instance alias.
@@ -117,6 +118,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
@@ -215,11 +217,7 @@ impl working_group::WeightInfo for Weights {
         unimplemented!()
     }
 
-    fn leave_role_immediatly() -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role_later() -> u64 {
+    fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
 }

@@ -178,6 +178,7 @@ parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
+    pub const MinimumStakeForOpening: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
 }
 
@@ -190,6 +191,7 @@ impl Trait for Test {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
     type WeightInfo = ();
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl common::StakingAccountValidator<Test> for () {
@@ -262,10 +264,7 @@ impl crate::WeightInfo for () {
     fn add_opening(_: u32) -> Weight {
         0
     }
-    fn leave_role_immediatly() -> Weight {
-        0
-    }
-    fn leave_role_later() -> Weight {
+    fn leave_role(_: u32) -> Weight {
         0
     }
 }
@@ -295,7 +294,6 @@ pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
-pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
