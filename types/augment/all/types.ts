@@ -40,7 +40,7 @@ export interface AddSchemaSupportToEntityOperation extends Struct {
 export interface Application extends Struct {
   readonly role_account_id: AccountId;
   readonly reward_account_id: AccountId;
-  readonly staking_account_id: AccountId;
+  readonly staking_account_id: Option<AccountId>;
   readonly member_id: MemberId;
   readonly description_hash: Text;
 }
@@ -446,7 +446,7 @@ export interface Nonce extends u64 {}
 export interface Opening extends Struct {
   readonly opening_type: OpeningType;
   readonly created: u32;
-  readonly description_hash: Text;
+  readonly description_hash: Bytes;
   readonly stake_policy: Option<StakePolicy>;
   readonly reward_per_block: Option<u128>;
 }

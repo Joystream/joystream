@@ -136,7 +136,7 @@
     "Application": {
         "role_account_id": "AccountId",
         "reward_account_id": "AccountId",
-        "staking_account_id": "AccountId",
+        "staking_account_id": "Option<AccountId>",
         "member_id": "MemberId",
         "description_hash": "Text"
     },
@@ -165,7 +165,7 @@
     "Opening": {
         "opening_type": "OpeningType",
         "created": "u32",
-        "description_hash": "Text",
+        "description_hash": "Bytes",
         "stake_policy": "Option<StakePolicy>",
         "reward_per_block": "Option<u128>"
     },

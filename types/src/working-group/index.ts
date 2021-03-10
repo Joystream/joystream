@@ -1,5 +1,5 @@
 import { BTreeMap, Option, Text } from '@polkadot/types'
-import { Null, u32, u64, u128 } from '@polkadot/types/primitive'
+import { Null, u32, u64, u128, Bytes } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { AccountId, ActorId, MemberId, JoyEnum, JoyStructDecorated, JoyBTreeSet } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -15,7 +15,7 @@ export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, Wor
 export type IApplication = {
   role_account_id: AccountId
   reward_account_id: AccountId
-  staking_account_id: AccountId
+  staking_account_id: Option<AccountId>
   member_id: MemberId
   description_hash: Text
 }
@@ -24,7 +24,7 @@ export class Application
   extends JoyStructDecorated({
     role_account_id: AccountId,
     reward_account_id: AccountId,
-    staking_account_id: AccountId,
+    staking_account_id: Option.with(AccountId),
     member_id: MemberId,
     description_hash: Text,
   })
@@ -152,7 +152,7 @@ export class OpeningType extends JoyEnum(OpeningTypeDef) {}
 export type IOpening = {
   opening_type: OpeningType
   created: BlockNumber
-  description_hash: Text
+  description_hash: Bytes
   stake_policy: Option<StakePolicy>
   reward_per_block: Option<Balance>
 }
@@ -161,7 +161,7 @@ export class Opening
   extends JoyStructDecorated({
     opening_type: OpeningType,
     created: u32,
-    description_hash: Text,
+    description_hash: Bytes,
     stake_policy: Option.with(StakePolicy),
     reward_per_block: Option.with(u128),
   })
