@@ -1,6 +1,8 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
+import { JoyBTreeSet } from '@joystream/types/common'
+import { ApplicationId } from '@joystream/types/working-group'
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   static description = "Allows filling working group opening that's currently in review. Requires lead access."
@@ -30,7 +32,10 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [openingId, applicationIds])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
+      openingId,
+      new (JoyBTreeSet(ApplicationId))(this.getTypesRegistry(), applicationIds),
+    ])
 
     this.log(chalk.green(`Opening ${chalk.white(openingId.toString())} succesfully filled!`))
     this.log(
