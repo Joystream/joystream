@@ -21,19 +21,14 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
 
     const application = await this.getApi().groupApplication(this.group, parseInt(args.wgApplicationId))
 
-    displayHeader('Human readable text')
-    this.jsonPrettyPrint(application.humanReadableText)
-
     displayHeader(`Details`)
     const applicationRow = {
-      'WG application ID': application.wgApplicationId,
       'Application ID': application.applicationId,
-      'Member handle': application.member?.handle.toString() || chalk.red('NONE'),
+      'Member handle': application.member?.handle_hash.toString() || chalk.red('NONE'),
       'Role account': application.roleAccout.toString(),
-      Stage: application.stage,
-      'Application stake': application.stakes.application,
-      'Role stake': application.stakes.role,
-      'Total stake': Object.values(application.stakes).reduce((a, b) => a + b),
+      'Reward account': application.rewardAccount.toString(),
+      'Staking account': application.stakingAccount?.toString() || 'NONE',
+      'Description': application.descriptionHash.toString(),
     }
     displayCollapsedRow(applicationRow)
   }

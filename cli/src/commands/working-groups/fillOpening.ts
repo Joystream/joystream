@@ -1,8 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
-import { createParamOptions } from '../../helpers/promptOptions'
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   static description = "Allows filling working group opening that's currently in review. Requires lead access."
@@ -26,20 +24,15 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     await this.getRequiredLead()
 
     const openingId = parseInt(args.wgOpeningId)
-    const opening = await this.getOpeningForLeadAction(openingId, OpeningStatus.InReview)
+    const opening = await this.getOpeningForLeadAction(openingId)
 
     const applicationIds = await this.promptForApplicationsToAccept(opening)
-    const rewardPolicyOpt = await this.promptForParam(`Option<RewardPolicy>`, createParamOptions('RewardPolicy'))
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
-      openingId,
-      applicationIds,
-      rewardPolicyOpt,
-    ])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [openingId, applicationIds])
 
-    this.log(chalk.green(`Opening ${chalk.white(openingId)} succesfully filled!`))
+    this.log(chalk.green(`Opening ${chalk.white(openingId.toString())} succesfully filled!`))
     this.log(
       chalk.green('Accepted working group application IDs: ') +
         chalk.white(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')

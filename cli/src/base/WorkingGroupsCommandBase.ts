@@ -6,12 +6,10 @@ import {
   AvailableGroups,
   NamedKeyringPair,
   GroupMember,
-  GroupOpening,
-  OpeningStatus,
-  GroupApplication,
+  OpeningDetails,
+  ApplicationDetails,
 } from '../Types'
 import _ from 'lodash'
-import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
 import { IConfig } from '@oclif/config'
 
@@ -113,33 +111,24 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     }),
   }
 
-  async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {
-    const acceptableApplications = opening.applications.filter((a) => a.stage === ApplicationStageKeys.Active)
+  async promptForApplicationsToAccept(opening: OpeningDetails): Promise<number[]> {
     const acceptedApplications = await this.simplePrompt({
       message: 'Select succesful applicants',
       type: 'checkbox',
-      choices: acceptableApplications.map((a) => ({
-        name: ` ${a.wgApplicationId}: ${a.member?.handle.toString()}`,
-        value: a.wgApplicationId,
+      choices: opening.applications.map((a) => ({
+        name: ` ${a.applicationId}: ${a.member?.handle_hash.toString()}`,
+        value: a.applicationId,
       })),
     })
 
     return acceptedApplications
   }
 
-  async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
+  async getOpeningForLeadAction(id: number): Promise<OpeningDetails> {
     const opening = await this.getApi().groupOpening(this.group, id)
 
-    if (!opening.type.isOfType('Worker')) {
-      this.error('A lead can only manage Worker openings!', { exit: ExitCodes.AccessDenied })
-    }
-
-    if (requiredStatus && opening.stage.status !== requiredStatus) {
-      this.error(
-        `The opening needs to be in "${_.startCase(requiredStatus)}" stage! ` +
-          `This one is: "${_.startCase(opening.stage.status)}"`,
-        { exit: ExitCodes.InvalidInput }
-      )
+    if (!opening.type.isOfType('Regular')) {
+      this.error('A lead can only manage Regular openings!', { exit: ExitCodes.AccessDenied })
     }
 
     return opening
@@ -148,21 +137,14 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
   // An alias for better code readibility in case we don't need the actual return value
   validateOpeningForLeadAction = this.getOpeningForLeadAction
 
-  async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<GroupApplication> {
+  async getApplicationForLeadAction(id: number): Promise<ApplicationDetails> {
     const application = await this.getApi().groupApplication(this.group, id)
-    const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId)
+    // TODO: Add once opening-application connection is established
+    // const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId)
 
-    if (!opening.type.isOfType('Worker')) {
-      this.error('A lead can only manage Worker opening applications!', { exit: ExitCodes.AccessDenied })
-    }
-
-    if (requiredStatus && application.stage !== requiredStatus) {
-      this.error(
-        `The application needs to have "${_.startCase(requiredStatus)}" status! ` +
-          `This one has: "${_.startCase(application.stage)}"`,
-        { exit: ExitCodes.InvalidInput }
-      )
-    }
+    // if (!opening.type.isOfType('Worker')) {
+    //   this.error('A lead can only manage Worker opening applications!', { exit: ExitCodes.AccessDenied })
+    // }
 
     return application
   }

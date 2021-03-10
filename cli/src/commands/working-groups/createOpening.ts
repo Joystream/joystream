@@ -6,14 +6,14 @@ import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
 import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import WGOpeningSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
-import { WorkingGroupOpening as WGOpeningJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
+import OpeningParamsSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
+import { WorkingGroupOpening as OpeningParamsJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
 import _ from 'lodash'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
 import Ajv from 'ajv'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
-import { createType } from '@joystream/types'
+import { AugmentedSubmittables } from '@polkadot/api/types'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
@@ -76,46 +76,36 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }
   }
 
-  createTxParams(wgOpeningJson: WGOpeningJson, hrtJson: HRTJson) {
+  createTxParams(
+    openingParamsJson: OpeningParamsJson,
+    hrtJson: HRTJson
+  ): Parameters<AugmentedSubmittables<'promise'>['membershipWorkingGroup']['addOpening']> {
     return [
-      wgOpeningJson.activateAt,
-      createType('WorkingGroupOpeningPolicyCommitment', {
-        max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
-        application_rationing_policy: wgOpeningJson.maxActiveApplicants
-          ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }
-          : null,
-        application_staking_policy: wgOpeningJson.applicationStake
-          ? {
-              amount: wgOpeningJson.applicationStake.value,
-              amount_mode: wgOpeningJson.applicationStake.mode,
-            }
-          : null,
-        role_staking_policy: wgOpeningJson.roleStake
-          ? {
-              amount: wgOpeningJson.roleStake.value,
-              amount_mode: wgOpeningJson.roleStake.mode,
-            }
-          : null,
-        terminate_role_stake_unstaking_period: wgOpeningJson.terminateRoleUnstakingPeriod,
-        exit_role_stake_unstaking_period: wgOpeningJson.leaveRoleUnstakingPeriod,
-      }),
       JSON.stringify(hrtJson),
-      createType('OpeningType', 'Worker'),
+      'Regular',
+      openingParamsJson.stakingPolicy
+        ? {
+            stake_amount: openingParamsJson.stakingPolicy.amount,
+            leaving_unstaking_period: openingParamsJson.stakingPolicy.unstakingPeriod,
+          }
+        : null,
+      // TODO: Proper bigint handling?
+      openingParamsJson.rewardPerBlock?.toString() || null,
     ]
   }
 
   async promptForData(
     lead: GroupMember,
-    rememberedInput?: [WGOpeningJson, HRTJson]
-  ): Promise<[WGOpeningJson, HRTJson]> {
+    rememberedInput?: [OpeningParamsJson, HRTJson]
+  ): Promise<[OpeningParamsJson, HRTJson]> {
     const openingDefaults = rememberedInput?.[0]
-    const openingPrompt = new JsonSchemaPrompter<WGOpeningJson>(
-      (WGOpeningSchema as unknown) as JSONSchema,
+    const openingPrompt = new JsonSchemaPrompter<OpeningParamsJson>(
+      (OpeningParamsSchema as unknown) as JSONSchema,
       openingDefaults
     )
-    const wgOpeningJson = await openingPrompt.promptAll()
+    const openingParamsJson = await openingPrompt.promptAll()
 
-    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(lead.profile.handle.toString())
+    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(lead.profile.handle_hash.toString())
     this.log(`Values for ${chalk.greenBright('human_readable_text')} json:`)
     const hrtPropmpt = new JsonSchemaPrompter<HRTJson>((HRTSchema as unknown) as JSONSchema, hrtDefaults)
     // Prompt only for 'headline', 'job', 'application', 'reward' and 'process', leave the rest default
@@ -131,17 +121,17 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
     const hrtJson = { ...hrtDefaults, job, headline, application, reward, process }
 
-    return [wgOpeningJson, hrtJson]
+    return [openingParamsJson, hrtJson]
   }
 
-  async getInputFromFile(filePath: string): Promise<[WGOpeningJson, HRTJson]> {
+  async getInputFromFile(filePath: string): Promise<[OpeningParamsJson, HRTJson]> {
     const ajv = new Ajv({ allErrors: true })
-    const inputParams = await getInputJson<[WGOpeningJson, HRTJson]>(filePath)
+    const inputParams = await getInputJson<[OpeningParamsJson, HRTJson]>(filePath)
     if (!Array.isArray(inputParams) || inputParams.length !== 2) {
       this.error('Invalid input file', { exit: ExitCodes.InvalidInput })
     }
     const [openingJson, hrtJson] = inputParams
-    if (!ajv.validate(WGOpeningSchema, openingJson)) {
+    if (!ajv.validate(OpeningParamsSchema, openingJson)) {
       this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'openingJson', separator: '\n' })}`, {
         exit: ExitCodes.InvalidInput,
       })
@@ -168,7 +158,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     ensureOutputFileIsWriteable(output)
 
     let tryAgain = false
-    let rememberedInput: [WGOpeningJson, HRTJson] | undefined
+    let rememberedInput: [OpeningParamsJson, HRTJson] | undefined
     do {
       if (edit) {
         rememberedInput = await this.getInputFromFile(input as string)

@@ -157,7 +157,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const choices = curators
       .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
       .map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        name: `${c.profile.handle_hash.toString()} (Worker ID: ${c.workerId})`,
         value: c.workerId.toNumber(),
       }))
 

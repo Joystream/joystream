@@ -6,7 +6,7 @@ import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
 import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
@@ -31,9 +31,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.api
   }
 
-  // Get original api for lower-level api calls
-  getOriginalApi(): ApiPromise {
+  // Shortcuts
+  getOriginalApi() {
     return this.getApi().getOriginalApi()
+  }
+
+  getUnaugmentedApi() {
+    return this.getApi().getUnaugmentedApi()
   }
 
   getTypesRegistry(): Registry {
@@ -332,7 +336,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: string,
     paramsOptions?: ApiParamsOptions
   ): Promise<ApiMethodArg[]> {
-    const extrinsicMethod = this.getOriginalApi().tx[module][method]
+    const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
     const values: ApiMethodArg[] = []
 
     this.openIndentGroup()
@@ -350,7 +354,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>) {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<void> {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(account, {}, (result) => {
@@ -425,7 +429,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     warnOnly = false
   ): Promise<boolean> {
     this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
-    const tx = await this.getOriginalApi().tx[module][method](...params)
+    const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
   }
 
@@ -445,7 +449,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodNamedArgs {
     let draftJSONObj
     const parsedArgs: ApiMethodNamedArgs = []
-    const extrinsicMethod = this.getOriginalApi().tx[module][method]
+    const extrinsicMethod = this.getUnaugmentedApi().tx[module][method]
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       draftJSONObj = require(draftFilePath)

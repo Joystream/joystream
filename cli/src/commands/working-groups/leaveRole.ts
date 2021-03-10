@@ -1,13 +1,16 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { minMaxStr } from '../../validators/common'
 import chalk from 'chalk'
-import { createParamOptions } from '../../helpers/promptOptions'
+import { flags } from '@oclif/command'
 
 export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
   static description = 'Leave the worker or lead role associated with currently selected account.'
   static flags = {
     ...WorkingGroupsCommandBase.flags,
+    rationale: flags.string({
+      name: 'Optional rationale',
+      required: false,
+    }),
   }
 
   async run() {
@@ -15,14 +18,17 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
     // Worker-only gate
     const worker = await this.getRequiredWorker()
 
-    const constraint = await this.getApi().workerExitRationaleConstraint(this.group)
-    const rationaleValidator = minMaxStr(constraint.min.toNumber(), constraint.max.toNumber())
-    const rationale = await this.promptForParam('Bytes', createParamOptions('rationale', undefined, rationaleValidator))
+    const {
+      flags: { rationale },
+    } = this.parse(WorkingGroupsLeaveRole)
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'leaveRole', [worker.workerId, rationale])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'leaveRole', [
+      worker.workerId,
+      rationale || null,
+    ])
 
-    this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.white(worker.workerId.toNumber())})`))
+    this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.white(worker.workerId.toString())})`))
   }
 }

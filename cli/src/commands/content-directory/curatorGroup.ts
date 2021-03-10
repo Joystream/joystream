@@ -32,7 +32,9 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
     displayHeader(`Group Members (${members.length})`)
     this.log(
       members
-        .map((curator) => chalk.white(`${curator.profile.handle} (WorkerID: ${curator.workerId.toString()})`))
+        .map((curator) =>
+          chalk.white(`${curator.profile.handle_hash.toString()} (WorkerID: ${curator.workerId.toString()})`)
+        )
         .join(', ')
     )
   }

@@ -17,3 +17,8 @@ export function checkBalance(accBalances: DeriveBalancesAll, requiredBalance: BN
     throw new CLIError('Not enough balance available', { exit: ExitCodes.InvalidInput })
   }
 }
+
+// We assume balance can be bigger than JavaScript integer
+export function isValidBalance(balance: string): boolean {
+  return /^[1-9][0-9]{0,38}$/.test(balance)
+}

@@ -18,7 +18,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
     if (lead) {
       displayNameValueTable([
         { name: 'Member id:', value: lead.memberId.toString() },
-        { name: 'Member handle:', value: lead.profile.handle.toString() },
+        { name: 'Member handle:', value: lead.profile.handle_hash.toString() },
         { name: 'Role account:', value: lead.roleAccount.toString() },
       ])
     } else {
@@ -31,9 +31,10 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
     const membersRows = members.map((m) => ({
       'Worker id': m.workerId.toString(),
       'Member id': m.memberId.toString(),
-      'Member handle': m.profile.handle.toString(),
+      'Member handle': m.profile.handle_hash.toString(),
       Stake: formatBalance(m.stake),
-      Earned: formatBalance(m.reward?.totalRecieved),
+      'Reward': formatBalance(m.reward?.valuePerBlock),
+      'Missed reward': formatBalance(m.reward?.totalMissed),
       'Role account': shortAddress(m.roleAccount),
       '':
         (lead?.workerId.eq(m.workerId) ? '\u{2B50}' : '  ') +
