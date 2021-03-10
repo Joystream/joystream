@@ -34,7 +34,7 @@ benchmark() {
 # So uncomment this when we move to a version that contains that PR.
 # See issue: #1979
 # benchmark frame_system
-benchmark pallet_utility
+benchmark substrate_utility
 benchmark pallet_session
 # benchmark pallet_timestamp
 
