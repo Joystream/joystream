@@ -7,23 +7,25 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
-  $SCRIPT_DIR/../target/release/joystream-node benchmark \
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark \
       --pallet=$1 \
       --extrinsic=* \
       --chain=dev \
       --steps=50 \
       --repeat=20 \
       --execution=wasm \
-      --output=.  > /dev/null
+      --output=. 2>&1 > /dev/null)
 
-  end=`date +%s`
 
-  if [ $? -eq 0 ]; then
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
       mv $SCRIPT_DIR/../*.rs $SCRIPT_DIR/../runtime/src/weights/
       echo "Weights generated successfully for $1"
       echo "It took $((end-start)) seconds"
   else
-      echo "There was a problem generating the weights for $1, check the error above"
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating the weights for $1, check the error above"
+      exit 1
   fi
 }
 
@@ -36,7 +38,7 @@ benchmark() {
 # benchmark frame_system
 benchmark substrate_utility
 benchmark pallet_session
-# benchmark pallet_timestamp
+benchmark pallet_timestamp
 
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
 # Will have it commented out until we test it in the reference machine. If there
@@ -55,3 +57,4 @@ benchmark referendum
 benchmark forum
 benchmark membership
 benchmark blog
+benchmark joystream_utility
