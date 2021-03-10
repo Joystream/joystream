@@ -415,7 +415,7 @@ export class ElectionParametersProposalFixture extends BaseFixture {
   public async execute(): Promise<void> {
     // Setup
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing Election Parameters proposal ' + uuid().substring(0, 8)
 
     const announcingPeriod: BN = new BN(28800)
     const votingPeriod: BN = new BN(14400)
@@ -428,7 +428,7 @@ export class ElectionParametersProposalFixture extends BaseFixture {
 
     // Proposal stake calculation
     // Required stake is hardcoded in runtime-module (but not available as const)
-    const proposalStake: BN = new BN(200000)
+    const proposalStake: BN = new BN(1000000)
     const proposalFee: BN = this.api.estimateProposeElectionParametersFee(
       description,
       description,
@@ -450,7 +450,9 @@ export class ElectionParametersProposalFixture extends BaseFixture {
     const proposedVotingPeriod: BN = votingPeriod.addn(1)
     const proposedRevealingPeriod: BN = revealingPeriod.addn(1)
     const proposedCouncilSize: BN = councilSize.addn(1)
-    const proposedCandidacyLimit: BN = candidacyLimit.addn(1)
+    const proposedCandidacyLimit: BN = new BN(51) // candidacyLimit.addn(1)
+    // assert they are different
+    assert(!candidacyLimit.eq(proposedCandidacyLimit))
     const proposedNewTermDuration: BN = newTermDuration.addn(1)
     const proposedMinCouncilStake: BN = minCouncilStake.addn(1)
     const proposedMinVotingStake: BN = minVotingStake.addn(1)
@@ -618,12 +620,12 @@ export class TextProposalFixture extends BaseFixture {
 
 export class ValidatorCountProposalFixture extends BaseFixture {
   private proposer: string
-  private validatorCountIncrement: BN
+  private proposedValidatorCount: BN
 
-  constructor(api: Api, proposer: string, validatorCountIncrement: BN) {
+  constructor(api: Api, proposer: string, validatorCount: BN) {
     super(api)
     this.proposer = proposer
-    this.validatorCountIncrement = validatorCountIncrement
+    this.proposedValidatorCount = validatorCount
   }
 
   public async execute(): Promise<void> {
@@ -632,19 +634,21 @@ export class ValidatorCountProposalFixture extends BaseFixture {
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
 
     // Proposal stake calculation
-    const proposalStake: BN = new BN(100000)
+    const proposalStake: BN = new BN(500000)
     const proposalFee: BN = this.api.estimateProposeValidatorCountFee(description, description, proposalStake)
     this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
-    const validatorCount: BN = await this.api.getValidatorCount()
+    const currentValidatorCount: BN = await this.api.getValidatorCount()
 
     // Proposal creation
-    const proposedValidatorCount: BN = validatorCount.add(this.validatorCountIncrement)
+    // Make sure proposed is different than current to ensure change is applied.
+    assert(!currentValidatorCount.eq(this.proposedValidatorCount))
+
     const result = await this.api.proposeValidatorCount(
       this.proposer,
       proposalTitle,
       description,
       proposalStake,
-      proposedValidatorCount
+      this.proposedValidatorCount
     )
     const proposalNumber: ProposalId = this.api.findProposalCreatedEvent(result.events) as ProposalId
     assert.notEqual(proposalNumber, undefined)
@@ -656,8 +660,8 @@ export class ValidatorCountProposalFixture extends BaseFixture {
 
     const newValidatorCount: BN = await this.api.getValidatorCount()
     assert(
-      proposedValidatorCount.eq(newValidatorCount),
-      `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
+      this.proposedValidatorCount.eq(newValidatorCount),
+      `Validator count has unexpeccted value ${newValidatorCount}, expected ${this.proposedValidatorCount}`
     )
   }
 }
