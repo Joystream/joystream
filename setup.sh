@@ -2,8 +2,25 @@
 
 set -e
 
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    # code build tools
+    sudo apt-get update
+    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
+    # docker
+    sudo apt-get install -y docker.io docker-compose containerd runc
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # install brew package manager
+    if ! which brew >/dev/null 2>&1; then
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+    fi
+    # install additional packages
+    brew update
+    brew install b2sum gnu-tar jq curl
+    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
+fi
+
 # If OS is supported will install build tools for rust and substrate.
-# Skips installing substrate itself and subkey
+# Skips installation of substrate and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
@@ -23,21 +40,16 @@ rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
 rustup install 1.46.0
 rustup default 1.46.0
 
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
-    sudo apt-get install -y docker.io docker-compose
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install b2sum gnu-tar jq curl
-    echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
-fi
-
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
-# After installing volta the .profile and .bash_profile are updated
-# to add it to the PATH, so we start new shell to use it
-env bash -c "volta install node@12"
-env bash -c "volta install yarn"
-env bash -c "volta install npx"
+# source env variables added by Volta
+source source ~/.bash_profile || ~/.profile || source ~/.bashrc || :
 
-echo "Open a new terminal to start using newly installed tools"
+volta install node@12
+volta install yarn
+volta install npx
+
+echo "Starting new terminal/shell session to make newly installed tools available."
+
+exec bash -l
