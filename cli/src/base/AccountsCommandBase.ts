@@ -177,14 +177,6 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return password
   }
 
-  async requireConfirmation(
-    message = 'Are you sure you want to execute this action?',
-    defaultVal = false
-  ): Promise<void> {
-    const { confirmed } = await inquirer.prompt([{ type: 'confirm', name: 'confirmed', message, default: defaultVal }])
-    if (!confirmed) this.exit(ExitCodes.OK)
-  }
-
   async promptForAccount(
     accounts: NamedKeyringPair[],
     defaultAccount: NamedKeyringPair | null = null,

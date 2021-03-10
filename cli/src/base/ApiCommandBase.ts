@@ -4,7 +4,6 @@ import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
 import { Registry, Codec, TypeDef, TypeDefInfo } from '@polkadot/types/types'
-
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -16,6 +15,7 @@ import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import { formatBalance } from '@polkadot/util'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -401,6 +401,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     tx: SubmittableExtrinsic<'promise'>,
     warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
   ): Promise<boolean> {
+    // Calculate fee and ask for confirmation
+    const fee = await this.getApi().estimateFee(account, tx)
+
+    await this.requireConfirmation(
+      `Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account, do you confirm the transfer?`
+    )
+
     try {
       await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
