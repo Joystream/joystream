@@ -67,11 +67,13 @@ import {
 import { DB } from '../../generated/indexer'
 
 // Keep track of the next entity id
-async function nextEntityId(db: DB, nextEntityId: number): Promise<void> {
+async function nextEntityId(db: DB): Promise<NextEntityId> {
   let e = await db.get(NextEntityId, { where: { id: '1' } })
-  if (!e) e = new NextEntityId({ id: '1' })
-  e.nextId = nextEntityId
-  await db.save<NextEntityId>(e)
+  if (!e) {
+    e = new NextEntityId({ id: '1', nextId: 1 })
+    await db.save<NextEntityId>(e)
+  }
+  return e
 }
 
 function generateEntityIdFromIndex(index: number): string {

@@ -185,7 +185,7 @@ type JoystreamMediaLocationEntity @entity {
   id: ID!
 
   "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String! @unique
+  dataObjectId: String!
 
   happenedIn: Block!
 }
@@ -258,7 +258,7 @@ type Video @entity {
   language: Language
 
   "Reference to VideoMedia"
-  media: VideoMedia!
+  media: VideoMedia
 
   "Whether or not Video contains marketing"
   hasMarketing: Boolean

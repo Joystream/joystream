@@ -20,6 +20,7 @@ import {
   ILanguage,
   ILicense,
   IMediaLocation,
+  IProperty,
   IUserDefinedLicense,
   IVideo,
   IVideoMedia,
@@ -42,40 +43,25 @@ import {
   mediaLocationPropertyNamesWithId,
   featuredVideoPropertyNamesWithId,
 } from './content-dir-consts'
-import {
-  updateCategoryEntityPropertyValues,
-  updateChannelEntityPropertyValues,
-  updateVideoMediaEntityPropertyValues,
-  updateVideoEntityPropertyValues,
-  updateUserDefinedLicenseEntityPropertyValues,
-  updateHttpMediaLocationEntityPropertyValues,
-  updateJoystreamMediaLocationEntityPropertyValues,
-  updateKnownLicenseEntityPropertyValues,
-  updateLanguageEntityPropertyValues,
-  updateVideoMediaEncodingEntityPropertyValues,
-  updateLicenseEntityPropertyValues,
-  updateMediaLocationEntityPropertyValues,
-  updateFeaturedVideoEntityPropertyValues,
-} from './entity/update'
 
-import {
-  createCategory,
-  createChannel,
-  createVideoMedia,
-  createVideo,
-  createUserDefinedLicense,
-  createKnownLicense,
-  createHttpMediaLocation,
-  createJoystreamMediaLocation,
-  createLanguage,
-  createVideoMediaEncoding,
-  getClassName,
-  createLicense,
-  createMediaLocation,
-  createBlockOrGetFromDatabase,
-  createFeaturedVideo,
-} from './entity/create'
+import { getClassName, createBlockOrGetFromDatabase } from './entity/create'
 import { getOrCreate } from './get-or-create'
+import {
+  addSchemaToCategory,
+  addSchemaToChannel,
+  addSchemaToFeaturedVideo,
+  addSchemaToHttpMediaLocation,
+  addSchemaToJoystreamMediaLocation,
+  addSchemaToKnownLicense,
+  addSchemaToLanguage,
+  addSchemaToLicense,
+  addSchemaToMediaLocation,
+  addSchemaToUserDefinedLicense,
+  addSchemaToVideo,
+  addSchemaToVideoMedia,
+  addSchemaToVideoMediaEncoding,
+} from './entity/addSchema'
+import { createDefaultSchema } from './default-schemas'
 
 const debug = Debug('mappings:cd:transaction')
 
@@ -119,21 +105,26 @@ async function applyOperations(operations: IBatchOperation, db: DB, event: Subst
 }
 
 async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
-  const nId = await db.get(NextEntityId, { where: { id: '1' } })
-  let nextId = nId ? nId.nextId : 1 // start entity id from 1
+  const nextEntityIdFromDb = await getOrCreate.nextEntityId(db)
 
+  let entityId = nextEntityIdFromDb.nextId
   for (const { classId } of operations) {
     const c = new ClassEntity({
-      id: nextId.toString(), // entity id
+      id: entityId.toString(),
       classId: classId,
       version: block,
       happenedIn: await createBlockOrGetFromDatabase(db, block),
     })
     await db.save<ClassEntity>(c)
-    nextId++
+
+    // Create default schema for the entity
+    await createDefaultSchema(db, c)
+    entityId++
   }
 
-  await getOrCreate.nextEntityId(db, nextId)
+  // Update database for next entity id
+  nextEntityIdFromDb.nextId = entityId
+  await db.save<NextEntityId>(nextEntityIdFromDb)
 }
 
 /**
@@ -161,7 +152,7 @@ async function batchAddSchemaSupportToEntity(
 
   // This is a copy of classEntityMap, we will use it to keep track of items.
   // We will remove items from this list whenever we insert them into db
-  const doneList: ClassEntityMap = new Map(classEntityMap.entries())
+  // const doneList: ClassEntityMap = new Map(classEntityMap.entries())
 
   const nextEntityIdBeforeTransaction = (await getNextEntityId(db)) - createEntityOperations.length
 
@@ -170,112 +161,9 @@ async function batchAddSchemaSupportToEntity(
       const { entityId, indexOf, properties } = entity
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const id = entityId !== undefined ? entityId : indexOf! + nextEntityIdBeforeTransaction
-      const arg: IDBBlockId = { db, block, id: id.toString() }
+      // const arg: IDBBlockId = { db, block, id: id.toString() }
 
-      switch (className) {
-        case ContentDirectoryKnownClasses.CATEGORY:
-          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId))
-          break
-
-        case ContentDirectoryKnownClasses.CHANNEL:
-          await createChannel(
-            arg,
-            doneList,
-            decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-
-        case ContentDirectoryKnownClasses.KNOWNLICENSE:
-          await createKnownLicense(
-            arg,
-            decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId)
-          )
-          break
-
-        case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-          await createUserDefinedLicense(
-            arg,
-            decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId)
-          )
-          break
-
-        case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-          await createJoystreamMediaLocation(
-            arg,
-            decode.setEntityPropertyValues<IJoystreamMediaLocation>(
-              properties,
-              joystreamMediaLocationPropertyNamesWithId
-            )
-          )
-          break
-
-        case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-          await createHttpMediaLocation(
-            arg,
-            decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId)
-          )
-          break
-
-        case ContentDirectoryKnownClasses.VIDEOMEDIA:
-          await createVideoMedia(
-            arg,
-            doneList,
-            decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-
-        case ContentDirectoryKnownClasses.VIDEO:
-          await createVideo(
-            arg,
-            doneList,
-            decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-
-        case ContentDirectoryKnownClasses.LANGUAGE:
-          await createLanguage(arg, decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId))
-          break
-
-        case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-          await createVideoMediaEncoding(
-            arg,
-            decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
-          )
-          break
-
-        case ContentDirectoryKnownClasses.LICENSE:
-          await createLicense(
-            arg,
-            classEntityMap,
-            decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-        case ContentDirectoryKnownClasses.MEDIALOCATION:
-          await createMediaLocation(
-            arg,
-            classEntityMap,
-            decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-
-        case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-          await createFeaturedVideo(
-            arg,
-            classEntityMap,
-            decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
-            nextEntityIdBeforeTransaction
-          )
-          break
-
-        default:
-          console.log(`Unknown class name: ${className}`)
-          break
-      }
+      await addSchemaSupportToEntity(db, className, id, nextEntityIdBeforeTransaction, properties)
     }
   }
 }
@@ -292,126 +180,149 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
   for (const entity of entities) {
     const { entityId, indexOf, properties } = entity
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = entityId ? entityId.toString() : entityIdBeforeTransaction - indexOf!
+    const id = entityId !== undefined ? entityId : entityIdBeforeTransaction - indexOf!
 
-    const where: IWhereCond = { where: { id: id.toString() } }
+    // const where: IWhereCond = { where: { id: id.toString() } }
     const className = await getClassName(db, entity, createEntityOperations)
-    if (className === undefined) {
-      console.log(`Can not update entity properties values. Unknown class name`)
+    if (!className) {
+      debug(`Can not update entity properties values. Unknown class name`)
       return
     }
 
-    switch (className) {
-      case ContentDirectoryKnownClasses.CHANNEL:
-        await updateChannelEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
+    await addSchemaSupportToEntity(db, className, id, entityIdBeforeTransaction, properties)
+  }
+}
 
-      case ContentDirectoryKnownClasses.CATEGORY:
-        await updateCategoryEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId)
-        )
-        break
+async function addSchemaSupportToEntity(
+  db: DB,
+  className: string,
+  entityId: number,
+  nextEntityId: number,
+  properties: IProperty[]
+) {
+  switch (className) {
+    case ContentDirectoryKnownClasses.CATEGORY:
+      await addSchemaToCategory({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<ICategory>(properties, categoryPropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.KNOWNLICENSE:
-        await updateKnownLicenseEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId)
-        )
-        break
+    case ContentDirectoryKnownClasses.CHANNEL:
+      await addSchemaToChannel({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-        await updateUserDefinedLicenseEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId)
-        )
-        break
+    case ContentDirectoryKnownClasses.KNOWNLICENSE:
+      await addSchemaToKnownLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-        await updateJoystreamMediaLocationEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IJoystreamMediaLocation>(properties, joystreamMediaLocationPropertyNamesWithId)
-        )
-        break
+    case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
+      await addSchemaToUserDefinedLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-        await updateHttpMediaLocationEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId)
-        )
-        break
+    case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
+      await addSchemaToJoystreamMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IJoystreamMediaLocation>(
+          properties,
+          joystreamMediaLocationPropertyNamesWithId
+        ),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.VIDEOMEDIA:
-        await updateVideoMediaEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IVideoMedia>(properties, videoPropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
+    case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
+      await addSchemaToHttpMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.VIDEO:
-        await updateVideoEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
+    case ContentDirectoryKnownClasses.VIDEOMEDIA:
+      await addSchemaToVideoMedia({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.LANGUAGE:
-        await updateLanguageEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId)
-        )
-        break
+    case ContentDirectoryKnownClasses.VIDEO:
+      await addSchemaToVideo({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
+      })
+      break
 
-      case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-        await updateVideoMediaEncodingEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
-        )
-        break
-      case ContentDirectoryKnownClasses.LICENSE:
-        await updateLicenseEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
-      case ContentDirectoryKnownClasses.MEDIALOCATION:
-        await updateMediaLocationEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
-      case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-        await updateFeaturedVideoEntityPropertyValues(
-          db,
-          where,
-          decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
-          entityIdBeforeTransaction
-        )
-        break
+    case ContentDirectoryKnownClasses.LANGUAGE:
+      await addSchemaToLanguage({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId),
+      })
+      break
 
-      default:
-        console.log(`Unknown class name: ${className}`)
-        break
-    }
+    case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
+      await addSchemaToVideoMediaEncoding({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await addSchemaToLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await addSchemaToMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await addSchemaToFeaturedVideo({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setEntityPropertyValues<IFeaturedVideo>(properties, featuredVideoPropertyNamesWithId),
+      })
+      break
+
+    default:
+      debug(`Unknown class name: ${className}`)
+      break
   }
 }
