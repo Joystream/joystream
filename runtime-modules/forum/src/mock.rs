@@ -347,7 +347,6 @@ impl Trait for Runtime {
     type PostDeposit = PostDeposit;
 
     type ModuleId = ForumModuleId;
-    type Currency = Balances;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
@@ -1271,4 +1270,3 @@ pub type Timestamp = pallet_timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
-pub type Balances = balances::Module<Runtime>;
