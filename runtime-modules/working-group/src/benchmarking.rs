@@ -7,7 +7,6 @@ use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
-use sp_std::cmp::min;
 use sp_std::prelude::*;
 
 use crate::types::StakeParameters;
@@ -67,7 +66,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
 ) -> ApplicationId {
     let stake_parameters = StakeParameters {
         // Due to mock implementation of StakingHandler we can't go over 1000
-        stake: min(BalanceOf::<T>::max_value(), BalanceOf::<T>::from(1000)),
+        stake: T::MinimumStakeForOpening::get(),
         staking_account_id: applicant_id.clone(),
     };
 
