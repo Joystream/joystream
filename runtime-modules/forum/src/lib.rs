@@ -763,8 +763,13 @@ decl_module! {
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
 
-
-            let cleanup_pay_off = T::ThreadDeposit::get();
+            // Reserve cleanup pay off in the thread account plus the cost of creating the
+            // initial thread
+            Self::transfer_to_state_cleanup_treasury_account(
+                T::ThreadDeposit::get() + T::PostDeposit::get(),
+                new_thread_id,
+                &account_id
+            )?;
 
             // Build a new thread
             let new_thread = Thread {
@@ -774,7 +779,7 @@ decl_module! {
                 archived: false,
                 poll: poll.clone(),
                 posts: BTreeMap::new(),
-                cleanup_pay_off,
+                cleanup_pay_off: T::ThreadDeposit::get(),
             };
 
             // Store thread
@@ -782,21 +787,13 @@ decl_module! {
                 *value = new_thread.clone()
             });
 
-            // Reserve cleanup pay off in the thread account
-            Self::transfer_to_state_cleanup_treasury_account(
-                cleanup_pay_off,
-                new_thread_id,
-                &account_id
-            )?;
-
             // Add inital post to thread
             let _ = Self::add_new_post(
-                &account_id,
                 new_thread_id,
                 category_id,
                 &text,
                 forum_user_id
-            )?;
+            );
 
             // Update next thread id
             <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -1147,14 +1144,21 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Shouldn't fail since we checked in `ensure_can_add_post` that the account
+            // has enough balance.
+            Self::transfer_to_state_cleanup_treasury_account(
+                T::PostDeposit::get(),
+                thread_id,
+                &account_id
+            )?;
+
             // Add new post
             let (post_id, _) = Self::add_new_post(
-                    &account_id,
                     thread_id,
                     category_id,
                     text.as_slice(),
                     forum_user_id
-                )?;
+                );
 
             // Generate event
             Self::deposit_event(
@@ -1375,12 +1379,11 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn add_new_post(
-        account_id: &T::AccountId,
         thread_id: T::ThreadId,
         category_id: T::CategoryId,
         text: &[u8],
         author_id: ForumUserId<T>,
-    ) -> Result<(T::PostId, Post<ForumUserId<T>, T::Hash>), sp_runtime::DispatchError> {
+    ) -> (T::PostId, Post<ForumUserId<T>, T::Hash>) {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
 
@@ -1393,16 +1396,14 @@ impl<T: Trait> Module<T> {
         let mut thread = <ThreadById<T>>::get(category_id, thread_id);
         thread.posts.insert(new_post_id, new_post.clone());
 
-        let post_deposit = T::PostDeposit::get();
-        thread.cleanup_pay_off = thread.cleanup_pay_off.saturating_add(post_deposit);
-        Self::transfer_to_state_cleanup_treasury_account(post_deposit, thread_id, &account_id)?;
+        thread.cleanup_pay_off = thread.cleanup_pay_off.saturating_add(T::PostDeposit::get());
 
         <ThreadById<T>>::insert(category_id, thread_id, thread);
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
-        Ok((new_post_id, new_post))
+        (new_post_id, new_post)
     }
 
     fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
