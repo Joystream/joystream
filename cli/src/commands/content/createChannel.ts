@@ -1,9 +1,12 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import CreateClassSchema from '@joystream/cd-schemas/schemas/extrinsics/CreateClass.schema.json'
-import { CreateClass } from '@joystream/cd-schemas/types/extrinsics/CreateClass'
-import { InputParser } from '@joystream/cd-schemas'
-import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import {ChannelCreationParametersMetadata, AssetsMetadata} from '@joystream/content-metadata-protobuf'
+
+type ChannelCreationParametersInput = {
+  assets?: AssetsMetadata.AsObject,
+  meta?: Uint8Array,
+  rewardAccount?: Uint8Array | string,
+}
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
@@ -13,23 +16,37 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   }
 
   async run() {
-    let { context, input, output } = this.parse(CreateChannelCommand).flags
+    let { context, input } = this.parse(CreateChannelCommand).flags
 
     if (!context) {
       context = await this.promptForContext()
     }
 
+    const currentAccount = await this.getRequiredSelectedAccount()
+    await this.requestAccountDecoding(currentAccount)
 
-    // let inputJson = await getInputJson<CreateClass>(input, CreateClassSchema as JSONSchema)
+    const actor = await this.getActor(context)
 
-    // this.jsonPrettyPrint(JSON.stringify(inputJson))
-    // const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
+    if (input) {
+      let channelCreationParameters = await getInputJson<ChannelCreationParametersMetadata>(input)
 
-    // if (confirmed) {
-    //   saveOutputJson(output, `${inputJson.name}Class.json`, inputJson)
-    //   this.log('Sending the extrinsic...')
-    //   const inputParser = new InputParser(this.getOriginalApi())
-    //   await this.sendAndFollowTx(account, inputParser.parseCreateClassExtrinsic(inputJson))
-    // }
+      let channelCreationParametersInput: ChannelCreationParametersInput = {
+        assets: channelCreationParameters.getAssets()?.toObject(),
+        meta: channelCreationParameters.getMeta()?.serializeBinary(),
+        rewardAccount: channelCreationParameters.getRewardAccount()
+      }
+
+      this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
+      const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
+
+      if (confirmed)  {
+        this.log('Sending the extrinsic...')
+
+        await this.sendAndFollowNamedTx(currentAccount, 'contentDirectory', 'createChannel', [actor, channelCreationParametersInput])
+
+      }
+    } else {
+      this.log('Input invalid or was not provided...')
+    }
   }
 }

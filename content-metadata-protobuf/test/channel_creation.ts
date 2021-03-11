@@ -1,22 +1,29 @@
-import { ChannelCreationParametersMetadata, AssetsMetadata, NewAssetMetadata, Urls, Upload } from '../src'
+import { ChannelCreationParametersMetadata, AssetsMetadata, NewAssetMetadata, Urls, ChannelMetadata, Upload } from '../src'
 import { assert } from 'chai'
 
 describe('Channel Creation Metadata', () => {
   it('Message', () => {
     const channelCreation = new ChannelCreationParametersMetadata()
 
-    const meta = "0x1f4433"
     const rewardAccount = "0x0a11c9bcc81f8bd314e80bc51cbfacf30eaeb57e863196a79cccdc8bf4750d21"
 
     channelCreation.setAssets(new AssetsMetadata())
-    channelCreation.setMeta(meta)
+    channelCreation.setMeta(new ChannelMetadata())
     channelCreation.setRewardAccount(rewardAccount)
 
     assert.deepEqual(channelCreation.toObject(), {
       assets: {
         newAssetList: [],
       },
-      meta: meta,
+      meta: {
+        avatarPhoto: undefined,
+        category: undefined,
+        coverPhoto: undefined,
+        description: undefined,
+        isPublic: undefined,
+        language: undefined,
+        title: undefined
+      },
       rewardAccount: rewardAccount,
     })
   })

@@ -1,19 +1,16 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { ReferenceProperty } from '@joystream/cd-schemas/types/extrinsics/AddClassSchema'
 import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import {
-  Class,
-  ClassId,
+  Channel,
   CuratorGroup,
   CuratorGroupId,
-  Entity,
-  EntityId,
   Actor,
-  PropertyType,
-  Property,
-} from '@joystream/types/content-directory'
+  Video,
+  VideoId,
+} from '@joystream/types/content'
+import { ChannelId} from '@joystream/types/common'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
@@ -140,12 +137,6 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
 
     return selectedIds
-  }
-
-  async promptForClassReference(): Promise<ReferenceProperty['Reference']> {
-    const selectedClass = await this.promptForClass()
-    const sameOwner = await this.simplePrompt({ message: 'Same owner required?', ...BOOL_PROMPT_OPTIONS })
-    return { className: selectedClass.name.toString(), sameOwner }
   }
 
   async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
@@ -301,42 +292,6 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
 
-  parseStoredPropertyInnerValue(value: Codec | null): AnyJson {
-    if (value === null) {
-      return null
-    }
-
-    if (value instanceof AbstractInt) {
-      return value.toNumber() // Integers (signed ones) are by default converted to hex when using .toJson()
-    }
-
-    return value.toJSON()
-  }
-
-  parseEntityPropertyValues(
-    entity: Entity,
-    entityClass: Class,
-    includedProperties?: string[]
-  ): Record<string, ParsedPropertyValue> {
-    const { properties } = entityClass
-    return Array.from(entity.getField('values').entries()).reduce((columns, [propId, propValue]) => {
-      const prop = properties[propId.toNumber()]
-      const propName = prop.name.toString()
-      const included = !includedProperties || includedProperties.some((p) => p.toLowerCase() === propName.toLowerCase())
-      const { type: propType, subtype: propSubtype } = prop.property_type
-
-      if (included) {
-        columns[propName] = {
-          // If type doesn't match (Boolean(false) for optional fields case) - use "null" as value
-          value: propType !== propValue.type || propSubtype !== propValue.subtype ? null : propValue.getValue(),
-          type: propType,
-          subtype: propSubtype,
-        }
-      }
-      return columns
-    }, {} as Record<string, ParsedPropertyValue>)
-  }
-
   async parseToEntityJson<T = unknown>(entity: Entity): Promise<FlattenRelations<T>> {
     const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
@@ -375,13 +330,13 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return parsedEntities.filter((entity) => filters.every(([pName, pValue]) => entity[pName] === pValue))
   }
 
-  async getActor(context: typeof CONTEXTS[number], pickedClass: Class) {
+  async getActor(context: typeof CONTEXTS[number]) {
     let actor: Actor
     if (context === 'Member') {
       const memberId = await this.getRequiredMemberId()
       actor = this.createType('Actor', { Member: memberId })
     } else if (context === 'Curator') {
-      actor = await this.getCuratorContext([pickedClass.name.toString()])
+      actor = await this.getCuratorContext()
     } else {
       await this.getRequiredLead()
 
@@ -389,109 +344,5 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     return actor
-  }
-
-  isActorEntityController(actor: Actor, entity: Entity, isMaintainer: boolean): boolean {
-    const entityController = entity.entity_permissions.controller
-    return (
-      (isMaintainer && entityController.isOfType('Maintainers')) ||
-      (entityController.isOfType('Member') &&
-        actor.isOfType('Member') &&
-        entityController.asType('Member').eq(actor.asType('Member'))) ||
-      (entityController.isOfType('Lead') && actor.isOfType('Lead'))
-    )
-  }
-
-  async isEntityPropertyEditableByActor(entity: Entity, classPropertyId: number, actor: Actor): Promise<boolean> {
-    const [, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
-
-    const isActorMaintainer =
-      actor.isOfType('Curator') &&
-      entityClass.class_permissions.maintainers.toArray().some((groupId) => groupId.eq(actor.asType('Curator')[0]))
-
-    const isActorController = this.isActorEntityController(actor, entity, isActorMaintainer)
-
-    const {
-      is_locked_from_controller: isLockedFromController,
-      is_locked_from_maintainer: isLockedFromMaintainer,
-    } = entityClass.properties[classPropertyId].locking_policy
-
-    return (
-      (isActorController && !isLockedFromController.valueOf()) ||
-      (isActorMaintainer && !isLockedFromMaintainer.valueOf())
-    )
-  }
-
-  getQuestionsFromProperties(properties: Property[], defaults?: { [key: string]: unknown }): DistinctQuestion[] {
-    return properties.reduce((previousValue, { name, property_type: propertyType, required }) => {
-      const propertySubtype = propertyType.subtype
-      const questionType = propertySubtype === 'Bool' ? 'list' : 'input'
-      const isSubtypeNumber = propertySubtype.toLowerCase().includes('int')
-      const isSubtypeReference = propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')
-
-      const validate = async (answer: string | number | null) => {
-        if (answer === null) {
-          return true // Can only happen through "filter" if property is not required
-        }
-
-        if ((isSubtypeNumber || isSubtypeReference) && parseInt(answer.toString()).toString() !== answer.toString()) {
-          return `Expected integer value!`
-        }
-
-        if (isSubtypeReference) {
-          try {
-            await this.getEntity(+answer, propertyType.asType('Single').asType('Reference')[0].toString())
-          } catch (e) {
-            return e.message || JSON.stringify(e)
-          }
-        }
-
-        return true
-      }
-
-      const optionalQuestionProperties = {
-        ...{
-          filter: async (answer: string) => {
-            if (required.isFalse && !answer) {
-              return null
-            }
-
-            // Only cast to number if valid
-            // Prevents inquirer bug not allowing to edit invalid values when casted to number
-            // See: https://github.com/SBoudrias/Inquirer.js/issues/866
-            if ((isSubtypeNumber || isSubtypeReference) && (await validate(answer)) === true) {
-              return parseInt(answer)
-            }
-
-            return answer
-          },
-          validate,
-        },
-        ...(propertySubtype === 'Bool' && {
-          choices: ['true', 'false'],
-          filter: (answer: string) => {
-            return answer === 'true' || false
-          },
-        }),
-      }
-
-      const isQuestionOptional = propertySubtype === 'Bool' ? '' : required.isTrue ? '(required)' : '(optional)'
-      const classId = isSubtypeReference
-        ? ` [Class Id: ${propertyType.asType('Single').asType('Reference')[0].toString()}]`
-        : ''
-
-      return [
-        ...previousValue,
-        {
-          name: name.toString(),
-          message: `${name} - ${propertySubtype}${classId} ${isQuestionOptional}`,
-          type: questionType,
-          ...optionalQuestionProperties,
-          ...(defaults && {
-            default: propertySubtype === 'Bool' ? JSON.stringify(defaults[name.toString()]) : defaults[name.toString()],
-          }),
-        },
-      ]
-    }, [] as DistinctQuestion[])
   }
 }
