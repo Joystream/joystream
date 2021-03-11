@@ -1,5 +1,4 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
-// TODO: fix TS imports from joystream packages
 // TODO: split file into multiple files
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
@@ -74,9 +73,12 @@ import {
 } from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
 
 import {
-  contentDirectory
+  contentDirectory,
 } from '@joystream/types'
 
+
+type RawAsset = ReturnType<typeof contentDirectory.NewAsset.create>
+type RawAssetTypes = typeof contentDirectory.NewAsset.typeDefinitions
 
 const currentNetwork = Network.BABYLON
 
@@ -85,7 +87,7 @@ const currentNetwork = Network.BABYLON
 async function readProtobuf(
   type: Channel | ChannelCategory | Video | VideoCategory,
   metadata: Uint8Array,
-  assets: typeof contentDirectory.NewAsset[],
+  assets: RawAsset[],
   db: DatabaseManager,
 ): Promise<Partial<typeof type>> {
   // process channel
@@ -131,7 +133,8 @@ async function readProtobuf(
 
     // prepare media meta information if needed
     if (metaAsObject.mediaType) {
-      result.mediaType = await prepareVideoMetadata(metaAsObject)
+      result.mediaMetadata = await prepareVideoMetadata(metaAsObject)
+      delete metaAsObject.mediaType
     }
 
     // prepare license if needed
@@ -141,12 +144,12 @@ async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      result.thumbnailPhoto = extractAsset(metaAsObject.thumbnailPhoto, assets)
+      result.thumbnail = extractAsset(metaAsObject.thumbnailPhoto, assets)
     }
 
     // prepare video asset if needed
-    if (metaAsObject.media !== undefined) {
-      result.media = extractAsset(metaAsObject.media, assets)
+    if (metaAsObject.video !== undefined) {
+      result.media = extractAsset(metaAsObject.video, assets)
     }
 
     // prepare language if needed
@@ -185,47 +188,46 @@ function convertBlockNumberToBlock(block: number): Block {
   })
 }
 
-function convertAsset(rawAsset: contentDirectory.RawAsset): Asset {
-  if (rawAsset.isUrl) {
-    const assetUrl = new AssetUrl({
-      url: rawAsset.asUrl()[0] // TODO: find out why asUrl() returns array
-    })
+function convertAsset(rawAsset: RawAsset): typeof Asset {
+  if (rawAsset.type == 'Urls') {
+    const assetUrl = new AssetUrl()
+    assetUrl.url = rawAsset.asType('Urls').toArray()[0].toString() // TODO: find out why asUrl() returns array
 
-    const asset = new Asset(assetUrl) // TODO: make sure this is a proper way to initialize Asset (on all places)
-
-    return asset
+    return assetUrl
   }
 
-  // !rawAsset.isUrl && rawAsset.isUpload
+  // rawAsset == 'Upload'
 
-  const contentParameters: contentDirectory.ContentParameters = rawAsset.asStorage()
+  //const contentParameters: typeof contentDirectory.ContentParameters = rawAsset.asStorage()
+  const contentParameters = rawAsset.asType('Upload')
 
-  const assetOwner = new AssetOwner(new AssetOwnerMember(0)) // TODO: proper owner
+  const assetOwner = new AssetOwnerMember() // TODO: proper owner
+  assetOwner.memberId = 0
+
   const assetDataObject = new AssetDataObject({
-    owner: new AssetOwner(),
+    owner: assetOwner,
     addedAt: convertBlockNumberToBlock(0), // TODO: proper addedAt
-    typeId: contentParameters.type_id,
+    typeId: contentParameters.type_id.toNumber(),
     size: 0, // TODO: retrieve proper file size
     liaisonId: 0, // TODO: proper id
     liaisonJudgement: LiaisonJudgement.PENDING, // TODO: proper judgement
-    ipfsContentId: contentParameters.ipfs_content_id,
-    joystreamContentId: contentParameters.content_id,
+    ipfsContentId: contentParameters.ipfs_content_id.toHex(),
+    joystreamContentId: contentParameters.content_id.toHex(),
   })
   // TODO: handle `AssetNeverProvided` and `AssetDeleted` states
-  const uploadingStatus = new AssetUploadStatus({
-    dataObject: new AssetDataObject,
-    oldDataObject: undefined // TODO: handle oldDataObject
-  })
+  const uploadingStatus = new AssetUploadStatus()
+  /* TODO: set the values (`dataObject` and `oldDataObject` absent in AssetUploadStatus)
+  uploadingStatus.dataObject = new AssetDataObject
+  uploadingStatus.oldDataObject: undefined // TODO: handle oldDataObject
+  */
 
-  const assetStorage = new AssetStorage({
-    uploadStatus: uploadingStatus
-  })
-  const asset = new Asset(assetStorage)
+  const assetStorage = new AssetStorage()
+  assetStorage.uploadStatus = uploadingStatus
 
-  return asset
+  return assetStorage
 }
 
-function extractAsset(assetIndex: number | undefined, assets: contentDirectory.RawAsset[]): Asset | undefined {
+function extractAsset(assetIndex: number | undefined, assets: RawAsset[]): typeof Asset | undefined {
   if (assetIndex === undefined) {
     return undefined
   }
@@ -266,7 +268,7 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promis
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject): Promise<MediaType> {
+async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject): Promise<VideoMediaMetadata> {
   const encoding = new VideoMediaEncoding(videoProtobuf.mediaType)
 
   const videoMeta = new VideoMediaMetadata({
@@ -337,8 +339,14 @@ export async function content_ChannelUpdated(
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(new Channel(), (event.params[3].value as any).new_meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new Channel(),
+    (event.params[3].value as any).new_meta,
+    (event.params[3].value as any).assets,
+    db
+  ) // TODO: get rid of `any` typecast
 
+  // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
     channel[key] = value
   }
@@ -350,7 +358,7 @@ export async function content_ChannelAssetsRemoved(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  // TODO
+  // TODO - what should happen here?
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -436,7 +444,12 @@ export async function content_ChannelCategoryCreated(
   ChannelCategoryCreationParameters,
   */
 
-  const protobufContent = await readProtobuf(new ChannelCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new ChannelCategory(),
+    (event.params[2].value as any).meta,
+    [],
+    db
+  ) // TODO: get rid of `any` typecast
 
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
@@ -466,8 +479,14 @@ export async function content_ChannelCategoryUpdated(
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(new ChannelCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new ChannelCategory(),
+    (event.params[2].value as any).meta,
+    [],
+    db
+  ) // TODO: get rid of `any` typecast
 
+  // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
     channelCategory[key] = value
   }
@@ -538,8 +557,14 @@ export async function content_VideoCategoryUpdated(
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(new VideoCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new VideoCategory(),
+    (event.params[2].value as any).meta,
+    [],
+    db
+  ) // TODO: get rid of `any` typecast
 
+  // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
     videoCategory[key] = value
   }
@@ -581,7 +606,12 @@ export async function content_VideoCreated(
   VideoCreationParameters<ContentParameters>,
   */
 
-  const protobufContent = await readProtobuf(new Video(), (event.params[3].value as any).meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new Video(),
+    (event.params[3].value as any).meta,
+    (event.params[3].value as any).assets,
+    db
+  ) // TODO: get rid of `any` typecast
 
   const channel = new Video({
     id: event.params[2].toString(), // ChannelId
@@ -611,8 +641,14 @@ export async function content_VideoUpdated(
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(new Video(), (event.params[2].value as any).meta, (event.params[2].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new Video(),
+    (event.params[2].value as any).meta,
+    (event.params[2].value as any).assets,
+    db
+  ) // TODO: get rid of `any` typecast
 
+  // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
     video[key] = value
   }
