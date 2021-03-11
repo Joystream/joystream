@@ -35,6 +35,9 @@ docker-compose up -d db
 # Migrate the databases
 yarn workspace query-node-root db:migrate
 
+# Seed initial schemas
+yarn workspace query-node-root db:init
+
 docker-compose up -d graphql-server
 
 # Start the joystream-node before the indexer
