@@ -1437,7 +1437,7 @@ fn vote_on_poll_fails_on_double_voting() {
     let initial_balance = 10_000_000;
 
     with_test_externalities(|| {
-        Balances::make_free_balance_be(&forum_lead, initial_balance);
+        Balances::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             FORUM_LEAD_ORIGIN.clone(),
@@ -1953,7 +1953,7 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
     let initial_balance = 10_000_000;
 
     with_test_externalities(|| {
-        Balances::make_free_balance_be(&forum_lead, initial_balance);
+        Balances::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(

@@ -169,15 +169,16 @@ benchmarks! {
     burn_account_tokens {
         let account_id = account::<T::AccountId>("caller", 0, 0);
         let initial_issuance = Balances::<T>::total_issuance();
-        let _ = Balances::<T>::make_free_balance_be(&account_id, One::one());
+        let initial_balance: BalanceOf<T> = 15.into();
+        let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance);
 
-        assert_eq!(Balances::<T>::free_balance(&account_id), One::one());
-        assert_eq!(Balances::<T>::total_issuance(), initial_issuance + One::one());
-    }: _ (RawOrigin::Signed(account_id.clone()), One::one())
+        assert_eq!(Balances::<T>::free_balance(&account_id), initial_balance);
+        assert_eq!(Balances::<T>::total_issuance(), initial_issuance + initial_balance);
+    }: _ (RawOrigin::Signed(account_id.clone()), initial_balance)
     verify {
         assert_eq!(Balances::<T>::free_balance(&account_id), Zero::zero());
         assert_eq!(Balances::<T>::total_issuance(),  initial_issuance);
-        assert_last_event::<T>(RawEvent::TokensBurned(account_id, One::one()).into());
+        assert_last_event::<T>(RawEvent::TokensBurned(account_id, initial_balance).into());
     }
 }
 

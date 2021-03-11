@@ -84,7 +84,7 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
 pub struct Test;
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl balances::Trait for Test {
