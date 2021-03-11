@@ -266,7 +266,7 @@ type Video @entity {
   duration: Int
 
   "Video thumbnail (recommended ratio: 16:9)"
-  thumbnail: Asset
+  thumbnailPhoto: Asset
 
   "Video's main langauge"
   language: Language

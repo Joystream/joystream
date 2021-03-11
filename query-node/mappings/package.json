@@ -10,8 +10,8 @@
     "clean": "rm -rf lib"
   },
   "dependencies": {
-    "@dzlzv/hydra-common": "0.0.3",
-    "@polkadot/types": "~2.10.2-7",
+    "@dzlzv/hydra-common": "2.0.1-beta.0",
+    "@dzlzv/hydra-db-utils": "2.0.1-beta.0",
     "@joystream/content-metadata-protobuf": "^1.0.0",
     "@joystream/types": "^0.16.0",
     "query-node": "^0.0.0",

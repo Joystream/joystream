@@ -1,6 +1,4 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
-// TODO: update event list - some events were added/removed recently and are missing in this file
-// TODO: handling of Language, MediaType, etc.
 // TODO: fix TS imports from joystream packages
 // TODO: split file into multiple files
 
@@ -17,20 +15,8 @@ import {
   VideoMetadata,
   VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
-/*
-import {
-  ChannelMetadata,
-  ChannelCategoryMetadata
-} from '../../content-metadata-protobuf/compiled/proto/Channel_pb'
-import {
-  PublishedBeforeJoystream as PublishedBeforeJoystreamMetadata,
-  License as LicenseMetadata,
-  MediaType as MediaTypeMetadata,
-  VideoMetadata,
-  VideoCategoryMetadata,
-} from '../../content-metadata-protobuf/compiled/proto/Video_pb'
-*/
 
+/* TODO: can it be imported nicely like this?
 import {
   // primary entites
   Network,
@@ -57,112 +43,122 @@ import {
   AssetOwner,
   AssetOwnerMember,
 } from 'query-node'
+*/
+
+// primary entities
+import { Network } from 'query-node/src/modules/enums/enums'
+import { Block } from 'query-node/dist/src/modules/block/block.model'
+import { Channel } from 'query-node/dist/src/modules/channel/channel.model'
+import { ChannelCategory } from 'query-node/dist/src/modules/channel-category/channel-category.model'
+import { Video } from 'query-node/dist/src/modules/video/video.model'
+import { VideoCategory } from 'query-node/dist/src/modules/video-category/video-category.model'
+
+// secondary entities
+import { Language } from 'query-node/dist/src/modules/language/language.model'
+import { License } from 'query-node/dist/src/modules/license/license.model'
+import { VideoMediaEncoding } from 'query-node/dist/src/modules/video-media-encoding/video-media-encoding.model'
+import { VideoMediaMetadata } from 'query-node/dist/src/modules/video-media-metadata/video-media-metadata.model'
+
+// Asset
+import {
+  Asset,
+  AssetUrl,
+  AssetUploadStatus,
+  AssetStorage,
+  AssetOwner,
+  AssetOwnerMember,
+} from 'query-node/dist/src/modules/variants/variants.model'
+import {
+  AssetDataObject,
+  LiaisonJudgement
+} from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
 
 import {
   contentDirectory
 } from '@joystream/types'
-/*
-// enums
-import { Network } from '../generated/graphql-server/src/modules/enums/enums'
 
-// input schema models
-import { Block } from '../generated/graphql-server/src/modules/block/block.model'
-import { Channel } from '../generated/graphql-server/src/modules/channel/channel.model'
-import { ChannelCategory } from '../generated/graphql-server/src/modules/channelCategory/channelCategory.model'
-import { Video } from '../generated/graphql-server/src/modules/video/video.model'
-import { VideoCategory } from '../generated/graphql-server/src/modules/videoCategory/videoCategory.model'
-*/
 
 const currentNetwork = Network.BABYLON
 
 /////////////////// Utils //////////////////////////////////////////////////////
 
-enum ProtobufEntity {
-  Channel,
-  ChannelCategory,
-  Video,
-  VideoCategory,
-}
-
-// TODO: tweak generic types to make them actually work
-//function readProtobuf(type: ProtobufEntity, metadata: Uint8Array) {
-async function readProtobuf<T extends ProtobufEntity>(
-  type: ProtobufEntity,
+async function readProtobuf(
+  type: Channel | ChannelCategory | Video | VideoCategory,
   metadata: Uint8Array,
-  assets: contentDirectory.RawAsset[],
+  assets: typeof contentDirectory.NewAsset[],
   db: DatabaseManager,
-): Promise<Partial<T>> {
-  // TODO: consider getting rid of this function - it makes sense to keep it only complex logic will be executed here
-  //       for example retriving language for channel, retrieving new assets (channel photo), etc.
-
+): Promise<Partial<typeof type>> {
   // process channel
-  if (type == ProtobufEntity.Channel) {
+  if (type instanceof Channel) {
     const meta = ChannelMetadata.deserializeBinary(metadata)
-    const result = meta.toObject()
+    const metaAsObject = meta.toObject()
+    const result = metaAsObject as any as Channel
 
     // prepare cover photo asset if needed
-    if (result.coverPhoto !== undefined) {
-      result.coverPhoto = extractAsset(result.coverPhoto, assets)
+    if (metaAsObject.coverPhoto !== undefined) {
+      result.coverPhoto = extractAsset(metaAsObject.coverPhoto, assets)
     }
 
     // prepare avatar photo asset if needed
-    if (result.avatarPhoto !== undefined) {
-      result.avatarPhoto = extractAsset(result.avatarPhoto, assets)
+    if (metaAsObject.avatarPhoto !== undefined) {
+      result.avatarPhoto = extractAsset(metaAsObject.avatarPhoto, assets)
     }
 
     // prepare language if needed
-    if (result.language) {
-      result.language = await prepareLanguage(result.language, db)
+    if (metaAsObject.language) {
+      result.language = await prepareLanguage(metaAsObject.language, db)
     }
 
     return result
   }
 
   // process channel category
-  if (type == ProtobufEntity.ChannelCategory) {
+  if (type instanceof ChannelCategory) {
     return ChannelCategoryMetadata.deserializeBinary(metadata).toObject()
   }
 
   // process video
-  if (type == ProtobufEntity.Video) {
+  if (type instanceof Video) {
     const meta = VideoMetadata.deserializeBinary(metadata)
-    const result = meta.toObject()
+    const metaAsObject = meta.toObject()
+    const result = metaAsObject as any as Video
 
     // prepare video category if needed
-    if (result.category !== undefined) {
-      result.category = prepareVideoCategory(result.category, db)
+    if (metaAsObject.category !== undefined) {
+      // TODO: find why array instead of one value is required here (mb input schema problem?)
+      result.category = [await prepareVideoCategory(metaAsObject.category, db)]
     }
 
     // prepare media meta information if needed
-    if (result.mediaType) {
-      result.mediaType = prepareVideoMetadata(result)
+    if (metaAsObject.mediaType) {
+      result.mediaType = await prepareVideoMetadata(metaAsObject)
     }
 
     // prepare license if needed
-    if (result.license) {
-      result.license = prepareLicense(result.license)
+    if (metaAsObject.license) {
+      result.license = await prepareLicense(metaAsObject.license)
     }
 
     // prepare thumbnail photo asset if needed
-    if (result.thumbnail !== undefined) {
-      result.thumbnail = extractAsset(result.thumbnail, assets)
+    if (metaAsObject.thumbnailPhoto !== undefined) {
+      result.thumbnailPhoto = extractAsset(metaAsObject.thumbnailPhoto, assets)
     }
 
     // prepare video asset if needed
-    if (result.media !== undefined) {
-      result.media = extractAsset(result.media, assets)
+    if (metaAsObject.media !== undefined) {
+      result.media = extractAsset(metaAsObject.media, assets)
     }
 
     // prepare language if needed
-    if (result.language) {
-      result.language = await prepareLanguage(result.language, db)
+    if (metaAsObject.language) {
+      result.language = await prepareLanguage(metaAsObject.language, db)
     }
 
     // prepare information about media published somewhere else before Joystream if needed.
-    if (result.publishedBeforeJoystream) {
+    if (metaAsObject.publishedBeforeJoystream) {
       // TODO: is ok to just ignore `isPublished?: boolean` here?
-      if (result.publishedBeforeJoystream.hasDate()) {
-        result.publishedBeforeJoystream = new Date(result.publishedBeforeJoystream.getDate())
+      if (metaAsObject.publishedBeforeJoystream.date) {
+        result.publishedBeforeJoystream = new Date(metaAsObject.publishedBeforeJoystream.date)
       } else {
         delete result.publishedBeforeJoystream
       }
@@ -172,7 +168,7 @@ async function readProtobuf<T extends ProtobufEntity>(
   }
 
   // process video category
-  if (type == ProtobufEntity.VideoCategory) {
+  if (type instanceof VideoCategory) {
     return VideoCategoryMetadata.deserializeBinary(metadata).toObject()
   }
 
@@ -246,7 +242,7 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
   const isValidIso = true;
 
   if (!isValidIso) {
-    throw // TODO: create a proper way of handling inconsistent state
+    throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
   }
 
   const language = await db.get(Language, { where: { iso: languageIso }})
@@ -265,7 +261,7 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
 async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promise<License> {
   // TODO: add old license removal (when existing) or rework the whole function
 
-  const license = new License(licenseProtobuf.toObject())
+  const license = new License(licenseProtobuf)
 
   return license
 }
@@ -287,10 +283,14 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
   const category = await db.get(VideoCategory, { where: { id: categoryId }})
 
   if (!category) {
-    throw // TODO: create a proper way of handling inconsistent state
+    throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
   }
 
   return category
+}
+
+function inconsistentState(): void {
+  throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
 }
 
 /////////////////// Channel ////////////////////////////////////////////////////
@@ -304,7 +304,8 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
   ChannelCreationParameters<ContentParameters>,
   */
 
-  const protobufContent = await readProtobuf(ProtobufEntity.Channel, (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
+  //const protobufContent = await readProtobuf(ProtobufEntity.Channel, (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new Channel(), (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
 
   const channel = new Channel({
     id: event.params[0].value.toString(), // ChannelId
@@ -333,10 +334,10 @@ export async function content_ChannelUpdated(
   const channel = await db.get(Channel, { where: { id: channelId } })
 
   if (!channel) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(ProtobufEntity.Channel, (event.params[3].value as any).new_meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new Channel(), (event.params[3].value as any).new_meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
 
   for (let [key, value] of Object(protobufContent).entries()) {
     channel[key] = value
@@ -345,15 +346,11 @@ export async function content_ChannelUpdated(
   await db.save<Channel>(channel)
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelDeleted(
+export async function content_ChannelAssetsRemoved(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  const channelId = event.params[1].value.toString()
-  const channel = await db.get(Channel, { where: { id: channelId } })
-
-  await db.remove<Channel>(channel)
+  // TODO
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -371,7 +368,7 @@ export async function content_ChannelCensored(
   const channel = await db.get(Channel, { where: { id: channelId } })
 
   if (!channel) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
   channel.isCensored = true;
@@ -394,7 +391,7 @@ export async function content_ChannelUncensored(
   const channel = await db.get(Channel, { where: { id: channelId } })
 
   if (!channel) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
   channel.isCensored = false;
@@ -439,7 +436,7 @@ export async function content_ChannelCategoryCreated(
   ChannelCategoryCreationParameters,
   */
 
-  const protobufContent = await readProtobuf(ProtobufEntity.ChannelCategory, (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new ChannelCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
 
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
@@ -466,10 +463,10 @@ export async function content_ChannelCategoryUpdated(
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
   if (!channelCategory) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(ProtobufEntity.ChannelCategory, (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new ChannelCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
 
   for (let [key, value] of Object(protobufContent).entries()) {
     channelCategory[key] = value
@@ -490,6 +487,10 @@ export async function content_ChannelCategoryDeleted(
   const channelCategoryId = event.params[1].value.toString()
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
+  if (!channelCategory) {
+    return inconsistentState()
+  }
+
   await db.remove<ChannelCategory>(channelCategory)
 }
 
@@ -506,7 +507,7 @@ export async function content_VideoCategoryCreated(
   VideoCategoryCreationParameters,
   */
 
-  const protobufContent = readProtobuf(ProtobufEntity.VideoCategory, (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = readProtobuf(new VideoCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
 
   const videoCategory = new VideoCategory({
     id: event.params[0].value.toString(), // ChannelId
@@ -534,10 +535,10 @@ export async function content_VideoCategoryUpdated(
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
   if (!videoCategory) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(ProtobufEntity.VideoCategory, (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new VideoCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
 
   for (let [key, value] of Object(protobufContent).entries()) {
     videoCategory[key] = value
@@ -559,6 +560,10 @@ export async function content_VideoCategoryDeleted(
   const videoCategoryId = event.params[1].toString()
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
+  if (!videoCategory) {
+    return inconsistentState()
+  }
+
   await db.remove<VideoCategory>(videoCategory)
 }
 
@@ -576,7 +581,7 @@ export async function content_VideoCreated(
   VideoCreationParameters<ContentParameters>,
   */
 
-  const protobufContent = await readProtobuf(ProtobufEntity.Video, (event.params[3].value as any).meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new Video(), (event.params[3].value as any).meta, (event.params[3].value as any).assets, db) // TODO: get rid of `any` typecast
 
   const channel = new Video({
     id: event.params[2].toString(), // ChannelId
@@ -603,10 +608,10 @@ export async function content_VideoUpdated(
   const video = await db.get(Video, { where: { id: videoId } })
 
   if (!video) {
-    throw // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(ProtobufEntity.Video, (event.params[2].value as any).meta, (event.params[2].value as any).assets, db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(new Video(), (event.params[2].value as any).meta, (event.params[2].value as any).assets, db) // TODO: get rid of `any` typecast
 
   for (let [key, value] of Object(protobufContent).entries()) {
     video[key] = value
@@ -628,6 +633,10 @@ export async function content_VideoDeleted(
   const videoId = event.params[1].toString()
   const video = await db.get(Video, { where: { id: videoId } })
 
+  if (!video) {
+    return inconsistentState()
+  }
+
   await db.remove<Video>(video)
 }
 
@@ -645,6 +654,10 @@ export async function content_VideoCensored(
   const videoId = event.params[1].toString()
   const video = await db.get(Video, { where: { id: videoId } })
 
+  if (!video) {
+    return inconsistentState()
+  }
+
   video.isCensored = true;
 
   await db.save<Video>(video)
@@ -661,8 +674,12 @@ export async function content_VideoUncensored(
   Vec<u8>
   */
 
-  const channelId = event.params[1].toString()
+  const videoId = event.params[1].toString()
   const video = await db.get(Video, { where: { id: videoId } })
+
+  if (!video) {
+    return inconsistentState()
+  }
 
   video.isCensored = false;
 
@@ -682,18 +699,34 @@ export async function content_FeaturedVideosSet(
   const videoIds = event.params[1].value as string[]
   const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } })
 
-  const isSame = (videoA: Video) => (videoB: Video) => videoA.id == videoB
+  // comparsion utility
+  const isSame = (videoIdA: string) => (videoIdB: string) => videoIdA == videoIdB
 
-  const toRemove = existingFeaturedVideos.filter(existingFV => !videoIds.some(isSame(existingFV)))
-  const toAdd = videoIds.filter(video => !existingFeaturedVideos.some(isSame(video)))
+  // calculate diff sets
+  const toRemove = existingFeaturedVideos.filter(existingFV => !videoIds.some(isSame(existingFV.id)))
+  const toAdd = videoIds.filter(video => !existingFeaturedVideos.map(item => item.id).some(isSame(video)))
 
-  for (let video in toRemove) {
+  // mark previously featured videos as not-featured
+  for (let video of toRemove) {
     video.isFeatured = false;
 
     await db.save<Video>(video)
   }
 
-  for (let video in toAdd) {
+  // escape if no featured video needs to be added
+  if (!toAdd) {
+    return
+  }
+
+  // read videos previously not-featured videos that are meant to be featured
+  const videosToAdd = await db.getMany(Video, { where: { id: [toAdd] } })
+
+  if (videosToAdd.length != toAdd.length) {
+    return inconsistentState()
+  }
+
+  // mark previously not-featured videos as featured
+  for (let video of videosToAdd) {
     video.isFeatured = true;
 
     await db.save<Video>(video)
