@@ -23,15 +23,10 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     const { accountId, memberId } = new Members.MemberRegisteredEvent(event_).data
     const { avatarUri, about, handle } = new Members.BuyMembershipCall(event_).args
   
-    let block = await db.get(Block, { where: { block: event_.blockNumber } })
-  
-    if (!block) {
-      block = new Block({
-        network: Network.BABYLON,
-        block: event_.blockNumber,
-        timestamp: new BN(Date.now()),
-      })
-      await db.save<Block>(block)
+    const [{ value: MemberId }, { value: AccountId }] = event_.params
+
+    if (event_.extrinsic === undefined) {
+      throw new Error(`Extrinsic is undefined`)
     }
 
     const member = new Membership({
@@ -44,7 +39,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
         isVerified: false,
         isFoundingMember: false,
         inviteCount: new BN(memberId),
-        registeredAtBlock: block,
+        registeredAtBlock: new BN(event_.blockNumber),
         registeredAtTime: new Date(),
         entry: EntryMethod.PAID, 
         suspended: false,
