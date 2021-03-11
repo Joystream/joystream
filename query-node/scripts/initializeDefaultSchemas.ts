@@ -40,7 +40,7 @@ function getConnectionOptions() {
 export async function main(): Promise<void> {
   console.log(`Initializing...`)
   await createConnection(getConnectionOptions())
-  getConnection().transaction(async (db: EntityManager) => {
+  await getConnection().transaction(async (db: EntityManager) => {
     const id = '0'
     const createdAt = new Date()
     const createdById = '0'

@@ -20,7 +20,7 @@
     "codegen:server": "yarn hydra-cli codegen --no-install --no-indexer",
     "cd-classes": "ts-node scripts/get-class-id-and-name.ts",
     "integration-tests": "./run-tests.sh",
-    "db:init": "(cd ./generated/graphql-server && ts-node ../../scripts/initializeDefaultSchemas.ts)"
+    "db:init": "(cd ./generated/graphql-server && TYPEORM_LOGGING=true ts-node ../../scripts/initializeDefaultSchemas.ts)"
   },
   "author": "",
   "license": "ISC",
