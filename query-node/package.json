@@ -24,7 +24,9 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@dzlzv/hydra-cli": "^0.0.24"
+		"@dzlzv/hydra-cli": "^2.0.0-beta",
+		"@dzlzv/hydra-common": "^0.0.3",
+		"@dzlzv/hydra-db-utils": "^0.0.2"
 	},
 	"dependencies": {
 		"@dzlzv/hydra-indexer-lib": "^0.0.18-alpha.2",

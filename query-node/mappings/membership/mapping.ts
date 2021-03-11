@@ -1,7 +1,8 @@
 import BN from 'bn.js'
 import { Bytes, bool } from '@polkadot/types'
 import { MemberId } from '@joystream/types/src/common'
-import { DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-indexer-lib/lib'
+import { SubstrateEvent } from '@dzlzv/hydra-common'
+import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
 import { Members } from '../../generated/types'
 import { Membership } from '../../generated/graphql-server/src/modules/membership/membership.model'
