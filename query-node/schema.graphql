@@ -47,7 +47,7 @@ type Membership @entity {
   inviteCount: BigInt!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: Block!
+  registeredAtBlock: BigInt!
 
   "Member controller in SS58 encoding."
   controllerAccount: String!
