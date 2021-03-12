@@ -1,26 +1,9 @@
 #![cfg(test)]
 
+use super::curators;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
-
-fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
-    let curator_group_id = Content::next_curator_group_id();
-    // create new group and add curator id to it
-    assert_ok!(Content::create_curator_group(Origin::signed(LEAD_ORIGIN)));
-    assert_ok!(Content::add_curator_to_group(
-        Origin::signed(LEAD_ORIGIN),
-        curator_group_id,
-        curator_id
-    ));
-    // make group active
-    assert_ok!(Content::set_curator_group_status(
-        Origin::signed(LEAD_ORIGIN),
-        curator_group_id,
-        true
-    ));
-    curator_group_id
-}
 
 #[test]
 fn lead_cannot_create_channel() {
@@ -57,7 +40,7 @@ fn curators_can_create_channel() {
             Error::<Test>::CuratorGroupIsNotActive
         );
 
-        let group_id = add_curator_to_new_group(FIRST_CURATOR_ID);
+        let group_id = curators::add_curator_to_new_group(FIRST_CURATOR_ID);
         assert_eq!(FIRST_CURATOR_GROUP_ID, group_id);
 
         // Curator from wrong group

@@ -2,8 +2,7 @@
 
 use crate::*;
 
-// use frame_support::storage::StorageMap;
-// use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -293,4 +292,14 @@ impl ExtBuilder {
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default().build().execute_with(|| f())
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
 }
