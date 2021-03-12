@@ -44,8 +44,9 @@ import {
 } from 'query-node'
 */
 
+import { prepareBlock } from './common'
+
 // primary entities
-import { Network } from 'query-node/src/modules/enums/enums'
 import { Block } from 'query-node/dist/src/modules/block/block.model'
 import { Channel } from 'query-node/dist/src/modules/channel/channel.model'
 import { ChannelCategory } from 'query-node/dist/src/modules/channel-category/channel-category.model'
@@ -80,8 +81,6 @@ import {
 type RawAsset = ReturnType<typeof contentDirectory.NewAsset.create>
 type RawAssetTypes = typeof contentDirectory.NewAsset.typeDefinitions
 
-const currentNetwork = Network.BABYLON
-
 /////////////////// Utils //////////////////////////////////////////////////////
 
 async function readProtobuf(
@@ -89,6 +88,7 @@ async function readProtobuf(
   metadata: Uint8Array,
   assets: RawAsset[],
   db: DatabaseManager,
+  event: SubstrateEvent,
 ): Promise<Partial<typeof type>> {
   // process channel
   if (type instanceof Channel) {
@@ -98,12 +98,12 @@ async function readProtobuf(
 
     // prepare cover photo asset if needed
     if (metaAsObject.coverPhoto !== undefined) {
-      result.coverPhoto = extractAsset(metaAsObject.coverPhoto, assets)
+      result.coverPhoto = await extractAsset(metaAsObject.coverPhoto, assets, db, event)
     }
 
     // prepare avatar photo asset if needed
     if (metaAsObject.avatarPhoto !== undefined) {
-      result.avatarPhoto = extractAsset(metaAsObject.avatarPhoto, assets)
+      result.avatarPhoto = await extractAsset(metaAsObject.avatarPhoto, assets, db, event)
     }
 
     // prepare language if needed
@@ -144,12 +144,12 @@ async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      result.thumbnail = extractAsset(metaAsObject.thumbnailPhoto, assets)
+      result.thumbnail = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
     }
 
     // prepare video asset if needed
     if (metaAsObject.video !== undefined) {
-      result.media = extractAsset(metaAsObject.video, assets)
+      result.media = await extractAsset(metaAsObject.video, assets, db, event)
     }
 
     // prepare language if needed
@@ -179,16 +179,7 @@ async function readProtobuf(
   throw `Not implemented type: ${type}`
 }
 
-// temporary function used before proper block is retrieved
-function convertBlockNumberToBlock(block: number): Block {
-  return new Block({
-    block: block,
-    executedAt: new Date(), // TODO get real block execution time
-    network: currentNetwork,
-  })
-}
-
-function convertAsset(rawAsset: RawAsset): typeof Asset {
+async function convertAsset(rawAsset: RawAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
   if (rawAsset.type == 'Urls') {
     const assetUrl = new AssetUrl()
     assetUrl.url = rawAsset.asType('Urls').toArray()[0].toString() // TODO: find out why asUrl() returns array
@@ -206,7 +197,7 @@ function convertAsset(rawAsset: RawAsset): typeof Asset {
 
   const assetDataObject = new AssetDataObject({
     owner: assetOwner,
-    addedAt: convertBlockNumberToBlock(0), // TODO: proper addedAt
+    addedAt: await prepareBlock(db, event),
     typeId: contentParameters.type_id.toNumber(),
     size: 0, // TODO: retrieve proper file size
     liaisonId: 0, // TODO: proper id
@@ -227,7 +218,12 @@ function convertAsset(rawAsset: RawAsset): typeof Asset {
   return assetStorage
 }
 
-function extractAsset(assetIndex: number | undefined, assets: RawAsset[]): typeof Asset | undefined {
+async function extractAsset(
+  assetIndex: number | undefined,
+  assets: RawAsset[],
+  db: DatabaseManager,
+  event: SubstrateEvent,
+): Promise<typeof Asset | undefined> {
   if (assetIndex === undefined) {
     return undefined
   }
@@ -236,7 +232,7 @@ function extractAsset(assetIndex: number | undefined, assets: RawAsset[]): typeo
     throw 'Inconsistent state' // TODO: more sophisticated inconsistency handling; unify handling with other critical errors
   }
 
-  return convertAsset(assets[assetIndex])
+  return convertAsset(assets[assetIndex], db, event)
 }
 
 async function prepareLanguage(languageIso: string, db: DatabaseManager): Promise<Language> {
@@ -307,13 +303,19 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
   */
 
   //const protobufContent = await readProtobuf(ProtobufEntity.Channel, (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
-  const protobufContent = await readProtobuf(new Channel(), (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
+  const protobufContent = await readProtobuf(
+    new Channel(),
+    (event.params[3].value as any).meta,
+    event.params[2].value as any[],
+    db,
+    event,
+  ) // TODO: get rid of `any` typecast
 
   const channel = new Channel({
     id: event.params[0].value.toString(), // ChannelId
     isCensored: false,
     videos: [],
-    happenedIn: convertBlockNumberToBlock(event.blockNumber),
+    happenedIn: await prepareBlock(db, event),
     ...Object(protobufContent)
   })
 
@@ -343,7 +345,8 @@ export async function content_ChannelUpdated(
     new Channel(),
     (event.params[3].value as any).new_meta,
     (event.params[3].value as any).assets,
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   // update all fields read from protobuf
@@ -448,13 +451,14 @@ export async function content_ChannelCategoryCreated(
     new ChannelCategory(),
     (event.params[2].value as any).meta,
     [],
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
     channels: [],
-    happenedIn: convertBlockNumberToBlock(event.blockNumber),
+    happenedIn: await prepareBlock(db, event),
     ...Object(protobufContent)
   })
 
@@ -483,7 +487,8 @@ export async function content_ChannelCategoryUpdated(
     new ChannelCategory(),
     (event.params[2].value as any).meta,
     [],
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   // update all fields read from protobuf
@@ -526,13 +531,19 @@ export async function content_VideoCategoryCreated(
   VideoCategoryCreationParameters,
   */
 
-  const protobufContent = readProtobuf(new VideoCategory(), (event.params[2].value as any).meta, [], db) // TODO: get rid of `any` typecast
+  const protobufContent = readProtobuf(
+    new VideoCategory(),
+    (event.params[2].value as any).meta,
+    [],
+    db,
+    event
+  ) // TODO: get rid of `any` typecast
 
   const videoCategory = new VideoCategory({
     id: event.params[0].value.toString(), // ChannelId
     isCensored: false,
     videos: [],
-    happenedIn: convertBlockNumberToBlock(event.blockNumber),
+    happenedIn: await prepareBlock(db, event),
     ...Object(protobufContent)
   })
 
@@ -561,7 +572,8 @@ export async function content_VideoCategoryUpdated(
     new VideoCategory(),
     (event.params[2].value as any).meta,
     [],
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   // update all fields read from protobuf
@@ -610,14 +622,15 @@ export async function content_VideoCreated(
     new Video(),
     (event.params[3].value as any).meta,
     (event.params[3].value as any).assets,
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   const channel = new Video({
     id: event.params[2].toString(), // ChannelId
     isCensored: false,
     channel: event.params[1],
-    happenedIn: convertBlockNumberToBlock(event.blockNumber),
+    happenedIn: await prepareBlock(db, event),
     ...Object(protobufContent)
   })
 
@@ -645,7 +658,8 @@ export async function content_VideoUpdated(
     new Video(),
     (event.params[2].value as any).meta,
     (event.params[2].value as any).assets,
-    db
+    db,
+    event,
   ) // TODO: get rid of `any` typecast
 
   // update all fields read from protobuf
