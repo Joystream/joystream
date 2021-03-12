@@ -57,7 +57,7 @@ fn curator_group_management() {
         let group = Content::curator_group_by_id(curator_group_id);
         assert_eq!(group.is_active(), true);
 
-        // Add curator to group
+        // Cannot add non curators into group
         assert_err!(
             Content::add_curator_to_group(
                 Origin::signed(LEAD_ORIGIN),
@@ -67,6 +67,7 @@ fn curator_group_management() {
             Error::<Test>::CuratorIdInvalid
         );
 
+        // Add curator to group
         assert_ok!(Content::add_curator_to_group(
             Origin::signed(LEAD_ORIGIN),
             curator_group_id,
@@ -82,6 +83,7 @@ fn curator_group_management() {
         let group = Content::curator_group_by_id(curator_group_id);
         assert!(group.has_curator(&FIRST_CURATOR_ID));
 
+        // Cannot add same curator again
         assert_err!(
             Content::add_curator_to_group(
                 Origin::signed(LEAD_ORIGIN),
@@ -91,7 +93,7 @@ fn curator_group_management() {
             Error::<Test>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
 
-        // Remove curator from group
+        // Cannot remove curator if not in group
         assert_err!(
             Content::remove_curator_from_group(
                 Origin::signed(LEAD_ORIGIN),
@@ -101,6 +103,7 @@ fn curator_group_management() {
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
         );
 
+        // Remove curator from group
         assert_ok!(Content::remove_curator_from_group(
             Origin::signed(LEAD_ORIGIN),
             curator_group_id,
@@ -114,5 +117,15 @@ fn curator_group_management() {
 
         let group = Content::curator_group_by_id(curator_group_id);
         assert!(!group.has_curator(&FIRST_CURATOR_ID));
+
+        // Already removed cannot remove again
+        assert_err!(
+            Content::remove_curator_from_group(
+                Origin::signed(LEAD_ORIGIN),
+                curator_group_id,
+                FIRST_CURATOR_ID
+            ),
+            Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
+        );
     })
 }
