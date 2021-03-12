@@ -260,7 +260,7 @@ export async function addSchemaToVideo(param: SchemaSupport<IVideo>): Promise<vo
   v.description = props.description || v.description
   v.duration = props.duration || v.duration
   v.hasMarketing = props.hasMarketing || v.hasMarketing
-  v.isCurated = !props.isCurated || v.isCurated
+  v.isCurated = !!props.isCurated
   v.isExplicit = props.isExplicit || v.isExplicit
   v.isPublic = props.isPublic || v.isPublic
   v.publishedBeforeJoystream = props.publishedBeforeJoystream || v.publishedBeforeJoystream
