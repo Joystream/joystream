@@ -30,10 +30,6 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { InputParser } from '@joystream/cd-schemas'
-import { OperationType } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/storage'
 import Debugger from 'debug'
 
@@ -1727,67 +1723,6 @@ export class Api {
 
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
-  }
-
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
-    const transaction = this.api.tx.contentDirectory.transaction(
-      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      operations // We provide parsed operations as second argument
-    )
-    const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    return this.sender.signAndSend(transaction, lead.role_account_id)
-  }
-
-  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Channel',
-          entries: [channel], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Video',
-          entries: [video], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async updateChannelEntity(
-    channelUpdateInput: Record<string, any>,
-    uniquePropValue: Record<string, any>
-  ): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(this.api)
-
-    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
-    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
-    const updateOperations = await parser.getEntityUpdateOperations(
-      channelUpdateInput,
-      'Channel', // Class name
-      CHANNEL_ID // Id of the entity we want to update
-    )
-    return this.sendContentDirectoryTransaction(updateOperations)
   }
 
   async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
