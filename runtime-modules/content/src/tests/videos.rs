@@ -213,3 +213,35 @@ fn curators_can_censor_videos() {
         );
     })
 }
+
+#[test]
+fn featured_videos() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // Lead can update curator owned channels
+        assert_ok!(Content::set_featured_videos(
+            Origin::signed(LEAD_ORIGIN),
+            ContentActor::Lead,
+            vec![1, 2, 3]
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::FeaturedVideosSet(
+                ContentActor::Lead,
+                vec![1, 2, 3]
+            ))
+        );
+
+        assert_err!(
+            Content::set_featured_videos(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Member(FIRST_MEMBER_ID),
+                vec![1, 2, 3]
+            ),
+            Error::<Test>::ActorNotAuthorized
+        );
+    })
+}
