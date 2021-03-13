@@ -308,5 +308,15 @@ fn curators_can_censor_channels() {
         let channel = Content::channel_by_id(channel_id);
 
         assert!(!channel.is_censored);
+
+        // Member cannot censor channels
+        assert_err!(Content::censor_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Curator(FIRST_MEMBER_ID),
+            channel_id,
+            vec![]
+        ),
+            Error::<Test>::ActorNotAuthorized
+        );
     })
 }
