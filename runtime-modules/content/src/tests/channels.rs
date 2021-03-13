@@ -10,7 +10,7 @@ fn lead_cannot_create_channel() {
     with_default_mock_builder(|| {
         assert_err!(
             Content::create_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
+                Origin::signed(LEAD_ORIGIN),
                 ContentActor::Lead,
                 ChannelCreationParameters {
                     assets: vec![],
@@ -24,7 +24,7 @@ fn lead_cannot_create_channel() {
 }
 
 #[test]
-fn curators_can_create_channel() {
+fn curator_owned_channels() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -107,11 +107,35 @@ fn curators_can_create_channel() {
                 }
             ))
         );
+
+        // Curator can update channel
+        assert_ok!(Content::update_channel(
+            Origin::signed(FIRST_CURATOR_ORIGIN),
+            ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
+            channel_id,
+            ChannelUpdateParameters {
+                assets: None,
+                new_meta: None,
+                reward_account: None,
+            }
+        ));
+
+        // Lead can update curator owned channels
+        assert_ok!(Content::update_channel(
+            Origin::signed(LEAD_ORIGIN),
+            ContentActor::Lead,
+            channel_id,
+            ChannelUpdateParameters {
+                assets: None,
+                new_meta: None,
+                reward_account: None,
+            }
+        ));
     })
 }
 
 #[test]
-fn members_can_manage_channels() {
+fn member_owned_channels() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -249,7 +273,7 @@ fn members_can_manage_channels() {
 }
 
 #[test]
-fn curators_can_censor_channels() {
+fn channel_censoring() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -310,13 +334,46 @@ fn curators_can_censor_channels() {
         assert!(!channel.is_censored);
 
         // Member cannot censor channels
-        assert_err!(Content::censor_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Curator(FIRST_MEMBER_ID),
-            channel_id,
-            vec![]
-        ),
+        assert_err!(
+            Content::censor_channel(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Member(FIRST_MEMBER_ID),
+                channel_id,
+                vec![]
+            ),
             Error::<Test>::ActorNotAuthorized
         );
+
+        let curator_channel_id = Content::next_channel_id();
+
+        // create curator channel
+        assert_ok!(Content::create_channel(
+            Origin::signed(FIRST_CURATOR_ORIGIN),
+            ContentActor::Curator(group_id, FIRST_CURATOR_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+            }
+        ));
+
+        // Curator cannot censor curator group channels
+        assert_err!(
+            Content::censor_channel(
+                Origin::signed(FIRST_CURATOR_ORIGIN),
+                ContentActor::Curator(group_id, FIRST_CURATOR_ID),
+                curator_channel_id,
+                vec![]
+            ),
+            Error::<Test>::CannotCensoreCuratorGroupOwnedChannels
+        );
+
+        // Lead can still censor curator group channels
+        assert_ok!(Content::censor_channel(
+            Origin::signed(LEAD_ORIGIN),
+            ContentActor::Lead,
+            curator_channel_id,
+            vec![]
+        ));
     })
 }
