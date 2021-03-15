@@ -2,15 +2,11 @@ import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { GroupMember } from '../../Types'
 import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
-import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
-import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import OpeningParamsSchema from '../../json-schemas/WorkingGroupOpening.schema.json'
 import { WorkingGroupOpening as OpeningParamsJson } from '../../json-schemas/typings/WorkingGroupOpening.schema'
-import _ from 'lodash'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
-import Ajv from 'ajv'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
 import { AugmentedSubmittables } from '@polkadot/api/types'
@@ -41,47 +37,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     }),
   }
 
-  getHRTDefaults(memberHandle: string): HRTJson {
-    const groupName = _.startCase(this.group)
-    return {
-      version: 1,
-      headline: `Looking for ${groupName}!`,
-      job: {
-        title: groupName,
-        description: `Become part of the ${groupName} Group! This is a great opportunity to support Joystream!`,
-      },
-      application: {
-        sections: [
-          {
-            title: 'About you',
-            questions: [
-              {
-                title: 'Your name',
-                type: 'text',
-              },
-              {
-                title: 'What makes you a good fit for the job?',
-                type: 'text area',
-              },
-            ],
-          },
-        ],
-      },
-      reward: '10k JOY per 3600 blocks',
-      creator: {
-        membership: {
-          handle: memberHandle,
-        },
-      },
-    }
-  }
-
   createTxParams(
-    openingParamsJson: OpeningParamsJson,
-    hrtJson: HRTJson
+    openingParamsJson: OpeningParamsJson
   ): Parameters<AugmentedSubmittables<'promise'>['membershipWorkingGroup']['addOpening']> {
     return [
-      JSON.stringify(hrtJson),
+      openingParamsJson.description,
       'Regular',
       {
         stake_amount: openingParamsJson.stakingPolicy.amount,
@@ -92,55 +52,21 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     ]
   }
 
-  async promptForData(
-    lead: GroupMember,
-    rememberedInput?: [OpeningParamsJson, HRTJson]
-  ): Promise<[OpeningParamsJson, HRTJson]> {
-    const openingDefaults = rememberedInput?.[0]
+  async promptForData(lead: GroupMember, rememberedInput?: OpeningParamsJson): Promise<OpeningParamsJson> {
+    const openingDefaults = rememberedInput
     const openingPrompt = new JsonSchemaPrompter<OpeningParamsJson>(
       (OpeningParamsSchema as unknown) as JSONSchema,
       openingDefaults
     )
     const openingParamsJson = await openingPrompt.promptAll()
 
-    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(lead.profile.handle_hash.toString())
-    this.log(`Values for ${chalk.greenBright('human_readable_text')} json:`)
-    const hrtPropmpt = new JsonSchemaPrompter<HRTJson>((HRTSchema as unknown) as JSONSchema, hrtDefaults)
-    // Prompt only for 'headline', 'job', 'application', 'reward' and 'process', leave the rest default
-    const headline = await hrtPropmpt.promptSingleProp('headline')
-    this.log('General information about the job:')
-    const job = await hrtPropmpt.promptSingleProp('job')
-    this.log('Application form sections and questions:')
-    const application = await hrtPropmpt.promptSingleProp('application')
-    this.log('Reward displayed in the opening box:')
-    const reward = await hrtPropmpt.promptSingleProp('reward')
-    this.log('Hiring process details (additional information)')
-    const process = await hrtPropmpt.promptSingleProp('process')
-
-    const hrtJson = { ...hrtDefaults, job, headline, application, reward, process }
-
-    return [openingParamsJson, hrtJson]
+    return openingParamsJson
   }
 
-  async getInputFromFile(filePath: string): Promise<[OpeningParamsJson, HRTJson]> {
-    const ajv = new Ajv({ allErrors: true })
-    const inputParams = await getInputJson<[OpeningParamsJson, HRTJson]>(filePath)
-    if (!Array.isArray(inputParams) || inputParams.length !== 2) {
-      this.error('Invalid input file', { exit: ExitCodes.InvalidInput })
-    }
-    const [openingJson, hrtJson] = inputParams
-    if (!ajv.validate(OpeningParamsSchema, openingJson)) {
-      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'openingJson', separator: '\n' })}`, {
-        exit: ExitCodes.InvalidInput,
-      })
-    }
-    if (!ajv.validate(HRTSchema, hrtJson)) {
-      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'hrtJson', separator: '\n' })}`, {
-        exit: ExitCodes.InvalidInput,
-      })
-    }
+  async getInputFromFile(filePath: string): Promise<OpeningParamsJson> {
+    const inputParams = await getInputJson<OpeningParamsJson>(filePath, (OpeningParamsSchema as unknown) as JSONSchema)
 
-    return [openingJson, hrtJson]
+    return inputParams as OpeningParamsJson
   }
 
   async run() {
@@ -154,22 +80,22 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     ensureOutputFileIsWriteable(output)
 
     let tryAgain = false
-    let rememberedInput: [OpeningParamsJson, HRTJson] | undefined
+    let rememberedInput: OpeningParamsJson | undefined
     do {
       if (edit) {
         rememberedInput = await this.getInputFromFile(input as string)
       }
       // Either prompt for the data or get it from input file
-      const [openingJson, hrtJson] =
+      const openingJson =
         !input || edit || tryAgain
           ? await this.promptForData(lead, rememberedInput)
           : await this.getInputFromFile(input)
 
       // Remember the provided/fetched data in a variable
-      rememberedInput = [openingJson, hrtJson]
+      rememberedInput = openingJson
 
       // Generate and ask to confirm tx params
-      const txParams = this.createTxParams(openingJson, hrtJson)
+      const txParams = this.createTxParams(openingJson)
       this.jsonPrettyPrint(JSON.stringify(txParams))
       const confirmed = await this.simplePrompt({
         type: 'confirm',

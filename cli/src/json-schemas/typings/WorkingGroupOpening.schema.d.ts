@@ -26,4 +26,8 @@ export interface WorkingGroupOpening {
    * Reward per block
    */
   rewardPerBlock?: number
+  /**
+   * Opening description
+   */
+  description: string
 }
