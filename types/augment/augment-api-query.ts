@@ -225,7 +225,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Amount of balance to be refilled every budget period
        **/
-      budgetIncrement: AugmentedQuery<ApiType, () => Observable<>>;
+      budgetIncrement: AugmentedQuery<ApiType, () => Observable<Balance>>;
       /**
        * Map of all candidates that ever candidated and haven't unstake yet.
        **/
@@ -237,7 +237,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Councilor reward per block
        **/
-      councilorReward: AugmentedQuery<ApiType, () => Observable<>>;
+      councilorReward: AugmentedQuery<ApiType, () => Observable<Balance>>;
       /**
        * The next block in which the budget will be increased.
        **/
