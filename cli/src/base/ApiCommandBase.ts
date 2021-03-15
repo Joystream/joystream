@@ -430,7 +430,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     if (Array.isArray(p)) {
       return p.map((v) => this.humanize(v))
     } else if (typeof p === 'object' && p !== null) {
-      if ((p as Codec).toHuman) {
+      if ((p as any).toHuman) {
         return (p as Codec).toHuman()
       } else if (p instanceof BN) {
         return p.toString()

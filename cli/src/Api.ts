@@ -33,7 +33,6 @@ import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '
 import { ContentId, DataObject } from '@joystream/types/media'
 import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
-import ExitCodes from './ExitCodes'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -88,23 +87,6 @@ export default class Api {
   static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
     return new Api(api, chainType.isDevelopment || chainType.isLocal)
-  }
-
-  private queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
-    return new Promise((resolve, reject) => {
-      let unsub: () => void
-      this._api
-        .queryMulti(queries, (res) => {
-          // unsub should already be set at this point
-          if (!unsub) {
-            reject(new CLIError('API queryMulti issue - unsub method not set!', { exit: ExitCodes.ApiError }))
-          }
-          unsub()
-          resolve(res)
-        })
-        .then((unsubscribe) => (unsub = unsubscribe))
-        .catch((e) => reject(e))
-    })
   }
 
   async bestNumber(): Promise<number> {
