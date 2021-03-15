@@ -10,7 +10,7 @@ use sp_std::iter::FromIterator;
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, OracleJudgmentOf, OracleWorkEntryJudgment, RawEvent,
+    Entry, FundingType, OracleJudgmentOf, OracleWorkEntryJudgment, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 
@@ -100,13 +100,14 @@ impl EventFixture {
 pub const DEFAULT_BOUNTY_CHERRY: u64 = 10;
 pub const DEFAULT_BOUNTY_ENTRANT_STAKE: u64 = 10;
 pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
+pub const DEFAULT_BOUNTY_MIN_AMOUNT: u64 = 1;
+pub const DEFAULT_BOUNTY_FUNDING_PERIOD: u64 = 1;
+
 pub struct CreateBountyFixture {
     origin: RawOrigin<u128>,
     metadata: Vec<u8>,
     creator: BountyActor<u64>,
-    funding_period: Option<u64>,
-    min_amount: u64,
-    max_amount: u64,
+    funding_type: FundingType<u64, u64>,
     work_period: u64,
     judging_period: u64,
     cherry: u64,
@@ -122,9 +123,9 @@ impl CreateBountyFixture {
             origin: RawOrigin::Root,
             metadata: Vec::new(),
             creator: BountyActor::Council,
-            funding_period: None,
-            min_amount: 0,
-            max_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
+            funding_type: FundingType::Perpetual {
+                target: DEFAULT_BOUNTY_MAX_AMOUNT,
+            },
             work_period: 1,
             judging_period: 1,
             cherry: DEFAULT_BOUNTY_CHERRY,
@@ -157,13 +158,6 @@ impl CreateBountyFixture {
         Self { metadata, ..self }
     }
 
-    pub fn with_min_amount(self, min_amount: u64) -> Self {
-        Self { min_amount, ..self }
-    }
-    pub fn with_max_amount(self, max_amount: u64) -> Self {
-        Self { max_amount, ..self }
-    }
-
     pub fn with_work_period(self, work_period: u64) -> Self {
         Self {
             work_period,
@@ -171,9 +165,47 @@ impl CreateBountyFixture {
         }
     }
 
+    pub fn with_limited_funding(
+        self,
+        min_funding_amount: u64,
+        max_funding_amount: u64,
+        funding_period: u64,
+    ) -> Self {
+        Self {
+            funding_type: FundingType::Limited {
+                funding_period,
+                min_funding_amount,
+                max_funding_amount,
+            },
+            ..self
+        }
+    }
+
+    pub fn with_perpetual_funding(self, target: u64) -> Self {
+        Self {
+            funding_type: FundingType::Perpetual { target },
+            ..self
+        }
+    }
+
     pub fn with_funding_period(self, funding_period: u64) -> Self {
         Self {
-            funding_period: Some(funding_period),
+            funding_type: FundingType::Limited {
+                funding_period,
+                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
+                max_funding_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
+            },
+            ..self
+        }
+    }
+
+    pub fn with_max_funding_amount(self, max_funding_amount: u64) -> Self {
+        Self {
+            funding_type: FundingType::Limited {
+                funding_period: DEFAULT_BOUNTY_FUNDING_PERIOD,
+                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
+                max_funding_amount,
+            },
             ..self
         }
     }
@@ -208,11 +240,9 @@ impl CreateBountyFixture {
     pub fn get_bounty_creation_parameters(&self) -> BountyCreationParameters<Test> {
         BountyCreationParameters::<Test> {
             creator: self.creator.clone(),
-            min_amount: self.min_amount.clone(),
-            max_amount: self.max_amount.clone(),
+            funding_type: self.funding_type.clone(),
             work_period: self.work_period.clone(),
             judging_period: self.judging_period.clone(),
-            funding_period: self.funding_period.clone(),
             cherry: self.cherry,
             entrant_stake: self.entrant_stake,
             contract_type: self.contract_type.clone(),

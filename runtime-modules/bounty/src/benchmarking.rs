@@ -21,7 +21,7 @@ use membership::Module as Membership;
 
 use crate::{
     AssuranceContractType, BalanceOf, Bounties, BountyActor, BountyCreationParameters,
-    BountyMilestone, Call, Entries, Event, Module, OracleWorkEntryJudgment, Trait,
+    BountyMilestone, Call, Entries, Event, FundingType, Module, OracleWorkEntryJudgment, Trait,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -148,11 +148,25 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
 }
 
 fn create_max_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
-    create_funded_bounty::<T>(params.clone(), params.max_amount)
+    let funding_amount = match params.funding_type {
+        FundingType::Perpetual { target } => target,
+        FundingType::Limited {
+            max_funding_amount, ..
+        } => max_funding_amount,
+    };
+
+    create_funded_bounty::<T>(params.clone(), funding_amount)
 }
 
 fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
-    create_funded_bounty::<T>(params.clone(), params.min_amount)
+    let funding_amount = match params.funding_type {
+        FundingType::Perpetual { target } => target,
+        FundingType::Limited {
+            min_funding_amount, ..
+        } => min_funding_amount,
+    };
+
+    create_funded_bounty::<T>(params.clone(), funding_amount)
 }
 
 fn create_funded_bounty<T: Trait>(
@@ -194,6 +208,7 @@ benchmarks! {
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = 10.into();
+        let max_amount: BalanceOf<T> = 1000.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -202,6 +217,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             entrant_stake,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             ..Default::default()
         };
 
@@ -219,6 +235,7 @@ benchmarks! {
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = 10.into();
+        let max_amount: BalanceOf<T> = 1000.into();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
@@ -230,6 +247,7 @@ benchmarks! {
             cherry,
             entrant_stake,
             creator: BountyActor::Member(member_id),
+            funding_type: FundingType::Perpetual{ target: max_amount },
             ..Default::default()
         };
 
@@ -255,7 +273,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             ..Default::default()
         };
@@ -289,7 +307,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             ..Default::default()
         };
@@ -321,7 +339,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
             entrant_stake,
             ..Default::default()
@@ -350,7 +368,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
             entrant_stake,
             ..Default::default()
@@ -381,7 +399,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             cherry,
             entrant_stake,
             ..Default::default()
@@ -402,18 +420,20 @@ benchmarks! {
 
     withdraw_funding_by_member {
         let funding_period = 1;
-        let bounty_amount = 200;
+        let bounty_amount: BalanceOf<T> = 200.into();
         let cherry: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
         let params = BountyCreationParameters::<T>{
-            funding_period: Some(funding_period.into()),
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount: bounty_amount.into(),
-            min_amount: bounty_amount.into(),
+            funding_type: FundingType::Limited{
+                min_funding_amount: bounty_amount,
+                max_funding_amount: bounty_amount,
+                funding_period: funding_period.into(),
+            },
             cherry,
             entrant_stake,
             ..Default::default()
@@ -448,7 +468,7 @@ benchmarks! {
 
     withdraw_funding_by_council {
         let funding_period = 1;
-        let bounty_amount = 200;
+        let bounty_amount: BalanceOf<T> = 200.into();
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = 10.into();
@@ -456,11 +476,13 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(cherry + funding_amount);
 
         let params = BountyCreationParameters::<T>{
-            funding_period: Some(funding_period.into()),
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount: bounty_amount.into(),
-            min_amount: bounty_amount.into(),
+            funding_type: FundingType::Limited{
+                min_funding_amount: bounty_amount,
+                max_funding_amount: bounty_amount,
+                funding_period: funding_period.into(),
+            },
             cherry,
             entrant_stake,
             ..Default::default()
@@ -501,7 +523,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             creator: creator.clone(),
             ..Default::default()
@@ -534,7 +556,7 @@ benchmarks! {
             cherry,
             entrant_stake,
             creator: creator.clone(),
-            max_amount,
+            funding_type: FundingType::Perpetual{ target: max_amount },
             ..Default::default()
         };
 
@@ -575,7 +597,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             cherry,
             contract_type,
             entrant_stake: stake,
@@ -615,7 +637,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             entrant_stake: stake,
             ..Default::default()
         };
@@ -656,10 +678,12 @@ benchmarks! {
         let params = BountyCreationParameters::<T>{
             work_period,
             judging_period,
-            funding_period: Some(funding_period),
             cherry,
-            min_amount: funding_amount,
-            max_amount,
+            funding_type: FundingType::Limited{
+                min_funding_amount: funding_amount,
+                max_funding_amount: max_amount,
+                funding_period
+            },
             entrant_stake,
             ..Default::default()
         };
@@ -709,7 +733,7 @@ benchmarks! {
             creator: BountyActor::Council,
             cherry,
             entrant_stake,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             ..Default::default()
         };
@@ -757,7 +781,7 @@ benchmarks! {
             creator: BountyActor::Council,
             cherry,
             entrant_stake,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             ..Default::default()
         };
@@ -802,7 +826,7 @@ benchmarks! {
             creator: BountyActor::Council,
             cherry,
             entrant_stake,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             ..Default::default()
         };
@@ -857,7 +881,7 @@ benchmarks! {
             creator: BountyActor::Council,
             cherry,
             entrant_stake,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             ..Default::default()
         };
@@ -905,7 +929,7 @@ benchmarks! {
             judging_period: One::one(),
             creator: creator.clone(),
             cherry,
-            max_amount: funding_amount,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
             entrant_stake: stake,
             ..Default::default()

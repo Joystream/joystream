@@ -1,7 +1,7 @@
 //! This module contains the BountyStageCalculator - a bounty stage calculation helper.
 //! It allows to get a bounty stage based on the current bounty state and the current system block.
 
-use crate::{Bounty, BountyMilestone, BountyStage, Trait};
+use crate::{Bounty, BountyMilestone, BountyStage, FundingType, Trait};
 
 // Bounty stage helper.
 pub(crate) struct BountyStageCalculator<'a, T: Trait> {
@@ -37,18 +37,21 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         match self.bounty.milestone.clone() {
             // Funding period is over. Minimum funding reached. Work period is not expired.
             BountyMilestone::Created { created_at, .. } => {
-                // Limited funding period.
-                if let Some(funding_period) = self.bounty.creation_params.funding_period {
-                    let minimum_funding_reached = self.minimum_funding_reached();
-                    let funding_period_expired = self.funding_period_expired(created_at);
-                    let working_period_is_not_expired =
-                        !self.work_period_expired(created_at + funding_period);
+                match self.bounty.creation_params.funding_type {
+                    // Perpetual funding is not reached its target yet.
+                    FundingType::Perpetual { .. } => return None,
+                    FundingType::Limited { funding_period, .. } => {
+                        let minimum_funding_reached = self.minimum_funding_reached();
+                        let funding_period_expired = self.funding_period_expired(created_at);
+                        let working_period_is_not_expired =
+                            !self.work_period_expired(created_at + funding_period);
 
-                    if minimum_funding_reached
-                        && funding_period_expired
-                        && working_period_is_not_expired
-                    {
-                        return Some(BountyStage::WorkSubmission);
+                        if minimum_funding_reached
+                            && funding_period_expired
+                            && working_period_is_not_expired
+                        {
+                            return Some(BountyStage::WorkSubmission);
+                        }
                     }
                 }
             }
@@ -177,7 +180,13 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Checks whether the minimum funding reached for the bounty.
     fn minimum_funding_reached(&self) -> bool {
-        self.bounty.total_funding >= self.bounty.creation_params.min_amount
+        match self.bounty.creation_params.funding_type {
+            // There is no minimum for the perpetual funding type - only maximum (target).
+            FundingType::Perpetual { .. } => false,
+            FundingType::Limited {
+                min_funding_amount, ..
+            } => self.bounty.total_funding >= min_funding_amount,
+        }
     }
 
     // Checks whether the work period expired by now starting from the provided block number.
@@ -187,13 +196,11 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Checks whether the funding period expired by now starting from the provided block number.
     fn funding_period_expired(&self, created_at: T::BlockNumber) -> bool {
-        // Limited funding period
-        if let Some(funding_period) = self.bounty.creation_params.funding_period {
-            return created_at + funding_period < self.now;
+        match self.bounty.creation_params.funding_type {
+            // Never expires
+            FundingType::Perpetual { .. } => false,
+            FundingType::Limited { funding_period, .. } => created_at + funding_period < self.now,
         }
-
-        // Unlimited funding period
-        false
     }
 
     // Checks whether the judgment period expired by now when work period start from the provided

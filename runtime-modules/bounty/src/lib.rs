@@ -166,6 +166,37 @@ impl<MemberId: Ord> Default for AssuranceContractType<MemberId> {
     }
 }
 
+/// Defines funding conditions.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum FundingType<BlockNumber, Balance> {
+    /// Funding has no time limits.
+    Perpetual {
+        /// Desired funding.
+        target: Balance,
+    },
+
+    /// Funding has a time limitation.
+    Limited {
+        /// Minimum amount of funds for a successful bounty.
+        min_funding_amount: Balance,
+
+        /// Upper boundary for a bounty funding.
+        max_funding_amount: Balance,
+
+        /// Maximum allowed funding period.
+        funding_period: BlockNumber,
+    },
+}
+
+impl<BlockNumber, Balance: Default> Default for FundingType<BlockNumber, Balance> {
+    fn default() -> Self {
+        Self::Perpetual {
+            target: Default::default(),
+        }
+    }
+}
+
 /// Defines parameters for the bounty creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -185,19 +216,11 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     /// does it, it comes from an account.
     pub cherry: Balance,
 
-    /// The minimum total quantity of funds, possibly 0, required for the bounty to become
-    /// available for people to work on.
-    pub min_amount: Balance,
-
-    /// Maximum funding accepted, if this limit is reached, funding automatically is over.
-    pub max_amount: Balance,
-
     /// Amount of stake required, possibly 0, to enter bounty as entrant.
     pub entrant_stake: Balance,
 
-    /// Number of blocks from creation until funding is no longer possible. If not provided, then
-    /// funding is called perpetual, and it only ends when minimum amount is reached.
-    pub funding_period: Option<BlockNumber>,
+    /// Defines parameters for different funding types.
+    pub funding_type: FundingType<BlockNumber, Balance>,
 
     /// Number of blocks from end of funding period until people can no longer submit
     /// bounty submissions.
@@ -326,7 +349,7 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
     pub active_work_entry_count: u32,
 }
 
-impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
+impl<Balance: PartialOrd, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
     // Increments bounty active work entry counter.
     fn increment_active_work_entry_counter(&mut self) {
         self.active_work_entry_count += 1;
@@ -336,6 +359,17 @@ impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, Mem
     fn decrement_active_work_entry_counter(&mut self) {
         if self.active_work_entry_count > 0 {
             self.active_work_entry_count -= 1;
+        }
+    }
+
+    // Defines whether the maximum funding amount will be reached for current funding type.
+    fn is_maximum_funding_reached(&self, total_funding: Balance) -> bool {
+        match self.creation_params.funding_type {
+            FundingType::Perpetual { ref target } => total_funding >= *target,
+            FundingType::Limited {
+                ref max_funding_amount,
+                ..
+            } => total_funding >= *max_funding_amount,
         }
     }
 }
@@ -603,6 +637,12 @@ decl_error! {
 
         /// Cannot create a bounty with zero work entrant stake.
         EntrantStakeCannotBeZero,
+
+        /// Cannot create a bounty with zero funding amount parameter.
+        FundingAmountCannotBeZero,
+
+        /// Cannot create a bounty with zero funding period parameter.
+        FundingPeriodCannotBeZero,
     }
 }
 
@@ -785,7 +825,7 @@ decl_module! {
             bounty_funder_manager.transfer_funds_to_bounty_account(bounty_id, amount)?;
 
             let total_funding = bounty.total_funding.saturating_add(amount);
-            let maximum_funding_reached = total_funding >= bounty.creation_params.max_amount;
+            let maximum_funding_reached = bounty.is_maximum_funding_reached(total_funding);
             let new_milestone = Self::get_bounty_milestone_on_funding(
                     maximum_funding_reached,
                     bounty.milestone
@@ -1215,10 +1255,39 @@ impl<T: Trait> Module<T> {
             Error::<T>::JudgingPeriodCannotBeZero
         );
 
-        ensure!(
-            params.min_amount <= params.max_amount,
-            Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
-        );
+        match params.funding_type {
+            FundingType::Perpetual { target } => {
+                ensure!(
+                    target != Zero::zero(),
+                    Error::<T>::FundingAmountCannotBeZero
+                );
+            }
+            FundingType::Limited {
+                min_funding_amount,
+                max_funding_amount,
+                funding_period,
+            } => {
+                ensure!(
+                    min_funding_amount != Zero::zero(),
+                    Error::<T>::FundingAmountCannotBeZero
+                );
+
+                ensure!(
+                    max_funding_amount != Zero::zero(),
+                    Error::<T>::FundingAmountCannotBeZero
+                );
+
+                ensure!(
+                    funding_period != Zero::zero(),
+                    Error::<T>::FundingPeriodCannotBeZero
+                );
+
+                ensure!(
+                    min_funding_amount <= max_funding_amount,
+                    Error::<T>::MinFundingAmountCannotBeGreaterThanMaxAmount
+                );
+            }
+        }
 
         ensure!(
             params.cherry >= T::MinCherryLimit::get(),
@@ -1427,15 +1496,12 @@ impl<T: Trait> Module<T> {
 
         match bounty.milestone.clone() {
             BountyMilestone::Created { created_at, .. } => {
-                // Limited funding period.
-                if let Some(funding_period) = bounty.creation_params.funding_period {
-                    return BountyMilestone::WorkSubmitted {
+                match bounty.creation_params.funding_type {
+                    FundingType::Perpetual { .. } => previous_milestone,
+                    FundingType::Limited { funding_period, .. } => BountyMilestone::WorkSubmitted {
                         work_period_started_at: created_at + funding_period,
-                    };
+                    },
                 }
-
-                // Unlimited funding period.
-                previous_milestone
             }
             BountyMilestone::BountyMaxFundingReached {
                 max_funding_reached_at,
