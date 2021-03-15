@@ -330,7 +330,7 @@ fn plot_hist() {
 
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(70)
-        .y_label_area_size(100)
+        .y_label_area_size(150)
         .margin(80)
         .caption("State distribution", ("sans-serif", 50))
         .build_cartesian_2d((0u32..9000u32).into_segmented(), 0u32..*max_count)
