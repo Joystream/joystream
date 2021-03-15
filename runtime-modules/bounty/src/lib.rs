@@ -1268,7 +1268,7 @@ impl<T: Trait> Module<T> {
             account_id,
             &bounty_account_id,
             amount,
-            ExistenceRequirement::KeepAlive,
+            ExistenceRequirement::AllowDeath,
         )
     }
 
@@ -1284,7 +1284,7 @@ impl<T: Trait> Module<T> {
             &bounty_account_id,
             account_id,
             amount,
-            ExistenceRequirement::KeepAlive,
+            ExistenceRequirement::AllowDeath,
         )
     }
 
