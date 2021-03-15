@@ -25,7 +25,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
       this.log(chalk.yellow('No lead assigned!'))
     }
 
-    const accounts = this.fetchAccounts()
+    const pairs = this.getPairs()
 
     displayHeader('Members')
     const membersRows = members.map((m) => ({
@@ -39,7 +39,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
       '':
         (lead?.workerId.eq(m.workerId) ? '\u{2B50}' : '  ') +
         ' ' +
-        (accounts.some((a) => a.address === m.roleAccount.toString()) ? '\u{1F511}' : '  '),
+        (pairs.some((p) => p.address === m.roleAccount.toString()) ? '\u{1F511}' : '  '),
     }))
     displayTable(membersRows, 5)
 

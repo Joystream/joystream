@@ -36,9 +36,8 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
       flags: { rationale },
     } = this.parse(WorkingGroupsSlashWorker)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const groupMember = await this.getWorkerWithStakeForLeadAction(parseInt(workerId))
 
@@ -48,13 +47,12 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
       this.error('Invalid slash amount', { exit: ExitCodes.InvalidInput })
     }
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'slashStake', [
-      workerId,
-      amount,
-      rationale || null,
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount.toString()),
+      apiModuleByGroup[this.group],
+      'slashStake',
+      [workerId, amount, rationale || null]
+    )
 
     this.log(
       chalk.green(

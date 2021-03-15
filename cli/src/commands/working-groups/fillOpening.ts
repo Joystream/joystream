@@ -21,21 +21,20 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
   async run() {
     const { args } = this.parse(WorkingGroupsFillOpening)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const openingId = parseInt(args.wgOpeningId)
     const opening = await this.getOpeningForLeadAction(openingId)
 
     const applicationIds = await this.promptForApplicationsToAccept(opening)
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'fillOpening', [
-      openingId,
-      new (JoyBTreeSet(ApplicationId))(this.getTypesRegistry(), applicationIds),
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount.toString()),
+      apiModuleByGroup[this.group],
+      'fillOpening',
+      [openingId, new (JoyBTreeSet(ApplicationId))(this.getTypesRegistry(), applicationIds)]
+    )
 
     this.log(chalk.green(`Opening ${chalk.white(openingId.toString())} succesfully filled!`))
     this.log(

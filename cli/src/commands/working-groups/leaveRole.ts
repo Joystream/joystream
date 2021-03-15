@@ -14,20 +14,19 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
   }
 
   async run() {
-    const account = await this.getRequiredSelectedAccount()
     // Worker-only gate
-    const worker = await this.getRequiredWorker()
+    const worker = await this.getRequiredWorkerContext()
 
     const {
       flags: { rationale },
     } = this.parse(WorkingGroupsLeaveRole)
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'leaveRole', [
-      worker.workerId,
-      rationale || null,
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(worker.roleAccount.toString()),
+      apiModuleByGroup[this.group],
+      'leaveRole',
+      [worker.workerId, rationale || null]
+    )
 
     this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.white(worker.workerId.toString())})`))
   }

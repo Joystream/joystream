@@ -146,10 +146,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   }
 
   async run() {
-    const account = await this.getRequiredSelectedAccount()
     // lead-only gate
-    const lead = await this.getRequiredLead()
-    await this.requestAccountDecoding(account) // Prompt for password
+    const lead = await this.getRequiredLeadContext()
 
     const {
       flags: { input, output, edit, dryRun },
@@ -199,10 +197,11 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      this.log(chalk.white('Sending the extrinsic...'))
-      const txSuccess = await this.sendAndFollowTx(
-        account,
-        this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams),
+      const txSuccess = await this.sendAndFollowNamedTx(
+        await this.getDecodedPair(lead.roleAccount.toString()),
+        apiModuleByGroup[this.group],
+        'addOpening',
+        txParams,
         true // warnOnly
       )
 

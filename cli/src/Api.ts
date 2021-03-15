@@ -27,7 +27,7 @@ import {
   StorageProviderId,
   Opening,
 } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
+import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
 import { AccountId, MemberId } from '@joystream/types/common'
 import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/media'
@@ -50,8 +50,10 @@ export const apiModuleByGroup = {
 export default class Api {
   private _api: ApiPromise
   private _cdClassesCache: [ClassId, Class][] | null = null
+  public isDevelopment = false
 
-  private constructor(originalApi: ApiPromise) {
+  private constructor(originalApi: ApiPromise, isDevelopment: boolean) {
+    this.isDevelopment = isDevelopment
     this._api = originalApi
   }
 
@@ -64,15 +66,12 @@ export default class Api {
     return (this._api as unknown) as UnaugmentedApiPromise
   }
 
-  private static async initApi(
-    apiUri: string = DEFAULT_API_URI,
-    metadataCache: Record<string, any>
-  ): Promise<ApiPromise> {
+  private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
     const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
-    const [properties] = await Promise.all([api.rpc.system.properties()])
+    const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
     const tokenSymbol = properties.tokenSymbol.unwrapOr('DEV').toString()
     const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber()
@@ -83,12 +82,12 @@ export default class Api {
       unit: tokenSymbol,
     })
 
-    return api
+    return { api, properties, chainType }
   }
 
   static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
-    const originalApi: ApiPromise = await Api.initApi(apiUri, metadataCache)
-    return new Api(originalApi)
+    const { api, chainType } = await Api.initApi(apiUri, metadataCache)
+    return new Api(api, chainType.isDevelopment || chainType.isLocal)
   }
 
   private queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
@@ -358,10 +357,8 @@ export default class Api {
     return this.fetchOpeningDetails(group, opening, openingId)
   }
 
-  async getMemberIdsByControllerAccount(address: string): Promise<MemberId[]> {
-    // TODO: FIXME: Temporary ugly solution, the account management in CLI needs to be changed
-    const membersEntries = await this.entriesByIds(this._api.query.members.membershipById)
-    return membersEntries.filter(([, m]) => m.controller_account.eq(address)).map(([id]) => id)
+  async allMembers(): Promise<[MemberId, Membership][]> {
+    return this.entriesByIds<MemberId, Membership>(this._api.query.members.membershipById)
   }
 
   // Content directory
@@ -424,5 +421,10 @@ export default class Api {
 
     const bestNumber = await this.bestNumber()
     return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
+  }
+
+  async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {
+    const status = await this.getOriginalApi().query.members.stakingAccountIdMemberStatus(account)
+    return status.isEmpty ? null : status
   }
 }

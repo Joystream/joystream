@@ -10,7 +10,6 @@ import { WorkingGroups } from '../Types'
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
-  selectedAccountFilename: string
   apiUri: string
   defaultWorkingGroup: WorkingGroups
   metadataCache: Record<string, any>
@@ -18,7 +17,6 @@ type StateObject = {
 
 // State object default values
 const DEFAULT_STATE: StateObject = {
-  selectedAccountFilename: '',
   apiUri: '',
   defaultWorkingGroup: WorkingGroups.StorageProviders,
   metadataCache: {},
@@ -91,7 +89,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
       fs.mkdirSync(this.getAppDataPath())
     }
     if (!fs.existsSync(this.getStateFilePath())) {
-      fs.writeFileSync(this.getStateFilePath(), JSON.stringify(DEFAULT_STATE))
+      fs.writeFileSync(this.getStateFilePath(), JSON.stringify(DEFAULT_STATE, null, 4))
     }
   }
 
@@ -117,7 +115,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
     const oldState: StateObject = this.getPreservedState()
     const newState: StateObject = { ...oldState, ...modifiedState }
     try {
-      fs.writeFileSync(stateFilePath, JSON.stringify(newState))
+      fs.writeFileSync(stateFilePath, JSON.stringify(newState, null, 4))
     } catch (e) {
       await unlock()
       throw this.createDataWriteError()

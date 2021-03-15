@@ -33,9 +33,8 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
       args: { workerId, amount },
     } = this.parse(WorkingGroupsDecreaseWorkerStake)
 
-    const account = await this.getRequiredSelectedAccount()
     // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const groupMember = await this.getWorkerWithStakeForLeadAction(parseInt(workerId))
 
@@ -45,9 +44,12 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
       this.error('Invalid amount', { exit: ExitCodes.InvalidInput })
     }
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'decreaseStake', [workerId, amount])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount.toString()),
+      apiModuleByGroup[this.group],
+      'decreaseStake',
+      [workerId, amount]
+    )
 
     this.log(
       chalk.green(

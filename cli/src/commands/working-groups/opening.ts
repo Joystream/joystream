@@ -37,7 +37,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     if (opening.stake) {
       const stakingRow = {
         'Stake amount': formatBalance(opening.stake.value),
-        'Unstaking period': formatBalance(opening.stake.unstakingPeriod),
+        'Unstaking period': opening.stake.unstakingPeriod.toLocaleString() + ' blocks',
       }
       displayCollapsedRow(stakingRow)
     } else {

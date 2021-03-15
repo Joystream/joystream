@@ -4,12 +4,14 @@ import { decodeAddress } from '@polkadot/util-crypto'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
 
-export function validateAddress(address: string, errorMessage = 'Invalid address'): void {
+export function validateAddress(address: string, errorMessage = 'Invalid address'): string | true {
   try {
     decodeAddress(address)
   } catch (e) {
-    throw new CLIError(errorMessage, { exit: ExitCodes.InvalidInput })
+    return errorMessage
   }
+
+  return true
 }
 
 export function checkBalance(accBalances: DeriveBalancesAll, requiredBalance: BN): void {

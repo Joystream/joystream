@@ -35,9 +35,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       flags: { penalty, rationale },
     } = this.parse(WorkingGroupsEvictWorker)
 
-    const account = await this.getRequiredSelectedAccount()
-    // Lead-only gate
-    await this.getRequiredLead()
+    const lead = await this.getRequiredLeadContext()
 
     const workerId = parseInt(args.workerId)
     // This will also make sure the worker is valid
@@ -51,13 +49,12 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       this.error('Penalty cannot exceed worker stake', { exit: ExitCodes.InvalidInput })
     }
 
-    await this.requestAccountDecoding(account)
-
-    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateRole', [
-      workerId,
-      penalty || null,
-      rationale || null,
-    ])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount.toString()),
+      apiModuleByGroup[this.group],
+      'terminateRole',
+      [workerId, penalty || null, rationale || null]
+    )
 
     this.log(chalk.green(`Worker ${chalk.white(workerId.toString())} has been evicted!`))
     if (penalty) {

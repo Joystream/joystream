@@ -16,6 +16,8 @@ import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import { formatBalance } from '@polkadot/util'
+import BN from 'bn.js'
+import _ from 'lodash'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -424,6 +426,22 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
+  private humanize(p: unknown): any {
+    if (Array.isArray(p)) {
+      return p.map((v) => this.humanize(v))
+    } else if (typeof p === 'object' && p !== null) {
+      if ((p as Codec).toHuman) {
+        return (p as Codec).toHuman()
+      } else if (p instanceof BN) {
+        return p.toString()
+      } else {
+        return _.mapValues(p, this.humanize.bind(this))
+      }
+    }
+
+    return p
+  }
+
   async sendAndFollowNamedTx<
     Module extends keyof AugmentedSubmittables<'promise'>,
     Method extends keyof AugmentedSubmittables<'promise'>[Module] & string,
@@ -435,7 +453,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : [],
     warnOnly = false
   ): Promise<boolean> {
-    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+    this.log(chalk.white(`\nSending ${module}.${method} extrinsic from ${account.address}...`))
+    console.log('Params:', this.humanize(params))
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
   }
