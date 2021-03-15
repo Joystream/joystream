@@ -1,11 +1,15 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
-import {ChannelCreationParametersMetadata, AssetsMetadata} from '@joystream/content-metadata-protobuf'
+import { IOFlags, getInputJson } from '../../helpers/InputOutput'
+import {ChannelCreationParameters, NewAsset} from '@joystream/types/content'
+import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
+import { Vec, Option} from '@polkadot/types';
+import AccountId from '@polkadot/types/generic/AccountId';
+import { Bytes } from '@polkadot/types/primitive';
 
 type ChannelCreationParametersInput = {
-  assets?: AssetsMetadata.AsObject,
-  meta?: Uint8Array,
-  rewardAccount?: Uint8Array | string,
+  assets: import("@polkadot/types/types").Constructor<Vec<NewAsset>>,
+  meta: ChannelMetadata.AsObject,
+  reward_account: import("@polkadot/types/types").Constructor<Option<AccountId>>,
 }
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
@@ -28,12 +32,19 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let channelCreationParameters = await getInputJson<ChannelCreationParametersMetadata>(input)
+      let channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
+      let channelMetadata = new ChannelMetadata()
+      channelMetadata.setTitle(channelCreationParametersInput.meta.title!)
+      channelMetadata.setDescription(channelCreationParametersInput.meta.description!)
+      channelMetadata.setIsPublic(channelCreationParametersInput.meta.isPublic!)
+      channelMetadata.setLanguage(channelCreationParametersInput.meta.language!)
+      channelMetadata.setCoverPhoto(channelCreationParametersInput.meta.coverPhoto!)
+      channelMetadata.setAvatarPhoto(channelCreationParametersInput.meta.avatarPhoto!)
+      channelMetadata.setCategory(channelCreationParametersInput.meta.category!)
 
-      let channelCreationParametersInput: ChannelCreationParametersInput = {
-        assets: channelCreationParameters.getAssets()?.toObject(),
-        meta: channelCreationParameters.getMeta()?.serializeBinary(),
-        rewardAccount: channelCreationParameters.getRewardAccount()
+      let channelCreationParameters: ChannelCreationParameters = {
+        meta: channelMetadata.serializeBinary() as Bytes,
+        reward_account: channelCreationParametersInput.reward_account,
       }
 
       this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
