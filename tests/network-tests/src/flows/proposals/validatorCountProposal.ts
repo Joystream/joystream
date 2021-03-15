@@ -6,7 +6,7 @@ import { FixtureRunner } from '../../Fixture'
 import Debugger from 'debug'
 import { Resource } from '../../Resources'
 
-export default async function validatorCount({ api, env, lock }: FlowProps): Promise<void> {
+export default async function validatorCount({ api, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:validatorCountProposal')
   debug('Started')
   await lock(Resource.Proposals)
@@ -16,13 +16,12 @@ export default async function validatorCount({ api, env, lock }: FlowProps): Pro
   assert(council.length)
 
   const proposer = council[0].member.toString()
-
-  const validatorCountIncrement: BN = new BN(+env.VALIDATOR_COUNT_INCREMENT!)
+  const proposedValidatorCount = new BN(300)
 
   const validatorCountProposalFixture: ValidatorCountProposalFixture = new ValidatorCountProposalFixture(
     api,
     proposer,
-    validatorCountIncrement
+    proposedValidatorCount
   )
   await new FixtureRunner(validatorCountProposalFixture).run()
 

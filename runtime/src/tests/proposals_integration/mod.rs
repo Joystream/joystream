@@ -513,7 +513,7 @@ where
             setup_members(NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE);
             setup_council();
 
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1000000);
         }
 
         assert_eq!((self.successful_call)(), Ok(()));
@@ -620,7 +620,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
             voting_period: 14400,
             revealing_period: 14400,
             council_size: 4,
-            candidacy_limit: 25,
+            candidacy_limit: 50,
             new_term_duration: 14400,
             min_council_stake: 1,
             min_voting_stake: 1,
@@ -633,7 +633,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(200_000_u32)),
+                Some(<BalanceOf<Runtime>>::from(1_000_000_u32)),
                 election_parameters,
             )
         });
@@ -658,7 +658,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(100_000_u32)),
+                Some(<BalanceOf<Runtime>>::from(500_000_u32)),
                 new_validator_count,
             )
         });
