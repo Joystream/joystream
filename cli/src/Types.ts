@@ -45,8 +45,8 @@ export const AvailableGroups: readonly WorkingGroups[] = [
 ] as const
 
 export type Reward = {
-  totalMissed: Balance
-  valuePerBlock: Balance
+  totalMissed?: Balance
+  valuePerBlock?: Balance
 }
 
 // Compound working group types
@@ -55,22 +55,23 @@ export type GroupMember = {
   memberId: MemberId
   roleAccount: AccountId
   profile: Membership
-  stake?: Balance
-  reward?: Reward
+  stake: Balance
+  reward: Reward
 }
 
 export type ApplicationDetails = {
   applicationId: number
   member: Membership | null
   roleAccout: AccountId
-  stakingAccount?: AccountId
+  stakingAccount: AccountId
   rewardAccount: AccountId
   descriptionHash: string
+  openingId: number
 }
 
 export type OpeningDetails = {
   openingId: number
-  stake?: {
+  stake: {
     value: Balance
     unstakingPeriod: number
   }

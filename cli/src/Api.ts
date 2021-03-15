@@ -204,14 +204,11 @@ export default class Api {
       throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`)
     }
 
-    let stake: Balance | undefined
-    if (worker.staking_account_id.isSome) {
-      stake = await this.fetchStake(worker.staking_account_id.unwrap())
-    }
+    const stake = await this.fetchStake(worker.staking_account_id)
 
     const reward: Reward = {
-      valuePerBlock: worker.reward_per_block.unwrapOrDefault(),
-      totalMissed: worker.missed_reward.unwrapOrDefault(),
+      valuePerBlock: worker.reward_per_block.unwrapOr(undefined),
+      totalMissed: worker.missed_reward.unwrapOr(undefined),
     }
 
     return {
@@ -291,8 +288,9 @@ export default class Api {
       member: await this.membershipById(application.member_id),
       roleAccout: application.role_account_id,
       rewardAccount: application.reward_account_id,
-      stakingAccount: application.staking_account_id.unwrapOr(undefined),
+      stakingAccount: application.staking_account_id,
       descriptionHash: application.description_hash.toString(),
+      openingId: application.opening_id.toNumber(),
     }
   }
 
@@ -301,18 +299,15 @@ export default class Api {
     return await this.fetchApplicationDetails(applicationId, application)
   }
 
-  protected async groupOpeningApplications(
-    group: WorkingGroups /*, openingId: number */
-  ): Promise<ApplicationDetails[]> {
+  protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
     const applicationEntries = await this.entriesByIds<ApplicationId, Application>(
       this.workingGroupApiQuery(group).applicationById
     )
 
     return Promise.all(
       applicationEntries
-        // TODO: No relation between application and opening yet!
-        // .filter(([, /* id */ wgApplication]) => wgApplication.opening_id.eqn(wgOpeningId))
-        .map(([id, wgApplication]) => this.fetchApplicationDetails(id.toNumber(), wgApplication))
+        .filter(([, application]) => application.opening_id.eqn(openingId))
+        .map(([id, application]) => this.fetchApplicationDetails(id.toNumber(), application))
     )
   }
 
@@ -333,14 +328,12 @@ export default class Api {
   }
 
   async fetchOpeningDetails(group: WorkingGroups, opening: Opening, openingId: number): Promise<OpeningDetails> {
-    const applications = await this.groupOpeningApplications(group)
+    const applications = await this.groupOpeningApplications(group, openingId)
     const type = opening.opening_type
-    const stake = opening.stake_policy.isSome
-      ? {
-          unstakingPeriod: opening.stake_policy.unwrap().leaving_unstaking_period.toNumber(),
-          value: opening.stake_policy.unwrap().stake_amount,
-        }
-      : undefined
+    const stake = {
+      unstakingPeriod: opening.stake_policy.leaving_unstaking_period.toNumber(),
+      value: opening.stake_policy.stake_amount,
+    }
 
     return {
       openingId,

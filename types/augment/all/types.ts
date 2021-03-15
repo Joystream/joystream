@@ -18,14 +18,6 @@ export interface Actor extends Enum {
 /** @name ActorId */
 export interface ActorId extends u64 {}
 
-/** @name AddOpeningParameters */
-export interface AddOpeningParameters extends Struct {
-  readonly description: Text;
-  readonly stake_policy: Option<StakePolicy>;
-  readonly reward_per_block: Option<u128>;
-  readonly working_group: WorkingGroup;
-}
-
 /** @name Address */
 export interface Address extends AccountId {}
 
@@ -40,9 +32,10 @@ export interface AddSchemaSupportToEntityOperation extends Struct {
 export interface Application extends Struct {
   readonly role_account_id: AccountId;
   readonly reward_account_id: AccountId;
-  readonly staking_account_id: Option<AccountId>;
+  readonly staking_account_id: AccountId;
   readonly member_id: MemberId;
-  readonly description_hash: Text;
+  readonly description_hash: Bytes;
+  readonly opening_id: OpeningId;
 }
 
 /** @name ApplicationId */
@@ -67,13 +60,19 @@ export interface ApplyOnOpeningParameters extends Struct {
   readonly role_account_id: AccountId;
   readonly reward_account_id: AccountId;
   readonly description: Text;
-  readonly stake_parameters: Option<StakeParameters>;
+  readonly stake_parameters: StakeParameters;
 }
 
 /** @name Approved */
 export interface Approved extends Enum {
   readonly isPendingExecution: boolean;
   readonly isPendingConstitutionality: boolean;
+}
+
+/** @name BalanceKind */
+export interface BalanceKind extends Enum {
+  readonly isPositive: boolean;
+  readonly isNegative: boolean;
 }
 
 /** @name BlockAndTime */
@@ -210,6 +209,14 @@ export interface CreateEntityOperation extends Struct {
   readonly class_id: ClassId;
 }
 
+/** @name CreateOpeningParameters */
+export interface CreateOpeningParameters extends Struct {
+  readonly description: Text;
+  readonly stake_policy: StakePolicy;
+  readonly reward_per_block: Option<u128>;
+  readonly working_group: WorkingGroup;
+}
+
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
   readonly curators: Vec<CuratorId>;
@@ -338,6 +345,12 @@ export interface FillOpeningParameters extends Struct {
 /** @name ForumUserId */
 export interface ForumUserId extends u64 {}
 
+/** @name FundingRequestParameters */
+export interface FundingRequestParameters extends Struct {
+  readonly account: AccountId;
+  readonly amount: u128;
+}
+
 /** @name GeneralProposalParameters */
 export interface GeneralProposalParameters extends Struct {
   readonly member_id: MemberId;
@@ -447,7 +460,7 @@ export interface Opening extends Struct {
   readonly opening_type: OpeningType;
   readonly created: u32;
   readonly description_hash: Bytes;
-  readonly stake_policy: Option<StakePolicy>;
+  readonly stake_policy: StakePolicy;
   readonly reward_per_block: Option<u128>;
 }
 
@@ -499,6 +512,9 @@ export interface ParametrizedPropertyValue extends Enum {
   readonly isInternalEntityVec: boolean;
   readonly asInternalEntityVec: Vec<ParameterizedEntity>;
 }
+
+/** @name ParticipantId */
+export interface ParticipantId extends u64 {}
 
 /** @name Penalty */
 export interface Penalty extends Struct {
@@ -602,58 +618,110 @@ export interface ProposalDecision extends Enum {
 
 /** @name ProposalDetails */
 export interface ProposalDetails extends Enum {
-  readonly isText: boolean;
-  readonly asText: Text;
+  readonly isSignal: boolean;
+  readonly asSignal: Text;
   readonly isRuntimeUpgrade: boolean;
   readonly asRuntimeUpgrade: Bytes;
-  readonly isSpending: boolean;
-  readonly asSpending: ITuple<[Balance, AccountId]>;
-  readonly isSetValidatorCount: boolean;
-  readonly asSetValidatorCount: u32;
-  readonly isAddWorkingGroupLeaderOpening: boolean;
-  readonly asAddWorkingGroupLeaderOpening: AddOpeningParameters;
-  readonly isFillWorkingGroupLeaderOpening: boolean;
-  readonly asFillWorkingGroupLeaderOpening: FillOpeningParameters;
-  readonly isSetWorkingGroupBudgetCapacity: boolean;
-  readonly asSetWorkingGroupBudgetCapacity: ITuple<[Balance, WorkingGroup]>;
-  readonly isDecreaseWorkingGroupLeaderStake: boolean;
-  readonly asDecreaseWorkingGroupLeaderStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isSlashWorkingGroupLeaderStake: boolean;
-  readonly asSlashWorkingGroupLeaderStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isSetWorkingGroupLeaderReward: boolean;
-  readonly asSetWorkingGroupLeaderReward: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isTerminateWorkingGroupLeaderRole: boolean;
-  readonly asTerminateWorkingGroupLeaderRole: TerminateRoleParameters;
+  readonly isFundingRequest: boolean;
+  readonly asFundingRequest: Vec<FundingRequestParameters>;
+  readonly isSetMaxValidatorCount: boolean;
+  readonly asSetMaxValidatorCount: u32;
+  readonly isCreateWorkingGroupLeadOpening: boolean;
+  readonly asCreateWorkingGroupLeadOpening: CreateOpeningParameters;
+  readonly isFillWorkingGroupLeadOpening: boolean;
+  readonly asFillWorkingGroupLeadOpening: FillOpeningParameters;
+  readonly isUpdateWorkingGroupBudget: boolean;
+  readonly asUpdateWorkingGroupBudget: ITuple<[Balance, WorkingGroup, BalanceKind]>;
+  readonly isDecreaseWorkingGroupLeadStake: boolean;
+  readonly asDecreaseWorkingGroupLeadStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
+  readonly isSlashWorkingGroupLead: boolean;
+  readonly asSlashWorkingGroupLead: ITuple<[WorkerId, Balance, WorkingGroup]>;
+  readonly isSetWorkingGroupLeadReward: boolean;
+  readonly asSetWorkingGroupLeadReward: ITuple<[WorkerId, Option<Balance>, WorkingGroup]>;
+  readonly isTerminateWorkingGroupLead: boolean;
+  readonly asTerminateWorkingGroupLead: TerminateRoleParameters;
   readonly isAmendConstitution: boolean;
   readonly asAmendConstitution: Text;
+  readonly isCancelWorkingGroupLeadOpening: boolean;
+  readonly asCancelWorkingGroupLeadOpening: ITuple<[OpeningId, WorkingGroup]>;
+  readonly isSetMembershipPrice: boolean;
+  readonly asSetMembershipPrice: u128;
+  readonly isSetCouncilBudgetIncrement: boolean;
+  readonly asSetCouncilBudgetIncrement: u128;
+  readonly isSetCouncilorReward: boolean;
+  readonly asSetCouncilorReward: u128;
+  readonly isSetInitialInvitationBalance: boolean;
+  readonly asSetInitialInvitationBalance: u128;
+  readonly isSetInitialInvitationCount: boolean;
+  readonly asSetInitialInvitationCount: u32;
+  readonly isSetMembershipLeadInvitationQuota: boolean;
+  readonly asSetMembershipLeadInvitationQuota: u32;
+  readonly isSetReferralCut: boolean;
+  readonly asSetReferralCut: u128;
+  readonly isCreateBlogPost: boolean;
+  readonly asCreateBlogPost: ITuple<[Text, Text]>;
+  readonly isEditBlogPost: boolean;
+  readonly asEditBlogPost: ITuple<[PostId, Option<Text>, Option<Text>]>;
+  readonly isLockBlogPost: boolean;
+  readonly asLockBlogPost: PostId;
+  readonly isUnlockBlogPost: boolean;
+  readonly asUnlockBlogPost: PostId;
+  readonly isVetoProposal: boolean;
+  readonly asVetoProposal: ProposalId;
 }
 
 /** @name ProposalDetailsOf */
 export interface ProposalDetailsOf extends Enum {
-  readonly isText: boolean;
-  readonly asText: Text;
+  readonly isSignal: boolean;
+  readonly asSignal: Text;
   readonly isRuntimeUpgrade: boolean;
   readonly asRuntimeUpgrade: Bytes;
-  readonly isSpending: boolean;
-  readonly asSpending: ITuple<[Balance, AccountId]>;
-  readonly isSetValidatorCount: boolean;
-  readonly asSetValidatorCount: u32;
-  readonly isAddWorkingGroupLeaderOpening: boolean;
-  readonly asAddWorkingGroupLeaderOpening: AddOpeningParameters;
-  readonly isFillWorkingGroupLeaderOpening: boolean;
-  readonly asFillWorkingGroupLeaderOpening: FillOpeningParameters;
-  readonly isSetWorkingGroupBudgetCapacity: boolean;
-  readonly asSetWorkingGroupBudgetCapacity: ITuple<[Balance, WorkingGroup]>;
-  readonly isDecreaseWorkingGroupLeaderStake: boolean;
-  readonly asDecreaseWorkingGroupLeaderStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isSlashWorkingGroupLeaderStake: boolean;
-  readonly asSlashWorkingGroupLeaderStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isSetWorkingGroupLeaderReward: boolean;
-  readonly asSetWorkingGroupLeaderReward: ITuple<[WorkerId, Balance, WorkingGroup]>;
-  readonly isTerminateWorkingGroupLeaderRole: boolean;
-  readonly asTerminateWorkingGroupLeaderRole: TerminateRoleParameters;
+  readonly isFundingRequest: boolean;
+  readonly asFundingRequest: Vec<FundingRequestParameters>;
+  readonly isSetMaxValidatorCount: boolean;
+  readonly asSetMaxValidatorCount: u32;
+  readonly isCreateWorkingGroupLeadOpening: boolean;
+  readonly asCreateWorkingGroupLeadOpening: CreateOpeningParameters;
+  readonly isFillWorkingGroupLeadOpening: boolean;
+  readonly asFillWorkingGroupLeadOpening: FillOpeningParameters;
+  readonly isUpdateWorkingGroupBudget: boolean;
+  readonly asUpdateWorkingGroupBudget: ITuple<[Balance, WorkingGroup, BalanceKind]>;
+  readonly isDecreaseWorkingGroupLeadStake: boolean;
+  readonly asDecreaseWorkingGroupLeadStake: ITuple<[WorkerId, Balance, WorkingGroup]>;
+  readonly isSlashWorkingGroupLead: boolean;
+  readonly asSlashWorkingGroupLead: ITuple<[WorkerId, Balance, WorkingGroup]>;
+  readonly isSetWorkingGroupLeadReward: boolean;
+  readonly asSetWorkingGroupLeadReward: ITuple<[WorkerId, Option<Balance>, WorkingGroup]>;
+  readonly isTerminateWorkingGroupLead: boolean;
+  readonly asTerminateWorkingGroupLead: TerminateRoleParameters;
   readonly isAmendConstitution: boolean;
   readonly asAmendConstitution: Text;
+  readonly isCancelWorkingGroupLeadOpening: boolean;
+  readonly asCancelWorkingGroupLeadOpening: ITuple<[OpeningId, WorkingGroup]>;
+  readonly isSetMembershipPrice: boolean;
+  readonly asSetMembershipPrice: u128;
+  readonly isSetCouncilBudgetIncrement: boolean;
+  readonly asSetCouncilBudgetIncrement: u128;
+  readonly isSetCouncilorReward: boolean;
+  readonly asSetCouncilorReward: u128;
+  readonly isSetInitialInvitationBalance: boolean;
+  readonly asSetInitialInvitationBalance: u128;
+  readonly isSetInitialInvitationCount: boolean;
+  readonly asSetInitialInvitationCount: u32;
+  readonly isSetMembershipLeadInvitationQuota: boolean;
+  readonly asSetMembershipLeadInvitationQuota: u32;
+  readonly isSetReferralCut: boolean;
+  readonly asSetReferralCut: u128;
+  readonly isCreateBlogPost: boolean;
+  readonly asCreateBlogPost: ITuple<[Text, Text]>;
+  readonly isEditBlogPost: boolean;
+  readonly asEditBlogPost: ITuple<[PostId, Option<Text>, Option<Text>]>;
+  readonly isLockBlogPost: boolean;
+  readonly asLockBlogPost: PostId;
+  readonly isUnlockBlogPost: boolean;
+  readonly asUnlockBlogPost: PostId;
+  readonly isVetoProposal: boolean;
+  readonly asVetoProposal: ProposalId;
 }
 
 /** @name ProposalId */
@@ -717,6 +785,16 @@ export interface ReferendumStageVoting extends Struct {
   readonly winning_target_count: u64;
   readonly current_cycle_id: u64;
 }
+
+/** @name Reply */
+export interface Reply extends Struct {
+  readonly text_hash: Hash;
+  readonly owner: ParticipantId;
+  readonly parent_id: PostId;
+}
+
+/** @name ReplyId */
+export interface ReplyId extends u64 {}
 
 /** @name SameController */
 export interface SameController extends bool {}
@@ -804,7 +882,7 @@ export interface StoredValue extends Enum {
 /** @name TerminateRoleParameters */
 export interface TerminateRoleParameters extends Struct {
   readonly worker_id: WorkerId;
-  readonly penalty: Option<Penalty>;
+  readonly slashing_amount: Option<u128>;
   readonly working_group: WorkingGroup;
 }
 
@@ -830,6 +908,25 @@ export interface ThreadMode extends Enum {
   readonly isClosed: boolean;
   readonly asClosed: Vec<MemberId>;
 }
+
+/** @name ThreadOf */
+export interface ThreadOf extends Struct {
+  readonly title_hash: Hash;
+  readonly category_id: CategoryId;
+  readonly author_id: ForumUserId;
+  readonly archived: bool;
+  readonly poll: Option<Poll>;
+  readonly num_direct_posts: u32;
+}
+
+/** @name Title */
+export interface Title extends Text {}
+
+/** @name UpdatedBody */
+export interface UpdatedBody extends Option<Text> {}
+
+/** @name UpdatedTitle */
+export interface UpdatedTitle extends Option<Text> {}
 
 /** @name UpdatePropertyValuesOperation */
 export interface UpdatePropertyValuesOperation extends Struct {
@@ -920,7 +1017,7 @@ export interface VotingResults extends Struct {
 export interface Worker extends Struct {
   readonly member_id: MemberId;
   readonly role_account_id: AccountId;
-  readonly staking_account_id: Option<AccountId>;
+  readonly staking_account_id: AccountId;
   readonly reward_account_id: AccountId;
   readonly started_leaving_at: Option<u32>;
   readonly job_unstaking_period: u32;

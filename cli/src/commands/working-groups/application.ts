@@ -27,8 +27,9 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
       'Member handle': application.member?.handle_hash.toString() || chalk.red('NONE'),
       'Role account': application.roleAccout.toString(),
       'Reward account': application.rewardAccount.toString(),
-      'Staking account': application.stakingAccount?.toString() || 'NONE',
+      'Staking account': application.stakingAccount.toString(),
       'Description': application.descriptionHash.toString(),
+      'Opening ID': application.openingId.toString(),
     }
     displayCollapsedRow(applicationRow)
   }

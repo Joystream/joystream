@@ -453,7 +453,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : [],
     warnOnly = false
   ): Promise<boolean> {
-    this.log(chalk.white(`\nSending ${module}.${method} extrinsic from ${account.address}...`))
+    this.log(
+      chalk.white(
+        `\nSending ${module}.${method} extrinsic from ${account.meta.name ? account.meta.name : account.address}...`
+      )
+    )
     console.log('Params:', this.humanize(params))
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)

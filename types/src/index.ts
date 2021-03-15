@@ -6,6 +6,7 @@ import forum from './forum'
 import workingGroup from './working-group'
 import discovery from './discovery'
 import media from './media'
+import blog from './blog'
 import proposals from './proposals'
 import contentDirectory from './content-directory'
 import referendum from './referendum'
@@ -27,6 +28,7 @@ export const types: RegistryTypes = {
   ...workingGroup,
   ...discovery,
   ...media,
+  ...blog,
   ...proposals,
   ...contentDirectory,
   ...referendum,

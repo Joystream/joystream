@@ -12,7 +12,7 @@ export interface WorkingGroupOpening {
   /**
    * Staking policy
    */
-  stakingPolicy?: {
+  stakingPolicy: {
     /**
      * Stake amount
      */

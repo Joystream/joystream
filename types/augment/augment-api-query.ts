@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalId, ProposalOf, ReferendumStage, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, Thread, ThreadId, Url, VoteKind, Worker, WorkerId } from './all';
+import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalId, ProposalOf, ReferendumStage, Reply, ReplyId, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, ThreadId, ThreadOf, Url, VoteKind, Worker, WorkerId } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -140,7 +140,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Reply by unique blog, post and reply identificators
        **/
-      replyById: AugmentedQueryDoubleMap<ApiType, (key1: PostId | AnyNumber | Uint8Array, key2: ReplyId | null) => Observable<Reply>>;
+      replyById: AugmentedQueryDoubleMap<ApiType, (key1: PostId | AnyNumber | Uint8Array, key2: ReplyId | AnyNumber | Uint8Array) => Observable<Reply>>;
     };
     constitution: {
       constitution: AugmentedQuery<ApiType, () => Observable<ConstitutionInfo>>;
@@ -337,13 +337,9 @@ declare module '@polkadot/api/types/storage' {
        **/
       nextThreadId: AugmentedQuery<ApiType, () => Observable<ThreadId>>;
       /**
-       * Map post identifier to corresponding post.
-       **/
-      postById: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: PostId | AnyNumber | Uint8Array) => Observable<Post>>;
-      /**
        * Map thread identifier to corresponding thread.
        **/
-      threadById: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ThreadId | AnyNumber | Uint8Array) => Observable<Thread>>;
+      threadById: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ThreadId | AnyNumber | Uint8Array) => Observable<ThreadOf>>;
     };
     forumWorkingGroup: {
       /**

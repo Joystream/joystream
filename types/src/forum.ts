@@ -73,6 +73,8 @@ export const forumTypes: RegistryTypes = {
   PollAlternative,
   Poll,
   PrivilegedActor,
+  // runtime alias
+  ThreadOf: Thread,
 }
 
 export default forumTypes

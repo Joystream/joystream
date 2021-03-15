@@ -225,7 +225,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     let isPassValid = false
     while (!isPassValid) {
       try {
-        const password = await this.promptForPassword(message)
+        const password = await this.promptForPassword(
+          message || `Enter ${pair.meta.name ? pair.meta.name : pair.address} account password`
+        )
         pair.decodePkcs8(password)
         isPassValid = true
       } catch (e) {
@@ -358,7 +360,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     this.log(`Required stake: ${formatBalance(stakeValue)}`)
     let stakingAccount: string
     while (true) {
-      stakingAccount = await this.promptForAnyAddress()
+      stakingAccount = await this.promptForAnyAddress('Choose staking account')
       const { balances } = await this.getApi().getAccountSummary(stakingAccount)
       const stakingStatus = await this.getApi().stakingAccountStatus(stakingAccount)
 
@@ -396,7 +398,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       const missingStakingAccountBalance = requiredStakingAccountBalance.sub(balances.availableBalance)
       if (missingStakingAccountBalance.gtn(0)) {
         this.warn(
-          `Not enough available balance! Missing: ${chalk.cyan(formatBalance(missingStakingAccountBalance))}.` +
+          `Not enough available staking account balance! Missing: ${chalk.cyan(
+            formatBalance(missingStakingAccountBalance)
+          )}.` +
             (additionalStakingAccountCosts.gtn(0)
               ? ` (includes ${formatBalance(additionalStakingAccountCosts)} fee for setting new staking account)`
               : '')

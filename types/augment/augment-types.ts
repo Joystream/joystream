@@ -3,7 +3,7 @@
 
 import { Compact, Option, Raw, Vec } from '@polkadot/types/codec';
 import { BitVec, Bytes, Data, DoNotConstruct, Null, StorageKey, Text, Type, U256, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types/primitive';
-import { Actor, ActorId, AddOpeningParameters, AddSchemaSupportToEntityOperation, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, BlockAndTime, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Class, ClassId, ClassOf, ClassPermissions, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateEntityOperation, CuratorGroup, CuratorGroupId, CuratorId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, ExecutionFailed, ExecutionStatus, FailedAt, FillOpeningParameters, ForumUserId, GeneralProposalParameters, HashedTextMaxLength, IPNSIdentity, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, InviteMembershipParameters, LiaisonJudgement, MemberId, Membership, MemoText, ModeratorId, Nonce, Opening, OpeningId, OpeningType, OperationType, OptionResult, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, Penalty, Poll, PollAlternative, Post, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferenceCounterSideEffects, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SameController, Schema, SchemaId, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, StakeParameters, StakePolicy, StakingAccountMemberBinding, Status, StorageProviderId, StoredPropertyValue, StoredValue, TerminateRoleParameters, TextMaxLength, Thread, ThreadId, ThreadMode, UpdatePropertyValuesOperation, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotePower, VotingResults, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
+import { Actor, ActorId, AddSchemaSupportToEntityOperation, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, BalanceKind, BlockAndTime, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Class, ClassId, ClassOf, ClassPermissions, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateEntityOperation, CreateOpeningParameters, CuratorGroup, CuratorGroupId, CuratorId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, ExecutionFailed, ExecutionStatus, FailedAt, FillOpeningParameters, ForumUserId, FundingRequestParameters, GeneralProposalParameters, HashedTextMaxLength, IPNSIdentity, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, InviteMembershipParameters, LiaisonJudgement, MemberId, Membership, MemoText, ModeratorId, Nonce, Opening, OpeningId, OpeningType, OperationType, OptionResult, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, ParticipantId, Penalty, Poll, PollAlternative, Post, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferenceCounterSideEffects, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Reply, ReplyId, SameController, Schema, SchemaId, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, StakeParameters, StakePolicy, StakingAccountMemberBinding, Status, StorageProviderId, StoredPropertyValue, StoredValue, TerminateRoleParameters, TextMaxLength, Thread, ThreadId, ThreadMode, ThreadOf, Title, UpdatePropertyValuesOperation, UpdatedBody, UpdatedTitle, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotePower, VotingResults, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
 import { BlockAttestations, IncludedBlocks, MoreAttestations } from '@polkadot/types/interfaces/attestations';
 import { RawAuraPreDigest } from '@polkadot/types/interfaces/aura';
 import { ExtrinsicOrHash, ExtrinsicStatus } from '@polkadot/types/interfaces/author';
@@ -1800,6 +1800,9 @@ declare module '@polkadot/types/types/registry' {
     MemoText: MemoText;
     'Option<MemoText>': Option<MemoText>;
     'Vec<MemoText>': Vec<MemoText>;
+    BalanceKind: BalanceKind;
+    'Option<BalanceKind>': Option<BalanceKind>;
+    'Vec<BalanceKind>': Vec<BalanceKind>;
     Membership: Membership;
     'Option<Membership>': Option<Membership>;
     'Vec<Membership>': Vec<Membership>;
@@ -1867,6 +1870,9 @@ declare module '@polkadot/types/types/registry' {
     PrivilegedActor: PrivilegedActor;
     'Option<PrivilegedActor>': Option<PrivilegedActor>;
     'Vec<PrivilegedActor>': Vec<PrivilegedActor>;
+    ThreadOf: ThreadOf;
+    'Option<ThreadOf>': Option<ThreadOf>;
+    'Vec<ThreadOf>': Vec<ThreadOf>;
     ApplicationId: ApplicationId;
     'Compact<ApplicationId>': Compact<ApplicationId>;
     'Option<ApplicationId>': Option<ApplicationId>;
@@ -1954,6 +1960,26 @@ declare module '@polkadot/types/types/registry' {
     DataObjectsMap: DataObjectsMap;
     'Option<DataObjectsMap>': Option<DataObjectsMap>;
     'Vec<DataObjectsMap>': Vec<DataObjectsMap>;
+    ParticipantId: ParticipantId;
+    'Compact<ParticipantId>': Compact<ParticipantId>;
+    'Option<ParticipantId>': Option<ParticipantId>;
+    'Vec<ParticipantId>': Vec<ParticipantId>;
+    Title: Title;
+    'Option<Title>': Option<Title>;
+    'Vec<Title>': Vec<Title>;
+    UpdatedTitle: UpdatedTitle;
+    'Option<UpdatedTitle>': Option<UpdatedTitle>;
+    'Vec<UpdatedTitle>': Vec<UpdatedTitle>;
+    UpdatedBody: UpdatedBody;
+    'Option<UpdatedBody>': Option<UpdatedBody>;
+    'Vec<UpdatedBody>': Vec<UpdatedBody>;
+    ReplyId: ReplyId;
+    'Compact<ReplyId>': Compact<ReplyId>;
+    'Option<ReplyId>': Option<ReplyId>;
+    'Vec<ReplyId>': Vec<ReplyId>;
+    Reply: Reply;
+    'Option<Reply>': Option<Reply>;
+    'Vec<Reply>': Vec<Reply>;
     ProposalId: ProposalId;
     'Compact<ProposalId>': Compact<ProposalId>;
     'Option<ProposalId>': Option<ProposalId>;
@@ -1988,9 +2014,9 @@ declare module '@polkadot/types/types/registry' {
     DiscussionPost: DiscussionPost;
     'Option<DiscussionPost>': Option<DiscussionPost>;
     'Vec<DiscussionPost>': Vec<DiscussionPost>;
-    AddOpeningParameters: AddOpeningParameters;
-    'Option<AddOpeningParameters>': Option<AddOpeningParameters>;
-    'Vec<AddOpeningParameters>': Vec<AddOpeningParameters>;
+    CreateOpeningParameters: CreateOpeningParameters;
+    'Option<CreateOpeningParameters>': Option<CreateOpeningParameters>;
+    'Vec<CreateOpeningParameters>': Vec<CreateOpeningParameters>;
     FillOpeningParameters: FillOpeningParameters;
     'Option<FillOpeningParameters>': Option<FillOpeningParameters>;
     'Vec<FillOpeningParameters>': Vec<FillOpeningParameters>;
@@ -2015,6 +2041,9 @@ declare module '@polkadot/types/types/registry' {
     ExecutionStatus: ExecutionStatus;
     'Option<ExecutionStatus>': Option<ExecutionStatus>;
     'Vec<ExecutionStatus>': Vec<ExecutionStatus>;
+    FundingRequestParameters: FundingRequestParameters;
+    'Option<FundingRequestParameters>': Option<FundingRequestParameters>;
+    'Vec<FundingRequestParameters>': Vec<FundingRequestParameters>;
     Nonce: Nonce;
     'Compact<Nonce>': Compact<Nonce>;
     'Option<Nonce>': Option<Nonce>;

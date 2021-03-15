@@ -134,6 +134,11 @@ export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
 export class MemoText extends Text {}
 
+export class BalanceKind extends JoyEnum({
+  Positive: Null,
+  Negative: Null,
+}) {}
+
 // @polkadot/types overrides required since migration to Substrate 2.0,
 // see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
 export class AccountId extends GenericAccountId {}
@@ -149,6 +154,7 @@ export const commonTypes: RegistryTypes = {
   InputValidationLengthConstraint,
   WorkingGroup,
   MemoText,
+  BalanceKind,
   // Customize Address type for joystream chain
   Address,
   LookupSource,

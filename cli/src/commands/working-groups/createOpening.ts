@@ -83,12 +83,10 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     return [
       JSON.stringify(hrtJson),
       'Regular',
-      openingParamsJson.stakingPolicy
-        ? {
-            stake_amount: openingParamsJson.stakingPolicy.amount,
-            leaving_unstaking_period: openingParamsJson.stakingPolicy.unstakingPeriod,
-          }
-        : null,
+      {
+        stake_amount: openingParamsJson.stakingPolicy.amount,
+        leaving_unstaking_period: openingParamsJson.stakingPolicy.unstakingPeriod,
+      },
       // TODO: Proper bigint handling?
       openingParamsJson.rewardPerBlock?.toString() || null,
     ]

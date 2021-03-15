@@ -5,7 +5,7 @@
   "description": "JSON schema to describe Joystream working group opening",
   "type": "object",
   "additionalProperties": false,
-  "required": ["activateAt", "maxReviewPeriodLength"],
+  "required": ["activateAt", "maxReviewPeriodLength", "stakingPolicy"],
   "properties": {
     "stakingPolicy": { "$ref": "#/definitions/StakingPolicy", "description": "Staking policy" },
     "rewardPerBlock": {
@@ -23,7 +23,7 @@
         "amount": {
           "type": "integer",
           "description": "Stake amount",
-          "minimum": 1
+          "minimum": 2000
         },
         "unstakingPeriod": {
           "type": "integer",

@@ -115,12 +115,11 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
 
   async getApplicationForLeadAction(id: number): Promise<ApplicationDetails> {
     const application = await this.getApi().groupApplication(this.group, id)
-    // TODO: Add once opening-application connection is established
-    // const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId)
+    const opening = await this.getApi().groupOpening(this.group, application.openingId)
 
-    // if (!opening.type.isOfType('Worker')) {
-    //   this.error('A lead can only manage Worker opening applications!', { exit: ExitCodes.AccessDenied })
-    // }
+    if (!opening.type.isOfType('Regular')) {
+      this.error('A lead can only manage Regular opening applications!', { exit: ExitCodes.AccessDenied })
+    }
 
     return application
   }

@@ -31,10 +31,6 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
       this.error('Invalid stake amount!', { exit: ExitCodes.InvalidInput })
     }
 
-    if (!worker.stake) {
-      this.error('Cannot increase stake. No associated role stake profile found!', { exit: ExitCodes.InvalidInput })
-    }
-
     await this.sendAndFollowNamedTx(
       await this.getDecodedPair(worker.roleAccount.toString()),
       apiModuleByGroup[this.group],
