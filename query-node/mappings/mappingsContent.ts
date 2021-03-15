@@ -44,7 +44,11 @@ import {
 } from 'query-node'
 */
 
-import { prepareBlock } from './common'
+import {
+  inconsistentState,
+  prepareBlock,
+  prepareAssetDataObject,
+} from './common'
 
 // primary entities
 import { Block } from 'query-node/dist/src/modules/block/block.model'
@@ -73,11 +77,15 @@ import {
   LiaisonJudgement
 } from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
 
+
+// TODO: decide which of the following imports is valid
+import {
+  ContentParameters
+} from '@joystream/types/augment'
 import {
   contentDirectory,
+  storage,
 } from '@joystream/types'
-
-
 type RawAsset = ReturnType<typeof contentDirectory.NewAsset.create>
 type RawAssetTypes = typeof contentDirectory.NewAsset.typeDefinitions
 
@@ -179,6 +187,7 @@ async function readProtobuf(
   throw `Not implemented type: ${type}`
 }
 
+
 async function convertAsset(rawAsset: RawAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
   if (rawAsset.type == 'Urls') {
     const assetUrl = new AssetUrl()
@@ -190,30 +199,10 @@ async function convertAsset(rawAsset: RawAsset, db: DatabaseManager, event: Subs
   // rawAsset == 'Upload'
 
   //const contentParameters: typeof contentDirectory.ContentParameters = rawAsset.asStorage()
-  const contentParameters = rawAsset.asType('Upload')
+  const contentParameters: ContentParameters = rawAsset.asType('Upload')
 
-  const assetOwner = new AssetOwnerMember() // TODO: proper owner
-  assetOwner.memberId = 0
-
-  const assetDataObject = new AssetDataObject({
-    owner: assetOwner,
-    addedAt: await prepareBlock(db, event),
-    typeId: contentParameters.type_id.toNumber(),
-    size: 0, // TODO: retrieve proper file size
-    liaisonId: 0, // TODO: proper id
-    liaisonJudgement: LiaisonJudgement.PENDING, // TODO: proper judgement
-    ipfsContentId: contentParameters.ipfs_content_id.toHex(),
-    joystreamContentId: contentParameters.content_id.toHex(),
-  })
-  // TODO: handle `AssetNeverProvided` and `AssetDeleted` states
-  const uploadingStatus = new AssetUploadStatus()
-  /* TODO: set the values (`dataObject` and `oldDataObject` absent in AssetUploadStatus)
-  uploadingStatus.dataObject = new AssetDataObject
-  uploadingStatus.oldDataObject: undefined // TODO: handle oldDataObject
-  */
-
-  const assetStorage = new AssetStorage()
-  assetStorage.uploadStatus = uploadingStatus
+  const block = await prepareBlock(db, event)
+  const assetStorage = await prepareAssetDataObject(contentParameters, block)
 
   return assetStorage
 }
@@ -285,10 +274,6 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
   }
 
   return category
-}
-
-function inconsistentState(): void {
-  throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
 }
 
 /////////////////// Channel ////////////////////////////////////////////////////

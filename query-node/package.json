@@ -37,13 +37,12 @@
     "tslib": "^2.0.0",
     "@types/bn.js": "^4.11.6",
     "bn.js": "^5.1.2",
-    "@dzlzv/hydra-cli": "2.0.0-beta",
-    "@dzlzv/hydra-processor": "0.1.1"
+    "@dzlzv/hydra-cli": "2.0.1-beta.9",
+    "@dzlzv/hydra-processor": "2.0.1-beta.9"
   },
   "devDependencies": {
-    "@dzlzv/hydra-cli": "2.0.1-beta.3",
-    "@dzlzv/hydra-processor": "2.0.1-beta.3",
-    "@dzlzv/hydra-typegen": "2.0.1-beta.3"
+    "@dzlzv/hydra-typegen": "2.0.1-beta.9"
+    , "@polkadot/x-ws": "6.0.5"
   },
   "volta": {
 		"extends": "../package.json"
