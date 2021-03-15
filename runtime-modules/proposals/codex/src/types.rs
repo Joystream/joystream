@@ -177,7 +177,7 @@ pub struct CreateOpeningParameters<BlockNumber, Balance> {
     pub description: Vec<u8>,
 
     /// Optional Staking policy.
-    pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
+    pub stake_policy: StakePolicy<BlockNumber, Balance>,
 
     /// Reward per block for the opening.
     pub reward_per_block: Option<Balance>,

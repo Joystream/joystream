@@ -331,7 +331,6 @@ impl_runtime_apis! {
                     member_id: <Runtime as common::Trait>::MemberId,
                 ) -> <Runtime as common::Trait>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
-                        working_group::benchmarking::StakingRole::WithStakes,
                         working_group::OpeningType::Leader,
                         opening_id,
                         None,

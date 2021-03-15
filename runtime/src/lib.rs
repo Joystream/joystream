@@ -43,7 +43,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -650,6 +650,9 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 20;
     pub const MaxPollAlternativesNumber: u64 = 20;
+    pub const ThreadDeposit: u64 = 30;
+    pub const PostDeposit: u64 = 10;
+    pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
 }
 
 pub struct MapLimits;
@@ -670,6 +673,10 @@ impl forum::Trait for Runtime {
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
+
+    type ThreadDeposit = ThreadDeposit;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ForumModuleId;
 
     type MapLimits = MapLimits;
     type WeightInfo = weights::forum::WeightInfo;
@@ -697,6 +704,10 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
+    // This should be more costly than `add_opening` fee with the current configuration
+    // the base cost of `add_opening` in tokens is 193. And has a very slight slope
+    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    pub const MinimumStakeForOpening: Balance = 2000;
 }
 
 // Staking managers type aliases.
@@ -732,6 +743,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -743,6 +755,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -754,6 +767,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
@@ -765,6 +779,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -794,6 +809,7 @@ impl proposals_engine::Trait for Runtime {
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = weights::proposals_engine::WeightInfo;
+    type StakingAccountValidator = Members;
 }
 
 impl Default for Call {

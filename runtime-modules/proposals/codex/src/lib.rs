@@ -486,6 +486,7 @@ decl_module! {
                 &general_proposal_parameters.description,
                 general_proposal_parameters.staking_account_id.clone(),
                 general_proposal_parameters.exact_execution_block,
+                general_proposal_parameters.member_id,
             )?;
 
             let initial_thread_mode = ThreadMode::Open;

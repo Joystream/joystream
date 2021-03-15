@@ -3,6 +3,7 @@
 use super::*;
 use crate::mock::*;
 use frame_support::assert_err;
+use frame_support::traits::Currency;
 
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
@@ -324,8 +325,11 @@ fn update_category_archival_status_moderator() {
 // test if moderator can archive category
 fn update_category_archival_status_lock_works() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let initial_balance = 10_000_000;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -337,6 +341,7 @@ fn update_category_archival_status_lock_works() {
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -346,6 +351,7 @@ fn update_category_archival_status_lock_works() {
 
         let post_id = create_post_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -365,6 +371,7 @@ fn update_category_archival_status_lock_works() {
         create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -375,6 +382,7 @@ fn update_category_archival_status_lock_works() {
         // can't add more posts to thread inside category
         create_post_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -457,8 +465,11 @@ fn delete_category_non_empty_subcategories() {
 // test category can't be deleted when it contains threads
 fn delete_category_non_empty_threads() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let initial_balance = 10_000_000;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -468,6 +479,7 @@ fn delete_category_non_empty_threads() {
         );
         create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -598,7 +610,14 @@ fn create_thread_origin() {
     for index in 0..origins.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+            assert_eq!(
+                balances::Module::<Runtime>::free_balance(&forum_lead),
+                initial_balance
+            );
             let category_id = create_category_mock(
                 origin,
                 None,
@@ -608,6 +627,7 @@ fn create_thread_origin() {
             );
             create_thread_mock(
                 origins[index].clone(),
+                forum_user_ids[index],
                 forum_user_ids[index],
                 category_id,
                 good_thread_title(),
@@ -620,6 +640,59 @@ fn create_thread_origin() {
 }
 
 #[test]
+// test thread creator needs minimum balance
+fn create_thread_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(
+            &forum_lead,
+            BalanceOf::<Runtime>::max_value(),
+        );
+
+        let category_id = create_category_mock(
+            origin,
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let first_thread_id = create_thread_mock(
+            FORUM_LEAD_ORIGIN,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let second_thread_id = create_thread_mock(
+            FORUM_LEAD_ORIGIN,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let first_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
+            <Runtime as Trait>::ModuleId::get().into_sub_account(first_thread_id);
+        let second_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
+            <Runtime as Trait>::ModuleId::get().into_sub_account(second_thread_id);
+
+        assert_ne!(
+            first_state_cleanup_treasury_account,
+            second_state_cleanup_treasury_account
+        );
+    });
+}
+
+#[test]
 // test if timestamp of poll start time and end time are valid
 fn create_thread_poll_timestamp() {
     let expiration_diff = 10;
@@ -627,9 +700,12 @@ fn create_thread_poll_timestamp() {
 
     for index in 0..results.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let initial_balance = 10_000_000;
         let origin = OriginType::Signed(forum_lead);
 
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
             change_current_time(1);
             let poll = generate_poll_timestamp_cases(index, expiration_diff);
             change_current_time(index as u64 * expiration_diff + 1);
@@ -644,6 +720,7 @@ fn create_thread_poll_timestamp() {
 
             create_thread_mock(
                 origin.clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 good_thread_title(),
@@ -663,7 +740,18 @@ fn edit_thread_title() {
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Module::<Runtime>::make_free_balance_be(
+            &NOT_FORUM_LEAD_ORIGIN_ID,
+            initial_balance,
+        );
+        balances::Module::<Runtime>::make_free_balance_be(
+            &NOT_FORUM_LEAD_2_ORIGIN_ID,
+            initial_balance,
+        );
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -674,6 +762,7 @@ fn edit_thread_title() {
         // create thread by author
         let thread_id = create_thread_mock(
             origins[0].clone(),
+            forum_users[0],
             forum_users[0],
             category_id,
             good_thread_title(),
@@ -716,7 +805,10 @@ fn update_thread_archival_status_origin() {
     for index in 0..origins.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
             let category_id = create_category_mock(
                 origin,
                 None,
@@ -727,6 +819,7 @@ fn update_thread_archival_status_origin() {
 
             let thread_id = create_thread_mock(
                 origins[0].clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 good_thread_title(),
@@ -751,7 +844,10 @@ fn update_thread_archival_status_origin() {
 fn update_thread_archival_status_no_change() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -761,6 +857,7 @@ fn update_thread_archival_status_no_change() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -784,7 +881,10 @@ fn update_thread_archival_status_no_change() {
 fn update_thread_archival_status_thread_exists() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -794,6 +894,7 @@ fn update_thread_archival_status_thread_exists() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -828,7 +929,10 @@ fn update_thread_archival_status_moderator() {
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -838,6 +942,7 @@ fn update_thread_archival_status_moderator() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -882,7 +987,10 @@ fn update_thread_archival_status_moderator() {
 fn update_thread_archival_status_lock_works() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -894,6 +1002,7 @@ fn update_thread_archival_status_lock_works() {
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -903,6 +1012,7 @@ fn update_thread_archival_status_lock_works() {
 
         let post_id = create_post_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -922,6 +1032,7 @@ fn update_thread_archival_status_lock_works() {
         // can't add more posts to thread inside category
         create_post_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -968,7 +1079,17 @@ fn delete_thread() {
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+        let mut current_balance = initial_balance;
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&forum_lead),
+            current_balance
+        );
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -980,6 +1101,7 @@ fn delete_thread() {
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -987,13 +1109,29 @@ fn delete_thread() {
             Ok(()),
         );
 
-        let post_id = create_post_mock(
+        current_balance -= <Runtime as Trait>::ThreadDeposit::get();
+        current_balance -= <Runtime as Trait>::PostDeposit::get();
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&forum_lead),
+            current_balance
+        );
+
+        let _ = create_post_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             thread_id,
             good_post_text(),
             Ok(()),
+        );
+
+        current_balance -= <Runtime as Trait>::PostDeposit::get();
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&forum_lead),
+            current_balance
         );
 
         update_category_membership_of_moderator_mock(
@@ -1014,6 +1152,7 @@ fn delete_thread() {
         delete_thread_mock(
             origins[2].clone(),
             moderators[2],
+            moderators[2],
             category_id,
             thread_id,
             Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
@@ -1022,6 +1161,7 @@ fn delete_thread() {
         // moderator not associated with thread will fail to delete it
         delete_thread_mock(
             origins[1].clone(),
+            moderators[1],
             moderators[1],
             category_id,
             thread_id,
@@ -1032,13 +1172,11 @@ fn delete_thread() {
         delete_thread_mock(
             origins[0].clone(),
             moderators[0],
+            moderators[0],
             category_id,
             thread_id,
             Ok(()),
         );
-
-        // check thread's post was deleted
-        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
 
         // check category's thread count was decreased
         assert_eq!(
@@ -1056,7 +1194,10 @@ fn move_thread_moderator_permissions() {
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id_1 = create_category_mock(
             origin.clone(),
             None,
@@ -1077,6 +1218,7 @@ fn move_thread_moderator_permissions() {
 
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id_1,
             good_thread_title(),
@@ -1181,7 +1323,10 @@ fn move_thread_invalid_move() {
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1192,6 +1337,7 @@ fn move_thread_invalid_move() {
 
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1236,7 +1382,9 @@ fn vote_on_poll_origin() {
     for index in 0..origins.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1246,6 +1394,7 @@ fn vote_on_poll_origin() {
             );
             let thread_id = create_thread_mock(
                 origin.clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 good_thread_title(),
@@ -1271,7 +1420,10 @@ fn vote_on_poll_origin() {
 fn vote_on_poll_exists() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1281,6 +1433,7 @@ fn vote_on_poll_exists() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1305,8 +1458,10 @@ fn vote_on_poll_expired() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     let expiration_diff = 10;
-
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1316,6 +1471,7 @@ fn vote_on_poll_expired() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1344,7 +1500,10 @@ fn vote_on_poll_expired() {
 fn moderate_thread_origin_ok() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1362,6 +1521,7 @@ fn moderate_thread_origin_ok() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1388,6 +1548,7 @@ fn moderate_thread_origin_ok() {
 // test if post origin registered as forum user
 fn add_post_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MEMBER_ORIGIN];
+    let accounts = vec![FORUM_LEAD_ORIGIN_ID, NOT_FORUM_MEMBER_ORIGIN_ID];
     let results = vec![
         Ok(()),
         Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
@@ -1395,7 +1556,13 @@ fn add_post_origin() {
     for index in 0..origins.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Module::<Runtime>::make_free_balance_be(
+                &NOT_FORUM_MEMBER_ORIGIN_ID,
+                initial_balance,
+            );
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1407,6 +1574,7 @@ fn add_post_origin() {
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
+                forum_lead,
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -1415,6 +1583,7 @@ fn add_post_origin() {
             );
             create_post_mock(
                 origins[index].clone(),
+                accounts[index],
                 forum_lead,
                 category_id,
                 thread_id,
@@ -1426,6 +1595,53 @@ fn add_post_origin() {
 }
 
 #[test]
+// test if post can be created by user without enough balance
+fn add_post_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(
+            &forum_lead,
+            <Runtime as Trait>::PostDeposit::get() + <Runtime as Trait>::ThreadDeposit::get(),
+        );
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        assert_eq!(balances::Module::<Runtime>::free_balance(&forum_lead), 0);
+
+        balances::Module::<Runtime>::make_free_balance_be(
+            &forum_lead,
+            <Runtime as Trait>::PostDeposit::get() - 1,
+        );
+        create_post_mock(
+            FORUM_LEAD_ORIGIN,
+            forum_lead,
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Err(Error::<Runtime>::InsufficientBalanceForPost.into()),
+        );
+    });
+}
+
+#[test]
 // test if post text can be edited by author
 fn edit_post_text() {
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
@@ -1434,7 +1650,18 @@ fn edit_post_text() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
 
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Module::<Runtime>::make_free_balance_be(
+            &NOT_FORUM_LEAD_ORIGIN_ID,
+            initial_balance,
+        );
+        balances::Module::<Runtime>::make_free_balance_be(
+            &NOT_FORUM_LEAD_2_ORIGIN_ID,
+            initial_balance,
+        );
+
         // prepare category and thread
         let category_id = create_category_mock(
             origin.clone(),
@@ -1446,6 +1673,7 @@ fn edit_post_text() {
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -1456,6 +1684,7 @@ fn edit_post_text() {
         // create post by author
         let post_id = create_post_mock(
             origins[0].clone(),
+            forum_users[0],
             forum_users[0],
             category_id,
             thread_id,
@@ -1498,8 +1727,10 @@ fn react_post() {
     for index in 0..reactions.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = FORUM_LEAD_ORIGIN;
+        let initial_balance = 10_000_000;
 
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1511,6 +1742,7 @@ fn react_post() {
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
+                forum_lead,
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -1519,6 +1751,7 @@ fn react_post() {
             );
             let post_id = create_post_mock(
                 origin.clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 thread_id,
@@ -1553,7 +1786,9 @@ fn moderate_post_origin() {
     for index in 0..origins.len() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
+        let initial_balance = 10_000_000;
         with_test_externalities(|| {
+            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let moderator_id = forum_lead;
 
             let category_id = create_category_mock(
@@ -1574,6 +1809,7 @@ fn moderate_post_origin() {
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
+                forum_lead,
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -1582,6 +1818,7 @@ fn moderate_post_origin() {
             );
             let post_id = create_post_mock(
                 origin.clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 thread_id,
@@ -1605,7 +1842,10 @@ fn moderate_post_origin() {
 fn set_stickied_threads_ok() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1624,6 +1864,7 @@ fn set_stickied_threads_ok() {
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
+            forum_lead,
             category_id,
             good_thread_title(),
             good_thread_text(),
@@ -1638,7 +1879,10 @@ fn set_stickied_threads_ok() {
 fn set_stickied_threads_wrong_moderator() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1650,6 +1894,7 @@ fn set_stickied_threads_wrong_moderator() {
 
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1671,7 +1916,10 @@ fn set_stickied_threads_wrong_moderator() {
 fn set_stickied_threads_thread_not_exists() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1689,6 +1937,7 @@ fn set_stickied_threads_thread_not_exists() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1782,9 +2031,12 @@ fn test_migration_not_done() {
 fn storage_limit_checks() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
 
     // test MaxSubcategories and MaxThreadsInCategory
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1814,6 +2066,7 @@ fn storage_limit_checks() {
             create_thread_mock(
                 origin.clone(),
                 forum_lead,
+                forum_lead,
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -1828,6 +2081,8 @@ fn storage_limit_checks() {
 
     // test MaxPostsInThread
     with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1837,6 +2092,7 @@ fn storage_limit_checks() {
         );
         let thread_id = create_thread_mock(
             origin.clone(),
+            forum_lead,
             forum_lead,
             category_id,
             good_thread_title(),
@@ -1851,6 +2107,7 @@ fn storage_limit_checks() {
         for i in 1..max {
             create_post_mock(
                 origin.clone(),
+                forum_lead,
                 forum_lead,
                 category_id,
                 thread_id,

@@ -13,11 +13,10 @@ use crate::tests::fixtures::{
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
-    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
-    STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
+    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
-use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Worker};
+use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Trait, Worker};
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
@@ -40,10 +39,10 @@ fn add_opening_succeeded() {
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_stake_policy(Some(StakePolicy {
-                stake_amount: 10,
+            .with_stake_policy(StakePolicy {
+                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
                 leaving_unstaking_period: 100,
-            }))
+            })
             .with_reward_per_block(Some(10));
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
@@ -70,18 +69,27 @@ fn add_opening_fails_with_bad_origin() {
 }
 
 #[test]
-fn add_opening_fails_with_zero_stake() {
+fn add_opening_fails_with_less_than_minimum_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: 0,
-                leaving_unstaking_period: 0,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: 0,
+            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
+        });
 
-        add_opening_fixture
-            .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotStakeZero.into()));
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::BelowMinimumStakes.into(),
+        ));
+
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: <Test as Trait>::MinimumStakeForOpening::get() - 1,
+            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
+        });
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::BelowMinimumStakes.into(),
+        ));
     });
 }
 
@@ -110,11 +118,10 @@ fn add_opening_fails_with_incorrect_unstaking_period() {
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let invalid_unstaking_period = 3;
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: stake,
-                leaving_unstaking_period: invalid_unstaking_period,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: invalid_unstaking_period,
+        });
 
         add_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::UnstakingPeriodLessThanMinimum.into(),
@@ -144,7 +151,8 @@ fn apply_on_opening_succeeded() {
 
         let opening_id = add_opening_fixture.call().unwrap();
 
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get());
 
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
@@ -252,7 +260,7 @@ fn fill_opening_succeeded_with_stake() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
@@ -261,12 +269,10 @@ fn fill_opening_succeeded_with_stake() {
             staking_account_id: account_id,
         };
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
+        };
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
             .with_stake_policy(stake_policy.clone());
@@ -274,14 +280,15 @@ fn fill_opening_succeeded_with_stake() {
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_initial_balance(total_balance)
+            .with_stake_parameters(stake_parameters);
 
         let application_id = apply_on_opening_fixture.call().unwrap();
 
         let fill_opening_fixture =
             FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_stake_policy(stake_policy)
-                .with_staking_account_id(Some(account_id))
+                .with_staking_account_id(account_id)
                 .with_created_at(starting_block);
 
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
@@ -319,6 +326,31 @@ fn fill_opening_fails_with_bad_origin() {
 }
 
 #[test]
+fn fill_opening_fails_with_application_for_other_opening() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        let filling_opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(apply_opening_id);
+
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(filling_opening_id, vec![application_id]);
+
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::ApplicationsNotForOpening.into(),
+        ));
+    });
+}
+
+#[test]
 fn fill_opening_fails_with_invalid_active_worker_number() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
@@ -328,18 +360,19 @@ fn fill_opening_fails_with_invalid_active_worker_number() {
         let opening_id = add_opening_fixture.call().unwrap();
 
         let application_id1 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .call()
-            .unwrap();
-        let application_id2 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(2), 2)
             .call()
             .unwrap();
-        let application_id3 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+        let application_id2 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(3), 3)
             .call()
             .unwrap();
-        let application_id4 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+        let application_id3 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(4), 4)
+            .call()
+            .unwrap();
+        let application_id4 = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_origin(RawOrigin::Signed(5), 5)
             .call()
             .unwrap();
 
@@ -402,7 +435,7 @@ fn cannot_hire_a_lead_twice() {
         HireLeadFixture::default().hire_lead();
         HireLeadFixture::default()
             .with_setup_environment(false)
-            .expect(Error::<Test, DefaultInstance>::CannotHireLeaderWhenLeaderExists.into());
+            .expect(Error::<Test, DefaultInstance>::ConflictStakesOnAccount.into());
     });
 }
 
@@ -413,7 +446,7 @@ fn cannot_hire_muptiple_leaders() {
             .with_setup_environment(true)
             .with_opening_type(OpeningType::Leader)
             .add_default_application()
-            .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(2), 2, Some(2))
+            .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(3), 3, 3)
             .expect(Err(
                 Error::<Test, DefaultInstance>::CannotHireMultipleLeaders.into(),
             ))
@@ -474,26 +507,23 @@ fn update_worker_role_account_by_leader_succeeds() {
 #[test]
 fn update_worker_role_fails_with_leaving_worker() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let leaving_unstaking_period = 10;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy.clone())
             .hire();
 
         let new_account_id = 10;
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let update_worker_account_fixture =
@@ -533,14 +563,17 @@ fn leave_worker_role_succeeds() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerLeft(worker_id, None));
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        run_to_block(1 + worker.job_unstaking_period);
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
     });
 }
 
 #[test]
 fn leave_worker_role_succeeds_with_paying_missed_reward() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let reward_per_block = 10;
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -557,9 +590,12 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        run_to_block(block_number + worker.job_unstaking_period);
+
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block
+            block_number * reward_per_block + <Test as Trait>::MinimumStakeForOpening::get()
         );
     });
 }
@@ -567,7 +603,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
 #[test]
 fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let reward_per_block = 10;
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -585,7 +621,13 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        assert_eq!(Balances::usable_balance(&account_id), budget);
+        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        run_to_block(block_number + worker.job_unstaking_period);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            budget + <Test as Trait>::MinimumStakeForOpening::get()
+        );
     });
 }
 
@@ -598,9 +640,16 @@ fn leave_worker_role_by_leader_succeeds() {
 
         assert!(TestWorkingGroup::current_lead().is_some());
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Signed(1));
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let current_lead = TestWorkingGroup::current_lead().unwrap();
+        let leader = TestWorkingGroup::worker_by_id(current_lead);
+        assert!(leader.started_leaving_at.is_some());
+
+        run_to_block(frame_system::Module::<Test>::block_number() + leader.job_unstaking_period);
 
         assert_eq!(TestWorkingGroup::current_lead(), None);
     });
@@ -622,7 +671,7 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
         let worker_id = HireRegularWorkerFixture::default().hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_origin(RawOrigin::Signed(2));
+            .with_origin(RawOrigin::Signed(3));
 
         leave_worker_role_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
@@ -633,23 +682,20 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
 #[test]
 fn leave_worker_role_fails_already_leaving_worker() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy.clone())
             .hire();
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
         leave_worker_role_fixture
@@ -700,12 +746,13 @@ fn terminate_worker_role_succeeds() {
 #[test]
 fn terminate_worker_role_succeeds_with_paying_missed_reward() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let reward_per_block = 10;
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_reward_per_block(Some(reward_per_block))
             .hire();
+
         let block_number = 4;
 
         run_to_block(block_number);
@@ -721,7 +768,7 @@ fn terminate_worker_role_succeeds_with_paying_missed_reward() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block
+            block_number * reward_per_block + <Test as Trait>::MinimumStakeForOpening::get()
         );
     });
 }
@@ -777,7 +824,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
 
         let worker_id = HiringWorkflow::default()
             .with_setup_environment(false)
-            .add_application_full(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2, Some(2))
+            .add_application_full(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2, 2)
             .execute()
             .unwrap();
 
@@ -846,22 +893,21 @@ fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
         HireLeadFixture::default().hire_lead();
 
         let account_id = 1;
-        increase_total_balance_issuance_using_account_id(account_id, 300);
 
         let stake_parameters = StakeParameters {
             stake: 100,
             staking_account_id: account_id,
         };
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: 200,
-                leaving_unstaking_period: 10,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: 200,
+            leaving_unstaking_period: 10,
+        });
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_initial_balance(300)
+            .with_stake_parameters(stake_parameters);
 
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::ApplicationStakeDoesntMatchOpening.into(),
@@ -874,28 +920,24 @@ fn apply_on_opening_locks_the_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let account_id = 1;
-        let total_balance = 300;
-        let stake = 200;
+        let account_id = 2;
+        let total_balance = <Test as Trait>::MinimumStakeForOpening::get() + 100;
+        let stake = <Test as Trait>::MinimumStakeForOpening::get();
 
         let stake_parameters = StakeParameters {
             stake,
             staking_account_id: account_id,
         };
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: stake,
-                leaving_unstaking_period: 10,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
-
-        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+            .with_stake_parameters(stake_parameters)
+            .with_initial_balance(total_balance);
 
         apply_on_opening_fixture.call_and_assert(Ok(()));
 
@@ -908,7 +950,7 @@ fn apply_on_opening_fails_stake_amount_check() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 100;
         let stake = 200;
 
@@ -917,17 +959,15 @@ fn apply_on_opening_fails_stake_amount_check() {
             staking_account_id: account_id,
         };
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: stake,
-                leaving_unstaking_period: 10,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_initial_balance(total_balance)
+            .with_stake_parameters(stake_parameters);
 
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
@@ -940,11 +980,9 @@ fn apply_on_opening_fails_invalid_staking_check() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
         increase_total_balance_issuance_using_account_id(
             STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
             total_balance,
@@ -955,15 +993,15 @@ fn apply_on_opening_fails_invalid_staking_check() {
             staking_account_id: STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
         };
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: stake,
-                leaving_unstaking_period: 10,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_initial_balance(total_balance)
+            .with_stake_parameters(stake_parameters);
 
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::InvalidStakingAccountForMember.into(),
@@ -991,19 +1029,19 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
             total_balance,
         );
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: stake,
-                leaving_unstaking_period: 10,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
+            stake_amount: stake,
+            leaving_unstaking_period: 10,
+        });
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters.clone()));
+            .with_stake_parameters(stake_parameters.clone())
+            .with_initial_balance(stake_parameters.stake);
         apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_stake_parameters(stake_parameters);
 
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::ConflictStakesOnAccount.into(),
@@ -1014,18 +1052,17 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
 #[test]
 fn terminate_worker_unlocks_the_stake() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1043,27 +1080,25 @@ fn terminate_worker_unlocks_the_stake() {
 #[test]
 fn leave_worker_unlocks_the_stake() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
         let leaving_unstaking_period = 10;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy.clone())
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1076,26 +1111,24 @@ fn leave_worker_unlocks_the_stake() {
 #[test]
 fn leave_worker_unlocks_the_stake_with_unstaking_period() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
         let leaving_unstaking_period = 10;
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy.clone())
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1111,56 +1144,19 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
 }
 
 #[test]
-fn leave_worker_works_immediately_stake_is_zero() {
-    build_test_externalities().execute_with(|| {
-        let account_id = STAKING_ACCOUNT_ID_FOR_ZERO_STAKE;
-        let total_balance = 300;
-        let stake = 200;
-
-        let leaving_unstaking_period = 10;
-        let stake_policy = Some(StakePolicy {
-            stake_amount: stake,
-            leaving_unstaking_period,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HiringWorkflow::default()
-            .with_setup_environment(true)
-            .with_opening_type(OpeningType::Regular)
-            //    .with_stake_policy(stake_policy.clone())
-            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
-            .execute()
-            .unwrap();
-
-        //        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
-
-        leave_worker_role_fixture.call_and_assert(Ok(()));
-
-        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
-            worker_id
-        ));
-    });
-}
-
-#[test]
 fn terminate_worker_with_slashing_succeeds() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1176,29 +1172,6 @@ fn terminate_worker_with_slashing_succeeds() {
 }
 
 #[test]
-fn terminate_worker_with_slashing_fails_with_no_staking_account() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-        let stake = 200;
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HiringWorkflow::default()
-            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
-            .execute()
-            .unwrap();
-
-        let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_penalty(Some(stake));
-
-        terminate_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
-        ));
-    });
-}
-
-#[test]
 fn slash_worker_stake_succeeds() {
     build_test_externalities().execute_with(|| {
         /*
@@ -1208,19 +1181,17 @@ fn slash_worker_stake_succeeds() {
         */
         run_to_block(1);
 
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let penalty = 100;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1236,29 +1207,6 @@ fn slash_worker_stake_succeeds() {
 }
 
 #[test]
-fn slash_worker_stake_fails_with_no_staking_account() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-        let penalty = 100;
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HiringWorkflow::default()
-            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
-            .execute()
-            .unwrap();
-
-        let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
-
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
-        ));
-    });
-}
-
-#[test]
 fn slash_leader_stake_succeeds() {
     build_test_externalities().execute_with(|| {
         /*
@@ -1268,22 +1216,22 @@ fn slash_leader_stake_succeeds() {
         */
         run_to_block(1);
 
-        let account_id = 1;
         let total_balance = 300;
         let penalty = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: penalty,
             leaving_unstaking_period: 10,
-        });
+        };
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
         let leader_worker_id = HireLeadFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire_lead();
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
             .with_penalty(penalty)
+            .with_account_id(1)
             .with_origin(RawOrigin::Root);
 
         slash_stake_fixture.call_and_assert(Ok(()));
@@ -1325,18 +1273,16 @@ fn slash_leader_stake_fails_with_invalid_origin() {
 #[test]
 fn slash_worker_stake_fails_with_zero_balance() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1385,19 +1331,17 @@ fn decrease_worker_stake_succeeds() {
         */
         run_to_block(1);
 
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let new_stake_balance = 100;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1414,48 +1358,24 @@ fn decrease_worker_stake_succeeds() {
 }
 
 #[test]
-fn decrease_worker_stake_fails_with_no_staking_account() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-        let new_stake_balance = 100;
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HiringWorkflow::default()
-            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
-            .execute()
-            .unwrap();
-
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_balance(new_stake_balance);
-
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
-        ));
-    });
-}
-
-#[test]
 fn decrease_worker_stake_succeeds_for_leader() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireLeadFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire_lead();
 
         let new_stake = 100;
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_account_id(1)
             .with_origin(RawOrigin::Root)
             .with_balance(new_stake);
 
@@ -1490,19 +1410,17 @@ fn decrease_worker_stake_fails_with_invalid_origin_for_leader() {
 #[test]
 fn decrease_worker_stake_fails_with_zero_balance() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_stake_policy(stake_policy)
+            .with_initial_balance(total_balance)
             .hire();
 
         let decrease_stake_fixture =
@@ -1552,19 +1470,17 @@ fn increase_worker_stake_succeeds() {
         */
         run_to_block(1);
 
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let stake_balance_delta = 100;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1583,23 +1499,23 @@ fn increase_worker_stake_succeeds() {
 #[test]
 fn increase_worker_stake_succeeds_for_leader() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 400;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireLeadFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire_lead();
 
-        let increase_stake_fixture =
-            IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(stake);
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(stake)
+            .with_account_id(1)
+            .with_origin(RawOrigin::Signed(1));
 
         increase_stake_fixture.call_and_assert(Ok(()));
     });
@@ -1621,19 +1537,17 @@ fn increase_worker_stake_fails_with_invalid_origin() {
 #[test]
 fn increase_worker_stake_fails_with_zero_balance() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_stake_policy(stake_policy)
+            .with_initial_balance(total_balance)
             .hire();
 
         let increase_stake_fixture =
@@ -1641,27 +1555,6 @@ fn increase_worker_stake_fails_with_zero_balance() {
 
         increase_stake_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
-        ));
-    });
-}
-
-#[test]
-fn increase_worker_stake_fails_with_no_staking_account() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HiringWorkflow::default()
-            .add_application_full(b"worker".to_vec(), RawOrigin::Signed(1), 1, None)
-            .execute()
-            .unwrap();
-
-        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
-
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
         ));
     });
 }
@@ -1685,18 +1578,16 @@ fn increase_worker_stake_fails_with_invalid_worker_id() {
 #[test]
 fn increase_worker_stake_fails_external_check() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy)
             .hire();
 
@@ -1721,7 +1612,7 @@ fn withdraw_application_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let account_id = 1;
+        let account_id = 2;
         let total_balance = 300;
         let stake = 200;
 
@@ -1730,20 +1621,19 @@ fn withdraw_application_succeeds() {
             staking_account_id: account_id,
         };
 
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_stake_policy(Some(StakePolicy {
+            .with_stake_policy(StakePolicy {
                 stake_amount: stake,
                 leaving_unstaking_period: 10,
-            }));
+            });
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
+            .with_initial_balance(total_balance)
+            .with_stake_parameters(stake_parameters);
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let withdraw_application_fixture =
@@ -1793,7 +1683,8 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
         let add_opening_fixture = AddOpeningFixture::default();
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get() + 1);
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let invalid_author_account_id = 55;
@@ -1860,24 +1751,21 @@ fn cancel_opening_fails_invalid_opening_id() {
 #[test]
 fn decrease_worker_stake_fails_with_leaving_worker() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let new_stake_balance = 100;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
+            .with_initial_balance(total_balance)
             .with_stake_policy(stake_policy.clone())
             .hire();
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1892,24 +1780,21 @@ fn decrease_worker_stake_fails_with_leaving_worker() {
 #[test]
 fn increase_worker_stake_fails_with_leaving_worker() {
     build_test_externalities().execute_with(|| {
-        let account_id = 1;
         let total_balance = 300;
         let stake = 200;
         let new_stake_balance = 100;
 
-        let stake_policy = Some(StakePolicy {
+        let stake_policy = StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        };
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_stake_policy(stake_policy.clone())
+            .with_initial_balance(total_balance)
             .hire();
 
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
-            .with_stake_policy(stake_policy);
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -2120,7 +2005,8 @@ fn update_reward_account_succeeds_for_leader() {
 
         let new_reward_account = 22;
         let update_account_fixture =
-            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account)
+                .with_origin(RawOrigin::Signed(1));
 
         update_account_fixture.call_and_assert(Ok(()));
     });
@@ -2387,7 +2273,7 @@ fn ensure_worker_origin_works_correctly() {
             Err(DispatchError::BadOrigin)
         );
 
-        let account_id = 1;
+        let account_id = 2;
         assert_eq!(
             TestWorkingGroup::ensure_worker_origin(
                 RawOrigin::Signed(account_id).into(),
@@ -2398,7 +2284,7 @@ fn ensure_worker_origin_works_correctly() {
 
         let worker_id = HireRegularWorkerFixture::default().hire();
 
-        let invalid_account = 2;
+        let invalid_account = 3;
         assert_eq!(
             TestWorkingGroup::ensure_worker_origin(
                 RawOrigin::Signed(invalid_account).into(),
@@ -2486,8 +2372,8 @@ fn is_leader_account_id_works_correctly() {
 #[test]
 fn is_worker_account_id_works_correctly() {
     build_test_externalities().execute_with(|| {
-        let invalid_account_id = 2u64;
-        let invalid_worker_id = 2u64;
+        let invalid_account_id = 3u64;
+        let invalid_worker_id = 3u64;
 
         // Not hired
         assert_eq!(
@@ -2502,7 +2388,7 @@ fn is_worker_account_id_works_correctly() {
             false
         );
 
-        let account_id = 1u64;
+        let account_id = 2u64;
         assert_eq!(
             TestWorkingGroup::is_worker_account_id(&account_id, &invalid_worker_id),
             false

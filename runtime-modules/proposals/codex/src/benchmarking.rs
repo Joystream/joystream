@@ -4,7 +4,7 @@ use crate::Module as Codex;
 use balances::Module as Balances;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -70,6 +70,19 @@ fn member_funded_account<T: Trait + membership::Trait>(
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
@@ -162,7 +175,12 @@ fn create_proposal_verify<T: Trait>(
 }
 
 benchmarks! {
-    where_clause { where T: membership::Trait, T: council::Trait }
+    where_clause {
+        where T: membership::Trait,
+        T: council::Trait,
+        T: working_group::Trait<working_group::Instance1>
+    }
+
     _ {
         let t in 1 .. T::TitleMaxLength::get() => ();
         let d in 1 .. T::DescriptionMaxLength::get() => ();
@@ -307,7 +325,12 @@ benchmarks! {
         let proposal_details = ProposalDetails::CreateWorkingGroupLeadOpening(
             CreateOpeningParameters {
                 description: vec![0u8; i.try_into().unwrap()],
-                stake_policy: None,
+                stake_policy: working_group::StakePolicy {
+                    stake_amount:
+                        <T as working_group::Trait<working_group::Instance1>>
+                            ::MinimumStakeForOpening::get(),
+                    leaving_unstaking_period: Zero::zero(),
+                },
                 reward_per_block: None,
                 group: WorkingGroup::Forum,
         });

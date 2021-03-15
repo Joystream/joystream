@@ -12,6 +12,7 @@ use proposals_engine::{
     ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
+use working_group::{StakeParameters, StakePolicy};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Currency;
@@ -455,7 +456,12 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         RawOrigin::Root.into(),
         vec![0u8],
         working_group::OpeningType::Leader,
-        None,
+        StakePolicy {
+            stake_amount:
+                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get(
+                ) as u128,
+            leaving_unstaking_period: 1000000,
+        },
         None,
     )
     .unwrap();
@@ -466,7 +472,11 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         role_account_id: lead_account_id.clone(),
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
-        stake_parameters: None,
+        stake_parameters: StakeParameters {
+            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get() as
+                u128,
+            staking_account_id: lead_account_id.clone(),
+        },
     };
 
     MembershipWorkingGroup::apply_on_opening(
@@ -491,8 +501,14 @@ where
             setup_members(15);
             setup_council(0);
             if self.set_member_lead {
-                let lead_account_id = [self.lead_id as u8; 32].into();
-                set_membership_leader(lead_account_id, self.lead_id);
+                let lead_account_id = [self.lead_id as u8; 32];
+
+                increase_total_balance_issuance_using_account_id(
+                    lead_account_id.clone().into(),
+                    1_500_000,
+                );
+
+                set_membership_leader(lead_account_id.into(), self.lead_id);
             }
         }
 

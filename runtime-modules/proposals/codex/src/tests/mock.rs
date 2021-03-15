@@ -222,6 +222,15 @@ impl proposals_engine::Trait for Test {
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
     type WeightInfo = MockProposalsEngineWeight;
+    type StakingAccountValidator = ();
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
 }
 
 impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
@@ -346,6 +355,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
     pub const LockId2: [u8; 8] = [2; 8];
+    pub const MinimumStakeForOpening: u32 = 50;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -353,11 +363,12 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {
@@ -424,10 +435,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn add_opening(_: u32) -> Weight {
         0
     }
-    fn leave_role_immediatly() -> Weight {
-        0
-    }
-    fn leave_role_later() -> Weight {
+    fn leave_role(_: u32) -> Weight {
         0
     }
 }
@@ -436,33 +444,36 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumStakeForOpening = MinimumStakeForOpening;
 }
 
 pallet_staking_reward_curve::build! {
@@ -618,12 +629,6 @@ impl council::Trait for Test {
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 
     type MemberOriginValidator = ();
-}
-
-impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u64) -> bool {
-        true
-    }
 }
 
 pub struct CouncilWeightInfo;
