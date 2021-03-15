@@ -16,14 +16,14 @@ export interface WorkingGroupOpening {
     /**
      * Stake amount
      */
-    amount: number;
+    amount: number
     /**
      * Unstaking period in blocks
      */
-    unstakingPeriod: number;
-  };
+    unstakingPeriod: number
+  }
   /**
    * Reward per block
    */
-  rewardPerBlock?: number;
+  rewardPerBlock?: number
 }
