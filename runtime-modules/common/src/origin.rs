@@ -8,7 +8,7 @@ pub trait CouncilOriginValidator<Origin, MemberId, AccountId> {
 
 /// Membership validator for the origin(account_id) and member_id (eg.: thread author id).
 pub trait MemberOriginValidator<Origin, MemberId, AccountId> {
-    /// Check for valid combination of origin and member_id.
+    /// Check for valid combination of origin and member_id. Returns member controller account ID.
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: MemberId,

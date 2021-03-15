@@ -128,7 +128,6 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
         member_id,
         *bounty_id,
         account_id.clone(),
-        account_id.clone(),
     )
     .unwrap();
 
@@ -591,7 +590,6 @@ benchmarks! {
         RawOrigin::Signed(account_id.clone()),
         member_id,
         bounty_id,
-        account_id.clone(),
         account_id.clone()
     )
     verify {
@@ -603,7 +601,6 @@ benchmarks! {
                 bounty_id,
                 entry_id,
                 member_id,
-                account_id.clone(),
                 account_id
             ).into()
         );
@@ -631,7 +628,6 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
-            account_id.clone(),
             account_id.clone()
         ).unwrap();
 
@@ -681,7 +677,6 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
-            account_id.clone(),
             account_id.clone()
         ).unwrap();
 
@@ -924,7 +919,6 @@ benchmarks! {
             RawOrigin::Signed(work_account_id.clone()).into(),
             work_member_id,
             bounty_id,
-            work_account_id.clone(),
             work_account_id.clone(),
         )
         .unwrap();

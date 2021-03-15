@@ -503,7 +503,6 @@ pub struct AnnounceWorkEntryFixture {
     origin: RawOrigin<u128>,
     bounty_id: u64,
     member_id: u64,
-    reward_account_id: u128,
     staking_account_id: u128,
 }
 
@@ -513,7 +512,6 @@ impl AnnounceWorkEntryFixture {
             origin: RawOrigin::Signed(1),
             bounty_id: 1,
             member_id: 1,
-            reward_account_id: 1,
             staking_account_id: 1,
         }
     }
@@ -546,7 +544,6 @@ impl AnnounceWorkEntryFixture {
             self.origin.clone().into(),
             self.member_id,
             self.bounty_id,
-            self.reward_account_id,
             self.staking_account_id,
         );
 
@@ -563,7 +560,6 @@ impl AnnounceWorkEntryFixture {
             let expected_entry = Entry::<Test> {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
-                reward_account_id: self.reward_account_id,
                 submitted_at: System::current_block_number(),
                 last_submitted_work: None,
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,

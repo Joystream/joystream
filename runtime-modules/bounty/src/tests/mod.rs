@@ -2060,7 +2060,7 @@ fn announce_work_entry_succeeded() {
         let entry_id = 1;
 
         EventFixture::assert_last_crate_event(RawEvent::WorkEntryAnnounced(
-            entry_id, bounty_id, member_id, account_id, account_id,
+            entry_id, bounty_id, member_id, account_id,
         ));
     });
 }

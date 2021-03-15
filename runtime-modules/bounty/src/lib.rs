@@ -358,9 +358,6 @@ pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
     /// Account ID for staking lock.
     pub staking_account_id: AccountId,
 
-    /// Account ID for reward.
-    pub reward_account_id: AccountId,
-
     /// Work entry submission block.
     pub submitted_at: BlockNumber,
 
@@ -478,9 +475,8 @@ decl_event! {
         /// - bounty ID
         /// - created entry ID
         /// - entrant member ID
-        /// - reward account ID
         /// - staking account ID
-        WorkEntryAnnounced(BountyId, EntryId, MemberId, AccountId, AccountId),
+        WorkEntryAnnounced(BountyId, EntryId, MemberId, AccountId),
 
         /// Work entry was withdrawn.
         /// Params:
@@ -928,7 +924,6 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
-            reward_account_id: T::AccountId,
             staking_account_id: T::AccountId,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
@@ -966,7 +961,6 @@ decl_module! {
 
             let entry = Entry::<T> {
                 member_id,
-                reward_account_id: reward_account_id.clone(),
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
                 last_submitted_work: None,
@@ -988,7 +982,6 @@ decl_module! {
                 bounty_id,
                 entry_id,
                 member_id,
-                reward_account_id,
                 staking_account_id,
             ));
         }
@@ -1161,7 +1154,8 @@ decl_module! {
             bounty_id: T::BountyId,
             entry_id: T::EntryId,
         ) {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+            let controller_account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1178,7 +1172,7 @@ decl_module! {
             // Claim the winner reward.
             if let OracleWorkEntryJudgment::Winner { reward } = entry.oracle_judgment_result {
                 Self::transfer_funds_from_bounty_account(
-                    &entry.reward_account_id,
+                    &controller_account_id,
                     bounty_id,
                     reward
                 )?;
