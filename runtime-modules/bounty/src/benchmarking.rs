@@ -21,7 +21,7 @@ use membership::Module as Membership;
 
 use crate::{
     AssuranceContractType, BalanceOf, Bounties, BountyActor, BountyCreationParameters,
-    BountyMilestone, Call, Event, Module, OracleWorkEntryJudgment, Trait, WorkEntries,
+    BountyMilestone, Call, Entries, Event, Module, OracleWorkEntryJudgment, Trait,
 };
 
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
@@ -119,7 +119,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
 fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
     bounty_id: &T::BountyId,
     index: u32,
-) -> T::WorkEntryId {
+) -> T::EntryId {
     let membership_index = 1000 + index;
     let (account_id, member_id) = member_funded_account::<T>("work entrants", membership_index);
 
@@ -128,11 +128,11 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
         member_id,
         *bounty_id,
         account_id.clone(),
-        Some(account_id.clone()),
+        account_id.clone(),
     )
     .unwrap();
 
-    let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+    let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
     let work_data = b"work_data".to_vec();
 
@@ -194,6 +194,7 @@ benchmarks! {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -201,6 +202,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -217,6 +219,7 @@ benchmarks! {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
@@ -226,6 +229,7 @@ benchmarks! {
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            entrant_stake,
             creator: BountyActor::Member(member_id),
             ..Default::default()
         };
@@ -242,6 +246,7 @@ benchmarks! {
     cancel_bounty_by_council {
         let cherry: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 1000.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -252,6 +257,7 @@ benchmarks! {
             cherry,
             creator: creator.clone(),
             max_amount,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -271,6 +277,8 @@ benchmarks! {
     cancel_bounty_by_member {
         let cherry: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 1000.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
+
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
         T::CouncilBudgetManager::set_budget(cherry);
@@ -283,6 +291,7 @@ benchmarks! {
             cherry,
             creator: creator.clone(),
             max_amount,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -306,6 +315,7 @@ benchmarks! {
     veto_bounty {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -314,6 +324,7 @@ benchmarks! {
             judging_period: One::one(),
             max_amount,
             cherry,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -333,6 +344,7 @@ benchmarks! {
     fund_bounty_by_member {
         let max_amount: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -341,6 +353,7 @@ benchmarks! {
             judging_period: One::one(),
             max_amount,
             cherry,
+            entrant_stake,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -362,6 +375,7 @@ benchmarks! {
     fund_bounty_by_council {
         let max_amount: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry + max_amount);
 
@@ -370,6 +384,7 @@ benchmarks! {
             judging_period: One::one(),
             max_amount,
             cherry,
+            entrant_stake,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -390,6 +405,7 @@ benchmarks! {
         let funding_period = 1;
         let bounty_amount = 200;
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -400,6 +416,7 @@ benchmarks! {
             max_amount: bounty_amount.into(),
             min_amount: bounty_amount.into(),
             cherry,
+            entrant_stake,
             ..Default::default()
         };
         // should reach default max bounty funding amount
@@ -435,6 +452,7 @@ benchmarks! {
         let bounty_amount = 200;
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry + funding_amount);
 
@@ -445,6 +463,7 @@ benchmarks! {
             max_amount: bounty_amount.into(),
             min_amount: bounty_amount.into(),
             cherry,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -474,6 +493,7 @@ benchmarks! {
     withdraw_creator_cherry_by_council {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -483,6 +503,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             max_amount,
+            entrant_stake,
             creator: creator.clone(),
             ..Default::default()
         };
@@ -505,13 +526,14 @@ benchmarks! {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-
+        let entrant_stake: BalanceOf<T> = 10.into();
         let creator = BountyActor::Member(member_id);
 
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
+            entrant_stake,
             creator: creator.clone(),
             max_amount,
             ..Default::default()
@@ -570,19 +592,19 @@ benchmarks! {
         member_id,
         bounty_id,
         account_id.clone(),
-        Some(account_id.clone())
+        account_id.clone()
     )
     verify {
-        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
-        assert!(WorkEntries::<T>::contains_key(bounty_id, entry_id));
+        assert!(Entries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
             Event::<T>::WorkEntryAnnounced(
                 bounty_id,
                 entry_id,
                 member_id,
                 account_id.clone(),
-                Some(account_id)
+                account_id
             ).into()
         );
     }
@@ -610,14 +632,14 @@ benchmarks! {
             member_id,
             bounty_id,
             account_id.clone(),
-            Some(account_id.clone())
+            account_id.clone()
         ).unwrap();
 
-        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id)
     verify {
-        assert!(!WorkEntries::<T>::contains_key(bounty_id, entry_id));
+        assert!(!Entries::<T>::contains_key(bounty_id, entry_id));
         assert_last_event::<T>(
             Event::<T>::WorkEntryWithdrawn(bounty_id, entry_id, member_id).into()
         );
@@ -630,7 +652,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 10000.into();
-
+        let entrant_stake: BalanceOf<T> = 10.into();
         let work_period: T::BlockNumber = One::one();
         let judging_period: T::BlockNumber = One::one();
         let funding_period: T::BlockNumber = One::one();
@@ -642,6 +664,7 @@ benchmarks! {
             cherry,
             min_amount: funding_amount,
             max_amount,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -659,14 +682,14 @@ benchmarks! {
             member_id,
             bounty_id,
             account_id.clone(),
-            Some(account_id.clone())
+            account_id.clone()
         ).unwrap();
 
-        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id, work_data.clone())
     verify {
-        let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+        let entry = Bounty::<T>::entries(bounty_id, entry_id);
         let hashed = T::Hashing::hash(&work_data);
         let work_data_hash = hashed.as_ref().to_vec();
 
@@ -683,12 +706,14 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 10000000.into();
         let oracle = BountyActor::Council;
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         let params = BountyCreationParameters::<T> {
             work_period,
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            entrant_stake,
             max_amount: funding_amount,
             oracle: oracle.clone(),
             ..Default::default()
@@ -711,7 +736,7 @@ benchmarks! {
     }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
     verify {
         for entry_id in entry_ids {
-            let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+            let entry = Bounty::<T>::entries(bounty_id, entry_id);
             assert_eq!(
                 entry.oracle_judgment_result,
                 OracleWorkEntryJudgment::Winner {reward : winner_reward}
@@ -729,12 +754,14 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let oracle = BountyActor::Council;
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         let params = BountyCreationParameters::<T> {
             work_period,
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            entrant_stake,
             max_amount: funding_amount,
             oracle: oracle.clone(),
             ..Default::default()
@@ -756,7 +783,7 @@ benchmarks! {
     }: submit_oracle_judgment(RawOrigin::Root, oracle.clone(), bounty_id, judgment.clone())
     verify {
         for entry_id in entry_ids {
-            assert!(!<WorkEntries<T>>::contains_key(bounty_id, entry_id));
+            assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         }
         assert_last_event::<T>(
             Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
@@ -772,12 +799,14 @@ benchmarks! {
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         let params = BountyCreationParameters::<T> {
             work_period,
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            entrant_stake,
             max_amount: funding_amount,
             oracle: oracle.clone(),
             ..Default::default()
@@ -805,7 +834,7 @@ benchmarks! {
     )
     verify {
         for entry_id in entry_ids {
-            let entry = Bounty::<T>::work_entries(bounty_id, entry_id);
+            let entry = Bounty::<T>::entries(bounty_id, entry_id);
             assert_eq!(
                 entry.oracle_judgment_result,
                 OracleWorkEntryJudgment::Winner {reward : winner_reward}
@@ -825,12 +854,14 @@ benchmarks! {
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
+        let entrant_stake: BalanceOf<T> = 10.into();
 
         let params = BountyCreationParameters::<T> {
             work_period,
             judging_period: One::one(),
             creator: BountyActor::Council,
             cherry,
+            entrant_stake,
             max_amount: funding_amount,
             oracle: oracle.clone(),
             ..Default::default()
@@ -857,7 +888,7 @@ benchmarks! {
     )
     verify {
         for entry_id in entry_ids {
-            assert!(!<WorkEntries<T>>::contains_key(bounty_id, entry_id));
+            assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         }
         assert_last_event::<T>(
             Event::<T>::OracleJudgmentSubmitted(bounty_id, oracle, judgment).into()
@@ -894,11 +925,11 @@ benchmarks! {
             work_member_id,
             bounty_id,
             work_account_id.clone(),
-            Some(work_account_id.clone()),
+            work_account_id.clone(),
         )
         .unwrap();
 
-        let entry_id: T::WorkEntryId = Bounty::<T>::work_entry_count().into();
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
 
         let work_data = b"work_data".to_vec();
         Bounty::<T>::submit_work(
@@ -932,7 +963,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(work_account_id), work_member_id, bounty_id, entry_id)
     verify {
-        assert!(!<WorkEntries<T>>::contains_key(bounty_id, entry_id));
+        assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
         assert_was_fired::<T>(
             Event::<T>::WorkEntrantFundsWithdrawn(bounty_id, entry_id, work_member_id).into()
         );

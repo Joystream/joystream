@@ -890,7 +890,7 @@ impl bounty::Trait for Runtime {
     type WeightInfo = weights::bounty::WeightInfo;
     type CouncilBudgetManager = Council;
     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
-    type WorkEntryId = u64;
+    type EntryId = u64;
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
     type MinFundingLimit = MinFundingLimit;

@@ -99,7 +99,7 @@ impl Trait for Test {
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
     type StakingHandler = StakingManager<Test, BountyLockId>;
-    type WorkEntryId = u64;
+    type EntryId = u64;
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
     type MinFundingLimit = MinFundingLimit;

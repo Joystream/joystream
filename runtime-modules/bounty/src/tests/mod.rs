@@ -11,7 +11,7 @@ use sp_std::collections::btree_map::BTreeMap;
 
 use crate::{
     Bounties, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage,
-    Error, OracleWorkEntryJudgment, RawEvent, WorkEntries,
+    Entries, Error, OracleWorkEntryJudgment, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 use fixtures::{
@@ -502,6 +502,17 @@ fn create_bounty_fails_with_invalid_min_max_amounts() {
             .call_and_assert(Err(
                 Error::<Test>::MinFundingAmountCannotBeGreaterThanMaxAmount.into(),
             ));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_invalid_entrant_stake() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_entrant_stake(0)
+            .call_and_assert(Err(Error::<Test>::EntrantStakeCannotBeZero.into()));
     });
 }
 
@@ -2049,11 +2060,7 @@ fn announce_work_entry_succeeded() {
         let entry_id = 1;
 
         EventFixture::assert_last_crate_event(RawEvent::WorkEntryAnnounced(
-            entry_id,
-            bounty_id,
-            member_id,
-            account_id,
-            Some(account_id),
+            entry_id, bounty_id, member_id, account_id, account_id,
         ));
     });
 }
@@ -2107,19 +2114,20 @@ fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
         run_to_block(starting_block);
 
         let initial_balance = 500;
-        let entrant_stake = 0;
         let amount = 100;
 
         <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_amount(0)
-            .with_entrant_stake(entrant_stake)
             .call_and_assert(Ok(()));
 
         let bounty_id = 1;
         let member_id = 1;
-        let account_id = 1;
+        let account_id1 = 1;
+        let account_id2 = 2;
+        let account_id3 = 3;
+        let account_id4 = 4;
 
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
@@ -2128,33 +2136,35 @@ fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
-        increase_account_balance(&account_id, initial_balance);
-
+        increase_account_balance(&account_id1, initial_balance);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_origin(RawOrigin::Signed(account_id1))
             .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+            .with_staking_account_id(account_id1)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
+        increase_account_balance(&account_id2, initial_balance);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_origin(RawOrigin::Signed(account_id2))
             .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+            .with_staking_account_id(account_id2)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
+        increase_account_balance(&account_id3, initial_balance);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_origin(RawOrigin::Signed(account_id3))
             .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+            .with_staking_account_id(account_id3)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
+        increase_account_balance(&account_id4, initial_balance);
         AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_origin(RawOrigin::Signed(account_id4))
             .with_member_id(member_id)
-            .with_staking_account_id(account_id)
+            .with_staking_account_id(account_id4)
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::MaxWorkEntryLimitReached.into()));
     });
@@ -2232,12 +2242,6 @@ fn announce_work_entry_fails_with_invalid_staking_data() {
 
         let member_id = 1;
         let account_id = 1;
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::NoStakingAccountProvided.into()));
 
         AnnounceWorkEntryFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
@@ -2596,6 +2600,8 @@ fn withdraw_work_entry_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
+        increase_account_balance(&account_id, initial_balance);
+
         AnnounceWorkEntryFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
@@ -2794,6 +2800,8 @@ fn submit_work_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
+        increase_account_balance(&account_id, initial_balance);
+
         AnnounceWorkEntryFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
@@ -2982,7 +2990,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         .cloned()
         .collect::<BTreeMap<_, _>>();
 
-        assert!(<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(Balances::total_balance(&account_id), initial_balance);
 
         SubmitJudgmentFixture::default()
@@ -2991,16 +2999,16 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            Bounty::work_entries(bounty_id, entry_id1).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id1).oracle_judgment_result,
             OracleWorkEntryJudgment::Winner {
                 reward: DEFAULT_WINNER_REWARD
             }
         );
         assert_eq!(
-            Bounty::work_entries(bounty_id, entry_id2).oracle_judgment_result,
+            Bounty::entries(bounty_id, entry_id2).oracle_judgment_result,
             OracleWorkEntryJudgment::Legit
         );
-        assert!(!<WorkEntries<Test>>::contains_key(bounty_id, entry_id3));
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id3));
         assert_eq!(
             Balances::total_balance(&account_id),
             initial_balance - entrant_stake
@@ -3509,6 +3517,8 @@ fn withdraw_work_entrant_funds_fails_with_invalid_origin() {
             .with_council()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
 
         AnnounceWorkEntryFixture::default()
             .with_origin(RawOrigin::Signed(account_id))

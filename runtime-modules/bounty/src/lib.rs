@@ -128,7 +128,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
     type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
 
     /// Work entry Id type
-    type WorkEntryId: From<u32> + Parameter + Default + Copy + Ord;
+    type EntryId: From<u32> + Parameter + Default + Copy + Ord;
 
     /// Defines max work entry number for a bounty.
     /// It limits further work entries iteration after the judge decision about winners, non-winners
@@ -340,8 +340,8 @@ impl<Balance, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, Mem
     }
 }
 
-/// Alias type for the WorkEntry.
-pub type WorkEntry<T> = WorkEntryRecord<
+/// Alias type for the Entry.
+pub type Entry<T> = EntryRecord<
     <T as frame_system::Trait>::AccountId,
     <T as common::Trait>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
@@ -351,12 +351,12 @@ pub type WorkEntry<T> = WorkEntryRecord<
 /// Work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct WorkEntryRecord<AccountId, MemberId, BlockNumber, Balance> {
+pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
     /// Work entrant member ID.
     pub member_id: MemberId,
 
-    /// Optional account ID for staking lock.
-    pub staking_account_id: Option<AccountId>,
+    /// Account ID for staking lock.
+    pub staking_account_id: AccountId,
 
     /// Account ID for reward.
     pub reward_account_id: AccountId,
@@ -410,11 +410,10 @@ struct RequiredStakeInfo<T: Trait> {
 }
 
 /// An alias for the OracleJudgment.
-pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::WorkEntryId, BalanceOf<T>>;
+pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::EntryId, BalanceOf<T>>;
 
 /// The collection of the oracle judgments for the work entries.
-pub type OracleJudgment<WorkEntryId, Balance> =
-    BTreeMap<WorkEntryId, OracleWorkEntryJudgment<Balance>>;
+pub type OracleJudgment<EntryId, Balance> = BTreeMap<EntryId, OracleWorkEntryJudgment<Balance>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -430,12 +429,12 @@ decl_storage! {
         pub BountyCount get(fn bounty_count): u32;
 
         /// Work entry storage double map.
-        pub WorkEntries get(fn work_entries): double_map
+        pub Entries get(fn entries): double_map
             hasher(blake2_128_concat) T::BountyId,
-            hasher(blake2_128_concat) T::WorkEntryId => WorkEntry<T>;
+            hasher(blake2_128_concat) T::EntryId => Entry<T>;
 
         /// Count of all work entries that have been created.
-        pub WorkEntryCount get(fn work_entry_count): u32;
+        pub EntryCount get(fn entry_count): u32;
     }
 }
 
@@ -443,7 +442,7 @@ decl_event! {
     pub enum Event<T>
     where
         <T as Trait>::BountyId,
-        <T as Trait>::WorkEntryId,
+        <T as Trait>::EntryId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::AccountId,
@@ -480,21 +479,21 @@ decl_event! {
         /// - created entry ID
         /// - entrant member ID
         /// - reward account ID
-        /// - optional staking account ID
-        WorkEntryAnnounced(BountyId, WorkEntryId, MemberId, AccountId, Option<AccountId>),
+        /// - staking account ID
+        WorkEntryAnnounced(BountyId, EntryId, MemberId, AccountId, AccountId),
 
         /// Work entry was withdrawn.
         /// Params:
         /// - bounty ID
         /// - entry ID
         /// - entrant member ID
-        WorkEntryWithdrawn(BountyId, WorkEntryId, MemberId),
+        WorkEntryWithdrawn(BountyId, EntryId, MemberId),
 
         /// Work entry was slashed.
         /// Params:
         /// - bounty ID
         /// - entry ID
-        WorkEntrySlashed(BountyId, WorkEntryId),
+        WorkEntrySlashed(BountyId, EntryId),
 
         /// Submit work.
         /// Params:
@@ -502,7 +501,7 @@ decl_event! {
         /// - created entry ID
         /// - entrant member ID
         /// - work data (description, URL, BLOB, etc.)
-        WorkSubmitted(BountyId, WorkEntryId, MemberId, Vec<u8>),
+        WorkSubmitted(BountyId, EntryId, MemberId, Vec<u8>),
 
         /// Submit oracle judgment.
         /// Params:
@@ -516,7 +515,7 @@ decl_event! {
         /// - bounty ID
         /// - entry ID
         /// - entrant member ID
-        WorkEntrantFundsWithdrawn(BountyId, WorkEntryId, MemberId),
+        WorkEntrantFundsWithdrawn(BountyId, EntryId, MemberId),
     }
 }
 
@@ -571,9 +570,6 @@ decl_error! {
         /// The conflicting stake discovered. Cannot stake.
         ConflictingStakes,
 
-        /// No staking account was provided.
-        NoStakingAccountProvided,
-
         /// Work entry doesnt exist.
         WorkEntryDoesntExist,
 
@@ -608,6 +604,9 @@ decl_error! {
 
         /// Cannot withdraw funds from a successful bounty.
         CannotWithdrawFundsOnSuccessfulBounty,
+
+        /// Cannot create a bounty with zero work entrant stake.
+        EntrantStakeCannotBeZero,
     }
 }
 
@@ -930,7 +929,7 @@ decl_module! {
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
             reward_account_id: T::AccountId,
-            staking_account_id: Option<T::AccountId>,
+            staking_account_id: T::AccountId,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
@@ -957,15 +956,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let next_entry_count_value = Self::work_entry_count() + 1;
-            let entry_id = T::WorkEntryId::from(next_entry_count_value);
+            let next_entry_count_value = Self::entry_count() + 1;
+            let entry_id = T::EntryId::from(next_entry_count_value);
 
             // Lock stake balance for bounty if the stake is required.
             if let Some(stake) = stake {
                 T::StakingHandler::lock(&stake.account_id, stake.amount);
             }
 
-            let entry = WorkEntry::<T> {
+            let entry = Entry::<T> {
                 member_id,
                 reward_account_id: reward_account_id.clone(),
                 staking_account_id: staking_account_id.clone(),
@@ -975,8 +974,8 @@ decl_module! {
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,
             };
 
-            <WorkEntries<T>>::insert(bounty_id, entry_id, entry);
-            WorkEntryCount::mutate(|count| {
+            <Entries<T>>::insert(bounty_id, entry_id, entry);
+            EntryCount::mutate(|count| {
                 *count = next_entry_count_value
             });
 
@@ -1007,7 +1006,7 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
-            entry_id: T::WorkEntryId,
+            entry_id: T::EntryId,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
@@ -1044,7 +1043,7 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
-            entry_id: T::WorkEntryId,
+            entry_id: T::EntryId,
             work_data: Vec<u8>
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
@@ -1065,7 +1064,7 @@ decl_module! {
             let work_data_hash = hashed.as_ref().to_vec();
 
             // Update entry
-            <WorkEntries<T>>::mutate(bounty_id, entry_id, |entry| {
+            <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                 entry.last_submitted_work = Some(work_data_hash);
             });
 
@@ -1093,7 +1092,7 @@ decl_module! {
             origin,
             oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgment: OracleJudgment<T::WorkEntryId, BalanceOf<T>>
+            judgment: OracleJudgment<T::EntryId, BalanceOf<T>>
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
                 origin,
@@ -1128,11 +1127,11 @@ decl_module! {
             for (entry_id, work_entry_judgment) in judgment.iter() {
                 // Update work entries for winners and legitimate participants.
                 if *work_entry_judgment != OracleWorkEntryJudgment::Rejected{
-                    <WorkEntries<T>>::mutate(bounty_id, entry_id, |entry| {
+                    <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                         entry.oracle_judgment_result = *work_entry_judgment;
                     });
                 } else {
-                    let entry = Self::work_entries(bounty_id, entry_id);
+                    let entry = Self::entries(bounty_id, entry_id);
 
                     Self::slash_work_entry_stake(&entry);
 
@@ -1160,7 +1159,7 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
-            entry_id: T::WorkEntryId,
+            entry_id: T::EntryId,
         ) {
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
@@ -1186,9 +1185,7 @@ decl_module! {
             }
 
             // Unstake the full work entry state.
-            if let Some(staking_account_id) = &entry.staking_account_id {
-                T::StakingHandler::unlock(staking_account_id);
-            }
+            T::StakingHandler::unlock(&entry.staking_account_id);
 
             // Delete the work entry record from the storage.
             Self::remove_work_entry(&bounty_id, &entry_id);
@@ -1232,6 +1229,11 @@ impl<T: Trait> Module<T> {
         ensure!(
             params.cherry >= T::MinCherryLimit::get(),
             Error::<T>::CherryLessThenMinimumAllowed
+        );
+
+        ensure!(
+            params.entrant_stake != Zero::zero(),
+            Error::<T>::EntrantStakeCannotBeZero
         );
 
         if let AssuranceContractType::Closed(ref member_ids) = params.contract_type {
@@ -1330,7 +1332,7 @@ impl<T: Trait> Module<T> {
     fn remove_bounty(bounty_id: &T::BountyId) {
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
-        <WorkEntries<T>>::remove_prefix(bounty_id);
+        <Entries<T>>::remove_prefix(bounty_id);
 
         // Slash remaining funds.
         let bounty_account_id = Self::bounty_account_id(*bounty_id);
@@ -1383,7 +1385,7 @@ impl<T: Trait> Module<T> {
     // Verifies that bounty has some work entries to withdraw.
     // Should be O(1) because of the single inner call of the next() function of the iterator.
     pub(crate) fn work_entries_exist(bounty_id: &T::BountyId) -> bool {
-        <WorkEntries<T>>::iter_prefix_values(bounty_id)
+        <Entries<T>>::iter_prefix_values(bounty_id)
             .peekable()
             .peek()
             .is_some()
@@ -1454,58 +1456,42 @@ impl<T: Trait> Module<T> {
     fn validate_entrant_stake(
         member_id: MemberId<T>,
         bounty: &Bounty<T>,
-        staking_account_id: Option<T::AccountId>,
+        staking_account_id: T::AccountId,
     ) -> Result<Option<RequiredStakeInfo<T>>, DispatchError> {
         let staking_balance = bounty.creation_params.entrant_stake;
 
-        if staking_balance != Zero::zero() {
-            if let Some(staking_account_id) = staking_account_id {
-                ensure!(
-                    T::StakingAccountValidator::is_member_staking_account(
-                        &member_id,
-                        &staking_account_id
-                    ),
-                    Error::<T>::InvalidStakingAccountForMember
-                );
+        ensure!(
+            T::StakingAccountValidator::is_member_staking_account(&member_id, &staking_account_id),
+            Error::<T>::InvalidStakingAccountForMember
+        );
 
-                ensure!(
-                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
-                    Error::<T>::ConflictingStakes
-                );
+        ensure!(
+            T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+            Error::<T>::ConflictingStakes
+        );
 
-                ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(
-                        &staking_account_id,
-                        staking_balance
-                    ),
-                    Error::<T>::InsufficientBalanceForStake
-                );
+        ensure!(
+            T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, staking_balance),
+            Error::<T>::InsufficientBalanceForStake
+        );
 
-                Ok(Some(RequiredStakeInfo {
-                    amount: staking_balance,
-                    account_id: staking_account_id,
-                }))
-            } else {
-                // No staking account when required.
-                Err(Error::<T>::NoStakingAccountProvided.into())
-            }
-        } else {
-            // No stake required
-            Ok(None)
-        }
+        Ok(Some(RequiredStakeInfo {
+            amount: staking_balance,
+            account_id: staking_account_id,
+        }))
     }
 
     // Verifies work entry existence and retrieves an entry from the storage.
     fn ensure_work_entry_exists(
         bounty_id: &T::BountyId,
-        entry_id: &T::WorkEntryId,
-    ) -> Result<WorkEntry<T>, DispatchError> {
+        entry_id: &T::EntryId,
+    ) -> Result<Entry<T>, DispatchError> {
         ensure!(
-            <WorkEntries<T>>::contains_key(bounty_id, entry_id),
+            <Entries<T>>::contains_key(bounty_id, entry_id),
             Error::<T>::WorkEntryDoesntExist
         );
 
-        let entry = <WorkEntries<T>>::get(bounty_id, entry_id);
+        let entry = <Entries<T>>::get(bounty_id, entry_id);
 
         Ok(entry)
     }
@@ -1513,34 +1499,32 @@ impl<T: Trait> Module<T> {
     // Unlocks the work entry stake.
     // It also calculates and slashes the stake on work entry withdrawal.
     // The slashing amount depends on the entry active period.
-    fn unlock_work_entry_stake_with_possible_penalty(bounty: &Bounty<T>, entry: &WorkEntry<T>) {
-        if let Some(staking_account_id) = &entry.staking_account_id {
-            let now = Self::current_block();
-            let staking_balance = bounty.creation_params.entrant_stake;
+    fn unlock_work_entry_stake_with_possible_penalty(bounty: &Bounty<T>, entry: &Entry<T>) {
+        let staking_account_id = &entry.staking_account_id;
 
-            let entry_was_active_period = now.saturating_sub(entry.submitted_at);
+        let now = Self::current_block();
+        let staking_balance = bounty.creation_params.entrant_stake;
 
-            let slashing_share = Perbill::from_rational_approximation(
-                entry_was_active_period,
-                bounty.creation_params.work_period,
-            );
+        let entry_was_active_period = now.saturating_sub(entry.submitted_at);
 
-            // No more than staking_balance.
-            let slashing_amount = (slashing_share * staking_balance).min(staking_balance);
+        let slashing_share = Perbill::from_rational_approximation(
+            entry_was_active_period,
+            bounty.creation_params.work_period,
+        );
 
-            if slashing_amount > Zero::zero() {
-                T::StakingHandler::slash(staking_account_id, Some(slashing_amount));
-            }
+        // No more than staking_balance.
+        let slashing_amount = (slashing_share * staking_balance).min(staking_balance);
 
-            T::StakingHandler::unlock(staking_account_id);
+        if slashing_amount > Zero::zero() {
+            T::StakingHandler::slash(staking_account_id, Some(slashing_amount));
         }
+
+        T::StakingHandler::unlock(staking_account_id);
     }
 
     // Slashed the work entry stake.
-    fn slash_work_entry_stake(entry: &WorkEntry<T>) {
-        if let Some(staking_account_id) = &entry.staking_account_id {
-            T::StakingHandler::slash(staking_account_id, None);
-        }
+    fn slash_work_entry_stake(entry: &Entry<T>) {
+        T::StakingHandler::slash(&entry.staking_account_id, None);
     }
 
     // Validates the contract type for a bounty
@@ -1595,7 +1579,7 @@ impl<T: Trait> Module<T> {
 
             // Check work entry existence.
             ensure!(
-                <WorkEntries<T>>::contains_key(bounty_id, entry_id),
+                <Entries<T>>::contains_key(bounty_id, entry_id),
                 Error::<T>::WorkEntryDoesntExist
             );
         }
@@ -1604,8 +1588,8 @@ impl<T: Trait> Module<T> {
     }
 
     // Removes the work entry and decrements active entry count in a bounty.
-    fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::WorkEntryId) {
-        <WorkEntries<T>>::remove(bounty_id, entry_id);
+    fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::EntryId) {
+        <Entries<T>>::remove(bounty_id, entry_id);
 
         // Decrement work entry counter and update bounty record.
         <Bounties<T>>::mutate(bounty_id, |bounty| {
