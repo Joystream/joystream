@@ -1,15 +1,21 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import {ChannelCreationParameters, NewAsset} from '@joystream/types/content'
+import { NewAsset} from '@joystream/types/content'
 import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
 import { Vec, Option} from '@polkadot/types';
 import AccountId from '@polkadot/types/generic/AccountId';
 import { Bytes } from '@polkadot/types/primitive';
 
 type ChannelCreationParametersInput = {
-  assets: import("@polkadot/types/types").Constructor<Vec<NewAsset>>,
+  assets: Vec<NewAsset>,
   meta: ChannelMetadata.AsObject,
-  reward_account: import("@polkadot/types/types").Constructor<Option<AccountId>>,
+  reward_account: Option<AccountId>,
+}
+
+type ChannelCreationParameters = {
+  assets: Vec<NewAsset>,
+  meta: Bytes,
+  reward_account: Option<AccountId>,
 }
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
@@ -43,6 +49,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       channelMetadata.setCategory(channelCreationParametersInput.meta.category!)
 
       let channelCreationParameters: ChannelCreationParameters = {
+        assets: channelCreationParametersInput.assets,
         meta: channelMetadata.serializeBinary() as Bytes,
         reward_account: channelCreationParametersInput.reward_account,
       }
