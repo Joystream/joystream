@@ -19,7 +19,8 @@ members = [
     "runtime-modules/blog",
     "runtime-modules/utility",
 	"node",
-	"utils/chain-spec-builder/"
+	"utils/chain-spec-builder/",
+    "analyses/bench"
 ]
 
 [profile.release]
