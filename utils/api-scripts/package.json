@@ -5,7 +5,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "status": "ts-node src/status",
-    "initialize-content-lead": "ts-node src/sudo-init-content-lead",
+    "initialize-content-lead": "ts-node src/initialize-content-lead",
     "script": "ts-node src/script",
     "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict"
   },
