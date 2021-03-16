@@ -107,10 +107,8 @@ fn update_profile_succeeds() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            info.name.clone(),
             info.handle.clone(),
-            info.avatar_uri.clone(),
-            info.about.clone(),
+            Some(info.meta_data.clone()),
         ));
 
         let profile = get_membership_by_id(next_member_id);
@@ -123,10 +121,8 @@ fn update_profile_succeeds() {
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(
             next_member_id,
-            info.name,
             info.handle,
-            info.avatar_uri,
-            info.about,
+            Some(info.meta_data),
         ));
     });
 }
@@ -143,8 +139,6 @@ fn update_profile_has_no_effect_on_empty_parameters() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            None,
-            None,
             None,
             None,
         ));

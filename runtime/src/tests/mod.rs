@@ -164,10 +164,8 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle.to_vec()),
-        avatar_uri: None,
-        about: None,
+        meta_data: Vec::new(),
         referrer_id: None,
     };
 

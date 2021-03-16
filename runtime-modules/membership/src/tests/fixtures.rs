@@ -52,11 +52,9 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestUserInfo {
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
     pub handle_hash: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub meta_data: Vec<u8>,
 }
 
 pub fn get_alice_info() -> TestUserInfo {
@@ -64,12 +62,19 @@ pub fn get_alice_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
+    let meta_data = b"
+    {
+        'name': 'Alice',
+        'avatar_uri': 'http://avatar-url.com/alice',
+        'about': 'my name is alice',
+    }
+    "
+    .to_vec();
+
     TestUserInfo {
-        name: Some(b"Alice".to_vec()),
         handle: Some(handle),
         handle_hash: Some(hash),
-        avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
-        about: Some(b"my name is alice".to_vec()),
+        meta_data,
     }
 }
 
@@ -78,12 +83,19 @@ pub fn get_bob_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
+    let meta_data = b"
+    {
+        'name': 'Bob',
+        'avatar_uri': 'http://avatar-url.com/bob',
+        'about': 'my name is bob',
+    }
+    "
+    .to_vec();
+
     TestUserInfo {
-        name: Some(b"Bob".to_vec()),
         handle: Some(handle),
         handle_hash: Some(hash),
-        avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
-        about: Some(b"my name is bob".to_vec()),
+        meta_data,
     }
 }
 
@@ -98,11 +110,9 @@ pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     BuyMembershipParameters {
         root_account: ALICE_ACCOUNT_ID,
         controller_account: ALICE_ACCOUNT_ID,
-        name: info.name,
         handle: info.handle,
-        avatar_uri: info.avatar_uri,
-        about: info.about,
         referrer_id: None,
+        meta_data: info.meta_data,
     }
 }
 
@@ -167,10 +177,8 @@ pub struct BuyMembershipFixture {
     pub origin: RawOrigin<u64>,
     pub root_account: u64,
     pub controller_account: u64,
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub meta_data: Vec<u8>,
     pub referrer_id: Option<u64>,
 }
 
@@ -181,10 +189,8 @@ impl Default for BuyMembershipFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             root_account: ALICE_ACCOUNT_ID,
             controller_account: ALICE_ACCOUNT_ID,
-            name: alice.name,
             handle: alice.handle,
-            avatar_uri: alice.avatar_uri,
-            about: alice.about,
+            meta_data: alice.meta_data,
             referrer_id: None,
         }
     }
@@ -195,10 +201,8 @@ impl BuyMembershipFixture {
         let params = BuyMembershipParameters {
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
-            name: self.name.clone(),
             handle: self.handle.clone(),
-            avatar_uri: self.avatar_uri.clone(),
-            about: self.about.clone(),
+            meta_data: self.meta_data.clone(),
             referrer_id: self.referrer_id.clone(),
         };
 
@@ -332,10 +336,8 @@ pub struct InviteMembershipFixture {
     pub origin: RawOrigin<u64>,
     pub root_account: u64,
     pub controller_account: u64,
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub meta_data: Vec<u8>,
 }
 
 impl Default for InviteMembershipFixture {
@@ -346,10 +348,8 @@ impl Default for InviteMembershipFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             root_account: BOB_ACCOUNT_ID,
             controller_account: BOB_ACCOUNT_ID,
-            name: bob.name,
             handle: bob.handle,
-            avatar_uri: bob.avatar_uri,
-            about: bob.about,
+            meta_data: bob.meta_data,
         }
     }
 }
@@ -360,10 +360,8 @@ impl InviteMembershipFixture {
             inviting_member_id: self.member_id.clone(),
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
-            name: self.name.clone(),
             handle: self.handle.clone(),
-            avatar_uri: self.avatar_uri.clone(),
-            about: self.about.clone(),
+            meta_data: self.meta_data.clone(),
         }
     }
 
