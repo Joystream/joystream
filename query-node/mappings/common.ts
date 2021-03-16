@@ -1,3 +1,4 @@
+import BN from 'bn.js'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
@@ -48,8 +49,8 @@ export async function prepareAssetDataObject(contentParameters: ContentParameter
     owner: assetOwner,
     addedAt: block,
     typeId: contentParameters.type_id.toNumber(),
-    size: contentParameters.size,
-    liaisonId: 0, // TODO: proper id
+    size: new BN(contentParameters.size),
+    liaisonId: new BN(0), // TODO: proper id
     liaisonJudgement: LiaisonJudgement.PENDING, // TODO: proper judgement
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),
     joystreamContentId: contentParameters.content_id.toHex(),

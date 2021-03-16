@@ -152,7 +152,7 @@ async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      result.thumbnail = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
+      result.thumbnailPhoto = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
     }
 
     // prepare video asset if needed
