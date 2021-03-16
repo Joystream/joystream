@@ -60,6 +60,8 @@ const DEFAULT_DECIMALS = new BN(12)
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Builder]: 'builderWorkingGroup',
+  [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 }
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future

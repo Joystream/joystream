@@ -71,12 +71,16 @@ export type NameValueObj = { name: string; value: string }
 export enum WorkingGroups {
   StorageProviders = 'storageProviders',
   Curators = 'curators',
+  Builder = 'builder',
+  Gateway = 'gateway',
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
+  WorkingGroups.Builder,
+  WorkingGroups.Gateway,
 ] as const
 
 export type Reward = {
