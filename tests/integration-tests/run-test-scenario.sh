@@ -10,4 +10,4 @@ SCENARIO=$1
 SCENARIO=${SCENARIO:=olympia}
 
 # Execute the tests
-time DEBUG=* yarn workspace network-tests node-ts-strict src/scenarios/${SCENARIO}.ts
+time DEBUG=* yarn workspace integration-tests node-ts-strict src/scenarios/${SCENARIO}.ts
