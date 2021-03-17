@@ -101,7 +101,7 @@
       "working-groups": {
         "description": "Working group lead and worker actions"
       },
-      "content-directory": {
+      "content": {
         "description": "Interactions with content directory module - managing classes, schemas, entities and permissions"
       },
       "media": {
