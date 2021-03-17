@@ -15,8 +15,8 @@ export function createSimpleChannelFixture(api: Api): CreateChannelFixture {
     // Here we reference language that we assume was added by initialization script (initialize:dev), as it is part of
     // input/entityBatches/LanguageBatch.json
     language: { existing: { code: 'EN' } },
-    coverPhotoUrl: '',
-    avatarPhotoUrl: '',
+    coverPhotoUrl: 'url1',
+    avatarPhotoUrl: 'url2',
     isPublic: true,
   }
   return new CreateChannelFixture(api, channelEntity)

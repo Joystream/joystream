@@ -140,7 +140,7 @@ export async function main(): Promise<void> {
     v.thumbnailUrl = 'https://eu-central-1.linodeobjects.com/joystream/1.png'
     v.isPublic = false
     v.isCurated = false
-    v.isExplicit = true
+    v.isExplicit = false
     v.isFeatured = false
     await db.save<Video>(v)
     // ///////// Video /////////////////
