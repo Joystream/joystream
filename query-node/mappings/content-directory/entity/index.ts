@@ -4,21 +4,6 @@ import { ClassEntity } from '../../../generated/graphql-server/src/modules/class
 
 import { decode } from '../decode'
 import {
-  updateCategoryEntityPropertyValues,
-  updateChannelEntityPropertyValues,
-  updateVideoMediaEntityPropertyValues,
-  updateVideoEntityPropertyValues,
-  updateUserDefinedLicenseEntityPropertyValues,
-  updateHttpMediaLocationEntityPropertyValues,
-  updateJoystreamMediaLocationEntityPropertyValues,
-  updateKnownLicenseEntityPropertyValues,
-  updateLanguageEntityPropertyValues,
-  updateVideoMediaEncodingEntityPropertyValues,
-  updateLicenseEntityPropertyValues,
-  updateMediaLocationEntityPropertyValues,
-  updateFeaturedVideoEntityPropertyValues,
-} from './update'
-import {
   removeCategory,
   removeChannel,
   removeVideoMedia,
@@ -33,20 +18,7 @@ import {
   removeMediaLocation,
   removeFeaturedVideo,
 } from './remove'
-import {
-  createCategory,
-  createChannel,
-  createVideoMedia,
-  createVideo,
-  createUserDefinedLicense,
-  createKnownLicense,
-  createHttpMediaLocation,
-  createJoystreamMediaLocation,
-  createLanguage,
-  createVideoMediaEncoding,
-  createBlockOrGetFromDatabase,
-  createFeaturedVideo,
-} from './create'
+import { createBlockOrGetFromDatabase } from './create'
 import {
   categoryPropertyNamesWithId,
   channelPropertyNamesWithId,
@@ -59,6 +31,8 @@ import {
   videoPropertyNamesWithId,
   ContentDirectoryKnownClasses,
   featuredVideoPropertyNamesWithId,
+  licensePropertyNamesWithId,
+  mediaLocationPropertyNamesWithId,
 } from '../content-dir-consts'
 
 import {
@@ -72,109 +46,175 @@ import {
   IVideo,
   ILanguage,
   IVideoMediaEncoding,
-  IDBBlockId,
   IWhereCond,
-  IEntity,
   ILicense,
   IMediaLocation,
   IFeaturedVideo,
 } from '../../types'
 import { getOrCreate, getKnownClass } from '../get-or-create'
+import { createDefaultSchema } from '../default-schemas'
+import {
+  addSchemaToCategory,
+  addSchemaToChannel,
+  addSchemaToFeaturedVideo,
+  addSchemaToHttpMediaLocation,
+  addSchemaToJoystreamMediaLocation,
+  addSchemaToKnownLicense,
+  addSchemaToLanguage,
+  addSchemaToLicense,
+  addSchemaToMediaLocation,
+  addSchemaToUserDefinedLicense,
+  addSchemaToVideo,
+  addSchemaToVideoMedia,
+  addSchemaToVideoMediaEncoding,
+} from './addSchema'
+import { NextEntityId } from '../../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
 
 const debug = Debug('mappings:content-directory')
+
+async function addSchemSupportToEntity(
+  event: SubstrateEvent,
+  className: string,
+  db: DB,
+  entityId: number,
+  nextEntityId = 0
+) {
+  switch (className) {
+    case ContentDirectoryKnownClasses.CHANNEL:
+      addSchemaToChannel({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IChannel>(event, channelPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.CATEGORY:
+      await addSchemaToCategory({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<ICategory>(event, categoryPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.KNOWNLICENSE:
+      await addSchemaToKnownLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IKnownLicense>(event, knownLicensePropertyNamesWIthId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
+      await addSchemaToUserDefinedLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IUserDefinedLicense>(event, userDefinedLicensePropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
+      await addSchemaToJoystreamMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IJoystreamMediaLocation>(event, joystreamMediaLocationPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
+      await addSchemaToHttpMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IHttpMediaLocation>(event, httpMediaLocationPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.VIDEOMEDIA:
+      await addSchemaToVideoMedia({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.VIDEO:
+      await addSchemaToVideo({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IVideo>(event, videoPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.LANGUAGE:
+      await addSchemaToLanguage({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<ILanguage>(event, languagePropertyNamesWIthId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
+      await addSchemaToVideoMediaEncoding({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
+      await addSchemaToFeaturedVideo({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await addSchemaToLicense({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<ILicense>(event, licensePropertyNamesWithId),
+      })
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await addSchemaToMediaLocation({
+        db,
+        entityId,
+        nextEntityId,
+        props: decode.setProperties<IMediaLocation>(event, mediaLocationPropertyNamesWithId),
+      })
+      break
+
+    default:
+      debug(`Unknown class name: ${className}`)
+      break
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: SubstrateEvent): Promise<void> {
   if (event.extrinsic && event.extrinsic.method === 'transaction') return
   debug(`EntitySchemaSupportAdded event: ${JSON.stringify(event)}`)
 
-  const { blockNumber: block } = event
-  const entityId = decode.stringIfyEntityId(event)
+  const { params } = event
+  const entityId = params[1].value as number
 
-  const [knownClass] = await getKnownClass(db, { where: { id: entityId } })
+  const [knownClass] = await getKnownClass(db, { where: { id: entityId.toString() } })
   if (!knownClass) return
 
-  const arg: IDBBlockId = { db, block, id: entityId }
-
-  switch (knownClass.name) {
-    case ContentDirectoryKnownClasses.CHANNEL:
-      await createChannel(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IChannel>(event, channelPropertyNamesWithId),
-        0 // ignored
-      )
-      break
-
-    case ContentDirectoryKnownClasses.CATEGORY:
-      await createCategory(arg, decode.setProperties<ICategory>(event, categoryPropertyNamesWithId))
-      break
-
-    case ContentDirectoryKnownClasses.KNOWNLICENSE:
-      await createKnownLicense(arg, decode.setProperties<IKnownLicense>(event, knownLicensePropertyNamesWIthId))
-      break
-
-    case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-      await createUserDefinedLicense(
-        arg,
-        decode.setProperties<IUserDefinedLicense>(event, userDefinedLicensePropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-      await createJoystreamMediaLocation(
-        arg,
-        decode.setProperties<IJoystreamMediaLocation>(event, joystreamMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-      await createHttpMediaLocation(
-        arg,
-        decode.setProperties<IHttpMediaLocation>(event, httpMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await createVideoMedia(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
-        0 // ignored
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEO:
-      await createVideo(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IVideo>(event, videoPropertyNamesWithId),
-        0 // ignored
-      )
-      break
-
-    case ContentDirectoryKnownClasses.LANGUAGE:
-      await createLanguage(arg, decode.setProperties<ILanguage>(event, languagePropertyNamesWIthId))
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-      await createVideoMediaEncoding(
-        arg,
-        decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
-      )
-      break
-    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-      await createFeaturedVideo(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
-        0
-      )
-      break
-
-    default:
-      throw new Error(`Unknown class name: ${knownClass.name}`)
-  }
+  await addSchemSupportToEntity(event, knownClass.name, db, entityId)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -259,7 +299,11 @@ async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent): Pr
   classEntity.happenedIn = await createBlockOrGetFromDatabase(db, event.blockNumber)
   await db.save<ClassEntity>(classEntity)
 
-  await getOrCreate.nextEntityId(db, c.entityId + 1)
+  const nextEntityIdFromDb = await getOrCreate.nextEntityId(db)
+  nextEntityIdFromDb.nextId = c.entityId + 1
+  await db.save<NextEntityId>(nextEntityIdFromDb)
+
+  await createDefaultSchema(db, classEntity)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -271,10 +315,11 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
   debug(`EntityPropertyValuesUpdated event: ${JSON.stringify(event)}`)
 
   const { 2: newPropertyValues } = extrinsic.args
-  const entityId = decode.stringIfyEntityId(event)
-  const where: IWhereCond = { where: { id: entityId } }
+  // const entityId = decode.stringIfyEntityId(event)
+  // const where: IWhereCond = { where: { id: entityId } }
+  const entityId = event.params[1].value as number
 
-  const [knownClass] = await getKnownClass(db, where)
+  const [knownClass] = await getKnownClass(db, { where: { id: entityId.toString() } })
   if (!knownClass) return
 
   // TODO: change setProperties method signature to accecpt SubstrateExtrinsic, then remove the following
@@ -282,110 +327,7 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
   // to get properties values
   extrinsic.args.push(newPropertyValues)
 
-  switch (knownClass.name) {
-    case ContentDirectoryKnownClasses.CHANNEL:
-      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId), 0)
-      break
-
-    case ContentDirectoryKnownClasses.CATEGORY:
-      await updateCategoryEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ICategory>(event, categoryPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.KNOWNLICENSE:
-      await updateKnownLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IKnownLicense>(event, knownLicensePropertyNamesWIthId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-      await updateUserDefinedLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IUserDefinedLicense>(event, userDefinedLicensePropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-      await updateJoystreamMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IJoystreamMediaLocation>(event, joystreamMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-      await updateHttpMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IHttpMediaLocation>(event, httpMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await updateVideoMediaEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
-        0
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEO:
-      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId), 0)
-      break
-
-    case ContentDirectoryKnownClasses.LANGUAGE:
-      await updateLanguageEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ILanguage>(event, languagePropertyNamesWIthId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-      await updateVideoMediaEncodingEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.LICENSE:
-      await updateLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId),
-        0
-      )
-      break
-
-    case ContentDirectoryKnownClasses.MEDIALOCATION:
-      await updateMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
-        0
-      )
-      break
-
-    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-      await updateFeaturedVideoEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
-        0
-      )
-      break
-
-    default:
-      throw new Error(`Unknown class name: ${knownClass.name}`)
-  }
+  await addSchemSupportToEntity(event, knownClass.name, db, entityId)
 }
 
 export {
