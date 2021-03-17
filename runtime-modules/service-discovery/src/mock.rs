@@ -219,6 +219,7 @@ parameter_types! {
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const MinimumStakeForOpening: u32 = 50;
     pub const CandidateStake: u64 = 100;
+    pub const OpeningStake: u32 = 20;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -232,6 +233,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
     type MinimumStakeForOpening = MinimumStakeForOpening;
+    type OpeningStake = OpeningStake;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {

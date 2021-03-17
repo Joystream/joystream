@@ -408,7 +408,9 @@ impl Default for HireLeadFixture {
             },
             reward_per_block: None,
             lead_id: 1,
-            initial_balance: <Test as Trait>::MinimumStakeForOpening::get() + 1,
+            initial_balance: <Test as Trait>::MinimumStakeForOpening::get()
+                + <Test as Trait>::OpeningStake::get()
+                + 1,
         }
     }
 }

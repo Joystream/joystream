@@ -35,6 +35,7 @@ fn add_opening_succeeded() {
         HireLeadFixture::default().hire_lead();
 
         let starting_block = 1;
+
         run_to_block(starting_block);
 
         let add_opening_fixture = AddOpeningFixture::default()
@@ -102,6 +103,21 @@ fn add_opening_fails_with_zero_reward() {
 
         add_opening_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::CannotRewardWithZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn add_opening_fails_with_insufficient_balance() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default()
+            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get() + 1)
+            .hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
         ));
     });
 }
@@ -239,7 +255,14 @@ fn fill_opening_succeeded() {
                 .with_reward_per_block(Some(reward_per_block))
                 .with_created_at(starting_block);
 
+        let initial_balance = Balances::usable_balance(&1);
+
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&1),
+            initial_balance + <Test as Trait>::OpeningStake::get()
+        );
 
         let mut result_map = BTreeMap::new();
         result_map.insert(application_id, worker_id);
@@ -328,7 +351,13 @@ fn fill_opening_fails_with_bad_origin() {
 #[test]
 fn fill_opening_fails_with_application_for_other_opening() {
     build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
+        HireLeadFixture::default()
+            .with_initial_balance(
+                <Test as Trait>::MinimumStakeForOpening::get()
+                    + 3 * <Test as Trait>::OpeningStake::get()
+                    + 1,
+            )
+            .hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default();
 
@@ -1713,8 +1742,15 @@ fn cancel_opening_succeeds() {
         let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
+        let initial_balance = Balances::usable_balance(&1);
+
         let cancel_opening_fixture = CancelOpeningFixture::default_for_opening_id(opening_id);
         cancel_opening_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&1),
+            initial_balance + <Test as Trait>::OpeningStake::get()
+        );
 
         EventFixture::assert_last_crate_event(RawEvent::OpeningCanceled(opening_id));
     });

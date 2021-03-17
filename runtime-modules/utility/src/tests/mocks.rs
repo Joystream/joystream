@@ -340,6 +340,7 @@ parameter_types! {
     pub const LockId1: [u8; 8] = [1; 8];
     pub const LockId2: [u8; 8] = [2; 8];
     pub const MinimumStakeForOpening: u32 = 50;
+    pub const OpeningStake: u32 = 20;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -353,6 +354,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
     type MinimumStakeForOpening = MinimumStakeForOpening;
+    type OpeningStake = OpeningStake;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {
@@ -434,6 +436,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
     type MinimumStakeForOpening = MinimumStakeForOpening;
+    type OpeningStake = OpeningStake;
 }
 
 impl working_group::Trait<ForumWorkingGroupInstance> for Test {
@@ -446,6 +449,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Test {
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
     type MinimumStakeForOpening = MinimumStakeForOpening;
+    type OpeningStake = OpeningStake;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -458,6 +462,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
     type MinimumStakeForOpening = MinimumStakeForOpening;
+    type OpeningStake = OpeningStake;
 }
 
 parameter_types! {

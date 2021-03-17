@@ -120,6 +120,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// Minimum stake required for an opening
     type MinimumStakeForOpening: Get<Self::Balance>;
+
+    /// Stake needed to create an opening
+    type OpeningStake: Get<Self::Balance>;
 }
 
 decl_event!(
@@ -369,9 +372,35 @@ decl_module! {
 
             checks::ensure_valid_reward_per_block::<T, I>(&reward_per_block)?;
 
+            // Lead needs stake to generate
+            if opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(Self::current_lead().unwrap());
+
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(
+                        &lead.staking_account_id,
+                        T::OpeningStake::get()
+                    ),
+                    Error::<T, I>::InsufficientBalanceToCoverStake
+                );
+            }
+
             //
             // == MUTATION SAFE ==
             //
+
+            if opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(Self::current_lead().unwrap());
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    T::OpeningStake::get().saturating_add(current_stake)
+                )?;
+            }
 
             let hashed_description = T::Hashing::hash(&description);
 
@@ -541,6 +570,17 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(Self::current_lead().unwrap());
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(T::OpeningStake::get())
+                )?;
+            }
 
             // Process successful applications
             let application_id_to_worker_id = Self::fulfill_successful_applications(
@@ -860,6 +900,18 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // Remove opening stake
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(Self::current_lead().unwrap());
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(T::OpeningStake::get())
+                )?;
+            }
 
             // Remove the opening.
             <OpeningById::<T, I>>::remove(opening_id);

@@ -129,7 +129,9 @@ impl HiringWorkflow {
         } else {
             balances::Module::<Test>::make_free_balance_be(
                 &1,
-                <Test as Trait>::MinimumStakeForOpening::get() + 1,
+                <Test as Trait>::MinimumStakeForOpening::get()
+                    + <Test as Trait>::OpeningStake::get()
+                    + 1,
             );
             //         setup_members(6);
         }
@@ -137,7 +139,7 @@ impl HiringWorkflow {
 
     pub fn execute(&self) -> Option<u64> {
         if self.setup_environment {
-            self.setup_environment()
+            self.setup_environment();
         }
 
         let result = self.fill_worker_position();
