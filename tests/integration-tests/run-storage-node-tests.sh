@@ -47,6 +47,6 @@ yarn joystream-cli media:createChannel \
 echo "Uploading video..."
 yes | yarn joystream-cli media:uploadVideo ./assets/joystream.MOV \
   --input ./assets/TestVideo.json \
-  --confirm 
+  --confirm
 
-time DEBUG=* yarn workspace network-tests run-test-scenario storage-node
+time DEBUG=* yarn workspace integration-tests run-test-scenario storage-node
