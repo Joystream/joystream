@@ -21,7 +21,7 @@ export default class RemoveCuratorGroupCommand extends ContentDirectoryCommandBa
     }
 
     await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'removeCuratorGroup', [id])
+    await this.sendAndFollowNamedTx(account, 'content', 'removeCuratorGroup', [id])
 
     console.log(chalk.green(`Curator Group ${chalk.white(id)} succesfully removed!`))
   }

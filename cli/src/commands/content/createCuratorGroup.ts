@@ -10,7 +10,7 @@ export default class AddCuratorGroupCommand extends ContentDirectoryCommandBase 
     await this.requireLead()
 
     await this.requestAccountDecoding(account)
-    await this.buildAndSendExtrinsic(account, 'contentDirectory', 'addCuratorGroup')
+    await this.buildAndSendExtrinsic(account, 'content', 'addCuratorGroup')
 
     const newGroupId = (await this.getApi().nextCuratorGroupId()) - 1
     console.log(chalk.green(`New group succesfully created! (ID: ${chalk.white(newGroupId)})`))

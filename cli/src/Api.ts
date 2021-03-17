@@ -59,7 +59,7 @@ const DEFAULT_DECIMALS = new BN(12)
 // Mapping of working group to api module
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.Curators]: 'contentWorkingGroup',
+  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
   [WorkingGroups.Builder]: 'builderWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 }

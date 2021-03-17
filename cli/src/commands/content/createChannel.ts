@@ -60,7 +60,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       if (confirmed)  {
         this.log('Sending the extrinsic...')
 
-        await this.sendAndFollowNamedTx(currentAccount, 'contentDirectory', 'createChannel', [actor, channelCreationParametersInput])
+        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParametersInput])
 
       }
     } else {

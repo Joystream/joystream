@@ -1730,7 +1730,7 @@ export class Api {
   }
 
   async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
-    const transaction = this.api.tx.contentDirectory.transaction(
+    const transaction = this.api.tx.content.transaction(
       { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
       operations // We provide parsed operations as second argument
     )

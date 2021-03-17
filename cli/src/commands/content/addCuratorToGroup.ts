@@ -35,7 +35,7 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
     }
 
     await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'addCuratorToGroup', [groupId, curatorId])
+    await this.sendAndFollowNamedTx(account, 'content', 'addCuratorToGroup', [groupId, curatorId])
 
     console.log(chalk.green(`Curator ${chalk.white(curatorId)} succesfully added to group ${chalk.white(groupId)}!`))
   }
