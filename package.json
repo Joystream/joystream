@@ -12,7 +12,7 @@
     "cargo-build": "scripts/cargo-build.sh"
   },
   "workspaces": [
-    "tests/network-tests",
+    "tests/integration-tests",
     "cli",
     "types",
     "storage-node",
