@@ -10,9 +10,6 @@ decl_error! {
         // Curator Management Errors
         // -------------------------
 
-        /// Curator group can`t be removed
-        CuratorGroupRemovalForbidden,
-
         /// Curator under provided curator id is not a member of curaror group under given id
         CuratorIsNotAMemberOfGivenCuratorGroup,
 
