@@ -97,12 +97,12 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -146,7 +146,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::Trait {
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
 >;
 
 /// Defines who can submit the work.
@@ -330,7 +330,7 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
 >;
 
 /// Crowdfunded bounty record.
@@ -380,7 +380,7 @@ impl<Balance: PartialOrd, BlockNumber, MemberId: Ord> BountyRecord<Balance, Bloc
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
     <T as frame_system::Trait>::AccountId,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
 >;

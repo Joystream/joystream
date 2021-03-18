@@ -59,7 +59,7 @@ use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
 
@@ -95,7 +95,7 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
+    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::membership::Trait
 {
     /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -320,7 +320,7 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::Trait>::MemberId,
+      <T as common::membership::Trait>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
     {

@@ -12,7 +12,7 @@ use frame_system::ensure_root;
 use sp_arithmetic::traits::Saturating;
 
 use common::council::CouncilBudgetManager;
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::MemberId;
 
 // Helper enum for the bounty management.

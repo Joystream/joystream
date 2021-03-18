@@ -26,7 +26,7 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + common::Trait {}
+//! pub trait Trait: discussions::Trait + common::membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -62,7 +62,8 @@ use frame_support::{
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
-use common::origin::{CouncilOriginValidator, MemberOriginValidator};
+use common::council::CouncilOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
@@ -107,7 +108,7 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + common::membership::Trait {
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

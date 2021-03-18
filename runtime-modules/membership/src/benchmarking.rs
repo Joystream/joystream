@@ -86,7 +86,7 @@ fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
 
 benchmarks! {
     where_clause { where T: balances::Trait, T: Trait, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Trait>::AccountId, <T as common::Trait>::MemberId, <T as common::Trait>::ActorId> }
+        frame_system::Trait>::AccountId, <T as common::membership::Trait>::MemberId, <T as common::membership::Trait>::ActorId> }
     _{  }
 
     buy_membership_without_referrer{

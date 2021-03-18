@@ -7,7 +7,7 @@ use crate::{Error, Event};
 pub use fixtures::*;
 pub use mock::*;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};

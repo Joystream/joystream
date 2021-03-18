@@ -627,7 +627,7 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
 }
