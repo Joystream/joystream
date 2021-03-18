@@ -4,7 +4,7 @@ import { NewAsset} from '@joystream/types/content'
 import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
 import { Vec, Option} from '@polkadot/types';
 import AccountId from '@polkadot/types/generic/AccountId';
-import { Bytes, Raw } from '@polkadot/types/primitive';
+import { Bytes } from '@polkadot/types/primitive';
 
 type ChannelUpdateParametersInput = {
   assets: Option<Vec<NewAsset>>,
@@ -62,7 +62,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       const serialized = channelMetadata.serializeBinary();
 
       const api = await this.getOriginalApi()
-      
+
       const metaRaw = api.createType('Raw', serialized)
       const meta = new Bytes(api.registry, metaRaw)
 
