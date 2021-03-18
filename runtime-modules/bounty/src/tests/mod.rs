@@ -3098,6 +3098,175 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 }
 
 #[test]
+fn submit_judgment_returns_cherry_on_successful_bounty() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let cherry = DEFAULT_BOUNTY_CHERRY;
+        let entrant_stake = 37;
+        let working_period = 10;
+        let judging_period = 10;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(working_period)
+            .with_judging_period(judging_period)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1u64;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + working_period + 1);
+
+        // Judgment
+        let judgment = vec![(
+            entry_id,
+            OracleWorkEntryJudgment::Winner {
+                reward: DEFAULT_WINNER_REWARD,
+            },
+        )]
+        .iter()
+        .cloned()
+        .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Bounty::entries(bounty_id, entry_id).oracle_judgment_result,
+            OracleWorkEntryJudgment::Winner {
+                reward: DEFAULT_WINNER_REWARD
+            }
+        );
+
+        // Cherry returned.
+        assert_eq!(
+            <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget(),
+            initial_balance - max_amount // initial - funding_amount
+        );
+
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            BountyActor::Council,
+        ));
+    });
+}
+
+#[test]
+fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let cherry = DEFAULT_BOUNTY_CHERRY;
+        let entrant_stake = 37;
+        let working_period = 10;
+        let judging_period = 10;
+
+        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(working_period)
+            .with_judging_period(judging_period)
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1u64;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + working_period + 1);
+
+        // Judgment
+        let judgment = vec![(entry_id, OracleWorkEntryJudgment::Rejected)]
+            .iter()
+            .cloned()
+            .collect::<BTreeMap<_, _>>();
+
+        assert!(<Entries<Test>>::contains_key(bounty_id, entry_id));
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment.clone())
+            .call_and_assert(Ok(()));
+
+        assert!(!<Entries<Test>>::contains_key(bounty_id, entry_id));
+
+        // Cherry not returned.
+        assert_eq!(
+            <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget(),
+            initial_balance - max_amount - cherry // initial - funding_amount - cherry
+        );
+    });
+}
+
+#[test]
 fn submit_judgment_by_member_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;

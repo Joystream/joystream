@@ -97,8 +97,9 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
 use common::council::CouncilBudgetManager;
-use common::membership::MemberOriginValidator;
-use common::{MemberId, StakingAccountValidator};
+use common::membership::{
+    MemberId, MemberOriginValidator, MembershipInfoProvider, StakingAccountValidator,
+};
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
@@ -112,11 +113,11 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
     /// Bounty Id type
     type BountyId: From<u32> + Parameter + Default + Copy;
 
-    /// Validates staking account ownership for a member.
-    type StakingAccountValidator: common::StakingAccountValidator<Self>;
-
-    /// Validates member ID and origin combination.
-    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    /// Validates staking account ownership for a member, member ID and origin combination and
+    /// providers controller id for a member.
+    type Membership: StakingAccountValidator<Self>
+        + MembershipInfoProvider<Self>
+        + MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -501,8 +502,8 @@ decl_event! {
         /// A member or a council has withdrawn the funding.
         BountyFundingWithdrawal(BountyId, BountyActor<MemberId>),
 
-        /// A bounty creator has withdrew the funding (member or council).
-        BountyCreatorFundingWithdrawal(BountyId, BountyActor<MemberId>),
+        /// A bounty creator has withdrawn the cherry (member or council).
+        BountyCreatorCherryWithdrawal(BountyId, BountyActor<MemberId>),
 
         /// A bounty was removed.
         BountyRemoved(BountyId),
@@ -682,7 +683,7 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
               .max(WeightInfoBounty::<T>::create_bounty_by_council())]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
-            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 params.creator.clone()
             )?;
@@ -730,7 +731,7 @@ decl_module! {
         #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
               .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
         pub fn cancel_bounty(origin, creator: BountyActor<MemberId<T>>, bounty_id: T::BountyId) {
-            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 creator.clone(),
             )?;
@@ -802,7 +803,7 @@ decl_module! {
             bounty_id: T::BountyId,
             amount: BalanceOf<T>
         ) {
-            let bounty_funder_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_funder_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 funder.clone(),
             )?;
@@ -867,7 +868,7 @@ decl_module! {
             funder: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
         ) {
-            let bounty_funder_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_funder_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 funder.clone(),
             )?;
@@ -918,7 +919,7 @@ decl_module! {
             creator: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
         ) {
-            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 creator.clone(),
             )?;
@@ -945,7 +946,7 @@ decl_module! {
             bounty.milestone = BountyMilestone::CreatorCherryWithdrawn { bounty_was_successful };
             <Bounties<T>>::insert(bounty_id, bounty.clone());
 
-            Self::deposit_event(RawEvent::BountyCreatorFundingWithdrawal(bounty_id, creator));
+            Self::deposit_event(RawEvent::BountyCreatorCherryWithdrawal(bounty_id, creator));
 
             let new_bounty_stage = Self::get_bounty_stage(&bounty);
 
@@ -969,7 +970,7 @@ decl_module! {
             bounty_id: T::BountyId,
             staking_account_id: T::AccountId,
         ) {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+            T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1044,7 +1045,7 @@ decl_module! {
             bounty_id: T::BountyId,
             entry_id: T::EntryId,
         ) {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+            T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1082,7 +1083,7 @@ decl_module! {
             entry_id: T::EntryId,
             work_data: Vec<u8>
         ) {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+            T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1130,7 +1131,7 @@ decl_module! {
             bounty_id: T::BountyId,
             judgment: OracleJudgment<T::EntryId, BalanceOf<T>>
         ) {
-            let bounty_oracle_manager = BountyActorManager::<T>::get_bounty_actor(
+            let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 oracle.clone(),
             )?;
@@ -1151,6 +1152,22 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // Return a cherry to a creator.
+            if successful_bounty {
+                let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
+                    bounty.creation_params.creator.clone(),
+                )?;
+
+                bounty_creator_manager.transfer_funds_from_bounty_account(
+                    bounty_id,
+                    bounty.creation_params.cherry
+                )?;
+
+                Self::deposit_event(
+                    RawEvent::BountyCreatorCherryWithdrawal(bounty_id, bounty.creation_params.creator)
+                );
+            }
 
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
@@ -1177,6 +1194,7 @@ decl_module! {
                 }
             }
 
+            // Fire a judgment event.
             Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
         }
 
@@ -1198,7 +1216,7 @@ decl_module! {
             entry_id: T::EntryId,
         ) {
             let controller_account_id =
-                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+                T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
@@ -1524,7 +1542,7 @@ impl<T: Trait> Module<T> {
         let staking_balance = bounty.creation_params.entrant_stake;
 
         ensure!(
-            T::StakingAccountValidator::is_member_staking_account(&member_id, &staking_account_id),
+            T::Membership::is_member_staking_account(&member_id, &staking_account_id),
             Error::<T>::InvalidStakingAccountForMember
         );
 

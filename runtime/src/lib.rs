@@ -885,8 +885,7 @@ impl bounty::Trait for Runtime {
     type Event = Event;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
-    type StakingAccountValidator = Members;
-    type MemberOriginValidator = Members;
+    type Membership = Members;
     type WeightInfo = weights::bounty::WeightInfo;
     type CouncilBudgetManager = Council;
     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;

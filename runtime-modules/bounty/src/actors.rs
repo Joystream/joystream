@@ -12,8 +12,7 @@ use frame_system::ensure_root;
 use sp_arithmetic::traits::Saturating;
 
 use common::council::CouncilBudgetManager;
-use common::membership::MemberOriginValidator;
-use common::MemberId;
+use common::membership::{MemberId, MemberOriginValidator, MembershipInfoProvider};
 
 // Helper enum for the bounty management.
 pub(crate) enum BountyActorManager<T: Trait> {
@@ -26,15 +25,14 @@ pub(crate) enum BountyActorManager<T: Trait> {
 
 impl<T: Trait> BountyActorManager<T> {
     // Construct BountyActor by extrinsic origin and optional member_id.
-    pub(crate) fn get_bounty_actor(
+    pub(crate) fn ensure_bounty_actor_manager(
         origin: T::Origin,
-        creator: BountyActor<MemberId<T>>,
+        actor: BountyActor<MemberId<T>>,
     ) -> Result<BountyActorManager<T>, DispatchError> {
-        match creator {
+        match actor {
             BountyActor::Member(member_id) => {
-                let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
-                    origin, member_id,
-                )?;
+                let account_id =
+                    T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
                 Ok(BountyActorManager::Member(account_id, member_id))
             }
@@ -43,6 +41,20 @@ impl<T: Trait> BountyActorManager<T> {
 
                 Ok(BountyActorManager::Council)
             }
+        }
+    }
+
+    // Construct BountyActor.
+    pub(crate) fn get_bounty_actor_manager(
+        actor: BountyActor<MemberId<T>>,
+    ) -> Result<BountyActorManager<T>, DispatchError> {
+        match actor {
+            BountyActor::Member(member_id) => {
+                let account_id = T::Membership::controller_account_id(member_id)?;
+
+                Ok(BountyActorManager::Member(account_id, member_id))
+            }
+            BountyActor::Council => Ok(BountyActorManager::Council),
         }
     }
 

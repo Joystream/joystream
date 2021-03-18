@@ -52,3 +52,9 @@ pub trait MemberOriginValidator<Origin, MemberId, AccountId> {
     /// Verifies that provided account is the controller account of the member
     fn is_member_controller_account(member_id: &MemberId, account_id: &AccountId) -> bool;
 }
+
+/// Gives access to some membership information.
+pub trait MembershipInfoProvider<T: Trait> {
+    /// Returns current controller account for a member.
+    fn controller_account_id(member_id: MemberId<T>) -> Result<T::AccountId, DispatchError>;
+}

@@ -94,8 +94,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
-    type StakingAccountValidator = ();
-    type MemberOriginValidator = ();
+    type Membership = ();
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
     type StakingHandler = StakingManager<Test, BountyLockId>;
@@ -109,6 +108,16 @@ pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
 impl common::StakingAccountValidator<Test> for () {
     fn is_member_staking_account(_: &u64, account_id: &u128) -> bool {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
+}
+
+impl common::membership::MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
+        if member_id < 10 {
+            return Ok(member_id as u128); // similar account_id
+        }
+
+        Err(membership::Error::<Test>::MemberProfileNotFound.into())
     }
 }
 
