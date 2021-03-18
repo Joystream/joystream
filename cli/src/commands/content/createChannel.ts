@@ -48,9 +48,16 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       channelMetadata.setAvatarPhoto(channelCreationParametersInput.meta.avatarPhoto!)
       channelMetadata.setCategory(channelCreationParametersInput.meta.category!)
 
+      const serialized = channelMetadata.serializeBinary();
+
+      const api = await this.getOriginalApi()
+      
+      const metaRaw = api.createType('Raw', serialized)
+      const meta = new Bytes(api.registry, metaRaw)
+
       let channelCreationParameters: ChannelCreationParameters = {
         assets: channelCreationParametersInput.assets,
-        meta: channelMetadata.serializeBinary() as Bytes,
+        meta,
         reward_account: channelCreationParametersInput.reward_account,
       }
 
@@ -61,7 +68,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
         saveOutputJson(output, `${channelCreationParametersInput.meta.title}Channel.json`, channelCreationParametersInput)
         this.log('Sending the extrinsic...')
 
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParametersInput])
+        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
 
       }
     } else {
