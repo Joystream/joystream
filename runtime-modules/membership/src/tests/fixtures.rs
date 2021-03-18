@@ -556,6 +556,7 @@ pub struct AddStakingAccountFixture {
     pub origin: RawOrigin<u64>,
     pub member_id: u64,
     pub staking_account_id: u64,
+    pub initial_balance: u64,
 }
 
 impl Default for AddStakingAccountFixture {
@@ -564,12 +565,14 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
+            initial_balance: <Test as Trait>::CandidateStake::get(),
         }
     }
 }
 
 impl AddStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        Balances::make_free_balance_be(&self.staking_account_id, self.initial_balance);
         let actual_result =
             Membership::add_staking_account_candidate(self.origin.clone().into(), self.member_id);
 
@@ -588,6 +591,13 @@ impl AddStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
+    }
+
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
     }
 }
 
@@ -609,12 +619,19 @@ impl Default for RemoveStakingAccountFixture {
 
 impl RemoveStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let initial_balance = Balances::usable_balance(&self.staking_account_id);
+
         let actual_result =
             Membership::remove_staking_account(self.origin.clone().into(), self.member_id);
 
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
+            assert_eq!(
+                Balances::usable_balance(&self.staking_account_id),
+                initial_balance + <Test as Trait>::CandidateStake::get()
+            );
+
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
                 &self.staking_account_id,
             ));

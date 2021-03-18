@@ -777,6 +777,17 @@ fn add_staking_account_candidate_fails_with_duplicated_staking_account_id() {
 }
 
 #[test]
+fn add_staking_account_candidate_fails_with_insufficient_balance() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default()
+            .with_initial_balance(<Test as Trait>::CandidateStake::get() - 1)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceToCoverStake.into()));
+    });
+}
+
+#[test]
 fn remove_staking_account_succeeds() {
     let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
 

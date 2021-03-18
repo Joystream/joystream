@@ -261,6 +261,8 @@ parameter_types! {
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -443,6 +445,9 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {

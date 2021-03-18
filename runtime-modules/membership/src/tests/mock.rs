@@ -86,6 +86,8 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -301,6 +303,9 @@ impl Trait for Test {
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
 

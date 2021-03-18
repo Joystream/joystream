@@ -103,7 +103,9 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const MinimumStakeForOpening: u32 = 50;
+    pub const CandidateStake: u64 = 100;
 }
 
 // The forum working group instance alias.
@@ -304,6 +306,9 @@ impl membership::Trait for Runtime {
     type WorkingGroup = ();
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 parameter_types! {
