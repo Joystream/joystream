@@ -237,7 +237,7 @@ async function announcePublicUrl(api, publicUrl) {
   try {
     await api.workers.setWorkerStorageValue(publicUrl)
 
-    debug('publishing complete, scheduling next update')
+    debug('announcing complete.')
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
 

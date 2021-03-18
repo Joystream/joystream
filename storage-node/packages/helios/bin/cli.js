@@ -5,24 +5,6 @@ const { encodeAddress } = require('@polkadot/keyring')
 const axios = require('axios')
 const stripEndingSlash = require('@joystream/storage-utils/stripEndingSlash')
 
-function mapInfoToStatus(providers, currentHeight) {
-  return providers.map(({ providerId, info }) => {
-    if (info) {
-      return {
-        providerId,
-        identity: info.identity.toString(),
-        expiresIn: info.expires_at.sub(currentHeight).toNumber(),
-        expired: currentHeight.gte(info.expires_at),
-      }
-    }
-    return {
-      providerId,
-      identity: null,
-      status: 'down',
-    }
-  })
-}
-
 function makeAssetUrl(contentId, source) {
   source = stripEndingSlash(source)
   return `${source}/asset/v0/${encodeAddress(contentId)}`
@@ -77,58 +59,16 @@ async function main() {
   const runtime = await RuntimeApi.create()
   const { api } = runtime
 
-  // get current blockheight
-  const currentHeader = await api.rpc.chain.getHeader()
-  const currentHeight = currentHeader.number.toBn()
-
   // get all providers
   const { ids: storageProviders } = await runtime.workers.getAllProviders()
   console.log(`Found ${storageProviders.length} staked providers`)
 
-  const storageProviderAccountInfos = await Promise.all(
-    storageProviders.map(async (providerId) => {
-      return {
-        providerId,
-        info: await runtime.discovery.getAccountInfo(providerId),
-      }
-    })
-  )
-
-  // providers that have updated their account info and published ipfs id
-  // considered live if the record hasn't expired yet
-  const liveProviders = storageProviderAccountInfos.filter(({ info }) => {
-    return info && info.expires_at.gte(currentHeight)
-  })
-
-  const downProviders = storageProviderAccountInfos.filter(({ info }) => {
-    return info === null
-  })
-
-  const expiredTtlProviders = storageProviderAccountInfos.filter(({ info }) => {
-    return info && currentHeight.gte(info.expires_at)
-  })
-
-  const providersStatuses = mapInfoToStatus(liveProviders, currentHeight)
-  console.log('\n== Live Providers\n', providersStatuses)
-
-  const expiredProviderStatuses = mapInfoToStatus(expiredTtlProviders, currentHeight)
-  console.log('\n== Expired Providers\n', expiredProviderStatuses)
-
-  console.log(
-    '\n== Down Providers!\n',
-    downProviders.map((provider) => {
-      return {
-        providerId: provider.providerId,
-      }
-    })
-  )
-
-  // Resolve IPNS identities of providers
+  // Resolve Endpoints of providers
   console.log('\nResolving live provider API Endpoints...')
   const endpoints = await Promise.all(
-    providersStatuses.map(async ({ providerId }) => {
+    storageProviders.map(async (providerId) => {
       try {
-        const endpoint = (await api.workers.getWorkerStorageValue(providerId)).toString()
+        const endpoint = (await runtime.workers.getWorkerStorageValue(providerId)).toString()
         return { providerId, endpoint }
       } catch (err) {
         console.log('resolve failed for id', providerId, err.message)
@@ -141,7 +81,7 @@ async function main() {
   await Promise.all(
     endpoints.map(async (provider) => {
       if (!provider.endpoint) {
-        console.log('skipping', provider.address)
+        console.log(provider.providerId, 'No url set, skipping')
         return
       }
       const swaggerUrl = `${stripEndingSlash(provider.endpoint)}/swagger.json`
@@ -153,22 +93,20 @@ async function main() {
       } catch (err) {
         error = err
       }
-      console.log(`${provider.endpoint} - ${error ? error.message : 'OK'}`)
+      console.log(`${provider.providerId}`, `${provider.endpoint} - ${error ? error.message : 'OK'}`)
     })
   )
 
   const knownContentIds = await runtime.assets.getKnownContentIds()
-  console.log(`\nData Directory has ${knownContentIds.length} assets`)
-
-  // Check which providers are reporting a ready relationship for each asset
+  const assetStatuses = {}
   await Promise.all(
     knownContentIds.map(async (contentId) => {
-      const [relationshipsCount, judgement] = await assetRelationshipState(api, contentId, storageProviders)
-      console.log(
-        `${encodeAddress(contentId)} replication ${relationshipsCount}/${storageProviders.length} - ${judgement}`
-      )
+      const [, judgement] = await assetRelationshipState(api, contentId, storageProviders)
+      const j = judgement.toString()
+      assetStatuses[j] = assetStatuses[j] ? assetStatuses[j] + 1 : 1
     })
   )
+  console.log(`\nData Directory has ${knownContentIds.length} assets:`, assetStatuses)
 
   // interesting disconnect doesn't work unless an explicit provider was created
   // for underlying api instance
