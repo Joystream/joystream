@@ -31,6 +31,25 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         None
     }
 
+    // Calculates 'funding expired' stage of the bounty.
+    // Returns None if conditions are not met.
+    pub(crate) fn is_funding_expired_stage(&self) -> Option<BountyStage> {
+        // Bounty was created. There can be some contributions. Funding period is not over.
+        if let BountyMilestone::Created {
+            has_contributions,
+            created_at,
+        } = self.bounty.milestone.clone()
+        {
+            let funding_period_is_expired = self.funding_period_expired(created_at);
+
+            if funding_period_is_expired && !has_contributions {
+                return Some(BountyStage::FundingExpired);
+            }
+        }
+
+        None
+    }
+
     // Calculates work submission stage of the bounty.
     // Returns None if conditions are not met.
     pub(crate) fn is_work_submission_stage(&self) -> Option<BountyStage> {

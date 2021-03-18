@@ -273,6 +273,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
+            // same complexity with limited funding and FundingExpired stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             ..Default::default()
@@ -307,6 +308,7 @@ benchmarks! {
             judging_period: One::one(),
             cherry,
             creator: creator.clone(),
+            // same complexity with limited funding and FundingExpired stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             ..Default::default()

@@ -128,6 +128,39 @@ fn validate_funding_bounty_stage() {
 }
 
 #[test]
+fn validate_funding_expired_bounty_stage() {
+    build_test_externalities().execute_with(|| {
+        let created_at = 10;
+        let funding_period = 10;
+
+        // Limited funding period
+        // No contributions.
+        let bounty = BountyRecord {
+            creation_params: BountyCreationParameters::<Test> {
+                funding_type: FundingType::Limited {
+                    funding_period,
+                    min_funding_amount: 10,
+                    max_funding_amount: 10,
+                },
+                ..Default::default()
+            },
+            milestone: BountyMilestone::Created {
+                created_at,
+                has_contributions: false,
+            },
+            ..Default::default()
+        };
+
+        System::set_block_number(created_at + funding_period + 1);
+
+        assert_eq!(
+            Bounty::get_bounty_stage(&bounty),
+            BountyStage::FundingExpired
+        );
+    });
+}
+
+#[test]
 fn validate_work_submission_bounty_stage() {
     build_test_externalities().execute_with(|| {
         let created_at = 10;
@@ -612,6 +645,27 @@ fn cancel_bounty_succeeds() {
             bounty_id,
             BountyActor::Council,
         ));
+    });
+}
+
+#[test]
+fn cancel_bounty_succeeds_at_funding_expired_stage() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        let funding_period = 10;
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        run_to_block(funding_period + 1);
+
+        // Funding period expired with no contribution.
+        CancelBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
     });
 }
 
@@ -1215,7 +1269,9 @@ fn fund_bounty_fails_with_expired_funding_period() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
     });
 }
 

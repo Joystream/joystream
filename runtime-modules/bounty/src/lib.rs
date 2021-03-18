@@ -251,11 +251,14 @@ impl<MemberId> Default for BountyActor<MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
 pub enum BountyStage {
-    /// Bounty founding stage.
+    /// Bounty funding stage.
     Funding {
         /// Bounty has already some contributions.
         has_contributions: bool,
     },
+
+    /// Bounty funding period expired with no contributions.
+    FundingExpired,
 
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
@@ -570,6 +573,9 @@ decl_error! {
         /// Unexpected bounty stage for an operation: Funding.
         InvalidStageUnexpectedFunding,
 
+        /// Unexpected bounty stage for an operation: FundingExpired.
+        InvalidStageUnexpectedFundingExpired,
+
         /// Unexpected bounty stage for an operation: WorkSubmission.
         InvalidStageUnexpectedWorkSubmission,
 
@@ -735,10 +741,7 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            Self::ensure_bounty_stage(
-                current_bounty_stage,
-                BountyStage::Funding { has_contributions: false }
-            )?;
+            Self::ensure_bounty_stage_for_canceling(current_bounty_stage)?;
 
             //
             // == MUTATION SAFE ==
@@ -1609,6 +1612,7 @@ impl<T: Trait> Module<T> {
         };
 
         sc.is_funding_stage()
+            .or_else(|| sc.is_funding_expired_stage())
             .or_else(|| sc.is_work_submission_stage())
             .or_else(|| sc.is_judgment_stage())
             .unwrap_or_else(|| sc.withdrawal_stage())
@@ -1692,6 +1696,21 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Bounty stage validator for cancel_bounty() extrinsic.
+    fn ensure_bounty_stage_for_canceling(actual_stage: BountyStage) -> DispatchResult {
+        let funding_stage_with_no_contributions = BountyStage::Funding {
+            has_contributions: false,
+        };
+
+        ensure!(
+            actual_stage == funding_stage_with_no_contributions
+                || actual_stage == BountyStage::FundingExpired,
+            Self::unexpected_bounty_stage_error(actual_stage)
+        );
+
+        Ok(())
+    }
+
     // Bounty withdrawal stage validator. Returns `cherry_needs_withdrawal` flag.
     fn ensure_bounty_withdrawal_stage(
         actual_stage: BountyStage,
@@ -1711,6 +1730,7 @@ impl<T: Trait> Module<T> {
     fn unexpected_bounty_stage_error(unexpected_stage: BountyStage) -> DispatchError {
         match unexpected_stage {
             BountyStage::Funding { .. } => Error::<T>::InvalidStageUnexpectedFunding.into(),
+            BountyStage::FundingExpired => Error::<T>::InvalidStageUnexpectedFundingExpired.into(),
             BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::Withdrawal { .. } => Error::<T>::InvalidStageUnexpectedWithdrawal.into(),
