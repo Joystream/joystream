@@ -421,6 +421,8 @@ impl FundBountyFixture {
         let old_bounty_funding =
             Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
 
+        let old_bounty = Bounty::bounties(self.bounty_id);
+
         let actual_result = Bounty::fund_bounty(
             self.origin.clone().into(),
             self.funder.clone(),
@@ -433,7 +435,15 @@ impl FundBountyFixture {
         let new_bounty_funding =
             Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
         if actual_result.is_ok() {
-            assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
+            let new_bounty = Bounty::bounties(self.bounty_id);
+            if new_bounty.total_funding == new_bounty.maximum_funding() {
+                assert_eq!(
+                    new_bounty_funding,
+                    old_bounty_funding + old_bounty.maximum_funding() - old_bounty.total_funding
+                );
+            } else {
+                assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
+            }
         } else {
             assert_eq!(new_bounty_funding, old_bounty_funding);
         }

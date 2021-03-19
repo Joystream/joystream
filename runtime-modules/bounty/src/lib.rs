@@ -343,7 +343,9 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
     pub active_work_entry_count: u32,
 }
 
-impl<Balance: PartialOrd, BlockNumber, MemberId: Ord> BountyRecord<Balance, BlockNumber, MemberId> {
+impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
+    BountyRecord<Balance, BlockNumber, MemberId>
+{
     // Increments bounty active work entry counter.
     fn increment_active_work_entry_counter(&mut self) {
         self.active_work_entry_count += 1;
@@ -356,7 +358,7 @@ impl<Balance: PartialOrd, BlockNumber, MemberId: Ord> BountyRecord<Balance, Bloc
         }
     }
 
-    // Defines whether the maximum funding amount will be reached for current funding type.
+    // Defines whether the maximum funding amount will be reached for the current funding type.
     fn is_maximum_funding_reached(&self, total_funding: Balance) -> bool {
         match self.creation_params.funding_type {
             FundingType::Perpetual { ref target } => total_funding >= *target,
@@ -364,6 +366,16 @@ impl<Balance: PartialOrd, BlockNumber, MemberId: Ord> BountyRecord<Balance, Bloc
                 ref max_funding_amount,
                 ..
             } => total_funding >= *max_funding_amount,
+        }
+    }
+
+    // Returns the maximum funding amount for the current funding type.
+    pub(crate) fn maximum_funding(&self) -> Balance {
+        match self.creation_params.funding_type.clone() {
+            FundingType::Perpetual { target } => target,
+            FundingType::Limited {
+                max_funding_amount, ..
+            } => max_funding_amount,
         }
     }
 }
@@ -839,10 +851,20 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            bounty_funder_manager.transfer_funds_to_bounty_account(bounty_id, amount)?;
+            let maximum_funding_reached = bounty.is_maximum_funding_reached(
+                bounty.total_funding.saturating_add(amount)
+            );
 
-            let total_funding = bounty.total_funding.saturating_add(amount);
-            let maximum_funding_reached = bounty.is_maximum_funding_reached(total_funding);
+            //
+            let actual_funding = if maximum_funding_reached {
+                bounty.maximum_funding().saturating_sub(bounty.total_funding)
+            } else {
+                amount
+            };
+
+            bounty_funder_manager.transfer_funds_to_bounty_account(bounty_id, actual_funding)?;
+
+
             let new_milestone = Self::get_bounty_milestone_on_funding(
                     maximum_funding_reached,
                     bounty.milestone
@@ -850,17 +872,17 @@ decl_module! {
 
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.total_funding = total_funding;
+                bounty.total_funding = bounty.total_funding.saturating_add(actual_funding);
                 bounty.milestone = new_milestone;
             });
 
             // Update member funding record checking previous funding.
             let funds_so_far = Self::contribution_by_bounty_by_actor(bounty_id, &funder);
-            let total_funding = funds_so_far.saturating_add(amount);
+            let total_funding = funds_so_far.saturating_add(actual_funding);
             <BountyContributions<T>>::insert(bounty_id, funder.clone(), total_funding);
 
             // Fire events.
-            Self::deposit_event(RawEvent::BountyFunded(bounty_id, funder, amount));
+            Self::deposit_event(RawEvent::BountyFunded(bounty_id, funder, actual_funding));
             if  maximum_funding_reached{
                 Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
