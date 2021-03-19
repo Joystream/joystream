@@ -676,9 +676,19 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
-        let winner_reward: BalanceOf<T> = 10.into();
-        let judgment = entry_ids.iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
+        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
+        let judgment = entry_ids
+            .iter()
+            .map(|entry_id| {
+                let corrected_winner_reward = if *entry_id == One::one() {
+                    winner_reward + correction
+                } else {
+                    winner_reward
+                };
+
+                (*entry_id, OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward})
+            })
             .collect::<BTreeMap<_, _>>();
 
         run_to_block::<T>((work_period + One::one()).into());
@@ -687,9 +697,14 @@ benchmarks! {
     verify {
         for entry_id in entry_ids {
             let entry = Bounty::<T>::entries(bounty_id, entry_id);
+            let corrected_winner_reward = if entry_id == One::one() {
+                    winner_reward + correction
+                } else {
+                    winner_reward
+                };
             assert_eq!(
                 entry.oracle_judgment_result,
-                OracleWorkEntryJudgment::Winner {reward : winner_reward}
+                OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward}
             );
         }
         assert_last_event::<T>(
@@ -769,9 +784,19 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
-        let winner_reward: BalanceOf<T> = 10.into();
-        let judgment = entry_ids.iter()
-            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
+        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
+        let judgment = entry_ids
+            .iter()
+            .map(|entry_id| {
+                let corrected_winner_reward = if *entry_id == One::one() {
+                    winner_reward + correction
+                } else {
+                    winner_reward
+                };
+
+                (*entry_id, OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward})
+            })
             .collect::<BTreeMap<_, _>>();
 
         run_to_block::<T>((work_period + One::one()).into());
@@ -785,9 +810,14 @@ benchmarks! {
     verify {
         for entry_id in entry_ids {
             let entry = Bounty::<T>::entries(bounty_id, entry_id);
+            let corrected_winner_reward = if entry_id == One::one() {
+                    winner_reward + correction
+                } else {
+                    winner_reward
+                };
             assert_eq!(
                 entry.oracle_judgment_result,
-                OracleWorkEntryJudgment::Winner {reward : winner_reward}
+                OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward}
             );
         }
         assert_last_event::<T>(
@@ -890,7 +920,7 @@ benchmarks! {
         )
         .unwrap();
 
-        let winner_reward: BalanceOf<T> = 10.into();
+        let winner_reward: BalanceOf<T> = funding_amount;
         let judgment = vec![entry_id].iter()
             .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();

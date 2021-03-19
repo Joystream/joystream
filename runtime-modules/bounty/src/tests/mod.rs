@@ -1586,7 +1586,7 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
 
         let initial_balance = 500;
         let max_amount = 100;
-        let winner_reward = 50;
+        let winner_reward = max_amount;
         let entrant_stake = 37;
         let work_period = 1;
 
@@ -2730,9 +2730,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         let judgment = vec![
             (
                 entry_id1,
-                OracleWorkEntryJudgment::Winner {
-                    reward: DEFAULT_WINNER_REWARD,
-                },
+                OracleWorkEntryJudgment::Winner { reward: max_amount },
             ),
             (entry_id2, OracleWorkEntryJudgment::Legit),
             (entry_id3, OracleWorkEntryJudgment::Rejected),
@@ -2751,9 +2749,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 
         assert_eq!(
             Bounty::entries(bounty_id, entry_id1).oracle_judgment_result,
-            OracleWorkEntryJudgment::Winner {
-                reward: DEFAULT_WINNER_REWARD
-            }
+            OracleWorkEntryJudgment::Winner { reward: max_amount }
         );
         assert_eq!(
             Bounty::entries(bounty_id, entry_id2).oracle_judgment_result,
@@ -2832,9 +2828,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
         // Judgment
         let judgment = vec![(
             entry_id,
-            OracleWorkEntryJudgment::Winner {
-                reward: DEFAULT_WINNER_REWARD,
-            },
+            OracleWorkEntryJudgment::Winner { reward: max_amount },
         )]
         .iter()
         .cloned()
@@ -2847,9 +2841,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
 
         assert_eq!(
             Bounty::entries(bounty_id, entry_id).oracle_judgment_result,
-            OracleWorkEntryJudgment::Winner {
-                reward: DEFAULT_WINNER_REWARD
-            }
+            OracleWorkEntryJudgment::Winner { reward: max_amount }
         );
 
         // Cherry returned.
@@ -3004,9 +2996,7 @@ fn submit_judgment_by_member_succeeded() {
             .map(|entry_id| {
                 (
                     *entry_id,
-                    OracleWorkEntryJudgment::Winner {
-                        reward: DEFAULT_WINNER_REWARD,
-                    },
+                    OracleWorkEntryJudgment::Winner { reward: max_amount },
                 )
             })
             .collect::<BTreeMap<_, _>>();
@@ -3205,7 +3195,7 @@ fn submit_judgment_fails_with_invalid_judgment() {
             .with_judgment(judgment)
             .call_and_assert(Err(Error::<Test>::ZeroWinnerReward.into()));
 
-        // Winner reward greater than total bounty funding.
+        // Winner reward is not equal to the total bounty funding.
         let invalid_reward = max_amount * 2;
         let judgment = vec![entry_id]
             .iter()
@@ -3222,7 +3212,9 @@ fn submit_judgment_fails_with_invalid_judgment() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment)
-            .call_and_assert(Err(Error::<Test>::TotalRewardGreaterThanTotalFunding.into()));
+            .call_and_assert(Err(
+                Error::<Test>::TotalRewardShouldBeEqualToTotalFunding.into()
+            ));
     });
 }
 
@@ -3234,7 +3226,7 @@ fn withdraw_work_entrant_funds_succeeded() {
 
         let initial_balance = 500;
         let max_amount = 100;
-        let winner_reward = 50;
+        let winner_reward = max_amount;
         let entrant_stake = 37;
         let work_period = 1;
 

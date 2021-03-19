@@ -84,7 +84,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
-use sp_arithmetic::traits::{Saturating, Zero};
+use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Hash},
     ModuleId,
@@ -127,7 +127,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
     type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
 
     /// Work entry Id type
-    type EntryId: From<u32> + Parameter + Default + Copy + Ord;
+    type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
 
     /// Defines max work entry number for a bounty.
     /// It limits further work entries iteration after the judge decision about winners, non-winners
@@ -651,8 +651,8 @@ decl_error! {
         /// Cannot set zero reward for winners.
         ZeroWinnerReward,
 
-        /// Cannot set total reward for winners greater than total bounty funding.
-        TotalRewardGreaterThanTotalFunding,
+        /// The total reward for winners should be equal to total bounty funding.
+        TotalRewardShouldBeEqualToTotalFunding,
 
         /// Cannot withdraw funds from a successful bounty.
         CannotWithdrawFundsOnSuccessfulBounty,
@@ -1595,12 +1595,7 @@ impl<T: Trait> Module<T> {
                 // Check for zero reward.
                 ensure!(*reward != Zero::zero(), Error::<T>::ZeroWinnerReward);
 
-                // Check for invalid total sum.
                 reward_sum_from_judgment += *reward;
-                ensure!(
-                    reward_sum_from_judgment <= bounty.total_funding,
-                    Error::<T>::TotalRewardGreaterThanTotalFunding
-                );
             }
 
             // Check work entry existence.
@@ -1609,6 +1604,13 @@ impl<T: Trait> Module<T> {
                 Error::<T>::WorkEntryDoesntExist
             );
         }
+
+        // Check for invalid total sum.
+        ensure!(
+            reward_sum_from_judgment == Zero::zero() || // unsuccessful bounty
+            reward_sum_from_judgment == bounty.total_funding, // 100% bounty distribution
+            Error::<T>::TotalRewardShouldBeEqualToTotalFunding
+        );
 
         Ok(())
     }
