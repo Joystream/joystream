@@ -125,23 +125,18 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Returns None if conditions are not met.
     pub(crate) fn withdrawal_stage(&self) -> BountyStage {
         let failed_bounty_withdrawal = BountyStage::Withdrawal {
-            cherry_needs_withdrawal: false, // no cherry withdrawal on failed bounty
             bounty_was_successful: false,
         };
 
         match self.bounty.milestone.clone() {
             // Funding period. No contributions or not enough contributions.
-            BountyMilestone::Created {
-                has_contributions,
-                created_at,
-            } => {
+            BountyMilestone::Created { created_at, .. } => {
                 let funding_period_expired = self.funding_period_expired(created_at);
 
                 let minimum_funding_is_not_reached = !self.minimum_funding_reached();
 
                 if minimum_funding_is_not_reached && funding_period_expired {
                     return BountyStage::Withdrawal {
-                        cherry_needs_withdrawal: !has_contributions,
                         bounty_was_successful: false,
                     };
                 }
@@ -159,17 +154,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             // Bounty was canceled or vetoed. Allow cherry withdrawal.
             BountyMilestone::Canceled => {
                 return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: true,
                     bounty_was_successful: false,
-                }
-            }
-            // It is withdrawal stage and the creator cherry has been already withdrawn.
-            BountyMilestone::CreatorCherryWithdrawn {
-                bounty_was_successful,
-            } => {
-                return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: false,
-                    bounty_was_successful,
                 }
             }
             // Work submitted but no judgment.
@@ -188,7 +173,6 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             // The bounty judgment was submitted.
             BountyMilestone::JudgmentSubmitted { successful_bounty } => {
                 return BountyStage::Withdrawal {
-                    cherry_needs_withdrawal: successful_bounty,
                     bounty_was_successful: successful_bounty,
                 }
             }

@@ -18,8 +18,8 @@ use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
     EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, VetoBountyFixture,
-    WithdrawCreatorCherryFixture, WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture,
-    WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY,
+    WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture, WithdrawWorkEntryFixture,
+    DEFAULT_BOUNTY_CHERRY,
 };
 use mocks::{
     build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, System, Test,
@@ -315,7 +315,6 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false,
                 bounty_was_successful: false
             }
         );
@@ -343,7 +342,6 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false,
                 bounty_was_successful: false
             }
         );
@@ -372,7 +370,6 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false,
                 bounty_was_successful: false
             }
         );
@@ -386,7 +383,6 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: true,
                 bounty_was_successful: false,
             }
         );
@@ -401,25 +397,7 @@ fn validate_withdrawal_bounty_stage() {
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
             BountyStage::Withdrawal {
-                cherry_needs_withdrawal: successful_bounty,
                 bounty_was_successful: successful_bounty
-            }
-        );
-
-        let bounty_was_successful = true;
-        // Creator cherry was withdrawn.
-        let bounty = BountyRecord {
-            milestone: BountyMilestone::CreatorCherryWithdrawn {
-                bounty_was_successful,
-            },
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                cherry_needs_withdrawal: false,
-                bounty_was_successful
             }
         );
     });
@@ -1668,10 +1646,6 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
             .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
         WithdrawFundingFixture::default()
             .with_bounty_id(bounty_id)
             .with_council()
@@ -1679,305 +1653,6 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
             .call_and_assert(Err(
                 Error::<Test>::CannotWithdrawFundsOnSuccessfulBounty.into()
             ));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_by_council_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let funding_period = 10;
-        let max_amount = 500;
-        let initial_balance = 500;
-        let cherry = 200;
-
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-        increase_account_balance(&account_id, initial_balance);
-
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - cherry
-        );
-
-        // Bounty failed because of the funding period
-        run_to_block(starting_block + funding_period + 1);
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance
-        );
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            0
-        );
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_removes_the_bounty() {
-    build_test_externalities().execute_with(|| {
-        let max_amount = 500;
-        let initial_balance = 500;
-        let cherry = 200;
-
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        CreateBountyFixture::default()
-            .with_perpetual_funding(max_amount)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance - cherry
-        );
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
-            initial_balance
-        );
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_by_member_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let max_amount = 500;
-        let initial_balance = 500;
-        let cherry = 200;
-        let account_id = 1;
-        let member_id = 1;
-        let funding_period = 10;
-
-        let funding_account_id = 2;
-
-        increase_account_balance(&account_id, initial_balance);
-        increase_account_balance(&funding_account_id, initial_balance);
-
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance - cherry
-        );
-
-        // Bounty failed because of the funding period
-        run_to_block(starting_block + funding_period + 1);
-
-        WithdrawCreatorCherryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
-            initial_balance
-        );
-
-        assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
-            0
-        );
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_fails_with_invalid_bounty_id() {
-    build_test_externalities().execute_with(|| {
-        let invalid_bounty_id = 11u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(invalid_bounty_id)
-            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        let initial_balance = 500;
-        let member_id = 1;
-        let account_id = 1;
-
-        increase_account_balance(&account_id, initial_balance);
-        set_council_budget(initial_balance);
-
-        // Created by council - try to cancel with bad origin
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        // Created by a member - try to cancel with invalid member_id
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 2u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let invalid_member_id = 2;
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(invalid_member_id)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
-
-        // Created by a member - try to cancel with bad origin
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 3u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        // Created by a member  - try to cancel by council
-        CreateBountyFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 4u64;
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_creator_member_id(member_id)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(Error::<Test>::NotBountyActor.into()));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_fails_with_invalid_stage() {
-    build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
-        CreateBountyFixture::default().call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
-    });
-}
-
-#[test]
-fn withdraw_creator_cherry_fails_when_nothing_to_withdraw() {
-    build_test_externalities().execute_with(|| {
-        let max_amount = 500;
-        let funding_amount = 100;
-        let initial_balance = 500;
-        let cherry = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let funding_period = 10;
-
-        increase_account_balance(&account_id, initial_balance);
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-
-        // No creator funding and cherry goes to another funder.
-        // Create bounty
-        CreateBountyFixture::default()
-            .with_limited_funding(max_amount, max_amount, funding_period)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(funding_amount)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
-            .call_and_assert(Ok(()));
-
-        // Bounty failed.
-        run_to_block(funding_period + 1);
-
-        // Cannot withdraw cherry.
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::NothingToWithdraw.into()));
     });
 }
 
@@ -3643,10 +3318,6 @@ fn withdraw_work_entrant_funds_succeeded() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-
-        WithdrawCreatorCherryFixture::default()
-            .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
         // Withdraw work entrant.

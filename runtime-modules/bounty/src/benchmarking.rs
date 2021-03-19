@@ -513,77 +513,6 @@ benchmarks! {
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
-    withdraw_creator_cherry_by_council {
-        let max_amount: BalanceOf<T> = 1000.into();
-        let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
-
-        T::CouncilBudgetManager::set_budget(cherry);
-
-        let creator = BountyActor::Council;
-        let params = BountyCreationParameters::<T>{
-            work_period: One::one(),
-            judging_period: One::one(),
-            cherry,
-            funding_type: FundingType::Perpetual{ target: max_amount },
-            entrant_stake,
-            creator: creator.clone(),
-            ..Default::default()
-        };
-
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
-
-        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
-
-        assert!(Bounties::<T>::contains_key(bounty_id));
-
-        Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), creator.clone(), bounty_id).unwrap();
-
-    }: withdraw_creator_cherry(RawOrigin::Root, creator.clone(), bounty_id)
-    verify {
-        assert!(!Bounties::<T>::contains_key(bounty_id));
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
-    }
-
-    withdraw_creator_cherry_by_member {
-        let max_amount: BalanceOf<T> = 1000.into();
-        let cherry: BalanceOf<T> = 100.into();
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-        let entrant_stake: BalanceOf<T> = 10.into();
-        let creator = BountyActor::Member(member_id);
-
-        let params = BountyCreationParameters::<T>{
-            work_period: One::one(),
-            judging_period: One::one(),
-            cherry,
-            entrant_stake,
-            creator: creator.clone(),
-            funding_type: FundingType::Perpetual{ target: max_amount },
-            ..Default::default()
-        };
-
-        Bounty::<T>::create_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            params,
-            Vec::new()
-        ).unwrap();
-
-        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
-
-        assert!(Bounties::<T>::contains_key(bounty_id));
-
-        Bounty::<T>::cancel_bounty(
-            RawOrigin::Signed(account_id.clone()).into(),
-            creator.clone(),
-            bounty_id
-        ).unwrap();
-
-    }: withdraw_creator_cherry(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
-    verify {
-        assert!(!Bounties::<T>::contains_key(bounty_id));
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
-    }
-
     announce_work_entry {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
@@ -975,12 +904,6 @@ benchmarks! {
             judgment.clone()
         ).unwrap();
 
-        Bounty::<T>::withdraw_creator_cherry(
-            RawOrigin::Root.into(),
-            creator,
-            bounty_id
-        ).unwrap();
-
     }: _ (RawOrigin::Signed(work_account_id), work_member_id, bounty_id, entry_id)
     verify {
         assert!(!<Entries<T>>::contains_key(bounty_id, entry_id));
@@ -1057,20 +980,6 @@ mod tests {
     fn withdraw_funding_by_council() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_funding_by_council::<Test>());
-        });
-    }
-
-    #[test]
-    fn withdraw_creator_cherry_by_council() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_creator_cherry_by_council::<Test>());
-        });
-    }
-
-    #[test]
-    fn withdraw_creator_cherry_by_member() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_creator_cherry_by_member::<Test>());
         });
     }
 

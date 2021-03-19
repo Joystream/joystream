@@ -488,47 +488,6 @@ impl WithdrawFundingFixture {
     }
 }
 
-pub struct WithdrawCreatorCherryFixture {
-    origin: RawOrigin<u128>,
-    creator: BountyActor<u64>,
-    bounty_id: u64,
-}
-
-impl WithdrawCreatorCherryFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            creator: BountyActor::Council,
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_creator_member_id(self, member_id: u64) -> Self {
-        Self {
-            creator: BountyActor::Member(member_id),
-            ..self
-        }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_creator_cherry(
-            self.origin.clone().into(),
-            self.creator.clone(),
-            self.bounty_id.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-    }
-}
-
 pub struct AnnounceWorkEntryFixture {
     origin: RawOrigin<u128>,
     bounty_id: u64,

@@ -33,8 +33,6 @@
 //! withdraw work entrant funds.
 //! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
 //! funding for a failed bounty.
-//! - [withdraw_creator_cherry](./struct.Module.html#method.withdraw_creator_cherry) - withdraw
-//! a cherry for a failed or canceled bounty.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -269,9 +267,6 @@ pub enum BountyStage {
 
     /// Creator cherry can be withdrawn.
     Withdrawal {
-        /// Creator cherry is not withdrawn.
-        cherry_needs_withdrawal: bool,
-
         /// Indicates bounty success.
         bounty_was_successful: bool,
     },
@@ -309,12 +304,6 @@ pub enum BountyMilestone<BlockNumber> {
     JudgmentSubmitted {
         /// The bounty judgment contains at least a single winner.
         successful_bounty: bool,
-    },
-
-    /// Creator cherry was withdrawn.
-    CreatorCherryWithdrawn {
-        /// Indicates bounty success.
-        bounty_was_successful: bool,
     },
 }
 
@@ -876,7 +865,7 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            let (_, successful_bounty) = Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+            let successful_bounty = Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
 
             ensure!(!successful_bounty, Error::<T>::CannotWithdrawFundsOnSuccessfulBounty);
 
@@ -904,56 +893,6 @@ decl_module! {
             }
         }
 
-        /// Withdraw creator funding.
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_creator_cherry_by_member()
-              .max(WeightInfoBounty::<T>::withdraw_creator_cherry_by_council())]
-        pub fn withdraw_creator_cherry(
-            origin,
-            creator: BountyActor<MemberId<T>>,
-            bounty_id: T::BountyId,
-        ) {
-            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-                origin,
-                creator.clone(),
-            )?;
-
-            let mut bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
-            bounty_creator_manager.validate_actor(&bounty.creation_params.creator)?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            let (cherry_needs_withdrawal, bounty_was_successful) =
-                Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
-
-            ensure!(cherry_needs_withdrawal, Error::<T>::NothingToWithdraw);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let cherry = Self::get_cherry_for_creator_withdrawal(&bounty, current_bounty_stage);
-
-            bounty_creator_manager.transfer_funds_from_bounty_account(bounty_id, cherry)?;
-
-            bounty.milestone = BountyMilestone::CreatorCherryWithdrawn { bounty_was_successful };
-            <Bounties<T>>::insert(bounty_id, bounty.clone());
-
-            Self::deposit_event(RawEvent::BountyCreatorCherryWithdrawal(bounty_id, creator));
-
-            let new_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            if Self::withdrawal_completed(&new_bounty_stage, &bounty_id) {
-                Self::remove_bounty(&bounty_id);
-            }
-        }
 
         /// Announce work entry for a successful bounty.
         /// # <weight>
@@ -1397,21 +1336,6 @@ impl<T: Trait> Module<T> {
         funding_share * bounty.creation_params.cherry
     }
 
-    // Calculate cherry to withdraw by bounty creator.
-    fn get_cherry_for_creator_withdrawal(bounty: &Bounty<T>, stage: BountyStage) -> BalanceOf<T> {
-        if let BountyStage::Withdrawal {
-            cherry_needs_withdrawal,
-            ..
-        } = stage
-        {
-            if cherry_needs_withdrawal {
-                return bounty.creation_params.cherry;
-            }
-        }
-
-        Zero::zero()
-    }
-
     // Remove bounty and all related info from the storage.
     fn remove_bounty(bounty_id: &T::BountyId) {
         <Bounties<T>>::remove(bounty_id);
@@ -1431,15 +1355,9 @@ impl<T: Trait> Module<T> {
     // Verifies that the bounty has no pending fund withdrawals left.
     fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
         if let BountyStage::Withdrawal {
-            cherry_needs_withdrawal,
             bounty_was_successful,
         } = *stage
         {
-            if cherry_needs_withdrawal {
-                // Pending creator cherry withdrawal.
-                return false;
-            }
-
             let has_no_contributions = !Self::contributions_exist(bounty_id);
             let has_no_work_entries = !Self::work_entries_exist(bounty_id);
 
@@ -1729,16 +1647,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Bounty withdrawal stage validator. Returns `cherry_needs_withdrawal` flag.
-    fn ensure_bounty_withdrawal_stage(
-        actual_stage: BountyStage,
-    ) -> Result<(bool, bool), DispatchError> {
+    // Bounty withdrawal stage validator. Returns `bounty_was_successful` flag.
+    fn ensure_bounty_withdrawal_stage(actual_stage: BountyStage) -> Result<bool, DispatchError> {
         if let BountyStage::Withdrawal {
-            cherry_needs_withdrawal,
             bounty_was_successful,
         } = actual_stage
         {
-            Ok((cherry_needs_withdrawal, bounty_was_successful))
+            Ok(bounty_was_successful)
         } else {
             Err(Self::unexpected_bounty_stage_error(actual_stage))
         }
