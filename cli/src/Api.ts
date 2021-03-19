@@ -555,4 +555,9 @@ export default class Api {
     const bestNumber = await this.bestNumber()
     return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
   }
+
+  async storageProviderEndpoint(storageProviderId: number): Promise<string> {
+    const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
+    return this._api.createType('Text', value).toString()
+  }
 }
