@@ -160,18 +160,21 @@ fn curators_can_censor_videos() {
         let group_id = curators::add_curator_to_new_group(FIRST_CURATOR_ID);
 
         // Curator can censor videos
-        assert_ok!(Content::censor_video(
+        let is_censored = true;
+        assert_ok!(Content::update_video_censorship_status(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             video_id,
+            is_censored,
             vec![]
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoCensored(
+            MetaEvent::content(RawEvent::VideoCensorshipStatusUpdated(
                 ContentActor::Curator(group_id, FIRST_CURATOR_ID),
                 video_id,
+                is_censored,
                 vec![]
             ))
         );
@@ -181,18 +184,21 @@ fn curators_can_censor_videos() {
         assert!(video.is_censored);
 
         // Curator can un-censor videos
-        assert_ok!(Content::uncensor_video(
+        let is_censored = false;
+        assert_ok!(Content::update_video_censorship_status(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             video_id,
+            is_censored,
             vec![]
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::VideoUncensored(
+            MetaEvent::content(RawEvent::VideoCensorshipStatusUpdated(
                 ContentActor::Curator(group_id, FIRST_CURATOR_ID),
                 video_id,
+                is_censored,
                 vec![]
             ))
         );
@@ -203,10 +209,11 @@ fn curators_can_censor_videos() {
 
         // Members cannot censor videos
         assert_err!(
-            Content::censor_video(
+            Content::update_video_censorship_status(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
                 ContentActor::Member(FIRST_MEMBER_ORIGIN),
                 channel_id,
+                true,
                 vec![]
             ),
             Error::<Test>::ActorNotAuthorized
