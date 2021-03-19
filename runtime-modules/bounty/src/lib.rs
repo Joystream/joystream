@@ -474,27 +474,50 @@ decl_event! {
         OracleJudgment = OracleJudgmentOf<T>,
     {
         /// A bounty was created.
-        BountyCreated(BountyId, BountyCreationParameters),
+        /// Params:
+        /// - bounty ID
+        /// - creation parameters
+        /// - bounty metadata
+        BountyCreated(BountyId, BountyCreationParameters, Vec<u8>),
 
         /// A bounty was canceled.
+        /// Params:
+        /// - bounty ID
+        /// - bounty creator
         BountyCanceled(BountyId, BountyActor<MemberId>),
 
         /// A bounty was vetoed.
+        /// Params:
+        /// - bounty ID
         BountyVetoed(BountyId),
 
         /// A bounty was funded by a member or a council.
+        /// Params:
+        /// - bounty ID
+        /// - bounty funder
+        /// - funding amount
         BountyFunded(BountyId, BountyActor<MemberId>, Balance),
 
         /// A bounty has reached its maximum funding amount.
+        /// Params:
+        /// - bounty ID
         BountyMaxFundingReached(BountyId),
 
         /// A member or a council has withdrawn the funding.
+        /// Params:
+        /// - bounty ID
+        /// - bounty funder
         BountyFundingWithdrawal(BountyId, BountyActor<MemberId>),
 
         /// A bounty creator has withdrawn the cherry (member or council).
+        /// Params:
+        /// - bounty ID
+        /// - bounty creator
         BountyCreatorCherryWithdrawal(BountyId, BountyActor<MemberId>),
 
         /// A bounty was removed.
+        /// Params:
+        /// - bounty ID
         BountyRemoved(BountyId),
 
         /// Work entry was announced.
@@ -671,7 +694,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
               .max(WeightInfoBounty::<T>::create_bounty_by_council())]
-        pub fn create_bounty(origin, params: BountyCreationParameters<T>, _metadata: Vec<u8>) {
+        pub fn create_bounty(origin, params: BountyCreationParameters<T>, metadata: Vec<u8>) {
             let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 params.creator.clone()
@@ -706,7 +729,7 @@ decl_module! {
             BountyCount::mutate(|count| {
                 *count = next_bounty_count_value
             });
-            Self::deposit_event(RawEvent::BountyCreated(bounty_id, params));
+            Self::deposit_event(RawEvent::BountyCreated(bounty_id, params, metadata));
         }
 
         /// Cancels a bounty.

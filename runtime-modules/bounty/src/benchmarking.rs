@@ -221,13 +221,13 @@ benchmarks! {
             ..Default::default()
         };
 
-    }: create_bounty (RawOrigin::Root, params.clone(), metadata)
+    }: create_bounty (RawOrigin::Root, params.clone(), metadata.clone())
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
-        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
+        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params, metadata).into());
     }
 
     create_bounty_by_member {
@@ -251,13 +251,13 @@ benchmarks! {
             ..Default::default()
         };
 
-    }: create_bounty (RawOrigin::Signed(account_id), params.clone(), metadata)
+    }: create_bounty (RawOrigin::Signed(account_id), params.clone(), metadata.clone())
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
-        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params).into());
+        assert_last_event::<T>(Event::<T>::BountyCreated(bounty_id, params, metadata).into());
     }
 
     cancel_bounty_by_council {

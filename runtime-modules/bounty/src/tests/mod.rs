@@ -413,7 +413,7 @@ fn create_bounty_succeeds() {
 
         let text = b"Bounty text".to_vec();
 
-        let create_bounty_fixture = CreateBountyFixture::default().with_metadata(text);
+        let create_bounty_fixture = CreateBountyFixture::default().with_metadata(text.clone());
         create_bounty_fixture.call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
@@ -421,6 +421,7 @@ fn create_bounty_succeeds() {
         EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
             bounty_id,
             create_bounty_fixture.get_bounty_creation_parameters(),
+            text,
         ));
     });
 }
