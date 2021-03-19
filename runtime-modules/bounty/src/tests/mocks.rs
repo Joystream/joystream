@@ -60,6 +60,7 @@ parameter_types! {
     pub const MaxWorkEntryLimit: u32 = 3;
     pub const MinCherryLimit: u64 = 10;
     pub const MinFundingLimit: u64 = 50;
+    pub const MinWorkEntrantStake: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -102,6 +103,7 @@ impl Trait for Test {
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
     type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;

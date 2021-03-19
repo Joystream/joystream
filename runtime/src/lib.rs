@@ -879,6 +879,7 @@ parameter_types! {
     pub const MaxWorkEntryLimit: u32 = 50;
     pub const MinCherryLimit: Balance = 10;
     pub const MinFundingLimit: Balance = 10;
+    pub const MinWorkEntrantStake: Balance = 100;
 }
 
 impl bounty::Trait for Runtime {
@@ -893,6 +894,7 @@ impl bounty::Trait for Runtime {
     type MaxWorkEntryLimit = MaxWorkEntryLimit;
     type MinCherryLimit = MinCherryLimit;
     type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
 }
 
 /// Forum identifier for category

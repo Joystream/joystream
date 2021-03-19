@@ -562,9 +562,10 @@ fn create_bounty_fails_with_invalid_entrant_stake() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
+        let invalid_stake = 1;
         CreateBountyFixture::default()
-            .with_entrant_stake(0)
-            .call_and_assert(Err(Error::<Test>::EntrantStakeCannotBeZero.into()));
+            .with_entrant_stake(invalid_stake)
+            .call_and_assert(Err(Error::<Test>::EntrantStakeIsLessThanMininum.into()));
     });
 }
 

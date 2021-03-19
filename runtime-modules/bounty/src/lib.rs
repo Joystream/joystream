@@ -139,6 +139,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
 
     /// Defines min funding amount for a bounty.
     type MinFundingLimit: Get<BalanceOf<Self>>;
+
+    /// Defines min work entrant stake for a bounty.
+    type MinWorkEntrantStake: Get<BalanceOf<Self>>;
 }
 
 /// Alias type for the BountyParameters.
@@ -654,8 +657,8 @@ decl_error! {
         /// Cannot withdraw funds from a successful bounty.
         CannotWithdrawFundsOnSuccessfulBounty,
 
-        /// Cannot create a bounty with zero work entrant stake.
-        EntrantStakeCannotBeZero,
+        /// Cannot create a bounty with an entrant stake is less than required minimum.
+        EntrantStakeIsLessThanMininum,
 
         /// Cannot create a bounty with zero funding amount parameter.
         FundingAmountCannotBeZero,
@@ -1278,8 +1281,8 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            params.entrant_stake != Zero::zero(),
-            Error::<T>::EntrantStakeCannotBeZero
+            params.entrant_stake >= T::MinWorkEntrantStake::get(),
+            Error::<T>::EntrantStakeIsLessThanMininum
         );
 
         if let AssuranceContractType::Closed(ref member_ids) = params.contract_type {
