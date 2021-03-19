@@ -1,5 +1,5 @@
-import {VideoMetadata, PublishedBeforeJoystream, License, MediaType} from '@joystream/content-metadata-protobuf'
-import { VideoUpdateParametersInput, VideoCreationParametersInput } from '../Types'
+import {VideoMetadata, PublishedBeforeJoystream, License, MediaType, ChannelMetadata} from '@joystream/content-metadata-protobuf'
+import { VideoUpdateParametersInput, VideoCreationParametersInput, ChannelUpdateParametersInput, ChannelCreationParametersInput } from '../Types'
 import { ApiPromise } from '@polkadot/api'
 import { Bytes } from '@polkadot/types/primitive';
 
@@ -42,6 +42,20 @@ export function videoMetadataFromInput(api: ApiPromise, videoParametersInput: Vi
     videoMetadata.setLicense(license)
     videoMetadata.setPublishedBeforeJoystream(publishedBeforeJoystream)
 
-    const serialized = videoMetadata.serializeBinary();
+    const serialized = videoMetadata.serializeBinary()
+    return BinaryToMeta(api, serialized)
+}
+
+export function channelMetadataFromInput(api: ApiPromise, channelParametersInput: ChannelCreationParametersInput | ChannelUpdateParametersInput): Bytes {
+    let channelMetadata = new ChannelMetadata()
+    channelMetadata.setTitle(channelParametersInput.meta.title!)
+    channelMetadata.setDescription(channelParametersInput.meta.description!)
+    channelMetadata.setIsPublic(channelParametersInput.meta.isPublic!)
+    channelMetadata.setLanguage(channelParametersInput.meta.language!)
+    channelMetadata.setCoverPhoto(channelParametersInput.meta.coverPhoto!)
+    channelMetadata.setAvatarPhoto(channelParametersInput.meta.avatarPhoto!)
+    channelMetadata.setCategory(channelParametersInput.meta.category!)
+
+    const serialized = channelMetadata.serializeBinary()
     return BinaryToMeta(api, serialized)
 }

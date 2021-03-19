@@ -4,7 +4,7 @@
       "Urls": ["https://joystream.org/WorkingGroupOpening.schema.json"]
     }
   ],
-  "new_meta": {
+  "meta": {
     "title": "Channel Title",
     "description": "Cool Description",
     "isPublic": true,

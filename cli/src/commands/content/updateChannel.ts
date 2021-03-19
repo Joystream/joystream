@@ -1,22 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
-import { NewAsset} from '@joystream/types/content'
-import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
-import { Vec, Option} from '@polkadot/types';
-import AccountId from '@polkadot/types/generic/AccountId';
-import { Bytes } from '@polkadot/types/primitive';
-
-type ChannelUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>,
-  new_meta: ChannelMetadata.AsObject,
-  reward_account: Option<AccountId>,
-}
-
-type ChannelUpdateParameters = {
-  assets: Option<Vec<NewAsset>>,
-  new_meta: Bytes,
-  reward_account: Option<AccountId>,
-}
+import { channelMetadataFromInput } from '../../helpers/serialization'
+import { ChannelUpdateParameters, ChannelUpdateParametersInput } from '../../Types'
 
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing content directory channel.'
@@ -50,21 +35,10 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     if (input) {
       let channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
-      let channelMetadata = new ChannelMetadata()
-      channelMetadata.setTitle(channelUpdateParametersInput.new_meta.title!)
-      channelMetadata.setDescription(channelUpdateParametersInput.new_meta.description!)
-      channelMetadata.setIsPublic(channelUpdateParametersInput.new_meta.isPublic!)
-      channelMetadata.setLanguage(channelUpdateParametersInput.new_meta.language!)
-      channelMetadata.setCoverPhoto(channelUpdateParametersInput.new_meta.coverPhoto!)
-      channelMetadata.setAvatarPhoto(channelUpdateParametersInput.new_meta.avatarPhoto!)
-      channelMetadata.setCategory(channelUpdateParametersInput.new_meta.category!)
-
-      const serialized = channelMetadata.serializeBinary();
-
+   
       const api = await this.getOriginalApi()
 
-      const metaRaw = api.createType('Raw', serialized)
-      const meta = new Bytes(api.registry, metaRaw)
+      const meta = channelMetadataFromInput(api, channelUpdateParametersInput)
 
       let channelUpdateParameters: ChannelUpdateParameters = {
         assets: channelUpdateParametersInput.assets,
@@ -76,7 +50,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed && channelUpdateParameters)  {
-        saveOutputJson(output, `${channelUpdateParametersInput.new_meta.title}Channel.json`, channelUpdateParametersInput)
+        saveOutputJson(output, `${channelUpdateParametersInput.meta.title}Channel.json`, channelUpdateParametersInput)
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [actor, channelId, channelUpdateParameters])
