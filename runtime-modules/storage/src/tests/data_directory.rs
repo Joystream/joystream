@@ -2,6 +2,7 @@
 
 use crate::data_directory::Error;
 use common::storage::StorageObjectOwner;
+use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
 use system::RawOrigin;
 
@@ -546,4 +547,126 @@ fn reject_content_as_liaison() {
         );
         assert_eq!(res, Ok(()));
     });
+}
+
+#[test]
+fn incrementing_global_voucher_limits() {
+    with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let size_limit = TestDataDirectory::global_voucher().size_limit;
+        let increment_size_limit_by = 10;
+        let expected_new_size_limit = size_limit + increment_size_limit_by;
+
+        assert_ok!(TestDataDirectory::increase_global_voucher_size_limit(
+            RawOrigin::Root.into(),
+            increment_size_limit_by
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(data_directory::RawEvent::GlobalVoucherSizeLimitIncremented(
+                increment_size_limit_by,
+                expected_new_size_limit
+            ))
+        );
+
+        assert_eq!(
+            TestDataDirectory::global_voucher().size_limit,
+            expected_new_size_limit
+        );
+
+        let objects_limit = TestDataDirectory::global_voucher().objects_limit;
+        let increment_objects_limit_by = 10;
+        let expected_new_objects_limit = objects_limit + increment_objects_limit_by;
+
+        assert_ok!(TestDataDirectory::increase_global_voucher_objects_limit(
+            RawOrigin::Root.into(),
+            increment_objects_limit_by
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(
+                data_directory::RawEvent::GlobalVoucherObjectsLimitIncremented(
+                    increment_objects_limit_by,
+                    expected_new_objects_limit
+                )
+            )
+        );
+
+        assert_eq!(
+            TestDataDirectory::global_voucher().objects_limit,
+            expected_new_objects_limit
+        );
+    })
+}
+
+#[test]
+fn incrementing_limit_upper_bounds() {
+    with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let size_limit_upper_bound = TestDataDirectory::voucher_size_limit_upper_bound();
+        let increment_size_limit_upper_bound_by = 10;
+        let expected_new_size_limit_upper_bound =
+            size_limit_upper_bound + increment_size_limit_upper_bound_by;
+
+        assert_ok!(TestDataDirectory::increase_voucher_size_limit_upper_bound(
+            RawOrigin::Root.into(),
+            increment_size_limit_upper_bound_by
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(
+                data_directory::RawEvent::VoucherSizeLimitUpperBoundIncremented(
+                    increment_size_limit_upper_bound_by,
+                    expected_new_size_limit_upper_bound
+                )
+            )
+        );
+
+        assert_eq!(
+            TestDataDirectory::voucher_size_limit_upper_bound(),
+            expected_new_size_limit_upper_bound
+        );
+
+        let objects_limit_upper_bound = TestDataDirectory::voucher_objects_limit_upper_bound();
+        let increment_objects_limit_upper_bound_by = 10;
+        let expected_new_objects_limit_upper_bound =
+            objects_limit_upper_bound + increment_objects_limit_upper_bound_by;
+
+        assert_ok!(
+            TestDataDirectory::increase_voucher_objects_limit_upper_bound(
+                RawOrigin::Root.into(),
+                increment_objects_limit_upper_bound_by
+            )
+        );
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(
+                data_directory::RawEvent::VoucherObjectsLimitUpperBoundIncremented(
+                    increment_objects_limit_upper_bound_by,
+                    expected_new_objects_limit_upper_bound
+                )
+            )
+        );
+
+        assert_eq!(
+            TestDataDirectory::voucher_objects_limit_upper_bound(),
+            expected_new_objects_limit_upper_bound
+        );
+    })
 }

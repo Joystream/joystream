@@ -248,6 +248,14 @@ impl Voucher {
     pub fn set_new_objects_limit(&mut self, new_objects_limit: u64) {
         self.objects_limit = new_objects_limit;
     }
+
+    pub fn increment_size_limit(&mut self, increment_by: u64) {
+        self.size_limit += increment_by;
+    }
+
+    pub fn increment_objects_limit(&mut self, increment_by: u64) {
+        self.objects_limit += increment_by;
+    }
 }
 
 /// A map collection of unique DataObjects keyed by the ContentId
@@ -332,6 +340,30 @@ decl_event! {
         /// Params:
         /// - UploadingStatus bool flag.
         ContentUploadingStatusUpdated(UploadingStatus),
+
+        /// Emits when the global voucher size limit is incremented.
+        /// Params:
+        /// - Increment amount
+        /// - New limit
+        GlobalVoucherSizeLimitIncremented(u64, u64),
+
+        /// Emits when the global voucher objects limit is incremented.
+        /// Params:
+        /// - Increment amount
+        /// - New limit
+        GlobalVoucherObjectsLimitIncremented(u64, u64),
+
+        /// Emits when the size limit upper bound is incremented.
+        /// Params:
+        /// - Increment amount
+        /// - New limit
+        VoucherSizeLimitUpperBoundIncremented(u64, u64),
+
+        /// Emits when the objects limit upper bound is incremented.
+        /// Params:
+        /// - Increment amount
+        /// - New limit
+        VoucherObjectsLimitUpperBoundIncremented(u64, u64),
     }
 }
 
@@ -457,6 +489,85 @@ decl_module! {
             };
 
             Self::deposit_event(RawEvent::StorageObjectOwnerVoucherSizeLimitUpdated(abstract_owner, new_voucher_size_limit));
+        }
+
+        /// Increments global voucher size limit. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn increase_global_voucher_size_limit(
+            origin,
+            increment: u64
+        ) {
+            ensure_root(origin)?;
+
+            // ensure no overflow?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut voucher = Self::global_voucher();
+            voucher.increment_size_limit(increment);
+            GlobalVoucher::put(voucher);
+
+            Self::deposit_event(RawEvent::GlobalVoucherSizeLimitIncremented(increment, voucher.size_limit));
+        }
+
+        /// Increments global voucher objects limit. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn increase_global_voucher_objects_limit(
+            origin,
+            increment: u64
+        ) {
+            ensure_root(origin)?;
+            // ensure no overflow?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut voucher = Self::global_voucher();
+            voucher.increment_objects_limit(increment);
+            GlobalVoucher::put(voucher);
+
+            Self::deposit_event(RawEvent::GlobalVoucherObjectsLimitIncremented(increment, voucher.objects_limit));
+        }
+
+        /// Increments VoucherSizeLimitUpperBound. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn increase_voucher_size_limit_upper_bound(
+            origin,
+            increment: u64
+        ) {
+            ensure_root(origin)?;
+            // ensure no overflow?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let new_upper_bound = VoucherSizeLimitUpperBound::get() + increment;
+            VoucherSizeLimitUpperBound::put(new_upper_bound);
+
+            Self::deposit_event(RawEvent::VoucherSizeLimitUpperBoundIncremented(increment, new_upper_bound));
+        }
+
+        /// Increments VoucherObjectsLimitUpperBound. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn increase_voucher_objects_limit_upper_bound(
+            origin,
+            increment: u64
+        ) {
+            ensure_root(origin)?;
+            // ensure no overflow?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let new_upper_bound = VoucherObjectsLimitUpperBound::get() + increment;
+            VoucherObjectsLimitUpperBound::put(new_upper_bound);
+
+            Self::deposit_event(RawEvent::VoucherObjectsLimitUpperBoundIncremented(increment, new_upper_bound));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
