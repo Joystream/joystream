@@ -83,15 +83,24 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return selectedClass
   }
 
-  async channelEntryById(channelId: string): Promise<[ChannelId, Channel]> {
-    const channels = await this.getApi().availableChannels()
-    const foundClass = channels.find(([id, c]) => id.toString() === channelId)
-    if (!foundClass) {
-      this.error(`Class id not found by class name or id: "${channelId}"!`)
-    }
+  // async channelEntryById(channelId: number): Promise<[ChannelId, Channel]> {
+  //   const foundChannel = await this.getApi().channelById(channelId)
+  //   if (!foundChannel) {
+  //     this.error(`Channel not found by channel id: "${channelId}"!`)
+  //   }
 
-    return foundClass
-  }
+  //   return [channelId, foundChannel]
+  // }
+
+  // async videoEntryById(videoId: string): Promise<[ChannelId, Channel]> {
+  //   const videos = await this.getApi().availableVideos()
+  //   const foundVideo = channels.find(([id, ]) => id.toString() === channelId)
+  //   if (!foundChannel) {
+  //     this.error(`Channel not found by channel id: "${channelId}"!`)
+  //   }
+
+  //   return foundChannel
+  // }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
     const groups = await this.getApi().availableCuratorGroups()

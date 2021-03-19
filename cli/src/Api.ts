@@ -67,7 +67,6 @@ export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
-  private _cdClassesCache: [ChannelId, Channel][] | null = null
 
   private constructor(originalApi: ApiPromise) {
     this._api = originalApi
@@ -495,10 +494,12 @@ export default class Api {
   }
 
   // Content directory
-  async availableChannels(useCache = true): Promise<[ChannelId, Channel][]> {
-    return useCache && this._cdClassesCache
-      ? this._cdClassesCache
-      : (this._cdClassesCache = await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById))
+  async availableChannels(): Promise<[ChannelId, Channel][]> {
+    return await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById)
+  }
+
+  async availableVideos(): Promise<[VideoId, Video][]> {
+    return await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {

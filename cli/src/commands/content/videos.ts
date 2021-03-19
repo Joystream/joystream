@@ -1,0 +1,39 @@
+import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+// import chalk from 'chalk'
+import { displayTable } from '../../helpers/display'
+
+export default class VideosCommand extends ContentDirectoryCommandBase {
+  static description = 'List existing content directory videos.'
+
+  static args = [
+    {
+      name: 'channelId',
+      required: true,
+      description: 'ID of the Channel',
+    },
+  ]
+
+  async run() {
+    const { channelId } = this.parse(VideosCommand).args
+
+    let videos = await this.getApi().availableVideos()
+
+    if (channelId) {
+        videos = videos.filter(([, /* id */ video]) => video.in_channel.eqn(channelId))
+    }
+
+    if (videos.length > 0) {
+      displayTable(
+        videos.map(([id, v]) => ({
+            'ID': id.toString(),
+            'InChannel': v.in_channel.toString(),
+            'InSeries': v.in_series.toString(),
+            'IsCensored': v.is_censored.toString(),
+        })),
+        3
+      )
+    } else {
+        this.log('There are no videos yet')
+    }
+  }
+}
