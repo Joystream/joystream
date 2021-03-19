@@ -200,6 +200,7 @@ benchmarks! {
         where T: council::Trait,
               T: balances::Trait,
               T: membership::Trait,
+              T: Trait,
     }
     _{ }
 
@@ -207,7 +208,7 @@ benchmarks! {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let max_amount: BalanceOf<T> = 1000.into();
 
         T::CouncilBudgetManager::set_budget(cherry);
@@ -234,7 +235,7 @@ benchmarks! {
         let i in 1 .. MAX_BYTES;
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let max_amount: BalanceOf<T> = 1000.into();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
@@ -263,7 +264,7 @@ benchmarks! {
     cancel_bounty_by_council {
         let cherry: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 1000.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -295,7 +296,7 @@ benchmarks! {
     cancel_bounty_by_member {
         let cherry: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 1000.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 0);
 
@@ -334,7 +335,7 @@ benchmarks! {
     veto_bounty {
         let max_amount: BalanceOf<T> = 1000.into();
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -363,7 +364,7 @@ benchmarks! {
     fund_bounty_by_member {
         let max_amount: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -394,7 +395,7 @@ benchmarks! {
     fund_bounty_by_council {
         let max_amount: BalanceOf<T> = 100.into();
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry + max_amount);
 
@@ -424,7 +425,7 @@ benchmarks! {
         let funding_period = 1;
         let bounty_amount: BalanceOf<T> = 200.into();
         let cherry: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry);
 
@@ -473,7 +474,7 @@ benchmarks! {
         let bounty_amount: BalanceOf<T> = 200.into();
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(cherry + funding_amount);
 
@@ -601,7 +602,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let max_amount: BalanceOf<T> = 10000.into();
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let work_period: T::BlockNumber = One::one();
         let judging_period: T::BlockNumber = One::one();
         let funding_period: T::BlockNumber = One::one();
@@ -656,7 +657,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 10000000.into();
         let oracle = BountyActor::Council;
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -719,7 +720,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let oracle = BountyActor::Council;
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -764,7 +765,7 @@ benchmarks! {
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T> {
             work_period,
@@ -834,7 +835,7 @@ benchmarks! {
         let work_period: T::BlockNumber = One::one();
         let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
-        let entrant_stake: BalanceOf<T> = 10.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T> {
             work_period,

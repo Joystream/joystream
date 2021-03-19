@@ -58,8 +58,6 @@ pub trait WeightInfo {
     fn fund_bounty_by_council() -> Weight;
     fn withdraw_funding_by_member() -> Weight;
     fn withdraw_funding_by_council() -> Weight;
-    fn withdraw_creator_cherry_by_council() -> Weight;
-    fn withdraw_creator_cherry_by_member() -> Weight;
     fn announce_work_entry() -> Weight;
     fn withdraw_work_entry() -> Weight;
     fn submit_work(i: u32) -> Weight;

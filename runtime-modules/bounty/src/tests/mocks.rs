@@ -175,12 +175,6 @@ impl crate::WeightInfo for () {
     fn withdraw_funding_by_council() -> u64 {
         0
     }
-    fn withdraw_creator_cherry_by_council() -> u64 {
-        0
-    }
-    fn withdraw_creator_cherry_by_member() -> u64 {
-        0
-    }
     fn announce_work_entry() -> u64 {
         0
     }
