@@ -24,18 +24,13 @@ fn storage_provider_helper_succeeds() {
 		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::default());
 		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::default());
 
-		// Still error - not registered in the service discovery.
+		// Still error - endpoints not set in worker storage value.
 		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();
 		assert!(random_provider_result.is_err());
 
-		let account_info = service_discovery::ServiceProviderRecord{
-			identity: Vec::new(),
-			expires_at: 1000
-		};
-
-		<service_discovery::AccountInfoByStorageProviderId<Runtime>>::insert(worker_id1,account_info.clone());
-		<service_discovery::AccountInfoByStorageProviderId<Runtime>>::insert(worker_id2,account_info.clone());
-		<service_discovery::AccountInfoByStorageProviderId<Runtime>>::insert(worker_id3,account_info);
+		<working_group::WorkerStorage<Runtime, Instance2>>::insert(worker_id1, b"http://storage1.net/".to_vec());
+		<working_group::WorkerStorage<Runtime, Instance2>>::insert(worker_id2, b"http://storage2.net/".to_vec());
+		<working_group::WorkerStorage<Runtime, Instance2>>::insert(worker_id3, b"http://storage3.net/".to_vec());
 
 		// Should work now.
 		let worker_ids = vec![worker_id1, worker_id2, worker_id3];

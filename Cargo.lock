@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "7.14.0"
+version = "7.15.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2083,7 +2083,6 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-recurring-reward",
- "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-stake",
@@ -3597,29 +3596,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-service-discovery"
-version = "3.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "pallet-working-group",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std 2.0.0-rc4",
 ]
 
 [[package]]

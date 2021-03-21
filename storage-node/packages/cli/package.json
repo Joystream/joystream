@@ -45,7 +45,6 @@
   },
   "dependencies": {
     "@joystream/storage-runtime-api": "^0.1.0",
-    "@joystream/service-discovery": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
     "@joystream/types": "^0.16.0",
     "axios": "^0.21.1",
