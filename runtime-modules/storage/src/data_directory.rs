@@ -119,7 +119,13 @@ decl_error! {
         OwnersAreNotEqual,
 
         /// No storage provider available to service the request
-        NoProviderAvailable
+        NoProviderAvailable,
+
+        /// New voucher limit being set is less than used.
+        VoucherLimitLessThanUsed,
+
+        /// Overflow detected when changing
+        VoucherOverflow,
     }
 }
 
@@ -195,15 +201,17 @@ pub struct Delta {
 }
 
 /// Uploading voucher for StorageObjectOwner
+/// All fields are private. All changes should be done through the methods
+/// to avoid invalid state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct Voucher {
     // Total objects size limit per StorageObjectOwner
-    pub size_limit: u64,
+    size_limit: u64,
     // Total objects number limit per StorageObjectOwner
-    pub objects_limit: u64,
-    pub size_used: u64,
-    pub objects_used: u64,
+    objects_limit: u64,
+    size_used: u64,
+    objects_used: u64,
 }
 
 impl Voucher {
@@ -217,7 +225,24 @@ impl Voucher {
         }
     }
 
-    /// Calculate voucher delta
+    pub fn get_size_limit(&self) -> u64 {
+        self.size_limit
+    }
+
+    pub fn get_objects_limit(&self) -> u64 {
+        self.objects_limit
+    }
+
+    pub fn get_size_used(&self) -> u64 {
+        self.size_used
+    }
+
+    pub fn get_objects_used(&self) -> u64 {
+        self.objects_used
+    }
+
+    /// Calculate voucher delta. We don't do checked_sub as the other methods
+    /// protect against state which would result in underflow.
     pub fn calculate_delta(&self) -> Delta {
         Delta {
             size: self.size_limit - self.size_used,
@@ -225,36 +250,51 @@ impl Voucher {
         }
     }
 
-    pub fn fill_voucher(self, voucher_delta: Delta) -> Self {
-        Self {
-            size_used: self.size_used + voucher_delta.size,
-            objects_used: self.objects_used + voucher_delta.objects,
-            ..self
+    pub fn fill_voucher<T: Trait>(self, voucher_delta: Delta) -> Result<Self, Error<T>> {
+        if let Some(size_used) = self.size_used.checked_add(voucher_delta.size) {
+            if let Some(objects_used) = self.objects_used.checked_add(voucher_delta.objects) {
+                return Ok(Self {
+                    size_used,
+                    objects_used,
+                    ..self
+                });
+            }
+        }
+        Err(Error::<T>::VoucherOverflow)
+    }
+
+    pub fn release_voucher<T: Trait>(self, voucher_delta: Delta) -> Result<Self, Error<T>> {
+        if let Some(size_used) = self.size_used.checked_sub(voucher_delta.size) {
+            if let Some(objects_used) = self.objects_used.checked_sub(voucher_delta.objects) {
+                return Ok(Self {
+                    size_used,
+                    objects_used,
+                    ..self
+                });
+            }
+        }
+        Err(Error::<T>::VoucherOverflow)
+    }
+
+    pub fn set_new_size_limit<T: Trait>(&mut self, new_size_limit: u64) -> Result<(), Error<T>> {
+        if self.size_used > new_size_limit {
+            Err(Error::<T>::VoucherLimitLessThanUsed)
+        } else {
+            self.size_limit = new_size_limit;
+            Ok(())
         }
     }
 
-    pub fn release_voucher(self, voucher_delta: Delta) -> Self {
-        Self {
-            size_used: self.size_used - voucher_delta.size,
-            objects_used: self.objects_used - voucher_delta.objects,
-            ..self
+    pub fn set_new_objects_limit<T: Trait>(
+        &mut self,
+        new_objects_limit: u64,
+    ) -> Result<(), Error<T>> {
+        if self.objects_used > new_objects_limit {
+            Err(Error::<T>::VoucherLimitLessThanUsed)
+        } else {
+            self.objects_limit = new_objects_limit;
+            Ok(())
         }
-    }
-
-    pub fn set_new_size_limit(&mut self, new_size_limit: u64) {
-        self.size_limit = new_size_limit;
-    }
-
-    pub fn set_new_objects_limit(&mut self, new_objects_limit: u64) {
-        self.objects_limit = new_objects_limit;
-    }
-
-    pub fn increment_size_limit(&mut self, increment_by: u64) {
-        self.size_limit += increment_by;
-    }
-
-    pub fn increment_objects_limit(&mut self, increment_by: u64) {
-        self.objects_limit += increment_by;
     }
 }
 
@@ -279,7 +319,7 @@ decl_storage! {
         pub VoucherObjectsLimitUpperBound get(fn voucher_objects_limit_upper_bound) config(): u64 = DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND;
 
         /// Default content voucher for all actors.
-        pub DefaultVoucher get(fn default_voucher) config(): Voucher;
+        pub DefaultVoucher get(fn default_voucher) config(): Voucher = DEFAULT_VOUCHER;
 
         /// Global voucher.
         pub GlobalVoucher get(fn global_voucher) config(): Voucher = DEFAULT_GLOBAL_VOUCHER;
@@ -341,29 +381,31 @@ decl_event! {
         /// - UploadingStatus bool flag.
         ContentUploadingStatusUpdated(UploadingStatus),
 
-        /// Emits when the global voucher size limit is incremented.
+        /// Emits when the global voucher size limit is updated.
         /// Params:
-        /// - Increment amount
         /// - New limit
-        GlobalVoucherSizeLimitIncremented(u64, u64),
+        GlobalVoucherSizeLimitUpdated(u64),
 
-        /// Emits when the global voucher objects limit is incremented.
+        /// Emits when the global voucher objects limit is updated.
         /// Params:
-        /// - Increment amount
         /// - New limit
-        GlobalVoucherObjectsLimitIncremented(u64, u64),
+        GlobalVoucherObjectsLimitUpdated(u64),
 
-        /// Emits when the size limit upper bound is incremented.
+        /// Emits when the size limit upper bound is updated.
         /// Params:
-        /// - Increment amount
-        /// - New limit
-        VoucherSizeLimitUpperBoundIncremented(u64, u64),
+        /// - New Upper bound
+        VoucherSizeLimitUpperBoundUpdated(u64),
 
-        /// Emits when the objects limit upper bound is incremented.
+        /// Emits when the objects limit upper bound is updated.
         /// Params:
-        /// - Increment amount
-        /// - New limit
-        VoucherObjectsLimitUpperBoundIncremented(u64, u64),
+        /// - New Upper bound
+        VoucherObjectsLimitUpperBoundUpdated(u64),
+
+        /// Emits when the lead sets a new default voucher
+        /// Params:
+        /// - New size limit
+        /// - New objects limit
+        DefaultVoucherUpdated(u64, u64),
     }
 }
 
@@ -401,14 +443,23 @@ decl_module! {
             // Ensure global voucher constraints satisfied.
             Self::ensure_global_voucher_constraints_satisfied(upload_voucher_delta)?;
 
+            // fill vouchers - overflow cannot happen because of prior constraint checks
+            let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher_delta)?;
+            let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher_delta)?;
+
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Let's create the entry then
-            Self::upload_content(owner_voucher, upload_voucher_delta, liaison, content.clone(), owner.clone());
+            // Updade or create owner voucher.
+            <Vouchers<T>>::insert(&owner, new_owner_voucher);
+
+            // Update global voucher
+            <GlobalVoucher>::put(new_global_voucher);
+
+            Self::upload_content(liaison, content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -427,147 +478,181 @@ decl_module! {
             // Ensure content under given content ids can be successfully removed
             let content = Self::ensure_content_can_be_removed(&content_ids, &owner)?;
 
+            let owner_voucher = Self::get_voucher(&owner);
+            let removal_voucher = Self::calculate_content_voucher(content);
+            let new_owner_voucher = owner_voucher.release_voucher::<T>(removal_voucher)?;
+            let new_global_voucher = Self::global_voucher().release_voucher::<T>(removal_voucher)?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            // Let's remove a content
-            Self::delete_content(&owner, &content_ids, content);
+            // Updade owner voucher
+            <Vouchers<T>>::insert(&owner, new_owner_voucher);
+
+            // Update global voucher
+            <GlobalVoucher>::put(new_global_voucher);
+
+            // Let's remove content
+            for content_id in &content_ids {
+                <DataByContentId<T>>::remove(content_id);
+            }
 
             Self::deposit_event(RawEvent::ContentRemoved(content_ids, owner));
         }
 
         /// Updates storage object owner voucher objects limit. Requires leader privileges.
+        /// New limit cannot be less that used value.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_object_owner_voucher_objects_limit(
             origin,
-            abstract_owner: ObjectOwner<T>,
+            object_owner: ObjectOwner<T>,
             new_voucher_objects_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_voucher_objects_limit <= Self::voucher_objects_limit_upper_bound(), Error::<T>::VoucherObjectsLimitUpperBoundExceeded);
+            ensure!(
+                new_voucher_objects_limit <= Self::voucher_objects_limit_upper_bound(),
+                Error::<T>::VoucherObjectsLimitUpperBoundExceeded
+            );
+
+            let mut voucher = Self::get_voucher(&object_owner);
+
+            voucher.set_new_objects_limit::<T>(new_voucher_objects_limit)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if <Vouchers<T>>::contains_key(&abstract_owner) {
-                <Vouchers<T>>::mutate(&abstract_owner, |voucher| {
-                    voucher.set_new_objects_limit(new_voucher_objects_limit);
-                });
-            } else {
-                let mut voucher = Self::default_voucher();
-                voucher.set_new_objects_limit(new_voucher_objects_limit);
-                <Vouchers<T>>::insert(&abstract_owner, voucher);
-            };
+            <Vouchers<T>>::insert(&object_owner, voucher);
 
-            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherObjectsLimitUpdated(abstract_owner, new_voucher_objects_limit));
+            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherObjectsLimitUpdated(object_owner, new_voucher_objects_limit));
         }
 
         /// Updates storage object owner voucher size limit. Requires leader privileges.
+        /// New limit cannot be less that used value.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_object_owner_voucher_size_limit(
             origin,
-            abstract_owner: ObjectOwner<T>,
+            object_owner: ObjectOwner<T>,
             new_voucher_size_limit: u64
         ) {
             <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
-            ensure!(new_voucher_size_limit <= Self::voucher_size_limit_upper_bound(), Error::<T>::VoucherSizeLimitUpperBoundExceeded);
+            ensure!(
+                new_voucher_size_limit <= Self::voucher_size_limit_upper_bound(),
+                Error::<T>::VoucherSizeLimitUpperBoundExceeded
+            );
+
+            let mut voucher = Self::get_voucher(&object_owner);
+
+            voucher.set_new_size_limit::<T>(new_voucher_size_limit)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if <Vouchers<T>>::contains_key(&abstract_owner) {
-                <Vouchers<T>>::mutate(&abstract_owner, |voucher| {
-                    voucher.set_new_size_limit(new_voucher_size_limit);
-                });
-            } else {
-                let mut voucher = Self::default_voucher();
-                voucher.set_new_size_limit(new_voucher_size_limit);
-                <Vouchers<T>>::insert(&abstract_owner, voucher);
-            };
+            <Vouchers<T>>::insert(&object_owner, voucher);
 
-            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherSizeLimitUpdated(abstract_owner, new_voucher_size_limit));
+            Self::deposit_event(RawEvent::StorageObjectOwnerVoucherSizeLimitUpdated(object_owner, new_voucher_size_limit));
         }
 
-        /// Increments global voucher size limit. Requires root privileges.
+        /// Sets global voucher size limit. Requires root privileges.
+        /// New limit cannot be less that used value.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_global_voucher_size_limit(
+        pub fn set_global_voucher_size_limit(
             origin,
-            increment: u64
+            new_size_limit: u64
         ) {
             ensure_root(origin)?;
 
-            // ensure no overflow?
+            let mut voucher =  Self::global_voucher();
+            voucher.set_new_size_limit::<T>(new_size_limit)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            let mut voucher = Self::global_voucher();
-            voucher.increment_size_limit(increment);
             GlobalVoucher::put(voucher);
 
-            Self::deposit_event(RawEvent::GlobalVoucherSizeLimitIncremented(increment, voucher.size_limit));
+            Self::deposit_event(RawEvent::GlobalVoucherSizeLimitUpdated(new_size_limit));
         }
 
-        /// Increments global voucher objects limit. Requires root privileges.
+        /// Sets global voucher objects limit. Requires root privileges.
+        /// New limit cannot be less that used value.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_global_voucher_objects_limit(
+        pub fn set_global_voucher_objects_limit(
             origin,
-            increment: u64
+            new_objects_limit: u64
         ) {
             ensure_root(origin)?;
-            // ensure no overflow?
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             let mut voucher = Self::global_voucher();
-            voucher.increment_objects_limit(increment);
-            GlobalVoucher::put(voucher);
-
-            Self::deposit_event(RawEvent::GlobalVoucherObjectsLimitIncremented(increment, voucher.objects_limit));
-        }
-
-        /// Increments VoucherSizeLimitUpperBound. Requires root privileges.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_voucher_size_limit_upper_bound(
-            origin,
-            increment: u64
-        ) {
-            ensure_root(origin)?;
-            // ensure no overflow?
+            voucher.set_new_objects_limit::<T>(new_objects_limit)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            let new_upper_bound = VoucherSizeLimitUpperBound::get() + increment;
+            GlobalVoucher::put(voucher);
+
+            Self::deposit_event(RawEvent::GlobalVoucherObjectsLimitUpdated(new_objects_limit));
+        }
+
+        /// Sets VoucherSizeLimitUpperBound. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_voucher_size_limit_upper_bound(
+            origin,
+            new_upper_bound: u64
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             VoucherSizeLimitUpperBound::put(new_upper_bound);
 
-            Self::deposit_event(RawEvent::VoucherSizeLimitUpperBoundIncremented(increment, new_upper_bound));
+            Self::deposit_event(RawEvent::VoucherSizeLimitUpperBoundUpdated(new_upper_bound));
         }
 
-        /// Increments VoucherObjectsLimitUpperBound. Requires root privileges.
+        /// Sets VoucherObjectsLimitUpperBound. Requires root privileges.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn increase_voucher_objects_limit_upper_bound(
+        pub fn set_voucher_objects_limit_upper_bound(
             origin,
-            increment: u64
+            new_upper_bound: u64
         ) {
             ensure_root(origin)?;
-            // ensure no overflow?
 
             //
             // == MUTATION SAFE ==
             //
 
-            let new_upper_bound = VoucherObjectsLimitUpperBound::get() + increment;
             VoucherObjectsLimitUpperBound::put(new_upper_bound);
 
-            Self::deposit_event(RawEvent::VoucherObjectsLimitUpperBoundIncremented(increment, new_upper_bound));
+            Self::deposit_event(RawEvent::VoucherObjectsLimitUpperBoundUpdated(new_upper_bound));
+        }
+
+        /// Set the default owner voucher
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_default_voucher(
+            origin,
+            size_limit: u64,
+            objects_limit: u64
+        ) {
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
+            // constrain to upper bounds
+            ensure!(
+                size_limit <= Self::voucher_size_limit_upper_bound(),
+                Error::<T>::VoucherSizeLimitUpperBoundExceeded
+            );
+            ensure!(
+                objects_limit <= Self::voucher_objects_limit_upper_bound(),
+                Error::<T>::VoucherObjectsLimitUpperBoundExceeded
+            );
+
+            // == MUTATION SAFE ==
+            DefaultVoucher::put(Voucher::new(size_limit, objects_limit));
+
+            Self::deposit_event(RawEvent::DefaultVoucherUpdated(size_limit, objects_limit));
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
@@ -747,8 +832,6 @@ impl<T: Trait> Module<T> {
 
     // Complete content upload, update vouchers
     fn upload_content(
-        owner_voucher: Voucher,
-        upload_voucher_delta: Delta,
         liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: ObjectOwner<T>,
@@ -766,33 +849,6 @@ impl<T: Trait> Module<T> {
 
             <DataByContentId<T>>::insert(content.content_id, data);
         }
-
-        // Updade or create owner voucher.
-        <Vouchers<T>>::insert(owner, owner_voucher.fill_voucher(upload_voucher_delta));
-
-        // Update global voucher
-        <GlobalVoucher>::put(Self::global_voucher().fill_voucher(upload_voucher_delta));
-    }
-
-    // Complete content removal
-    fn delete_content(
-        owner: &ObjectOwner<T>,
-        content_ids: &[T::ContentId],
-        content: Vec<DataObject<T>>,
-    ) {
-        let removal_voucher = Self::calculate_content_voucher(content);
-
-        for content_id in content_ids {
-            <DataByContentId<T>>::remove(content_id);
-        }
-
-        // Updade owner voucher.
-        <Vouchers<T>>::mutate(owner, |owner_voucher| {
-            owner_voucher.release_voucher(removal_voucher)
-        });
-
-        // Update global voucher
-        <GlobalVoucher>::put(Self::global_voucher().release_voucher(removal_voucher));
     }
 
     fn ensure_content_is_valid(
@@ -880,15 +936,23 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         // Ensure global voucher constraints satisfied.
         Self::ensure_global_voucher_constraints_satisfied(upload_voucher)?;
 
+        // fill vouchers - overflow cannot happen because of prior constraint checks
+        let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher)?;
+        let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher)?;
+
         let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        // Let's create the entry then
+        // Updade or create owner voucher.
+        <Vouchers<T>>::insert(&owner, new_owner_voucher);
 
-        Self::upload_content(owner_voucher, upload_voucher, liaison, content, owner);
+        // Update global voucher
+        <GlobalVoucher>::put(new_global_voucher);
+
+        Self::upload_content(liaison, content, owner);
         Ok(())
     }
 
@@ -899,12 +963,26 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         // Ensure content under given content ids can be successfully removed
         let content = Self::ensure_content_can_be_removed(content_ids, owner)?;
 
+        let owner_voucher = Self::get_voucher(&owner);
+        let removal_voucher = Self::calculate_content_voucher(content);
+        let new_owner_voucher = owner_voucher.release_voucher::<T>(removal_voucher)?;
+        let new_global_voucher = Self::global_voucher().release_voucher::<T>(removal_voucher)?;
+
         //
         // == MUTATION SAFE ==
         //
 
-        // Let's remove a content
-        Self::delete_content(owner, content_ids, content);
+        // Updade owner voucher.
+        <Vouchers<T>>::insert(owner, new_owner_voucher);
+
+        // Update global voucher
+        <GlobalVoucher>::put(new_global_voucher);
+
+        // Let's remove content
+        for content_id in content_ids {
+            <DataByContentId<T>>::remove(content_id);
+        }
+
         Ok(())
     }
 
@@ -918,7 +996,9 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         let owner_voucher = Self::get_voucher(&owner);
 
         // Ensure owner voucher constraints satisfied.
-        Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
+        let delta = Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
+        // Ensure global voucher constraints satisfied.
+        Self::ensure_global_voucher_constraints_satisfied(delta)?;
         Self::ensure_content_is_valid(&content)
     }
 
