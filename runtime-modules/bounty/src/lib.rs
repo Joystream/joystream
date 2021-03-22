@@ -3,10 +3,11 @@
 //!
 //! ### Bounty stages
 //! - Funding - a bounty is being funded.
-//! - FundingExpired - a bounty is expired. It can be only cancelled.
+//! - FundingExpired - a bounty is expired. It can be only canceled.
 //! - WorkSubmission - interested participants can submit their work.
 //! - Judgment - working periods ended and the oracle should provide their judgment.
-//! - Withdrawal - all funds can be withdrawn.
+//! - SuccessfulBountyWithdrawal - work entrants' stakes and rewards can be withdrawn.
+//! - FailedBountyWithdrawal - contributors' funds can be withdrawn along with a split cherry.
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
@@ -32,9 +33,11 @@
 //! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
 //! oracle judgment for a bounty.
 //!
-//! #### Withdrawal stage
+//! #### SuccessfulBountyWithdrawal stage
 //! - [withdraw_work_entrant_funds](./struct.Module.html#method.withdraw_work_entrant_funds) -
 //! withdraw work entrant funds.
+//!
+//! #### FailedBountyWithdrawal stage
 //! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
 //! funding for a failed bounty.
 
@@ -265,11 +268,12 @@ pub enum BountyStage {
     /// Working periods ended and the oracle should provide their judgment.
     Judgment,
 
-    /// Creator cherry can be withdrawn.
-    Withdrawal {
-        /// Indicates bounty success.
-        bounty_was_successful: bool,
-    },
+    /// Indicates a withdrawal on bounty success. Workers get rewards and their stake.
+    SuccessfulBountyWithdrawal,
+
+    /// Indicates a withdrawal on bounty failure. Workers get their stake back. Funders
+    /// get their contribution back as well as part of the cherry.
+    FailedBountyWithdrawal,
 }
 
 /// Defines current bounty state.
@@ -602,8 +606,11 @@ decl_error! {
         /// Unexpected bounty stage for an operation: Judgment.
         InvalidStageUnexpectedJudgment,
 
-        /// Unexpected bounty stage for an operation: Withdrawal.
-        InvalidStageUnexpectedWithdrawal,
+        /// Unexpected bounty stage for an operation: SuccessfulBountyWithdrawal.
+        InvalidStageUnexpectedSuccessfulBountyWithdrawal,
+
+        /// Unexpected bounty stage for an operation: FailedBountyWithdrawal.
+        InvalidStageUnexpectedFailedBountyWithdrawal,
 
         /// Insufficient balance for a bounty cherry.
         InsufficientBalanceForBounty,
@@ -657,9 +664,6 @@ decl_error! {
 
         /// The total reward for winners should be equal to total bounty funding.
         TotalRewardShouldBeEqualToTotalFunding,
-
-        /// Cannot withdraw funds from a successful bounty.
-        CannotWithdrawFundsOnSuccessfulBounty,
 
         /// Cannot create a bounty with an entrant stake is less than required minimum.
         EntrantStakeIsLessThanMininum,
@@ -917,9 +921,7 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
-            let successful_bounty = Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
-
-            ensure!(!successful_bounty, Error::<T>::CannotWithdrawFundsOnSuccessfulBounty);
+            Self::ensure_bounty_stage(current_bounty_stage, BountyStage::FailedBountyWithdrawal)?;
 
             ensure!(
                 <BountyContributions<T>>::contains_key(&bounty_id, &funder),
@@ -1197,7 +1199,12 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            Self::ensure_bounty_withdrawal_stage(current_bounty_stage)?;
+            // Ensure withdrawal for successful or failed bounty.
+            ensure!(
+                current_bounty_stage == BountyStage::FailedBountyWithdrawal ||
+                current_bounty_stage == BountyStage::SuccessfulBountyWithdrawal,
+                Self::unexpected_bounty_stage_error(current_bounty_stage)
+            );
 
             let entry = Self::ensure_work_entry_exists(&entry_id)?;
 
@@ -1389,25 +1396,22 @@ impl<T: Trait> Module<T> {
 
     // Verifies that the bounty has no pending fund withdrawals left.
     fn withdrawal_completed(stage: &BountyStage, bounty_id: &T::BountyId) -> bool {
-        if let BountyStage::Withdrawal {
-            bounty_was_successful,
-        } = *stage
-        {
-            let has_no_contributions = !Self::contributions_exist(bounty_id);
-            let has_no_work_entries = !Self::work_entries_exist(bounty_id);
+        let has_no_contributions = !Self::contributions_exist(bounty_id);
+        let has_no_work_entries = !Self::work_entries_exist(bounty_id);
 
-            if bounty_was_successful {
+        match stage {
+            BountyStage::SuccessfulBountyWithdrawal => {
                 // All work entrants withdrew their stakes and rewards.
-                return has_no_work_entries;
-            } else {
+                has_no_work_entries
+            }
+            BountyStage::FailedBountyWithdrawal => {
                 // All work entrants withdrew their stakes and all funders withdrew cherry and
                 // provided funds.
-                return has_no_contributions && has_no_work_entries;
+                has_no_contributions && has_no_work_entries
             }
+            // Not withdrawal stage
+            _ => false,
         }
-
-        // Not withdrawal stage
-        false
     }
 
     // Verifies that bounty has some contribution to withdraw.
@@ -1575,11 +1579,7 @@ impl<T: Trait> Module<T> {
             bounty,
         };
 
-        sc.is_funding_stage()
-            .or_else(|| sc.is_funding_expired_stage())
-            .or_else(|| sc.is_work_submission_stage())
-            .or_else(|| sc.is_judgment_stage())
-            .unwrap_or_else(|| sc.withdrawal_stage())
+        sc.get_bounty_stage()
     }
 
     // Validates oracle judgment.
@@ -1675,18 +1675,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Bounty withdrawal stage validator. Returns `bounty_was_successful` flag.
-    fn ensure_bounty_withdrawal_stage(actual_stage: BountyStage) -> Result<bool, DispatchError> {
-        if let BountyStage::Withdrawal {
-            bounty_was_successful,
-        } = actual_stage
-        {
-            Ok(bounty_was_successful)
-        } else {
-            Err(Self::unexpected_bounty_stage_error(actual_stage))
-        }
-    }
-
     // Provides fined-grained errors for a bounty stages
     fn unexpected_bounty_stage_error(unexpected_stage: BountyStage) -> DispatchError {
         match unexpected_stage {
@@ -1694,7 +1682,12 @@ impl<T: Trait> Module<T> {
             BountyStage::FundingExpired => Error::<T>::InvalidStageUnexpectedFundingExpired.into(),
             BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
-            BountyStage::Withdrawal { .. } => Error::<T>::InvalidStageUnexpectedWithdrawal.into(),
+            BountyStage::SuccessfulBountyWithdrawal => {
+                Error::<T>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into()
+            }
+            BountyStage::FailedBountyWithdrawal => {
+                Error::<T>::InvalidStageUnexpectedFailedBountyWithdrawal.into()
+            }
         }
     }
 

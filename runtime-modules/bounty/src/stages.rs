@@ -12,9 +12,19 @@ pub(crate) struct BountyStageCalculator<'a, T: Trait> {
 }
 
 impl<'a, T: Trait> BountyStageCalculator<'a, T> {
+    // Calculates the current bounty stage.
+    pub(crate) fn get_bounty_stage(&self) -> BountyStage {
+        self.is_funding_stage()
+            .or_else(|| self.is_funding_expired_stage())
+            .or_else(|| self.is_work_submission_stage())
+            .or_else(|| self.is_judgment_stage())
+            .or_else(|| self.is_successful_bounty_withdrawal_stage())
+            .unwrap_or(BountyStage::FailedBountyWithdrawal)
+    }
+
     // Calculates funding stage of the bounty.
     // Returns None if conditions are not met.
-    pub(crate) fn is_funding_stage(&self) -> Option<BountyStage> {
+    fn is_funding_stage(&self) -> Option<BountyStage> {
         // Bounty was created. There can be some contributions. Funding period is not over.
         if let BountyMilestone::Created {
             has_contributions,
@@ -33,7 +43,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Calculates 'funding expired' stage of the bounty.
     // Returns None if conditions are not met.
-    pub(crate) fn is_funding_expired_stage(&self) -> Option<BountyStage> {
+    fn is_funding_expired_stage(&self) -> Option<BountyStage> {
         // Bounty was created. There can be some contributions. Funding period is not over.
         if let BountyMilestone::Created {
             has_contributions,
@@ -52,7 +62,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Calculates work submission stage of the bounty.
     // Returns None if conditions are not met.
-    pub(crate) fn is_work_submission_stage(&self) -> Option<BountyStage> {
+    fn is_work_submission_stage(&self) -> Option<BountyStage> {
         match self.bounty.milestone.clone() {
             // Funding period is over. Minimum funding reached. Work period is not expired.
             BountyMilestone::Created { created_at, .. } => {
@@ -102,7 +112,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
 
     // Calculates judgment stage of the bounty.
     // Returns None if conditions are not met.
-    pub(crate) fn is_judgment_stage(&self) -> Option<BountyStage> {
+    fn is_judgment_stage(&self) -> Option<BountyStage> {
         // Can be judged only if there are work submissions.
         if let BountyMilestone::WorkSubmitted {
             work_period_started_at,
@@ -121,58 +131,19 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         None
     }
 
-    // Calculates withdrawal stage of the bounty.
+    // Calculates withdrawal stage for the successful bounty.
     // Returns None if conditions are not met.
-    pub(crate) fn withdrawal_stage(&self) -> BountyStage {
-        let failed_bounty_withdrawal = BountyStage::Withdrawal {
-            bounty_was_successful: false,
-        };
-
-        match self.bounty.milestone.clone() {
-            // Funding period. No contributions or not enough contributions.
-            BountyMilestone::Created { created_at, .. } => {
-                let funding_period_expired = self.funding_period_expired(created_at);
-
-                let minimum_funding_is_not_reached = !self.minimum_funding_reached();
-
-                if minimum_funding_is_not_reached && funding_period_expired {
-                    return BountyStage::Withdrawal {
-                        bounty_was_successful: false,
-                    };
-                }
-            }
-            // No work submitted.
-            BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            } => {
-                let work_period_expired = self.work_period_expired(max_funding_reached_at);
-
-                if work_period_expired {
-                    return failed_bounty_withdrawal;
-                }
-            }
-            // Work submitted but no judgment.
-            BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            } => {
-                let work_period_expired = self.work_period_expired(work_period_started_at);
-
-                let judgment_period_is_expired =
-                    self.judgment_period_expired(work_period_started_at);
-
-                if work_period_expired && judgment_period_is_expired {
-                    return failed_bounty_withdrawal;
-                }
-            }
-            // The bounty judgment was submitted.
-            BountyMilestone::JudgmentSubmitted { successful_bounty } => {
-                return BountyStage::Withdrawal {
-                    bounty_was_successful: successful_bounty,
-                }
+    fn is_successful_bounty_withdrawal_stage(&self) -> Option<BountyStage> {
+        // The bounty judgment was submitted and the bounty is successful (there are some winners).
+        if let BountyMilestone::JudgmentSubmitted { successful_bounty } =
+            self.bounty.milestone.clone()
+        {
+            if successful_bounty {
+                return Some(BountyStage::SuccessfulBountyWithdrawal);
             }
         }
 
-        failed_bounty_withdrawal
+        None
     }
 
     // Checks whether the minimum funding reached for the bounty.

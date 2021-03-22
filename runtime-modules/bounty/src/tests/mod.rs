@@ -277,102 +277,8 @@ fn validate_judgment_bounty_stage() {
 }
 
 #[test]
-fn validate_withdrawal_bounty_stage() {
+fn validate_successful_withdrawal_bounty_stage() {
     build_test_externalities().execute_with(|| {
-        let created_at = 10;
-        let max_funding_reached_at = 10;
-        let funding_period = 10;
-        let judging_period = 10;
-        let work_period = 10;
-        let total_amount = 50;
-        let min_funding_amount = 100;
-        let work_period_started_at = created_at + funding_period;
-
-        // Expired funding period with not enough funding.
-        // Has contributions.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_type: FundingType::Limited {
-                    funding_period,
-                    min_funding_amount,
-                    max_funding_amount: 10,
-                },
-                work_period,
-
-                ..Default::default()
-            },
-            milestone: BountyMilestone::Created {
-                created_at,
-                has_contributions: true,
-            },
-            total_funding: total_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + funding_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                bounty_was_successful: false
-            }
-        );
-
-        // No work submissions.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_type: FundingType::Limited {
-                    funding_period,
-                    min_funding_amount,
-                    max_funding_amount: 10,
-                },
-                work_period,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::BountyMaxFundingReached {
-                max_funding_reached_at,
-            },
-            total_funding: total_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(max_funding_reached_at + work_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                bounty_was_successful: false
-            }
-        );
-
-        // Judging period has passed.
-        let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
-                funding_type: FundingType::Limited {
-                    funding_period,
-                    min_funding_amount,
-                    max_funding_amount: 10,
-                },
-                work_period,
-                judging_period,
-                ..Default::default()
-            },
-            milestone: BountyMilestone::WorkSubmitted {
-                work_period_started_at,
-            },
-            total_funding: min_funding_amount,
-            ..Default::default()
-        };
-
-        System::set_block_number(created_at + funding_period + work_period + judging_period + 1);
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                bounty_was_successful: false
-            }
-        );
-
         // Judging was submitted.
         let successful_bounty = true;
         let bounty = BountyRecord {
@@ -382,9 +288,7 @@ fn validate_withdrawal_bounty_stage() {
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                bounty_was_successful: successful_bounty
-            }
+            BountyStage::SuccessfulBountyWithdrawal
         );
     });
 }
@@ -1624,7 +1528,7 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
             .with_council()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(
-                Error::<Test>::CannotWithdrawFundsOnSuccessfulBounty.into()
+                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
             ));
     });
 }
@@ -2330,7 +2234,9 @@ fn withdraw_work_entry_fails_with_invalid_stage() {
             .with_member_id(member_id)
             .with_entry_id(entry_id)
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
     });
 }
 
@@ -2530,7 +2436,9 @@ fn submit_work_fails_with_invalid_stage() {
             .with_member_id(member_id)
             .with_entry_id(entry_id)
             .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
+            ));
     });
 }
 
