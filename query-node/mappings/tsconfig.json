@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "importHelpers": true,
+    "module": "commonjs",
+    "outDir": "lib",
+    "rootDirs": ["./"],
+    "strict": true,
+    "target": "es2017",
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true
+    // "paths": {
+    //   "query-node": [ "../generated/graphql-server/src" ],
+    //   "query-node/*": [ "../generated/graphql-server/src/*" ]
+    // }
+  },
+  "include": ["./**/*"]
+}

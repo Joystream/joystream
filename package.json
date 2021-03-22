@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build && yarn workspace @joystream/cd-schemas generate:all && yarn workspace @joystream/cd-schemas build",
+    "postinstall": "yarn workspace @joystream/types build",
     "build-joystream-cli": "yarn workspace @joystream/cli build",
     "build": "./build.sh",
     "start": "./start.sh",
@@ -24,6 +24,7 @@
     "utils/api-scripts",
     "content-directory-schemas",
     "query-node",
+    "query-node/mappings",
     "query-node/generated/*"
   ],
   "resolutions": {
@@ -43,7 +44,7 @@
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
-    "@dzlzv/hydra-indexer-lib": "0.0.18-alpha.2"
+    "typeorm": "^0.2.31"
   },
   "devDependencies": {
     "eslint": "^7.6.0",

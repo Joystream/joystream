@@ -1,0 +1,11 @@
+{
+  "name": "query-node-codegen",
+  "version": "0.0.0",
+  "description": "Hydra codegen tools for Joystream Query Node",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dzlzv/hydra-cli": "2.0.1-beta.11",
+    "@dzlzv/hydra-typegen": "2.0.1-beta.11"
+  }
+}

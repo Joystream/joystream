@@ -1,0 +1,12 @@
+overwrite: true
+
+schema: '../../query-node/generated/graphql-server/generated/schema.graphql'
+
+generates:
+  src/QueryNodeApiSchema.generated.ts:
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+        - eslint --fix
+    plugins:
+      - typescript

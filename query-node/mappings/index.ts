@@ -1,2 +1,1 @@
-export * from './content-directory/mapping'
-// export * from "./membership/mapping"
+export * from './mappings'
