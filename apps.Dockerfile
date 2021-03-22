@@ -5,7 +5,6 @@ COPY . /joystream
 RUN rm -fr /joystream/pioneer
 # Replaced by "integration-tests" on Olympia
 RUN rm -fr /joystream/tests/network-tests
-RUN rm -fr /joystream/content-directory-schemas
 
 ARG TYPEGEN_WS_URI
 
