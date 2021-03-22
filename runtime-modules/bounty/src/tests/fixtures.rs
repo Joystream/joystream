@@ -1,5 +1,5 @@
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::{StorageDoubleMap, StorageMap};
+use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
@@ -550,10 +550,7 @@ impl AnnounceWorkEntryFixture {
         let new_bounty = Bounty::bounties(self.bounty_id);
         if actual_result.is_ok() {
             assert_eq!(next_entry_count_value, Bounty::entry_count());
-            assert!(<crate::Entries<Test>>::contains_key(
-                &self.bounty_id,
-                &entry_id
-            ));
+            assert!(<crate::Entries<Test>>::contains_key(&entry_id));
 
             let expected_entry = Entry::<Test> {
                 member_id: self.member_id,
@@ -563,7 +560,7 @@ impl AnnounceWorkEntryFixture {
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,
             };
 
-            assert_eq!(expected_entry, Bounty::entries(self.bounty_id, entry_id));
+            assert_eq!(expected_entry, Bounty::entries(entry_id));
 
             assert_eq!(
                 new_bounty.active_work_entry_count,
@@ -571,10 +568,7 @@ impl AnnounceWorkEntryFixture {
             );
         } else {
             assert_eq!(next_entry_count_value - 1, Bounty::entry_count());
-            assert!(!<crate::Entries<Test>>::contains_key(
-                &self.bounty_id,
-                &entry_id
-            ));
+            assert!(!<crate::Entries<Test>>::contains_key(&entry_id));
 
             assert_eq!(
                 new_bounty.active_work_entry_count,
@@ -629,10 +623,7 @@ impl WithdrawWorkEntryFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::Entries<Test>>::contains_key(
-                &self.bounty_id,
-                &self.entry_id
-            ));
+            assert!(!<crate::Entries<Test>>::contains_key(&self.entry_id));
 
             let new_bounty = Bounty::bounties(self.bounty_id);
             assert_eq!(
@@ -683,7 +674,7 @@ impl SubmitWorkFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_entry = Bounty::entries(self.bounty_id, self.entry_id);
+        let old_entry = Bounty::entries(self.entry_id);
         let actual_result = Bounty::submit_work(
             self.origin.clone().into(),
             self.member_id,
@@ -694,7 +685,7 @@ impl SubmitWorkFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let new_entry = Bounty::entries(self.bounty_id, self.entry_id);
+        let new_entry = Bounty::entries(self.entry_id);
 
         if actual_result.is_ok() {
             assert!(new_entry.work_submitted);
@@ -811,10 +802,7 @@ impl WithdrawWorkEntrantFundsFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::Entries<Test>>::contains_key(
-                &self.bounty_id,
-                &self.entry_id
-            ));
+            assert!(!<crate::Entries<Test>>::contains_key(&self.entry_id));
 
             if <crate::Bounties<Test>>::contains_key(self.bounty_id) {
                 let new_bounty = Bounty::bounties(self.bounty_id);
