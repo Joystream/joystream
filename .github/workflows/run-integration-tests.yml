@@ -97,8 +97,6 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
-      - name: Ensure query-node builds
-        run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
         run: yarn workspace integration-tests build
       # Bring up hydra query-node development instance, then run content directory
