@@ -117,8 +117,18 @@ pub trait Trait:
         Self::MemberId,
     >;
 
+    /// Staking handler used for staking candidate.
+    type StakingCandidateStakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        Self::MemberId,
+    >;
+
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Stake needed to candidate as staking account.
+    type CandidateStake: Get<BalanceOf<Self>>;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
@@ -259,6 +269,12 @@ decl_error! {
         /// Cannot invite a member. Working group balance is not sufficient to set the default
         /// balance.
         WorkingGroupBudgetIsNotSufficientForInviting,
+
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
     }
 }
 
@@ -839,9 +855,29 @@ decl_module! {
 
             Self::ensure_membership(member_id)?;
 
+            ensure!(
+              T::StakingCandidateStakingHandler::is_account_free_of_conflicting_stakes(
+                  &staking_account_id
+              ),
+              Error::<T>::ConflictStakesOnAccount
+            );
+
+            ensure!(
+                T::StakingCandidateStakingHandler::is_enough_balance_for_stake(
+                    &staking_account_id,
+                    T::CandidateStake::get()
+                ),
+                Error::<T>::InsufficientBalanceToCoverStake
+            );
+
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::lock(
+                &staking_account_id,
+                T::CandidateStake::get(),
+            );
 
             <StakingAccountIdMemberStatus<T>>::insert(
                 staking_account_id.clone(),
@@ -877,6 +913,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::unlock(&staking_account_id);
 
             <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone());
 

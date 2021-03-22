@@ -234,6 +234,8 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl membership::Trait for Runtime {
@@ -243,6 +245,9 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl pallet_timestamp::Trait for Runtime {

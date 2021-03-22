@@ -269,11 +269,18 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_proposer(member_id);
 
         let account_balance = 500000;
-        let _imbalance = Balances::deposit_creating(&account_id, account_balance);
+        Balances::make_free_balance_be(&account_id, account_balance);
 
-        assert_eq!(Balances::usable_balance(&account_id), account_balance);
+        // Since the account_id is the staking account it neccesarily has locked funds
+        // for being a candidate for a staking account.
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            account_balance - <Runtime as membership::Trait>::CandidateStake::get()
+        );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // Only the biggest locked stake count, we don't need to substract the stake candidate here
         assert_eq!(
             Balances::usable_balance(&account_id),
             account_balance - stake_amount
@@ -300,9 +307,14 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         cancel_proposal_fixture.cancel_and_assert(Ok(()));
 
         let cancellation_fee = ProposalCancellationFee::get() as u128;
+
+        // Since the account_id is the staking account it neccesarily has locked funds
+        // for being a candidate for a staking account.
         assert_eq!(
             Balances::usable_balance(&account_id),
-            account_balance - cancellation_fee
+            account_balance
+                - cancellation_fee
+                - <Runtime as membership::Trait>::CandidateStake::get()
         );
     });
 }
@@ -586,12 +598,12 @@ fn funding_request_proposal_execution_succeeds() {
         })
         .with_member_id(member_id as u64);
 
-        assert_eq!(Balances::free_balance(target_account_id.clone()), 0);
+        assert_eq!(Balances::usable_balance(target_account_id.clone()), 0);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
         run_to_block(86410);
 
-        assert_eq!(Balances::free_balance(target_account_id), funding);
+        assert_eq!(Balances::usable_balance(target_account_id), funding);
     });
 }
 

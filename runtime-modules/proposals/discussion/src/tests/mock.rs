@@ -75,6 +75,8 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 // Weights info stub
@@ -158,6 +160,9 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {

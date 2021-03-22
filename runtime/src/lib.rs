@@ -604,6 +604,8 @@ impl memo::Trait for Runtime {
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
     pub const DefaultMembershipPrice: Balance = 100;
+    // The candidate stake should be more than the transaction fee which currently is 53
+    pub const CandidateStake: Balance = 200;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -637,8 +639,10 @@ impl membership::Trait for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
+    type StakingCandidateStakingHandler = StakingCandidateStakingHandler;
     type WorkingGroup = MembershipWorkingGroup;
     type WeightInfo = weights::membership::WeightInfo;
+    type CandidateStake = CandidateStake;
 }
 
 parameter_types! {
@@ -721,6 +725,8 @@ pub type MembershipWorkingGroupStakingManager =
     staking_handler::StakingManager<Runtime, MembershipWorkingGroupLockId>;
 pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
+pub type StakingCandidateStakingHandler =
+    staking_handler::StakingManager<Runtime, StakingCandidateLockId>;
 
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
