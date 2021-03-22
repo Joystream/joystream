@@ -123,5 +123,13 @@ chmod +x tmp.sh
 yarn workspace query-node-root typegen
 yarn workspace query-node-mappings build
 
+```
+
+running the processor:
+```
+cp types/augment/all/defs.json query-node/mappings/lib/generated/types/typedefs.json
+docker-compose up -d db
+yarn workspace query-node-root db:create
+yarn workspace query-node-root db:migrate
 
 ```

@@ -2,7 +2,7 @@ import BN from 'bn.js'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
-import { Block } from 'query-node/dist/src/modules/block/block.model'
+import { Block } from 'query-node/src/modules/block/block.model'
 import { Network } from 'query-node/src/modules/enums/enums'
 
 // Asset
@@ -11,11 +11,11 @@ import {
   AssetUploadStatus,
   AssetStorage,
   AssetOwnerMember,
-} from 'query-node/dist/src/modules/variants/variants.model'
+} from 'query-node/src/modules/variants/variants.model'
 import {
   AssetDataObject,
   LiaisonJudgement,
-} from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
+} from 'query-node/src/modules/asset-data-object/asset-data-object.model'
 import {
   ContentParameters
 } from '@joystream/types/augment'
@@ -43,7 +43,7 @@ export async function prepareBlock(db: DatabaseManager, event: SubstrateEvent): 
 
 export async function prepareAssetDataObject(contentParameters: ContentParameters, block: Block): Promise<AssetStorage> {
   const assetOwner = new AssetOwnerMember() // TODO: proper owner
-  assetOwner.memberId = 0
+  assetOwner.memberId = new BN(0)
 
   const assetDataObject = new AssetDataObject({
     owner: assetOwner,

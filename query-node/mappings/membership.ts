@@ -6,8 +6,8 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
 import { prepareBlock } from './common'
 import { Members } from '../generated/types'
-import { MembershipEntryMethod, Membership } from 'query-node/dist/src/modules/membership/membership.model'
-import { Block } from 'query-node/dist/src/modules/block/block.model'
+import { MembershipEntryMethod, Membership } from 'query-node/src/modules/membership/membership.model'
+import { Block } from 'query-node/src/modules/block/block.model'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await db.get(Membership, { where: { id: id.toString() } })

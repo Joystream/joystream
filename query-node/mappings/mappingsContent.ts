@@ -1,5 +1,6 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
 // TODO: split file into multiple files
+// TODO: make sure assets are updated when VideoUpdateParameters have only `assets` parameter set (no `new_meta` set) - if this situation can even happend
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
@@ -14,6 +15,10 @@ import {
   VideoMetadata,
   VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
+
+import {
+  Content,
+} from '../generated/types'
 
 /* TODO: can it be imported nicely like this?
 import {
@@ -51,17 +56,17 @@ import {
 } from './common'
 
 // primary entities
-import { Block } from 'query-node/dist/src/modules/block/block.model'
-import { Channel } from 'query-node/dist/src/modules/channel/channel.model'
-import { ChannelCategory } from 'query-node/dist/src/modules/channel-category/channel-category.model'
-import { Video } from 'query-node/dist/src/modules/video/video.model'
-import { VideoCategory } from 'query-node/dist/src/modules/video-category/video-category.model'
+import { Block } from 'query-node/src/modules/block/block.model'
+import { Channel } from 'query-node/src/modules/channel/channel.model'
+import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
+import { Video } from 'query-node/src/modules/video/video.model'
+import { VideoCategory } from 'query-node/src/modules/video-category/video-category.model'
 
 // secondary entities
-import { Language } from 'query-node/dist/src/modules/language/language.model'
-import { License } from 'query-node/dist/src/modules/license/license.model'
-import { VideoMediaEncoding } from 'query-node/dist/src/modules/video-media-encoding/video-media-encoding.model'
-import { VideoMediaMetadata } from 'query-node/dist/src/modules/video-media-metadata/video-media-metadata.model'
+import { Language } from 'query-node/src/modules/language/language.model'
+import { License } from 'query-node/src/modules/license/license.model'
+import { VideoMediaEncoding } from 'query-node/src/modules/video-media-encoding/video-media-encoding.model'
+import { VideoMediaMetadata } from 'query-node/src/modules/video-media-metadata/video-media-metadata.model'
 
 // Asset
 import {
@@ -71,30 +76,24 @@ import {
   AssetStorage,
   AssetOwner,
   AssetOwnerMember,
-} from 'query-node/dist/src/modules/variants/variants.model'
+} from 'query-node/src/modules/variants/variants.model'
 import {
   AssetDataObject,
   LiaisonJudgement
-} from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
+} from 'query-node/src/modules/asset-data-object/asset-data-object.model'
 
-
-// TODO: decide which of the following imports is valid
+// Joystream types
 import {
-  ContentParameters
+  ContentParameters,
+  NewAsset,
 } from '@joystream/types/augment'
-import {
-  contentDirectory,
-  storage,
-} from '@joystream/types'
-type RawAsset = ReturnType<typeof contentDirectory.NewAsset.create>
-type RawAssetTypes = typeof contentDirectory.NewAsset.typeDefinitions
 
 /////////////////// Utils //////////////////////////////////////////////////////
 
 async function readProtobuf(
   type: Channel | ChannelCategory | Video | VideoCategory,
   metadata: Uint8Array,
-  assets: RawAsset[],
+  assets: NewAsset[],
   db: DatabaseManager,
   event: SubstrateEvent,
 ): Promise<Partial<typeof type>> {
@@ -135,8 +134,7 @@ async function readProtobuf(
 
     // prepare video category if needed
     if (metaAsObject.category !== undefined) {
-      // TODO: find why array instead of one value is required here (mb input schema problem?)
-      result.category = [await prepareVideoCategory(metaAsObject.category, db)]
+      result.category = await prepareVideoCategory(metaAsObject.category, db)
     }
 
     // prepare media meta information if needed
@@ -187,19 +185,17 @@ async function readProtobuf(
   throw `Not implemented type: ${type}`
 }
 
-
-async function convertAsset(rawAsset: RawAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
-  if (rawAsset.type == 'Urls') {
+async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
+  if (rawAsset.isUrls) {
     const assetUrl = new AssetUrl()
-    assetUrl.url = rawAsset.asType('Urls').toArray()[0].toString() // TODO: find out why asUrl() returns array
+    assetUrl.url = rawAsset.asUrls.toArray()[0].toString() // TODO: find out why asUrl() returns array
 
     return assetUrl
   }
 
-  // rawAsset == 'Upload'
+  // !rawAsset.isUrls && rawAsset.isUpload
 
-  //const contentParameters: typeof contentDirectory.ContentParameters = rawAsset.asStorage()
-  const contentParameters: ContentParameters = rawAsset.asType('Upload')
+  const contentParameters: ContentParameters = rawAsset.asUpload
 
   const block = await prepareBlock(db, event)
   const assetStorage = await prepareAssetDataObject(contentParameters, block)
@@ -209,7 +205,7 @@ async function convertAsset(rawAsset: RawAsset, db: DatabaseManager, event: Subs
 
 async function extractAsset(
   assetIndex: number | undefined,
-  assets: RawAsset[],
+  assets: NewAsset[],
   db: DatabaseManager,
   event: SubstrateEvent,
 ): Promise<typeof Asset | undefined> {
@@ -280,24 +276,18 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
-  /* event arguments
-  ChannelId,
-  ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-  Vec<NewAsset>,
-  ChannelCreationParameters<ContentParameters>,
-  */
+  const {channelId, channelCreationParameters} = new Content.ChannelCreatedEvent(event).data
 
-  //const protobufContent = await readProtobuf(ProtobufEntity.Channel, (event.params[3].value as any).meta, event.params[2].value as any[], db) // TODO: get rid of `any` typecast
   const protobufContent = await readProtobuf(
     new Channel(),
-    (event.params[3].value as any).meta,
-    event.params[2].value as any[],
+    channelCreationParameters.meta,
+    channelCreationParameters.assets,
     db,
     event,
-  ) // TODO: get rid of `any` typecast
+  )
 
   const channel = new Channel({
-    id: event.params[0].value.toString(), // ChannelId
+    id: channelId,
     isCensored: false,
     videos: [],
     happenedIn: await prepareBlock(db, event),
@@ -312,31 +302,39 @@ export async function content_ChannelUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelId,
-  Channel,
-  ChannelUpdateParameters<ContentParameters, AccountId>,
-  */
+  const {channelId , channelUpdateParameters} = new Content.ChannelUpdatedEvent(event).data
 
-  const channelId = event.params[1].value.toString()
   const channel = await db.get(Channel, { where: { id: channelId } })
 
   if (!channel) {
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(
-    new Channel(),
-    (event.params[3].value as any).new_meta,
-    (event.params[3].value as any).assets,
-    db,
-    event,
-  ) // TODO: get rid of `any` typecast
+  // metadata change happened?
+  if (channelUpdateParameters.new_meta.isSome) {
+    const protobufContent = await readProtobuf(
+      new Channel(),
+      channelUpdateParameters.new_meta.unwrap(), // TODO: is there any better way to get value without unwrap?
+      channelUpdateParameters.assets.unwrapOr([]),
+      db,
+      event,
+    )
 
-  // update all fields read from protobuf
-  for (let [key, value] of Object(protobufContent).entries()) {
-    channel[key] = value
+    // update all fields read from protobuf
+    for (let [key, value] of Object(protobufContent).entries()) {
+      channel[key] = value
+    }
+  }
+
+  // reward account change happened?
+  if (channelUpdateParameters.reward_account.isSome) {
+    // TODO: separate to function
+    // new different reward account set
+    if (channelUpdateParameters.reward_account.unwrap().isSome) {
+      channel.rewardAccount = channelUpdateParameters.reward_account.unwrap().unwrap().toString()
+    } else { // reward account removed
+      delete channel.rewardAccount
+    }
   }
 
   await db.save<Channel>(channel)
@@ -354,12 +352,6 @@ export async function content_ChannelCensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelId,
-  Vec<u8>
-  */
-
   const channelId = event.params[1].value.toString()
   const channel = await db.get(Channel, { where: { id: channelId } })
 
@@ -377,12 +369,6 @@ export async function content_ChannelUncensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelId,
-  Vec<u8>
-  */
-
   const channelId = event.params[1].value.toString()
   const channel = await db.get(Channel, { where: { id: channelId } })
 
@@ -426,19 +412,15 @@ export async function content_ChannelCategoryCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ChannelCategoryId,
-  ChannelCategory,
-  ChannelCategoryCreationParameters,
-  */
+  const {channelCategoryCreationParameters} = new Content.ChannelCategoryCreatedEvent(event).data
 
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
-    (event.params[2].value as any).meta,
+    channelCategoryCreationParameters.meta,
     [],
     db,
     event,
-  ) // TODO: get rid of `any` typecast
+  )
 
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
@@ -455,13 +437,7 @@ export async function content_ChannelCategoryUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelCategoryId,
-  ChannelCategoryUpdateParameters,
-  */
-
-  const channelCategoryId = event.params[1].value.toString()
+  const {channelCategoryId, channelCategoryUpdateParameters} = new Content.ChannelCategoryUpdatedEvent(event).data
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
   if (!channelCategory) {
@@ -470,11 +446,11 @@ export async function content_ChannelCategoryUpdated(
 
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
-    (event.params[2].value as any).meta,
+    channelCategoryUpdateParameters.new_meta,
     [],
     db,
     event,
-  ) // TODO: get rid of `any` typecast
+  )
 
   // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
@@ -489,11 +465,7 @@ export async function content_ChannelCategoryDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelCategoryId
-  */
-  const channelCategoryId = event.params[1].value.toString()
+  const {channelCategoryId} = new Content.ChannelCategoryDeletedEvent(event).data
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
   if (!channelCategory) {
@@ -510,22 +482,17 @@ export async function content_VideoCategoryCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoCategoryId,
-  VideoCategoryCreationParameters,
-  */
-
+  const {videoCategoryId, videoCategoryCreationParameters} = new Content.VideoCategoryCreatedEvent(event).data
   const protobufContent = readProtobuf(
     new VideoCategory(),
-    (event.params[2].value as any).meta,
+    videoCategoryCreationParameters.meta,
     [],
     db,
     event
-  ) // TODO: get rid of `any` typecast
+  )
 
   const videoCategory = new VideoCategory({
-    id: event.params[0].value.toString(), // ChannelId
+    id: videoCategoryId.toString(), // ChannelId
     isCensored: false,
     videos: [],
     happenedIn: await prepareBlock(db, event),
@@ -540,13 +507,7 @@ export async function content_VideoCategoryUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoCategoryId,
-  VideoCategoryUpdateParameters,
-  */
-
-  const videoCategoryId = event.params[1].toString()
+  const {videoCategoryId, videoCategoryUpdateParameters} = new Content.VideoCategoryUpdatedEvent(event).data
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
   if (!videoCategory) {
@@ -555,11 +516,11 @@ export async function content_VideoCategoryUpdated(
 
   const protobufContent = await readProtobuf(
     new VideoCategory(),
-    (event.params[2].value as any).meta,
+    videoCategoryUpdateParameters.new_meta,
     [],
     db,
     event,
-  ) // TODO: get rid of `any` typecast
+  )
 
   // update all fields read from protobuf
   for (let [key, value] of Object(protobufContent).entries()) {
@@ -574,12 +535,7 @@ export async function content_VideoCategoryDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoCategoryId,
-  */
-
-  const videoCategoryId = event.params[1].toString()
+  const {videoCategoryId} = new Content.VideoCategoryDeletedEvent(event).data
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
   if (!videoCategory) {
@@ -596,25 +552,19 @@ export async function content_VideoCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  ChannelId,
-  VideoId,
-  VideoCreationParameters<ContentParameters>,
-  */
-
+  const {channelId, videoId, videoCreationParameters} = new Content.VideoCreatedEvent(event).data
   const protobufContent = await readProtobuf(
     new Video(),
-    (event.params[3].value as any).meta,
-    (event.params[3].value as any).assets,
+    videoCreationParameters.meta,
+    videoCreationParameters.assets,
     db,
     event,
-  ) // TODO: get rid of `any` typecast
+  )
 
   const channel = new Video({
-    id: event.params[2].toString(), // ChannelId
+    id: videoId,
     isCensored: false,
-    channel: event.params[1],
+    channel: channelId,
     happenedIn: await prepareBlock(db, event),
     ...Object(protobufContent)
   })
@@ -627,29 +577,26 @@ export async function content_VideoUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoId,
-  VideoUpdateParameters<ContentParameters>,
-  */
-  const videoId = event.params[1].toString()
+  const {videoId, videoUpdateParameters} = new Content.VideoUpdatedEvent(event).data
   const video = await db.get(Video, { where: { id: videoId } })
 
   if (!video) {
     return inconsistentState()
   }
 
-  const protobufContent = await readProtobuf(
-    new Video(),
-    (event.params[2].value as any).meta,
-    (event.params[2].value as any).assets,
-    db,
-    event,
-  ) // TODO: get rid of `any` typecast
+  if (videoUpdateParameters.new_meta.isSome) {
+    const protobufContent = await readProtobuf(
+      new Video(),
+      videoUpdateParameters.new_meta.unwrap(), // TODO: is there any better way to get value without unwrap?
+      videoUpdateParameters.assets.unwrapOr([]),
+      db,
+      event,
+    )
 
-  // update all fields read from protobuf
-  for (let [key, value] of Object(protobufContent).entries()) {
-    video[key] = value
+    // update all fields read from protobuf
+    for (let [key, value] of Object(protobufContent).entries()) {
+      video[key] = value
+    }
   }
 
   await db.save<Video>(video)
@@ -660,12 +607,7 @@ export async function content_VideoDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoCategoryId,
-  */
-
-  const videoId = event.params[1].toString()
+  const {videoId} = new Content.VideoDeletedEvent(event).data
   const video = await db.get(Video, { where: { id: videoId } })
 
   if (!video) {
@@ -680,13 +622,7 @@ export async function content_VideoCensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoId,
-  Vec<u8>
-  */
-
-  const videoId = event.params[1].toString()
+  const {videoId} = new Content.VideoCensoredEvent(event).data
   const video = await db.get(Video, { where: { id: videoId } })
 
   if (!video) {
@@ -703,13 +639,7 @@ export async function content_VideoUncensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  VideoId,
-  Vec<u8>
-  */
-
-  const videoId = event.params[1].toString()
+  const {videoId} = new Content.VideoUncensoredEvent(event).data
   const video = await db.get(Video, { where: { id: videoId } })
 
   if (!video) {
@@ -726,20 +656,23 @@ export async function content_FeaturedVideosSet(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  /* event arguments
-  ContentActor,
-  Vec<VideoId>,
-  */
-
-  const videoIds = event.params[1].value as string[]
+  const {videoId: videoIds} = new Content.FeaturedVideosSetEvent(event).data
   const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } })
 
   // comparsion utility
   const isSame = (videoIdA: string) => (videoIdB: string) => videoIdA == videoIdB
 
   // calculate diff sets
-  const toRemove = existingFeaturedVideos.filter(existingFV => !videoIds.some(isSame(existingFV.id)))
-  const toAdd = videoIds.filter(video => !existingFeaturedVideos.map(item => item.id).some(isSame(video)))
+  const toRemove = existingFeaturedVideos.filter(existingFV =>
+    !videoIds
+      .map(item => item.toHex())
+      .some(isSame(existingFV.id))
+  )
+  const toAdd = videoIds.filter(video =>
+    !existingFeaturedVideos
+      .map(item => item.id)
+      .some(isSame(video.toHex()))
+  )
 
   // mark previously featured videos as not-featured
   for (let video of toRemove) {

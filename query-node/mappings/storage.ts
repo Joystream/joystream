@@ -13,10 +13,10 @@ import {
 } from '@joystream/types/augment'
 import {
   AssetStorage,
-} from 'query-node/dist/src/modules/variants/variants.model'
-import { LiaisonJudgement } from 'query-node/dist/src/modules/enums/enums'
+} from 'query-node/src/modules/variants/variants.model'
+import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
 
-import { AssetDataObject } from 'query-node/dist/src/modules/asset-data-object/asset-data-object.model'
+import { AssetDataObject } from 'query-node/src/modules/asset-data-object/asset-data-object.model'
 
 export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   /* event arguments
