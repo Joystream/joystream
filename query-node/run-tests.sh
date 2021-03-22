@@ -8,10 +8,6 @@ set -a
 . ../.env
 set +a
 
-# Only run codegen if no generated files found
-# TODO: Use docker apps image to run db migrations istead?
-[ ! -d "generated/" ] && yarn build
-
 function cleanup() {
     # Show tail end of logs for the processor and indexer containers to
     # see any possible errors
@@ -29,6 +25,10 @@ docker-compose down -v
 
 # Start the joystream-node first to allow fetching Olympia metadata during build (typegen)
 docker-compose up -d joystream-node
+
+# Only run codegen if no generated files found
+# TODO: Use docker apps image to run db migrations istead?
+[ ! -d "generated/" ] && yarn build
 
 # Build apps image using joystream-node metadata
 docker build --network host .. --file ../apps.Dockerfile --tag joystream/apps
