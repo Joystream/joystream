@@ -3,6 +3,7 @@
 //!
 //! ### Bounty stages
 //! - Funding - a bounty is being funded.
+//! - FundingExpired - a bounty is expired. It can be only cancelled.
 //! - WorkSubmission - interested participants can submit their work.
 //! - Judgment - working periods ended and the oracle should provide their judgment.
 //! - Withdrawal - all funds can be withdrawn.
@@ -16,6 +17,9 @@
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
+//!
+//! #### FundingExpired stage
+//! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //!
 //! #### Work submission stage
 //! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
@@ -285,9 +289,6 @@ pub enum BountyMilestone<BlockNumber> {
         /// Bounty has already some contributions.
         has_contributions: bool,
     },
-
-    /// A bounty was canceled.
-    Canceled,
 
     /// A bounty funding was successful and it exceeded max funding amount.
     BountyMaxFundingReached {
@@ -746,6 +747,7 @@ decl_module! {
         }
 
         /// Cancels a bounty.
+        /// It returns a cherry to creator and removes bounty.
         /// # <weight>
         ///
         /// ## weight
@@ -773,14 +775,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.milestone = BountyMilestone::Canceled;
-            });
+            Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
+
+            Self::remove_bounty(&bounty_id);
 
             Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
         }
 
         /// Vetoes a bounty.
+        /// It returns a cherry to creator and removes bounty.
         /// # <weight>
         ///
         /// ## weight
@@ -805,9 +808,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.milestone = BountyMilestone::Canceled;
-            });
+            Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
+
+            Self::remove_bounty(&bounty_id);
 
             Self::deposit_event(RawEvent::BountyVetoed(bounty_id));
         }
@@ -1140,18 +1143,7 @@ decl_module! {
 
             // Return a cherry to a creator.
             if successful_bounty {
-                let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
-                    bounty.creation_params.creator.clone(),
-                )?;
-
-                bounty_creator_manager.transfer_funds_from_bounty_account(
-                    bounty_id,
-                    bounty.creation_params.cherry
-                )?;
-
-                Self::deposit_event(
-                    RawEvent::BountyCreatorCherryWithdrawal(bounty_id, bounty.creation_params.creator)
-                );
+                Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
             }
 
             // Update bounty record.
@@ -1625,12 +1617,13 @@ impl<T: Trait> Module<T> {
             );
         }
 
-        // Check for invalid total sum.
-        ensure!(
-            reward_sum_from_judgment == Zero::zero() || // unsuccessful bounty
-            reward_sum_from_judgment == bounty.total_funding, // 100% bounty distribution
-            Error::<T>::TotalRewardShouldBeEqualToTotalFunding
-        );
+        // Check for invalid total sum for successful bounty.
+        if reward_sum_from_judgment != Zero::zero() {
+            ensure!(
+                reward_sum_from_judgment == bounty.total_funding, // 100% bounty distribution
+                Error::<T>::TotalRewardShouldBeEqualToTotalFunding
+            );
+        }
 
         Ok(())
     }
@@ -1721,5 +1714,25 @@ impl<T: Trait> Module<T> {
     // Oracle judgment helper. Returns true if a judgement contains at least one winner.
     pub(crate) fn judgment_has_winners(judgment: &OracleJudgmentOf<T>) -> bool {
         judgment.iter().any(|(_, j)| j.is_winner())
+    }
+
+    // Transfers cherry back to the bounty creator and fires an event.
+    fn return_bounty_cherry_to_creator(
+        bounty_id: T::BountyId,
+        bounty: &Bounty<T>,
+    ) -> DispatchResult {
+        let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
+            bounty.creation_params.creator.clone(),
+        )?;
+
+        bounty_creator_manager
+            .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.cherry)?;
+
+        Self::deposit_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            bounty.creation_params.creator.clone(),
+        ));
+
+        Ok(())
     }
 }

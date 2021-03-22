@@ -151,12 +151,6 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                     return failed_bounty_withdrawal;
                 }
             }
-            // Bounty was canceled or vetoed. Allow cherry withdrawal.
-            BountyMilestone::Canceled => {
-                return BountyStage::Withdrawal {
-                    bounty_was_successful: false,
-                }
-            }
             // Work submitted but no judgment.
             BountyMilestone::WorkSubmitted {
                 work_period_started_at,

@@ -15,14 +15,14 @@ use crate::{
 };
 use common::council::CouncilBudgetManager;
 use fixtures::{
-    increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
-    set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture, CreateBountyFixture,
-    EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, VetoBountyFixture,
-    WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture, WithdrawWorkEntryFixture,
-    DEFAULT_BOUNTY_CHERRY,
+    get_council_budget, increase_account_balance, increase_total_balance_issuance_using_account_id,
+    run_to_block, set_council_budget, AnnounceWorkEntryFixture, CancelBountyFixture,
+    CreateBountyFixture, EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture,
+    VetoBountyFixture, WithdrawFundingFixture, WithdrawWorkEntrantFundsFixture,
+    WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY,
 };
 use mocks::{
-    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, System, Test,
+    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, MinFundingLimit, System, Test,
     COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 
@@ -374,19 +374,6 @@ fn validate_withdrawal_bounty_stage() {
             }
         );
 
-        // Canceled bounty
-        let bounty = BountyRecord {
-            milestone: BountyMilestone::Canceled,
-            ..Default::default()
-        };
-
-        assert_eq!(
-            Bounty::get_bounty_stage(&bounty),
-            BountyStage::Withdrawal {
-                bounty_was_successful: false,
-            }
-        );
-
         // Judging was submitted.
         let successful_bounty = true;
         let bounty = BountyRecord {
@@ -491,7 +478,7 @@ fn create_bounty_transfers_the_council_balance_correctly() {
         let cherry = 100;
         let initial_balance = 500;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         // Insufficient member controller account balance.
         CreateBountyFixture::default()
@@ -606,20 +593,38 @@ fn create_bounty_fails_with_insufficient_balances() {
 }
 
 #[test]
-fn cancel_bounty_succeeds() {
+fn cancel_bounty_succeeds_full_test() {
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
         let starting_block = 1;
         run_to_block(starting_block);
 
-        CreateBountyFixture::default().call_and_assert(Ok(()));
+        let initial_balance = 500;
+        let cherry = 100;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
+
+        assert_eq!(get_council_budget(), initial_balance - cherry);
 
         CancelBountyFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
+
+        assert_eq!(get_council_budget(), initial_balance);
+
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            BountyActor::Council,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::BountyRemoved(
+            bounty_id,
+        ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
             bounty_id,
@@ -652,9 +657,6 @@ fn cancel_bounty_succeeds_at_funding_expired_stage() {
 #[test]
 fn cancel_bounty_by_member_succeeds() {
     build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
         let member_id = 1;
         let account_id = 1;
         let initial_balance = 500;
@@ -673,11 +675,6 @@ fn cancel_bounty_by_member_succeeds() {
             .with_creator_member_id(member_id)
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
-            bounty_id,
-            BountyActor::Member(member_id),
-        ));
     });
 }
 
@@ -761,39 +758,16 @@ fn cancel_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
-        // Test already cancelled bounty.
+        // Test bounty with funding.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
-
-        // Test bounty that was funded.
-        let max_amount = 500;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let initial_balance = 500;
-
-        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 2u64;
-
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .with_amount(amount)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_amount(MinFundingLimit::get())
+            .with_council()
+            .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
         CancelBountyFixture::default()
@@ -805,18 +779,36 @@ fn cancel_bounty_fails_with_invalid_stage() {
 #[test]
 fn veto_bounty_succeeds() {
     build_test_externalities().execute_with(|| {
-        set_council_budget(500);
-
         let starting_block = 1;
         run_to_block(starting_block);
 
-        CreateBountyFixture::default().call_and_assert(Ok(()));
+        let initial_balance = 500;
+        let cherry = 100;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_cherry(cherry)
+            .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
+
+        assert_eq!(get_council_budget(), initial_balance - cherry);
 
         VetoBountyFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
+
+        assert_eq!(get_council_budget(), initial_balance);
+
+        EventFixture::contains_crate_event(RawEvent::BountyCreatorCherryWithdrawal(
+            bounty_id,
+            BountyActor::Council,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::BountyRemoved(
+            bounty_id,
+        ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyVetoed(bounty_id));
     });
@@ -858,39 +850,16 @@ fn veto_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
-        // Test already vetoed bounty.
+        // Test bounty with funding.
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        CancelBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        VetoBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
-
-        // Test bounty that was funded.
-        let max_amount = 500;
-        let amount = 100;
-        let account_id = 1;
-        let member_id = 1;
-        let initial_balance = 500;
-
-        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 2u64;
-
         FundBountyFixture::default()
             .with_bounty_id(bounty_id)
-            .with_amount(amount)
-            .with_member_id(member_id)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_amount(MinFundingLimit::get())
+            .with_council()
+            .with_origin(RawOrigin::Root)
             .call_and_assert(Ok(()));
 
         VetoBountyFixture::default()
@@ -1202,6 +1171,7 @@ fn fund_bounty_fails_with_invalid_stage() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
 
+        let max_amount = 100;
         let amount = 100;
         let account_id = 1;
         let member_id = 1;
@@ -1209,19 +1179,28 @@ fn fund_bounty_fails_with_invalid_stage() {
 
         increase_total_balance_issuance_using_account_id(account_id, initial_balance);
 
-        CreateBountyFixture::default().call_and_assert(Ok(()));
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .call_and_assert(Ok(()));
 
         let bounty_id = 1u64;
 
-        CancelBountyFixture::default()
+        // Fund to maximum.
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
             .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
+            .with_bounty_id(bounty_id)
             .with_amount(amount)
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedWithdrawal.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedWorkSubmission.into()
+            ));
     });
 }
 
@@ -1590,7 +1569,7 @@ fn withdraw_member_funding_fails_with_successful_bounty() {
         let entrant_stake = 37;
         let work_period = 1;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -1775,7 +1754,7 @@ fn announce_work_entry_succeeded() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -1825,7 +1804,7 @@ fn announce_work_entry_failed_with_closed_contract() {
 
         let closed_contract_member_ids = vec![2, 3];
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -1867,7 +1846,7 @@ fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
         let initial_balance = 500;
         let amount = 100;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(amount)
@@ -1975,7 +1954,7 @@ fn announce_work_entry_fails_with_invalid_staking_data() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2036,7 +2015,7 @@ fn withdraw_work_entry_succeeded() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2095,7 +2074,7 @@ fn withdraw_work_slashes_successfully1() {
         let entrant_stake = 100;
         let work_period = 1000;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2190,7 +2169,7 @@ fn withdraw_work_slashes_successfully2() {
         let entrant_stake = 100;
         let work_period = 1000;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2300,7 +2279,7 @@ fn withdraw_work_entry_fails_with_invalid_entry_id() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2334,7 +2313,7 @@ fn withdraw_work_entry_fails_with_invalid_origin() {
         let initial_balance = 500;
         let max_amount = 100;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2380,7 +2359,7 @@ fn withdraw_work_entry_fails_with_invalid_stage() {
         let entrant_stake = 37;
         let work_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2436,7 +2415,7 @@ fn submit_work_succeeded() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2500,7 +2479,7 @@ fn submit_work_fails_with_invalid_entry_id() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2534,7 +2513,7 @@ fn submit_work_fails_with_invalid_origin() {
         let initial_balance = 500;
         let max_amount = 100;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2580,7 +2559,7 @@ fn submit_work_fails_with_invalid_stage() {
         let entrant_stake = 37;
         let work_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2638,7 +2617,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
         let working_period = 10;
         let judging_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2783,7 +2762,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
         let working_period = 10;
         let judging_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2870,7 +2849,7 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
         let working_period = 10;
         let judging_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -2949,7 +2928,7 @@ fn submit_judgment_by_member_succeeded() {
         let oracle_member_id = 1;
         let oracle_account_id = 1;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -3116,7 +3095,7 @@ fn submit_judgment_fails_with_invalid_judgment() {
         let working_period = 10;
         let judging_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -3230,7 +3209,7 @@ fn withdraw_work_entrant_funds_succeeded() {
         let entrant_stake = 37;
         let work_period = 1;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -3373,7 +3352,7 @@ fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
         let max_amount = 100;
         let entrant_stake = 37;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -3409,7 +3388,7 @@ fn withdraw_work_entrant_funds_fails_with_invalid_origin() {
         let initial_balance = 500;
         let max_amount = 100;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)
@@ -3455,7 +3434,7 @@ fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
         let entrant_stake = 37;
         let work_period = 10;
 
-        <mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(initial_balance);
+        set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
             .with_max_funding_amount(max_amount)

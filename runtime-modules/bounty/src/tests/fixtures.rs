@@ -30,6 +30,10 @@ pub fn set_council_budget(new_budget: u64) {
     <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(new_budget);
 }
 
+pub fn get_council_budget() -> u64 {
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget()
+}
+
 pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {
@@ -333,9 +337,7 @@ impl CancelBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let bounty = Bounty::bounties(&self.bounty_id);
-
-            assert!(matches!(bounty.milestone, BountyMilestone::Canceled))
+            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
         }
     }
 }
@@ -367,9 +369,7 @@ impl VetoBountyFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let bounty = Bounty::bounties(&self.bounty_id);
-
-            assert!(matches!(bounty.milestone, BountyMilestone::Canceled))
+            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
         }
     }
 }
