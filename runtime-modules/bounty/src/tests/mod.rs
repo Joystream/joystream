@@ -622,9 +622,7 @@ fn cancel_bounty_succeeds_full_test() {
             BountyActor::Council,
         ));
 
-        EventFixture::contains_crate_event(RawEvent::BountyRemoved(
-            bounty_id,
-        ));
+        EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyCanceled(
             bounty_id,
@@ -806,9 +804,7 @@ fn veto_bounty_succeeds() {
             BountyActor::Council,
         ));
 
-        EventFixture::contains_crate_event(RawEvent::BountyRemoved(
-            bounty_id,
-        ));
+        EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyVetoed(bounty_id));
     });
@@ -3080,6 +3076,85 @@ fn submit_judgment_fails_with_invalid_stage() {
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
+    });
+}
+
+#[test]
+fn submit_judgment_fails_with_zero_work_entries() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+        let working_period = 10;
+        let judging_period = 10;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .with_work_period(working_period)
+            .with_judging_period(judging_period)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Ok(()));
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_entry_id(entry_id)
+            .call_and_assert(Ok(()));
+
+        run_to_block(starting_block + working_period + 1);
+
+        // Withdrawn entry.
+        let judgment = vec![entry_id]
+            .iter()
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: DEFAULT_WINNER_REWARD,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Err(Error::<Test>::NoActiveWorkEntries.into()));
     });
 }
 

@@ -676,6 +676,10 @@ decl_error! {
 
         /// Cannot create a bounty with zero funding period parameter.
         FundingPeriodCannotBeZero,
+
+        /// Cannot submit a judgment without active work entries. A probable case for an error:
+        /// an entry with a single submission for a bounty was withdrawn.
+        NoActiveWorkEntries,
     }
 }
 
@@ -1131,6 +1135,8 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::Judgment)?;
+
+            ensure!(bounty.active_work_entry_count != 0, Error::<T>::NoActiveWorkEntries);
 
             Self::validate_judgment(&bounty_id, &bounty, &judgment)?;
 
