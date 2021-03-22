@@ -56,8 +56,8 @@ mod benchmarking;
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_bounty_by_council() -> Weight;
-    fn create_bounty_by_member() -> Weight;
+    fn create_bounty_by_council(i: u32) -> Weight;
+    fn create_bounty_by_member(i: u32) -> Weight;
     fn cancel_bounty_by_member() -> Weight;
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
@@ -713,8 +713,8 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::create_bounty_by_member()
-              .max(WeightInfoBounty::<T>::create_bounty_by_council())]
+        #[weight = WeightInfoBounty::<T>::create_bounty_by_member(metadata.len().saturated_into())
+              .max(WeightInfoBounty::<T>::create_bounty_by_council(metadata.len().saturated_into()))]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, metadata: Vec<u8>) {
             let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,

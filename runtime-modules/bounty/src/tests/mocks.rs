@@ -148,10 +148,10 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
 }
 
 impl crate::WeightInfo for () {
-    fn create_bounty_by_council() -> u64 {
+    fn create_bounty_by_council(_i: u32) -> u64 {
         0
     }
-    fn create_bounty_by_member() -> u64 {
+    fn create_bounty_by_member(_i: u32) -> u64 {
         0
     }
     fn cancel_bounty_by_member() -> u64 {
