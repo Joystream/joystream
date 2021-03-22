@@ -3201,6 +3201,17 @@ fn submit_judgment_fails_with_invalid_judgment() {
 
         let entry_id = 1;
 
+        let account_id2 = 2;
+        increase_account_balance(&account_id2, initial_balance);
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id2)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id2 = 2;
+
         let work_data = b"Work submitted".to_vec();
         SubmitWorkFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
@@ -3269,6 +3280,25 @@ fn submit_judgment_fails_with_invalid_judgment() {
             .call_and_assert(Err(
                 Error::<Test>::TotalRewardShouldBeEqualToTotalFunding.into()
             ));
+
+        // No work submission for a winner.
+        let winner_reward = max_amount;
+        let judgment = vec![entry_id2]
+            .iter()
+            .map(|entry_id| {
+                (
+                    *entry_id,
+                    OracleWorkEntryJudgment::Winner {
+                        reward: winner_reward,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Err(Error::<Test>::WinnerShouldHasWorkSubmission.into()));
     });
 }
 

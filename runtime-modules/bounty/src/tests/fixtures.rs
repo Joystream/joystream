@@ -3,7 +3,6 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
-use sp_runtime::traits::Hash;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
 
@@ -560,7 +559,7 @@ impl AnnounceWorkEntryFixture {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
                 submitted_at: System::current_block_number(),
-                last_submitted_work: None,
+                work_submitted: false,
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,
             };
 
@@ -698,10 +697,7 @@ impl SubmitWorkFixture {
         let new_entry = Bounty::entries(self.bounty_id, self.entry_id);
 
         if actual_result.is_ok() {
-            let hashed = <Test as frame_system::Trait>::Hashing::hash(&self.work_data);
-            let work_data_hash = hashed.as_ref().to_vec();
-
-            assert_eq!(new_entry.last_submitted_work, Some(work_data_hash));
+            assert!(new_entry.work_submitted);
         } else {
             assert_eq!(new_entry, old_entry);
         }

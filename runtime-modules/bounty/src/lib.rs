@@ -87,10 +87,7 @@ use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Saturating, Zero};
-use sp_runtime::{
-    traits::{AccountIdConversion, Hash},
-    ModuleId,
-};
+use sp_runtime::{traits::AccountIdConversion, ModuleId};
 use sp_runtime::{Perbill, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -402,8 +399,8 @@ pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
     /// Work entry submission block.
     pub submitted_at: BlockNumber,
 
-    /// Last submitted work data hash.
-    pub last_submitted_work: Option<Vec<u8>>,
+    /// Signifies that an entry has at least one submitted work.
+    pub work_submitted: bool,
 
     /// Oracle judgment for the work entry.
     pub oracle_judgment_result: OracleWorkEntryJudgment<Balance>,
@@ -680,6 +677,9 @@ decl_error! {
         /// Cannot submit a judgment without active work entries. A probable case for an error:
         /// an entry with a single submission for a bounty was withdrawn.
         NoActiveWorkEntries,
+
+        /// Invalid judgment - all winners should have work submissions.
+        WinnerShouldHasWorkSubmission,
     }
 }
 
@@ -999,7 +999,7 @@ decl_module! {
                 member_id,
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
-                last_submitted_work: None,
+                work_submitted: false,
                 // The default initial value.
                 oracle_judgment_result: OracleWorkEntryJudgment::Legit,
             };
@@ -1089,12 +1089,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let hashed = T::Hashing::hash(&work_data);
-            let work_data_hash = hashed.as_ref().to_vec();
-
             // Update entry
             <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
-                entry.last_submitted_work = Some(work_data_hash);
+                entry.work_submitted = true;
             });
 
             let new_milestone = Self::get_bounty_milestone_on_work_submitting(&bounty);
@@ -1616,10 +1613,11 @@ impl<T: Trait> Module<T> {
                 reward_sum_from_judgment += *reward;
             }
 
-            // Check work entry existence.
+            // Check winner work submission.
+            let entry = Self::ensure_work_entry_exists(bounty_id, entry_id)?;
             ensure!(
-                <Entries<T>>::contains_key(bounty_id, entry_id),
-                Error::<T>::WorkEntryDoesntExist
+                entry.work_submitted,
+                Error::<T>::WinnerShouldHasWorkSubmission
             );
         }
 
