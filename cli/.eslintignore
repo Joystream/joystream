@@ -2,5 +2,4 @@
 # Temporarly ignore before merging `Sumer`
 /src/commands/media
 /src/commands/content-directory
-/src/base/MediaCommandBase.ts
 .eslintrc.js

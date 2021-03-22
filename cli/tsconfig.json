@@ -24,7 +24,6 @@
   /* Temporary exclude before merging `Sumer` */
   "exclude": [
     "src/commands/content-directory/*",
-    "src/commands/media/*",
-    "src/base/MediaCommandBase.ts"
+    "src/commands/media/*"
   ]
 }
