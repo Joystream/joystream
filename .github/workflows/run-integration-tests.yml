@@ -78,56 +78,6 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
-  basic_runtime_with_upgrade:
-    name: Integration Tests (Runtime Upgrade)
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
-      # Commented out to allow partial build of testing code
-      # - name: Ensure tests are runnable
-      #   run: yarn workspace network-tests build
-      - name: Execute network tests
-        run: RUNTIME=babylon tests/integration-tests/run-tests.sh olympia
-
-  basic_runtime:
-    name: Integration Tests (New Chain)
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
-      # Commented out to allow partial build of testing code
-      # - name: Ensure tests are runnable
-      #   run: yarn workspace network-tests build
-      - name: Execute network tests
-        run: tests/integration-tests/run-tests.sh olympia
-
   query_node:
     name: Query Node Integration Tests
     needs: build_images
