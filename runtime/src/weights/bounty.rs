@@ -20,75 +20,76 @@ impl bounty::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn cancel_bounty_by_council() -> Weight {
-        (290_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
+        (613_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn cancel_bounty_by_member() -> Weight {
-        (387_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads(2 as Weight))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
+        (925_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(4 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn veto_bounty() -> Weight {
-        (286_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
+        (594_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn fund_bounty_by_member() -> Weight {
-        (829_000_000 as Weight)
+        (878_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn fund_bounty_by_council() -> Weight {
-        (543_000_000 as Weight)
+        (585_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn withdraw_funding_by_member() -> Weight {
-        (965_000_000 as Weight)
+        (1_004_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn withdraw_funding_by_council() -> Weight {
-        (697_000_000 as Weight)
+        (705_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
-    fn announce_work_entry() -> Weight {
-        (1_305_000_000 as Weight)
+    fn announce_work_entry(i: u32) -> Weight {
+        (797_274_000 as Weight)
+            .saturating_add((12_466_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(5 as Weight))
     }
     fn withdraw_work_entry() -> Weight {
-        (924_000_000 as Weight)
+        (986_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn submit_work(i: u32) -> Weight {
-        (741_115_000 as Weight)
-            .saturating_add((174_000 as Weight).saturating_mul(i as Weight))
+        (526_380_000 as Weight)
+            .saturating_add((212_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn submit_oracle_judgment_by_council_all_winners(i: u32) -> Weight {
-        (483_991_000 as Weight)
-            .saturating_add((117_742_000 as Weight).saturating_mul(i as Weight))
+        (841_087_000 as Weight)
+            .saturating_add((145_801_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
             .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
     }
     fn submit_oracle_judgment_by_council_all_rejected(i: u32) -> Weight {
-        (473_839_000 as Weight)
-            .saturating_add((602_484_000 as Weight).saturating_mul(i as Weight))
+        (0 as Weight)
+            .saturating_add((661_563_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
             .saturating_add(DbWeight::get().writes((3 as Weight).saturating_mul(i as Weight)))
     }
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight {
-        (597_882_000 as Weight)
-            .saturating_add((120_517_000 as Weight).saturating_mul(i as Weight))
+        (781_961_000 as Weight)
+            .saturating_add((142_432_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
@@ -96,14 +97,14 @@ impl bounty::WeightInfo for WeightInfo {
     }
     fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight {
         (0 as Weight)
-            .saturating_add((623_197_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((690_600_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
             .saturating_add(DbWeight::get().writes((3 as Weight).saturating_mul(i as Weight)))
     }
     fn withdraw_work_entrant_funds() -> Weight {
-        (1_270_000_000 as Weight)
+        (1_337_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(9 as Weight))
             .saturating_add(DbWeight::get().writes(6 as Weight))
     }

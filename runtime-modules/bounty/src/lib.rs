@@ -62,7 +62,7 @@ pub trait WeightInfo {
     fn fund_bounty_by_council() -> Weight;
     fn withdraw_funding_by_member() -> Weight;
     fn withdraw_funding_by_council() -> Weight;
-    fn announce_work_entry() -> Weight;
+    fn announce_work_entry(i: u32) -> Weight;
     fn withdraw_work_entry() -> Weight;
     fn submit_work(i: u32) -> Weight;
     fn submit_oracle_judgment_by_council_all_winners(i: u32) -> Weight;
@@ -956,7 +956,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::announce_work_entry()]
+        #[weight = WeightInfoBounty::<T>::announce_work_entry(T::ClosedContractSizeLimit::get()
+            .saturated_into())]
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,

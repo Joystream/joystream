@@ -5,7 +5,6 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
@@ -194,6 +193,7 @@ fn create_funded_bounty<T: Trait>(
 
 const MAX_BYTES: u32 = 50000;
 const SEED: u32 = 0;
+const MAX_WORK_ENTRIES: u32 = 100;
 
 benchmarks! {
     where_clause {
@@ -287,9 +287,7 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Root, creator.clone(), bounty_id)
     verify {
-        let bounty = Bounty::<T>::bounties(bounty_id);
-
-        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
+        assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -326,9 +324,7 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Signed(account_id), creator.clone(), bounty_id)
     verify {
-        let bounty = Bounty::<T>::bounties(bounty_id);
-
-        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
+        assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -355,9 +351,7 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: _ (RawOrigin::Root, bounty_id)
     verify {
-        let bounty = Bounty::<T>::bounties(bounty_id);
-
-        assert!(matches!(bounty.milestone, BountyMilestone::Canceled));
+        assert!(!Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyVetoed(bounty_id).into());
     }
 
@@ -515,11 +509,13 @@ benchmarks! {
     }
 
     announce_work_entry {
+        let i in 1 .. T::ClosedContractSizeLimit::get();
+
         let cherry: BalanceOf<T> = 100.into();
         let funding_amount: BalanceOf<T> = 100.into();
         let stake: BalanceOf<T> = 100.into();
 
-        let member_ids = (0.. T::MaxWorkEntryLimit::get())
+        let member_ids = (0..i)
             .into_iter()
             .map(|id| id.saturated_into())
             .collect::<BTreeSet<T::MemberId>>();
@@ -641,17 +637,15 @@ benchmarks! {
     }: _(RawOrigin::Signed(account_id.clone()), member_id, bounty_id, entry_id, work_data.clone())
     verify {
         let entry = Bounty::<T>::entries(bounty_id, entry_id);
-        let hashed = T::Hashing::hash(&work_data);
-        let work_data_hash = hashed.as_ref().to_vec();
 
-        assert_eq!(entry.last_submitted_work, Some(work_data_hash));
+        assert!(entry.work_submitted);
         assert_last_event::<T>(
             Event::<T>::WorkSubmitted(bounty_id, entry_id, member_id, work_data).into()
         );
     }
 
     submit_oracle_judgment_by_council_all_winners {
-        let i in 1 .. T::MaxWorkEntryLimit::get();
+        let i in 1 .. MAX_WORK_ENTRIES;
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100.into();
@@ -714,7 +708,7 @@ benchmarks! {
     }
 
     submit_oracle_judgment_by_council_all_rejected {
-        let i in 1 .. T::MaxWorkEntryLimit::get();
+        let i in 1 .. MAX_WORK_ENTRIES;
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100.into();
@@ -757,7 +751,7 @@ benchmarks! {
     }
 
     submit_oracle_judgment_by_member_all_winners {
-        let i in 1 .. T::MaxWorkEntryLimit::get();
+        let i in 1 .. MAX_WORK_ENTRIES;
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100.into();
@@ -827,7 +821,7 @@ benchmarks! {
     }
 
     submit_oracle_judgment_by_member_all_rejected {
-        let i in 1 .. T::MaxWorkEntryLimit::get();
+        let i in 1 .. MAX_WORK_ENTRIES;
 
         let work_period: T::BlockNumber = One::one();
         let cherry: BalanceOf<T> = 100.into();
