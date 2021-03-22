@@ -128,10 +128,8 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
     /// Work entry Id type
     type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
 
-    /// Defines max work entry number for a bounty.
-    /// It limits further work entries iteration after the judge decision about winners, non-winners
-    /// and "byzantine" (malicious) users.
-    type MaxWorkEntryLimit: Get<u32>;
+    /// Defines max work entry number for a closed assurance type contract bounty.
+    type ClosedContractSizeLimit: Get<u32>;
 
     /// Defines min cherry for a bounty.
     type MinCherryLimit: Get<BalanceOf<Self>>;
@@ -692,14 +690,17 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
-        /// Exports const - max work entry number for a bounty.
-        const MaxWorkEntryLimit: u32 = T::MaxWorkEntryLimit::get();
+        /// Exports const - max work entry number for a closed assurance type contract bounty.
+        const ClosedContractSizeLimit: u32 = T::ClosedContractSizeLimit::get();
 
         /// Exports const - min cherry value limit for a bounty.
         const MinCherryLimit: BalanceOf<T> = T::MinCherryLimit::get();
 
         /// Exports const - min funding amount limit for a bounty.
         const MinFundingLimit: BalanceOf<T> = T::MinFundingLimit::get();
+
+        /// Exports const - min work entrant stake for a bounty.
+        const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -975,11 +976,6 @@ decl_module! {
                 &bounty,
                 staking_account_id.clone()
             )?;
-
-            ensure!(
-                bounty.active_work_entry_count < T::MaxWorkEntryLimit::get(),
-                Error::<T>::MaxWorkEntryLimitReached,
-            );
 
             Self::ensure_valid_contract_type(&bounty, &member_id)?;
 
@@ -1307,7 +1303,7 @@ impl<T: Trait> Module<T> {
             );
 
             ensure!(
-                member_ids.len() <= T::MaxWorkEntryLimit::get().saturated_into(),
+                member_ids.len() <= T::ClosedContractSizeLimit::get().saturated_into(),
                 Error::<T>::ClosedContractMemberListIsTooLarge
             );
         }

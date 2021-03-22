@@ -22,8 +22,8 @@ use fixtures::{
     WithdrawWorkEntryFixture, DEFAULT_BOUNTY_CHERRY,
 };
 use mocks::{
-    build_test_externalities, Balances, Bounty, MaxWorkEntryLimit, MinFundingLimit, System, Test,
-    COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
+    build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, MinFundingLimit, System,
+    Test, COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 
 const DEFAULT_WINNER_REWARD: u64 = 10;
@@ -420,7 +420,7 @@ fn create_bounty_fails_with_invalid_closed_contract() {
             .with_closed_contract(Vec::new())
             .call_and_assert(Err(Error::<Test>::ClosedContractMemberListIsEmpty.into()));
 
-        let large_member_id_list: Vec<u64> = (1..(MaxWorkEntryLimit::get() + 10))
+        let large_member_id_list: Vec<u64> = (1..(ClosedContractSizeLimit::get() + 10))
             .map(|x| x.into())
             .collect();
 
@@ -1830,69 +1830,6 @@ fn announce_work_entry_failed_with_closed_contract() {
             .call_and_assert(Err(
                 Error::<Test>::CannotSubmitWorkToClosedContractBounty.into()
             ));
-    });
-}
-
-#[test]
-fn announce_work_entry_fails_with_exceeding_the_entry_limit() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let amount = 100;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(amount)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id1 = 1;
-        let account_id2 = 2;
-        let account_id3 = 3;
-        let account_id4 = 4;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id1, initial_balance);
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id2, initial_balance);
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id2)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id3, initial_balance);
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id3))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id3)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id4, initial_balance);
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id4))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id4)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Err(Error::<Test>::MaxWorkEntryLimitReached.into()));
     });
 }
 
