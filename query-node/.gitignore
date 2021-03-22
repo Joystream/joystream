@@ -1,2 +1,4 @@
-lib
+mappings/lib
 generated
+# Generated from manifest via typegen:configure
+typegen.yml

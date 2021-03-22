@@ -203,19 +203,9 @@ export class Api {
   }
 
   // This method does not take into account weights and the runtime weight to fees computation!
-  private async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<BN> {
+  public async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<BN> {
     const paymentInfo = await tx.paymentInfo(account)
     return paymentInfo.partialFee
-  }
-
-  // The estimation methods here serve to allow fixtures to estimate fees ahead of
-  // constructing transactions which may have dependencies on other transactions finalizing
-
-  public estimateBuyMembershipFee(account: string, handle: string): Promise<BN> {
-    return this.estimateTxFee(
-      this.api.tx.members.buyMembership({ root_account: account, controller_account: account, handle }),
-      account
-    )
   }
 
   public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {

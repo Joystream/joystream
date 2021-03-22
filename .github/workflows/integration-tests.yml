@@ -1,4 +1,4 @@
-name: network-tests
+name: integration-tests
 on: [pull_request, push]
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
-        yarn workspace network-tests checks --quiet
+        yarn workspace integration-tests checks --quiet
 
   network_build_osx:
     name: MacOS Checks
@@ -34,4 +34,4 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace network-tests checks --quiet
+        yarn workspace integration-tests checks --quiet
