@@ -9,11 +9,16 @@ import { Members } from './generated/types'
 import { prepareBlock } from './common'
 import BN from 'bn.js'
 import { Block } from 'query-node/dist/src/modules/block/block.model'
+import { Bytes } from '@polkadot/types'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await db.get(Membership, { where: { id: id.toString() } })
   if (!member) throw Error(`Member(${id}) not found`)
   return member
+}
+
+function bytesToString(b: Bytes): string {
+  return Buffer.from(b.toU8a(true)).toString()
 }
 
 export async function members_MembershipBought(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -52,16 +57,16 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   const { name, about, avatarUri, handle } = new Members.UpdateProfileCall(event_).args
   const member = await getMemberById(db, memberId)
   if (name.isSome) {
-    member.name = name.unwrap().toString()
+    member.name = bytesToString(name.unwrap())
   }
   if (about.isSome) {
-    member.about = about.unwrap().toString()
+    member.about = bytesToString(about.unwrap())
   }
   if (avatarUri.isSome) {
-    member.avatarUri = avatarUri.unwrap().toString()
+    member.avatarUri = bytesToString(avatarUri.unwrap())
   }
   if (handle.isSome) {
-    member.handle = handle.unwrap().toString()
+    member.handle = bytesToString(handle.unwrap())
   }
 
   await db.save<Membership>(member)
