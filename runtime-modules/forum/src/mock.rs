@@ -13,7 +13,7 @@ use staking_handler::LockComparator;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, Hash, IdentityLookup, Zero},
+    traits::{BlakeTwo256, Hash, IdentityLookup},
     DispatchError, Perbill,
 };
 
@@ -308,6 +308,7 @@ impl membership::Trait for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 20;
+    pub const PostLifeTime: u64 = 100;
 
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
@@ -338,6 +339,7 @@ impl Trait for Runtime {
     type PostId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
+    type PostLifeTime = PostLifeTime;
 
     type MapLimits = MapLimits;
     type WorkingGroup = ();
@@ -428,7 +430,7 @@ impl WeightInfo for () {
     fn delete_category_moderator(_: u32) -> Weight {
         0
     }
-    fn create_thread(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn create_thread(_: u32, _: u32, _: u32) -> Weight {
         0
     }
     fn edit_thread_title(_: u32, _: u32) -> Weight {
@@ -440,10 +442,7 @@ impl WeightInfo for () {
     fn update_thread_archival_status_moderator(_: u32) -> Weight {
         0
     }
-    fn delete_thread_lead(_: u32) -> Weight {
-        0
-    }
-    fn delete_thread_moderator(_: u32) -> Weight {
+    fn delete_thread(_: u32) -> Weight {
         0
     }
     fn move_thread_to_category_lead(_: u32) -> Weight {
@@ -455,7 +454,7 @@ impl WeightInfo for () {
     fn vote_on_poll(_: u32, _: u32) -> Weight {
         0
     }
-    fn moderate_thread_lead(_: u32, _: u32, _: u32) -> Weight {
+    fn moderate_thread_lead(_: u32, _: u32) -> Weight {
         0
     }
     fn moderate_thread_moderator(_: u32, _: u32, _: u32) -> Weight {
@@ -480,6 +479,9 @@ impl WeightInfo for () {
         0
     }
     fn set_stickied_threads_moderator(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn delete_posts(_: u32, _: u32, _: u32) -> Weight {
         0
     }
 }
@@ -724,9 +726,9 @@ pub fn edit_thread_title_mock(
 pub fn delete_thread_mock(
     origin: OriginType,
     account_id: <Runtime as frame_system::Trait>::AccountId,
-    moderator_id: ModeratorId<Runtime>,
+    forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::PostId,
+    thread_id: <Runtime as Trait>::ThreadId,
     result: DispatchResult,
 ) {
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
@@ -739,7 +741,7 @@ pub fn delete_thread_mock(
     assert_eq!(
         TestForumModule::delete_thread(
             mock_origin(origin.clone()),
-            PrivilegedActor::Moderator(moderator_id),
+            forum_user_id,
             category_id,
             thread_id,
         ),
@@ -755,7 +757,7 @@ pub fn delete_thread_mock(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadDeleted(
                 thread_id,
-                PrivilegedActor::Moderator(moderator_id),
+                forum_user_id,
                 category_id
             ))
         );
@@ -763,6 +765,58 @@ pub fn delete_thread_mock(
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
             initial_balance + thread_payment
+        );
+    } else {
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&account_id),
+            initial_balance
+        );
+    }
+}
+
+pub fn delete_post_mock(
+    origin: OriginType,
+    account_id: <Runtime as frame_system::Trait>::AccountId,
+    forum_user_id: ForumUserId<Runtime>,
+    category_id: <Runtime as Trait>::CategoryId,
+    thread_id: <Runtime as Trait>::ThreadId,
+    post_id: <Runtime as Trait>::PostId,
+    result: DispatchResult,
+) {
+    let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
+    let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
+    let deleted_posts = vec![(category_id, thread_id, post_id)];
+
+    assert_eq!(
+        TestForumModule::delete_posts(
+            mock_origin(origin.clone()),
+            forum_user_id,
+            deleted_posts.clone(),
+            vec![0u8]
+        ),
+        result
+    );
+
+    if result.is_ok() {
+        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
+        if <ThreadById<Runtime>>::contains_key(category_id, thread_id) {
+            assert_eq!(
+                <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts,
+                number_of_posts - 1,
+            );
+        }
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostDeleted(
+                vec![0u8],
+                forum_user_id,
+                deleted_posts.clone()
+            ))
+        );
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&account_id),
+            initial_balance + <Runtime as Trait>::PostDeposit::get()
         );
     } else {
         assert_eq!(
@@ -845,6 +899,7 @@ pub fn create_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
+    editable: bool,
     result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
@@ -855,10 +910,12 @@ pub fn create_post_mock(
             forum_user_id,
             category_id,
             thread_id,
-            text.clone()
+            text.clone(),
+            editable
         ),
         result
     );
+
     if result.is_ok() {
         assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
@@ -868,14 +925,26 @@ pub fn create_post_mock(
                 forum_user_id,
                 category_id,
                 thread_id,
-                text
+                text,
+                editable
             ))
         );
 
-        assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
-            initial_balance - <Runtime as Trait>::PostDeposit::get()
-        );
+        if editable {
+            assert_eq!(
+                balances::Module::<Runtime>::free_balance(&account_id),
+                initial_balance - <Runtime as Trait>::PostDeposit::get()
+            );
+
+            assert!(<PostById<Runtime>>::contains_key(thread_id, post_id));
+        } else {
+            assert_eq!(
+                balances::Module::<Runtime>::free_balance(&account_id),
+                initial_balance
+            );
+
+            assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
+        }
     } else {
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
@@ -905,12 +974,10 @@ pub fn edit_post_text_mock(
         ),
         result
     );
+
     if result.is_ok() {
-        let thread = TestForumModule::thread_by_id(category_id, thread_id);
-        assert_eq!(
-            thread.posts.get(&post_id).unwrap().text_hash,
-            Runtime::calculate_hash(new_text.as_slice()),
-        );
+        let post = TestForumModule::post_by_id(thread_id, post_id);
+        assert_eq!(post.text_hash, Runtime::calculate_hash(new_text.as_slice()),);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostTextUpdated(
@@ -1082,9 +1149,11 @@ pub fn moderate_thread_mock(
             ))
         );
 
+        // If we moderate a thread with no extra post, only the initial post deposit
+        // should remain
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&thread_account_id),
-            BalanceOf::<Runtime>::zero()
+            <Runtime as Trait>::PostDeposit::get()
         );
     }
     thread_id
@@ -1099,6 +1168,7 @@ pub fn moderate_post_mock(
     rationale: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
+    let initial_balance = balances::Module::<Runtime>::free_balance(moderator_id);
     assert_eq!(
         TestForumModule::moderate_post(
             mock_origin(origin),
@@ -1111,8 +1181,7 @@ pub fn moderate_post_mock(
         result
     );
     if result.is_ok() {
-        let thread = <ThreadById<Runtime>>::get(category_id, thread_id);
-        assert!(!thread.posts.contains_key(&post_id));
+        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostModerated(
@@ -1123,7 +1192,17 @@ pub fn moderate_post_mock(
                 thread_id
             ))
         );
-    }
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&moderator_id),
+            initial_balance
+        );
+    } else {
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&moderator_id),
+            initial_balance
+        );
+    };
 
     post_id
 }
@@ -1209,6 +1288,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         next_category_id: 1,
         category_counter: 0,
         thread_by_id: vec![],
+        post_by_id: vec![],
         next_thread_id: 1,
         next_post_id: 1,
 

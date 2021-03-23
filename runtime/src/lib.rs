@@ -653,6 +653,7 @@ parameter_types! {
     pub const ThreadDeposit: u64 = 30;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
+    pub const PostLifeTime: BlockNumber = 3600;
 }
 
 pub struct MapLimits;
@@ -687,6 +688,7 @@ impl forum::Trait for Runtime {
 
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
+    type PostLifeTime = PostLifeTime;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {

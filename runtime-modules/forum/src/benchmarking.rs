@@ -2,7 +2,7 @@
 use super::*;
 use balances::Module as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Module as System;
@@ -287,6 +287,7 @@ fn add_thread_post<T: Trait>(
         category_id,
         thread_id,
         text,
+        true,
     )
     .unwrap();
     Module::<T>::next_post_id() - T::PostId::one()
@@ -751,10 +752,11 @@ benchmarks! {
         let new_post = Post {
             text_hash: T::calculate_hash(&text),
             author_id: forum_user_id.saturated_into(),
+            thread_id: next_thread_id,
+            last_edited: System::<T>::block_number(),
+            cleanup_pay_off: T::PostDeposit::get(),
         };
 
-        let mut posts = BTreeMap::new();
-        posts.insert(next_post_id, new_post.clone());
         // Ensure new thread created successfully
         let new_thread = Thread {
             category_id,
@@ -762,8 +764,8 @@ benchmarks! {
             author_id: forum_user_id.saturated_into(),
             archived: false,
             poll: poll.clone(),
-            cleanup_pay_off: T::ThreadDeposit::get() + T::PostDeposit::get(),
-            posts
+            cleanup_pay_off: T::ThreadDeposit::get(),
+            number_of_posts: 1,
         };
 
         assert_eq!(Module::<T>::thread_by_id(category_id, next_thread_id), new_thread);
@@ -771,10 +773,10 @@ benchmarks! {
 
 
         assert_eq!(
-            *Module::<T>::thread_by_id(category_id, next_thread_id)
-                .posts.get(&next_post_id).unwrap(),
+            Module::<T>::post_by_id(next_thread_id, next_post_id),
             new_post
         );
+
         assert_eq!(Module::<T>::next_post_id(), next_post_id + T::PostId::one());
 
         assert_last_event::<T>(
@@ -901,7 +903,7 @@ benchmarks! {
         );
     }
 
-    delete_thread_lead {
+    delete_thread {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
@@ -927,22 +929,20 @@ benchmarks! {
         let max_posts_in_thread =
             <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
 
-        for _ in 0..max_posts_in_thread - 1{
-            add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
-        }
-
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
-    }: delete_thread(RawOrigin::Signed(caller_id.clone()), PrivilegedActor::Lead, category_id, thread_id)
+    }: _(
+        RawOrigin::Signed(caller_id.clone()),
+        forum_user_id.saturated_into(),
+        category_id,
+        thread_id
+    )
     verify {
 
         // Ensure that balance is paid off
         assert_eq!(
             Balances::<T>::usable_balance(&caller_id),
             initial_balance +
-            T::ThreadDeposit::get() +
-            BalanceOf::<T>::from(
-                max_posts_in_thread.try_into().unwrap()
-            ) * T::PostDeposit::get()
+            T::ThreadDeposit::get()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -955,74 +955,7 @@ benchmarks! {
         assert_last_event::<T>(
             RawEvent::ThreadDeleted(
                 thread_id,
-                PrivilegedActor::Lead,
-                category_id
-            ).into()
-        );
-    }
-
-    delete_thread_moderator {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
-
-        let forum_user_id = 0;
-        let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
-
-        // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-        // Create thread
-        let expiration_diff = 10.into();
-        let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
-
-        let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
-        );
-
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
-        let mut category = Module::<T>::category_by_id(category_id);
-
-        let max_posts_in_thread =
-            <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
-
-        for _ in 0..max_posts_in_thread - 1 {
-            add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
-        }
-
-        let initial_balance = Balances::<T>::usable_balance(&caller_id);
-
-    }: delete_thread(RawOrigin::Signed(caller_id.clone()), PrivilegedActor::Moderator(moderator_id), category_id, thread_id)
-    verify {
-        // Ensure that balance is paid off
-        assert_eq!(
-            Balances::<T>::usable_balance(&caller_id),
-            initial_balance +
-            T::ThreadDeposit::get() +
-            BalanceOf::<T>::from(max_posts_in_thread.try_into().unwrap()) *
-            T::PostDeposit::get()
-        );
-
-        // Ensure category num_direct_threads updated successfully.
-        category.num_direct_threads-=1;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
-
-        // Ensure thread was successfully deleted
-        assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-
-        assert_last_event::<T>(
-            RawEvent::ThreadDeleted(
-                thread_id,
-                PrivilegedActor::Moderator(moderator_id),
+                forum_user_id.saturated_into(),
                 category_id
             ).into()
         );
@@ -1260,7 +1193,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           BalanceOf::<T>::zero()
+           T::Balance::from(j + 1) * T::PostDeposit::get()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -1327,7 +1260,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           BalanceOf::<T>::zero()
+           T::Balance::from(j + 1) * T::PostDeposit::get()
         );
 
 
@@ -1358,9 +1291,6 @@ benchmarks! {
 
         let j in 0 .. MAX_BYTES;
 
-        let k in 0 ..
-            (<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread::get() - 2) as u32;
-
         let text = vec![0u8].repeat(j as usize);
 
         // Generate categories tree
@@ -1372,21 +1302,11 @@ benchmarks! {
             vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize), None
         );
 
-        for _ in 0 .. k {
-            add_thread_post::<T>(
-                caller_id.clone(),
-                forum_user_id.saturated_into(),
-                category_id,
-                thread_id,
-                vec![0u8],
-            );
-        }
-
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let thread = Module::<T>::thread_by_id(category_id, thread_id);
         let post_id = Module::<T>::next_post_id();
 
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
-    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
+    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, thread_id, text.clone(), true)
     verify {
         assert_eq!(
             Balances::<T>::usable_balance(&caller_id),
@@ -1397,12 +1317,12 @@ benchmarks! {
         let new_post = Post {
             text_hash: T::calculate_hash(&text),
             author_id: forum_user_id.saturated_into(),
+            thread_id: thread_id,
+            last_edited: System::<T>::block_number(),
+            cleanup_pay_off: T::PostDeposit::get(),
         };
 
-        thread.posts.insert(post_id, new_post);
-        thread.cleanup_pay_off += T::PostDeposit::get();
-
-        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+        assert_eq!(Module::<T>::post_by_id(thread_id, post_id), new_post);
 
         assert_eq!(Module::<T>::next_post_id(), post_id + T::PostId::one());
 
@@ -1412,7 +1332,8 @@ benchmarks! {
                 forum_user_id.saturated_into(),
                 category_id,
                 thread_id,
-                text
+                text,
+                true,
             ).into()
         );
     }
@@ -1483,8 +1404,7 @@ benchmarks! {
 
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
 
-        let mut post = Module::<T>::thread_by_id(category_id, thread_id)
-            .posts.get(&post_id).unwrap().clone();
+        let mut post = Module::<T>::post_by_id(thread_id, post_id);
 
         let new_text = vec![0u8].repeat(j as usize);
 
@@ -1493,9 +1413,10 @@ benchmarks! {
 
         // Ensure post text updated successfully.
         post.text_hash = T::calculate_hash(&new_text);
+        post.last_edited = System::<T>::block_number();
 
         assert_eq!(
-            *Module::<T>::thread_by_id(category_id, thread_id).posts.get(&post_id).unwrap(),
+            Module::<T>::post_by_id(thread_id, post_id),
             post
         );
 
@@ -1542,8 +1463,10 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, post_id, rationale.clone())
     verify {
-        thread.posts.remove(&post_id);
+        thread.number_of_posts -= 1;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        assert!(!<PostById<T>>::contains_key(thread_id, post_id));
 
         assert_last_event::<T>(
             RawEvent::PostModerated(
@@ -1594,8 +1517,10 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, post_id, rationale.clone())
     verify {
-        thread.posts.remove(&post_id);
+        thread.number_of_posts -= 1;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        assert!(!<PostById<T>>::contains_key(thread_id, post_id));
 
         assert_last_event::<T>(
             RawEvent::PostModerated(
@@ -1604,6 +1529,85 @@ benchmarks! {
                 PrivilegedActor::Moderator(moderator_id),
                 category_id,
                 thread_id
+            ).into()
+        );
+    }
+
+    delete_posts {
+        let forum_user_id = 0;
+        let caller_id =
+            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+
+        let j in 0 .. MAX_BYTES;
+
+        let k in 1 ..
+            (<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread::get() - 2) as u32;
+
+        // Generate categories tree
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+
+        // Create thread
+        let expiration_diff = 10.into();
+        let poll = Some(
+            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+        );
+        let text = vec![1u8].repeat(MAX_BYTES as usize);
+
+        let thread_id = create_new_thread::<T>(
+            caller_id.clone(), forum_user_id.saturated_into(), category_id,
+            text.clone(), text.clone(), poll
+        );
+
+        let mut posts = Vec::new();
+        for _ in 0 .. k {
+            posts.push((
+                    category_id,
+                    thread_id,
+                    add_thread_post::<T>(
+                        caller_id.clone(),
+                        forum_user_id.saturated_into(),
+                        category_id,
+                        thread_id,
+                        vec![0u8],
+                    )
+                )
+            );
+        }
+
+        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text.clone());
+
+        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+
+        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
+
+        // Set up category membership of moderator.
+        Module::<T>::update_category_membership_of_moderator(
+            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
+        ).unwrap();
+
+        let rationale = vec![0u8].repeat(j as usize);
+
+    }: _(
+        RawOrigin::Signed(caller_id),
+        forum_user_id.saturated_into(),
+        posts.clone(),
+        rationale.clone()
+    )
+    verify {
+        thread.number_of_posts -= k as u64;
+        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+
+        for post in posts.clone() {
+            assert!(!<PostById<T>>::contains_key(post.1, post.2));
+        }
+
+        assert_last_event::<T>(
+            RawEvent::PostDeleted(
+                rationale,
+                forum_user_id.saturated_into(),
+                posts,
             ).into()
         );
     }
@@ -1790,16 +1794,9 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_thread_lead() {
+    fn test_delete_thread() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_thread_lead::<Runtime>());
-        });
-    }
-
-    #[test]
-    fn test_delete_thread_moderator() {
-        with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_thread_moderator::<Runtime>());
+            assert_ok!(test_benchmark_delete_thread::<Runtime>());
         });
     }
 
@@ -1884,6 +1881,13 @@ mod tests {
     fn test_set_stickied_threads_lead() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_set_stickied_threads_lead::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_delete_posts() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_delete_posts::<Runtime>());
         });
     }
 }
