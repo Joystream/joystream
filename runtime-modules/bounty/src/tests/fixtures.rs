@@ -9,7 +9,7 @@ use sp_std::iter::FromIterator;
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, OracleWorkEntryJudgment, RawEvent,
+    Entry, FundingType, OracleJudgmentOf, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 
@@ -557,7 +557,7 @@ impl AnnounceWorkEntryFixture {
                 staking_account_id: self.staking_account_id,
                 submitted_at: System::current_block_number(),
                 work_submitted: false,
-                oracle_judgment_result: OracleWorkEntryJudgment::Legit,
+                oracle_judgment_result: None,
             };
 
             assert_eq!(expected_entry, Bounty::entries(entry_id));

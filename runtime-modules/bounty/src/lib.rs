@@ -212,13 +212,13 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     /// Bounty creator: could be a member or a council.
     pub creator: BountyActor<MemberId>,
 
-    /// An mount of funding, possibly 0, provided by the creator which will be split among all other
-    /// contributors should the min funding bound not be reached. If reached, cherry is returned to
+    /// An amount of funding provided by the creator which will be split among all other
+    /// contributors should the bounty not be successful. If successful, cherry is returned to
     /// the creator. When council is creating bounty, this comes out of their budget, when a member
     /// does it, it comes from an account.
     pub cherry: Balance,
 
-    /// Amount of stake required, possibly 0, to enter bounty as entrant.
+    /// Amount of stake required to enter bounty as entrant.
     pub entrant_stake: Balance,
 
     /// Defines parameters for different funding types.
@@ -404,8 +404,10 @@ pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
     /// Signifies that an entry has at least one submitted work.
     pub work_submitted: bool,
 
-    /// Oracle judgment for the work entry.
-    pub oracle_judgment_result: OracleWorkEntryJudgment<Balance>,
+    /// Optional oracle judgment for the work entry.
+    /// Absent value means neither winner nor rejected entry - "legitimate user" that gets their
+    /// stake back without slashing but doesn't get a reward.
+    pub oracle_judgment_result: Option<OracleWorkEntryJudgment<Balance>>,
 }
 
 /// Defines the oracle judgment for the work entry.
@@ -415,16 +417,13 @@ pub enum OracleWorkEntryJudgment<Balance> {
     /// The work entry is selected as a winner.
     Winner { reward: Balance },
 
-    /// The work entry is not selected as a winner but no penalties applies.
-    Legit,
-
     /// The work entry is considered harmful. The stake will be slashed.
     Rejected,
 }
 
 impl<Balance> Default for OracleWorkEntryJudgment<Balance> {
     fn default() -> Self {
-        Self::Legit
+        Self::Rejected
     }
 }
 
@@ -997,8 +996,7 @@ decl_module! {
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
                 work_submitted: false,
-                // The default initial value.
-                oracle_judgment_result: OracleWorkEntryJudgment::Legit,
+                oracle_judgment_result: None,
             };
 
             <Entries<T>>::insert(entry_id, entry);
@@ -1155,10 +1153,10 @@ decl_module! {
 
             // Judgments triage.
             for (entry_id, work_entry_judgment) in judgment.iter() {
-                // Update work entries for winners and legitimate participants.
-                if *work_entry_judgment != OracleWorkEntryJudgment::Rejected{
+                // Update work entries for winners.
+                if matches!(*work_entry_judgment, OracleWorkEntryJudgment::Winner{ .. }) {
                     <Entries<T>>::mutate(entry_id, |entry| {
-                        entry.oracle_judgment_result = *work_entry_judgment;
+                        entry.oracle_judgment_result = Some(*work_entry_judgment);
                     });
                 } else {
                     let entry = Self::entries(entry_id);
@@ -1213,7 +1211,7 @@ decl_module! {
             //
 
             // Claim the winner reward.
-            if let OracleWorkEntryJudgment::Winner { reward } = entry.oracle_judgment_result {
+            if let Some(OracleWorkEntryJudgment::Winner { reward }) = entry.oracle_judgment_result {
                 Self::transfer_funds_from_bounty_account(
                     &controller_account_id,
                     bounty_id,

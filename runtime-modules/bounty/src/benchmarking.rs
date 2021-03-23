@@ -699,7 +699,7 @@ benchmarks! {
                 };
             assert_eq!(
                 entry.oracle_judgment_result,
-                OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward}
+                Some(OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward})
             );
         }
         assert_last_event::<T>(
@@ -812,7 +812,7 @@ benchmarks! {
                 };
             assert_eq!(
                 entry.oracle_judgment_result,
-                OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward}
+                Some(OracleWorkEntryJudgment::Winner {reward : corrected_winner_reward})
             );
         }
         assert_last_event::<T>(

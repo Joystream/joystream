@@ -2548,7 +2548,6 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
                 entry_id1,
                 OracleWorkEntryJudgment::Winner { reward: max_amount },
             ),
-            (entry_id2, OracleWorkEntryJudgment::Legit),
             (entry_id3, OracleWorkEntryJudgment::Rejected),
         ]
         .iter()
@@ -2565,12 +2564,9 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 
         assert_eq!(
             Bounty::entries(entry_id1).oracle_judgment_result,
-            OracleWorkEntryJudgment::Winner { reward: max_amount }
+            Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
-        assert_eq!(
-            Bounty::entries(entry_id2).oracle_judgment_result,
-            OracleWorkEntryJudgment::Legit
-        );
+        assert_eq!(Bounty::entries(entry_id2).oracle_judgment_result, None);
         assert!(!<Entries<Test>>::contains_key(entry_id3));
         assert_eq!(
             Balances::total_balance(&account_id),
@@ -2657,7 +2653,7 @@ fn submit_judgment_returns_cherry_on_successful_bounty() {
 
         assert_eq!(
             Bounty::entries(entry_id).oracle_judgment_result,
-            OracleWorkEntryJudgment::Winner { reward: max_amount }
+            Some(OracleWorkEntryJudgment::Winner { reward: max_amount })
         );
 
         // Cherry returned.
@@ -3230,7 +3226,6 @@ fn withdraw_work_entrant_funds_succeeded() {
                 reward: winner_reward,
             },
         );
-        judgment.insert(entry_id2, OracleWorkEntryJudgment::Legit);
 
         run_to_block(starting_block + work_period + 1);
 
