@@ -199,7 +199,7 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  #"Owner of the channel"
+  "Owner of the channel"
   owner: ChannelOwner!
 
   category: ChannelCategory
@@ -253,10 +253,10 @@ type ChannelOwnerDao @variant {
 
 type CuratorGroup @entity {
   "Curators belonging to this group"
-  curratorIds: [BigInt!]
+  curatorIds: [BigInt!]
 
   "Is group active or not"
-  is_active: Boolean
+  isActive: Boolean
 }
 
 type VideoCategory @entity {
