@@ -108,7 +108,7 @@ fn update_profile_succeeds() {
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
             info.handle.clone(),
-            Some(info.meta_data.clone()),
+            Some(info.metadata.clone()),
         ));
 
         let profile = get_membership_by_id(next_member_id);
@@ -122,7 +122,7 @@ fn update_profile_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(
             next_member_id,
             info.handle,
-            Some(info.meta_data),
+            Some(info.metadata),
         ));
     });
 }

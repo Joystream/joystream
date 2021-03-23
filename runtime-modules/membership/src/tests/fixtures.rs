@@ -54,7 +54,7 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 pub struct TestUserInfo {
     pub handle: Option<Vec<u8>>,
     pub handle_hash: Option<Vec<u8>>,
-    pub meta_data: Vec<u8>,
+    pub metadata: Vec<u8>,
 }
 
 pub fn get_alice_info() -> TestUserInfo {
@@ -62,7 +62,7 @@ pub fn get_alice_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
-    let meta_data = b"
+    let metadata = b"
     {
         'name': 'Alice',
         'avatar_uri': 'http://avatar-url.com/alice',
@@ -74,7 +74,7 @@ pub fn get_alice_info() -> TestUserInfo {
     TestUserInfo {
         handle: Some(handle),
         handle_hash: Some(hash),
-        meta_data,
+        metadata,
     }
 }
 
@@ -83,7 +83,7 @@ pub fn get_bob_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
-    let meta_data = b"
+    let metadata = b"
     {
         'name': 'Bob',
         'avatar_uri': 'http://avatar-url.com/bob',
@@ -95,7 +95,7 @@ pub fn get_bob_info() -> TestUserInfo {
     TestUserInfo {
         handle: Some(handle),
         handle_hash: Some(hash),
-        meta_data,
+        metadata,
     }
 }
 
@@ -112,7 +112,7 @@ pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
         controller_account: ALICE_ACCOUNT_ID,
         handle: info.handle,
         referrer_id: None,
-        meta_data: info.meta_data,
+        metadata: info.metadata,
     }
 }
 
@@ -178,7 +178,7 @@ pub struct BuyMembershipFixture {
     pub root_account: u64,
     pub controller_account: u64,
     pub handle: Option<Vec<u8>>,
-    pub meta_data: Vec<u8>,
+    pub metadata: Vec<u8>,
     pub referrer_id: Option<u64>,
 }
 
@@ -190,7 +190,7 @@ impl Default for BuyMembershipFixture {
             root_account: ALICE_ACCOUNT_ID,
             controller_account: ALICE_ACCOUNT_ID,
             handle: alice.handle,
-            meta_data: alice.meta_data,
+            metadata: alice.metadata,
             referrer_id: None,
         }
     }
@@ -202,7 +202,7 @@ impl BuyMembershipFixture {
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
             handle: self.handle.clone(),
-            meta_data: self.meta_data.clone(),
+            metadata: self.metadata.clone(),
             referrer_id: self.referrer_id.clone(),
         };
 
@@ -337,7 +337,7 @@ pub struct InviteMembershipFixture {
     pub root_account: u64,
     pub controller_account: u64,
     pub handle: Option<Vec<u8>>,
-    pub meta_data: Vec<u8>,
+    pub metadata: Vec<u8>,
 }
 
 impl Default for InviteMembershipFixture {
@@ -349,7 +349,7 @@ impl Default for InviteMembershipFixture {
             root_account: BOB_ACCOUNT_ID,
             controller_account: BOB_ACCOUNT_ID,
             handle: bob.handle,
-            meta_data: bob.meta_data,
+            metadata: bob.metadata,
         }
     }
 }
@@ -361,7 +361,7 @@ impl InviteMembershipFixture {
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
             handle: self.handle.clone(),
-            meta_data: self.meta_data.clone(),
+            metadata: self.metadata.clone(),
         }
     }
 

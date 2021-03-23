@@ -53,7 +53,7 @@ fn member_funded_account<T: Trait + balances::Trait>(
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
         handle: Some(handle),
-        meta_data: Vec::new(),
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -107,14 +107,14 @@ benchmarks! {
 
         let fee = Module::<T>::membership_price();
 
-        let meta_data = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat(j as usize);
 
         let params = BuyMembershipParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: Some(handle.clone()),
             referrer_id: None,
-            meta_data,
+            metadata,
         };
 
     }: buy_membership(RawOrigin::Signed(account_id.clone()), params.clone())
@@ -157,7 +157,7 @@ benchmarks! {
 
         let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-        let meta_data = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat(j as usize);
 
         let fee = Module::<T>::membership_price();
 
@@ -165,7 +165,7 @@ benchmarks! {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: Some(handle.clone()),
-            meta_data,
+            metadata,
             referrer_id: None,
         };
 
@@ -231,7 +231,7 @@ benchmarks! {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: Some(handle.clone()),
-            meta_data: Vec::new(),
+            metadata: Vec::new(),
             referrer_id: None,
         };
 
@@ -448,14 +448,14 @@ benchmarks! {
 
         let handle = handle_from_id::<T>(i);
 
-        let meta_data = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat(j as usize);
 
         let invite_params = InviteMembershipParameters {
             inviting_member_id: member_id,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: Some(handle.clone()),
-            meta_data,
+            metadata,
         };
 
         let default_invitation_balance = T::DefaultInitialInvitationBalance::get();

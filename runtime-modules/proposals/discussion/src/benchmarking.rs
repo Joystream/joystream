@@ -89,7 +89,7 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
         handle: Some(handle),
-        meta_data: Vec::new(),
+        metadata: Vec::new(),
         referrer_id: None,
     };
 

@@ -173,8 +173,8 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// Meta data concerning new member.
-    pub meta_data: Vec<u8>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 
     /// Referrer member id.
     pub referrer_id: Option<MemberId>,
@@ -195,8 +195,8 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// Meta data concerning new member.
-    pub meta_data: Vec<u8>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 }
 
 decl_error! {
@@ -438,10 +438,10 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             handle: Option<Vec<u8>>,
-            meta: Option<Vec<u8>>,
+            metadata: Option<Vec<u8>>,
         ) {
             // No effect if no changes.
-            if handle.is_none() && meta.is_none() {
+            if handle.is_none() && metadata.is_none() {
                 return Ok(())
             }
 
@@ -470,7 +470,7 @@ decl_module! {
                 Self::deposit_event(RawEvent::MemberProfileUpdated(
                         member_id,
                         handle,
-                        meta,
+                        metadata,
                     ));
             }
         }
@@ -641,7 +641,7 @@ decl_module! {
         // TODO: adjust weight
         #[weight = WeightInfoMembership::<T>::invite_member(
             Module::<T>::text_length_unwrap_or_default(&params.handle),
-            params.meta_data.len().saturated_into(),
+            params.metadata.len().saturated_into(),
         )]
         pub fn invite_member(
             origin,
@@ -930,12 +930,12 @@ impl<T: Trait> Module<T> {
         if params.referrer_id.is_some() {
             WeightInfoMembership::<T>::buy_membership_with_referrer(
                 Self::text_length_unwrap_or_default(&params.handle),
-                params.meta_data.len().saturated_into(),
+                params.metadata.len().saturated_into(),
             )
         } else {
             WeightInfoMembership::<T>::buy_membership_without_referrer(
                 Self::text_length_unwrap_or_default(&params.handle),
-                params.meta_data.len().saturated_into(),
+                params.metadata.len().saturated_into(),
             )
         }
     }
