@@ -219,6 +219,13 @@ export class Api {
     }
   }
 
+  public findMemberInvitedEvent(events: EventRecord[]): MemberId | undefined {
+    const record = this.findEventRecord(events, 'members', 'MemberInvited')
+    if (record) {
+      return record.event.data[0] as MemberId
+    }
+  }
+
   public getErrorNameFromExtrinsicFailedRecord(result: ISubmittableResult): string | undefined {
     const failed = result.findRecord('system', 'ExtrinsicFailed')
     if (!failed) {

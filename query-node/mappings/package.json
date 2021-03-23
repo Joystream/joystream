@@ -10,8 +10,8 @@
     "clean": "rm -rf lib"
   },
   "dependencies": {
-    "@dzlzv/hydra-common": "2.0.1-beta.11",
-    "@dzlzv/hydra-db-utils": "2.0.1-beta.11",
+    "@dzlzv/hydra-common": "2.0.1-beta.15",
+    "@dzlzv/hydra-db-utils": "2.0.1-beta.15",
     "@joystream/types": "^0.15.0",
     "warthog": "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
   },

@@ -11,6 +11,8 @@ export type Scalars = {
   Float: number
   /** The javascript `Date` as string. Type represents date and time as the ISO Date string. */
   DateTime: any
+  /** GraphQL representation of BigInt */
+  BigInt: any
 }
 
 export type BaseGraphQlObject = {
@@ -215,10 +217,18 @@ export type Membership = BaseGraphQlObject & {
   registeredAtTime: Scalars['DateTime']
   /** How the member was registered */
   entry: MembershipEntryMethod
-  /** Member id of the referrer (if any) */
-  referrerId?: Maybe<Scalars['String']>
   /** Whether member has been verified by membership working group. */
   isVerified: Scalars['Boolean']
+  /** Staking accounts bounded to membership. */
+  boundAccounts: Array<Scalars['String']>
+  /** Current count of invites left to send. */
+  inviteCount: Scalars['Int']
+  invitees: Array<Membership>
+  invitedBy?: Maybe<Membership>
+  invitedById?: Maybe<Scalars['String']>
+  referredMembers: Array<Membership>
+  referredBy?: Maybe<Membership>
+  referredById?: Maybe<Scalars['String']>
 }
 
 export type MembershipConnection = {
@@ -238,8 +248,11 @@ export type MembershipCreateInput = {
   registeredAtBlockId: Scalars['ID']
   registeredAtTime: Scalars['DateTime']
   entry: MembershipEntryMethod
-  referrerId?: Maybe<Scalars['String']>
   isVerified: Scalars['Boolean']
+  boundAccounts: Array<Scalars['String']>
+  inviteCount: Scalars['Float']
+  invitedById?: Maybe<Scalars['ID']>
+  referredById?: Maybe<Scalars['ID']>
 }
 
 export type MembershipEdge = {
@@ -250,6 +263,7 @@ export type MembershipEdge = {
 
 export enum MembershipEntryMethod {
   Paid = 'PAID',
+  Invited = 'INVITED',
   Genesis = 'GENESIS',
 }
 
@@ -278,10 +292,133 @@ export enum MembershipOrderByInput {
   RegisteredAtTimeDesc = 'registeredAtTime_DESC',
   EntryAsc = 'entry_ASC',
   EntryDesc = 'entry_DESC',
-  ReferrerIdAsc = 'referrerId_ASC',
-  ReferrerIdDesc = 'referrerId_DESC',
   IsVerifiedAsc = 'isVerified_ASC',
   IsVerifiedDesc = 'isVerified_DESC',
+  InviteCountAsc = 'inviteCount_ASC',
+  InviteCountDesc = 'inviteCount_DESC',
+  InvitedByIdAsc = 'invitedById_ASC',
+  InvitedByIdDesc = 'invitedById_DESC',
+  ReferredByIdAsc = 'referredById_ASC',
+  ReferredByIdDesc = 'referredById_DESC',
+}
+
+export type MembershipSystem = BaseGraphQlObject & {
+  __typename?: 'MembershipSystem'
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  /** Initial invitation count of a new member. */
+  defaultInviteCount: Scalars['Int']
+  /** Current price to buy a membership. */
+  membershipPrice: Scalars['BigInt']
+  /** Amount of tokens diverted to invitor. */
+  referralCut: Scalars['BigInt']
+  /** The initial, locked, balance credited to controller account of invitee. */
+  invitedInitialBalance: Scalars['BigInt']
+}
+
+export type MembershipSystemConnection = {
+  __typename?: 'MembershipSystemConnection'
+  totalCount: Scalars['Int']
+  edges: Array<MembershipSystemEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipSystemCreateInput = {
+  defaultInviteCount: Scalars['Float']
+  membershipPrice: Scalars['BigInt']
+  referralCut: Scalars['BigInt']
+  invitedInitialBalance: Scalars['BigInt']
+}
+
+export type MembershipSystemEdge = {
+  __typename?: 'MembershipSystemEdge'
+  node: MembershipSystem
+  cursor: Scalars['String']
+}
+
+export enum MembershipSystemOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  DefaultInviteCountAsc = 'defaultInviteCount_ASC',
+  DefaultInviteCountDesc = 'defaultInviteCount_DESC',
+  MembershipPriceAsc = 'membershipPrice_ASC',
+  MembershipPriceDesc = 'membershipPrice_DESC',
+  ReferralCutAsc = 'referralCut_ASC',
+  ReferralCutDesc = 'referralCut_DESC',
+  InvitedInitialBalanceAsc = 'invitedInitialBalance_ASC',
+  InvitedInitialBalanceDesc = 'invitedInitialBalance_DESC',
+}
+
+export type MembershipSystemUpdateInput = {
+  defaultInviteCount?: Maybe<Scalars['Float']>
+  membershipPrice?: Maybe<Scalars['BigInt']>
+  referralCut?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance?: Maybe<Scalars['BigInt']>
+}
+
+export type MembershipSystemWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  defaultInviteCount_eq?: Maybe<Scalars['Int']>
+  defaultInviteCount_gt?: Maybe<Scalars['Int']>
+  defaultInviteCount_gte?: Maybe<Scalars['Int']>
+  defaultInviteCount_lt?: Maybe<Scalars['Int']>
+  defaultInviteCount_lte?: Maybe<Scalars['Int']>
+  defaultInviteCount_in?: Maybe<Array<Scalars['Int']>>
+  membershipPrice_eq?: Maybe<Scalars['BigInt']>
+  membershipPrice_gt?: Maybe<Scalars['BigInt']>
+  membershipPrice_gte?: Maybe<Scalars['BigInt']>
+  membershipPrice_lt?: Maybe<Scalars['BigInt']>
+  membershipPrice_lte?: Maybe<Scalars['BigInt']>
+  membershipPrice_in?: Maybe<Array<Scalars['BigInt']>>
+  referralCut_eq?: Maybe<Scalars['BigInt']>
+  referralCut_gt?: Maybe<Scalars['BigInt']>
+  referralCut_gte?: Maybe<Scalars['BigInt']>
+  referralCut_lt?: Maybe<Scalars['BigInt']>
+  referralCut_lte?: Maybe<Scalars['BigInt']>
+  referralCut_in?: Maybe<Array<Scalars['BigInt']>>
+  invitedInitialBalance_eq?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance_gt?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance_gte?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance_lt?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance_lte?: Maybe<Scalars['BigInt']>
+  invitedInitialBalance_in?: Maybe<Array<Scalars['BigInt']>>
+}
+
+export type MembershipSystemWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type MembershipUpdateInput = {
@@ -294,8 +431,11 @@ export type MembershipUpdateInput = {
   registeredAtBlockId?: Maybe<Scalars['ID']>
   registeredAtTime?: Maybe<Scalars['DateTime']>
   entry?: Maybe<MembershipEntryMethod>
-  referrerId?: Maybe<Scalars['String']>
   isVerified?: Maybe<Scalars['Boolean']>
+  boundAccounts?: Maybe<Array<Scalars['String']>>
+  inviteCount?: Maybe<Scalars['Float']>
+  invitedById?: Maybe<Scalars['ID']>
+  referredById?: Maybe<Scalars['ID']>
 }
 
 export type MembershipWhereInput = {
@@ -362,13 +502,18 @@ export type MembershipWhereInput = {
   registeredAtTime_gte?: Maybe<Scalars['DateTime']>
   entry_eq?: Maybe<MembershipEntryMethod>
   entry_in?: Maybe<Array<MembershipEntryMethod>>
-  referrerId_eq?: Maybe<Scalars['String']>
-  referrerId_contains?: Maybe<Scalars['String']>
-  referrerId_startsWith?: Maybe<Scalars['String']>
-  referrerId_endsWith?: Maybe<Scalars['String']>
-  referrerId_in?: Maybe<Array<Scalars['String']>>
   isVerified_eq?: Maybe<Scalars['Boolean']>
   isVerified_in?: Maybe<Array<Scalars['Boolean']>>
+  inviteCount_eq?: Maybe<Scalars['Int']>
+  inviteCount_gt?: Maybe<Scalars['Int']>
+  inviteCount_gte?: Maybe<Scalars['Int']>
+  inviteCount_lt?: Maybe<Scalars['Int']>
+  inviteCount_lte?: Maybe<Scalars['Int']>
+  inviteCount_in?: Maybe<Array<Scalars['Int']>>
+  invitedById_eq?: Maybe<Scalars['ID']>
+  invitedById_in?: Maybe<Array<Scalars['ID']>>
+  referredById_eq?: Maybe<Scalars['ID']>
+  referredById_in?: Maybe<Array<Scalars['ID']>>
 }
 
 export type MembershipWhereUniqueInput = {
@@ -404,6 +549,9 @@ export type Query = {
   blocks: Array<Block>
   block?: Maybe<Block>
   blocksConnection: BlockConnection
+  membershipSystems: Array<MembershipSystem>
+  membershipSystem?: Maybe<MembershipSystem>
+  membershipSystemsConnection: MembershipSystemConnection
   memberships: Array<Membership>
   membership?: Maybe<Membership>
   membershipsConnection: MembershipConnection
@@ -428,6 +576,26 @@ export type QueryBlocksConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<BlockWhereInput>
   orderBy?: Maybe<BlockOrderByInput>
+}
+
+export type QueryMembershipSystemsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MembershipSystemWhereInput>
+  orderBy?: Maybe<MembershipSystemOrderByInput>
+}
+
+export type QueryMembershipSystemArgs = {
+  where: MembershipSystemWhereUniqueInput
+}
+
+export type QueryMembershipSystemsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MembershipSystemWhereInput>
+  orderBy?: Maybe<MembershipSystemOrderByInput>
 }
 
 export type QueryMembershipsArgs = {

@@ -54,6 +54,7 @@ export class QueryNodeApi {
     const MEMBER_BY_ID_QUERY = gql`
       query($id: ID!) {
         membership(where: { id: $id }) {
+          id
           handle
           name
           avatarUri
@@ -67,8 +68,15 @@ export class QueryNodeApi {
           }
           registeredAtTime
           entry
-          referrerId
           isVerified
+          inviteCount
+          invitedBy {
+            id
+          }
+          invitees {
+            id
+          }
+          boundAccounts
         }
       }
     `
