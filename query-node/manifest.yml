@@ -16,8 +16,15 @@ typegen:
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
     - members.MemberVerificationStatusUpdated
+    - members.InvitesTransferred
+    - members.MemberInvited
+    - members.StakingAccountConfirmed
+    - members.StakingAccountRemoved
+    - members.InitialInvitationCountUpdated
+    - members.MembershipPriceUpdated
+    - members.ReferralCutUpdated
+    - members.InitialInvitationBalanceUpdated
   calls:
-    - members.buyMembership
     - members.updateProfile
     - members.updateAccounts
   outDir: ./mappings/generated/types
@@ -43,6 +50,22 @@ mappings:
       handler: members_MemberAccountsUpdated(DatabaseManager, SubstrateEvent)
     - event: members.MemberVerificationStatusUpdated
       handler: members_MemberVerificationStatusUpdated(DatabaseManager, SubstrateEvent)
+    - event: members.InvitesTransferred
+      handler: members_InvitesTransferred(DatabaseManager, SubstrateEvent)
+    - event: members.MemberInvited
+      handler: members_MemberInvited(DatabaseManager, SubstrateEvent)
+    - event: members.StakingAccountConfirmed
+      handler: members_StakingAccountConfirmed(DatabaseManager, SubstrateEvent)
+    - event: members.StakingAccountRemoved
+      handler: members_StakingAccountRemoved(DatabaseManager, SubstrateEvent)
+    - event: members.InitialInvitationCountUpdated
+      handler: members_InitialInvitationCountUpdated(DatabaseManager, SubstrateEvent)
+    - event: members.MembershipPriceUpdated
+      handler: members_MembershipPriceUpdated(DatabaseManager, SubstrateEvent)
+    - event: members.ReferralCutUpdated
+      handler: members_ReferralCutUpdated(DatabaseManager, SubstrateEvent)
+    - event: members.InitialInvitationBalanceUpdated
+      handler: members_InitialInvitationBalanceUpdated(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

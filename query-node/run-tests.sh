@@ -40,6 +40,9 @@ docker-compose up -d db
 yarn workspace query-node-root db:prepare
 yarn workspace query-node-root db:migrate
 
+# Initialize databse (ie. membership module configuration)
+yarn workspace query-node-root db:init
+
 docker-compose up -d graphql-server
 
 # Starting up processor will bring up all services it depends on

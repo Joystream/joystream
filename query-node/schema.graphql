@@ -15,6 +15,7 @@ type Block @entity {
 
 enum MembershipEntryMethod {
   PAID
+  INVITED
   GENESIS
 }
 
@@ -50,9 +51,38 @@ type Membership @entity {
   "How the member was registered"
   entry: MembershipEntryMethod!
 
-  "Member id of the referrer (if any)"
-  referrerId: String
-
   "Whether member has been verified by membership working group."
   isVerified: Boolean!
+
+  "Staking accounts bounded to membership."
+  boundAccounts: [String!]
+
+  "Current count of invites left to send."
+  inviteCount: Int!
+
+  "All members invited by this member."
+  invitees: [Membership!] @derivedFrom(field: "invitedBy")
+
+  "A member that invited this member (if any)"
+  invitedBy: Membership
+
+  "All members referred by this member"
+  referredMembers: [Membership!] @derivedFrom(field: "referredBy")
+
+  "A member that referred this member (if any)"
+  referredBy: Membership
+}
+
+type MembershipSystem @entity {
+  "Initial invitation count of a new member."
+  defaultInviteCount: Int!
+
+  "Current price to buy a membership."
+  membershipPrice: BigInt!
+
+  "Amount of tokens diverted to invitor."
+  referralCut: BigInt!
+
+  "The initial, locked, balance credited to controller account of invitee."
+  invitedInitialBalance: BigInt!
 }
