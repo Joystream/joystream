@@ -115,14 +115,15 @@ pub fn run_benchmark(benchmark: Box<dyn BenchmarkDescription>, mode: Mode) -> Be
 
     let raw_average = (durations.iter().sum::<u128>() / (durations.len() as u128)) as u64;
     let average = (durations.iter().skip(10).take(30).sum::<u128>() / 30) as u64;
-    let avg: u32 = average.try_into().unwrap();
+    let avg: i32 = average.try_into().unwrap();
     let sd: f64 = durations
         .into_iter()
         .skip(10)
         .take(30)
         .map(|d| d.try_into().unwrap())
-        .map(|d: u32| d - avg)
-        .map(|x: u32| x * x)
+        .map(|d: i32| d - avg)
+        .map(|x: i32| x * x)
+        .map::<u32, _>(|x: i32| x.try_into().unwrap())
         .sum::<u32>()
         .into();
 
