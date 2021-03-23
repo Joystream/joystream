@@ -33,13 +33,13 @@ impl Default for HiringWorkflow {
             opening_type: OpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             applications: Vec::new(),
             setup_environment: true,
-            initial_balance: <Test as Trait>::MinimumStakeForOpening::get() + 1,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get() + 1,
         }
     }
 }
@@ -129,8 +129,8 @@ impl HiringWorkflow {
         } else {
             balances::Module::<Test>::make_free_balance_be(
                 &1,
-                <Test as Trait>::MinimumStakeForOpening::get()
-                    + <Test as Trait>::OpeningStake::get()
+                <Test as Trait>::MinimumApplicationStake::get()
+                    + <Test as Trait>::LeaderOpeningStake::get()
                     + 1,
             );
             //         setup_members(6);

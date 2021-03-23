@@ -72,6 +72,9 @@ pub struct Opening<BlockNumber: Ord, Balance> {
 
     /// Reward per block for the job opening.
     pub reward_per_block: Option<Balance>,
+
+    /// Stake used to create the opening.
+    pub creation_stake: Balance,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.

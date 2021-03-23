@@ -409,7 +409,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -481,7 +481,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -503,7 +503,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                                 T::Balance::from(
                                     <Runtime as working_group::Trait<
                                         MembershipWorkingGroupInstance,
-                                    >>::MinimumStakeForOpening::get(
+                                    >>::MinimumApplicationStake::get(
                                     )
                                     .try_into()
                                     .unwrap(),
@@ -931,7 +931,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -942,7 +942,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
             StakeParameters {
                 stake: <Runtime as working_group::Trait<
                     MembershipWorkingGroupInstance,
-                >>::MinimumStakeForOpening::get()
+                >>::MinimumApplicationStake::get()
                 .into(),
                 staking_account_id: account_id.into(),
             }
@@ -1073,7 +1073,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
             StakeParameters {
                 stake: <Runtime as working_group::Trait<
                     MembershipWorkingGroupInstance,
-                >>::MinimumStakeForOpening::get()
+                >>::MinimumApplicationStake::get()
                 .into(),
                 staking_account_id: account_id.into(),
             }
@@ -1086,7 +1086,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,

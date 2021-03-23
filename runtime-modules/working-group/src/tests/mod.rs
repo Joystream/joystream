@@ -41,7 +41,7 @@ fn add_opening_succeeded() {
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
             .with_stake_policy(StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: 100,
             })
             .with_reward_per_block(Some(10));
@@ -84,7 +84,7 @@ fn add_opening_fails_with_less_than_minimum_stake() {
         ));
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
-            stake_amount: <Test as Trait>::MinimumStakeForOpening::get() - 1,
+            stake_amount: <Test as Trait>::MinimumApplicationStake::get() - 1,
             leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
         });
 
@@ -111,7 +111,7 @@ fn add_opening_fails_with_zero_reward() {
 fn add_opening_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default()
-            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get() + 1)
+            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get() + 1)
             .hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default();
@@ -168,7 +168,7 @@ fn apply_on_opening_succeeded() {
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get());
+            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get());
 
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
@@ -261,7 +261,7 @@ fn fill_opening_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&1),
-            initial_balance + <Test as Trait>::OpeningStake::get()
+            initial_balance + <Test as Trait>::LeaderOpeningStake::get()
         );
 
         let mut result_map = BTreeMap::new();
@@ -353,8 +353,8 @@ fn fill_opening_fails_with_application_for_other_opening() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default()
             .with_initial_balance(
-                <Test as Trait>::MinimumStakeForOpening::get()
-                    + 3 * <Test as Trait>::OpeningStake::get()
+                <Test as Trait>::MinimumApplicationStake::get()
+                    + 3 * <Test as Trait>::LeaderOpeningStake::get()
                     + 1,
             )
             .hire_lead();
@@ -624,7 +624,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block + <Test as Trait>::MinimumStakeForOpening::get()
+            block_number * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
         );
     });
 }
@@ -655,7 +655,7 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            budget + <Test as Trait>::MinimumStakeForOpening::get()
+            budget + <Test as Trait>::MinimumApplicationStake::get()
         );
     });
 }
@@ -797,7 +797,7 @@ fn terminate_worker_role_succeeds_with_paying_missed_reward() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block + <Test as Trait>::MinimumStakeForOpening::get()
+            block_number * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
         );
     });
 }
@@ -950,8 +950,8 @@ fn apply_on_opening_locks_the_stake() {
         HireLeadFixture::default().hire_lead();
 
         let account_id = 2;
-        let total_balance = <Test as Trait>::MinimumStakeForOpening::get() + 100;
-        let stake = <Test as Trait>::MinimumStakeForOpening::get();
+        let total_balance = <Test as Trait>::MinimumApplicationStake::get() + 100;
+        let stake = <Test as Trait>::MinimumApplicationStake::get();
 
         let stake_parameters = StakeParameters {
             stake,
@@ -1713,7 +1713,7 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_initial_balance(<Test as Trait>::MinimumStakeForOpening::get() + 1);
+            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get() + 1);
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let invalid_author_account_id = 55;
@@ -1749,7 +1749,7 @@ fn cancel_opening_succeeds() {
 
         assert_eq!(
             Balances::usable_balance(&1),
-            initial_balance + <Test as Trait>::OpeningStake::get()
+            initial_balance + <Test as Trait>::LeaderOpeningStake::get()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::OpeningCanceled(opening_id));

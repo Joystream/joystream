@@ -183,9 +183,9 @@ parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
-    pub const MinimumStakeForOpening: u64 = 50;
+    pub const MinimumApplicationStake: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
-    pub const OpeningStake: u64 = 20;
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
 impl Trait for Test {
@@ -197,8 +197,8 @@ impl Trait for Test {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
     type WeightInfo = ();
-    type MinimumStakeForOpening = MinimumStakeForOpening;
-    type OpeningStake = OpeningStake;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl common::StakingAccountValidator<Test> for () {
