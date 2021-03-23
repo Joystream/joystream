@@ -485,8 +485,7 @@
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
-            "Accepted",
-            "Rejected"
+            "Accepted"
         ]
     },
     "DataObject": {

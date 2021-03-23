@@ -532,7 +532,6 @@ export interface LeadId extends Null {}
 export interface LiaisonJudgement extends Enum {
   readonly isPending: boolean;
   readonly isAccepted: boolean;
-  readonly isRejected: boolean;
 }
 
 /** @name LookupSource */

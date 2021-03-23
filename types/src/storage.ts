@@ -32,7 +32,6 @@ export class DataObjectStorageRelationshipId extends u64 {}
 export const LiaisonJudgementDef = {
   Pending: Null,
   Accepted: Null,
-  Rejected: Null,
 } as const
 export type LiaisonJudgementKey = keyof typeof LiaisonJudgementDef
 export class LiaisonJudgement extends JoyEnum(LiaisonJudgementDef) {}
