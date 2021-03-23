@@ -199,9 +199,8 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  # "Owner of the channel" Commenting out this field: 'owner' can be curator_group, lead
-  # or a member. We are not handling events related to curator group so we will not set this field
-  # owner: Member!
+  #"Owner of the channel"
+  owner: ChannelOwner!
 
   category: ChannelCategory
 
@@ -232,6 +231,32 @@ type Channel @entity {
   videos: [Video!] @derivedFrom(field: "channel")
 
   happenedIn: Block!
+}
+
+"Channel owner"
+union ChannelOwner = ChannelOwnerMember | ChannelCuratorGroup | ChannelOwnerDao
+
+type ChannelOwnerMember @variant {
+  "Member identifier"
+  memberId: BigInt!
+}
+
+type ChannelCuratorGroup @variant {
+  "Curator group identifier"
+  curatorGroupId: BigInt!
+}
+
+type ChannelOwnerDao @variant {
+  "DAO identifier"
+  daoId: BigInt!
+}
+
+type CuratorGroup @entity {
+  "Curators belonging to this group"
+  curratorIds: [BigInt!]
+
+  "Is group active or not"
+  is_active: Boolean
 }
 
 type VideoCategory @entity {
