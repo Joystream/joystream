@@ -10,7 +10,7 @@ pub(crate) fn set_validator_count_proposal<T: crate::Trait>(
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(100_000_u32)),
+        required_stake: Some(<BalanceOf<T>>::from(500_000_u32)),
     }
 }
 
@@ -24,7 +24,7 @@ pub(crate) fn runtime_upgrade_proposal<T: crate::Trait>(
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(1_000_000_u32)),
+        required_stake: Some(<BalanceOf<T>>::from(5_000_000_u32)),
     }
 }
 
@@ -51,7 +51,7 @@ pub(crate) fn set_election_parameters_proposal<T: crate::Trait>(
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(200_000_u32)),
+        required_stake: Some(<BalanceOf<T>>::from(1_000_000_u32)),
     }
 }
 

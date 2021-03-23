@@ -533,7 +533,7 @@ parameter_types! {
     pub const ProposalRejectionFee: u64 = 5000;
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
-    pub const ProposalMaxActiveProposalLimit: u32 = 5;
+    pub const ProposalMaxActiveProposalLimit: u32 = 20;
 }
 
 impl proposals_engine::Trait for Runtime {
