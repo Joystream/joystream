@@ -5,8 +5,8 @@ import {
   CuratorGroup,
   CuratorGroupId,
   ContentActor,
+  Video,
 } from '@joystream/types/content'
-import { ChannelId } from '@joystream/types/common'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import _ from 'lodash'
@@ -71,36 +71,30 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   }
 
   async promptForChannel(message = 'Select a channel'): Promise<Channel> {
-    const classes = await this.getApi().availableChannels()
-    const choices = classes.map(([id, c]) => ({ id: id.toString(), value: c }))
+    const channels = await this.getApi().availableChannels()
+    const choices = channels.map(([id, c]) => ({ id: id.toString(), value: c }))
     if (!choices.length) {
       this.warn('No channels exist to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedChannel = await this.simplePrompt({ message, type: 'list', choices })
 
-    return selectedClass
+    return selectedChannel
   }
 
-  // async channelEntryById(channelId: number): Promise<[ChannelId, Channel]> {
-  //   const foundChannel = await this.getApi().channelById(channelId)
-  //   if (!foundChannel) {
-  //     this.error(`Channel not found by channel id: "${channelId}"!`)
-  //   }
+  async promptForVideo(message = 'Select a video'): Promise<Video> {
+    const videos = await this.getApi().availableVideos()
+    const choices = videos.map(([id, c]) => ({ id: id.toString(), value: c }))
+    if (!choices.length) {
+      this.warn('No videos exist to choose from!')
+      this.exit(ExitCodes.InvalidInput)
+    }
 
-  //   return [channelId, foundChannel]
-  // }
+    const selectedVideo = await this.simplePrompt({ message, type: 'list', choices })
 
-  // async videoEntryById(videoId: string): Promise<[ChannelId, Channel]> {
-  //   const videos = await this.getApi().availableVideos()
-  //   const foundVideo = channels.find(([id, ]) => id.toString() === channelId)
-  //   if (!foundChannel) {
-  //     this.error(`Channel not found by channel id: "${channelId}"!`)
-  //   }
-
-  //   return foundChannel
-  // }
+    return selectedVideo
+  }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
     const groups = await this.getApi().availableCuratorGroups()
