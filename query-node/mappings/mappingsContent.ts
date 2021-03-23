@@ -1,6 +1,7 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
 // TODO: split file into multiple files
 // TODO: make sure assets are updated when VideoUpdateParameters have only `assets` parameter set (no `new_meta` set) - if this situation can even happend
+// TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
@@ -57,6 +58,7 @@ import {
 
 // primary entities
 import { Block } from 'query-node/src/modules/block/block.model'
+import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
 import { Channel } from 'query-node/src/modules/channel/channel.model'
 import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
 import { Video } from 'query-node/src/modules/video/video.model'
@@ -675,4 +677,75 @@ export async function content_FeaturedVideosSet(
 
     await db.save<Video>(video)
   }
+}
+
+/////////////////// Curator Group //////////////////////////////////////////////
+
+export async function content_CuratorGroupCreated(
+  db: DatabaseManager,
+  event: SubstrateEvent
+) {
+  const {curatorGroupId} = new Content.CuratorGroupCreatedEvent(event).data
+
+  const curatorGroup = new CuratorGroup({
+    id: curatorGroupId.toString(),
+    curatorIds: [],
+    isActive: false, // runtime creates inactive curator groups by default
+  })
+
+  await db.save<CuratorGroup>(curatorGroup)
+}
+
+export async function content_CuratorGroupStatusSet(
+  db: DatabaseManager,
+  event: SubstrateEvent
+) {
+  const {curatorGroupId, isActive} = new Content.CuratorGroupStatusSetEvent(event).data
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+
+  if (!curatorGroup) {
+    return inconsistentState()
+  }
+
+  curatorGroup.isActive = isActive
+
+  await db.save<CuratorGroup>(curatorGroup)
+}
+
+export async function content_CuratorAdded(
+  db: DatabaseManager,
+  event: SubstrateEvent
+) {
+  const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+
+  if (!curatorGroup) {
+    return inconsistentState()
+  }
+
+  curatorGroup.curatorIds.push(curatorId)
+
+  await db.save<CuratorGroup>(curatorGroup)
+}
+
+export async function content_CuratorRemoved(
+  db: DatabaseManager,
+  event: SubstrateEvent
+) {
+  const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+
+  if (!curatorGroup) {
+    return inconsistentState()
+  }
+
+  const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId)
+
+  if (curatorIndex < 0) {
+    return inconsistentState()
+  }
+
+  curatorGroup.curatorIds.splice(curatorIndex, 1)
+
+  await db.save<CuratorGroup>(curatorGroup)
 }
