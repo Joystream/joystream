@@ -208,15 +208,8 @@ impl data_object_type_registry::Trait for Test {
 
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
-    type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-}
-
-impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, data_directory::Error<Test>> {
-        Ok(1)
-    }
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {

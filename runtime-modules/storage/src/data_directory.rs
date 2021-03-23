@@ -63,9 +63,6 @@ pub trait Trait:
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Provides random storage provider id.
-    type StorageProviderHelper: StorageProviderHelper<Self>;
-
     /// Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
@@ -118,9 +115,6 @@ decl_error! {
         /// Provided owner should be equal o the data object owner under given content id
         OwnersAreNotEqual,
 
-        /// No storage provider available to service the request
-        NoProviderAvailable,
-
         /// New voucher limit being set is less than used.
         VoucherLimitLessThanUsed,
 
@@ -138,9 +132,6 @@ pub enum LiaisonJudgement {
 
     /// Content accepted.
     Accepted,
-
-    /// Content rejected.
-    Rejected,
 }
 
 impl Default for LiaisonJudgement {
@@ -447,8 +438,6 @@ decl_module! {
             let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher_delta)?;
             let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher_delta)?;
 
-            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -459,7 +448,7 @@ decl_module! {
             // Update global voucher
             <GlobalVoucher>::put(new_global_voucher);
 
-            Self::upload_content(liaison, content.clone(), owner.clone());
+            Self::upload_content(content.clone(), owner.clone());
 
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
@@ -665,27 +654,19 @@ decl_module! {
         ) {
             <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
-            // == MUTATION SAFE ==
-
-            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Accepted)?;
-
-            Self::deposit_event(RawEvent::ContentAccepted(content_id, storage_provider_id));
-        }
-
-        /// Storage provider rejects a content. Requires signed storage provider account and its id.
-        /// The LiaisonJudgement can be updated, but only by the liaison.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub(crate) fn reject_content(
-            origin,
-            storage_provider_id: StorageProviderId<T>,
-            content_id: T::ContentId
-        ) {
-            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            let mut data = Self::get_data_object(&content_id)?;
 
             // == MUTATION SAFE ==
 
-            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Rejected)?;
-            Self::deposit_event(RawEvent::ContentRejected(content_id, storage_provider_id));
+            if data.liaison_judgement == LiaisonJudgement::Pending {
+                // Set the liaison which is updating the judgement
+                data.liaison = storage_provider_id;
+
+                // Set the judgement
+                data.liaison_judgement = LiaisonJudgement::Accepted;
+                <DataByContentId<T>>::insert(content_id, data);
+                Self::deposit_event(RawEvent::ContentAccepted(content_id, storage_provider_id));
+            }
         }
 
         /// Locks / unlocks content uploading
@@ -830,9 +811,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Complete content upload, update vouchers
+    // Complete content upload
     fn upload_content(
-        liaison: StorageProviderId<T>,
         multi_content: Vec<ContentParameters<T::ContentId, DataObjectTypeId<T>>>,
         owner: ObjectOwner<T>,
     ) {
@@ -842,7 +822,8 @@ impl<T: Trait> Module<T> {
                 size: content.size,
                 added_at: common::current_block_time::<T>(),
                 owner: owner.clone(),
-                liaison,
+                // It is irrelevant what liaison is set when judgement is pending
+                liaison: StorageProviderId::<T>::default(),
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id: content.ipfs_content_id,
             };
@@ -867,31 +848,6 @@ impl<T: Trait> Module<T> {
         }
         Ok(())
     }
-
-    fn update_content_judgement(
-        storage_provider_id: &StorageProviderId<T>,
-        content_id: T::ContentId,
-        judgement: LiaisonJudgement,
-    ) -> DispatchResult {
-        let mut data = Self::get_data_object(&content_id)?;
-
-        // Make sure the liaison matches
-        ensure!(
-            data.liaison == *storage_provider_id,
-            Error::<T>::LiaisonRequired
-        );
-
-        data.liaison_judgement = judgement;
-        <DataByContentId<T>>::insert(content_id, data);
-
-        Ok(())
-    }
-}
-
-/// Provides random storage provider id. We use it when assign the content to the storage provider.
-pub trait StorageProviderHelper<T: Trait> {
-    /// Provides random storage provider id.
-    fn get_random_storage_provider() -> Result<StorageProviderId<T>, Error<T>>;
 }
 
 /// Content access helper.
@@ -940,8 +896,6 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher)?;
         let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher)?;
 
-        let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
-
         //
         // == MUTATION SAFE ==
         //
@@ -952,7 +906,7 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
         // Update global voucher
         <GlobalVoucher>::put(new_global_voucher);
 
-        Self::upload_content(liaison, content, owner);
+        Self::upload_content(content, owner);
         Ok(())
     }
 
@@ -992,7 +946,6 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     ) -> DispatchResult {
         Self::ensure_uploading_is_not_blocked()?;
 
-        T::StorageProviderHelper::get_random_storage_provider()?;
         let owner_voucher = Self::get_voucher(&owner);
 
         // Ensure owner voucher constraints satisfied.
