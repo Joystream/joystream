@@ -381,30 +381,6 @@ export async function content_ChannelUncensored(
   await db.save<Channel>(channel)
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelOwnershipTransferRequested(
-  db: DatabaseManager,
-  event: SubstrateEvent
-) {
-  // TODO - is mapping for this event needed?
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelOwnershipTransferRequestWithdrawn(
-  db: DatabaseManager,
-  event: SubstrateEvent
-) {
-  // TODO - is mapping for this event needed?
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelOwnershipTransferred(
-  db: DatabaseManager,
-  event: SubstrateEvent
-) {
-  // TODO
-}
-
 /////////////////// ChannelCategory ////////////////////////////////////////////
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
