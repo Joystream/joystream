@@ -252,11 +252,14 @@ type ChannelOwnerDao @variant {
 }
 
 type CuratorGroup @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
   "Curators belonging to this group"
   curatorIds: [BigInt!]
 
   "Is group active or not"
-  isActive: Boolean
+  isActive: Boolean!
 }
 
 type VideoCategory @entity {
