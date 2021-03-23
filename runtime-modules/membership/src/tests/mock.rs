@@ -226,10 +226,10 @@ impl working_group::WeightInfo for Weights {
 }
 
 impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         0
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         0
     }
     fn update_profile(_: u32) -> Weight {
@@ -253,7 +253,7 @@ impl WeightInfo for () {
     fn transfer_invites() -> Weight {
         0
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         0
     }
     fn set_membership_price() -> Weight {
