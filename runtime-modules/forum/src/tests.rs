@@ -2453,66 +2453,6 @@ fn storage_limit_checks() {
                 },
             );
         }
-
-        // test max threads in category
-        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get();
-        for i in 0..max {
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                match i {
-                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
-                    _ => Ok(()),
-                },
-            );
-        }
-    });
-
-    // test MaxPostsInThread
-    with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-
-        // test max posts in thread
-        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
-        // starting from 1 because create_thread_mock creates one post by itself
-        for i in 1..max {
-            create_post_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-                match i {
-                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
-                    _ => Ok(()),
-                },
-            );
-        }
     });
 
     // test MaxModeratorsForCategory
@@ -2546,7 +2486,7 @@ fn storage_limit_checks() {
     // test MaxCategories
     with_test_externalities(|| {
         let max: usize =
-            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as usize;
+            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxCategories>::get() as usize;
         for i in 0..max {
             create_category_mock(
                 origin.clone(),

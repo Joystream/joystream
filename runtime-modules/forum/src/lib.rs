@@ -173,12 +173,6 @@ pub trait StorageLimits {
     /// Maximum direct subcategories in a category
     type MaxSubcategories: Get<u64>;
 
-    /// Maximum direct threads in a category
-    type MaxThreadsInCategory: Get<u64>;
-
-    /// Maximum posts in a thread
-    type MaxPostsInThread: Get<NumberOfPosts>;
-
     /// Maximum moderator count for a single category
     type MaxModeratorsForCategory: Get<u64>;
 
@@ -1105,7 +1099,7 @@ decl_module! {
         ).max(
             WeightInfoForum::<T>::moderate_thread_moderator(
                 T::MaxCategoryDepth::get() as u32,
-                <T::MapLimits as StorageLimits>::MaxPostsInThread::get() as u32,
+                0,
                 rationale.len().saturated_into(),
             )
         )]
@@ -1164,7 +1158,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             // Make sure thread exists and is mutable
-            let (_, thread) = Self::ensure_can_add_post(&account_id, &forum_user_id, &category_id, &thread_id)?;
+            let _ = Self::ensure_can_add_post(&account_id, &forum_user_id, &category_id, &thread_id)?;
 
             if editable {
                 ensure!(
@@ -1172,11 +1166,6 @@ decl_module! {
                     Error::<T>::InsufficientBalanceForPost
                 );
             }
-
-            // Ensure map limits are not reached
-            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPostsInThread>(
-                thread.number_of_posts,
-            )?;
 
             //
             // == MUTATION SAFE ==
@@ -2089,10 +2078,6 @@ impl<T: Trait> Module<T> {
         Self::ensure_is_forum_user(account_id, &forum_user_id)?;
 
         let category = Self::ensure_category_is_mutable(category_id)?;
-
-        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxThreadsInCategory>(
-            category.num_direct_threads as u64,
-        )?;
 
         // The balance for creation of thread is the base cost plus the cost of a single post
         let minimum_balance = T::ThreadDeposit::get() + T::PostDeposit::get();

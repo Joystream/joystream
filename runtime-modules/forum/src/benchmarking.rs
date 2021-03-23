@@ -49,6 +49,8 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
+const MAX_POSTS: u32 = 500;
+const MAX_THREADS: u32 = 500;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
@@ -926,8 +928,6 @@ benchmarks! {
         );
 
         let mut category = Module::<T>::category_by_id(category_id);
-        let max_posts_in_thread =
-            <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
 
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
     }: _(
@@ -1161,8 +1161,6 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as u32 - 1;
-
         let k in 0 .. MAX_BYTES;
 
         // Generate categories tree
@@ -1182,9 +1180,6 @@ benchmarks! {
 
         let mut category = Module::<T>::category_by_id(category_id);
 
-        for _ in 0..j {
-            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).saturated_into(), category_id, thread_id, text.clone());
-        }
         let rationale = vec![0u8].repeat(k as usize);
 
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
@@ -1193,7 +1188,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::Balance::from(j + 1) * T::PostDeposit::get()
+           T::PostDeposit::get()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -1221,7 +1216,6 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as u32 - 1;
 
         let k in 0 .. MAX_BYTES;
 
@@ -1249,9 +1243,6 @@ benchmarks! {
 
         let mut category = Module::<T>::category_by_id(category_id);
 
-        for _ in 0..j {
-            add_thread_post::<T>(caller_id.clone(), (lead_id as u64).saturated_into(), category_id, thread_id, text.clone());
-        }
         let rationale = vec![0u8].repeat(k as usize);
 
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, rationale.clone())
@@ -1260,7 +1251,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::Balance::from(j + 1) * T::PostDeposit::get()
+           T::PostDeposit::get()
         );
 
 
@@ -1542,8 +1533,7 @@ benchmarks! {
 
         let j in 0 .. MAX_BYTES;
 
-        let k in 1 ..
-            (<<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread::get() - 2) as u32;
+        let k in 1 .. MAX_POSTS;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1619,7 +1609,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get() as u32;
+        let j in 0 .. MAX_THREADS;
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1662,7 +1652,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. <<<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get() as u32;
+        let j in 0 .. MAX_THREADS;
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);

@@ -311,8 +311,6 @@ parameter_types! {
     pub const PostLifeTime: u64 = 100;
 
     pub const MaxSubcategories: u64 = 20;
-    pub const MaxThreadsInCategory: u64 = 20;
-    pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
@@ -325,8 +323,6 @@ pub struct MapLimits;
 
 impl StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
-    type MaxThreadsInCategory = MaxThreadsInCategory;
-    type MaxPostsInThread = MaxPostsInThread;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;

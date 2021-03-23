@@ -660,8 +660,6 @@ pub struct MapLimits;
 
 impl forum::StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
-    type MaxThreadsInCategory = MaxThreadsInCategory;
-    type MaxPostsInThread = MaxPostsInThread;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
