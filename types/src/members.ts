@@ -35,10 +35,8 @@ export class StakingAccountMemberBinding
 export type IBuyMembershipParameters = {
   root_account: AccountId
   controller_account: AccountId
-  name: Option<Text>
   handle: Option<Text>
-  avatar_uri: Option<Text>
-  about: Option<Text>
+  metadata: Bytes
   referrer_id: Option<MemberId>
 }
 
@@ -46,10 +44,8 @@ export class BuyMembershipParameters
   extends JoyStructDecorated({
     root_account: AccountId,
     controller_account: AccountId,
-    name: Option.with(Text),
     handle: Option.with(Text),
-    avatar_uri: Option.with(Text),
-    about: Option.with(Text),
+    metadata: Bytes,
     referrer_id: Option.with(MemberId),
   })
   implements IBuyMembershipParameters {}
@@ -58,10 +54,8 @@ export type IInviteMembershipParameters = {
   inviting_member_id: MemberId
   root_account: AccountId
   controller_account: AccountId
-  name: Option<Text>
   handle: Option<Text>
-  avatar_uri: Option<Text>
-  about: Option<Text>
+  metadata: Bytes
 }
 
 export class InviteMembershipParameters
@@ -69,10 +63,8 @@ export class InviteMembershipParameters
     inviting_member_id: MemberId,
     root_account: AccountId,
     controller_account: AccountId,
-    name: Option.with(Text),
     handle: Option.with(Text),
-    avatar_uri: Option.with(Text),
-    about: Option.with(Text),
+    metadata: Bytes,
   })
   implements IInviteMembershipParameters {}
 

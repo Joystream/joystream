@@ -1280,7 +1280,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(V)
        * # </weight>
        **/
-      buyMembership: AugmentedSubmittable<(params: BuyMembershipParameters | { root_account?: any; controller_account?: any; name?: any; handle?: any; avatar_uri?: any; about?: any; referrer_id?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      buyMembership: AugmentedSubmittable<(params: BuyMembershipParameters | { root_account?: any; controller_account?: any; handle?: any; metadata?: any; referrer_id?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Confirm staking account candidate for a member.
        * 
@@ -1308,7 +1308,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(V)
        * # </weight>
        **/
-      inviteMember: AugmentedSubmittable<(params: InviteMembershipParameters | { inviting_member_id?: any; root_account?: any; controller_account?: any; name?: any; handle?: any; avatar_uri?: any; about?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      inviteMember: AugmentedSubmittable<(params: InviteMembershipParameters | { inviting_member_id?: any; root_account?: any; controller_account?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Remove staking account for a member.
        * 
@@ -1420,7 +1420,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W)
        * # </weight>
        **/
-      updateProfile: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, name: Option<Bytes> | null | object | string | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateProfile: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, metadata: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Updates member profile verification status. Requires working group member origin.
        * 

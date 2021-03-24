@@ -85,10 +85,8 @@ export interface BlockAndTime extends Struct {
 export interface BuyMembershipParameters extends Struct {
   readonly root_account: AccountId;
   readonly controller_account: AccountId;
-  readonly name: Option<Text>;
   readonly handle: Option<Text>;
-  readonly avatar_uri: Option<Text>;
-  readonly about: Option<Text>;
+  readonly metadata: Bytes;
   readonly referrer_id: Option<MemberId>;
 }
 
@@ -415,10 +413,8 @@ export interface InviteMembershipParameters extends Struct {
   readonly inviting_member_id: MemberId;
   readonly root_account: AccountId;
   readonly controller_account: AccountId;
-  readonly name: Option<Text>;
   readonly handle: Option<Text>;
-  readonly avatar_uri: Option<Text>;
-  readonly about: Option<Text>;
+  readonly metadata: Bytes;
 }
 
 /** @name IPNSIdentity */
