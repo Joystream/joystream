@@ -36,7 +36,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
       let videoUpdateParametersInput = await getInputJson<VideoUpdateParametersInput>(input)
 
       const api = await this.getOriginalApi()
-      
+
       const meta = videoMetadataFromInput(api, videoUpdateParametersInput)
 
       let videoUpdateParameters: VideoUpdateParameters = {
@@ -47,12 +47,15 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(videoUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && videoUpdateParametersInput)  {
+      if (confirmed && videoUpdateParametersInput) {
         saveOutputJson(output, `${videoUpdateParametersInput.meta.title}Video.json`, videoUpdateParametersInput)
         this.log('Sending the extrinsic...')
 
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [actor, videoId, videoUpdateParameters])
-
+        await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [
+          actor,
+          videoId,
+          videoUpdateParameters,
+        ])
       }
     } else {
       this.log('Input invalid or was not provided...')

@@ -31,7 +31,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     let { id, status, rationale } = this.parse(UpdateChannelCensorshipStatusCommand).args
 
     if (!context) {
-        context = await this.promptForContext()
+      context = await this.promptForContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()
@@ -61,13 +61,16 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
       status = !!parseInt(status)
     }
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCensorshipStatus', [actor, id, status, rationale])
+    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCensorshipStatus', [
+      actor,
+      id,
+      status,
+      rationale,
+    ])
 
     console.log(
       chalk.green(
-        `Video ${chalk.white(id)} status succesfully changed to: ${chalk.white(
-          status ? 'Active' : 'Inactive'
-        )}!`
+        `Video ${chalk.white(id)} status succesfully changed to: ${chalk.white(status ? 'Active' : 'Inactive')}!`
       )
     )
   }

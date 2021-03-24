@@ -48,9 +48,9 @@ import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recur
 import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint, ChannelId, Url } from '@joystream/types/common'
-import {  CuratorGroup, CuratorGroupId, Channel, Video, VideoId } from '@joystream/types/content'
-import { DataObject } from '@joystream/types/storage'
-import { ServiceProviderRecord,  } from '@joystream/types/discovery'
+import { CuratorGroup, CuratorGroupId, Channel, Video, VideoId } from '@joystream/types/content'
+import { ContentId, DataObject } from '@joystream/types/storage'
+import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -530,9 +530,9 @@ export default class Api {
     return exists ? await this._api.query.content.videoById<Video>(videoId) : null
   }
 
-  async dataByContentId(contentId: number): Promise<DataObject | null> {
-    const dataObject = await this._api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
-    return dataObject.unwrapOr(null)
+  async dataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this._api.query.dataDirectory.dataByContentId<DataObject>(contentId)
+    return dataObject.isEmpty ? null : dataObject
   }
 
   async ipnsIdentity(storageProviderId: number): Promise<string | null> {

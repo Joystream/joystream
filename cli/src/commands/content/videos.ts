@@ -19,21 +19,21 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
     let videos = await this.getApi().availableVideos()
 
     if (channelId) {
-        videos = videos.filter(([, /* id */ video]) => video.in_channel.eqn(channelId))
+      videos = videos.filter(([, /* id */ video]) => video.in_channel.eqn(channelId))
     }
 
     if (videos.length > 0) {
       displayTable(
         videos.map(([id, v]) => ({
-            'ID': id.toString(),
-            'InChannel': v.in_channel.toString(),
-            'InSeries': v.in_series.toString(),
-            'IsCensored': v.is_censored.toString(),
+          'ID': id.toString(),
+          'InChannel': v.in_channel.toString(),
+          'InSeries': v.in_series.toString(),
+          'IsCensored': v.is_censored.toString(),
         })),
         3
       )
     } else {
-        this.log('There are no videos yet')
+      this.log('There are no videos yet')
     }
   }
 }

@@ -19,19 +19,19 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
         'ID': channelId.toString(),
         'Owner': JSON.stringify(aChannel.owner.toJSON()),
         'IsCensored': aChannel.is_censored.toString(),
-        'RewardAccount': aChannel.reward_account? aChannel.reward_account.toString() : 'NONE'
+        'RewardAccount': aChannel.reward_account ? aChannel.reward_account.toString() : 'NONE',
       })
-  
+
       displayHeader(`Media`)
-  
+
       displayCollapsedRow({
         'NumberOfVideos': aChannel.videos.length,
         'NumberOfPlaylists': aChannel.playlists.length,
         'NumberOfSeries': aChannel.series.length,
       })
-  
+
       displayHeader(`MediaData`)
-  
+
       displayCollapsedRow({
         'Videos': JSON.stringify(aChannel.videos.toJSON()),
         'Playlists': JSON.stringify(aChannel.playlists.toJSON()),

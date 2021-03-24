@@ -36,7 +36,7 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
       let videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)
 
       const api = await this.getOriginalApi()
-      
+
       const meta = videoMetadataFromInput(api, videoCreationParametersInput)
 
       let videoCreationParameters: VideoCreationParameters = {
@@ -47,12 +47,15 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(videoCreationParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && videoCreationParametersInput)  {
+      if (confirmed && videoCreationParametersInput) {
         saveOutputJson(output, `${videoCreationParametersInput.meta.title}Video.json`, videoCreationParametersInput)
         this.log('Sending the extrinsic...')
 
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createVideo', [actor, channelId, videoCreationParameters])
-
+        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createVideo', [
+          actor,
+          channelId,
+          videoCreationParameters,
+        ])
       }
     } else {
       this.log('Input invalid or was not provided...')
