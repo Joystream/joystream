@@ -24,9 +24,9 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
     if (input) {
       let channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
-  
+
       const api = await this.getOriginalApi()
-      
+
       const meta = channelMetadataFromInput(api, channelCreationParametersInput)
 
       let channelCreationParameters: ChannelCreationParameters = {
@@ -38,12 +38,15 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && channelCreationParametersInput)  {
-        saveOutputJson(output, `${channelCreationParametersInput.meta.title}Channel.json`, channelCreationParametersInput)
+      if (confirmed && channelCreationParametersInput) {
+        saveOutputJson(
+          output,
+          `${channelCreationParametersInput.meta.title}Channel.json`,
+          channelCreationParametersInput
+        )
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
-
       }
     } else {
       this.log('Input invalid or was not provided...')

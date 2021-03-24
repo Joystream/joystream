@@ -5,7 +5,6 @@ import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
 
-
 export const IOFlags = {
   input: flags.string({
     char: 'i',
@@ -21,19 +20,19 @@ export const IOFlags = {
 }
 
 export async function getInputJson<T>(inputPath: string): Promise<T> {
-    let content, jsonObj
-    try {
-      content = fs.readFileSync(inputPath).toString()
-    } catch (e) {
-      throw new CLIError(`Cannot access the input file at: ${inputPath}`, { exit: ExitCodes.FsOperationFailed })
-    }
-    try {
-      jsonObj = JSON.parse(content)
-    } catch (e) {
-      throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
-    }
+  let content, jsonObj
+  try {
+    content = fs.readFileSync(inputPath).toString()
+  } catch (e) {
+    throw new CLIError(`Cannot access the input file at: ${inputPath}`, { exit: ExitCodes.FsOperationFailed })
+  }
+  try {
+    jsonObj = JSON.parse(content)
+  } catch (e) {
+    throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
+  }
 
-    return jsonObj as T
+  return jsonObj as T
 }
 
 export function saveOutputJson(outputPath: string | undefined, fileName: string, data: any): void {

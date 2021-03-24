@@ -19,7 +19,6 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-
     let { context, input, output } = this.parse(UpdateChannelCommand).flags
 
     const { channelId } = this.parse(UpdateChannelCommand).args
@@ -35,7 +34,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     if (input) {
       let channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
-   
+
       const api = await this.getOriginalApi()
 
       const meta = channelMetadataFromInput(api, channelUpdateParametersInput)
@@ -49,12 +48,15 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(channelUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && channelUpdateParameters)  {
+      if (confirmed && channelUpdateParameters) {
         saveOutputJson(output, `${channelUpdateParametersInput.meta.title}Channel.json`, channelUpdateParametersInput)
         this.log('Sending the extrinsic...')
 
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [actor, channelId, channelUpdateParameters])
-
+        await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [
+          actor,
+          channelId,
+          channelUpdateParameters,
+        ])
       }
     } else {
       this.log('Input invalid or was not provided...')

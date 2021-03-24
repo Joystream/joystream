@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { ElectionStage, Seat } from '@joystream/types/council'
-import { Vec, Option} from '@polkadot/types';
+import { Vec, Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
@@ -9,8 +9,8 @@ import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
 import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
-import { NewAsset} from '@joystream/types/content'
-import { Bytes } from '@polkadot/types/primitive';
+import { NewAsset } from '@joystream/types/content'
+import { Bytes } from '@polkadot/types/primitive'
 import { VideoMetadata, ChannelMetadata } from '@joystream/content-metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
@@ -202,45 +202,45 @@ export type ApiMethodNamedArg = {
 export type ApiMethodNamedArgs = ApiMethodNamedArg[]
 
 export type VideoUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>,
-  meta: VideoMetadata.AsObject,
+  assets: Option<Vec<NewAsset>>
+  meta: VideoMetadata.AsObject
 }
 
 export type VideoUpdateParameters = {
-  assets: Option<Vec<NewAsset>>,
-  meta: Bytes,
+  assets: Option<Vec<NewAsset>>
+  meta: Bytes
 }
 
 export type VideoCreationParametersInput = {
-  assets: Vec<NewAsset>,
-  meta: VideoMetadata.AsObject,
+  assets: Vec<NewAsset>
+  meta: VideoMetadata.AsObject
 }
 
 export type VideoCreationParameters = {
-  assets: Vec<NewAsset>,
-  meta: Bytes,
+  assets: Vec<NewAsset>
+  meta: Bytes
 }
 
 export type ChannelCreationParametersInput = {
-  assets: Vec<NewAsset>,
-  meta: ChannelMetadata.AsObject,
-  reward_account: Option<AccountId>,
+  assets: Vec<NewAsset>
+  meta: ChannelMetadata.AsObject
+  reward_account: Option<AccountId>
 }
 
 export type ChannelCreationParameters = {
-  assets: Vec<NewAsset>,
-  meta: Bytes,
-  reward_account: Option<AccountId>,
+  assets: Vec<NewAsset>
+  meta: Bytes
+  reward_account: Option<AccountId>
 }
 
 export type ChannelUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>,
-  meta: ChannelMetadata.AsObject,
-  reward_account: Option<AccountId>,
+  assets: Option<Vec<NewAsset>>
+  meta: ChannelMetadata.AsObject
+  reward_account: Option<AccountId>
 }
 
 export type ChannelUpdateParameters = {
-  assets: Option<Vec<NewAsset>>,
-  new_meta: Bytes,
-  reward_account: Option<AccountId>,
+  assets: Option<Vec<NewAsset>>
+  new_meta: Bytes
+  reward_account: Option<AccountId>
 }

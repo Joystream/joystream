@@ -1,12 +1,6 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import {
-  Channel,
-  CuratorGroup,
-  CuratorGroupId,
-  ContentActor,
-} from '@joystream/types/content'
-import { ChannelId } from '@joystream/types/common'
+import { Channel, CuratorGroup, CuratorGroupId, ContentActor } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import _ from 'lodash'
@@ -50,17 +44,13 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const availableGroupIds = groups
       .filter(
         ([_, group]) =>
-          group.active.valueOf() &&
-          group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
+          group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
       )
       .map(([id]) => id)
 
     let groupId: number
     if (!availableGroupIds.length) {
-      this.error(
-        'You do not have the curator access!',
-        { exit: ExitCodes.AccessDenied }
-      )
+      this.error('You do not have the curator access!', { exit: ExitCodes.AccessDenied })
     } else if (availableGroupIds.length === 1) {
       groupId = availableGroupIds[0].toNumber()
     } else {
@@ -71,36 +61,17 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   }
 
   async promptForChannel(message = 'Select a channel'): Promise<Channel> {
-    const classes = await this.getApi().availableChannels()
-    const choices = classes.map(([id, c]) => ({ id: id.toString(), value: c }))
+    const channels = await this.getApi().availableChannels()
+    const choices = channels.map(([id, c]) => ({ id: id.toString(), value: c }))
     if (!choices.length) {
       this.warn('No channels exist to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedChannel = await this.simplePrompt({ message, type: 'list', choices })
 
-    return selectedClass
+    return selectedChannel
   }
-
-  // async channelEntryById(channelId: number): Promise<[ChannelId, Channel]> {
-  //   const foundChannel = await this.getApi().channelById(channelId)
-  //   if (!foundChannel) {
-  //     this.error(`Channel not found by channel id: "${channelId}"!`)
-  //   }
-
-  //   return [channelId, foundChannel]
-  // }
-
-  // async videoEntryById(videoId: string): Promise<[ChannelId, Channel]> {
-  //   const videos = await this.getApi().availableVideos()
-  //   const foundVideo = channels.find(([id, ]) => id.toString() === channelId)
-  //   if (!foundChannel) {
-  //     this.error(`Channel not found by channel id: "${channelId}"!`)
-  //   }
-
-  //   return foundChannel
-  // }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
     const groups = await this.getApi().availableCuratorGroups()
