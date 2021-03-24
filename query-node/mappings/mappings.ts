@@ -11,6 +11,7 @@ import { Block } from 'query-node/dist/src/modules/block/block.model'
 import { Bytes } from '@polkadot/types'
 import { MembershipSystem } from 'query-node/dist/src/modules/membership-system/membership-system.model'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
+import { MembershipMetadata } from '@joystream/metadata-protobuf'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await db.get(Membership, { where: { id: id.toString() } })
@@ -32,6 +33,15 @@ function bytesToString(b: Bytes): string {
   return Buffer.from(b.toU8a(true)).toString()
 }
 
+function deserializeMemberMeta(metadataBytes: Bytes): MembershipMetadata | null {
+  try {
+    return MembershipMetadata.deserializeBinary(metadataBytes.toU8a(true))
+  } catch (e) {
+    console.error(`Invalid membership metadata! (${metadataBytes.toHex()})`)
+    return null
+  }
+}
+
 async function newMembershipFromParams(
   db: DatabaseManager,
   event_: SubstrateEvent,
@@ -41,22 +51,16 @@ async function newMembershipFromParams(
 ): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const membershipSystem = await getMembershipSystem(db)
-  const {
-    name,
-    root_account: rootAccount,
-    controller_account: controllerAccount,
-    handle,
-    about,
-    avatar_uri: avatarUri,
-  } = params
+  const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
+  const metadata = deserializeMemberMeta(metatadaBytes)
   const member = new Membership({
     id: memberId.toString(),
-    name: name.unwrapOr(undefined)?.toString(),
+    name: metadata?.getName(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: handle.unwrap().toString(),
-    about: about.unwrapOr(undefined)?.toString(),
-    avatarUri: avatarUri.unwrapOr(undefined)?.toString(),
+    about: metadata?.getAbout(),
+    avatarUri: metadata?.getAvatarUri(),
     registeredAtBlock: await prepareBlock(db, event_),
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
     entry: entryMethod,
@@ -86,16 +90,17 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
 
 export async function members_MemberProfileUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const { memberId } = new Members.MemberProfileUpdatedEvent(event_).data
-  const { name, about, avatarUri, handle } = new Members.UpdateProfileCall(event_).args
+  const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event_).args
+  const metadata = metadataBytesOpt.isSome ? deserializeMemberMeta(metadataBytesOpt.unwrap()) : undefined
   const member = await getMemberById(db, memberId)
-  if (name.isSome) {
-    member.name = bytesToString(name.unwrap())
+  if (metadata?.hasName()) {
+    member.name = metadata.getName()
   }
-  if (about.isSome) {
-    member.about = bytesToString(about.unwrap())
+  if (metadata?.hasAbout()) {
+    member.about = metadata.getAbout()
   }
-  if (avatarUri.isSome) {
-    member.avatarUri = bytesToString(avatarUri.unwrap())
+  if (metadata?.hasAvatarUri()) {
+    member.avatarUri = metadata.getAvatarUri()
   }
   if (handle.isSome) {
     member.handle = bytesToString(handle.unwrap())
