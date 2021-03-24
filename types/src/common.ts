@@ -108,7 +108,7 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 export const WorkingGroupDef = {
   Storage: Null,
   Content: Null,
-  Builder: Null,
+  Operations: Null,
   Gateway: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef

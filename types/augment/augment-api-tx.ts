@@ -649,12 +649,12 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'Begin review working group leader applications' proposal type.
        * This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
        **/
-      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Builder'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Operations'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Create 'decrease working group leader stake' proposal type.
        * This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
        **/
-      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Builder'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Operations'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Create 'Fill working group leader opening' proposal type.
        * This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
@@ -679,17 +679,17 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'set working group leader reward' proposal type.
        * This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Builder'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Operations'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Create 'Set working group mint capacity' proposal type.
        * This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Builder'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Operations'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Create 'slash working group leader stake' proposal type.
        * This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
        **/
-      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Builder'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage'|'Content'|'Operations'|'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Create 'Spending' proposal type.
        * This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.

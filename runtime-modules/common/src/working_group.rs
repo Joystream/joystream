@@ -16,8 +16,8 @@ pub enum WorkingGroup {
     Storage,
     /// Storage working group: working_group::Instance3.
     Content,
-    /// Builder working group: working_group::Instance4.
-    Builder,
+    /// Operations working group: working_group::Instance4.
+    Operations,
     /// Gateway working group: working_group::Instance5.
     Gateway,
 }
