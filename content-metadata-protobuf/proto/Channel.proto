@@ -1,7 +1,5 @@
 syntax = "proto2";
 
-package muthu.other;
-
 message ChannelMetadata {
     // Channel Title
     optional string title = 1;

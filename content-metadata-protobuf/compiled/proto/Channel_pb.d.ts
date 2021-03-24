@@ -1,4 +1,4 @@
-// package: muthu.other
+// package: 
 // file: proto/Channel.proto
 
 import * as jspb from "google-protobuf";
