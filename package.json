@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build",
+    "postinstall": "./build-packages.sh",
     "build-joystream-cli": "yarn workspace @joystream/cli build",
     "build": "./build.sh",
     "start": "./start.sh",
