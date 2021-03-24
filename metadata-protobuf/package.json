@@ -9,7 +9,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "./compile.sh && tsc",
+    "build": "tsc",
     "compile": "./compile.sh",
     "generate-doc": "./generate-md-doc.sh",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'test/**/*.ts'",
