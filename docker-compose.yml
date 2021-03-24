@@ -64,7 +64,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
 
-  graphql-server:
+  graphql-server: &graphql-server
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -82,7 +82,18 @@ services:
       - db
     command: ["workspace", "query-node-root", "query-node:start:prod"]
 
-  processor:
+  graphql-server-mnt:
+    <<: *graphql-server
+    image: node:12
+    build: .
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
+    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
+
+  processor: &processor
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -100,6 +111,17 @@ services:
     depends_on:
       - indexer-api-gateway
     command: ["workspace", "query-node-root", "processor:start"]
+
+  processor-mnt:
+    <<: *processor
+    image: node:12
+    build: .
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
+    command: ["yarn", "workspace", "query-node-root", "processor:start"]
 
   indexer:
     image: joystream/hydra-indexer:latest

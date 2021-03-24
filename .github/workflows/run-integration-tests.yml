@@ -99,7 +99,6 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace integration-tests build
-      # Bring up hydra query-node development instance, then run content directory
-      # integration tests
+      # Bring up hydra query-node development instance, then run integration tests
       - name: Execute Tests
         run: query-node/run-tests.sh
