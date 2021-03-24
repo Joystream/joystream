@@ -61,16 +61,16 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   }
 
   async promptForChannel(message = 'Select a channel'): Promise<Channel> {
-    const classes = await this.getApi().availableChannels()
-    const choices = classes.map(([id, c]) => ({ id: id.toString(), value: c }))
+    const channels = await this.getApi().availableChannels()
+    const choices = channels.map(([id, c]) => ({ id: id.toString(), value: c }))
     if (!choices.length) {
       this.warn('No channels exist to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedChannel = await this.simplePrompt({ message, type: 'list', choices })
 
-    return selectedClass
+    return selectedChannel
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
