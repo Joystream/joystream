@@ -1494,7 +1494,7 @@ impl<T: Trait> Module<T> {
             .posts
             .get(post_id)
             .cloned()
-            .ok_or_else(|| Error::<T>::PostDoesNotExist)
+            .ok_or(Error::<T>::PostDoesNotExist)
     }
 
     fn ensure_can_moderate_post(
