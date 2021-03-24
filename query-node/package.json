@@ -4,6 +4,7 @@
   "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
   "scripts": {
     "build": "./build.sh",
+    "start": "./start.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
     "lint": "echo \"Skippinng\"",
     "clean": "rm -rf ./generated",
