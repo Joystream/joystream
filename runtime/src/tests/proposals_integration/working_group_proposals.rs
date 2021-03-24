@@ -613,7 +613,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
             staking_account_id: staking_account_id.into(),
         };
 
-        let old_balance = Balances::usable_balance(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -1284,7 +1284,10 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let new_stake: working_group::BalanceOf<T> = SM::current_stake(&account_id.into()).into();
 
         assert_eq!(new_stake, 0.into());
-        assert_eq!(new_balance, old_balance + stake_amount);
+        assert_eq!(
+            new_balance,
+            old_balance + stake_amount - <Runtime as membership::Trait>::CandidateStake::get()
+        );
     });
 }
 
@@ -1422,6 +1425,9 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let new_stake: working_group::BalanceOf<T> = SM::current_stake(&account_id.into()).into();
 
         assert_eq!(new_stake, 0.into());
-        assert_eq!(new_balance, old_balance);
+        assert_eq!(
+            new_balance,
+            old_balance - <Runtime as membership::Trait>::CandidateStake::get()
+        );
     });
 }

@@ -76,8 +76,8 @@ type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn buy_membership_without_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
-    fn buy_membership_with_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
+    fn buy_membership_without_referrer(i: u32, j: u32) -> Weight;
+    fn buy_membership_with_referrer(i: u32, j: u32) -> Weight;
     fn update_profile(i: u32) -> Weight;
     fn update_accounts_none() -> Weight;
     fn update_accounts_root() -> Weight;
@@ -85,7 +85,7 @@ pub trait WeightInfo {
     fn update_accounts_both() -> Weight;
     fn set_referral_cut() -> Weight;
     fn transfer_invites() -> Weight;
-    fn invite_member(i: u32, j: u32, k: u32, z: u32) -> Weight;
+    fn invite_member(i: u32, j: u32) -> Weight;
     fn set_membership_price() -> Weight;
     fn update_profile_verification() -> Weight;
     fn set_leader_invitation_quota() -> Weight;
@@ -122,8 +122,18 @@ pub trait Trait:
         Self::MemberId,
     >;
 
+    /// Staking handler used for staking candidate.
+    type StakingCandidateStakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        Self::MemberId,
+    >;
+
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Stake needed to candidate as staking account.
+    type CandidateStake: Get<BalanceOf<Self>>;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
@@ -175,17 +185,11 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member controller account.
     pub controller_account: AccountId,
 
-    /// New member user name.
-    pub name: Option<Vec<u8>>,
-
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// New member avatar URI.
-    pub avatar_uri: Option<Vec<u8>>,
-
-    /// New member 'about' text.
-    pub about: Option<Vec<u8>>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 
     /// Referrer member id.
     pub referrer_id: Option<MemberId>,
@@ -203,17 +207,11 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// New member controller account.
     pub controller_account: AccountId,
 
-    /// New member user name.
-    pub name: Option<Vec<u8>>,
-
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// New member avatar URI.
-    pub avatar_uri: Option<Vec<u8>>,
-
-    /// New member 'about' text.
-    pub about: Option<Vec<u8>>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 }
 
 decl_error! {
@@ -270,6 +268,12 @@ decl_error! {
 
         /// Cannot set a referral cut percent value. The limit was exceeded.
         CannotExceedReferralCutPercentLimit,
+
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
     }
 }
 
@@ -348,8 +352,6 @@ decl_event! {
         MembershipBought(MemberId, BuyMembershipParameters),
         MemberProfileUpdated(
             MemberId,
-            Option<Vec<u8>>,
-            Option<Vec<u8>>,
             Option<Vec<u8>>,
             Option<Vec<u8>>,
         ),
@@ -438,7 +440,7 @@ decl_module! {
             let _ = balances::Module::<T>::slash(&who, fee);
 
             // Reward the referring member.
-            if let Some(referrer) = referrer{
+            if let Some(referrer) = referrer {
                 let referral_cut: BalanceOf<T> = Self::get_referral_bonus();
 
                 if referral_cut > Zero::zero() {
@@ -472,13 +474,11 @@ decl_module! {
         pub fn update_profile(
             origin,
             member_id: T::MemberId,
-            name: Option<Vec<u8>>,
             handle: Option<Vec<u8>>,
-            avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
+            metadata: Option<Vec<u8>>,
         ) {
             // No effect if no changes.
-            if name.is_none() && handle.is_none() && avatar_uri.is_none() && about.is_none() {
+            if handle.is_none() && metadata.is_none() {
                 return Ok(())
             }
 
@@ -506,10 +506,8 @@ decl_module! {
 
                 Self::deposit_event(RawEvent::MemberProfileUpdated(
                         member_id,
-                        name,
                         handle,
-                        avatar_uri,
-                        about
+                        metadata,
                     ));
             }
         }
@@ -682,11 +680,10 @@ decl_module! {
         /// - DB:
         ///    - O(V)
         /// # </weight>
+        // TODO: adjust weight
         #[weight = WeightInfoMembership::<T>::invite_member(
-            Module::<T>::text_length_unwrap_or_default(&params.name),
             Module::<T>::text_length_unwrap_or_default(&params.handle),
-            Module::<T>::text_length_unwrap_or_default(&params.avatar_uri),
-            Module::<T>::text_length_unwrap_or_default(&params.about),
+            params.metadata.len().saturated_into(),
         )]
         pub fn invite_member(
             origin,
@@ -873,9 +870,29 @@ decl_module! {
 
             Self::ensure_membership(member_id)?;
 
+            ensure!(
+              T::StakingCandidateStakingHandler::is_account_free_of_conflicting_stakes(
+                  &staking_account_id
+              ),
+              Error::<T>::ConflictStakesOnAccount
+            );
+
+            ensure!(
+                T::StakingCandidateStakingHandler::is_enough_balance_for_stake(
+                    &staking_account_id,
+                    T::CandidateStake::get()
+                ),
+                Error::<T>::InsufficientBalanceToCoverStake
+            );
+
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::lock(
+                &staking_account_id,
+                T::CandidateStake::get(),
+            );
 
             <StakingAccountIdMemberStatus<T>>::insert(
                 staking_account_id.clone(),
@@ -911,6 +928,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::unlock(&staking_account_id);
 
             <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone());
 
@@ -976,22 +995,19 @@ impl<T: Trait> Module<T> {
     }
 
     // Helper for buy_membership extrinsic weight calculation
+    // TODO: adjust weight
     fn calculate_weight_for_buy_membership(
         params: &BuyMembershipParameters<T::AccountId, T::MemberId>,
     ) -> Weight {
         if params.referrer_id.is_some() {
             WeightInfoMembership::<T>::buy_membership_with_referrer(
-                Self::text_length_unwrap_or_default(&params.name),
                 Self::text_length_unwrap_or_default(&params.handle),
-                Self::text_length_unwrap_or_default(&params.avatar_uri),
-                Self::text_length_unwrap_or_default(&params.about),
+                params.metadata.len().saturated_into(),
             )
         } else {
             WeightInfoMembership::<T>::buy_membership_without_referrer(
-                Self::text_length_unwrap_or_default(&params.name),
                 Self::text_length_unwrap_or_default(&params.handle),
-                Self::text_length_unwrap_or_default(&params.avatar_uri),
-                Self::text_length_unwrap_or_default(&params.about),
+                params.metadata.len().saturated_into(),
             )
         }
     }

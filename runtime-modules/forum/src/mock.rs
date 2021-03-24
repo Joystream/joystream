@@ -103,7 +103,9 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const MinimumStakeForOpening: u32 = 50;
+    pub const CandidateStake: u64 = 100;
 }
 
 // The forum working group instance alias.
@@ -223,10 +225,10 @@ impl working_group::WeightInfo for Weights {
 }
 
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -250,7 +252,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -305,6 +307,9 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 parameter_types! {

@@ -86,6 +86,8 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -226,10 +228,10 @@ impl working_group::WeightInfo for Weights {
 }
 
 impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         0
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         0
     }
     fn update_profile(_: u32) -> Weight {
@@ -253,7 +255,7 @@ impl WeightInfo for () {
     fn transfer_invites() -> Weight {
         0
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         0
     }
     fn set_membership_price() -> Weight {
@@ -304,6 +306,9 @@ impl Trait for Test {
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
 
