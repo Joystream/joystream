@@ -369,11 +369,18 @@ impl common::origin::MemberOriginValidator<Origin, u128, u128> for () {
     }
 
     fn is_member_controller_account(member_id: &u128, account_id: &u128) -> bool {
-        let allowed_accounts = [
+        let mut allowed_accounts = vec![
             FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_2_ORIGIN_ID,
         ];
+
+        // Test accounts for benchmarks.
+        let max_worker_number =
+            <Runtime as working_group::Trait<ForumWorkingGroupInstance>>::MaxWorkerNumberLimit::get(
+            ) as u128;
+        let mut benchmarks_accounts: Vec<u128> = (1..max_worker_number).collect::<Vec<_>>();
+        allowed_accounts.append(&mut benchmarks_accounts);
 
         allowed_accounts.contains(account_id) && account_id == member_id
     }
