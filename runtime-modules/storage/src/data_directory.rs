@@ -39,10 +39,15 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::*;
 
-pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 100000000;
-pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 200;
-pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(200000000, 2000);
-pub const DEFAULT_VOUCHER: Voucher = Voucher::new(5000000, 100);
+/// The default maximum storage size (bytes) that lead can set on the voucher of an owner
+pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 54_000_000_000;
+/// The default maximum number of objects that lead can set on the voucher of an owner
+pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 10_000;
+/// The default system global storage limits
+pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(1_100_000_000_000, 1_000_000);
+/// The default initial owner voucher
+pub const DEFAULT_VOUCHER: Voucher = Voucher::new(5_400_000_000, 1_000);
+/// The default starting upload blocked status
 pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 
 /// The _Data directory_ main _Trait_.

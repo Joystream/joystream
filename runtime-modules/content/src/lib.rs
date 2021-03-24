@@ -638,7 +638,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
-            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
+            ensure_actor_authorized_to_create_channel::<T>(
                 origin,
                 &actor,
             )?;
@@ -691,7 +691,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_update_channel_and_videos::<T>(
+            ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -752,7 +752,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_update_channel_and_videos::<T>(
+            ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 &channel.owner,
@@ -926,9 +926,13 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) {
-            ensure_actor_authorized_to_create_channels_and_videos_assets::<T>(
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
+                &channel.owner,
             )?;
 
             // Pick out the assets to be uploaded to storage system
@@ -982,10 +986,9 @@ decl_module! {
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
-            ensure_actor_authorized_update_channel_and_videos::<T>(
+            ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
-                // The channel owner will be..
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
@@ -1035,7 +1038,7 @@ decl_module! {
 
             let channel_id = video.in_channel;
 
-            ensure_actor_authorized_update_channel_and_videos::<T>(
+            ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
