@@ -1,12 +1,6 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import {
-  Channel,
-  CuratorGroup,
-  CuratorGroupId,
-  ContentActor,
-} from '@joystream/types/content'
-import { ChannelId } from '@joystream/types/common'
+import { Channel, CuratorGroup, CuratorGroupId, ContentActor } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import _ from 'lodash'
@@ -50,17 +44,13 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const availableGroupIds = groups
       .filter(
         ([_, group]) =>
-          group.active.valueOf() &&
-          group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
+          group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
       )
       .map(([id]) => id)
 
     let groupId: number
     if (!availableGroupIds.length) {
-      this.error(
-        'You do not have the curator access!',
-        { exit: ExitCodes.AccessDenied }
-      )
+      this.error('You do not have the curator access!', { exit: ExitCodes.AccessDenied })
     } else if (availableGroupIds.length === 1) {
       groupId = availableGroupIds[0].toNumber()
     } else {
@@ -81,16 +71,6 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
 
     return selectedClass
-  }
-
-  async channelEntryById(channelId: string): Promise<[ChannelId, Channel]> {
-    const channels = await this.getApi().availableChannels()
-    const foundClass = channels.find(([id, c]) => id.toString() === channelId)
-    if (!foundClass) {
-      this.error(`Class id not found by class name or id: "${channelId}"!`)
-    }
-
-    return foundClass
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {

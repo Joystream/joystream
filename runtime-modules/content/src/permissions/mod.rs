@@ -12,7 +12,7 @@ use frame_support::{ensure, Parameter};
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
-use system::ensure_root;
+// use system::ensure_root;
 
 /// Model of authentication manager.
 pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
@@ -99,7 +99,7 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     ensure_lead_auth_success::<T>(&account_id)
 }
 
-pub fn ensure_actor_authorized_to_create_channels_and_videos_assets<T: Trait>(
+pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
@@ -128,8 +128,8 @@ pub fn ensure_actor_authorized_to_create_channels_and_videos_assets<T: Trait>(
     }
 }
 
-// Enure actor can update or delete channels and videos
-pub fn ensure_actor_authorized_update_channel_and_videos<T: Trait>(
+// Enure actor can update channels and videos in the channel
+pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
@@ -263,19 +263,19 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     }
 }
 
-pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
-    if let ContentActor::Lead = actor {
-        let sender = ensure_signed(origin)?;
-        ensure_lead_auth_success::<T>(&sender)
-    } else {
-        ensure_root(origin)?;
-        Ok(())
-    }
-}
+// pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
+//     origin: T::Origin,
+//     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+// ) -> DispatchResult {
+//     // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
+//     if let ContentActor::Lead = actor {
+//         let sender = ensure_signed(origin)?;
+//         ensure_lead_auth_success::<T>(&sender)
+//     } else {
+//         ensure_root(origin)?;
+//         Ok(())
+//     }
+// }
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
