@@ -21,35 +21,6 @@ import {
   Content,
 } from '../generated/types'
 
-/* TODO: can it be imported nicely like this?
-import {
-  // primary entites
-  Network,
-  Block,
-  Channel,
-  ChannelCategory,
-  Video,
-  VideoCategory,
-
-  // secondary entities
-  Language,
-  License,
-  MediaType,
-  VideoMediaEncoding,
-  VideoMediaMetadata,
-
-  // Asset
-  Asset,
-  AssetUrl,
-  AssetUploadStatus,
-  AssetDataObject,
-  LiaisonJudgement,
-  AssetStorage,
-  AssetOwner,
-  AssetOwnerMember,
-} from 'query-node'
-*/
-
 import {
   inconsistentState,
   prepareBlock,
@@ -278,8 +249,10 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+  // read event data
   const {channelId, channelCreationParameters} = new Content.ChannelCreatedEvent(event).data
 
+  // read metadata
   const protobufContent = await readProtobuf(
     new Channel(),
     channelCreationParameters.meta,
@@ -288,6 +261,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     event,
   )
 
+  // create entity
   const channel = new Channel({
     id: channelId,
     isCensored: false,
@@ -296,6 +270,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     ...Object(protobufContent)
   })
 
+  // save entity
   await db.save<Channel>(channel)
 }
 
@@ -304,10 +279,13 @@ export async function content_ChannelUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {channelId , channelUpdateParameters} = new Content.ChannelUpdatedEvent(event).data
 
+  // load channel
   const channel = await db.get(Channel, { where: { id: channelId } })
 
+  // ensure channel exists
   if (!channel) {
     return inconsistentState()
   }
@@ -339,6 +317,7 @@ export async function content_ChannelUpdated(
     }
   }
 
+  // save channel
   await db.save<Channel>(channel)
 }
 
@@ -354,15 +333,21 @@ export async function content_ChannelCensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  const channelId = event.params[1].value.toString()
+  // read event data
+  const {channelId} = new Content.ChannelCensoredEvent(event).data
+
+  // load event
   const channel = await db.get(Channel, { where: { id: channelId } })
 
+  // ensure channel exists
   if (!channel) {
     return inconsistentState()
   }
 
+  // update channel
   channel.isCensored = true;
 
+  // save channel
   await db.save<Channel>(channel)
 }
 
@@ -371,15 +356,21 @@ export async function content_ChannelUncensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  const channelId = event.params[1].value.toString()
+  // read event data
+  const {channelId} = new Content.ChannelUncensoredEvent(event).data
+
+  // load event
   const channel = await db.get(Channel, { where: { id: channelId } })
 
+  // ensure channel exists
   if (!channel) {
     return inconsistentState()
   }
 
+  // update channel
   channel.isCensored = false;
 
+  // save channel
   await db.save<Channel>(channel)
 }
 
@@ -390,8 +381,10 @@ export async function content_ChannelCategoryCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {channelCategoryCreationParameters} = new Content.ChannelCategoryCreatedEvent(event).data
 
+  // read metadata
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
     channelCategoryCreationParameters.meta,
@@ -400,6 +393,7 @@ export async function content_ChannelCategoryCreated(
     event,
   )
 
+  // create new channel category
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
     channels: [],
@@ -407,6 +401,7 @@ export async function content_ChannelCategoryCreated(
     ...Object(protobufContent)
   })
 
+  // save channel
   await db.save<ChannelCategory>(channelCategory)
 }
 
@@ -415,13 +410,18 @@ export async function content_ChannelCategoryUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {channelCategoryId, channelCategoryUpdateParameters} = new Content.ChannelCategoryUpdatedEvent(event).data
+
+  // load channel category
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
+  // ensure channel exists
   if (!channelCategory) {
     return inconsistentState()
   }
 
+  // read metadata
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
     channelCategoryUpdateParameters.new_meta,
@@ -435,6 +435,7 @@ export async function content_ChannelCategoryUpdated(
     channelCategory[key] = value
   }
 
+  // save channel category
   await db.save<ChannelCategory>(channelCategory)
 }
 
@@ -443,13 +444,18 @@ export async function content_ChannelCategoryDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {channelCategoryId} = new Content.ChannelCategoryDeletedEvent(event).data
+
+  // load channel category
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
 
+  // ensure channel category exists
   if (!channelCategory) {
     return inconsistentState()
   }
 
+  // delete channel category
   await db.remove<ChannelCategory>(channelCategory)
 }
 
@@ -460,7 +466,10 @@ export async function content_VideoCategoryCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoCategoryId, videoCategoryCreationParameters} = new Content.VideoCategoryCreatedEvent(event).data
+
+  // read metadata
   const protobufContent = readProtobuf(
     new VideoCategory(),
     videoCategoryCreationParameters.meta,
@@ -469,6 +478,7 @@ export async function content_VideoCategoryCreated(
     event
   )
 
+  // create new video category
   const videoCategory = new VideoCategory({
     id: videoCategoryId.toString(), // ChannelId
     isCensored: false,
@@ -477,6 +487,7 @@ export async function content_VideoCategoryCreated(
     ...Object(protobufContent)
   })
 
+  // save video category
   await db.save<VideoCategory>(videoCategory)
 }
 
@@ -485,13 +496,18 @@ export async function content_VideoCategoryUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoCategoryId, videoCategoryUpdateParameters} = new Content.VideoCategoryUpdatedEvent(event).data
+
+  // load video category
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
+  // ensure video category exists
   if (!videoCategory) {
     return inconsistentState()
   }
 
+  // read metadata
   const protobufContent = await readProtobuf(
     new VideoCategory(),
     videoCategoryUpdateParameters.new_meta,
@@ -505,6 +521,7 @@ export async function content_VideoCategoryUpdated(
     videoCategory[key] = value
   }
 
+  // save video category
   await db.save<VideoCategory>(videoCategory)
 }
 
@@ -513,13 +530,18 @@ export async function content_VideoCategoryDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoCategoryId} = new Content.VideoCategoryDeletedEvent(event).data
+
+  // load video category
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
 
+  // ensure video category exists
   if (!videoCategory) {
     return inconsistentState()
   }
 
+  // remove video category
   await db.remove<VideoCategory>(videoCategory)
 }
 
@@ -530,7 +552,10 @@ export async function content_VideoCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {channelId, videoId, videoCreationParameters} = new Content.VideoCreatedEvent(event).data
+
+  // read metadata
   const protobufContent = await readProtobuf(
     new Video(),
     videoCreationParameters.meta,
@@ -539,7 +564,8 @@ export async function content_VideoCreated(
     event,
   )
 
-  const channel = new Video({
+  // create new video
+  const video = new Video({
     id: videoId,
     isCensored: false,
     channel: channelId,
@@ -547,7 +573,8 @@ export async function content_VideoCreated(
     ...Object(protobufContent)
   })
 
-  await db.save<Video>(channel)
+  // save video
+  await db.save<Video>(video)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -555,13 +582,18 @@ export async function content_VideoUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoId, videoUpdateParameters} = new Content.VideoUpdatedEvent(event).data
+
+  // load video
   const video = await db.get(Video, { where: { id: videoId } })
 
+  // ensure video exists
   if (!video) {
     return inconsistentState()
   }
 
+  // update metadata if it changed
   if (videoUpdateParameters.new_meta.isSome) {
     const protobufContent = await readProtobuf(
       new Video(),
@@ -577,6 +609,9 @@ export async function content_VideoUpdated(
     }
   }
 
+  // TODO: handle situation when only assets changed
+
+  // save video
   await db.save<Video>(video)
 }
 
@@ -585,13 +620,18 @@ export async function content_VideoDeleted(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoId} = new Content.VideoDeletedEvent(event).data
+
+  // load video
   const video = await db.get(Video, { where: { id: videoId } })
 
+  // ensure video exists
   if (!video) {
     return inconsistentState()
   }
 
+  // remove video
   await db.remove<Video>(video)
 }
 
@@ -600,15 +640,21 @@ export async function content_VideoCensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoId} = new Content.VideoCensoredEvent(event).data
+
+  // load video
   const video = await db.get(Video, { where: { id: videoId } })
 
+  // ensure video exists
   if (!video) {
     return inconsistentState()
   }
 
+  // update video
   video.isCensored = true;
 
+  // save video
   await db.save<Video>(video)
 }
 
@@ -617,15 +663,21 @@ export async function content_VideoUncensored(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoId} = new Content.VideoUncensoredEvent(event).data
+
+  // load video
   const video = await db.get(Video, { where: { id: videoId } })
 
+  // ensure video exists
   if (!video) {
     return inconsistentState()
   }
 
+  // update video
   video.isCensored = false;
 
+  // save video
   await db.save<Video>(video)
 }
 
@@ -634,7 +686,10 @@ export async function content_FeaturedVideosSet(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {videoId: videoIds} = new Content.FeaturedVideosSetEvent(event).data
+
+  // load old featured videos
   const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } })
 
   // comparsion utility
@@ -685,14 +740,17 @@ export async function content_CuratorGroupCreated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {curatorGroupId} = new Content.CuratorGroupCreatedEvent(event).data
 
+  // create new curator group
   const curatorGroup = new CuratorGroup({
     id: curatorGroupId.toString(),
     curatorIds: [],
     isActive: false, // runtime creates inactive curator groups by default
   })
 
+  // save curator group
   await db.save<CuratorGroup>(curatorGroup)
 }
 
@@ -700,15 +758,21 @@ export async function content_CuratorGroupStatusSet(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {curatorGroupId, isActive} = new Content.CuratorGroupStatusSetEvent(event).data
+
+  // load curator group
   const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
 
+  // ensure curator group exists
   if (!curatorGroup) {
     return inconsistentState()
   }
 
+  // update curator group
   curatorGroup.isActive = isActive
 
+  // save curator group
   await db.save<CuratorGroup>(curatorGroup)
 }
 
@@ -716,15 +780,21 @@ export async function content_CuratorAdded(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
+
+  // load curator group
   const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
 
+  // ensure curator group exists
   if (!curatorGroup) {
     return inconsistentState()
   }
 
+  // update curator group
   curatorGroup.curatorIds.push(curatorId)
 
+  // save curator group
   await db.save<CuratorGroup>(curatorGroup)
 }
 
@@ -732,20 +802,27 @@ export async function content_CuratorRemoved(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
+  // read event data
   const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
+
+  // load curator group
   const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
 
+  // ensure curator group exists
   if (!curatorGroup) {
     return inconsistentState()
   }
 
   const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId)
 
+  // ensure curator group exists
   if (curatorIndex < 0) {
     return inconsistentState()
   }
 
+  // update curator group
   curatorGroup.curatorIds.splice(curatorIndex, 1)
 
+  // save curator group
   await db.save<CuratorGroup>(curatorGroup)
 }

@@ -45,6 +45,13 @@ typegen:
     - content.VideoCensored
     - content.VideoUncensored
     - content.FeaturedVideosSet
+
+    # storage
+    #- storage.ContentAdded
+    #- storage.ContentRemoved
+    #- storage.ContentAccepted
+    #- storage.ContentRejected
+    #- storage.ContentUploadingStatusUpdated
   calls:
     # members
     - members.buyMembership
@@ -84,6 +91,13 @@ typegen:
     - content.remove_person_from_video
     - content.censor_video
     - content.uncensor_video
+
+    # storage
+    #- storage.add_content
+    #- storage.remove_content
+    #- storage.accept_content
+    #- storage.reject_content
+    #- storage.update_content_uploading_status
 
   outDir: ./generated/types
   customTypes:

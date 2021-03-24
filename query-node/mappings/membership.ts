@@ -32,9 +32,9 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     about: convertBytesToString(about.unwrap()),
     avatarUri: convertBytesToString(avatarUri.unwrap()),
     registeredAtBlock: await prepareBlock(db, event_),
-    // TODO: upgrade indexer-lib which support block timestamp: substrateEvent.timestamp
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
-    entry: MembershipEntryMethod.PAID, // TODO?: callArgs.paidTermsId
+    // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
+    entry: MembershipEntryMethod.PAID,
   })
 
   await db.save<Membership>(member)
