@@ -43,10 +43,8 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 

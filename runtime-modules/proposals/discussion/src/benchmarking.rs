@@ -88,10 +88,8 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 

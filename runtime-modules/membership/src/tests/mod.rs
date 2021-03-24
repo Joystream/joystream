@@ -107,10 +107,8 @@ fn update_profile_succeeds() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            info.name.clone(),
             info.handle.clone(),
-            info.avatar_uri.clone(),
-            info.about.clone(),
+            Some(info.metadata.clone()),
         ));
 
         let profile = get_membership_by_id(next_member_id);
@@ -123,10 +121,8 @@ fn update_profile_succeeds() {
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(
             next_member_id,
-            info.name,
             info.handle,
-            info.avatar_uri,
-            info.about,
+            Some(info.metadata),
         ));
     });
 }
@@ -143,8 +139,6 @@ fn update_profile_has_no_effect_on_empty_parameters() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            None,
-            None,
             None,
             None,
         ));
@@ -773,6 +767,17 @@ fn add_staking_account_candidate_fails_with_duplicated_staking_account_id() {
 
         AddStakingAccountFixture::default()
             .call_and_assert(Err(Error::<Test>::StakingAccountIsAlreadyRegistered.into()));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_insufficient_balance() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default()
+            .with_initial_balance(<Test as Trait>::CandidateStake::get() - 1)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceToCoverStake.into()));
     });
 }
 

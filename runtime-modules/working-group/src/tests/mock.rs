@@ -41,6 +41,8 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -100,10 +102,10 @@ impl common::Trait for Test {
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -127,7 +129,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -163,6 +165,9 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {

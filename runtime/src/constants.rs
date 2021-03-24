@@ -111,6 +111,7 @@ parameter_types! {
     pub const ForumGroupLockId: LockIdentifier = [8; 8];
     pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
+    pub const StakingCandidateLockId: LockIdentifier = [11; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -131,6 +132,19 @@ lazy_static! {
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
+        (StakingCandidateLockId::get(), [
+            VotingLockId::get(),
+            CandidacyLockId::get(),
+            CouncilorLockId::get(),
+            STAKING_LOCK_ID,
+            ProposalsLockId::get(),
+            ForumGroupLockId::get(),
+            ContentWorkingGroupLockId::get(),
+            StorageWorkingGroupLockId::get(),
+            MembershipWorkingGroupLockId::get(),
+            InvitedMemberLockId::get(),
         ].to_vec()),
         (VotingLockId::get(), [
             InvitedMemberLockId::get(),
@@ -142,38 +156,46 @@ lazy_static! {
             ContentWorkingGroupLockId::get(),
             StorageWorkingGroupLockId::get(),
             MembershipWorkingGroupLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         (CandidacyLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             CouncilorLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         (CouncilorLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
             CandidacyLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         // Proposals
         (ProposalsLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         // Working Groups
         (ForumGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         (ContentWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         (StorageWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
         (MembershipWorkingGroupLockId::get(), [
             InvitedMemberLockId::get(),
             VotingLockId::get(),
+            StakingCandidateLockId::get(),
         ].to_vec()),
     ]
     .iter()
