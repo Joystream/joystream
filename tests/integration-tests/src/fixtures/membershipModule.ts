@@ -10,7 +10,11 @@ import { BuyMembershipParameters, Membership } from '@joystream/types/members'
 import { Membership as QueryNodeMembership, MembershipEntryMethod } from '../QueryNodeApiSchema.generated'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { CreateInterface } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
+import { MembershipMetadata } from '@joystream/metadata-protobuf'
+
+// FIXME: Retrieve from runtime when possible!
+const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
 
 type MemberContext = {
   account: string
@@ -19,13 +23,15 @@ type MemberContext = {
 // common code for fixtures
 abstract class MembershipFixture extends BaseFixture {
   generateParamsFromAccountId(accountId: string): CreateInterface<BuyMembershipParameters> {
+    const metadata = new MembershipMetadata()
+    metadata.setName(`name${accountId.substring(0, 14)}`)
+    metadata.setAbout(`about${accountId.substring(0, 14)}`)
+    metadata.setAvatarUri(`avatarUri${accountId.substring(0, 14)}`)
     return {
       root_account: accountId,
       controller_account: accountId,
       handle: `handle${accountId.substring(0, 14)}`,
-      name: `name${accountId.substring(0, 14)}`,
-      about: `about${accountId.substring(0, 14)}`,
-      avatar_uri: `avatarUri${accountId.substring(0, 14)}`,
+      metadata: createType('Bytes', '0x' + Buffer.from(metadata.serializeBinary()).toString('hex')),
     }
   }
 
@@ -79,13 +85,14 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
       entry,
     } = qMember as QueryNodeMembership
     const txParams = this.generateParamsFromAccountId(rootAccount)
+    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(blake2AsHex(handle), member.handle_hash.toString())
     assert.equal(handle, txParams.handle)
     assert.equal(rootAccount, member.root_account.toString())
     assert.equal(controllerAccount, member.controller_account.toString())
-    assert.equal(name, txParams.name)
-    assert.equal(about, txParams.about)
-    assert.equal(avatarUri, txParams.avatar_uri)
+    assert.equal(name, metadata.getName())
+    assert.equal(about, metadata.getAbout())
+    assert.equal(avatarUri, metadata.getAvatarUri())
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Paid)
   }
@@ -196,12 +203,14 @@ export class UpdateProfileHappyCaseFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
+    const metadata = new MembershipMetadata()
+    metadata.setName(this.newName)
+    metadata.setAbout(this.newAbout)
+    metadata.setAvatarUri(this.newAvatarUri)
     const tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
-      this.newName,
       this.newHandle,
-      this.newAvatarUri,
-      this.newAbout
+      '0x' + Buffer.from(metadata.serializeBinary()).toString('hex')
     )
     const txFee = await this.api.estimateTxFee(tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
@@ -278,12 +287,13 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
       invitedBy,
     } = qMember as QueryNodeMembership
     const txParams = this.generateParamsFromAccountId(account)
+    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(handle, txParams.handle)
     assert.equal(rootAccount, txParams.root_account)
     assert.equal(controllerAccount, txParams.controller_account)
-    assert.equal(name, txParams.name)
-    assert.equal(about, txParams.about)
-    assert.equal(avatarUri, txParams.avatar_uri)
+    assert.equal(name, metadata.getName())
+    assert.equal(about, metadata.getAbout())
+    assert.equal(avatarUri, metadata.getAvatarUri())
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Invited)
     assert.isOk(invitedBy)
@@ -409,7 +419,8 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
     const confirmStakingAccountFee = await this.api.estimateTxFee(confirmStakingAccountTxs[0], memberContext.account)
 
     await this.api.treasuryTransferBalance(memberContext.account, confirmStakingAccountFee.muln(accounts.length))
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, addStakingCandidateFee)))
+    const stakingAccountRequiredBalance = addStakingCandidateFee.addn(MINIMUM_STAKING_ACCOUNT_BALANCE)
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, stakingAccountRequiredBalance)))
     // Add staking account candidates
     await Promise.all(accounts.map((a) => this.api.signAndSend(addStakingCandidateTx, a)))
     // Confirm staking accounts
