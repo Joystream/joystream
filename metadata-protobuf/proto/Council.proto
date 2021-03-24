@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+message CouncilCandidacyNoteMetadata {
+  optional string header = 1;
+  repeated string bullet_points = 2;
+  optional string cover_image = 3;
+  optional string description = 4;
+}

@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+message OpeningMetadata {
+  required string short_description = 1;
+  required string description = 2;
+  required uint32 hiring_limit = 3;
+  required uint32 expected_duration = 4;
+  required string application_details = 5;
+  message ApplicationFormQuestion {
+    required string question = 1;
+    enum InputType {
+      TEXT = 1;
+      TEXTAREA = 2;
+    }
+    required InputType type = 2;
+  }
+  repeated ApplicationFormQuestion application_form_questions = 6;
+}
+
+message ApplicationMetadata {
+  repeated string answers = 1;
+}
+
+message WorkingGroupStatusMetadata {
+  optional string description = 1;
+  optional string about = 2;
+  optional string status = 3; // Can also be an enum if we only want a limited set
+  optional string status_message = 4;
+}

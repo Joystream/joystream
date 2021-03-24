@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message MembershipMetadata {
+  optional string name = 1;
+  optional string avatar_uri = 2;
+  optional string about = 3;
+}
