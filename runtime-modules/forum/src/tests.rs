@@ -1196,7 +1196,7 @@ fn delete_thread() {
             Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
         );
 
-        // post creator will delete thread
+        // thread creator will delete thread
         delete_thread_mock(
             NOT_FORUM_LEAD_ORIGIN.clone(),
             NOT_FORUM_LEAD_ORIGIN_ID,
@@ -2036,6 +2036,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+            false,
         );
 
         // moderator not associated with thread will fail to delete it
@@ -2047,6 +2048,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+            false,
         );
 
         // moderator will not delete thread
@@ -2058,6 +2060,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+            false,
         );
 
         // forum lead will not delete thread
@@ -2069,6 +2072,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
+            false,
         );
 
         // another user will not delete thread
@@ -2080,6 +2084,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
+            false,
         );
 
         // post creator will delete thread
@@ -2091,6 +2096,7 @@ fn delete_post_creator() {
             thread_id,
             post_id,
             Ok(()),
+            true,
         );
 
         current_balance += <Runtime as Trait>::PostDeposit::get();
@@ -2193,6 +2199,7 @@ fn delete_post_not_creator() {
             thread_id,
             post_id,
             Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
+            false,
         );
 
         current_balance += <Runtime as Trait>::ThreadDeposit::get();
@@ -2208,7 +2215,19 @@ fn delete_post_not_creator() {
         let not_creator_balance =
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID);
 
-        // post creator will not delete thread now
+        // not post creator wil not be able to delete hiding the post
+        delete_post_mock(
+            NOT_FORUM_LEAD_2_ORIGIN.clone(),
+            NOT_FORUM_LEAD_2_ORIGIN_ID,
+            NOT_FORUM_LEAD_2_ORIGIN_ID,
+            category_id,
+            thread_id,
+            post_id,
+            Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
+            true,
+        );
+
+        // not post creator will delete thread now
         delete_post_mock(
             NOT_FORUM_LEAD_2_ORIGIN.clone(),
             NOT_FORUM_LEAD_2_ORIGIN_ID,
@@ -2217,6 +2236,7 @@ fn delete_post_not_creator() {
             thread_id,
             post_id,
             Ok(()),
+            false,
         );
 
         assert_eq!(
@@ -2264,7 +2284,40 @@ fn set_stickied_threads_ok() {
             None,
             Ok(()),
         );
-        set_stickied_threads_mock(origin, moderator_id, category_id, vec![thread_id], Ok(()));
+        set_stickied_threads_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            vec![thread_id],
+            Ok(()),
+        );
+
+        let thread_id_deleted = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+        moderate_thread_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            thread_id_deleted,
+            good_moderation_rationale(),
+            Ok(()),
+        );
+        // Can sticky deleted thread
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![thread_id, thread_id_deleted],
+            Ok(()),
+        );
     });
 }
 

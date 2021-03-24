@@ -728,6 +728,7 @@ pub fn delete_thread_mock(
     result: DispatchResult,
 ) {
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
+    let hide = false;
 
     let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
         true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
@@ -740,6 +741,7 @@ pub fn delete_thread_mock(
             forum_user_id,
             category_id,
             thread_id,
+            hide,
         ),
         result
     );
@@ -754,7 +756,8 @@ pub fn delete_thread_mock(
             TestEvent::forum_mod(RawEvent::ThreadDeleted(
                 thread_id,
                 forum_user_id,
-                category_id
+                category_id,
+                hide,
             ))
         );
 
@@ -778,10 +781,11 @@ pub fn delete_post_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     result: DispatchResult,
+    hide: bool,
 ) {
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
     let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
-    let deleted_posts = vec![(category_id, thread_id, post_id)];
+    let deleted_posts = vec![(category_id, thread_id, post_id, hide)];
 
     assert_eq!(
         TestForumModule::delete_posts(

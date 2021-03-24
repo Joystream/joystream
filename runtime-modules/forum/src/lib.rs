@@ -494,7 +494,7 @@ decl_event!(
         ThreadTitleUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
 
         /// A thread was deleted.
-        ThreadDeleted(ThreadId, ForumUserId, CategoryId),
+        ThreadDeleted(ThreadId, ForumUserId, CategoryId, bool),
 
         /// A thread was moved to new category
         ThreadMoved(ThreadId, CategoryId, PrivilegedActor, CategoryId),
@@ -506,7 +506,7 @@ decl_event!(
         PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with givne id was deleted.
-        PostDeleted(Vec<u8>, ForumUserId, Vec<(CategoryId, ThreadId, PostId)>),
+        PostDeleted(Vec<u8>, ForumUserId, Vec<(CategoryId, ThreadId, PostId, bool)>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -936,7 +936,13 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::delete_thread(T::MaxCategoryDepth::get() as u32)]
-        fn delete_thread(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId) -> DispatchResult {
+        fn delete_thread(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            hide: bool,
+        ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -963,7 +969,8 @@ decl_module! {
             Self::deposit_event(RawEvent::ThreadDeleted(
                     thread_id,
                     forum_user_id,
-                    category_id
+                    category_id,
+                    hide,
                 ));
 
             Ok(())
@@ -1343,6 +1350,19 @@ decl_module! {
             Ok(())
         }
 
+        /// Delete post from storage.
+        /// You need to provide a vector of posts to delete in the form
+        /// (T::CategoryId, T::ThreadId, T::PostId, bool)
+        /// where the last bool is whether you want to hide it apart from deleting it
+        ///
+        /// ## Weight
+        /// `O (W + V + P)` where:
+        /// - `W` is the category depth,
+        /// - `V` is the length of the rationale
+        /// - `P` is the number of posts to delete
+        /// - DB:
+        ///    - O(W + P)
+        /// # </weight>
         #[weight = WeightInfoForum::<T>::delete_posts(
             T::MaxCategoryDepth::get() as u32,
             rationale.len().saturated_into(),
@@ -1351,8 +1371,8 @@ decl_module! {
         fn delete_posts(
             origin,
             forum_user_id: ForumUserId<T>,
-            posts: Vec<(T::CategoryId, T::ThreadId, T::PostId)>,
-            rationale: Vec<u8>
+            posts: Vec<(T::CategoryId, T::ThreadId, T::PostId, bool)>,
+            rationale: Vec<u8>,
         ) -> DispatchResult {
 
             // Ensure data migration is done
@@ -1361,14 +1381,15 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             let mut deleting_posts = Vec::new();
-            for (category_id, thread_id, post_id) in &posts {
+            for (category_id, thread_id, post_id, hide) in &posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
                     &forum_user_id,
                     &category_id,
                     &thread_id,
-                    &post_id
+                    &post_id,
+                    *hide,
                 )?;
 
                 deleting_posts.push((category_id, thread_id, post_id, post));
@@ -1611,9 +1632,9 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
+        hide: bool,
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
-        // Make sure post exists and is mutable
         let post = if Self::thread_exists(category_id, thread_id) {
             Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
         } else {
@@ -1626,7 +1647,7 @@ impl<T: Trait> Module<T> {
         // Signer does not match creator of post with identifier postId
         ensure!(
             post.author_id == *forum_user_id
-                || Self::anyone_can_delete_post(&post, &thread_id, &category_id),
+                || Self::anyone_can_delete_post(&post, &thread_id, &category_id) && !hide,
             Error::<T>::AccountDoesNotMatchPostAuthor
         );
 
@@ -2116,9 +2137,12 @@ impl<T: Trait> Module<T> {
         // Ensure actor can moderate the category
         let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
 
-        // Ensure all thread id valid and is under the category
+        // Ensure all thread id have existed at some point in time
         for item in stickied_ids {
-            Self::ensure_thread_exists(&category_id, item)?;
+            ensure!(
+                *item < <NextThreadId<T>>::get(),
+                Error::<T>::ThreadDoesNotExist
+            );
         }
 
         Ok(category)
