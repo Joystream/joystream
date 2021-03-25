@@ -33,13 +33,13 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let videoUpdateParametersInput = await getInputJson<VideoUpdateParametersInput>(input)
+      const videoUpdateParametersInput = await getInputJson<VideoUpdateParametersInput>(input)
 
       const api = await this.getOriginalApi()
 
       const meta = videoMetadataFromInput(api, videoUpdateParametersInput)
 
-      let videoUpdateParameters: VideoUpdateParameters = {
+      const videoUpdateParameters: VideoUpdateParameters = {
         assets: videoUpdateParametersInput.assets,
         meta,
       }

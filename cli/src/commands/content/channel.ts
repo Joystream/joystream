@@ -13,29 +13,29 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
 
   async run() {
     const { channelId } = this.parse(ChannelCommand).args
-    const aChannel = await this.getApi().channelById(channelId)
-    if (aChannel) {
+    const channel = await this.getApi().channelById(channelId)
+    if (channel) {
       displayCollapsedRow({
         'ID': channelId.toString(),
-        'Owner': JSON.stringify(aChannel.owner.toJSON()),
-        'IsCensored': aChannel.is_censored.toString(),
-        'RewardAccount': aChannel.reward_account ? aChannel.reward_account.toString() : 'NONE',
+        'Owner': JSON.stringify(channel.owner.toJSON()),
+        'IsCensored': channel.is_censored.toString(),
+        'RewardAccount': channel.reward_account ? channel.reward_account.toString() : 'NONE',
       })
 
       displayHeader(`Media`)
 
       displayCollapsedRow({
-        'NumberOfVideos': aChannel.videos.length,
-        'NumberOfPlaylists': aChannel.playlists.length,
-        'NumberOfSeries': aChannel.series.length,
+        'NumberOfVideos': channel.videos.length,
+        'NumberOfPlaylists': channel.playlists.length,
+        'NumberOfSeries': channel.series.length,
       })
 
       displayHeader(`MediaData`)
 
       displayCollapsedRow({
-        'Videos': JSON.stringify(aChannel.videos.toJSON()),
-        'Playlists': JSON.stringify(aChannel.playlists.toJSON()),
-        'Series': JSON.stringify(aChannel.series.toJSON()),
+        'Videos': JSON.stringify(channel.videos.toJSON()),
+        'Playlists': JSON.stringify(channel.playlists.toJSON()),
+        'Series': JSON.stringify(channel.series.toJSON()),
       })
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)

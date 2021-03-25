@@ -33,13 +33,13 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)
+      const videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)
 
       const api = await this.getOriginalApi()
 
       const meta = videoMetadataFromInput(api, videoCreationParametersInput)
 
-      let videoCreationParameters: VideoCreationParameters = {
+      const videoCreationParameters: VideoCreationParameters = {
         assets: videoCreationParametersInput.assets,
         meta,
       }

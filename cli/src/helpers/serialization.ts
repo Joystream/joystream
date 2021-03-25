@@ -14,30 +14,29 @@ import {
 import { ApiPromise } from '@polkadot/api'
 import { Bytes } from '@polkadot/types/primitive'
 
-export function BinaryToMeta(api: ApiPromise, serialized: Uint8Array): Bytes {
-  const metaRaw = api.createType('Raw', serialized)
-  return new Bytes(api.registry, metaRaw)
+export function binaryToMeta(api: ApiPromise, serialized: Uint8Array): Bytes {
+  return api.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
 }
 
 export function videoMetadataFromInput(
   api: ApiPromise,
   videoParametersInput: VideoCreationParametersInput | VideoUpdateParametersInput
 ): Bytes {
-  let mediaType = new MediaType()
-  mediaType.setCodecName(videoParametersInput.meta.mediaType?.codecName!)
-  mediaType.setContainer(videoParametersInput.meta.mediaType?.container!)
-  mediaType.setMimeMediaType(videoParametersInput.meta.mediaType?.mimeMediaType!)
+  const mediaType = new MediaType()
+  mediaType.setCodecName(videoParametersInput.meta.mediaType!.codecName!)
+  mediaType.setContainer(videoParametersInput.meta.mediaType!.container!)
+  mediaType.setMimeMediaType(videoParametersInput.meta.mediaType!.mimeMediaType!)
 
-  let license = new License()
-  license.setCode(videoParametersInput.meta.license?.code!)
-  license.setAttribution(videoParametersInput.meta.license?.attribution!)
-  license.setCustomText(videoParametersInput.meta.license?.customText!)
+  const license = new License()
+  license.setCode(videoParametersInput.meta.license!.code!)
+  license.setAttribution(videoParametersInput.meta.license!.attribution!)
+  license.setCustomText(videoParametersInput.meta.license!.customText!)
 
-  let publishedBeforeJoystream = new PublishedBeforeJoystream()
-  publishedBeforeJoystream.setIsPublished(videoParametersInput.meta.publishedBeforeJoystream?.isPublished!)
-  publishedBeforeJoystream.setDate(videoParametersInput.meta.publishedBeforeJoystream?.date!)
+  const publishedBeforeJoystream = new PublishedBeforeJoystream()
+  publishedBeforeJoystream.setIsPublished(videoParametersInput.meta.publishedBeforeJoystream!.isPublished!)
+  publishedBeforeJoystream.setDate(videoParametersInput.meta.publishedBeforeJoystream!.date!)
 
-  let videoMetadata = new VideoMetadata()
+  const videoMetadata = new VideoMetadata()
   videoMetadata.setTitle(videoParametersInput.meta.title!)
   videoMetadata.setDescription(videoParametersInput.meta.description!)
   videoMetadata.setVideo(videoParametersInput.meta.video!)
@@ -57,14 +56,14 @@ export function videoMetadataFromInput(
   videoMetadata.setPublishedBeforeJoystream(publishedBeforeJoystream)
 
   const serialized = videoMetadata.serializeBinary()
-  return BinaryToMeta(api, serialized)
+  return binaryToMeta(api, serialized)
 }
 
 export function channelMetadataFromInput(
   api: ApiPromise,
   channelParametersInput: ChannelCreationParametersInput | ChannelUpdateParametersInput
 ): Bytes {
-  let channelMetadata = new ChannelMetadata()
+  const channelMetadata = new ChannelMetadata()
   channelMetadata.setTitle(channelParametersInput.meta.title!)
   channelMetadata.setDescription(channelParametersInput.meta.description!)
   channelMetadata.setIsPublic(channelParametersInput.meta.isPublic!)
@@ -74,5 +73,5 @@ export function channelMetadataFromInput(
   channelMetadata.setCategory(channelParametersInput.meta.category!)
 
   const serialized = channelMetadata.serializeBinary()
-  return BinaryToMeta(api, serialized)
+  return binaryToMeta(api, serialized)
 }

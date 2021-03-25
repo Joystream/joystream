@@ -1,20 +1,20 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { IOFlags, getInputJson } from '../../helpers/InputOutput'
 import { ChannelCreationParameters, ChannelCreationParametersInput } from '../../Types'
 import { channelMetadataFromInput } from '../../helpers/serialization'
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
-    ...IOFlags,
+    context: ContentDirectoryCommandBase.ownerContextFlag,
+    input: IOFlags.input,
   }
 
   async run() {
-    let { context, input, output } = this.parse(CreateChannelCommand).flags
+    let { context, input } = this.parse(CreateChannelCommand).flags
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()
@@ -23,33 +23,31 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
+      const channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
 
       const api = await this.getOriginalApi()
 
       const meta = channelMetadataFromInput(api, channelCreationParametersInput)
 
-      let channelCreationParameters: ChannelCreationParameters = {
+      const channelCreationParameters: ChannelCreationParameters = {
         assets: channelCreationParametersInput.assets,
         meta,
         reward_account: channelCreationParametersInput.reward_account,
       }
 
-      this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
+      this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
+
+      this.log('Meta: ' + meta)
+
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && channelCreationParametersInput) {
-        saveOutputJson(
-          output,
-          `${channelCreationParametersInput.meta.title}Channel.json`,
-          channelCreationParametersInput
-        )
+      if (confirmed) {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
       }
     } else {
-      this.log('Input invalid or was not provided...')
+      this.error('Input invalid or was not provided...')
     }
   }
 }
