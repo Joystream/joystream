@@ -21,7 +21,7 @@ type ChannelCreationParameters = {
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
+    context: ContentDirectoryCommandBase.ownerContextFlag,
     input: IOFlags.input
   }
 
@@ -29,7 +29,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     let { context, input } = this.parse(CreateChannelCommand).flags
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()

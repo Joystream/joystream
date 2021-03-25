@@ -8,7 +8,10 @@ import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
+const OWNER_CONTEXTS = ['Member', 'Curator'] as const
+
 type Context = typeof CONTEXTS[number]
+type OwnerContext = typeof OWNER_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
@@ -23,11 +26,26 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     options: [...CONTEXTS],
   })
 
+  static ownerContextFlag = flags.enum({
+    name: 'context',
+    required: false,
+    description: `Actor context to execute the command in (${OWNER_CONTEXTS.join('/')})`,
+    options: [...OWNER_CONTEXTS],
+  })
+
   async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
     return this.simplePrompt({
       message,
       type: 'list',
       choices: CONTEXTS.map((c) => ({ name: c, value: c })),
+    })
+  }
+
+  async promptForOwnerContext(message = 'Choose in which context you wish to execute the command'): Promise<OwnerContext> {
+    return this.simplePrompt({
+      message,
+      type: 'list',
+      choices: OWNER_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
