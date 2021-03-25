@@ -8,7 +8,7 @@
     "title": "Title",
     "description": "Description",
     "video": 1,
-    "thumbnailPhoto": "1",
+    "thumbnailPhoto": 1,
     "duration": 10,
     "mediaPixelHeight": 20,
     "mediaPixelWidth": 50,

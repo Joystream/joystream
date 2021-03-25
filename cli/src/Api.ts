@@ -526,7 +526,7 @@ export default class Api {
   }
 
   async videoById(videoId: number): Promise<Video | null> {
-    const exists = !!(await this._api.query.content.entityById.size(videoId)).toNumber()
+    const exists = !!(await this._api.query.content.videoById.size(videoId)).toNumber()
     return exists ? await this._api.query.content.videoById<Video>(videoId) : null
   }
 
