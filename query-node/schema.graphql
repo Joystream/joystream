@@ -49,6 +49,8 @@ type Membership @entity {
 
   "The type of subscription the member has purchased if any."
   subscription: BigInt
+
+  videos: [Video!] @derivedFrom(field: "ownerMember")
 }
 
 "Category of media channel"
@@ -199,8 +201,11 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  "Owner of the channel"
-  owner: ChannelOwner!
+  "Member owning the video (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the video (if any)"
+  ownerCuratorGroup: CuratorGroup
 
   category: ChannelCategory
 
@@ -233,24 +238,6 @@ type Channel @entity {
   happenedIn: Block!
 }
 
-"Channel owner"
-union ChannelOwner = ChannelOwnerMember | ChannelCuratorGroup | ChannelOwnerDao
-
-type ChannelOwnerMember @variant {
-  "Member identifier"
-  memberId: BigInt!
-}
-
-type ChannelCuratorGroup @variant {
-  "Curator group identifier"
-  curatorGroupId: BigInt!
-}
-
-type ChannelOwnerDao @variant {
-  "DAO identifier"
-  daoId: BigInt!
-}
-
 type CuratorGroup @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -260,6 +247,8 @@ type CuratorGroup @entity {
 
   "Is group active or not"
   isActive: Boolean!
+
+  videos: [Video!] @derivedFrom(field: "ownerCuratorGroup")
 }
 
 type VideoCategory @entity {
