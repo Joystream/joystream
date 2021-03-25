@@ -24,7 +24,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
     const { videoId } = this.parse(UpdateVideoCommand).args
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()

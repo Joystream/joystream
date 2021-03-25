@@ -24,7 +24,7 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
     const { channelId } = this.parse(CreateVideoCommand).args
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()
