@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '7.11.0'
+version = '9.0.0'
 
 [dependencies]
 # Third-party dependencies
@@ -12,79 +12,79 @@ serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
 
 # Substrate primitives
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-offchain = { package = 'sp-offchain', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-authority-discovery = { package = 'sp-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-consensus-babe = { package = 'sp-consensus-babe', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-transaction-pool = { package = 'sp-transaction-pool', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-session = { package = 'sp-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-block-builder = { package = 'sp-block-builder', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-api = { package = 'sp-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-offchain = { package = 'sp-offchain', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-authority-discovery = { package = 'sp-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-consensus-babe = { package = 'sp-consensus-babe', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-transaction-pool = { package = 'sp-transaction-pool', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-session = { package = 'sp-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-block-builder = { package = 'sp-block-builder', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-api = { package = 'sp-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 # Frame
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 # Pallets
-pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-babe = { package = 'pallet-babe', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-transaction-payment = { package = 'pallet-transaction-payment', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-transaction-payment-rpc-runtime-api = { package = 'pallet-transaction-payment-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-session = { package = 'pallet-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-finality-tracker = { package = 'pallet-finality-tracker', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-sudo = { package = 'pallet-sudo', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-collective = { package = 'pallet-collective', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-babe = { package = 'pallet-babe', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-transaction-payment = { package = 'pallet-transaction-payment', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-transaction-payment-rpc-runtime-api = { package = 'pallet-transaction-payment-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-session = { package = 'pallet-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-finality-tracker = { package = 'pallet-finality-tracker', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-sudo = { package = 'pallet-sudo', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+pallet-collective = { package = 'pallet-collective', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 # Benchmarking
-frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
-frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
-pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
-pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
+frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
+frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
+pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
+pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', default-features = false, optional = true }
 
 # Joystream
-common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
-forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
-membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
-governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
-minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
-recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
-working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
-content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../runtime-modules/content-working-group'}
-versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../runtime-modules/versioned-store'}
-versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../runtime-modules/versioned-store-permissions'}
-storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
-service-discovery = { package = 'pallet-service-discovery', default-features = false, path = '../runtime-modules/service-discovery'}
-proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
-proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
-proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
-content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
+#common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
+#memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
+#forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
+#membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
+#stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
+#governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
+#hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
+#minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
+#recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
+#working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
+#content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../runtime-modules/content-working-group'}
+#versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../runtime-modules/versioned-store'}
+#versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../runtime-modules/versioned-store-permissions'}
+#storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
+#service-discovery = { package = 'pallet-service-discovery', default-features = false, path = '../runtime-modules/service-discovery'}
+#proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
+#proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
+#proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
+#content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 strum = {version = "0.19", default-features = false}
 [build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
+wasm-builder-runner = { package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
 
 [features]
 default = ['std']
@@ -114,7 +114,7 @@ std = [
     'frame-support/std',
     'frame-executive/std',
     'frame-system-rpc-runtime-api/std',
-    'system/std',
+    'frame-system/std',
 
     # Pallets
     'pallet-timestamp/std',
@@ -134,31 +134,31 @@ std = [
     'pallet-im-online/std',
     'pallet-collective/std',
     'pallet-offences/std',
-    'pallet-utility/std',
+    'substrate-utility/std',
 
     # Joystream
-    'common/std',
-    'memo/std',
-    'forum/std',
-    'membership/std',
-    'stake/std',
-    'governance/std',
-    'hiring/std',
-    'minting/std',
-    'recurring-rewards/std',
-    'working-group/std',
-    'content-working-group/std',
-    'versioned-store/std',
-    'versioned-store-permissions/std',
-    'storage/std',
-    'service-discovery/std',
-    'proposals-engine/std',
-    'proposals-discussion/std',
-    'proposals-codex/std',
-    'content-directory/std',
+#    'common/std',
+#    'memo/std',
+#    'forum/std',
+#    'membership/std',
+#    'stake/std',
+#    'governance/std',
+#    'hiring/std',
+#    'minting/std',
+#    'recurring-rewards/std',
+#    'working-group/std',
+#    'content-working-group/std',
+#    'versioned-store/std',
+#    'versioned-store-permissions/std',
+#    'storage/std',
+#    'service-discovery/std',
+#    'proposals-engine/std',
+#    'proposals-discussion/std',
+#    'proposals-codex/std',
+#    'content-directory/std',
 ]
 runtime-benchmarks = [
-    "system/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
@@ -170,7 +170,7 @@ runtime-benchmarks = [
     "frame-system-benchmarking",
     "pallet-offences-benchmarking",
 	"pallet-session-benchmarking",
-    "pallet-utility/runtime-benchmarks",
+    "substrate-utility/runtime-benchmarks",
 ]
 
 

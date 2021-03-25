@@ -17,21 +17,25 @@ mod constants;
 mod integration;
 pub mod primitives;
 mod runtime_api;
-#[cfg(test)]
-mod tests; // Runtime integration tests
+mod weights;
+// #[cfg(test)]
+// mod tests; // Runtime integration tests
 
-use frame_support::traits::KeyOwnerProofSystem;
+use frame_support::traits::{Currency, KeyOwnerProofSystem, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
 };
+use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
 use frame_support::{construct_runtime, parameter_types};
+use frame_system::EnsureRoot;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::traits::Convert;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
 use sp_std::boxed::Box;
@@ -39,43 +43,41 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use system::EnsureRoot;
 
 pub use constants::*;
 pub use primitives::*;
 pub use runtime_api::*;
 
-use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+// use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+//
+// use governance::{council, election};
+// use storage::data_object_storage_registry;
 
-use governance::{council, election};
-use storage::data_object_storage_registry;
-
-// Node dependencies
-pub use common;
-pub use content_working_group as content_wg;
-pub use forum;
-pub use governance::election_params::ElectionParameters;
-pub use membership;
-#[cfg(any(feature = "std", test))]
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_staking::StakerStatus;
-pub use proposals_codex::ProposalsConfigParameters;
-pub use storage::{data_directory, data_object_type_registry};
-pub use versioned_store;
-pub use versioned_store_permissions;
-pub use working_group;
-
-pub use content_directory;
-pub use content_directory::{
-    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
-};
+// // Node dependencies
+// pub use common;
+// pub use content_working_group as content_wg;
+// pub use forum;
+// pub use governance::election_params::ElectionParameters;
+// pub use membership;
+// #[cfg(any(feature = "std", test))]
+// pub use pallet_balances::Call as BalancesCall;
+// pub use pallet_staking::StakerStatus;
+// pub use proposals_codex::ProposalsConfigParameters;
+// pub use storage::{data_directory, data_object_type_registry};
+// pub use versioned_store;
+// pub use versioned_store_permissions;
+// pub use working_group;
+// pub use content_directory;
+// pub use content_directory::{
+//     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+// };
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 7,
-    spec_version: 11,
+    authoring_version: 9,
+    spec_version: 0,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -105,7 +107,7 @@ parameter_types! {
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
 // TODO: adjust weight
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -126,15 +128,44 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = Version;
-    type ModuleToIndex = ModuleToIndex;
+    type PalletInfo = PalletInfo;
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = weights::frame_system::WeightInfo;
 }
 
-impl pallet_utility::Trait for Runtime {
+//TODO: remove:
+/// A structure that converts the currency type into a lossy u64
+/// And back from u128
+pub struct CurrencyToVoteHandler;
+
+impl Convert<u128, u64> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> u64 {
+        if x >> 96 == 0 {
+            x as u64
+        } else {
+            u64::max_value()
+        }
+    }
+}
+
+impl Convert<u128, u128> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> u128 {
+        // if it practically fits in u64
+        if x >> 64 == 0 {
+            x
+        } else {
+            // 0000_0000_FFFF_FFFF_FFFF_FFFF_0000_0000
+            u64::max_value() as u128
+        }
+    }
+}
+
+impl substrate_utility::Trait for Runtime {
     type Event = Event;
     type Call = Call;
+    type WeightInfo = weights::substrate_utility::WeightInfo;
 }
 
 parameter_types! {
@@ -146,6 +177,22 @@ impl pallet_babe::Trait for Runtime {
     type EpochDuration = EpochDuration;
     type ExpectedBlockTime = ExpectedBlockTime;
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+    type KeyOwnerProofSystem = Historical;
+
+    type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::Proof;
+
+    type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::IdentificationTuple;
+
+    type HandleEquivocation =
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+
+    type WeightInfo = ();
 }
 
 impl pallet_grandpa::Trait for Runtime {
@@ -161,19 +208,16 @@ impl pallet_grandpa::Trait for Runtime {
 
     type KeyOwnerProofSystem = Historical;
 
-    type HandleEquivocation = pallet_grandpa::EquivocationHandler<
-        Self::KeyOwnerIdentification,
-        primitives::report::ReporterAppCrypto,
-        Runtime,
-        Offences,
-    >;
+    type HandleEquivocation =
+        pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+    type WeightInfo = ();
 }
 
-impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
     Call: From<LocalCall>,
 {
-    fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: Call,
         public: <Signature as sp_runtime::traits::Verify>::Signer,
         account: AccountId,
@@ -186,12 +230,12 @@ where
     }
 }
 
-impl system::offchain::SigningTypes for Runtime {
+impl frame_system::offchain::SigningTypes for Runtime {
     type Public = <Signature as sp_runtime::traits::Verify>::Signer;
     type Signature = Signature;
 }
 
-impl<C> system::offchain::SendTransactionTypes<C> for Runtime
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
     Call: From<C>,
 {
@@ -207,13 +251,14 @@ impl pallet_timestamp::Trait for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = weights::pallet_timestamp::WeightInfo;
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u128 = 0;
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
-    pub const InitialMembersBalance: u32 = 2000;
+    pub const MaxLocks: u32 = 50;
 }
 
 impl pallet_balances::Trait for Runtime {
@@ -222,18 +267,43 @@ impl pallet_balances::Trait for Runtime {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = weights::pallet_balances::WeightInfo;
+    type MaxLocks = MaxLocks;
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
+    pub const TransactionByteFee: Balance = 0;
+}
+
+type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+
+pub struct Author;
+impl OnUnbalanced<NegativeImbalance> for Author {
+    fn on_nonzero_unbalanced(amount: NegativeImbalance) {
+        Balances::resolve_creating(&Authorship::author(), amount);
+    }
+}
+
+/// Stub for zero transaction weights.
+pub struct NoWeights;
+impl WeightToFeePolynomial for NoWeights {
+    type Balance = Balance;
+
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        Default::default()
+    }
+
+    fn calc(_weight: &u64) -> Self::Balance {
+        Default::default()
+    }
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
     type OnTransactionPayment = ();
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = integration::transactions::NoWeights; // TODO: adjust weight
-    type FeeMultiplierUpdate = (); // TODO: adjust fee
+    type WeightToFee = NoWeights;
+    type FeeMultiplierUpdate = ();
 }
 
 impl pallet_sudo::Trait for Runtime {
@@ -279,6 +349,7 @@ impl pallet_session::Trait for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+    type WeightInfo = weights::pallet_session::WeightInfo;
 }
 
 impl pallet_session::historical::Trait for Runtime {
@@ -319,7 +390,7 @@ parameter_types! {
 impl pallet_staking::Trait for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
+    type CurrencyToVote = CurrencyToVoteHandler;
     type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
     type Slash = (); // Where to send the slashed funds. Could be Treasury.
@@ -331,12 +402,13 @@ impl pallet_staking::Trait for Runtime {
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
     type NextNewSession = Session;
-    type ElectionLookahead = MaxIterations;
+    type ElectionLookahead = ElectionLookahead;
     type Call = Call;
     type MaxIterations = MaxIterations;
     type MinSolutionScoreBump = MinSolutionScoreBump;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type UnsignedPriority = StakingUnsignedPriority;
+    type WeightInfo = weights::pallet_staking::WeightInfo;
 }
 
 impl pallet_im_online::Trait for Runtime {
@@ -344,6 +416,9 @@ impl pallet_im_online::Trait for Runtime {
     type Event = Event;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
+    // Using the default weights until we check if we can run the benchmarks for this pallet in
+    // the reference machine in an acceptable time.
+    type WeightInfo = ();
     type UnsignedPriority = ImOnlineUnsignedPriority;
 }
 
@@ -366,245 +441,245 @@ parameter_types! {
 }
 
 impl pallet_finality_tracker::Trait for Runtime {
-    type OnFinalizationStalled = Grandpa;
+    type OnFinalizationStalled = ();
     type WindowSize = WindowSize;
     type ReportLatency = ReportLatency;
 }
 
-impl versioned_store::Trait for Runtime {
-    type Event = Event;
-}
-
-impl versioned_store_permissions::Trait for Runtime {
-    type Credential = Credential;
-    type CredentialChecker = (
-        integration::content_working_group::ContentWorkingGroupCredentials,
-        integration::versioned_store_permissions::SudoKeyHasAllCredentials,
-    );
-    type CreateClassPermissionsChecker =
-        integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
-}
-
-type EntityId = <Runtime as content_directory::Trait>::EntityId;
-
-parameter_types! {
-    pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const MaxNumberOfClasses: MaxNumber = 100;
-    pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
-    pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
-    pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
-    pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
-    pub const VecMaxLengthConstraint: VecMaxLength = 200;
-    pub const TextMaxLengthConstraint: TextMaxLength = 5000;
-    pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 500;
-}
-
-impl content_directory::Trait for Runtime {
-    type Event = Event;
-    type Nonce = u64;
-    type ClassId = u64;
-    type EntityId = u64;
-    type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
-    type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
-    type ClassNameLengthConstraint = ClassNameLengthConstraint;
-    type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
-    type MaxNumberOfClasses = MaxNumberOfClasses;
-    type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
-    type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
-    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
-    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
-    type VecMaxLengthConstraint = VecMaxLengthConstraint;
-    type TextMaxLengthConstraint = TextMaxLengthConstraint;
-    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
-    type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
-}
-
-impl hiring::Trait for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
-impl minting::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type MintId = u64;
-}
-
-impl recurring_rewards::Trait for Runtime {
-    type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
-}
-
-parameter_types! {
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-}
-
-impl stake::Trait for Runtime {
-    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (
-        crate::integration::proposals::StakingEventsHandler<Self>,
-        (
-            crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
-            crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
-        ),
-    );
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
-impl content_wg::Trait for Runtime {
-    type Event = Event;
-}
-
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
-}
-
-impl governance::election::Trait for Runtime {
-    type Event = Event;
-    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
-}
-
-impl governance::council::Trait for Runtime {
-    type Event = Event;
-    type CouncilTermEnded = (CouncilElection,);
-}
-
-impl memo::Trait for Runtime {
-    type Event = Event;
-}
-
-parameter_types! {
-    pub const MaxObjectsPerInjection: u32 = 100;
-}
-
-impl storage::data_object_type_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectTypeId = u64;
-}
-
-impl storage::data_directory::Trait for Runtime {
-    type Event = Event;
-    type ContentId = ContentId;
-    type StorageProviderHelper = integration::storage::StorageProviderHelper;
-    type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
-}
-
-impl storage::data_object_storage_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectStorageRelationshipId = u64;
-    type ContentIdExists = DataDirectory;
-}
-
-impl membership::Trait for Runtime {
-    type Event = Event;
-    type MemberId = MemberId;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
-    type ActorId = ActorId;
-}
-
-impl forum::Trait for Runtime {
-    type Event = Event;
-    type MembershipRegistry = integration::forum::ShimMembershipRegistry;
-    type ThreadId = ThreadId;
-    type PostId = PostId;
-}
-
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 100;
-}
-
-impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-}
-
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-}
-
-impl service_discovery::Trait for Runtime {
-    type Event = Event;
-}
-
-parameter_types! {
-    pub const ProposalCancellationFee: u64 = 10000;
-    pub const ProposalRejectionFee: u64 = 5000;
-    pub const ProposalTitleMaxLength: u32 = 40;
-    pub const ProposalDescriptionMaxLength: u32 = 3000;
-    pub const ProposalMaxActiveProposalLimit: u32 = 20;
-}
-
-impl proposals_engine::Trait for Runtime {
-    type Event = Event;
-    type ProposerOriginValidator = MembershipOriginValidator<Self>;
-    type VoterOriginValidator = CouncilManager<Self>;
-    type TotalVotersCounter = CouncilManager<Self>;
-    type ProposalId = u32;
-    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
-    type CancellationFee = ProposalCancellationFee;
-    type RejectionFee = ProposalRejectionFee;
-    type TitleMaxLength = ProposalTitleMaxLength;
-    type DescriptionMaxLength = ProposalDescriptionMaxLength;
-    type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
-    type DispatchableCallCode = Call;
-}
-impl Default for Call {
-    fn default() -> Self {
-        panic!("shouldn't call default for Call");
-    }
-}
-
-parameter_types! {
-    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
-    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
-    pub const ProposalThreadTitleLengthLimit: u32 = 40;
-    pub const ProposalPostLengthLimit: u32 = 1000;
-}
-
-impl proposals_discussion::Trait for Runtime {
-    type Event = Event;
-    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
-    type ThreadId = ThreadId;
-    type PostId = PostId;
-    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
-    type PostLengthLimit = ProposalPostLengthLimit;
-    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
-}
-
-parameter_types! {
-    pub const TextProposalMaxLength: u32 = 5_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
-}
-
-impl proposals_codex::Trait for Runtime {
-    type MembershipOriginValidator = MembershipOriginValidator<Self>;
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
-    type ProposalEncoder = ExtrinsicProposalEncoder;
-}
+// impl versioned_store::Trait for Runtime {
+//     type Event = Event;
+// }
+//
+// impl versioned_store_permissions::Trait for Runtime {
+//     type Credential = Credential;
+//     type CredentialChecker = (
+//         integration::content_working_group::ContentWorkingGroupCredentials,
+//         integration::versioned_store_permissions::SudoKeyHasAllCredentials,
+//     );
+//     type CreateClassPermissionsChecker =
+//         integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
+// }
+//
+// type EntityId = <Runtime as content_directory::Trait>::EntityId;
+//
+// parameter_types! {
+//     pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+//     pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+//     pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+//     pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+//     pub const MaxNumberOfClasses: MaxNumber = 100;
+//     pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
+//     pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
+//     pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
+//     pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
+//     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
+//     pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
+//     pub const VecMaxLengthConstraint: VecMaxLength = 200;
+//     pub const TextMaxLengthConstraint: TextMaxLength = 5000;
+//     pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
+//     pub const IndividualEntitiesCreationLimit: EntityId = 500;
+// }
+//
+// impl content_directory::Trait for Runtime {
+//     type Event = Event;
+//     type Nonce = u64;
+//     type ClassId = u64;
+//     type EntityId = u64;
+//     type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
+//     type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
+//     type ClassNameLengthConstraint = ClassNameLengthConstraint;
+//     type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
+//     type MaxNumberOfClasses = MaxNumberOfClasses;
+//     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+//     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
+//     type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
+//     type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
+//     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+//     type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
+//     type VecMaxLengthConstraint = VecMaxLengthConstraint;
+//     type TextMaxLengthConstraint = TextMaxLengthConstraint;
+//     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+//     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+// }
+//
+// impl hiring::Trait for Runtime {
+//     type OpeningId = u64;
+//     type ApplicationId = u64;
+//     type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
+//     type StakeHandlerProvider = hiring::Module<Self>;
+// }
+//
+// impl minting::Trait for Runtime {
+//     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
+//     type MintId = u64;
+// }
+//
+// impl recurring_rewards::Trait for Runtime {
+//     type PayoutStatusHandler = (); // TODO - deal with successful and failed payouts
+//     type RecipientId = u64;
+//     type RewardRelationshipId = u64;
+// }
+//
+// parameter_types! {
+//     pub const StakePoolId: [u8; 8] = *b"joystake";
+// }
+//
+// impl stake::Trait for Runtime {
+//     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
+//     type StakePoolId = StakePoolId;
+//     type StakingEventsHandler = (
+//         crate::integration::proposals::StakingEventsHandler<Self>,
+//         (
+//             crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
+//             crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
+//         ),
+//     );
+//     type StakeId = u64;
+//     type SlashId = u64;
+// }
+//
+// impl content_wg::Trait for Runtime {
+//     type Event = Event;
+// }
+//
+// impl common::currency::GovernanceCurrency for Runtime {
+//     type Currency = pallet_balances::Module<Self>;
+// }
+//
+// impl governance::election::Trait for Runtime {
+//     type Event = Event;
+//     type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
+// }
+//
+// impl governance::council::Trait for Runtime {
+//     type Event = Event;
+//     type CouncilTermEnded = (CouncilElection,);
+// }
+//
+// impl memo::Trait for Runtime {
+//     type Event = Event;
+// }
+//
+// parameter_types! {
+//     pub const MaxObjectsPerInjection: u32 = 100;
+// }
+//
+// impl storage::data_object_type_registry::Trait for Runtime {
+//     type Event = Event;
+//     type DataObjectTypeId = u64;
+// }
+//
+// impl storage::data_directory::Trait for Runtime {
+//     type Event = Event;
+//     type ContentId = ContentId;
+//     type StorageProviderHelper = integration::storage::StorageProviderHelper;
+//     type IsActiveDataObjectType = DataObjectTypeRegistry;
+//     type MemberOriginValidator = MembershipOriginValidator<Self>;
+//     type MaxObjectsPerInjection = MaxObjectsPerInjection;
+// }
+//
+// impl storage::data_object_storage_registry::Trait for Runtime {
+//     type Event = Event;
+//     type DataObjectStorageRelationshipId = u64;
+//     type ContentIdExists = DataDirectory;
+// }
+//
+// impl membership::Trait for Runtime {
+//     type Event = Event;
+//     type MemberId = MemberId;
+//     type PaidTermId = u64;
+//     type SubscriptionId = u64;
+//     type ActorId = ActorId;
+// }
+//
+// impl forum::Trait for Runtime {
+//     type Event = Event;
+//     type MembershipRegistry = integration::forum::ShimMembershipRegistry;
+//     type ThreadId = ThreadId;
+//     type PostId = PostId;
+// }
+//
+// // The storage working group instance alias.
+// pub type StorageWorkingGroupInstance = working_group::Instance2;
+//
+// // The content directory working group instance alias.
+// pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+//
+// parameter_types! {
+//     pub const MaxWorkerNumberLimit: u32 = 100;
+// }
+//
+// impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
+//     type Event = Event;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+// }
+//
+// impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+//     type Event = Event;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+// }
+//
+// impl service_discovery::Trait for Runtime {
+//     type Event = Event;
+// }
+//
+// parameter_types! {
+//     pub const ProposalCancellationFee: u64 = 10000;
+//     pub const ProposalRejectionFee: u64 = 5000;
+//     pub const ProposalTitleMaxLength: u32 = 40;
+//     pub const ProposalDescriptionMaxLength: u32 = 3000;
+//     pub const ProposalMaxActiveProposalLimit: u32 = 20;
+// }
+//
+// impl proposals_engine::Trait for Runtime {
+//     type Event = Event;
+//     type ProposerOriginValidator = MembershipOriginValidator<Self>;
+//     type VoterOriginValidator = CouncilManager<Self>;
+//     type TotalVotersCounter = CouncilManager<Self>;
+//     type ProposalId = u32;
+//     type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+//     type CancellationFee = ProposalCancellationFee;
+//     type RejectionFee = ProposalRejectionFee;
+//     type TitleMaxLength = ProposalTitleMaxLength;
+//     type DescriptionMaxLength = ProposalDescriptionMaxLength;
+//     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
+//     type DispatchableCallCode = Call;
+// }
+// impl Default for Call {
+//     fn default() -> Self {
+//         panic!("shouldn't call default for Call");
+//     }
+// }
+//
+// parameter_types! {
+//     pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
+//     pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
+//     pub const ProposalThreadTitleLengthLimit: u32 = 40;
+//     pub const ProposalPostLengthLimit: u32 = 1000;
+// }
+//
+// impl proposals_discussion::Trait for Runtime {
+//     type Event = Event;
+//     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+//     type ThreadId = ThreadId;
+//     type PostId = PostId;
+//     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
+//     type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
+//     type PostLengthLimit = ProposalPostLengthLimit;
+//     type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+// }
+//
+// parameter_types! {
+//     pub const TextProposalMaxLength: u32 = 5_000;
+//     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+// }
+//
+// impl proposals_codex::Trait for Runtime {
+//     type MembershipOriginValidator = MembershipOriginValidator<Self>;
+//     type TextProposalMaxLength = TextProposalMaxLength;
+//     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+//     type ProposalEncoder = ExtrinsicProposalEncoder;
+// }
 
 parameter_types! {
     pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
@@ -637,9 +712,9 @@ construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic
     {
         // Substrate
-        System: system::{Module, Call, Storage, Config, Event<T>},
-        Utility: pallet_utility::{Module, Call, Event},
-        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
+        System: frame_system::{Module, Call, Storage, Config, Event<T>},
+        Utility: substrate_utility::{Module, Call, Event},
+        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
@@ -654,32 +729,32 @@ construct_runtime!(
         Offences: pallet_offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
-        // Joystream
-        CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
-        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
-        Memo: memo::{Module, Call, Storage, Event<T>},
-        Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
-        Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
-        Stake: stake::{Module, Call, Storage},
-        Minting: minting::{Module, Call, Storage},
-        RecurringRewards: recurring_rewards::{Module, Call, Storage},
-        Hiring: hiring::{Module, Call, Storage},
-        ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
-        ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        // --- Storage
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        Discovery: service_discovery::{Module, Call, Storage, Event<T>},
-        // --- Proposals
-        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
-        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
-        // --- Working groups
-        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        // // Joystream
+        // CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
+        // Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        // Memo: memo::{Module, Call, Storage, Event<T>},
+        // Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
+        // Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
+        // VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
+        // VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
+        // Stake: stake::{Module, Call, Storage},
+        // Minting: minting::{Module, Call, Storage},
+        // RecurringRewards: recurring_rewards::{Module, Call, Storage},
+        // Hiring: hiring::{Module, Call, Storage},
+        // ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        // // --- Storage
+        // DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        // DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        // DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        // Discovery: service_discovery::{Module, Call, Storage, Event<T>},
+        // // --- Proposals
+        // ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
+        // ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
+        // ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
+        // // --- Working groups
+        // // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        // StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
+        // ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );

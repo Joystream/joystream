@@ -23,14 +23,13 @@ use frame_support::weights::Weight;
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
-    system::CheckSpecVersion<Runtime>,
-    system::CheckTxVersion<Runtime>,
-    system::CheckGenesis<Runtime>,
-    system::CheckEra<Runtime>,
-    system::CheckNonce<Runtime>,
-    system::CheckWeight<Runtime>,
+    frame_system::CheckSpecVersion<Runtime>,
+    frame_system::CheckTxVersion<Runtime>,
+    frame_system::CheckGenesis<Runtime>,
+    frame_system::CheckEra<Runtime>,
+    frame_system::CheckNonce<Runtime>,
+    frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    pallet_grandpa::ValidateEquivocationReport<Runtime>,
 );
 
 /// Digest item type.
@@ -53,7 +52,7 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 
 // Default Executive type without the RuntimeUpgrade
 // pub type Executive =
-//     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
@@ -67,7 +66,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
-    system::ChainContext<Runtime>,
+    frame_system::ChainContext<Runtime>,
     Runtime,
     AllModules,
     CustomOnRuntimeUpgrade,
@@ -139,7 +138,7 @@ impl_runtime_apis! {
             Grandpa::grandpa_authorities()
         }
 
-        fn submit_report_equivocation_extrinsic(
+        fn submit_report_equivocation_unsigned_extrinsic(
             equivocation_proof: fg_primitives::EquivocationProof<
                 <Block as BlockT>::Hash,
                 NumberFor<Block>,
@@ -148,7 +147,7 @@ impl_runtime_apis! {
         ) -> Option<()> {
             let key_owner_proof = key_owner_proof.decode()?;
 
-            Grandpa::submit_report_equivocation_extrinsic(
+            Grandpa::submit_unsigned_equivocation_report(
                 equivocation_proof,
                 key_owner_proof,
             )
@@ -183,6 +182,29 @@ impl_runtime_apis! {
             }
         }
 
+        fn generate_key_ownership_proof(
+            _slot_number: sp_consensus_babe::SlotNumber,
+            authority_id: sp_consensus_babe::AuthorityId,
+        ) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
+            use codec::Encode;
+
+            Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
+                .map(|p| p.encode())
+                .map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
+        }
+
+        fn submit_report_equivocation_unsigned_extrinsic(
+            equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
+            key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
+        ) -> Option<()> {
+            let key_owner_proof = key_owner_proof.decode()?;
+
+            Babe::submit_unsigned_equivocation_report(
+                equivocation_proof,
+                key_owner_proof,
+            )
+        }
+
         fn current_epoch_start() -> sp_consensus_babe::SlotNumber {
             Babe::current_epoch_start()
         }
@@ -203,9 +225,8 @@ impl_runtime_apis! {
     impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<
         Block,
         Balance,
-        UncheckedExtrinsic,
     > for Runtime {
-        fn query_info(uxt: UncheckedExtrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
+        fn query_info(uxt: <Block as BlockT>::Extrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
             TransactionPayment::query_info(uxt, len)
         }
     }
@@ -218,6 +239,127 @@ impl_runtime_apis! {
             encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
+        }
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    impl frame_benchmarking::Benchmark<Block> for Runtime {
+        fn dispatch_benchmark(
+            config: frame_benchmarking::BenchmarkConfig
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+            use sp_std::vec;
+            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
+
+            use pallet_session_benchmarking::Module as SessionBench;
+            use frame_system_benchmarking::Module as SystemBench;
+            use frame_system::RawOrigin;
+            use crate::ProposalsDiscussion;
+            use crate::ProposalsEngine;
+            use crate::ProposalsCodex;
+            use crate::Constitution;
+            use crate::Forum;
+            use crate::Members;
+            use crate::ContentDirectoryWorkingGroup;
+            use crate::Utility;
+            use crate::Timestamp;
+            use crate::ImOnline;
+            use crate::Council;
+            use crate::Referendum;
+            use crate::Blog;
+            use crate::JoystreamUtility;
+
+
+            // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
+            // To get around that, we separated the Session benchmarks into its own crate, which is why
+            // we need these two lines below.
+            impl pallet_session_benchmarking::Trait for Runtime {}
+            impl frame_system_benchmarking::Trait for Runtime {}
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::Trait>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::Trait>::MemberId) {
+                    crate::council::Module::<Runtime>::announce_candidacy(
+                        RawOrigin::Signed(account_id.clone()).into(),
+                        member_id,
+                        account_id.clone(),
+                        account_id.clone(),
+                        <Runtime as council::Trait>::MinCandidateStake::get().into(),
+                    ).expect(
+                        "Should pass a valid member associated to the account and the account
+                        should've enough
+                        free balance to stake the minimum for a council candidate."
+                    );
+                }
+            }
+
+            impl membership::MembershipWorkingGroupHelper<
+                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as common::Trait>::MemberId,
+                <Runtime as common::Trait>::ActorId,
+                    > for Runtime
+            {
+                fn insert_a_lead(
+                    opening_id: u32,
+                    caller_id: &<Runtime as frame_system::Trait>::AccountId,
+                    member_id: <Runtime as common::Trait>::MemberId,
+                ) -> <Runtime as common::Trait>::ActorId {
+                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
+                        working_group::OpeningType::Leader,
+                        opening_id,
+                        None,
+                        &caller_id,
+                        member_id,
+                    )
+                }
+            }
+
+            let whitelist: Vec<TrackedStorageKey> = vec![
+                // Block Number
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
+                // Total Issuance
+                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec().into(),
+                // Execution Phase
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec().into(),
+                // Event Count
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec().into(),
+                // System Events
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
+                // Caller 0 Account
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da946c154ffd9992e395af90b5b13cc6f295c77033fce8a9045824a6690bbf99c6db269502f0a8d1d2a008542d5690a0749").to_vec().into(),
+                // Treasury Account
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da95ecffd7b6c0f78751baa9d281e0bfa3a6d6f646c70792f74727372790000000000000000000000000000000000000000").to_vec().into(),
+            ];
+
+            let mut batches = Vec::<BenchmarkBatch>::new();
+            let params = (&config, &whitelist);
+
+            // Note: For benchmarking Stake and Balances we need to change ExistentialDeposit to
+            // a non-zero value.
+            // For now, due to the complexity grandpa and babe aren't benchmarked automatically
+            // we should use the default manually created weights.
+            // Finally, pallet_offences have no `WeightInfo` so there's no need to benchmark it
+            // the benchmark is only for illustrative pourpuses.
+
+            // Frame benchmarks
+            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
+            add_benchmark!(params, batches, substrate_utility, Utility);
+            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+            add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+            add_benchmark!(params, batches, pallet_im_online, ImOnline);
+
+            // Joystream Benchmarks
+            add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
+            add_benchmark!(params, batches, proposals_codex, ProposalsCodex);
+            add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, membership, Members);
+            add_benchmark!(params, batches, forum, Forum);
+            add_benchmark!(params, batches, pallet_constitution, Constitution);
+            add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
+            add_benchmark!(params, batches, referendum, Referendum);
+            add_benchmark!(params, batches, council, Council);
+            add_benchmark!(params, batches, blog, Blog);
+            add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
+
+            if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
+            Ok(batches)
         }
     }
 }
