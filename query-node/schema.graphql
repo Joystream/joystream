@@ -1,20 +1,7 @@
-# temporary type used before `DateTime` type is working
-type DateTime @entity {
-  timestamp: BigInt!
-}
-
 enum Network {
   BABYLON
   ALEXANDRIA
   ROME
-}
-
-type Block @entity {
-  "Block number as a string"
-  id: ID!
-  block: Int!
-  executedAt: DateTime!
-  network: Network!
 }
 
 enum MembershipEntryMethod {
@@ -44,7 +31,7 @@ type Membership @entity {
   rootAccount: String!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: Block!
+  registeredAtBlock: BigInt!
 
   "Timestamp when member was registered"
   registeredAtTime: DateTime!
@@ -65,7 +52,7 @@ type ChannelCategory @entity {
 
   channels: [Channel!] @derivedFrom(field: "category")
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 "Asset availability representation"
@@ -87,7 +74,7 @@ type AssetUrl @variant {
 
 "Asset was deleted and is no longer available."
 type AssetDeleted @variant {
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 "Storage asset"
@@ -98,7 +85,7 @@ type AssetStorage @variant {
   """
   dataObject: AssetDataObject!
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 "The decision of the storage provider when it acts as liaison"
@@ -119,7 +106,7 @@ type AssetDataObject @entity {
   owner: AssetOwner!
 
   "Content added at"
-  addedAt: Block!
+  addedAt: BigInt!
 
   "Content type id"
   typeId: Int!
@@ -153,6 +140,9 @@ type AssetOwnerMember @variant {
 type AssetOwnerChannel @variant {
   "Channel identifier"
   channel: Channel!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int!
 }
 
 "Asset owned by a DAO"
@@ -182,7 +172,7 @@ type Language @entity {
   "Language identifier ISO 639-1"
   iso: String!
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 type Channel @entity {
@@ -221,7 +211,7 @@ type Channel @entity {
 
   videos: [Video!] @derivedFrom(field: "channel")
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 type VideoCategory @entity {
@@ -233,7 +223,7 @@ type VideoCategory @entity {
 
   videos: [Video!] @derivedFrom(field: "category")
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 type Video @entity {
@@ -285,7 +275,7 @@ type Video @entity {
   "Video file metadata"
   mediaMetadata: VideoMediaMetadata
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 
   "Is video featured or not"
   isFeatured: Boolean!
@@ -316,7 +306,7 @@ type VideoMediaMetadata @entity {
 
   video: Video @derivedFrom(field: "mediaMetadata")
 
-  happenedIn: Block!
+  happenedIn: BigInt!
 }
 
 type VideoMediaEncoding @entity {
