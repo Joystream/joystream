@@ -1,28 +1,28 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { NewAsset} from '@joystream/types/content'
-import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
-import { Vec, Option} from '@polkadot/types';
-import AccountId from '@polkadot/types/generic/AccountId';
-import { Bytes } from '@polkadot/types/primitive';
+import { NewAsset } from '@joystream/types/content'
+import { ChannelMetadata } from '@joystream/content-metadata-protobuf'
+import { Vec, Option } from '@polkadot/types'
+import AccountId from '@polkadot/types/generic/AccountId'
+import { Bytes } from '@polkadot/types/primitive'
 
 type ChannelCreationParametersInput = {
-  assets: Vec<NewAsset>,
-  meta: ChannelMetadata.AsObject,
-  reward_account: Option<AccountId>,
+  assets: Vec<NewAsset>
+  meta: ChannelMetadata.AsObject
+  reward_account: Option<AccountId>
 }
 
 type ChannelCreationParameters = {
-  assets: Vec<NewAsset>,
-  meta: Bytes,
-  reward_account: Option<AccountId>,
+  assets: Vec<NewAsset>
+  meta: Bytes
+  reward_account: Option<AccountId>
 }
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.ownerContextFlag,
-    input: IOFlags.input
+    input: IOFlags.input,
   }
 
   async run() {
@@ -51,7 +51,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       channelMetadata.setAvatarPhoto(channelCreationParametersInput.meta.avatarPhoto!)
       channelMetadata.setCategory(channelCreationParametersInput.meta.category!)
 
-      const serialized = channelMetadata.serializeBinary();
+      const serialized = channelMetadata.serializeBinary()
 
       const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
 
@@ -67,11 +67,10 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed)  {
+      if (confirmed) {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
-
       }
     } else {
       this.error('Input invalid or was not provided...')

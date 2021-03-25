@@ -41,7 +41,9 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     })
   }
 
-  async promptForOwnerContext(message = 'Choose in which context you wish to execute the command'): Promise<OwnerContext> {
+  async promptForOwnerContext(
+    message = 'Choose in which context you wish to execute the command'
+  ): Promise<OwnerContext> {
     return this.simplePrompt({
       message,
       type: 'list',
