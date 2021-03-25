@@ -48,9 +48,9 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
+      const channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
 
-      let channelMetadata = new ChannelMetadata()
+      const channelMetadata = new ChannelMetadata()
       channelMetadata.setTitle(channelUpdateParametersInput.new_meta.title!)
       channelMetadata.setDescription(channelUpdateParametersInput.new_meta.description!)
       channelMetadata.setIsPublic(channelUpdateParametersInput.new_meta.isPublic!)
@@ -63,7 +63,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
       const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
 
-      let channelUpdateParameters: ChannelUpdateParameters = {
+      const channelUpdateParameters: ChannelUpdateParameters = {
         assets: channelUpdateParametersInput.assets,
         new_meta: meta,
         reward_account: channelUpdateParametersInput.reward_account,

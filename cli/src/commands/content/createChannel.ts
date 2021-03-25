@@ -38,11 +38,11 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
+      const channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
 
       this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
 
-      let channelMetadata = new ChannelMetadata()
+      const channelMetadata = new ChannelMetadata()
       channelMetadata.setTitle(channelCreationParametersInput.meta.title!)
       channelMetadata.setDescription(channelCreationParametersInput.meta.description!)
       channelMetadata.setIsPublic(channelCreationParametersInput.meta.isPublic!)
@@ -55,7 +55,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
       const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
 
-      let channelCreationParameters: ChannelCreationParameters = {
+      const channelCreationParameters: ChannelCreationParameters = {
         assets: channelCreationParametersInput.assets,
         meta,
         reward_account: channelCreationParametersInput.reward_account,
