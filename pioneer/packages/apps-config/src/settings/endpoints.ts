@@ -23,7 +23,17 @@ function createDev (t: TFunction): LinkOption[] {
       info: 'local',
       text: t<string>('rpc.local', 'Local Node (Own, 127.0.0.1:9944)', { ns: 'apps-config' }),
       value: 'ws://127.0.0.1:9944/'
-    }
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.olympia', 'Joystream Olympia Testing (hosted by js:stats)', { ns: 'apps-config' }),
+      value: 'wss://olympia.joystreamstats.live/rpc'
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.babylon', 'Joystream Babylon Testnet (hosted by js:stats)', { ns: 'apps-config' }),
+      value: 'wss://babylon.joystreamstats.live:9945'
+    },
   ];
 }
 
@@ -31,13 +41,13 @@ function createLive (t: TFunction): LinkOption[] {
   return [
     {
       info: 'joystream',
-      text: t<string>('rpc.joystream-1', 'Joystream (Europe/Germany - High Availabitliy)', { ns: 'apps-config' }),
-      value: 'wss://rome-rpc-endpoint.joystream.org:9944'
+      text: t<string>('rpc.jsstats', 'Joystream Current Testnet (global - hosted by js:stats)', { ns: 'apps-config' }),
+      value: 'wss://joystreamstats.live:9945'
     },
     {
       info: 'joystream',
-      text: t<string>('rpc.joystream-2', 'Joystream (JoystreamStats.Live)', { ns: 'apps-config' }),
-      value: 'wss://joystreamstats.live:9945'
+      text: t<string>('rpc.joystream-1', 'Joystream (Europe/Germany - High Availabitliy)', { ns: 'apps-config' }),
+      value: 'wss://rome-rpc-endpoint.joystream.org:9944'
     },
     {
       info: 'joystream',
