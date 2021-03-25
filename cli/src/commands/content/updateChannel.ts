@@ -72,7 +72,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(channelUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && channelUpdateParameters)  {
+      if (confirmed)  {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [actor, channelId, channelUpdateParameters])

@@ -61,7 +61,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && channelCreationParametersInput)  {
+      if (confirmed)  {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
