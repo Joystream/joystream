@@ -68,20 +68,21 @@ type ChannelCategory @entity {
   happenedIn: Block!
 }
 
-"Storage asset"
-union Asset = AssetUrl | AssetStorage
+"Asset availability representation"
+enum AssetAvailability {
+  ACCEPTED, # asset is available in storage
+  PENDING, # asset is being uploaded to storage
+  URL, # asset is referencing URL
+  INVALID, # invalid storage (meta)data used
+}
+
+"Asset representation"
+union Asset = AssetUrl | AssetStorage | AssetDeleted
 
 "Asset stored at an external source"
 type AssetUrl @variant {
-  id: ID!
-
   "The http url pointing to the media"
   url: String!
-}
-
-"Asset was never fully uploaded."
-type AssetNeverProvided @variant {
-  happenedIn: Block!
 }
 
 "Asset was deleted and is no longer available."
@@ -89,31 +90,15 @@ type AssetDeleted @variant {
   happenedIn: Block!
 }
 
-"Status of an asset upload"
-type AssetUploadStatus @variant {
+"Storage asset"
+type AssetStorage @variant {
   """
   Data object in upload life-cycle.
   If this is deleted, then set oldDataObject in its place if it is set and not rejected, otherwise union goes to Deleted.
   """
   dataObject: AssetDataObject!
 
-  """
-  Possible prior data object which was in some stage of upload life-cycle when new one was initiated.
-  If accepted, then apps may chose to use old in place of new before it is accepted.
-  If this is deleted, then set to null.
-  """
-  oldDataObject: AssetDataObject
-
   happenedIn: Block!
-}
-
-union AssetStorageUploadStatus = AssetNeverProvided | AssetDeleted | AssetUploadStatus
-
-type AssetStorage @variant {
-  id: ID!
-
-  "Upload to content directory status"
-  uploadStatus: AssetStorageUploadStatus!
 }
 
 "The decision of the storage provider when it acts as liaison"
@@ -306,6 +291,11 @@ type Video @entity {
   isFeatured: Boolean!
 
   featured: FeaturedVideo @derivedFrom(field: "video")
+
+  # helper properties - redudant info enabling important queries for Joystream use-cases
+
+  is_thumbnail_available: AssetAvailability!
+  is_media_available: AssetAvailability!
 }
 
 type VideoMediaMetadata @entity {
