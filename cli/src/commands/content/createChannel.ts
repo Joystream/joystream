@@ -39,6 +39,9 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
     if (input) {
       let channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
+
+      this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
+
       let channelMetadata = new ChannelMetadata()
       channelMetadata.setTitle(channelCreationParametersInput.meta.title!)
       channelMetadata.setDescription(channelCreationParametersInput.meta.description!)
@@ -58,7 +61,10 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
         reward_account: channelCreationParametersInput.reward_account,
       }
 
-      this.jsonPrettyPrint(JSON.stringify(channelCreationParameters))
+      this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
+
+      this.log('Meta: ' + meta)
+
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed)  {

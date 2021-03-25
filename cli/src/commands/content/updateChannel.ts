@@ -50,6 +50,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     if (input) {
       let channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
+
       let channelMetadata = new ChannelMetadata()
       channelMetadata.setTitle(channelUpdateParametersInput.new_meta.title!)
       channelMetadata.setDescription(channelUpdateParametersInput.new_meta.description!)
@@ -68,6 +69,10 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
         new_meta: meta,
         reward_account: channelUpdateParametersInput.reward_account,
       }
+
+      this.jsonPrettyPrint(JSON.stringify(channelUpdateParametersInput))
+
+      this.log('Meta: ' + meta)
 
       this.jsonPrettyPrint(JSON.stringify(channelUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
