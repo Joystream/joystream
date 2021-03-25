@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { IOFlags, getInputJson } from '../../helpers/InputOutput'
 import { NewAsset} from '@joystream/types/content'
 import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
 import { Vec, Option} from '@polkadot/types';
@@ -22,11 +22,11 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.contextFlag,
-    ...IOFlags,
+    input: IOFlags.input
   }
 
   async run() {
-    let { context, input, output } = this.parse(CreateChannelCommand).flags
+    let { context, input } = this.parse(CreateChannelCommand).flags
 
     if (!context) {
       context = await this.promptForContext()
@@ -62,7 +62,6 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed && channelCreationParametersInput)  {
-        saveOutputJson(output, `${channelCreationParametersInput.meta.title}Channel.json`, channelCreationParametersInput)
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])

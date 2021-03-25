@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { IOFlags, getInputJson,  } from '../../helpers/InputOutput'
 import { NewAsset} from '@joystream/types/content'
 import {ChannelMetadata} from '@joystream/content-metadata-protobuf'
 import { Vec, Option} from '@polkadot/types';
@@ -22,7 +22,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
     context: ContentDirectoryCommandBase.contextFlag,
-    ...IOFlags,
+    input: IOFlags.input
   }
 
   static args = [
@@ -35,7 +35,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
   async run() {
 
-    let { context, input, output } = this.parse(UpdateChannelCommand).flags
+    let { context, input } = this.parse(UpdateChannelCommand).flags
 
     const { channelId } = this.parse(UpdateChannelCommand).args
 
@@ -73,7 +73,6 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed && channelUpdateParameters)  {
-        saveOutputJson(output, `${channelUpdateParametersInput.new_meta.title}Channel.json`, channelUpdateParametersInput)
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [actor, channelId, channelUpdateParameters])
