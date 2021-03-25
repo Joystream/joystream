@@ -94,7 +94,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // give members of GROUP_ZERO permission to add schemas
         let add_schema_set = CredentialSet::from(vec![0]);
         assert_ok!(Permissions::set_class_add_schemas_set(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             add_schema_set
@@ -112,11 +112,11 @@ fn create_class_then_entity_with_default_class_permissions() {
         // System can always create entities (provided class exists) bypassing any permissions
         let entity_id_1 = next_entity_id();
         assert_ok!(Permissions::create_entity(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
         ));
-        // entities created by system are "un-owned"
+        // entities created by frame_system are "un-owned"
         assert!(!<EntityMaintainerByEntityId<Runtime>>::contains_key(
             entity_id_1
         ));
@@ -136,7 +136,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         );
 
         assert_ok!(Permissions::set_class_entities_can_be_created(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             true
@@ -154,7 +154,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // give members of GROUP_ONE permission to create entities
         let create_entities_set = CredentialSet::from(vec![1]);
         assert_ok!(Permissions::set_class_create_entities_set(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             create_entities_set
@@ -224,7 +224,7 @@ fn class_permissions_set_admins() {
         );
         assert_err!(
             Permissions::set_class_admins(
-                system::RawOrigin::None.into(), //unsigned inherent?
+                frame_system::RawOrigin::None.into(), //unsigned inherent?
                 class_id,
                 credential_set.clone()
             ),
@@ -233,7 +233,7 @@ fn class_permissions_set_admins() {
 
         // root origin can set admins
         assert_ok!(Permissions::set_class_admins(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             class_id,
             credential_set.clone()
         ));
@@ -258,7 +258,7 @@ fn class_permissions_set_add_schemas_set() {
 
         // root
         assert_ok!(Permissions::set_class_add_schemas_set(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             credential_set1.clone()
@@ -304,7 +304,7 @@ fn class_permissions_set_class_create_entities_set() {
 
         // root
         assert_ok!(Permissions::set_class_create_entities_set(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             credential_set1.clone()
@@ -347,7 +347,7 @@ fn class_permissions_set_class_entities_can_be_created() {
 
         // root
         assert_ok!(Permissions::set_class_entities_can_be_created(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             true
@@ -395,7 +395,7 @@ fn class_permissions_set_class_entity_permissions() {
 
         //root
         assert_ok!(Permissions::set_class_entity_permissions(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             entity_permissions1.clone()
@@ -449,7 +449,7 @@ fn class_permissions_set_class_reference_constraint() {
 
         //root
         assert_ok!(Permissions::set_class_reference_constraint(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             class_id,
             reference_constraint1.clone()
@@ -513,7 +513,7 @@ fn batch_transaction_simple() {
         }];
 
         assert_ok!(Permissions::add_class_schema(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             new_class_id,
             vec![],
@@ -597,7 +597,7 @@ fn batch_transaction_vector_of_entities() {
         }];
 
         assert_ok!(Permissions::add_class_schema(
-            system::RawOrigin::Root.into(),
+            frame_system::RawOrigin::Root.into(),
             None,
             new_class_id,
             vec![],

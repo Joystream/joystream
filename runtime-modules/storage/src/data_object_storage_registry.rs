@@ -37,12 +37,12 @@ const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 /// The _Data object storage registry_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
-    + system::Trait
+    + frame_system::Trait
     + data_directory::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data object storage registry_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Type for data object storage relationship id
     type DataObjectStorageRelationshipId: Parameter
