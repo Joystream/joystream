@@ -50,10 +50,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
       const serialized = channelMetadata.serializeBinary();
 
-      const api = await this.getOriginalApi()
-      
-      const metaRaw = api.createType('Raw', serialized)
-      const meta = new Bytes(api.registry, metaRaw)
+      const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
 
       let channelCreationParameters: ChannelCreationParameters = {
         assets: channelCreationParametersInput.assets,
