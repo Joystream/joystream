@@ -1117,7 +1117,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-common"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1131,7 +1131,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-content-directory"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1146,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-content-working-group"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1171,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-forum"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1188,7 +1188,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-governance"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-hiring"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1227,7 +1227,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1245,7 +1245,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-memo"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1257,7 +1257,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1288,7 +1288,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1306,7 +1306,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1327,7 +1327,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-recurring-reward"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1342,7 +1342,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-service-discovery"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-stake"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1432,7 +1432,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1473,7 +1473,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-token-mint"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1487,7 +1487,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-versioned-store"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1503,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-versioned-store-permissions"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1521,7 +1521,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
