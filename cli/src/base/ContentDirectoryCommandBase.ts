@@ -3,7 +3,6 @@ import { WorkingGroups } from '../Types'
 import { Channel, CuratorGroup, CuratorGroupId, ContentActor } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
-import _ from 'lodash'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
@@ -43,7 +42,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const groups = await this.getApi().availableCuratorGroups()
     const availableGroupIds = groups
       .filter(
-        ([_, group]) =>
+        ([, group]) =>
           group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
       )
       .map(([id]) => id)
