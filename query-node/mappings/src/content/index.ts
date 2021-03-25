@@ -1,1 +1,2 @@
-export * from './mappingsContent'
+export * from './channel'
+export * from './video'

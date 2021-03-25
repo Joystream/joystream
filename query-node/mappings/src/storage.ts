@@ -9,7 +9,7 @@ import {
   prepareBlock,
 } from './common'
 
-import { Storage as StorageTypes } from '../generated/types'
+import { Storage as StorageTypes } from '../../generated/types'
 import {
   ContentId,
   ContentParameters,

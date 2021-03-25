@@ -8,7 +8,7 @@ import {
   inconsistentState,
   prepareBlock,
 } from './common'
-import { Members } from '../generated/types'
+import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node/src/modules/membership/membership.model'
 import { Block } from 'query-node/src/modules/block/block.model'
 

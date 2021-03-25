@@ -1,3 +1,3 @@
-export * from './mappingsContent'
+export * from './content'
 export * from './membership'
 export * from './storage'
