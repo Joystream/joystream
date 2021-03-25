@@ -68,7 +68,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
       }
     } else {
-      this.log('Input invalid or was not provided...')
+      this.error('Input invalid or was not provided...')
     }
   }
 }
