@@ -71,7 +71,7 @@ type AssetUrl @variant {
   id: ID!
 
   "The http url pointing to the media"
-  url: String!
+  urls: [String!]
 }
 
 "Asset was never fully uploaded."
@@ -213,11 +213,11 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
-  "Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhoto: Asset
+  #"Channel's cover (background) photo. Recommended ratio: 16:9."
+  #coverPhoto: Asset
 
-  "Channel's avatar photo."
-  avatarPhoto: Asset
+  #"Channel's avatar photo."
+  #avatarPhoto: Asset
 
   "Flag signaling whether a channel is public."
   isPublic: Boolean

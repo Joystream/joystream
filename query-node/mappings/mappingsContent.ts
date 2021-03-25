@@ -5,6 +5,7 @@
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import ISO6391 from 'iso-639-1';
 
 // protobuf definitions
 import {
@@ -161,7 +162,7 @@ async function readProtobuf(
 async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
   if (rawAsset.isUrls) {
     const assetUrl = new AssetUrl()
-    assetUrl.url = rawAsset.asUrls.toArray()[0].toString() // TODO: find out why asUrl() returns array
+    assetUrl.urls = rawAsset.asUrls.toArray().map(item => item.toString())
 
     return assetUrl
   }
@@ -187,18 +188,17 @@ async function extractAsset(
   }
 
   if (assetIndex > assets.length) {
-    throw 'Inconsistent state' // TODO: more sophisticated inconsistency handling; unify handling with other critical errors
+    return inconsistentState()
   }
 
   return convertAsset(assets[assetIndex], db, event)
 }
 
 async function prepareLanguage(languageIso: string, db: DatabaseManager): Promise<Language> {
-  // TODO: ensure language is ISO name
-  const isValidIso = true;
+  const isValidIso = ISO6391.validate(languageIso);
 
   if (!isValidIso) {
-    throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
   const language = await db.get(Language, { where: { iso: languageIso }})
@@ -215,8 +215,6 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
 }
 
 async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promise<License> {
-  // TODO: add old license removal (when existing) or rework the whole function
-
   const license = new License(licenseProtobuf)
 
   return license
@@ -239,7 +237,7 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
   const category = await db.get(VideoCategory, { where: { id: categoryId }})
 
   if (!category) {
-    throw 'Inconsistent state' // TODO: create a proper way of handling inconsistent state
+    return inconsistentState()
   }
 
   return category
@@ -603,9 +601,17 @@ export async function content_VideoUpdated(
       event,
     )
 
+    // remember original license
+    const originalLicense = video.license
+
     // update all fields read from protobuf
     for (let [key, value] of Object(protobufContent).entries()) {
       video[key] = value
+    }
+
+    // license has changed - delete old license
+    if (originalLicense && video.license != originalLicense) {
+      await db.remove<License>(originalLicense)
     }
   }
 
@@ -759,7 +765,7 @@ export async function content_CuratorGroupStatusSet(
   event: SubstrateEvent
 ) {
   // read event data
-  const {curatorGroupId, isActive} = new Content.CuratorGroupStatusSetEvent(event).data
+  const {curatorGroupId, bool: isActive} = new Content.CuratorGroupStatusSetEvent(event).data
 
   // load curator group
   const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
@@ -770,7 +776,7 @@ export async function content_CuratorGroupStatusSet(
   }
 
   // update curator group
-  curatorGroup.isActive = isActive
+  curatorGroup.isActive = isActive.isTrue
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
