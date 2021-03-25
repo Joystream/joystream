@@ -2,62 +2,17 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
 
-// protobuf definitions
-import {
-  ChannelMetadata,
-  ChannelCategoryMetadata,
-  PublishedBeforeJoystream as PublishedBeforeJoystreamMetadata,
-  License as LicenseMetadata,
-  MediaType as MediaTypeMetadata,
-  VideoMetadata,
-  VideoCategoryMetadata,
-} from '@joystream/content-metadata-protobuf'
-
-import {
-  Content,
-} from '../../../generated/types'
-
+import { Content } from '../../../generated/types'
 import { readProtobuf } from './utils'
 
 import {
   inconsistentState,
   prepareBlock,
-  prepareAssetDataObject,
 } from '../common'
 
 // primary entities
-import { Block } from 'query-node/src/modules/block/block.model'
-import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
 import { Channel } from 'query-node/src/modules/channel/channel.model'
 import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
-import { Video } from 'query-node/src/modules/video/video.model'
-import { VideoCategory } from 'query-node/src/modules/video-category/video-category.model'
-
-// secondary entities
-import { Language } from 'query-node/src/modules/language/language.model'
-import { License } from 'query-node/src/modules/license/license.model'
-import { VideoMediaEncoding } from 'query-node/src/modules/video-media-encoding/video-media-encoding.model'
-import { VideoMediaMetadata } from 'query-node/src/modules/video-media-metadata/video-media-metadata.model'
-
-// Asset
-import {
-  Asset,
-  AssetUrl,
-  AssetUploadStatus,
-  AssetStorage,
-  AssetOwner,
-  AssetOwnerMember,
-} from 'query-node/src/modules/variants/variants.model'
-import {
-  AssetDataObject,
-  LiaisonJudgement
-} from 'query-node/src/modules/asset-data-object/asset-data-object.model'
-
-// Joystream types
-import {
-  ContentParameters,
-  NewAsset,
-} from '@joystream/types/augment'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
