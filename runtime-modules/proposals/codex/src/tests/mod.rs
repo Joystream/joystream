@@ -187,7 +187,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
 #[test]
 fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 5000000);
+        increase_total_balance_issuance_using_account_id(1, 10000000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -226,7 +226,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1_000_000_u32)),
+                    Some(<BalanceOf<Test>>::from(5_000_000_u32)),
                     b"wasm".to_vec(),
                 )
             },
@@ -272,7 +272,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 #[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
+        increase_total_balance_issuance_using_account_id(1, 2000000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -311,7 +311,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(200_000_u32)),
+                    Some(<BalanceOf<Test>>::from(1_000_000_u32)),
                     get_valid_election_parameters(),
                 )
             },
@@ -348,7 +348,7 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
         voting_period: 14400,
         revealing_period: 14400,
         council_size: 4,
-        candidacy_limit: 25,
+        candidacy_limit: 50,
         new_term_duration: 14400,
         min_council_stake: 1,
         min_voting_stake: 1,
@@ -358,7 +358,7 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
 #[test]
 fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
+        increase_total_balance_issuance_using_account_id(1, 1500000);
 
         let mut election_parameters = get_valid_election_parameters();
         election_parameters.council_size = 2;
@@ -566,7 +566,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
 #[test]
 fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
+        increase_total_balance_issuance_using_account_id(1, 1000000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -605,7 +605,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    Some(<BalanceOf<Test>>::from(500_000_u32)),
                     4,
                 )
             },

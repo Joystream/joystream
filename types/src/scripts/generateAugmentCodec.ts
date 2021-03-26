@@ -18,7 +18,6 @@ import mint from '../mint'
 import recurringRewards from '../recurring-rewards'
 import hiring from '../hiring'
 import workingGroup from '../working-group'
-import discovery from '../discovery'
 import storage from '../storage'
 import proposals from '../proposals'
 import contentDirectory from '../content'
@@ -41,7 +40,6 @@ const typesByModule = {
   'recurring-rewards': recurringRewards,
   'hiring': hiring,
   'working-group': workingGroup,
-  'discovery': discovery,
   'storage': storage,
   'proposals': proposals,
   'content': contentDirectory,
