@@ -4,7 +4,7 @@
 
 // Clippy linter warning. TODO: refactor "this function has too many argument"
 #![allow(clippy::too_many_arguments)] // disable it because of possible API break
-
+#![allow(clippy::match_like_matches_macro)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
