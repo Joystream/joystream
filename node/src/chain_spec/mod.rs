@@ -29,13 +29,13 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
     StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -235,8 +235,8 @@ pub fn testnet_genesis(
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
-        system: Some(SystemConfig {
-            code: WASM_BINARY.to_vec(),
+        frame_system: Some(SystemConfig {
+            code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         }),
         pallet_balances: Some(BalancesConfig {
