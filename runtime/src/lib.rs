@@ -35,7 +35,6 @@ use pallet_session::historical as pallet_session_historical;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::Convert;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
 use sp_std::boxed::Box;
@@ -133,33 +132,6 @@ impl frame_system::Trait for Runtime {
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = weights::frame_system::WeightInfo;
-}
-
-//TODO: remove:
-/// A structure that converts the currency type into a lossy u64
-/// And back from u128
-pub struct CurrencyToVoteHandler;
-
-impl Convert<u128, u64> for CurrencyToVoteHandler {
-    fn convert(x: u128) -> u64 {
-        if x >> 96 == 0 {
-            x as u64
-        } else {
-            u64::max_value()
-        }
-    }
-}
-
-impl Convert<u128, u128> for CurrencyToVoteHandler {
-    fn convert(x: u128) -> u128 {
-        // if it practically fits in u64
-        if x >> 64 == 0 {
-            x
-        } else {
-            // 0000_0000_FFFF_FFFF_FFFF_FFFF_0000_0000
-            u64::max_value() as u128
-        }
-    }
 }
 
 impl substrate_utility::Trait for Runtime {
@@ -390,7 +362,7 @@ parameter_types! {
 impl pallet_staking::Trait for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = CurrencyToVoteHandler;
+    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
     type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
     type Slash = (); // Where to send the slashed funds. Could be Treasury.
