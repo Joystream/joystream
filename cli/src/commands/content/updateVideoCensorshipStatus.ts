@@ -5,7 +5,7 @@ import ExitCodes from '../../ExitCodes'
 export default class UpdateChannelCensorshipStatusCommand extends ContentDirectoryCommandBase {
   static description = 'Update Channel censorship status (Active/Inactive).'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
+    context: ContentDirectoryCommandBase.ownerContextFlag,
   }
 
   static args = [
@@ -32,7 +32,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     let { id, status, rationale } = this.parse(UpdateChannelCensorshipStatusCommand).args
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()
