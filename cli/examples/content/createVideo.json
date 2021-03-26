@@ -8,7 +8,7 @@
     "title": "Title",
     "description": "Description",
     "video": 1,
-    "thumbnailPhoto": "1",
+    "thumbnailPhoto": 1,
     "duration": 10,
     "mediaPixelHeight": 20,
     "mediaPixelWidth": 50,
@@ -19,18 +19,18 @@
     "personsList": [1, 2, 5],
     "category": 2,
     "mediaType": {
-      "codecName": "mp4",
-      "container": "zip",
-      "mimeMediaType": "mime media type"
+      "codecName": "mpeg4",
+      "container": "avi",
+      "mimeMediaType": "videp/mp4"
     },
-    "licence": {
+    "license": {
       "code": 1001,
       "attribution": "first",
       "customText": "text"
     },
     "publishedBeforeJoystream": {
       "isPublished": true,
-      "date": "2020.02.20"
+      "date": "2012-09-27"
     }
   }
 }

@@ -521,12 +521,20 @@ export default class Api {
   }
 
   async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
-    const videoEntries = await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
-    return videoEntries.filter(([, video]) => video.in_channel.toNumber() === channelId)
+    const channel = await this.channelById(channelId)
+    if (channel) {
+      return Promise.all(
+        channel.videos.map(
+          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
+        )
+      )
+    } else {
+      return []
+    }
   }
 
   async videoById(videoId: number): Promise<Video | null> {
-    const exists = !!(await this._api.query.content.entityById.size(videoId)).toNumber()
+    const exists = !!(await this._api.query.content.videoById.size(videoId)).toNumber()
     return exists ? await this._api.query.content.videoById<Video>(videoId) : null
   }
 
@@ -557,5 +565,10 @@ export default class Api {
 
     const bestNumber = await this.bestNumber()
     return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
+  }
+
+  async storageProviderEndpoint(storageProviderId: number): Promise<string> {
+    const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
+    return this._api.createType('Text', value).toString()
   }
 }

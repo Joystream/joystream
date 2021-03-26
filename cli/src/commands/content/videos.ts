@@ -1,5 +1,5 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-// import chalk from 'chalk'
+import { Video, VideoId } from '@joystream/types/content'
 import { displayTable } from '../../helpers/display'
 
 export default class VideosCommand extends ContentDirectoryCommandBase {
@@ -16,10 +16,11 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
   async run() {
     const { channelId } = this.parse(VideosCommand).args
 
-    let videos = await this.getApi().availableVideos()
-
+    let videos: [VideoId, Video][]
     if (channelId) {
-      videos = videos.filter(([, /* id */ video]) => video.in_channel.eqn(channelId))
+      videos = await this.getApi().videosByChannelId(channelId)
+    } else {
+      videos = await this.getApi().availableVideos()
     }
 
     if (videos.length > 0) {

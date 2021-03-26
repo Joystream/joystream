@@ -1,13 +1,13 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { IOFlags, getInputJson } from '../../helpers/InputOutput'
 import { videoMetadataFromInput } from '../../helpers/serialization'
 import { VideoCreationParameters, VideoCreationParametersInput } from '../../Types'
 
 export default class CreateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Create video under specific channel inside content directory.'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
-    ...IOFlags,
+    context: ContentDirectoryCommandBase.ownerContextFlag,
+    input: IOFlags.input,
   }
 
   static args = [
@@ -19,12 +19,12 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-    let { context, input, output } = this.parse(CreateVideoCommand).flags
+    let { context, input } = this.parse(CreateVideoCommand).flags
 
     const { channelId } = this.parse(CreateVideoCommand).args
 
     if (!context) {
-      context = await this.promptForContext()
+      context = await this.promptForOwnerContext()
     }
 
     const currentAccount = await this.getRequiredSelectedAccount()
@@ -33,22 +33,23 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
     const actor = await this.getActor(context)
 
     if (input) {
-      let videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)
+      const videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)
 
       const api = await this.getOriginalApi()
 
       const meta = videoMetadataFromInput(api, videoCreationParametersInput)
 
-      let videoCreationParameters: VideoCreationParameters = {
+      const videoCreationParameters: VideoCreationParameters = {
         assets: videoCreationParametersInput.assets,
         meta,
       }
 
-      this.jsonPrettyPrint(JSON.stringify(videoCreationParameters))
+      this.jsonPrettyPrint(JSON.stringify(videoCreationParametersInput))
+      this.log('Meta: ' + meta)
+
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && videoCreationParametersInput) {
-        saveOutputJson(output, `${videoCreationParametersInput.meta.title}Video.json`, videoCreationParametersInput)
+      if (confirmed) {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'createVideo', [
@@ -58,7 +59,7 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
         ])
       }
     } else {
-      this.log('Input invalid or was not provided...')
+      this.error('Input invalid or was not provided...')
     }
   }
 }

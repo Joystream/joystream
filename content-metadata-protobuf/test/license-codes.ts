@@ -14,7 +14,7 @@ describe('Known License Codes', () => {
   })
 
   it('Pre-defined Joystream license codes', () => {
-    // Make sure we have correct known custom licence
+    // Make sure we have correct known custom license
     assert(KnownLicenses.has(CUSTOM_LICENSE_CODE))
     assert.equal(KnownLicenses.get(CUSTOM_LICENSE_CODE)!.name, 'CUSTOM')
 
@@ -33,7 +33,7 @@ describe('Known License Codes', () => {
     assert.equal(license.getCode(), CUSTOM_LICENSE_CODE)
   })
 
-  it('createKnownLicenseFromCode(): Licence can be created by name', () => {
+  it('createKnownLicenseFromCode(): License can be created by name', () => {
     const licenseCode = getLicenseCodeByName('CC_BY') as number
     const license = createKnownLicenseFromCode(licenseCode as number, 'Attribution: Joystream')
     const videoMeta = new VideoMetadata()
