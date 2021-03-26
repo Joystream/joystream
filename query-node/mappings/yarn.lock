@@ -83,7 +83,7 @@
   dependencies:
     bn.js "^5.1.3"
 
-"@dzlzv/hydra-db-utils@2.0.1-beta.15":
+"@dzlzv/hydra-db-utils@^2.0.1-beta.15":
   version "2.0.1-beta.15"
   resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.0.1-beta.15.tgz#eaf01ded617502cd3ac1968825862ecf962f0b4d"
   integrity sha512-vZvXZU2p0rz02r1bavO4a+H+CbTM+23ikX4QWvClU5/HPRbjlkRln+GrwYcRNk+Aj1pl7yacJaWzdyLF4j0B+w==
@@ -2453,6 +2453,11 @@ isexe@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=
+
+iso-639-1@^2.1.8:
+  version "2.1.8"
+  resolved "https://registry.yarnpkg.com/iso-639-1/-/iso-639-1-2.1.8.tgz#98fae683960db44cd14cf4ed2a37427e997d8c89"
+  integrity sha512-Ol0R5oepQmWTMrlzSx8giSQ4hQsh2SZI/fsAy+nYc5O+RsYeixy2tsGUYJNadqqoOcbanSbFTqK17PRKpuNCAw==
 
 isobject@^4.0.0:
   version "4.0.0"

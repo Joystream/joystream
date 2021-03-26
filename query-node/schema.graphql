@@ -345,7 +345,7 @@ type VideoMediaMetadata @entity {
   pixelHeight: Int
 
   "Video media size in bytes"
-  size: Int
+  size: BigInt
 
   video: Video @derivedFrom(field: "mediaMetadata")
 

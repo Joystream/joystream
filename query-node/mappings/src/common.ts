@@ -1,6 +1,7 @@
 import BN from 'bn.js'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { u64 } from '@polkadot/types/primitive';
 
 import { Block } from 'query-node/src/modules/block/block.model'
 import { Network } from 'query-node/src/modules/enums/enums'
@@ -49,7 +50,8 @@ export async function prepareAssetDataObject(contentParameters: ContentParameter
     owner: assetOwner,
     addedAt: block,
     typeId: contentParameters.type_id.toNumber(),
-    size: new BN(contentParameters.size),
+    // `size` is masked by `size` special name in struct so there needs to be `.get('size') as u64`
+    size: (contentParameters.get('size') as unknown as u64).toBn(),
     liaisonId: new BN(0), // TODO: proper id
     liaisonJudgement: LiaisonJudgement.PENDING, // TODO: proper judgement
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),

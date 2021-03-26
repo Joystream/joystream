@@ -4,6 +4,8 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
+import BN from 'bn.js'
+import { u64 } from '@polkadot/types/primitive';
 
 // protobuf definitions
 import {
@@ -109,7 +111,10 @@ export async function readProtobuf(
 
     // prepare media meta information if needed
     if (metaAsObject.mediaType) {
-      result.mediaMetadata = await prepareVideoMetadata(metaAsObject)
+      // prepare video file size if poosible
+      const videoSize = await extractVideoSize(assets, metaAsObject.video)
+
+      result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize)
       delete metaAsObject.mediaType
     }
 
@@ -154,7 +159,7 @@ export async function readProtobuf(
 function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string) {
   // published elsewhere before Joystream
   if (publishedAtString) {
-    video.publishedBeforeJoystream = new Date(publishedAt)
+    video.publishedBeforeJoystream = new Date(publishedAtString)
   }
 
   // unset publish info
@@ -196,6 +201,30 @@ async function extractAsset(
   return convertAsset(assets[assetIndex], db, event)
 }
 
+async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<BN | undefined> {
+  if (assetIndex === undefined) {
+    return undefined
+  }
+
+  if (assetIndex > assets.length) {
+    return inconsistentState()
+  }
+
+  const rawAsset = assets[assetIndex]
+
+  if (rawAsset.isUrls) {
+    return undefined
+  }
+
+  // !rawAsset.isUrls && rawAsset.isUpload
+
+  const contentParameters: ContentParameters = rawAsset.asUpload
+  // `size` is masked by `size` special name in struct so there needs to be `.get('size') as u64`
+  const videoSize = (contentParameters.get('size') as unknown as u64).toBn()
+
+  return videoSize
+}
+
 async function prepareLanguage(languageIso: string, db: DatabaseManager): Promise<Language> {
   const isValidIso = ISO6391.validate(languageIso);
 
@@ -222,15 +251,18 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promis
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject): Promise<VideoMediaMetadata> {
+async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: BN | undefined): Promise<VideoMediaMetadata> {
   const encoding = new VideoMediaEncoding(videoProtobuf.mediaType)
 
   const videoMeta = new VideoMediaMetadata({
     encoding,
     pixelWidth: videoProtobuf.mediaPixelWidth,
     pixelHeight: videoProtobuf.mediaPixelHeight,
-    size: 0, // TODO: retrieve proper file size
   })
+
+  if (videoSize !== undefined) {
+    videoMeta.size = videoSize
+  }
 
   return videoMeta
 }

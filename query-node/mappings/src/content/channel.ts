@@ -2,11 +2,14 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
 
-import { GenericAccountId } from '@polkadot/types/generic';
+import { AccountId } from "@polkadot/types/interfaces";
 import { Option } from '@polkadot/types/codec';
 import { Content } from '../../../generated/types'
 import { readProtobuf } from './utils'
 
+
+// Asset
+import { AssetStorage } from 'query-node/src/modules/variants/variants.model'
 import {
   inconsistentState,
   prepareBlock,
@@ -93,11 +96,11 @@ export async function content_ChannelAssetsRemoved(
   const {contentId: contentIds} = new Content.ChannelAssetsRemovedEvent(event).data
 
   // load channel
-  const assets = await db.getMany(Asset, { where: { id: contentIds } })
+  const assets = await db.getMany(AssetStorage, { where: { id: contentIds } })
 
   // delete assets
   for (const asset in assets) {
-    await db.remove<Asset>(asset)
+    await db.remove<AssetStorage>(asset)
   }
 }
 
@@ -236,7 +239,7 @@ export async function content_ChannelCategoryDeleted(
 
 function handleChannelRewardAccountChange(
   channel: Channel, // will be modified inside of the function!
-  reward_account: Option<GenericAccountId>
+  reward_account: Option<AccountId>
 ) {
   // new different reward account set?
   if (reward_account.isSome) {
