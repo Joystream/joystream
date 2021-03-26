@@ -2060,6 +2060,12 @@ declare module '@polkadot/types/types/registry' {
     FailedAt: FailedAt;
     'Option<FailedAt>': Option<FailedAt>;
     'Vec<FailedAt>': Vec<FailedAt>;
+    IPNSIdentity: IPNSIdentity;
+    'Option<IPNSIdentity>': Option<IPNSIdentity>;
+    'Vec<IPNSIdentity>': Vec<IPNSIdentity>;
+    ServiceProviderRecord: ServiceProviderRecord;
+    'Option<ServiceProviderRecord>': Option<ServiceProviderRecord>;
+    'Vec<ServiceProviderRecord>': Vec<ServiceProviderRecord>;
     BlockAndTime: BlockAndTime;
     'Option<BlockAndTime>': Option<BlockAndTime>;
     'Vec<BlockAndTime>': Vec<BlockAndTime>;
@@ -2345,12 +2351,6 @@ declare module '@polkadot/types/types/registry' {
     RoleStakeProfile: RoleStakeProfile;
     'Option<RoleStakeProfile>': Option<RoleStakeProfile>;
     'Vec<RoleStakeProfile>': Vec<RoleStakeProfile>;
-    IPNSIdentity: IPNSIdentity;
-    'Option<IPNSIdentity>': Option<IPNSIdentity>;
-    'Vec<IPNSIdentity>': Vec<IPNSIdentity>;
-    ServiceProviderRecord: ServiceProviderRecord;
-    'Option<ServiceProviderRecord>': Option<ServiceProviderRecord>;
-    'Vec<ServiceProviderRecord>': Vec<ServiceProviderRecord>;
     ContentId: ContentId;
     'Option<ContentId>': Option<ContentId>;
     'Vec<ContentId>': Vec<ContentId>;

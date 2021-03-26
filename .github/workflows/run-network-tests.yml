@@ -219,18 +219,9 @@ jobs:
           docker-compose up -d colossus
       - name: Test uploading
         run: |
-          WAIT_TIME=90
+          sleep 6
           export DEBUG=joystream:*
-          for i in {1..4}; do
-            [ "$i" == "4" ] && exit -1
-            echo "Waiting for ipfs name registration"
-            sleep ${WAIT_TIME}
-            if yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0; then
-              break
-            else
-              echo "Upload test failed, will retry"
-            fi
-          done
+          yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0
           # Wait for storage-node to set status Accepted on uploaded content
           sleep 6
           cd utils/api-scripts/
