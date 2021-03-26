@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, ObjectOwner, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, Stake, StakeId, Thread, ThreadCounter, ThreadId, TransferableStake, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, Voucher, WorkerId, WorkerOf } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ContentId, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, HiringApplicationId, InputValidationLengthConstraint, MemberId, Membership, MemoText, Mint, MintId, ObjectOwner, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Series, SeriesId, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, Voucher, WorkerId, WorkerOf } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -382,6 +382,20 @@ declare module '@polkadot/api/types/storage' {
        * Provides id counter for the data object types.
        **/
       nextDataObjectTypeId: AugmentedQuery<ApiType, () => Observable<DataObjectTypeId>>;
+    };
+    discovery: {
+      /**
+       * Mapping of service providers' storage provider id to their ServiceProviderRecord
+       **/
+      accountInfoByStorageProviderId: AugmentedQuery<ApiType, (arg: StorageProviderId | AnyNumber | Uint8Array) => Observable<ServiceProviderRecord>>;
+      /**
+       * Bootstrap endpoints maintained by root
+       **/
+      bootstrapEndpoints: AugmentedQuery<ApiType, () => Observable<Vec<Url>>>;
+      /**
+       * Lifetime of an ServiceProviderRecord record in AccountInfoByAccountId map
+       **/
+      defaultLifetime: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
     };
     forum: {
       /**
