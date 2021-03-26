@@ -21,7 +21,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     },
     {
       name: 'rationale',
-      required: false,
+      required: true,
       description: 'rationale',
     },
   ]
