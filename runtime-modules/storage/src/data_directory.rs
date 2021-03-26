@@ -103,12 +103,6 @@ decl_error! {
         /// Voucher objects limit upper bound exceeded
         VoucherObjectsLimitUpperBoundExceeded,
 
-        /// Contant uploading failed. Actor voucher size limit exceeded.
-        GlobalVoucherSizeLimitExceeded,
-
-        /// Contant uploading failed. Actor voucher objects limit exceeded.
-        GlobalVoucherObjectsLimitExceeded,
-
         /// Content uploading blocked.
         ContentUploadingBlocked,
 
@@ -241,9 +235,21 @@ impl Voucher {
         }
     }
 
+    /// Attempts to fill voucher and returns an updated Voucher if no overlflows occur
+    /// or limits are exceeded. Error otherwise.
     pub fn fill_voucher<T: Trait>(self, voucher_delta: Delta) -> Result<Self, Error<T>> {
         if let Some(size_used) = self.size_used.checked_add(voucher_delta.size) {
+            // Ensure size limit not exceeded
+            ensure!(
+                size_used <= self.size_limit,
+                Error::<T>::VoucherSizeLimitExceeded
+            );
             if let Some(objects_used) = self.objects_used.checked_add(voucher_delta.objects) {
+                // Ensure objects limit not exceeded
+                ensure!(
+                    objects_used <= self.objects_limit,
+                    Error::<T>::VoucherObjectsLimitExceeded
+                );
                 return Ok(Self {
                     size_used,
                     objects_used,
@@ -425,18 +431,8 @@ decl_module! {
 
             Self::ensure_content_is_valid(&content)?;
 
-            let owner_voucher = Self::get_voucher(&owner);
-
-            // Ensure owner voucher constraints satisfied.
-            // Calculate upload voucher delta
-            let upload_voucher_delta = Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
-
-            // Ensure global voucher constraints satisfied.
-            Self::ensure_global_voucher_constraints_satisfied(upload_voucher_delta)?;
-
-            // fill vouchers - overflow cannot happen because of prior constraint checks
-            let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher_delta)?;
-            let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher_delta)?;
+            // Ensure owner and global voucher constraints satisfied.
+            let (new_owner_voucher, new_global_voucher) = Self::ensure_voucher_constraints_satisfied(&owner, &content)?;
 
             //
             // == MUTATION SAFE ==
@@ -734,37 +730,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensure owner voucher constraints satisfied, returns total object length and total size voucher delta for this upload.
-    fn ensure_owner_voucher_constraints_satisfied(
-        owner_voucher: Voucher,
-        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
-    ) -> Result<Delta, Error<T>> {
-        let owner_voucher_delta = owner_voucher.calculate_delta();
-
-        // Ensure total content length is less or equal then available per given owner voucher
-        let content_length = content.len() as u64;
-
-        ensure!(
-            owner_voucher_delta.objects >= content_length,
-            Error::<T>::VoucherObjectsLimitExceeded
-        );
-
-        // Ensure total content size is less or equal then available per given owner voucher
-        let content_size = content
-            .iter()
-            .fold(0, |total_size, content| total_size + content.size);
-
-        ensure!(
-            owner_voucher_delta.size >= content_size,
-            Error::<T>::VoucherSizeLimitExceeded
-        );
-
-        Ok(Delta {
-            size: content_size,
-            objects: content_length,
-        })
-    }
-
     // Ensure content under given content ids can be successfully removed
     fn ensure_content_can_be_removed(
         content_ids: &[T::ContentId],
@@ -780,7 +745,7 @@ impl<T: Trait> Module<T> {
         Ok(content)
     }
 
-    // Calculates content voucher delta
+    /// Calculates content voucher delta of existing data objects
     fn calculate_content_voucher(content: Vec<DataObject<T>>) -> Delta {
         let content_length = content.len() as u64;
 
@@ -794,21 +759,32 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Ensures global voucher constraints satisfied.
-    fn ensure_global_voucher_constraints_satisfied(upload_voucher_delta: Delta) -> DispatchResult {
-        let global_voucher_voucher = Self::global_voucher().calculate_delta();
+    /// Calculates content voucher delta for new content being added
+    fn calculate_new_content_voucher(
+        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
+    ) -> Delta {
+        let objects = content.len() as u64;
+        let size = content
+            .iter()
+            .fold(0, |total_size, content| total_size + content.size);
 
-        ensure!(
-            global_voucher_voucher.objects >= upload_voucher_delta.objects,
-            Error::<T>::GlobalVoucherObjectsLimitExceeded
-        );
+        Delta { size, objects }
+    }
 
-        ensure!(
-            global_voucher_voucher.size >= upload_voucher_delta.size,
-            Error::<T>::GlobalVoucherSizeLimitExceeded
-        );
+    /// Ensures new content satisfies both owner and global vouchers. Returns new vouchers
+    /// if constraints are satisfied, Error otherwise.
+    fn ensure_voucher_constraints_satisfied(
+        owner: &ObjectOwner<T>,
+        content: &[ContentParameters<T::ContentId, DataObjectTypeId<T>>],
+    ) -> Result<(Voucher, Voucher), Error<T>> {
+        let owner_voucher = Self::get_voucher(owner);
+        let global_voucher = Self::global_voucher();
+        let content_voucher_delta = Self::calculate_new_content_voucher(content);
 
-        Ok(())
+        let new_owner_voucher = owner_voucher.fill_voucher::<T>(content_voucher_delta)?;
+        let new_global_voucher = global_voucher.fill_voucher::<T>(content_voucher_delta)?;
+
+        Ok((new_owner_voucher, new_global_voucher))
     }
 
     // Complete content upload
@@ -882,19 +858,9 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
 
         Self::ensure_uploading_is_not_blocked()?;
 
-        let owner_voucher = Self::get_voucher(&owner);
-
-        // Ensure owner voucher constraints satisfied.
-        // Calculate upload voucher
-        let upload_voucher =
-            Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
-
-        // Ensure global voucher constraints satisfied.
-        Self::ensure_global_voucher_constraints_satisfied(upload_voucher)?;
-
-        // fill vouchers - overflow cannot happen because of prior constraint checks
-        let new_owner_voucher = owner_voucher.fill_voucher::<T>(upload_voucher)?;
-        let new_global_voucher = Self::global_voucher().fill_voucher::<T>(upload_voucher)?;
+        // Ensure owner and global vouchers constraints satisfied.
+        let (new_owner_voucher, new_global_voucher) =
+            Self::ensure_voucher_constraints_satisfied(&owner, &content)?;
 
         //
         // == MUTATION SAFE ==
@@ -946,12 +912,8 @@ impl<T: Trait> common::storage::StorageSystem<T> for Module<T> {
     ) -> DispatchResult {
         Self::ensure_uploading_is_not_blocked()?;
 
-        let owner_voucher = Self::get_voucher(&owner);
+        let _ = Self::ensure_voucher_constraints_satisfied(&owner, &content)?;
 
-        // Ensure owner voucher constraints satisfied.
-        let delta = Self::ensure_owner_voucher_constraints_satisfied(owner_voucher, &content)?;
-        // Ensure global voucher constraints satisfied.
-        Self::ensure_global_voucher_constraints_satisfied(delta)?;
         Self::ensure_content_is_valid(&content)
     }
 
