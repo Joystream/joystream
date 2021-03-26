@@ -50,7 +50,7 @@ type Membership @entity {
   "The type of subscription the member has purchased if any."
   subscription: BigInt
 
-  videos: [Video!] @derivedFrom(field: "ownerMember")
+  channels: [Channel!] @derivedFrom(field: "ownerMember")
 }
 
 "Category of media channel"
@@ -201,10 +201,10 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  "Member owning the video (if any)"
+  "Member owning the channel (if any)"
   ownerMember: Membership
 
-  "Curator group owning the video (if any)"
+  "Curator group owning the channel (if any)"
   ownerCuratorGroup: CuratorGroup
 
   category: ChannelCategory
