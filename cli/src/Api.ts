@@ -525,7 +525,7 @@ export default class Api {
     if (channel) {
       return Promise.all(
         channel.videos.map(
-          async (video_id) => [video_id, await this._api.query.content.videoById<Video>(video_id)] as [VideoId, Video]
+          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
         )
       )
     } else {
