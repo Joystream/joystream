@@ -521,8 +521,16 @@ export default class Api {
   }
 
   async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
-    const videoEntries = await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
-    return videoEntries.filter(([, video]) => video.in_channel.toNumber() === channelId)
+    const channel = await this.channelById(channelId)
+    if (channel) {
+      return Promise.all(
+        channel.videos.map(
+          async (video_id) => [video_id, await this._api.query.content.videoById<Video>(video_id)] as [VideoId, Video]
+        )
+      )
+    } else {
+      return []
+    }
   }
 
   async videoById(videoId: number): Promise<Video | null> {
