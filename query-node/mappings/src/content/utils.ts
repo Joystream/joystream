@@ -1,6 +1,4 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
-// TODO: split file into multiple files
-// TODO: make sure assets are updated when VideoUpdateParameters have only `assets` parameter set (no `new_meta` set) - if this situation can even happend
 // TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
@@ -137,12 +135,8 @@ export async function readProtobuf(
 
     // prepare information about media published somewhere else before Joystream if needed.
     if (metaAsObject.publishedBeforeJoystream) {
-      // TODO: is ok to just ignore `isPublished?: boolean` here?
-      if (metaAsObject.publishedBeforeJoystream.date) {
-        result.publishedBeforeJoystream = new Date(metaAsObject.publishedBeforeJoystream.date)
-      } else {
-        delete result.publishedBeforeJoystream
-      }
+      // this will change the `channel`!
+      handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream.date)
     }
 
     return result
@@ -155,6 +149,16 @@ export async function readProtobuf(
 
   // this should never happen
   throw `Not implemented type: ${type}`
+}
+
+function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string) {
+  // published elsewhere before Joystream
+  if (publishedAtString) {
+    video.publishedBeforeJoystream = new Date(publishedAt)
+  }
+
+  // unset publish info
+  delete video.publishedBeforeJoystream
 }
 
 async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {

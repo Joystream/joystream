@@ -22,8 +22,10 @@ import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
 import { AssetDataObject } from 'query-node/src/modules/asset-data-object/asset-data-object.model'
 
 export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+  // read event data
   const {channelId , contentParameters} = new StorageTypes.ContentAddedEvent(event).data
   // TODO: resolve handling of Vec<ContentParameters> - currently only the first item is handleu
+
   const block = await prepareBlock(db, event)
   const assetStorage = await prepareAssetDataObject(contentParameters[0], block)
 
@@ -31,36 +33,52 @@ export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): 
 }
 
 export async function ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+  // read event data
   const {contentId: contentIds} = new StorageTypes.ContentRemovedEvent(event).data
+
+  // load assets
   const assetDataObjects = await db.getMany(AssetDataObject, { where: { joystreamContentId: contentIds }})
 
+  // remove assets from database
   for (let item of assetDataObjects) {
       await db.remove<AssetDataObject>(item)
   }
 }
 
 export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+  // read event data
   const {contentId} = new StorageTypes.ContentAcceptedEvent(event).data
+
+  // load asset
   const assetDataObject = await db.get(AssetDataObject, { where: { joystreamContentId: contentId }})
 
+  // ensure object exists
   if (!assetDataObject) {
     return inconsistentState()
   }
 
+  // update object
   assetDataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
+  // save object
   await db.save<AssetDataObject>(assetDataObject)
 }
 
 export async function ContentRejected(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+  // read event data
   const {contentId} = new StorageTypes.ContentRejectedEvent(event).data
+
+  // load asset
   const assetDataObject = await db.get(AssetDataObject, { where: { joystreamContentId: contentId }})
 
+  // ensure object exists
   if (!assetDataObject) {
     return inconsistentState()
   }
 
+  // update object
   assetDataObject.liaisonJudgement = LiaisonJudgement.REJECTED
 
+  // save object
   await db.save<AssetDataObject>(assetDataObject)
 }

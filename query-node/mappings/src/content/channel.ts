@@ -2,6 +2,8 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
 
+import { GenericAccountId } from '@polkadot/types/generic';
+import { Option } from '@polkadot/types/codec';
 import { Content } from '../../../generated/types'
 import { readProtobuf } from './utils'
 
@@ -75,13 +77,8 @@ export async function content_ChannelUpdated(
 
   // reward account change happened?
   if (channelUpdateParameters.reward_account.isSome) {
-    // TODO: separate to function
-    // new different reward account set
-    if (channelUpdateParameters.reward_account.unwrap().isSome) {
-      channel.rewardAccount = channelUpdateParameters.reward_account.unwrap().unwrap().toString()
-    } else { // reward account removed
-      delete channel.rewardAccount
-    }
+    // this will change the `channel`!
+    handleChannelRewardAccountChange(channel, channelUpdateParameters.reward_account.unwrap())
   }
 
   // save channel
@@ -92,7 +89,16 @@ export async function content_ChannelAssetsRemoved(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
-  // TODO - what should happen here?
+  // read event data
+  const {contentId: contentIds} = new Content.ChannelAssetsRemovedEvent(event).data
+
+  // load channel
+  const assets = await db.getMany(Asset, { where: { id: contentIds } })
+
+  // delete assets
+  for (const asset in assets) {
+    await db.remove<Asset>(asset)
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -224,4 +230,21 @@ export async function content_ChannelCategoryDeleted(
 
   // delete channel category
   await db.remove<ChannelCategory>(channelCategory)
+}
+
+/////////////////// Helpers ////////////////////////////////////////////////////
+
+function handleChannelRewardAccountChange(
+  channel: Channel, // will be modified inside of the function!
+  reward_account: Option<GenericAccountId>
+) {
+  // new different reward account set?
+  if (reward_account.isSome) {
+    channel.rewardAccount = reward_account.unwrap().toString()
+    return
+  }
+
+  // reward account removed
+
+  delete channel.rewardAccount
 }

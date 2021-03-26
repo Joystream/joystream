@@ -23,7 +23,7 @@ import {
 const currentNetwork = Network.BABYLON
 
 export function inconsistentState(extraInfo?: string): never {
-  throw 'Inconsistent state.' + extraInfo // TODO: create a proper way of handling inconsistent state
+  throw 'Inconsistent state: ' + extraInfo // TODO: create a proper way of handling inconsistent state
 }
 
 // prepare block record
