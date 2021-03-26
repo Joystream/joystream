@@ -4,7 +4,6 @@ import ipfsHash from 'ipfs-only-hash'
 import { ContentId, DataObject } from '@joystream/types/storage'
 import BN from 'bn.js'
 import { BaseCommand } from './base'
-import { DiscoveryClient } from '@joystream/service-discovery'
 import Debug from 'debug'
 import chalk from 'chalk'
 import { aliceKeyPair } from './dev'
@@ -28,7 +27,6 @@ export class UploadCommand extends BaseCommand {
   private readonly keyFile: string
   private readonly passPhrase: string
   private readonly memberId: string
-  private readonly discoveryClient: DiscoveryClient
 
   constructor(
     api: any,
@@ -41,7 +39,6 @@ export class UploadCommand extends BaseCommand {
     super()
 
     this.api = api
-    this.discoveryClient = new DiscoveryClient({ api })
     this.mediaSourceFilePath = mediaSourceFilePath
     this.dataObjectTypeId = dataObjectTypeId
     this.memberId = memberId
@@ -159,19 +156,13 @@ export class UploadCommand extends BaseCommand {
   // Requests the runtime and obtains the storage node endpoint URL.
   private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
     try {
-      const serviceInfo = await this.discoveryClient.discover(storageProviderId)
+      const endpoint = await this.api.workers.getWorkerStorageValue(storageProviderId)
 
-      if (serviceInfo === null) {
-        this.fail('Storage node discovery failed.')
-      }
-      debug(`Discovered service info object: ${serviceInfo}`)
+      debug(`Resolved endpoint: ${endpoint}`)
 
-      const dataWrapper = JSON.parse(serviceInfo)
-      const assetWrapper = JSON.parse(dataWrapper.serialized)
-
-      return assetWrapper.asset.endpoint
+      return endpoint
     } catch (err) {
-      this.fail(`Could not get asset endpoint: ${err}`)
+      this.fail(`Could not get provider endpoint: ${err}`)
     }
   }
 
