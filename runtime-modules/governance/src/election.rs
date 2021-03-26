@@ -28,6 +28,7 @@
 
 // Clippy linter warning
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+#![allow(clippy::match_like_matches_macro)]
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};

@@ -10,6 +10,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::match_like_matches_macro)]
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
