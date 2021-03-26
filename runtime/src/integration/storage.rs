@@ -10,16 +10,17 @@ impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProvider
     fn get_random_storage_provider() -> Result<ActorId, storage::data_directory::Error<Runtime>> {
         let ids = crate::StorageWorkingGroup::get_all_worker_ids();
 
-        let live_ids: Vec<ActorId> = ids
+        // Filter workers that have set value for their storage value
+        let ids: Vec<ActorId> = ids
             .into_iter()
-            .filter(|id| !<service_discovery::Module<Runtime>>::is_account_info_expired(id))
+            .filter(|id| !crate::StorageWorkingGroup::worker_storage(id).is_empty())
             .collect();
 
-        if live_ids.is_empty() {
+        if ids.is_empty() {
             Err(storage::data_directory::Error::<Runtime>::NoProviderAvailable)
         } else {
-            let index = Self::random_index(live_ids.len());
-            Ok(live_ids[index])
+            let index = Self::random_index(ids.len());
+            Ok(ids[index])
         }
     }
 }

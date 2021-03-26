@@ -89,6 +89,10 @@ export class ReferenceConstraint extends Null {}
 export class InputEntityValuesMap extends Null {}
 export class FailedAt extends Null {}
 
+// From discovery_service
+export class IPNSIdentity extends Null {}
+export class ServiceProviderRecord extends Null {}
+
 export const legacyTypes: RegistryTypes = {
   ChannelContentType,
   ChannelCurationStatus,
@@ -159,6 +163,8 @@ export const legacyTypes: RegistryTypes = {
   Operation,
   ReferenceConstraint,
   FailedAt,
+  IPNSIdentity,
+  ServiceProviderRecord,
 }
 
 export default legacyTypes
