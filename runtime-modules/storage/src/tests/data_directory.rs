@@ -157,10 +157,7 @@ fn add_content_global_size_limit_reached() {
                 owner,
                 vec![content_parameters],
             );
-            assert_eq!(
-                res,
-                Err(Error::<Test>::GlobalVoucherSizeLimitExceeded.into())
-            );
+            assert_eq!(res, Err(Error::<Test>::VoucherSizeLimitExceeded.into()));
         });
 }
 
@@ -193,10 +190,7 @@ fn add_content_global_objects_limit_reached() {
                 owner,
                 vec![content_parameters],
             );
-            assert_eq!(
-                res,
-                Err(Error::<Test>::GlobalVoucherObjectsLimitExceeded.into())
-            );
+            assert_eq!(res, Err(Error::<Test>::VoucherObjectsLimitExceeded.into()));
         });
 }
 
