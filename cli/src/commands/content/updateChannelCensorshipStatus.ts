@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 
 export default class UpdateChannelCensorshipStatusCommand extends ContentDirectoryCommandBase {
-  static description = 'Update Channel censorship status (Active/Inactive).'
+  static description = 'Update Channel censorship status (Censored / Not censored).'
   static flags = {
     context: ContentDirectoryCommandBase.ownerContextFlag,
   }
@@ -17,7 +17,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     {
       name: 'status',
       required: false,
-      description: 'New status of the channel (1 - active, 0 - inactive)',
+      description: 'New status of the channel (1 - censored, 0 - not censored)',
     },
     {
       name: 'rationale',
@@ -45,13 +45,13 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
         type: 'list',
         message: 'Select new status',
         choices: [
-          { name: 'Active', value: true },
-          { name: 'Inactive', value: false },
+          { name: 'Censored', value: true },
+          { name: 'Not censored', value: false },
         ],
       })
     } else {
       if (status !== '0' && status !== '1') {
-        this.error('Invalid status provided. Use "1" for Active and "0" for Inactive.', {
+        this.error('Invalid status provided. Use "1" for censored and "0" for not censored.', {
           exit: ExitCodes.InvalidInput,
         })
       }
@@ -67,7 +67,9 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
 
     console.log(
       chalk.green(
-        `Channel ${chalk.white(id)} status succesfully changed to: ${chalk.white(status ? 'Active' : 'Inactive')}!`
+        `Channel ${chalk.white(id)} censorship status succesfully changed to: ${chalk.white(
+          status ? 'Censored' : 'Not censored'
+        )}!`
       )
     )
   }

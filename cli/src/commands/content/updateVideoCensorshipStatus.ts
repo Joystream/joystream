@@ -2,8 +2,8 @@ import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 
-export default class UpdateChannelCensorshipStatusCommand extends ContentDirectoryCommandBase {
-  static description = 'Update Channel censorship status (Active/Inactive).'
+export default class UpdateVideoCensorshipStatusCommand extends ContentDirectoryCommandBase {
+  static description = 'Update Video censorship status (Censored / Not censored).'
   static flags = {
     context: ContentDirectoryCommandBase.ownerContextFlag,
   }
@@ -17,7 +17,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     {
       name: 'status',
       required: false,
-      description: 'New status of the video (1 - active, 0 - inactive)',
+      description: 'New video censorship status (1 - censored, 0 - not censored)',
     },
     {
       name: 'rationale',
@@ -27,9 +27,9 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
   ]
 
   async run() {
-    let { context } = this.parse(UpdateChannelCensorshipStatusCommand).flags
+    let { context } = this.parse(UpdateVideoCensorshipStatusCommand).flags
 
-    let { id, status, rationale } = this.parse(UpdateChannelCensorshipStatusCommand).args
+    let { id, status, rationale } = this.parse(UpdateVideoCensorshipStatusCommand).args
 
     if (!context) {
       context = await this.promptForOwnerContext()
@@ -45,13 +45,13 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
         type: 'list',
         message: 'Select new status',
         choices: [
-          { name: 'Active', value: true },
-          { name: 'Inactive', value: false },
+          { name: 'Censored', value: true },
+          { name: 'Not censored', value: false },
         ],
       })
     } else {
       if (status !== '0' && status !== '1') {
-        this.error('Invalid status provided. Use "1" for Active and "0" for Inactive.', {
+        this.error('Invalid status provided. Use "1" for Censored and "0" for Not censored.', {
           exit: ExitCodes.InvalidInput,
         })
       }
@@ -67,7 +67,9 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
 
     console.log(
       chalk.green(
-        `Video ${chalk.white(id)} status succesfully changed to: ${chalk.white(status ? 'Active' : 'Inactive')}!`
+        `Video ${chalk.white(id)} censorship status succesfully changed to: ${chalk.white(
+          status ? 'Censored' : 'Not censored'
+        )}!`
       )
     )
   }
