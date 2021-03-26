@@ -35,3 +35,7 @@ yarn*
 
 # eslint cache
 **/.eslintcache
+
+# test data for local node tests
+test-data/
+tmp.*
