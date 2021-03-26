@@ -49,7 +49,6 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
       this.log('Meta: ' + meta)
 
-      this.jsonPrettyPrint(JSON.stringify(channelUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed) {

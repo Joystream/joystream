@@ -1,13 +1,13 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { IOFlags, getInputJson } from '../../helpers/InputOutput'
 import { VideoUpdateParameters, VideoUpdateParametersInput } from '../../Types'
 import { videoMetadataFromInput } from '../../helpers/serialization'
 
 export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Update video under specific id.'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
-    ...IOFlags,
+    context: ContentDirectoryCommandBase.ownerContextFlag,
+    input: IOFlags.input,
   }
 
   static args = [
@@ -19,7 +19,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-    let { context, input, output } = this.parse(UpdateVideoCommand).flags
+    let { context, input } = this.parse(UpdateVideoCommand).flags
 
     const { videoId } = this.parse(UpdateVideoCommand).args
 
@@ -44,11 +44,12 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
         meta,
       }
 
-      this.jsonPrettyPrint(JSON.stringify(videoUpdateParameters))
+      this.jsonPrettyPrint(JSON.stringify(videoUpdateParametersInput))
+      this.log('Meta: ' + meta)
+
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
-      if (confirmed && videoUpdateParametersInput) {
-        saveOutputJson(output, `${videoUpdateParametersInput.meta.title}Video.json`, videoUpdateParametersInput)
+      if (confirmed) {
         this.log('Sending the extrinsic...')
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [
@@ -58,7 +59,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
         ])
       }
     } else {
-      this.log('Input invalid or was not provided...')
+      this.error('Input invalid or was not provided...')
     }
   }
 }
