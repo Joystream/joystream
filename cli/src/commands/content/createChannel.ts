@@ -40,8 +40,6 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     if (input) {
       const channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
 
-      this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
-
       const channelMetadata = new ChannelMetadata()
       channelMetadata.setTitle(channelCreationParametersInput.meta.title!)
       channelMetadata.setDescription(channelCreationParametersInput.meta.description!)
