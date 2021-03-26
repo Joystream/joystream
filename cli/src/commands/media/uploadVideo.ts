@@ -96,66 +96,9 @@ export default class UploadVideoCommand extends MediaCommandBase {
     return hash
   }
 
-  private async getDiscoveryDataViaLocalIpfsNode(ipnsIdentity: string): Promise<any> {
-    const ipfs = ipfsHttpClient({
-      // TODO: Allow customizing node url:
-      // host: 'localhost', port: '5001', protocol: 'http',
-      timeout: 10000,
-    })
-
-    const ipnsAddress = `/ipns/${ipnsIdentity}/`
-    const ipfsName = await last(
-      ipfs.name.resolve(ipnsAddress, {
-        recursive: false,
-        nocache: false,
-      })
-    )
-    const data: any = await first(ipfs.get(ipfsName))
-    const buffer = await toBuffer(data.content)
-
-    return JSON.parse(buffer.toString())
-  }
-
-  private async getDiscoveryDataViaBootstrapEndpoint(storageProviderId: number): Promise<any> {
-    const bootstrapEndpoint = await this.getApi().getRandomBootstrapEndpoint()
-    if (!bootstrapEndpoint) {
-      this.error('No bootstrap endpoints available', { exit: ExitCodes.ApiError })
-    }
-    this.log('Bootstrap endpoint:', bootstrapEndpoint)
-    const discoveryEndpoint = new URL(`discover/v0/${storageProviderId}`, bootstrapEndpoint).toString()
-    try {
-      const data = (await axios.get(discoveryEndpoint)).data
-      return data
-    } catch (e) {
-      this.error(`Cannot retrieve data from bootstrap enpoint (${discoveryEndpoint})`, {
-        exit: ExitCodes.ExternalInfrastructureError,
-      })
-    }
-  }
-
-  private async getUploadUrlFromDiscoveryData(data: any, contentId: ContentId): Promise<string> {
-    if (typeof data === 'object' && data !== null && data.serialized) {
-      const unserialized = JSON.parse(data.serialized)
-      if (unserialized.asset && unserialized.asset.endpoint && typeof unserialized.asset.endpoint === 'string') {
-        return new URL(`asset/v0/${contentId.encode()}`, unserialized.asset.endpoint).toString()
-      }
-    }
-    this.error(`Unexpected discovery data: ${JSON.stringify(data)}`)
-  }
-
-  private async getUploadUrl(ipnsIdentity: string, storageProviderId: number, contentId: ContentId): Promise<string> {
-    let data: any
-    try {
-      this.log('Trying to connect to local ipfs node...')
-      data = await this.getDiscoveryDataViaLocalIpfsNode(ipnsIdentity)
-    } catch (e) {
-      this.warn("Couldn't get data from local ipfs node, resolving to bootstrap endpoint...")
-      data = await this.getDiscoveryDataViaBootstrapEndpoint(storageProviderId)
-    }
-
-    const uploadUrl = await this.getUploadUrlFromDiscoveryData(data, contentId)
-
-    return uploadUrl
+  private async getUploadUrl(storageProviderId: number, contentId: ContentId): Promise<string> {
+    const endpoint = await this.getApi().storageProviderEndpoint(storageProviderId)
+    return new URL(`asset/v0/${contentId.encode()}`, endpoint).toString()
   }
 
   private async getVideoMetadata(filePath: string): Promise<VideoMetadata | null> {
@@ -412,7 +355,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
     }
 
     // Resolve upload url and upload the video
-    const uploadUrl = await this.getUploadUrl(ipnsIdentity, storageProviderId, contentId)
+    const uploadUrl = await this.getUploadUrl(storageProviderId, contentId)
     this.log('Resolved upload url:', uploadUrl)
 
     await this.uploadVideo(filePath, fileSize, uploadUrl)
