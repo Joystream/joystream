@@ -1,6 +1,6 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { Channel, CuratorGroup, CuratorGroupId, ContentActor, Video } from '@joystream/types/content'
+import { CuratorGroup, CuratorGroupId, ContentActor } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
@@ -77,32 +77,6 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     return createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] })
-  }
-
-  async promptForChannel(message = 'Select a channel'): Promise<Channel> {
-    const channels = await this.getApi().availableChannels()
-    const choices = channels.map(([id, c]) => ({ id: id.toString(), value: c }))
-    if (!choices.length) {
-      this.warn('No channels exist to choose from!')
-      this.exit(ExitCodes.InvalidInput)
-    }
-
-    const selectedChannel = await this.simplePrompt({ message, type: 'list', choices })
-
-    return selectedChannel
-  }
-
-  async promptForVideo(message = 'Select a video'): Promise<Video> {
-    const videos = await this.getApi().availableVideos()
-    const choices = videos.map(([id, c]) => ({ id: id.toString(), value: c }))
-    if (!choices.length) {
-      this.warn('No videos exist to choose from!')
-      this.exit(ExitCodes.InvalidInput)
-    }
-
-    const selectedVideo = await this.simplePrompt({ message, type: 'list', choices })
-
-    return selectedVideo
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {

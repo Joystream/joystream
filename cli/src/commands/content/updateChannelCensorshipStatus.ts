@@ -7,10 +7,11 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
   static flags = {
     context: ContentDirectoryCommandBase.contextFlag,
   }
+
   static args = [
     {
       name: 'id',
-      required: false,
+      required: true,
       description: 'ID of the Channel',
     },
     {
@@ -38,10 +39,6 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     await this.requestAccountDecoding(currentAccount)
 
     const actor = await this.getActor(context)
-
-    if (id === undefined) {
-      id = await this.promptForChannel()
-    }
 
     if (status === undefined) {
       status = await this.simplePrompt({
