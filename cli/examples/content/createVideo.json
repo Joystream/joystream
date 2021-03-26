@@ -19,9 +19,9 @@
     "personsList": [1, 2, 5],
     "category": 2,
     "mediaType": {
-      "codecName": "mp4",
-      "container": "zip",
-      "mimeMediaType": "mime media type"
+      "codecName": "mpeg4",
+      "container": "avi",
+      "mimeMediaType": "videp/mp4"
     },
     "license": {
       "code": 1001,
