@@ -6,12 +6,12 @@ yarn
 yarn workspace @joystream/types build
 yarn workspace @joystream/cd-schemas generate:all
 yarn workspace @joystream/cd-schemas build
-yarn workspace @joystream/cli build
+yarn workspace @joystream/cli build || :
 yarn workspace query-node-root build
 yarn workspace storage-node build
 # Not strictly needed during development, we run "yarn workspace pioneer start" to start
 # a dev instance, but will show highlight build issues
-yarn workspace pioneer build
+yarn workspace pioneer build || :
 
 if ! command -v docker-compose &> /dev/null
 then
