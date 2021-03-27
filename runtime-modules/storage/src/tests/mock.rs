@@ -227,6 +227,7 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+#[allow(dead_code)]
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
     first_content_id: u64,

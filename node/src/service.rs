@@ -286,7 +286,7 @@ pub fn new_full_base(
     }
 
     // Spawn authority discovery module.
-    if matches!(role, Role::Authority{..} | Role::Sentry {..}) {
+    if matches!(role, Role::Authority { .. } | Role::Sentry { .. }) {
         let (sentries, authority_discovery_role) = match role {
             sc_service::config::Role::Authority { ref sentry_nodes } => (
                 sentry_nodes.clone(),
