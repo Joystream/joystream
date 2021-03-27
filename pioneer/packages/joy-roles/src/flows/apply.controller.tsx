@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
-import AccountId from '@polkadot/types/generic/AccountId';
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId';
 
 import { Controller } from '@polkadot/joy-utils/react/helpers';
 import { View } from '@polkadot/joy-utils/react/hocs';
