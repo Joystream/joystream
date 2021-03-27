@@ -892,7 +892,7 @@ export class Api {
   // Looks for the first occurance of an expected event, and resolves.
   // Use this when the event we are expecting is not particular to a specific extrinsic,
   // Normally events emitted from on_initialize() or on_finalize() in a call
-  public async waitForSystemEvent(eventName: string): Promise<Event> {
+  public async waitForSystemEvent(eventName: string): Promise<InvertedPromise<Event>> {
     const invertedPromise = new InvertedPromise<Event>()
     const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
       events.forEach((record) => {
@@ -903,7 +903,7 @@ export class Api {
       })
     })
 
-    return invertedPromise.promise
+    return invertedPromise
   }
 
   public findApplicationReviewBeganEvent(
