@@ -2,7 +2,7 @@ import { assert } from 'chai'
 import { Utils } from './utils'
 import Debugger from 'debug'
 
-const debug = Debugger('resources')
+const debug = Debugger('integration-tests:resources')
 
 type NamedLocks = Record<Resource, Lock>
 export type ResourceLocker = (resource: Resource, timeout?: number) => Promise<() => void>

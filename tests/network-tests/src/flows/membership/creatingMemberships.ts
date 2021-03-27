@@ -10,7 +10,7 @@ import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
 export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:memberships')
+  const debug = Debugger('integration-tests:flow:memberships')
   debug('Started')
   api.enableDebugTxLogs()
 

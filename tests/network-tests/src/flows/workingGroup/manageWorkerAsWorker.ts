@@ -26,7 +26,7 @@ export default {
 
 // Manage worker as worker
 async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
-  const debug = Debugger(`flow:manageWorkerAsWorker:${group}`)
+  const debug = Debugger(`integration-tests:flow:manageWorkerAsWorker:${group}`)
   debug('Started')
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

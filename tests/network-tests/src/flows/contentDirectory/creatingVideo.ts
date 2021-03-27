@@ -56,7 +56,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
 }
 
 export default async function createVideo({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creatingVideo')
+  const debug = Debugger('integration-tests:flow:creatingVideo')
   debug('Started')
 
   const channelTitle = 'New channel example'

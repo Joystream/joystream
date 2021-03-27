@@ -26,7 +26,7 @@ export class Sender {
   constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
     this.keyring = keyring
-    this.debug = Debugger(`Sender:${Sender.instance++}:${label}`)
+    this.debug = Debugger(`integration-tests:sender:${Sender.instance++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read

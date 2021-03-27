@@ -19,7 +19,7 @@ export default {
 
 // Worker application happy case scenario
 async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = Debugger(`flow:leaderSetup:${group}`)
+  const debug = Debugger(`integration-tests:flow:leaderSetup:${group}`)
   debug('Started')
 
   const existingLead = await api.getGroupLead(group)

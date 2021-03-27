@@ -7,7 +7,7 @@ import Debugger from 'debug'
 import { Resource } from '../../Resources'
 
 export default async function spendingProposal({ api, env, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:spendingProposals')
+  const debug = Debugger('integration-tests:flow:spendingProposals')
   debug('Started')
   await lock(Resource.Proposals)
 

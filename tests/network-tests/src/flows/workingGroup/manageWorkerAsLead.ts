@@ -26,7 +26,7 @@ export default {
 }
 
 async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = Debugger(`flow:manageWorkerAsLead:${group}`)
+  const debug = Debugger(`integration-tests:flow:manageWorkerAsLead:${group}`)
   debug('Started')
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

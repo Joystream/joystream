@@ -9,7 +9,7 @@ import { Resource } from '../../Resources'
 
 export default async function councilSetup({ api, env, lock }: FlowProps): Promise<void> {
   const label = 'councilSetup'
-  const debug = Debugger(`flow:${label}`)
+  const debug = Debugger(`integration-tests:flow:${label}`)
 
   debug('Started')
 

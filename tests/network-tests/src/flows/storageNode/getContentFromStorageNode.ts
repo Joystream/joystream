@@ -8,7 +8,7 @@ import { Utils } from '../../utils'
 import Debugger from 'debug'
 
 export default async function getContentFromStorageNode({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:getContentFromStorageNode')
+  const debug = Debugger('integration-tests:flow:getContentFromStorageNode')
   debug('Started')
 
   const videoTitle = 'Storage node test'

@@ -19,7 +19,7 @@ export function createUpdateChannelHandleFixture(api: Api, handle: string, descr
 }
 
 export default async function updateChannel({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:updateChannel')
+  const debug = Debugger('integration-tests:flow:updateChannel')
   debug('Started')
 
   const handle = 'New channel example'

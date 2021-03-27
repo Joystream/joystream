@@ -28,7 +28,7 @@ export default {
 }
 
 async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
-  const debug = Debugger(`flow:workerPayout:${group}`)
+  const debug = Debugger(`integration-tests:flow:workerPayout:${group}`)
   debug('Started')
   await lock(Resource.Proposals)
 

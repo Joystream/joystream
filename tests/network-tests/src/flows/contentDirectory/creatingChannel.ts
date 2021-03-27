@@ -31,7 +31,7 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
 }
 
 export default async function channelCreation({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creatingChannel')
+  const debug = Debugger('integration-tests:flow:creatingChannel')
   debug('Started')
 
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)

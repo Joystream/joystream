@@ -15,7 +15,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
     super(api)
     this.accounts = accounts
     this.paidTerms = paidTerms
-    this.debug = Debugger('fixture:BuyMembershipHappyCaseFixture')
+    this.debug = Debugger('integration-tests:fixture:BuyMembershipHappyCaseFixture')
   }
 
   public getCreatedMembers(): MemberId[] {

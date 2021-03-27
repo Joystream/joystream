@@ -41,7 +41,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const query = new QueryNodeApi(queryNodeProvider)
 
-  const debug = Debugger('scenario')
+  const debug = Debugger('integration-tests:scenario')
 
   const jobs = new JobManager({ apiFactory, query, env })
 

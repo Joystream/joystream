@@ -9,7 +9,7 @@ import Debugger from 'debug'
 import { Resource } from '../../Resources'
 
 export default async function updateRuntime({ api, env, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:updateRuntime')
+  const debug = Debugger('integration-tests:flow:updateRuntime')
   debug('Started')
   await lock(Resource.Proposals)
 

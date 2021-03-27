@@ -471,11 +471,13 @@ export class ElectionParametersProposalFixture extends BaseFixture {
       proposedMinCouncilStake,
       proposedMinVotingStake
     )
+
     const proposalNumber = this.api.findProposalCreatedEvent(proposalCreationResult.events) as ProposalId
     assert.notEqual(proposalNumber, undefined)
 
     const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
     await approveProposalFixture.execute()
+
     assert(approveProposalFixture.proposalExecuted)
 
     // Assertions
@@ -733,10 +735,10 @@ export class VoteForProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
 
     // Approving the proposal
-    const onProposalFinalized = this.api.waitForProposalToFinalize(this.proposalNumber)
+    const onProposalFinalized = await this.api.waitForProposalToFinalize(this.proposalNumber)
     const approvals = await this.api.batchApproveProposal(this.proposalNumber)
     approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
-    const proposalOutcome = await onProposalFinalized
+    const proposalOutcome = await onProposalFinalized.promise
     this._proposalExecuted = proposalOutcome[0]
     this._events = proposalOutcome[1]
   }
