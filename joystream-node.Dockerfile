@@ -1,9 +1,9 @@
-FROM liuchong/rustup:1.52.0 AS rustup
+FROM liuchong/rustup:1.51.0 AS rustup
 RUN rustup component add rustfmt clippy
 RUN rustup install nightly-2021-02-20 --force
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
 RUN apt-get update && \
-  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
+  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang libc6-dev
 
 FROM rustup AS builder
 LABEL description="Compiles all workspace artifacts"
@@ -17,7 +17,7 @@ RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --release
 
-FROM debian:stretch
+FROM debian:buster
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node
