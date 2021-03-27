@@ -36,6 +36,7 @@ import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/media'
 import Debugger from 'debug'
+import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -53,7 +54,7 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('api-factory')
+    const debug = Debugger('integration-tests:api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
@@ -851,30 +852,31 @@ export class Api {
 
   // Resolves to true when proposal finalized and executed successfully
   // Resolved to false when proposal finalized and execution fails
-  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('Executed')
-          ) {
-            unsubscribe()
-            resolve([true, events])
-          } else if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('ExecutionFailed')
-          ) {
-            unsubscribe()
-            resolve([false, events])
-          }
-        })
+  public async waitForProposalToFinalize(id: ProposalId): Promise<InvertedPromise<[boolean, EventRecord[]]>> {
+    const invertedPromise = new InvertedPromise<[boolean, EventRecord[]]>()
+    const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
+      events.forEach((record) => {
+        if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([true, events])
+        } else if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executionFailed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([false, events])
+        }
       })
     })
+
+    return invertedPromise
   }
 
   public findOpeningFilledEvent(
@@ -888,18 +890,20 @@ export class Api {
   }
 
   // Looks for the first occurance of an expected event, and resolves.
-  // Use this when the event we are expecting is not particular to a specific extrinsic
-  public waitForSystemEvent(eventName: string): Promise<Event> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === eventName) {
-            unsubscribe()
-            resolve(record.event)
-          }
-        })
+  // Use this when the event we are expecting is not particular to a specific extrinsic,
+  // Normally events emitted from on_initialize() or on_finalize() in a call
+  public async waitForSystemEvent(eventName: string): Promise<Event> {
+    const invertedPromise = new InvertedPromise<Event>()
+    const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
+      events.forEach((record) => {
+        if (record.event.method && record.event.method.toString() === eventName) {
+          unsubscribe()
+          invertedPromise.resolve(record.event)
+        }
       })
     })
+
+    return invertedPromise.promise
   }
 
   public findApplicationReviewBeganEvent(
