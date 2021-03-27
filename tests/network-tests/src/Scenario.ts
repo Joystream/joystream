@@ -35,7 +35,6 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const queryNodeProvider = new ApolloClient({
     link: new HttpLink({ uri: queryNodeUrl, fetch }),
-    // uri: queryNodeUrl,
     cache: new InMemoryCache(),
     defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
   })

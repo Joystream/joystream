@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 
 import { AccountId } from '@polkadot/types/interfaces';
 import { Vec } from '@polkadot/types';
-import accountObservable from '@polkadot/ui-keyring/observable/accounts';
+import { keyring } from '@polkadot/ui-keyring';
 import { withCalls, withMulti, withObservable, ApiContext } from '@polkadot/react-api/index';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -105,7 +105,7 @@ const withMyProfile = <P extends MyAccountProps>(Component: React.ComponentType<
 export const withMyAccount = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
   withMulti(
     Component,
-    withObservable(accountObservable.subject, { propName: 'allAccounts' }),
+    withObservable(keyring.accounts.subject, { propName: 'allAccounts' }),
     withMyAddress,
     withMyMemberIds,
     withMyMembership,

@@ -26,7 +26,7 @@ export default function useChainInfo (): ChainInfo | null {
       specVersion: api.runtimeVersion.specVersion.toNumber(),
       ss58Format: isNumber(api.registry.chainSS58) ? api.registry.chainSS58 : 42,
       tokenDecimals: isNumber(api.registry.chainDecimals) ? api.registry.chainDecimals : 12,
-      tokenSymbol: api.registry.chainToken || 'Unit',
+      tokenSymbol: api.registry.chainTokens[0] || 'Unit',
       types: getSpecTypes(registry, systemChain, api.runtimeVersion.specName, api.runtimeVersion.specVersion) as unknown as Record<string, string>
     });
   }, [api, isApiReady, systemChain, systemName]);

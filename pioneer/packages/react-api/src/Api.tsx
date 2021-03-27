@@ -8,7 +8,7 @@ import { ApiProps, ApiState } from './types';
 
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import store from 'store';
-import ApiPromise from '@polkadot/api/promise';
+import { ApiPromise } from '@polkadot/api/promise';
 import { setDeriveCache, deriveMapCache } from '@polkadot/api-derive/util';
 import { typesChain, typesSpec } from '@polkadot/apps-config/api';
 import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
@@ -22,7 +22,7 @@ import uiSettings from '@polkadot/ui-settings';
 import ApiSigner from '@polkadot/react-signer/signers/ApiSigner';
 import { formatBalance, isTestChain } from '@polkadot/util';
 import { setSS58Format } from '@polkadot/util-crypto';
-import addressDefaults from '@polkadot/util-crypto/address/defaults';
+import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 
 import ApiContext from './ApiContext';
 import registry from './typeRegistry';
@@ -51,7 +51,6 @@ interface ChainData {
   systemVersion: string;
 }
 
-const DEFAULT_DECIMALS = registry.createType('u32', 15);
 const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
 const injectedPromise = web3Enable('pioneer');
 let api: ApiPromise;
@@ -110,8 +109,8 @@ async function loadOnReady (api: ApiPromise, store: KeyringStore | undefined, ty
   const ss58Format = uiSettings.prefix === -1
     ? properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber()
     : uiSettings.prefix;
-  const tokenSymbol = properties.tokenSymbol.unwrapOr(undefined)?.toString();
-  const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber();
+  const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString();
+  const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber();
   const isDevelopment = systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain);
 
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);

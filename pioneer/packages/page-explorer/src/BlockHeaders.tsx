@@ -3,7 +3,7 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import React, { useMemo } from 'react';
-import { HeaderExtended } from '@polkadot/api-derive';
+import { HeaderExtended } from '@polkadot/api-derive/types';
 import { Table } from '@polkadot/react-components';
 
 import BlockHeader from './BlockHeader';

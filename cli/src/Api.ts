@@ -54,7 +54,6 @@ import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
 import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
-const DEFAULT_DECIMALS = new BN(12)
 
 // Mapping of working group to api module
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
@@ -85,8 +84,8 @@ export default class Api {
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties] = await Promise.all([api.rpc.system.properties()])
 
-    const tokenSymbol = properties.tokenSymbol.unwrapOr('DEV').toString()
-    const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber()
+    const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
+    const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
 
     // formatBlanace config
     formatBalance.setDefaults({
