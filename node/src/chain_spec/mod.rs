@@ -18,6 +18,8 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
+// Remove after the Antioch release.
+#![allow(clippy::unnecessary_wraps)]
 
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
