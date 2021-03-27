@@ -73,6 +73,9 @@ function cleanup() {
 
 trap cleanup EXIT
 
+echo "Waiting for chain to startup..."
+sleep 10
+
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
@@ -94,8 +97,5 @@ fi
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
-
-echo "Waiting for chain to startup..."
-sleep 10
 
 ./run-test-scenario.sh $1

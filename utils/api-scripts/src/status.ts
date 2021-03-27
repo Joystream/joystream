@@ -20,6 +20,7 @@ async function main() {
       break
     } catch (err) {
       // failed to connect to node
+      console.error('Caught Error', err)
     }
 
     if (retry-- === 0) {

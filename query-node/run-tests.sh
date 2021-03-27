@@ -43,6 +43,9 @@ docker-compose up -d graphql-server
 # Start the joystream-node before the indexer
 docker-compose up -d joystream-node
 
+# Wait for chain to startup
+sleep 10
+
 # Starting up processor will bring up all services it depends on
 docker-compose up -d processor
 
