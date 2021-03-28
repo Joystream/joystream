@@ -337,7 +337,7 @@ declare module '@polkadot/api/types/storage' {
        **/
       dataObjectByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>, [ContentId]>;
       /**
-       * List of ids known to the system.
+       * List of ids known to the frame_system.
        **/
       knownContentIds: AugmentedQuery<ApiType, () => Observable<Vec<ContentId>>, []>;
     };
@@ -1143,6 +1143,10 @@ declare module '@polkadot/api/types/storage' {
        * Hash of the previous block.
        **/
       parentHash: AugmentedQuery<ApiType, () => Observable<Hash>, []>;
+      /**
+       * True if we have upgraded so that `type RefCount` is `u32`. False (default) if not.
+       **/
+      upgradedToU32RefCount: AugmentedQuery<ApiType, () => Observable<bool>, []>;
     };
     timestamp: {
       /**
@@ -1174,7 +1178,7 @@ declare module '@polkadot/api/types/storage' {
        **/
       classPermissionsByClassId: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<ClassPermissionsType>, [ClassId]>;
       /**
-       * Owner of an entity in the versioned store. If it is None then it is owned by the system.
+       * Owner of an entity in the versioned store. If it is None then it is owned by the frame_system.
        **/
       entityMaintainerByEntityId: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Option<Credential>>, [EntityId]>;
     };
