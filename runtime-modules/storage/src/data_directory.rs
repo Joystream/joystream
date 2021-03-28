@@ -1,6 +1,6 @@
 //! # Data directory module
 //! Data directory module for the Joystream platform manages IPFS content id, storage providers,
-//! owners of the content. It allows to add and accept or reject the content in the system.
+//! owners of the content. It allows to add and accept or reject the content in the frame_system.
 //!
 //! ## Comments
 //!
@@ -9,7 +9,7 @@
 //! ## Supported extrinsics
 //!
 //! ### Public extrinsic
-//! - [add_content](./struct.Module.html#method.add_content) - Adds the content to the system.
+//! - [add_content](./struct.Module.html#method.add_content) - Adds the content to the frame_system.
 //!
 //! ### Private extrinsics
 //! - accept_content - Storage provider accepts a content.
@@ -25,10 +25,10 @@ use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_system::ensure_root;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -43,13 +43,13 @@ use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGrou
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
-    + system::Trait
+    + frame_system::Trait
     + data_object_type_registry::Trait
     + membership::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data directory_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Content id.
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
@@ -112,7 +112,7 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
     StorageProviderId<T>,
@@ -149,7 +149,7 @@ pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
-        /// List of ids known to the system.
+        /// List of ids known to the frame_system.
         pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
 
         /// Maps data objects by their content id.
@@ -197,7 +197,7 @@ decl_module! {
         /// Maximum objects allowed per inject_data_objects() transaction
         const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
-        /// Adds the content to the system. Member id should match its origin. The created DataObject
+        /// Adds the content to the frame_system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(

@@ -31,7 +31,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -52,10 +52,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 parameter_types! {
@@ -69,6 +70,8 @@ impl balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl Trait for Test {
@@ -87,7 +90,7 @@ impl stake::Trait for Test {
 }
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Hiring = Module<Test>;
 
 // Intercepts panic method
@@ -141,7 +144,7 @@ pub(crate) fn test_expectation_and_clear_mock() {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -195,4 +198,4 @@ impl TestApplicationDeactivatedHandler {
 }
 
 // Test fixtures starting block.
-pub(crate) static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 0;
+pub(crate) static FIRST_BLOCK_HEIGHT: <Test as frame_system::Trait>::BlockNumber = 0;

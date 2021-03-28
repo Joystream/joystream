@@ -4,6 +4,8 @@ use sp_std::marker::PhantomData;
 use crate::{ContentDirectoryWorkingGroupInstance, StorageWorkingGroupInstance};
 use stake::{BalanceOf, NegativeImbalance};
 
+// Will be removed in the next releases.
+#[allow(clippy::upper_case_acronyms)]
 pub struct ContentDirectoryWGStakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }

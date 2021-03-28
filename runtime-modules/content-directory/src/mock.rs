@@ -20,7 +20,7 @@ use std::cell::RefCell;
 pub type ClassId = <Runtime as Trait>::ClassId;
 pub type EntityId = <Runtime as Trait>::EntityId;
 pub type Nonce = <Runtime as Trait>::Nonce;
-pub type Hashed = <Runtime as system::Trait>::Hash;
+pub type Hashed = <Runtime as frame_system::Trait>::Hash;
 
 pub type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
@@ -208,7 +208,7 @@ impl Get<EntityId> for IndividualEntitiesCreationLimit {
     }
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -229,10 +229,11 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 mod test_events {
@@ -242,7 +243,7 @@ mod test_events {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         test_events<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -364,7 +365,7 @@ impl ExtBuilder {
 
     pub fn build(self, config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
         self.set_associated_consts();
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
         config.assimilate_storage(&mut t).unwrap();
@@ -1025,7 +1026,7 @@ impl PropertyLockingPolicy {
 }
 
 // Assign back to type variables so we can make dispatched calls of these modules later.
-pub type System = system::Module<Runtime>;
+pub type System = frame_system::Module<Runtime>;
 pub type TestModule = Module<Runtime>;
 
 // Recommendation from Parity on testing on_finalize

@@ -4,7 +4,7 @@
 
 // Clippy linter warning. TODO: refactor the Option<Option<>>
 #![allow(clippy::option_option)] // disable it because of possible API break
-
+#![allow(clippy::result_unit_err)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -19,7 +19,7 @@ use minting::BalanceOf;
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + minting::Trait {
+pub trait Trait: frame_system::Trait + minting::Trait {
     type PayoutStatusHandler: PayoutStatusHandler<Self>;
 
     /// Type of identifier for recipients.
@@ -199,7 +199,7 @@ impl<T: Trait> Module<T> {
             RewardsError::RecipientNotFound
         );
         ensure!(
-            next_payment_at_block > <system::Module<T>>::block_number(),
+            next_payment_at_block > <frame_system::Module<T>>::block_number(),
             RewardsError::NextPaymentNotInFuture
         );
 
@@ -300,7 +300,7 @@ impl<T: Trait> Module<T> {
         if let Some(next_payout_at_block) = new_next_payment_at {
             if let Some(blocknumber) = next_payout_at_block {
                 ensure!(
-                    blocknumber > <system::Module<T>>::block_number(),
+                    blocknumber > <frame_system::Module<T>>::block_number(),
                     RewardsError::NextPaymentNotInFuture
                 );
             }
