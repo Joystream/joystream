@@ -2,6 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import type BN from 'bn.js';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
 import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { ApiProps, ApiState } from './types';
@@ -104,29 +105,28 @@ async function retrieve (api: ApiPromise): Promise<ChainData> {
 
 async function loadOnReady (api: ApiPromise, store: KeyringStore | undefined, types: Record<string, Record<string, string>>): Promise<ApiState> {
   registry.register(types);
-
   const { injectedAccounts, properties, systemChain, systemChainType, systemName, systemVersion } = await retrieve(api);
   const ss58Format = uiSettings.prefix === -1
     ? properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber()
     : uiSettings.prefix;
-  const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString();
-  const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber();
-  const isDevelopment = systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain);
+  const tokenSymbol = properties.tokenSymbol.unwrap();
+  const tokenDecimals = properties.tokenDecimals.unwrap();
+  const isDevelopment = (systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain));
 
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
 
   // explicitly override the ss58Format as specified
-  registry.setChainProperties(registry.createType('ChainProperties', { ...properties, ss58Format }));
+  registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
 
   // FIXME This should be removed (however we have some hanging bits, e.g. vanity)
   setSS58Format(ss58Format);
 
   // first setup the UI helpers
   formatBalance.setDefaults({
-    decimals: tokenDecimals,
-    unit: tokenSymbol
+    decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),
+    unit: tokenSymbol[0].toString()
   });
-  TokenUnit.setAbbr(tokenSymbol);
+  TokenUnit.setAbbr(tokenSymbol[0].toString());
 
   // finally load the keyring
   keyring.loadAll({
