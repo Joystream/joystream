@@ -79,7 +79,8 @@ export default class Api {
     metadataCache: Record<string, any>
   ): Promise<ApiPromise> {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
+    const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
+    await api.isReadyOrError
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties] = await Promise.all([api.rpc.system.properties()])

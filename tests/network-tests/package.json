@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@joystream/types": "link:../../types",
-    "@polkadot/api": "1.26.1",
-    "@polkadot/keyring": "3.0.1",
+    "@polkadot/api": "4.2.1",
+    "@polkadot/keyring": "^6.0.5",
     "@types/async-lock": "^1.1.2",
     "@types/bn.js": "^4.11.5",
     "@types/lowdb": "^1.0.9",
@@ -26,7 +26,7 @@
     "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
-    "@polkadot/ts": "^0.3.14",
+    "@polkadot/ts": "^0.3.62",
     "@types/chai": "^4.2.11",
     "@types/uuid": "^7.0.2",
     "chai": "^4.2.0",

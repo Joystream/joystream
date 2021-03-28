@@ -2475,11 +2475,11 @@
     chalk "^4.0.0"
 
 "@joystream/types@link:types":
-  version "0.14.0"
+  version "0.15.0"
   dependencies:
-    "@polkadot/api" "2.4.1"
-    "@polkadot/keyring" "3.6.1"
-    "@polkadot/types" "2.4.1"
+    "@polkadot/api" "4.2.1"
+    "@polkadot/keyring" "^6.0.5"
+    "@polkadot/types" "4.2.1"
     "@types/lodash" "^4.14.157"
     "@types/vfile" "^4.0.0"
     ajv "^6.11.0"
@@ -3641,7 +3641,7 @@
     "@polkadot/x-rxjs" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/api@1.26.1", "@polkadot/api@2.4.1", "@polkadot/api@4.2.1", "@polkadot/api@^1.26.1":
+"@polkadot/api@4.2.1", "@polkadot/api@^1.26.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-4.2.1.tgz#8eb0997dc148a34a4aca3a0dcaabad9954565909"
   integrity sha512-PbXwcLnZr5V5LfKsovMS0TRG+rfJp8lJxluCyOSABDpaz2h1B5R8rdYEZCmXI3qSrT0yu2C6Pp8AjTQHRd7SAA==
@@ -3764,7 +3764,7 @@
     "@polkadot/util" "^6.0.5"
     "@zondax/ledger-polkadot" "^0.13.4"
 
-"@polkadot/keyring@3.0.1", "@polkadot/keyring@3.6.1", "@polkadot/keyring@^3.0.1", "@polkadot/keyring@^6.0.5":
+"@polkadot/keyring@^6.0.5":
   version "6.0.5"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-6.0.5.tgz#b684f354476e96c657a7e8d3e5f0c090e1178b31"
   integrity sha512-v9Tmu+eGZnWpLzxHUj5AIvmfX0uCHWShtF90zvaLvMXLFRWfeuaFnZwdZ+fNkXsrbI0R/w1gRtpFqzsT7QUbVw==
@@ -3840,26 +3840,12 @@
     bn.js "^4.11.9"
     eventemitter3 "^4.0.7"
 
-"@polkadot/ts@^0.1.56":
-  version "0.1.91"
-  resolved "https://registry.yarnpkg.com/@polkadot/ts/-/ts-0.1.91.tgz#e3cc05cea480cc3d15b213110aec082fb0af5e79"
-  integrity sha512-UB8zOFZXb/ih03izzAQ1r1DRpiUXBofxAlXjcx4530jopfiNsiU1LZ2J/uS3dVV1QXaGRhkgm8SIJDLsSMRYIQ==
+"@polkadot/ts@^0.3.62":
+  version "0.3.62"
+  resolved "https://registry.yarnpkg.com/@polkadot/ts/-/ts-0.3.62.tgz#a5876fba8f6b6a4d571ccc12ce1ba600a335f928"
+  integrity sha512-kE+cZXi1eCIbQSQc6T76FEXC0m3T5VabnmUZ14N3NjqFzRfiRAgMPdFONicfJ2/Gx78Cj1NRJWnGewNsYIXSNQ==
   dependencies:
-    "@types/chrome" "^0.0.92"
-
-"@polkadot/ts@^0.3.14":
-  version "0.3.23"
-  resolved "https://registry.yarnpkg.com/@polkadot/ts/-/ts-0.3.23.tgz#2950c039c6a7e02962eb28026302d7ddd7fa830c"
-  integrity sha512-SOit6XLNOMrXuPKUyWpqwkd76pTS+0UVBWpTvL+4iLzOHWk0eKwfep+OVkKk1Mswy65GFJYecUWydIftfjnvIg==
-  dependencies:
-    "@types/chrome" "^0.0.114"
-
-"@polkadot/ts@^0.3.29":
-  version "0.3.34"
-  resolved "https://registry.yarnpkg.com/@polkadot/ts/-/ts-0.3.34.tgz#6cb6026557efa82fa7d16d5861a59b2787974986"
-  integrity sha512-W3fNz67uzafPnxqtCIFu414wlIOQGfiuVJ4hta8ZPuJdUICphfhj6SEFjQVWXSHWghwjAZl48fF2ElbmoPFAgQ==
-  dependencies:
-    "@types/chrome" "^0.0.122"
+    "@types/chrome" "^0.0.133"
 
 "@polkadot/typegen@4.2.1":
   version "4.2.1"
@@ -3889,7 +3875,7 @@
     "@polkadot/util" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/types@2.4.1", "@polkadot/types@4.2.1", "@polkadot/types@^1.26.1":
+"@polkadot/types@4.2.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-4.2.1.tgz#7be97d3abda4bb3f9031b43602062ed464596696"
   integrity sha512-xl8QnbXiJmSm6MUZH/U/ov3ZSXMN+KgNjsTCCzfz2xR5B3eK9ClYcstYYkNSyF12K90Gut9bnNSGZvaCfT2hNQ==
@@ -4861,28 +4847,13 @@
   dependencies:
     moment "^2.10.2"
 
-"@types/chrome@^0.0.114":
-  version "0.0.114"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.114.tgz#8ceb33fa261f4b9e307fa7344ba8182d8d410d4e"
-  integrity sha512-i7qRr74IrxHtbnrZSKUuP5Uvd5EOKwlwJq/yp7+yTPihOXnPhNQO4Z5bqb1XTnrjdbUKEJicaVVbhcgtRijmLA==
+"@types/chrome@^0.0.133":
+  version "0.0.133"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.133.tgz#9e1d55441584ba2d5274ca84db36427da9c5dc6e"
+  integrity sha512-G8uIUdaCTBILprQvQXBWGXZxjAWbkCkFQit17cdH3zYQEwU8f/etNl8+M7e8MRz9Xj8daHaVpysneMZMx8/ldQ==
   dependencies:
     "@types/filesystem" "*"
     "@types/har-format" "*"
-
-"@types/chrome@^0.0.122":
-  version "0.0.122"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.122.tgz#65265d3854f511c2c1e779148e97982ee00b460f"
-  integrity sha512-xHmT1AlBwKAVpQmv+/5gUsB1FXLUiizIZI6bIM52DJDtEhv97FkryHkohjw2HZqAGLOxuJ3kae7YfgWIZ+hMrg==
-  dependencies:
-    "@types/filesystem" "*"
-    "@types/har-format" "*"
-
-"@types/chrome@^0.0.92":
-  version "0.0.92"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.92.tgz#8630a52fcbcd0b30a2301f2a092386018ece1de6"
-  integrity sha512-bTv1EljZ03bexRJwS5FwSZmrudtw+QNbzwUY2sxVtXWgtxk752G4I2owhZ+Mlzbf3VKvG+rBYSw/FnvzuZ4xOA==
-  dependencies:
-    "@types/filesystem" "*"
 
 "@types/codeflask@^1.4.1":
   version "1.4.1"
