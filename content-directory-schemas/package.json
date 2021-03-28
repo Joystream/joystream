@@ -26,9 +26,9 @@
   "dependencies": {
     "ajv": "6.12.5",
     "@joystream/prettier-config": "*",
-    "@polkadot/api": "1.26.1",
-    "@polkadot/keyring": "^3.0.1",
-    "@joystream/types": "^0.14.0",
+    "@polkadot/api": "4.2.1",
+    "@polkadot/keyring": "^6.0.5",
+    "@joystream/types": "^0.15.0",
     "@apidevtools/json-schema-ref-parser": "^9.0.6"
   },
   "devDependencies": {
