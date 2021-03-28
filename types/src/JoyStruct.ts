@@ -1,5 +1,5 @@
 import { Struct } from '@polkadot/types/codec'
-import { Codec, Constructor, Registry } from '@polkadot/types/types'
+import { Codec, Registry, Constructor } from '@polkadot/types/types'
 
 export interface ExtendedStruct<FieldTypes extends Record<string, Constructor>> extends Struct<FieldTypes> {
   getField<FieldKey extends keyof FieldTypes>(key: FieldKey): InstanceType<FieldTypes[FieldKey]>

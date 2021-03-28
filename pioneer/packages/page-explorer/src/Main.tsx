@@ -5,7 +5,7 @@
 import { KeyedEvent } from '@polkadot/react-query/types';
 
 import React from 'react';
-import { HeaderExtended } from '@polkadot/api-derive';
+import { HeaderExtended } from '@polkadot/api-derive/types';
 import { Columar, Column } from '@polkadot/react-components';
 
 import BlockHeaders from './BlockHeaders';

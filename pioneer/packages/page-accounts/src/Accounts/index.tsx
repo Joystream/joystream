@@ -23,7 +23,6 @@ import Multisig from './modals/MultisigCreate';
 import Proxy from './modals/ProxyAdd';
 import Qr from './modals/Qr';
 import Account from './Account';
-import BannerClaims from './BannerClaims';
 import BannerExtension from './BannerExtension';
 import { sortAccounts } from '../util';
 
@@ -161,7 +160,6 @@ function Overview ({ className = '', onStatusChange }: Props): React.ReactElemen
   return (
     <div className={className}>
       <BannerExtension />
-      <BannerClaims />
       {isCreateOpen && (
         <CreateModal
           onClose={toggleCreate}

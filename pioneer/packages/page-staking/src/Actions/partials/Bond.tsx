@@ -3,7 +3,7 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { DeriveBalancesAll } from '@polkadot/api-derive/types';
-import { AmountValidateState } from '../types';
+import { AmountValidateState, DestinationType } from '../types';
 import { BondInfo } from './types';
 
 import BN from 'bn.js';
@@ -31,7 +31,7 @@ function Bond ({ className = '', onChange }: Props): React.ReactElement<Props> {
   const [amountError, setAmountError] = useState<AmountValidateState | null>(null);
   const [controllerError, setControllerError] = useState<boolean>(false);
   const [controllerId, setControllerId] = useState<string | null>(null);
-  const [destination, setDestination] = useState(0);
+  const [destination, setDestination] = useState<DestinationType>('Staked');
   const [stashId, setStashId] = useState<string | null>(null);
   const [startBalance, setStartBalance] = useState<BN | null>(null);
   const stashBalance = useCall<DeriveBalancesAll>(api.derive.balances.all, [stashId]);

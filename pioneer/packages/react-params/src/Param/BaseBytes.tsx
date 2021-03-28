@@ -6,9 +6,8 @@ import { TypeDef } from '@polkadot/types/types';
 import { RawParam, RawParamOnChange, RawParamOnEnter, RawParamOnEscape, Size } from '../types';
 
 import React, { useCallback, useState } from 'react';
-import { Compact } from '@polkadot/types';
 import { Input } from '@polkadot/react-components';
-import { hexToU8a, isAscii, isHex, isU8a, u8aToHex, u8aToString } from '@polkadot/util';
+import { hexToU8a, isAscii, isHex, isU8a, u8aToHex, u8aToString, compactAddLength } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 
 import Bare from './Bare';
@@ -77,7 +76,7 @@ function BaseBytes ({ asHex, children, className = '', defaultValue: { value }, 
       );
 
       if (withLength && isValid) {
-        value = Compact.addLengthPrefix(value);
+        value = compactAddLength(value);
       }
 
       onChange && onChange({

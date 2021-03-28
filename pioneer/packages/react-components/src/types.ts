@@ -5,7 +5,6 @@
 import { WithTranslation } from 'react-i18next';
 import { IconName } from '@fortawesome/fontawesome-svg-core';
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
-import { Abi } from '@polkadot/api-contract';
 import { ActionStatus } from '@polkadot/react-components/Status/types';
 import { TxState } from '@polkadot/react-hooks/types';
 import { AccountId, Index } from '@polkadot/types/interfaces';
@@ -104,22 +103,3 @@ export interface TxModalProps extends I18nProps, TxState {
 export type BitLength = 8 | 16 | 32 | 64 | 128 | 256;
 
 export type StringOrNull = string | null;
-
-interface ContractBase {
-  abi: Abi;
-}
-
-export interface Contract extends ContractBase {
-  address: null;
-}
-
-export interface ContractDeployed extends ContractBase {
-  address: string;
-}
-
-export type CallContract = ContractDeployed;
-
-export interface NullContract {
-  abi: null;
-  address: null;
-}
