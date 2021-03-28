@@ -230,7 +230,7 @@ decl_storage! {
                     &member.controller_account,
                     &checked_user_info,
                     EntryMethod::Genesis,
-                    T::BlockNumber::from(1),
+                    T::BlockNumber::from(1u32),
                     member.registered_at_time
                 ).expect("Importing Member Failed");
 

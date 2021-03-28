@@ -27,11 +27,11 @@ source ~/.cargo/env
 
 rustup component add rustfmt clippy
 
-rustup install nightly-2020-10-06
-rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
+rustup install nightly-2021-02-20
+rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
 
-rustup install 1.47.0
-rustup default 1.47.0
+rustup install 1.51.0
+rustup default 1.51.0
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash

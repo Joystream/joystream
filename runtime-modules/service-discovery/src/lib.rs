@@ -42,6 +42,8 @@ use sp_std::vec::Vec;
   https://github.com/multiformats/multicodec/
   https://github.com/multiformats/multihash/
 */
+// Will be removed in the next releases.
+#[allow(clippy::upper_case_acronyms)]
 /// base58 encoded IPNS identity multihash codec
 pub type IPNSIdentity = Vec<u8>;
 

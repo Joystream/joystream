@@ -61,7 +61,7 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
         };
 
         Self {
-            mint_capacity: minting::BalanceOf::<T>::from(10000),
+            mint_capacity: minting::BalanceOf::<T>::from(10000u32),
             channel_creation_enabled: true,
             channel_handle_constraint: default_constraint.clone(),
             channel_description_constraint: default_constraint.clone(),

@@ -4,7 +4,7 @@
 
 // Clippy linter warning. TODO: refactor the Option<Option<>>
 #![allow(clippy::option_option)] // disable it because of possible API break
-
+#![allow(clippy::result_unit_err)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 

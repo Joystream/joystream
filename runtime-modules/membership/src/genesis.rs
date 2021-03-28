@@ -59,7 +59,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
                 handle: (10000 + ix).to_string(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                registered_at_time: T::Moment::from(0),
+                registered_at_time: T::Moment::from(0u32),
             })
             .collect()
     }
