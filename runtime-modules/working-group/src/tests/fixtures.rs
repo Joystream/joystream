@@ -63,7 +63,7 @@ impl Default for AddOpeningFixture {
             opening_type: OpeningType::Regular,
             starting_block: 0,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
@@ -94,6 +94,11 @@ impl AddOpeningFixture {
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
                 reward_per_block: self.reward_per_block.clone(),
+                creation_stake: if self.opening_type == OpeningType::Regular {
+                    <Test as Trait>::LeaderOpeningStake::get()
+                } else {
+                    0
+                },
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -204,10 +209,10 @@ impl ApplyOnOpeningFixture {
             reward_account_id: 2,
             description: b"human_text".to_vec(),
             stake_parameters: StakeParameters {
-                stake: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake: <Test as Trait>::MinimumApplicationStake::get(),
                 staking_account_id: 2,
             },
-            initial_balance: <Test as Trait>::MinimumStakeForOpening::get(),
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
         }
     }
 
@@ -293,7 +298,7 @@ impl FillOpeningFixture {
             reward_account_id: 2,
             staking_account_id: 2,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
@@ -403,12 +408,14 @@ impl Default for HireLeadFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             lead_id: 1,
-            initial_balance: <Test as Trait>::MinimumStakeForOpening::get() + 1,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get()
+                + <Test as Trait>::LeaderOpeningStake::get()
+                + 1,
         }
     }
 }
@@ -477,11 +484,11 @@ impl Default for HireRegularWorkerFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumStakeForOpening::get(),
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
-            initial_balance: <Test as Trait>::MinimumStakeForOpening::get(),
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
         }
     }
 }

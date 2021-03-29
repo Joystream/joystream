@@ -35,7 +35,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     let staking_policy = StakePolicy {
-        stake_amount: T::MinimumStakeForOpening::get(),
+        stake_amount: T::MinimumApplicationStake::get(),
         leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
     };
 
@@ -66,7 +66,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
 ) -> ApplicationId {
     let stake_parameters = StakeParameters {
         // Due to mock implementation of StakingHandler we can't go over 1000
-        stake: T::MinimumStakeForOpening::get(),
+        stake: T::MinimumApplicationStake::get(),
         staking_account_id: applicant_id.clone(),
     };
 
@@ -524,7 +524,7 @@ benchmarks_instance! {
             description: vec![0u8; i.try_into().unwrap()],
             stake_parameters:
                 StakeParameters {
-                    stake: T::MinimumStakeForOpening::get(),
+                    stake: T::MinimumApplicationStake::get(),
                     staking_account_id: lead_account_id.clone(),
                 }
         };

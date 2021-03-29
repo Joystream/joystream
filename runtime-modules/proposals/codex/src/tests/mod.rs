@@ -716,7 +716,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
         let add_opening_parameters = CreateOpeningParameters {
             description: b"some text".to_vec(),
             stake_policy: StakePolicy {
-                stake_amount: <Test as working_group::Trait<working_group::Instance1>>::MinimumStakeForOpening::get() as
+                stake_amount: <Test as working_group::Trait<working_group::Instance1>>::MinimumApplicationStake::get() as
                     u64,
                 leaving_unstaking_period: 0 as u64,
             },
