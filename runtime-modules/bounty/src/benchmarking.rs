@@ -206,6 +206,7 @@ benchmarks! {
 
     create_bounty_by_council {
         let i in 1 .. MAX_BYTES;
+
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -213,12 +214,17 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
+        let members = (1..T::ClosedContractSizeLimit::get())
+            .map(|id| id.saturated_into())
+            .collect::<BTreeSet<_>>();
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
             cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: max_amount },
+            contract_type: AssuranceContractType::Closed(members),
             ..Default::default()
         };
 
@@ -233,6 +239,7 @@ benchmarks! {
 
     create_bounty_by_member {
         let i in 1 .. MAX_BYTES;
+
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -242,6 +249,10 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
+        let members = (1..T::ClosedContractSizeLimit::get())
+            .map(|id| id.saturated_into())
+            .collect::<BTreeSet<_>>();
+
         let params = BountyCreationParameters::<T>{
             work_period: One::one(),
             judging_period: One::one(),
@@ -249,6 +260,7 @@ benchmarks! {
             entrant_stake,
             creator: BountyActor::Member(member_id),
             funding_type: FundingType::Perpetual{ target: max_amount },
+            contract_type: AssuranceContractType::Closed(members),
             ..Default::default()
         };
 
