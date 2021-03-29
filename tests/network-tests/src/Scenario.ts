@@ -3,7 +3,7 @@ import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
 import { config } from 'dotenv'
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
-import Debugger from 'debug'
+import { Debugger, extendDebug } from './Debugger'
 import { Flow } from './Flow'
 import { Job } from './Job'
 import { JobManager } from './JobManager'
@@ -41,7 +41,7 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   const query = new QueryNodeApi(queryNodeProvider)
 
-  const debug = Debugger('integration-tests:scenario')
+  const debug = extendDebug('scenario')
 
   const jobs = new JobManager({ apiFactory, query, env })
 

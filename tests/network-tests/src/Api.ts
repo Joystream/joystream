@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
@@ -35,7 +35,7 @@ import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
 import { OperationType } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/media'
-import Debugger from 'debug'
+import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
@@ -54,7 +54,7 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('integration-tests:api-factory')
+    const debug = extendDebug('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
