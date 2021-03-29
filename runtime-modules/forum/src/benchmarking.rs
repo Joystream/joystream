@@ -184,7 +184,7 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
         *job_opening_type,
         StakePolicy {
             stake_amount:
-                <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumStakeForOpening::get(
+                <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(
                 ),
             leaving_unstaking_period: <T as
                 working_group::Trait<ForumWorkingGroupInstance>>::MinUnstakingPeriodLimit::get() + One::one(),
@@ -217,7 +217,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
             reward_account_id: applicant_id.clone(),
             description: vec![],
             stake_parameters: StakeParameters {
-                stake: <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumStakeForOpening::get(),
+                stake: <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(),
                 staking_account_id: applicant_id.clone()
             },
         },

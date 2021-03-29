@@ -158,8 +158,9 @@ parameter_types! {
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
-    pub const MinimumStakeForOpening: u32 = 50;
     pub const CandidateStake: u64 = 100;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -172,7 +173,8 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {

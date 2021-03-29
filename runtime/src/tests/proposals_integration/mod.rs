@@ -470,7 +470,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         working_group::OpeningType::Leader,
         StakePolicy {
             stake_amount:
-                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get(
+                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
                 ) as u128,
             leaving_unstaking_period: 1000000,
         },
@@ -485,7 +485,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
         stake_parameters: StakeParameters {
-            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumStakeForOpening::get() as
+            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
                 u128,
             staking_account_id: lead_account_id.clone(),
         },

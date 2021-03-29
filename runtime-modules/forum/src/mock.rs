@@ -104,8 +104,9 @@ parameter_types! {
     pub const LockId: [u8; 8] = [9; 8];
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const StakingCandidateLockId: [u8; 8] = [10; 8];
-    pub const MinimumStakeForOpening: u32 = 50;
     pub const CandidateStake: u64 = 100;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
 }
 
 // The forum working group instance alias.
@@ -120,7 +121,8 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {

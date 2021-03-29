@@ -708,10 +708,14 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
-    // This should be more costly than `add_opening` fee with the current configuration
-    // the base cost of `add_opening` in tokens is 193. And has a very slight slope
+    // This should be more costly than `apply_on_opening` fee with the current configuration
+    // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const MinimumStakeForOpening: Balance = 2000;
+    pub const MinimumApplicationStake: Balance = 2000;
+    // This should be more costly than `add_opening` fee with the current configuration
+    // the base cost of `add_opening` in tokens is 81. And has a very slight slope
+    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    pub const LeaderOpeningStake: Balance = 2000;
 }
 
 // Staking managers type aliases.
@@ -749,7 +753,8 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -761,7 +766,8 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -773,7 +779,8 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
@@ -785,7 +792,8 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl service_discovery::Trait for Runtime {
