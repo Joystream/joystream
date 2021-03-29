@@ -30,7 +30,7 @@ export class Job {
     this._flows = flows
     this._outcome = new InvertedPromise<JobOutcome>()
     this._manager.on('run', this.run.bind(this))
-    this.debug = extendDebug(`${this._label}`)
+    this.debug = extendDebug(`job:${this._label}`)
   }
 
   // Depend on another job to complete successfully
