@@ -63,23 +63,8 @@ enum AssetAvailability {
   "Asset is being uploaded to storage"
   PENDING,
 
-  "Asset is referencing URL"
-  URL,
-
   "Anvalid storage (meta)data used"
   INVALID,
-}
-
-"Asset representation"
-type Asset @entity {
-  "Asset's data object"
-  dataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  urls: [String!]
-
-  "Availability meta information"
-  availability: AssetAvailability!
 }
 
 "The decision of the storage provider when it acts as liaison"
