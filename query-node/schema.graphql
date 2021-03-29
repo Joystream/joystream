@@ -57,35 +57,29 @@ type ChannelCategory @entity {
 
 "Asset availability representation"
 enum AssetAvailability {
-  ACCEPTED, # asset is available in storage
-  PENDING, # asset is being uploaded to storage
-  URL, # asset is referencing URL
-  INVALID, # invalid storage (meta)data used
+  "Asset is available in storage"
+  ACCEPTED,
+
+  "Asset is being uploaded to storage"
+  PENDING,
+
+  "Asset is referencing URL"
+  URL,
+
+  "Anvalid storage (meta)data used"
+  INVALID,
 }
 
 "Asset representation"
-union Asset = AssetUrl | AssetStorage | AssetDeleted
+type Asset @entity {
+  "Asset's data object"
+  dataObject: DataObject
 
-"Asset stored at an external source"
-type AssetUrl @variant {
-  "The http url pointing to the media"
-  url: String!
-}
+  "URLs where the asset content can be accessed (if any)"
+  urls: [String!]
 
-"Asset was deleted and is no longer available."
-type AssetDeleted @variant {
-  happenedIn: BigInt!
-}
-
-"Storage asset"
-type AssetStorage @variant {
-  """
-  Data object in upload life-cycle.
-  If this is deleted, then set oldDataObject in its place if it is set and not rejected, otherwise union goes to Deleted.
-  """
-  dataObject: AssetDataObject!
-
-  happenedIn: BigInt!
+  "Availability meta information"
+  availability: AssetAvailability!
 }
 
 "The decision of the storage provider when it acts as liaison"
@@ -101,9 +95,9 @@ enum LiaisonJudgement {
 }
 
 "Manages content ids, type and storage provider decision about it"
-type AssetDataObject @entity {
+type DataObject @entity {
   "Content owner"
-  owner: AssetOwner!
+  owner: DataObjectOwner!
 
   "Content added at"
   addedAt: BigInt!
@@ -128,16 +122,23 @@ type AssetDataObject @entity {
 }
 
 "Owner type for storage object"
-union AssetOwner = AssetOwnerMember | AssetOwnerChannel | AssetOwnerDao | AssetOwnerCouncil | AssetOwnerWorkingGroup
+union DataObjectOwner = DataObjectOwnerMember
+  | DataObjectOwnerChannel
+  | DataObjectOwnerDao
+  | DataObjectOwnerCouncil
+  | DataObjectOwnerWorkingGroup
 
 "Asset owned by a member"
-type AssetOwnerMember @variant {
+type DataObjectOwnerMember @variant {
   "Member identifier"
-  memberId: BigInt!
+  memberId: Membership!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int!
 }
 
 "Asset owned by a channel"
-type AssetOwnerChannel @variant {
+type DataObjectOwnerChannel @variant {
   "Channel identifier"
   channel: Channel!
 
@@ -146,19 +147,19 @@ type AssetOwnerChannel @variant {
 }
 
 "Asset owned by a DAO"
-type AssetOwnerDao @variant {
+type DataObjectOwnerDao @variant {
   "DAO identifier"
   daoId: BigInt!
 }
 
 "Asset owned by the Council"
-type AssetOwnerCouncil @variant {
+type DataObjectOwnerCouncil @variant {
   "Variant needs to have at least one property. This value is not used."
   dummy: Int!
 }
 
 "Asset owned by a WorkingGroup"
-type AssetOwnerWorkingGroup @variant {
+type DataObjectOwnerWorkingGroup @variant {
   "Working group identifier"
   workingGroupId: BigInt!
 }
@@ -281,11 +282,6 @@ type Video @entity {
   isFeatured: Boolean!
 
   featured: FeaturedVideo @derivedFrom(field: "video")
-
-  # helper properties - redudant info enabling important queries for Joystream use-cases
-
-  is_thumbnail_available: AssetAvailability!
-  is_media_available: AssetAvailability!
 }
 
 type VideoMediaMetadata @entity {
