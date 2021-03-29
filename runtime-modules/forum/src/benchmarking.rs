@@ -963,12 +963,13 @@ benchmarks! {
             let member_id = idx.into();
             let member_account_id = insert_a_worker::<T>(caller_id.clone(), member_id);
 
+            let alternative_idx = 1;
             Module::<T>::vote_on_poll(
                 RawOrigin::Signed(member_account_id.clone()).into(),
                 member_id.saturated_into(),
                 category_id,
                 thread_id,
-                idx
+                alternative_idx
             ).unwrap();
         }
 
