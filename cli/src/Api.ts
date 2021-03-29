@@ -15,6 +15,8 @@ import {
   ApplicationDetails,
   OpeningDetails,
   UnaugmentedApiPromise,
+  MemberDetails,
+  GraphQLQueryResult,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -33,6 +35,8 @@ import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '
 import { ContentId, DataObject } from '@joystream/types/media'
 import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
+import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, gql } from '@apollo/client'
+import fetch from 'cross-fetch'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -48,12 +52,18 @@ export const apiModuleByGroup = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
+  private _queryNode?: ApolloClient<NormalizedCacheObject>
   private _cdClassesCache: [ClassId, Class][] | null = null
   public isDevelopment = false
 
-  private constructor(originalApi: ApiPromise, isDevelopment: boolean) {
+  private constructor(
+    originalApi: ApiPromise,
+    isDevelopment: boolean,
+    queryNodeClient?: ApolloClient<NormalizedCacheObject>
+  ) {
     this.isDevelopment = isDevelopment
     this._api = originalApi
+    this._queryNode = queryNodeClient
   }
 
   public getOriginalApi(): ApiPromise {
@@ -84,9 +94,22 @@ export default class Api {
     return { api, properties, chainType }
   }
 
-  static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
+  private static async createQueryNodeClient(uri: string) {
+    return new ApolloClient({
+      link: new HttpLink({ uri, fetch }),
+      cache: new InMemoryCache(),
+      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
+    })
+  }
+
+  static async create(
+    apiUri = DEFAULT_API_URI,
+    metadataCache: Record<string, any>,
+    queryNodeUri?: string
+  ): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
-    return new Api(api, chainType.isDevelopment || chainType.isLocal)
+    const queryNodeClient = queryNodeUri ? await this.createQueryNodeClient(queryNodeUri) : undefined
+    return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
   }
 
   async bestNumber(): Promise<number> {
@@ -150,10 +173,53 @@ export default class Api {
     return this._api.query[module]
   }
 
-  protected async membershipById(memberId: MemberId): Promise<Membership | null> {
-    const profile = await this._api.query.members.membershipById(memberId)
+  protected async fetchMemberQueryNodeData(
+    memberId: MemberId
+  ): Promise<GraphQLQueryResult<'membership', 'handle' | 'name'>['membership']> {
+    const MEMBER_BY_ID_QUERY = gql`
+      query($id: ID!) {
+        membership(where: { id: $id }) {
+          handle
+          name
+        }
+      }
+    `
 
-    return profile.isEmpty ? null : profile
+    if (!this._queryNode) {
+      return null
+    }
+
+    const res = await this._queryNode.query<GraphQLQueryResult<'membership', 'handle' | 'name'>>({
+      query: MEMBER_BY_ID_QUERY,
+      variables: { id: memberId.toNumber() },
+    })
+
+    return res.data.membership
+  }
+
+  async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
+    const memberData = await this.fetchMemberQueryNodeData(memberId)
+
+    return {
+      id: memberId,
+      name: memberData?.name,
+      handle: memberData?.handle,
+      membership,
+    }
+  }
+
+  protected async membershipById(memberId: MemberId): Promise<MemberDetails | null> {
+    const membership = await this._api.query.members.membershipById(memberId)
+    return membership.isEmpty ? null : await this.memberDetails(memberId, membership)
+  }
+
+  protected async expectedMembershipById(memberId: MemberId): Promise<MemberDetails> {
+    const member = await this.membershipById(memberId)
+    if (!member) {
+      throw new CLIError(`Expected member was not found by id: ${memberId.toString()}`)
+    }
+
+    return member
   }
 
   async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
@@ -267,7 +333,7 @@ export default class Api {
   ): Promise<ApplicationDetails> {
     return {
       applicationId,
-      member: await this.membershipById(application.member_id),
+      member: await this.expectedMembershipById(application.member_id),
       roleAccout: application.role_account_id,
       rewardAccount: application.reward_account_id,
       stakingAccount: application.staking_account_id,

@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { displayTable, displayCollapsedRow, displayHeader, shortAddress } from '../../helpers/display'
+import { displayTable, displayCollapsedRow, displayHeader, shortAddress, memberHandle } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
-import chalk from 'chalk'
 
 export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
   static description = 'Shows an overview of given working group opening by Working Group Opening ID'
@@ -47,7 +46,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     displayHeader(`Applications (${opening.applications.length})`)
     const applicationsRows = opening.applications.map((a) => ({
       'ID': a.applicationId,
-      Member: a.member?.handle_hash.toString() || chalk.red('NONE'),
+      Member: memberHandle(a.member),
       'Role Acc': shortAddress(a.roleAccout),
       'Reward Acc': shortAddress(a.rewardAccount),
       'Staking Acc': a.stakingAccount ? shortAddress(a.stakingAccount) : 'NONE',

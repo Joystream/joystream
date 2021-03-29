@@ -26,7 +26,6 @@ export class ExtrinsicFailedError extends Error {}
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
   private api: Api | null = null
-  forceSkipApiUriPrompt = false
 
   getApi(): Api {
     if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
@@ -53,13 +52,20 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   async init() {
     await super.init()
     let apiUri: string = this.getPreservedState().apiUri
+
     if (!apiUri) {
-      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
+      this.warn("You haven't provided a Joystream node websocket api uri for the CLI to connect to yet!")
       apiUri = await this.promptForApiUri()
     }
 
+    let queryNodeUri: string = this.getPreservedState().queryNodeUri
+    if (!queryNodeUri) {
+      this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
+      queryNodeUri = await this.promptForQueryNodeUri()
+    }
+
     const { metadataCache } = this.getPreservedState()
-    this.api = await Api.create(apiUri, metadataCache)
+    this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri)
 
     const { genesisHash, runtimeVersion } = this.getOriginalApi()
     const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
@@ -73,7 +79,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   async promptForApiUri(): Promise<string> {
     let selectedNodeUri = await this.simplePrompt({
       type: 'list',
-      message: 'Choose a node/endpoint:',
+      message: 'Choose a node websocket api uri:',
       choices: [
         {
           name: 'Local node (ws://localhost:9944)',
@@ -107,6 +113,47 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return selectedNodeUri
   }
 
+  async promptForQueryNodeUri(): Promise<string> {
+    let selectedUri = await this.simplePrompt({
+      type: 'list',
+      message: 'Choose a query node endpoint:',
+      choices: [
+        {
+          name: 'Local query node (http://localhost:8081/graphql)',
+          value: 'http://localhost:8081/graphql',
+        },
+        {
+          name: 'Jsgenesis-hosted query node (https://hydra.joystream.org/graphql)',
+          value: 'https://hydra.joystream.org/graphql',
+        },
+        {
+          name: 'Custom endpoint',
+          value: '',
+        },
+        {
+          name: "No endpoint (if you don't use query node some features will not be available)",
+          value: 'none',
+        },
+      ],
+    })
+
+    if (!selectedUri) {
+      do {
+        selectedUri = await this.simplePrompt({
+          type: 'input',
+          message: 'Provide a query node endpoint',
+        })
+        if (!this.isApiUriValid(selectedUri)) {
+          this.warn('Provided uri seems incorrect! Please try again...')
+        }
+      } while (!this.isApiUriValid(selectedUri))
+    }
+
+    await this.setPreservedState({ queryNodeUri: selectedUri })
+
+    return selectedUri
+  }
+
   isApiUriValid(uri: string) {
     try {
       // eslint-disable-next-line no-new
@@ -115,6 +162,17 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       return false
     }
     return true
+  }
+
+  isQueryNodeUriValid(uri: string) {
+    let url: URL
+    try {
+      url = new URL(uri)
+    } catch (_) {
+      return false
+    }
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
   }
 
   // This is needed to correctly handle some structs, enums etc.

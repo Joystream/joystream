@@ -16,7 +16,7 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
 
   async run() {
     const { openingId } = this.parse(WorkingGroupsApply).args
-    const [memberId, member] = await this.getRequiredMemberContext()
+    const memberContext = await this.getRequiredMemberContext()
 
     const opening = await this.getApi().groupOpening(this.group, parseInt(openingId))
 
@@ -25,7 +25,11 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
 
     let stakeParams: CreateInterface<Option<StakeParameters>> = null
     if (opening.stake) {
-      const stakingAccount = await this.promptForStakingAccount(opening.stake.value, memberId, member)
+      const stakingAccount = await this.promptForStakingAccount(
+        opening.stake.value,
+        memberContext.id,
+        memberContext.membership
+      )
 
       stakeParams = {
         stake: opening.stake.value,
@@ -39,12 +43,12 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
     })
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(member.controller_account.toString()),
+      await this.getDecodedPair(memberContext.membership.controller_account.toString()),
       apiModuleByGroup[this.group],
       'applyOnOpening',
       [
         this.createType('ApplyOnOpeningParameters', {
-          member_id: memberId,
+          member_id: memberContext.id,
           opening_id: openingId,
           role_account_id: roleAccount,
           reward_account_id: rewardAccount,

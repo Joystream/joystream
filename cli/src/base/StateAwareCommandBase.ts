@@ -11,6 +11,7 @@ import { WorkingGroups } from '../Types'
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
   apiUri: string
+  queryNodeUri: string
   defaultWorkingGroup: WorkingGroups
   metadataCache: Record<string, any>
 }
@@ -18,6 +19,7 @@ type StateObject = {
 // State object default values
 const DEFAULT_STATE: StateObject = {
   apiUri: '',
+  queryNodeUri: '',
   defaultWorkingGroup: WorkingGroups.StorageProviders,
   metadataCache: {},
 }

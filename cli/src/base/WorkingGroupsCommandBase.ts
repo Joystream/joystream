@@ -5,6 +5,7 @@ import { WorkingGroups, AvailableGroups, GroupMember, OpeningDetails, Applicatio
 import _ from 'lodash'
 import chalk from 'chalk'
 import { IConfig } from '@oclif/config'
+import { memberHandle } from '../helpers/display'
 
 /**
  * Abstract base class for commands that need to use gates based on user's roles
@@ -37,7 +38,7 @@ export abstract class RolesCommandBase extends AccountsCommandBase {
     const availableGroupMemberContexts = groupMembers.filter((m) =>
       expectedKeyType === 'Role'
         ? this.isKeyAvailable(m.roleAccount.toString())
-        : this.isKeyAvailable(m.profile.controller_account.toString())
+        : this.isKeyAvailable(m.profile.membership.controller_account.toString())
     )
 
     if (!availableGroupMemberContexts.length) {
@@ -92,7 +93,7 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
       message: 'Select succesful applicants',
       type: 'checkbox',
       choices: opening.applications.map((a) => ({
-        name: ` ${a.applicationId}: ${a.member?.handle_hash.toString()}`,
+        name: ` ${a.applicationId}: ${memberHandle(a.member)}`,
         value: a.applicationId,
       })),
     })

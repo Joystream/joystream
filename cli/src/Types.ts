@@ -8,6 +8,7 @@ import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
+import { Query } from './QueryNodeApiSchema.generated'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -54,14 +55,14 @@ export type GroupMember = {
   workerId: WorkerId
   memberId: MemberId
   roleAccount: AccountId
-  profile: Membership
+  profile: MemberDetails
   stake: Balance
   reward: Reward
 }
 
 export type ApplicationDetails = {
   applicationId: number
-  member: Membership | null
+  member: MemberDetails
   roleAccout: AccountId
   stakingAccount: AccountId
   rewardAccount: AccountId
@@ -79,6 +80,14 @@ export type OpeningDetails = {
   type: OpeningType
   createdAtBlock: number
   rewardPerBlock?: Balance
+}
+
+// Extended membership information (including optional query node data)
+export type MemberDetails = {
+  id: MemberId
+  name?: string | null
+  handle?: string
+  membership: Membership
 }
 
 // Api-related
@@ -111,3 +120,13 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   tx: { [key: string]: SubmittableModuleExtrinsics<'promise'> }
   consts: { [key: string]: QueryableModuleConsts }
 }
+
+type Maybe<T> = T | null
+
+// Helper for creating partial GraphQL query result type
+export type GraphQLQueryResult<
+  QueryName extends keyof Query,
+  Fields extends keyof NonNullable<Pick<Query, QueryName>[QueryName]>
+> = Pick<Query, QueryName>[QueryName] extends Maybe<Pick<Query, QueryName>[QueryName]>
+  ? { [K in QueryName]?: Maybe<Pick<NonNullable<Pick<Query, QueryName>[QueryName]>, Fields>> }
+  : { [K in QueryName]: Pick<NonNullable<Pick<Query, QueryName>[QueryName]>, Fields> }

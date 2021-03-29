@@ -6,9 +6,9 @@ import { CLIError } from '@oclif/errors'
 import ApiCommandBase from './ApiCommandBase'
 import { Keyring } from '@polkadot/api'
 import { formatBalance } from '@polkadot/util'
-import { NamedKeyringPair } from '../Types'
+import { MemberDetails, NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
-import { toFixedLength } from '../helpers/display'
+import { memberHandle, toFixedLength } from '../helpers/display'
 import { AccountId, MemberId } from '@joystream/types/common'
 import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
@@ -326,10 +326,14 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async getRequiredMemberContext(): Promise<[MemberId, Membership]> {
+  async getRequiredMemberContext(): Promise<MemberDetails> {
     // TODO: Limit only to a set of members provided by the user?
     const allMembers = await this.getApi().allMembers()
-    const availableMembers = allMembers.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
+    const availableMembers = await Promise.all(
+      allMembers
+        .filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
+        .map(([id, m]) => this.getApi().memberDetails(id, m))
+    )
 
     if (!availableMembers.length) {
       this.error('No member controller key available!', { exit: ExitCodes.AccessDenied })
@@ -340,15 +344,12 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async promptForMember(
-    availableMembers: [MemberId, Membership][],
-    message = 'Choose a member'
-  ): Promise<[MemberId, Membership]> {
+  async promptForMember(availableMembers: MemberDetails[], message = 'Choose a member'): Promise<MemberDetails> {
     const memberIndex = await this.simplePrompt({
       type: 'list',
       message,
-      choices: availableMembers.map(([, m], i) => ({
-        name: m.handle_hash.toString(),
+      choices: availableMembers.map((m, i) => ({
+        name: memberHandle(m),
         value: i,
       })),
     })

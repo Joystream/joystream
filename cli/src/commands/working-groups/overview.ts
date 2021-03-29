@@ -1,5 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { displayHeader, displayNameValueTable, displayTable, shortAddress } from '../../helpers/display'
+import { displayHeader, displayNameValueTable, displayTable, memberHandle, shortAddress } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
 
 import chalk from 'chalk'
@@ -18,7 +18,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
     if (lead) {
       displayNameValueTable([
         { name: 'Member id:', value: lead.memberId.toString() },
-        { name: 'Member handle:', value: lead.profile.handle_hash.toString() },
+        { name: 'Member handle:', value: memberHandle(lead.profile) },
         { name: 'Role account:', value: lead.roleAccount.toString() },
       ])
     } else {
@@ -31,7 +31,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
     const membersRows = members.map((m) => ({
       'Worker id': m.workerId.toString(),
       'Member id': m.memberId.toString(),
-      'Member handle': m.profile.handle_hash.toString(),
+      'Member handle': memberHandle(m.profile),
       Stake: formatBalance(m.stake),
       'Reward': formatBalance(m.reward?.valuePerBlock),
       'Missed reward': formatBalance(m.reward?.totalMissed),

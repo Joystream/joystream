@@ -8,6 +8,8 @@
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
+    "@apollo/client": "^3.3.13",
+    "cross-fetch": "^3.0.6",
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
     "@joystream/types": "^0.15.0",
@@ -124,7 +126,9 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/"
+    "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/",
+    "generate:graphql-typings": "graphql-codegen",
+    "generate:all": "yarn generate:schema-typings && yarn generate:graphql-typings"
   },
   "types": "lib/index.d.ts",
   "volta": {

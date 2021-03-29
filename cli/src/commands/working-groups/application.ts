@@ -1,6 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { displayCollapsedRow, displayHeader } from '../../helpers/display'
-import chalk from 'chalk'
+import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
 
 export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
   static description = 'Shows an overview of given application by Working Group Application ID'
@@ -24,7 +23,7 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
     displayHeader(`Details`)
     const applicationRow = {
       'Application ID': application.applicationId,
-      'Member handle': application.member?.handle_hash.toString() || chalk.red('NONE'),
+      'Member handle': memberHandle(application.member),
       'Role account': application.roleAccout.toString(),
       'Reward account': application.rewardAccount.toString(),
       'Staking account': application.stakingAccount.toString(),

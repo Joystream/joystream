@@ -25,6 +25,7 @@ import { createType } from '@joystream/types'
 import chalk from 'chalk'
 import { flags } from '@oclif/command'
 import { DistinctQuestion } from 'inquirer'
+import { memberHandle } from '../helpers/display'
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
 type Context = typeof CONTEXTS[number]
@@ -157,7 +158,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const choices = curators
       .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
       .map((c) => ({
-        name: `${c.profile.handle_hash.toString()} (Worker ID: ${c.workerId})`,
+        name: `${memberHandle(c.profile)} (Worker ID: ${c.workerId})`,
         value: c.workerId.toNumber(),
       }))
 
@@ -382,8 +383,8 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   async getActor(context: typeof CONTEXTS[number], pickedClass: Class) {
     let actor: Actor
     if (context === 'Member') {
-      const [memberId] = await this.getRequiredMemberContext()
-      actor = this.createType('Actor', { Member: memberId })
+      const { id } = await this.getRequiredMemberContext()
+      actor = this.createType('Actor', { Member: id })
     } else if (context === 'Curator') {
       actor = await this.getCuratorContext([pickedClass.name.toString()])
     } else {
