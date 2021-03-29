@@ -30,7 +30,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
       const meta = videoCategoryMetadataFromInput(api, videoCategoryUpdateParametersInput)
 
       const videoCategoryUpdateParameters: VideoCategoryUpdateParameters = {
-        meta,
+        new_meta: meta,
       }
 
       this.jsonPrettyPrint(JSON.stringify(videoCategoryUpdateParameters))

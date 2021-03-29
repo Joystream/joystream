@@ -263,7 +263,7 @@ export type ChannelCategoryUpdateParametersInput = {
 }
 
 export type ChannelCategoryUpdateParameters = {
-  meta: Bytes
+  new_meta: Bytes
 }
 
 export type VideoCategoryCreationParametersInput = {
@@ -279,5 +279,5 @@ export type VideoCategoryUpdateParametersInput = {
 }
 
 export type VideoCategoryUpdateParameters = {
-  meta: Bytes
+  new_meta: Bytes
 }

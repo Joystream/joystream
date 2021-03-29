@@ -30,7 +30,7 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
       const meta = channelCategoryMetadataFromInput(api, channelCategoryUpdateParametersInput)
 
       const channelCategoryUpdateParameters: ChannelCategoryUpdateParameters = {
-        meta,
+        new_meta: meta,
       }
 
       this.jsonPrettyPrint(JSON.stringify(channelCategoryUpdateParametersInput))
