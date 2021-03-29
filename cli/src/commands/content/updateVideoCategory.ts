@@ -10,8 +10,18 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
     input: IOFlags.input,
   }
 
+  static args = [
+    {
+      name: 'videoCategoryId',
+      required: true,
+      description: 'ID of the Video Category',
+    },
+  ]
+
   async run() {
     let { context, input } = this.parse(UpdateVideoCategoryCommand).flags
+
+    const { videoCategoryId } = this.parse(UpdateVideoCategoryCommand).args
 
     if (!context) {
       context = await this.promptForCategoriesContext()
@@ -44,6 +54,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
 
         await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCategory', [
           actor,
+          videoCategoryId,
           videoCategoryUpdateParameters,
         ])
       }
