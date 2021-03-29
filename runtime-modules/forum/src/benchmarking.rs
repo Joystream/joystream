@@ -121,10 +121,9 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn insert_a_worker<
+fn insert_a_leader<
     T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
 >(
-    job_opening_type: OpeningType,
     id: u64,
 ) -> T::AccountId
 where
@@ -132,22 +131,54 @@ where
 {
     let (caller_id, member_id) = member_funded_account::<T>(id as u32);
 
-    let add_worker_origin = match job_opening_type {
-        OpeningType::Leader => RawOrigin::Root,
-        OpeningType::Regular => RawOrigin::Signed(caller_id.clone()),
-    };
-
     let (opening_id, application_id) = add_and_apply_opening::<T>(
-        &T::Origin::from(add_worker_origin.clone()),
+        &T::Origin::from(RawOrigin::Root),
         &caller_id,
         &member_id,
-        &job_opening_type,
+        &OpeningType::Leader,
     );
 
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
     ForumGroup::<T>::fill_opening(
-        add_worker_origin.clone().into(),
+        RawOrigin::Root.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    let actor_id = <T as common::Trait>::ActorId::from(id.try_into().unwrap());
+    assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
+        actor_id
+    ));
+
+    caller_id
+}
+
+fn insert_a_worker<
+    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
+>(
+    leader_account_id: T::AccountId,
+    id: u64,
+) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+{
+    let (caller_id, member_id) = member_funded_account::<T>(id as u32);
+
+    let leader_origin = RawOrigin::Signed(leader_account_id);
+
+    let (opening_id, application_id) = add_and_apply_opening::<T>(
+        &T::Origin::from(leader_origin.clone()),
+        &caller_id,
+        &member_id,
+        &OpeningType::Regular,
+    );
+
+    let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
+    successful_application_ids.insert(application_id);
+    ForumGroup::<T>::fill_opening(
+        leader_origin.clone().into(),
         opening_id,
         successful_application_ids,
     )
@@ -163,13 +194,14 @@ where
 
 fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
-    applicant_id: &T::AccountId,
-    member_id: &T::MemberId,
+    applicant_account_id: &T::AccountId,
+    applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, ApplicationId) {
     let opening_id = add_opening_helper::<T>(add_opening_origin, job_opening_type);
 
-    let application_id = apply_on_opening_helper::<T>(applicant_id, member_id, &opening_id);
+    let application_id =
+        apply_on_opening_helper::<T>(applicant_account_id, applicant_member_id, &opening_id);
 
     (opening_id, application_id)
 }
@@ -204,21 +236,21 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
 }
 
 fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
-    applicant_id: &T::AccountId,
-    member_id: &T::MemberId,
+    applicant_account_id: &T::AccountId,
+    applicant_member_id: &T::MemberId,
     opening_id: &OpeningId,
 ) -> ApplicationId {
     ForumGroup::<T>::apply_on_opening(
-        RawOrigin::Signed(applicant_id.clone()).into(),
+        RawOrigin::Signed((*applicant_account_id).clone()).into(),
         ApplyOnOpeningParameters::<T> {
-            member_id: *member_id,
+            member_id: *applicant_member_id,
             opening_id: *opening_id,
-            role_account_id: applicant_id.clone(),
-            reward_account_id: applicant_id.clone(),
+            role_account_id: applicant_account_id.clone(),
+            reward_account_id: applicant_account_id.clone(),
             description: vec![],
             stake_parameters: StakeParameters {
                 stake: <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(),
-                staking_account_id: applicant_id.clone()
+                staking_account_id: applicant_account_id.clone()
             },
         },
     )
@@ -385,7 +417,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -446,7 +478,7 @@ benchmarks! {
         let moderator_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, moderator_id);
+            insert_a_leader::<T>(moderator_id);
 
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
@@ -487,7 +519,7 @@ benchmarks! {
         let moderator_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, moderator_id);
+            insert_a_leader::<T>(moderator_id);
 
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
@@ -532,7 +564,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -571,7 +603,7 @@ benchmarks! {
         let moderator_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, moderator_id);
+            insert_a_leader::<T>(moderator_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -617,7 +649,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -661,7 +693,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 3 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -705,7 +737,7 @@ benchmarks! {
     create_thread {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -795,7 +827,7 @@ benchmarks! {
         let forum_user_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -833,7 +865,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         // Generate categories tree
@@ -865,7 +897,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         // Generate categories tree
@@ -905,10 +937,11 @@ benchmarks! {
 
     delete_thread {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let hide = false;
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -925,6 +958,21 @@ benchmarks! {
             text.clone(), text.clone(), poll
         );
 
+        // Add poll voting.
+        for idx in 1..(T::MaxWorkerNumberLimit::get() - 1) {
+            let member_id = idx.into();
+            let member_account_id = insert_a_worker::<T>(caller_id.clone(), member_id);
+
+            let alternative_idx = 1;
+            Module::<T>::vote_on_poll(
+                RawOrigin::Signed(member_account_id.clone()).into(),
+                member_id.saturated_into(),
+                category_id,
+                thread_id,
+                alternative_idx
+            ).unwrap();
+        }
+
         let mut category = Module::<T>::category_by_id(category_id);
 
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
@@ -932,7 +980,8 @@ benchmarks! {
         RawOrigin::Signed(caller_id.clone()),
         forum_user_id.saturated_into(),
         category_id,
-        thread_id
+        thread_id,
+        hide
     )
     verify {
 
@@ -949,12 +998,14 @@ benchmarks! {
 
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
+        assert_eq!(<PollVotes<T>>::iter_prefix_values(&thread_id).count(), 0);
 
         assert_last_event::<T>(
             RawEvent::ThreadDeleted(
                 thread_id,
                 forum_user_id.saturated_into(),
-                category_id
+                category_id,
+                hide
             ).into()
         );
     }
@@ -966,7 +1017,7 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         // If category depth is less or equal to one, create two separate categories
         let (category_id, new_category_id) = if i <= 2 {
@@ -1028,7 +1079,7 @@ benchmarks! {
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         // If category depth is less or equal to one, create two separate categories
         let (category_id, new_category_id) = if i <= 2 {
@@ -1099,7 +1150,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1140,6 +1191,7 @@ benchmarks! {
         }
 
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
+        assert!(<PollVotes<T>>::get(thread_id, forum_user_id.saturated_into::<ForumUserId<T>>()));
 
         assert_last_event::<T>(
             RawEvent::VoteOnPoll(
@@ -1155,7 +1207,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1210,7 +1262,7 @@ benchmarks! {
         let lead_id = 0;
 
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, lead_id);
+            insert_a_leader::<T>(lead_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1274,7 +1326,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1331,7 +1383,7 @@ benchmarks! {
 
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1370,7 +1422,7 @@ benchmarks! {
     edit_post_text {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1424,7 +1476,7 @@ benchmarks! {
     moderate_post_lead {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1471,7 +1523,7 @@ benchmarks! {
     moderate_post_moderator {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1525,7 +1577,7 @@ benchmarks! {
     delete_posts {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1547,7 +1599,7 @@ benchmarks! {
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
             text.clone(), text.clone(), poll
         );
-
+        let hide = false;
         let mut posts = Vec::new();
         for _ in 0 .. k {
             posts.push((
@@ -1559,7 +1611,8 @@ benchmarks! {
                         category_id,
                         thread_id,
                         vec![0u8],
-                    )
+                    ),
+                    hide
                 )
             );
         }
@@ -1603,7 +1656,7 @@ benchmarks! {
     set_stickied_threads_lead {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
@@ -1646,7 +1699,7 @@ benchmarks! {
     set_stickied_threads_moderator {
         let forum_user_id = 0;
         let caller_id =
-            insert_a_worker::<T>(OpeningType::Leader, forum_user_id);
+            insert_a_leader::<T>(forum_user_id);
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 

@@ -296,6 +296,7 @@ impl_runtime_apis! {
             use crate::Referendum;
             use crate::Blog;
             use crate::JoystreamUtility;
+            use crate::Staking;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -373,6 +374,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
             add_benchmark!(params, batches, pallet_im_online, ImOnline);
+            add_benchmark!(params, batches, pallet_balances, Balances);
+            add_benchmark!(params, batches, pallet_staking, Staking);
 
             // Joystream Benchmarks
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);

@@ -248,10 +248,10 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
 
 pub struct SetReferralCutFixture {
     pub origin: RawOrigin<u64>,
-    pub value: u64,
+    pub value: u8,
 }
 
-pub const DEFAULT_REFERRAL_CUT_VALUE: u64 = 100;
+pub const DEFAULT_REFERRAL_CUT_VALUE: u8 = 50;
 
 impl Default for SetReferralCutFixture {
     fn default() -> Self {
@@ -275,6 +275,10 @@ impl SetReferralCutFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_referral_cut(self, value: u8) -> Self {
+        Self { value, ..self }
     }
 }
 

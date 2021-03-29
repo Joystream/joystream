@@ -249,9 +249,6 @@ impl pallet_timestamp::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 0;
-    pub const TransferFee: u128 = 0;
-    pub const CreationFee: u128 = 0;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -603,9 +600,6 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
-    pub const DefaultMembershipPrice: Balance = 100;
-    // The candidate stake should be more than the transaction fee which currently is 53
-    pub const CandidateStake: Balance = 200;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -634,6 +628,14 @@ impl common::Trait for Runtime {
     type ActorId = ActorId;
 }
 
+parameter_types! {
+    pub const DefaultMembershipPrice: Balance = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const DefaultInitialInvitationBalance: Balance = 100;
+    // The candidate stake should be more than the transaction fee which currently is 53
+    pub const CandidateStake: Balance = 200;
+}
+
 impl membership::Trait for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
@@ -642,11 +644,11 @@ impl membership::Trait for Runtime {
     type StakingCandidateStakingHandler = StakingCandidateStakingHandler;
     type WorkingGroup = MembershipWorkingGroup;
     type WeightInfo = weights::membership::WeightInfo;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type CandidateStake = CandidateStake;
 }
 
 parameter_types! {
-    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 6;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;

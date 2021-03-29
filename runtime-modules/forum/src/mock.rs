@@ -44,7 +44,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
@@ -308,15 +308,16 @@ impl membership::Trait for Runtime {
     type WorkingGroup = ();
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
 }
 
 parameter_types! {
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MaxCategoryDepth: u64 = 20;
     pub const PostLifeTime: u64 = 100;
-
     pub const MaxSubcategories: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
@@ -373,11 +374,18 @@ impl common::origin::MemberOriginValidator<Origin, u128, u128> for () {
     }
 
     fn is_member_controller_account(member_id: &u128, account_id: &u128) -> bool {
-        let allowed_accounts = [
+        let mut allowed_accounts = vec![
             FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_2_ORIGIN_ID,
         ];
+
+        // Test accounts for benchmarks.
+        let max_worker_number =
+            <Runtime as working_group::Trait<ForumWorkingGroupInstance>>::MaxWorkerNumberLimit::get(
+            ) as u128;
+        let mut benchmarks_accounts: Vec<u128> = (1..max_worker_number).collect::<Vec<_>>();
+        allowed_accounts.append(&mut benchmarks_accounts);
 
         allowed_accounts.contains(account_id) && account_id == member_id
     }
@@ -1074,6 +1082,10 @@ pub fn vote_on_poll_mock(
                 category_id
             ))
         );
+        assert!(TestForumModule::poll_votes_by_thread_id_by_forum_user_id(
+            &thread_id,
+            &forum_user_id
+        ));
     };
     thread_id
 }

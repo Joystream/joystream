@@ -264,6 +264,7 @@ parameter_types! {
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const MaxWinnerTargetCount: u64 = 10;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 mod balances_mod {
@@ -445,6 +446,7 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
@@ -504,7 +506,7 @@ impl Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
     pub const MaxLocks: u32 = 50;
 }
 

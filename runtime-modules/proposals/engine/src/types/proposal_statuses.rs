@@ -52,7 +52,7 @@ impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
 
     /// Determines whether a proposal in pending execution status.
     pub fn is_pending_execution_proposal(&self) -> bool {
-        matches!(self.clone(), ProposalStatus::PendingExecution{..})
+        matches!(self.clone(), ProposalStatus::PendingExecution { .. })
     }
 
     /// Determines whether a proposal in pending contitutionality status.

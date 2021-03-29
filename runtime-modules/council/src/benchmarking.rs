@@ -318,12 +318,13 @@ benchmarks! {
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
         assert_eq!(Council::<T>::budget(), Balance::<T>::max_value());
         let mut funding_requests = Vec::new();
+        let amount: Balance<T> = 100.into();
 
         for id in 0 .. i {
             let account = T::AccountId::create_account_id(id);
             assert_eq!(Balances::<T>::total_balance(&account), Zero::zero());
             funding_requests.push(common::FundingRequestParameters {
-                amount: One::one(),
+                amount,
                 account
             });
         }
@@ -332,7 +333,10 @@ benchmarks! {
 
     }: _(RawOrigin::Root, funding_requests.clone())
     verify {
-        assert_eq!(Council::<T>::budget(), Balance::<T>::max_value() - Balance::<T>::from(i));
+        assert_eq!(
+            Council::<T>::budget(),
+            Balance::<T>::max_value() - Balance::<T>::from(i) * amount
+        );
 
         for fund_request in funding_requests {
 

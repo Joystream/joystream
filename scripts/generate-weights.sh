@@ -40,6 +40,12 @@ benchmark substrate_utility
 benchmark pallet_session
 benchmark pallet_timestamp
 
+# Pallet staking benchmarking takes too long.
+# benchmark pallet_staking
+
+# Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
+# benchmark pallet_balances
+
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
 # Will have it commented out until we test it in the reference machine. If there
 # it still takes too long we will get rid of this benchmark for good and use always

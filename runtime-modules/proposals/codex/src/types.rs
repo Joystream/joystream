@@ -95,7 +95,7 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
     SetMembershipLeadInvitationQuota(u32),
 
     /// `Set Referral Cut` proposal
-    SetReferralCut(Balance),
+    SetReferralCut(u8),
 
     /// `Create Blog Post` proposal
     CreateBlogPost(Vec<u8>, Vec<u8>),

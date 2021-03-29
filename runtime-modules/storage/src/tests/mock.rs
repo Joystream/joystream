@@ -100,6 +100,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -138,7 +139,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl balances::Trait for Test {
@@ -359,6 +360,7 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;

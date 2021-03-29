@@ -208,6 +208,11 @@ lazy_static! {
     });
 }
 
+// Change it when changing the currency constants!
+parameter_types! {
+    pub const ExistentialDeposit: u128 = 10;
+}
+
 pub mod currency {
     use super::Balance;
 

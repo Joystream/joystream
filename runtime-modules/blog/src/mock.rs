@@ -90,6 +90,7 @@ parameter_types! {
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const MinimumPeriod: u64 = 5;
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const CandidateStake: u64 = 100;
 }
 
@@ -100,6 +101,7 @@ impl membership::Trait for Runtime {
     type WorkingGroup = ();
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
