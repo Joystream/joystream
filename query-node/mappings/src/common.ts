@@ -23,8 +23,14 @@ import {
 
 const currentNetwork = Network.BABYLON
 
-export function inconsistentState(extraInfo?: string): never {
-  throw 'Inconsistent state: ' + extraInfo // TODO: create a proper way of handling inconsistent state
+export function inconsistentState(extraInfo?: string, data?: unknown): never {
+  const errorMessage = 'Inconsistent state: ' + extraInfo
+
+  // log error
+  logger.error(errorMessage, data)
+
+  // throw exception
+  throw errorMessage
 }
 
 // prepare block record
@@ -69,3 +75,22 @@ export async function prepareAssetDataObject(contentParameters: ContentParameter
 
   return assetStorage
 }
+
+/////////////////// Logger /////////////////////////////////////////////////////
+
+/*
+Logger will not be needed in the future when Hydra v3 will be released.
+*/
+
+class Logger {
+
+  info(message: string, data: unknown) {
+    console.log(message, data)
+  }
+
+  error(message: string, data: unknown) {
+    console.error(message, data)
+  }
+}
+
+export const logger = new Logger()

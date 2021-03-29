@@ -6,6 +6,7 @@ import { Content } from '../../../generated/types'
 
 import {
   inconsistentState,
+  logger,
 } from '../common'
 
 export async function content_CuratorGroupCreated(
@@ -24,6 +25,9 @@ export async function content_CuratorGroupCreated(
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
+
+  // emit log event
+  logger.info('Curator group has been created', {id: curatorGroupId.id})
 }
 
 export async function content_CuratorGroupStatusSet(
@@ -46,6 +50,9 @@ export async function content_CuratorGroupStatusSet(
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
+
+  // emit log event
+  logger.info('Curator group status has been set', {id: curatorGroupId.id, isActive})
 }
 
 export async function content_CuratorAdded(
@@ -68,6 +75,9 @@ export async function content_CuratorAdded(
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
+
+  // emit log event
+  logger.info('Curator has been added to curator group', {id: curatorGroupId.id, curatorId})
 }
 
 export async function content_CuratorRemoved(
@@ -97,4 +107,7 @@ export async function content_CuratorRemoved(
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
+
+  // emit log event
+  logger.info('Curator has been removed from curator group', {id: curatorGroupId.id, curatorId})
 }

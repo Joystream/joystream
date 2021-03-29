@@ -7,6 +7,7 @@ import {
 
 import {
   inconsistentState,
+  logger,
   prepareBlock,
 } from '../common'
 
@@ -47,6 +48,9 @@ export async function content_VideoCategoryCreated(
 
   // save video category
   await db.save<VideoCategory>(videoCategory)
+
+  // emit log event
+  logger.info('Video category has been created', {id: videoCategoryId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -81,6 +85,9 @@ export async function content_VideoCategoryUpdated(
 
   // save video category
   await db.save<VideoCategory>(videoCategory)
+
+  // emit log event
+  logger.info('Video category has been updated', {id: videoCategoryId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -101,6 +108,9 @@ export async function content_VideoCategoryDeleted(
 
   // remove video category
   await db.remove<VideoCategory>(videoCategory)
+
+  // emit log event
+  logger.info('Video category has been deleted', {id: videoCategoryId.id})
 }
 
 /////////////////// Video //////////////////////////////////////////////////////
@@ -133,6 +143,9 @@ export async function content_VideoCreated(
 
   // save video
   await db.save<Video>(video)
+
+  // emit log event
+  logger.info('Video has been created', {id: videoId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -151,11 +164,14 @@ export async function content_VideoUpdated(
     return inconsistentState()
   }
 
-  // update metadata if it changed
-  if (videoUpdateParameters.new_meta.isSome) {
+  // prepare changed metadata
+  const newMetadata = videoUpdateParameters.new_meta.isSome && videoUpdateParameters.new_meta.unwrapOr(null)
+
+  // update metadata if it was changed
+  if (newMetadata) {
     const protobufContent = await readProtobuf(
       new Video(),
-      videoUpdateParameters.new_meta.unwrap(), // TODO: is there any better way to get value without unwrap?
+      newMetadata,
       videoUpdateParameters.assets.unwrapOr([]),
       db,
       event,
@@ -179,6 +195,9 @@ export async function content_VideoUpdated(
 
   // save video
   await db.save<Video>(video)
+
+  // emit log event
+  logger.info('Video has been updated', {id: videoId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -199,6 +218,9 @@ export async function content_VideoDeleted(
 
   // remove video
   await db.remove<Video>(video)
+
+  // emit log event
+  logger.info('Video has been deleted', {id: videoId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -222,6 +244,9 @@ export async function content_VideoCensored(
 
   // save video
   await db.save<Video>(video)
+
+  // emit log event
+  logger.info('Video has been censored', {id: videoId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -245,6 +270,9 @@ export async function content_VideoUncensored(
 
   // save video
   await db.save<Video>(video)
+
+  // emit log event
+  logger.info('Video has been uncensored', {id: videoId.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -298,4 +326,7 @@ export async function content_FeaturedVideosSet(
 
     await db.save<Video>(video)
   }
+
+  // emit log event
+  logger.info('New featured videos have been set', {videoIds})
 }

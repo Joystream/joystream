@@ -6,6 +6,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
 import {
   inconsistentState,
+  logger,
   prepareBlock,
 } from './common'
 import { Members } from '../../generated/types'
@@ -44,7 +45,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     id: memberId.toString(),
     rootAccount: accountId.toString(),
     controllerAccount: accountId.toString(),
-    handle: convertBytesToString(handle.unwrap()),
+    handle: convertBytesToString(handle.unwrap()), // TODO: get rid of unwraps
     about: convertBytesToString(about.unwrap()),
     avatarUri: convertBytesToString(avatarUri.unwrap()),
     registeredAtBlock: await prepareBlock(db, event_),
@@ -55,6 +56,9 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
 
   // save membership
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info('Member has been registered', {ids: memberId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -70,6 +74,9 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_
 
   // save member
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info("Member's about text has been updated", {ids: memberId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -85,6 +92,9 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: S
 
   // save member
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info("Member's avatar has been updated", {ids: memberId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -100,6 +110,9 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: S
 
   // save member
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info("Member's avatar has been updated", {ids: memberId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -114,6 +127,9 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event_: 
 
   // save member
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info("Member's root has been updated", {ids: memberId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -129,4 +145,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 
   // save member
   await db.save<Membership>(member)
+
+  // emit log event
+  logger.info("Member's controller has been updated", {ids: memberId})
 }

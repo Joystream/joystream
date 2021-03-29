@@ -12,6 +12,7 @@ import { readProtobuf } from './utils'
 import { AssetStorage } from 'query-node/src/modules/variants/variants.model'
 import {
   inconsistentState,
+  logger,
   prepareBlock,
 } from '../common'
 
@@ -44,6 +45,9 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
 
   // save entity
   await db.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel has been created', {id: channel.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -62,11 +66,15 @@ export async function content_ChannelUpdated(
     return inconsistentState()
   }
 
-  // metadata change happened?
-  if (channelUpdateParameters.new_meta.isSome) {
+
+  // prepare changed metadata
+  const newMetadata = channelUpdateParameters.new_meta.isSome && channelUpdateParameters.new_meta.unwrapOr(null)
+
+  //  update metadata if it was changed
+  if (newMetadata) {
     const protobufContent = await readProtobuf(
       new Channel(),
-      channelUpdateParameters.new_meta.unwrap(), // TODO: is there any better way to get value without unwrap?
+      newMetadata,
       channelUpdateParameters.assets.unwrapOr([]),
       db,
       event,
@@ -86,6 +94,9 @@ export async function content_ChannelUpdated(
 
   // save channel
   await db.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel has been updated', {id: channel.id})
 }
 
 export async function content_ChannelAssetsRemoved(
@@ -102,6 +113,9 @@ export async function content_ChannelAssetsRemoved(
   for (const asset in assets) {
     await db.remove<AssetStorage>(asset)
   }
+
+  // emit log event
+  logger.info('Channel assets have been removed', {ids: contentIds})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -125,6 +139,9 @@ export async function content_ChannelCensored(
 
   // save channel
   await db.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel has been censored', {id: channelId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -148,6 +165,9 @@ export async function content_ChannelUncensored(
 
   // save channel
   await db.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel has been uncensored', {id: channel.id})
 }
 
 /////////////////// ChannelCategory ////////////////////////////////////////////
@@ -179,6 +199,9 @@ export async function content_ChannelCategoryCreated(
 
   // save channel
   await db.save<ChannelCategory>(channelCategory)
+
+  // emit log event
+  logger.info('Channel category has been created', {id: channelCategory.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -213,6 +236,9 @@ export async function content_ChannelCategoryUpdated(
 
   // save channel category
   await db.save<ChannelCategory>(channelCategory)
+
+  // emit log event
+  logger.info('Channel category has been updated', {id: channelCategory.id})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -233,6 +259,9 @@ export async function content_ChannelCategoryDeleted(
 
   // delete channel category
   await db.remove<ChannelCategory>(channelCategory)
+
+  // emit log event
+  logger.info('Channel category has been deleted', {id: channelCategory.id})
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
