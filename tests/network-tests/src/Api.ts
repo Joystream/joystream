@@ -60,10 +60,10 @@ export class ApiFactory {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = await ApiPromise.create({ provider, types })
+        const api = new ApiPromise({ provider, types })
 
         // Wait for api to be connected and ready
-        await api.isReady
+        await api.isReadyOrError
 
         // If a node was just started up it might take a few seconds to start producing blocks
         // Give it a few seconds to be ready.

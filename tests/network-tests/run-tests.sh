@@ -73,9 +73,6 @@ function cleanup() {
 
 trap cleanup EXIT
 
-echo "Waiting for chain to startup..."
-sleep 10
-
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
