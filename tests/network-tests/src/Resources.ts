@@ -70,10 +70,11 @@ export class ResourceManager {
     return {
       [Resource.Council]: this.add(Resource.Council),
       // We assume that a flow will only have one active proposal at a time
-      // Runtime is configured for MaxActiveProposalLimit = 5
+      // Runtime is configured for MaxActiveProposalLimit = 20
       // So we should ensure we don't exceed that number of active proposals
       // which limits the number of concurrent tests that create proposals
-      [Resource.Proposals]: this.add(Resource.Proposals, 5),
+      // TODO: Get the value from api.consts.proposalsEngine.maxActiveProposalLimit
+      [Resource.Proposals]: this.add(Resource.Proposals, 20),
     }
   }
 
