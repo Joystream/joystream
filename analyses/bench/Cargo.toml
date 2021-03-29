@@ -42,5 +42,8 @@ sc-transaction-pool = { package = 'sc-transaction-pool', git = 'https://github.c
 futures = { version = "0.3.4", features = ["thread-pool"] }
 
 # Extra
-plotters = { version = "0.3" }
 linregress = { version = "0.4.0" }
+plotters = { version = "0.3", optional = true }
+
+[features]
+plot = ['plotters']
