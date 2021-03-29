@@ -11,7 +11,12 @@ import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/h
 import { Validator } from 'inquirer'
 import { NewAsset } from '@joystream/types/content'
 import { Bytes } from '@polkadot/types/primitive'
-import { VideoMetadata, ChannelMetadata } from '@joystream/content-metadata-protobuf'
+import {
+  VideoMetadata,
+  ChannelMetadata,
+  ChannelCategoryMetadata,
+  VideoCategoryMetadata,
+} from '@joystream/content-metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -243,4 +248,36 @@ export type ChannelUpdateParameters = {
   assets: Option<Vec<NewAsset>>
   new_meta: Bytes
   reward_account: Option<AccountId>
+}
+
+export type ChannelCategoryCreationParametersInput = {
+  meta: ChannelCategoryMetadata.AsObject
+}
+
+export type ChannelCategoryCreationParameters = {
+  meta: Bytes
+}
+
+export type ChannelCategoryUpdateParametersInput = {
+  meta: ChannelCategoryMetadata.AsObject
+}
+
+export type ChannelCategoryUpdateParameters = {
+  meta: Bytes
+}
+
+export type VideoCategoryCreationParametersInput = {
+  meta: VideoCategoryMetadata.AsObject
+}
+
+export type VideoCategoryCreationParameters = {
+  meta: Bytes
+}
+
+export type VideoCategoryUpdateParametersInput = {
+  meta: VideoCategoryMetadata.AsObject
+}
+
+export type VideoCategoryUpdateParameters = {
+  meta: Bytes
 }

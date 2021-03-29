@@ -4,12 +4,18 @@ import {
   License,
   MediaType,
   ChannelMetadata,
+  ChannelCategoryMetadata,
+  VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
 import {
   VideoUpdateParametersInput,
   VideoCreationParametersInput,
   ChannelUpdateParametersInput,
   ChannelCreationParametersInput,
+  ChannelCategoryCreationParametersInput,
+  ChannelCategoryUpdateParametersInput,
+  VideoCategoryCreationParametersInput,
+  VideoCategoryUpdateParametersInput,
 } from '../Types'
 import { ApiPromise } from '@polkadot/api'
 import { Bytes } from '@polkadot/types/primitive'
@@ -73,5 +79,27 @@ export function channelMetadataFromInput(
   channelMetadata.setCategory(channelParametersInput.meta.category!)
 
   const serialized = channelMetadata.serializeBinary()
+  return binaryToMeta(api, serialized)
+}
+
+export function channelCategoryMetadataFromInput(
+  api: ApiPromise,
+  channelCategoryParametersInput: ChannelCategoryCreationParametersInput | ChannelCategoryUpdateParametersInput
+): Bytes {
+  const channelCategoryMetadata = new ChannelCategoryMetadata()
+  channelCategoryMetadata.setName(channelCategoryParametersInput.meta.name!)
+
+  const serialized = channelCategoryMetadata.serializeBinary()
+  return binaryToMeta(api, serialized)
+}
+
+export function videoCategoryMetadataFromInput(
+  api: ApiPromise,
+  videoCategoryParametersInput: VideoCategoryCreationParametersInput | VideoCategoryUpdateParametersInput
+): Bytes {
+  const videoCategoryMetadata = new VideoCategoryMetadata()
+  videoCategoryMetadata.setName(videoCategoryParametersInput.meta.name!)
+
+  const serialized = videoCategoryMetadata.serializeBinary()
   return binaryToMeta(api, serialized)
 }

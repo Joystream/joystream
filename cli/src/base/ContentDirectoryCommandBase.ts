@@ -9,9 +9,11 @@ import { flags } from '@oclif/command'
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
 const OWNER_CONTEXTS = ['Member', 'Curator'] as const
+const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
 
 type Context = typeof CONTEXTS[number]
 type OwnerContext = typeof OWNER_CONTEXTS[number]
+type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
@@ -27,10 +29,17 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   })
 
   static ownerContextFlag = flags.enum({
-    name: 'context',
+    name: 'ownerContext',
     required: false,
     description: `Actor context to execute the command in (${OWNER_CONTEXTS.join('/')})`,
     options: [...OWNER_CONTEXTS],
+  })
+
+  static categoriesContextFlag = flags.enum({
+    name: 'categoriesContext',
+    required: false,
+    description: `Actor context to execute the command in (${CATEGORIES_CONTEXTS.join('/')})`,
+    options: [...CATEGORIES_CONTEXTS],
   })
 
   async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
@@ -48,6 +57,16 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       message,
       type: 'list',
       choices: OWNER_CONTEXTS.map((c) => ({ name: c, value: c })),
+    })
+  }
+
+  async promptForCategoriesContext(
+    message = 'Choose in which context you wish to execute the command'
+  ): Promise<CategoriesContext> {
+    return this.simplePrompt({
+      message,
+      type: 'list',
+      choices: CATEGORIES_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
