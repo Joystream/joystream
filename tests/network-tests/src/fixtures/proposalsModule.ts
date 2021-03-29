@@ -735,10 +735,10 @@ export class VoteForProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
 
     // Approving the proposal
-    const onProposalFinalized = await this.api.waitForProposalToFinalize(this.proposalNumber)
+    const proposalExecutionResult = await this.api.subscribeToProposalExecutionResult(this.proposalNumber)
     const approvals = await this.api.batchApproveProposal(this.proposalNumber)
     approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
-    const proposalOutcome = await onProposalFinalized.promise
+    const proposalOutcome = await proposalExecutionResult.promise
     this._proposalExecuted = proposalOutcome[0]
     this._events = proposalOutcome[1]
   }

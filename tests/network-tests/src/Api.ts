@@ -850,9 +850,12 @@ export class Api {
     }
   }
 
-  // Resolves to true when proposal finalized and executed successfully
-  // Resolved to false when proposal finalized and execution fails
-  public async waitForProposalToFinalize(id: ProposalId): Promise<InvertedPromise<[boolean, EventRecord[]]>> {
+  // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
+  // The inverted promise wraps a promise which resolves when the Proposal with id specified
+  // is executed.
+  // - On successful execution the wrapped promise resolves to `[true, events]`
+  // - On failed execution the wrapper promise resolves to `[false, events]`
+  public async subscribeToProposalExecutionResult(id: ProposalId): Promise<InvertedPromise<[boolean, EventRecord[]]>> {
     const invertedPromise = new InvertedPromise<[boolean, EventRecord[]]>()
     const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
       events.forEach((record) => {
@@ -887,23 +890,6 @@ export class Api {
     if (record) {
       return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
     }
-  }
-
-  // Looks for the first occurance of an expected event, and resolves.
-  // Use this when the event we are expecting is not particular to a specific extrinsic,
-  // Normally events emitted from on_initialize() or on_finalize() in a call
-  public async waitForSystemEvent(eventName: string): Promise<InvertedPromise<Event>> {
-    const invertedPromise = new InvertedPromise<Event>()
-    const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-      events.forEach((record) => {
-        if (record.event.method && record.event.method.toString() === eventName) {
-          unsubscribe()
-          invertedPromise.resolve(record.event)
-        }
-      })
-    })
-
-    return invertedPromise
   }
 
   public findApplicationReviewBeganEvent(
