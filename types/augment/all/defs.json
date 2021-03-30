@@ -68,6 +68,8 @@
     "Operation": "Null",
     "ReferenceConstraint": "Null",
     "FailedAt": "Null",
+    "IPNSIdentity": "Null",
+    "ServiceProviderRecord": "Null",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
@@ -478,11 +480,6 @@
         "stake_id": "StakeId",
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
-    },
-    "IPNSIdentity": "Text",
-    "ServiceProviderRecord": {
-        "identity": "IPNSIdentity",
-        "expires_at": "u32"
     },
     "ContentId": "[u8;32]",
     "LiaisonJudgement": {

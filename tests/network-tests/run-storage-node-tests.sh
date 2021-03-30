@@ -35,8 +35,8 @@ docker-compose up -d graphql-server
 docker-compose up -d processor
 
 # Fixes Error: No active storage providers available
-echo "Waiting for ipfs name registration"
-sleep 120
+echo "Wait for colossus to announce public url"
+sleep 6
 
 echo "Creating channel..."
 yarn joystream-cli media:createChannel \

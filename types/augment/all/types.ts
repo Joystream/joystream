@@ -520,7 +520,7 @@ export interface InputValidationLengthConstraint extends Struct {
 export interface InputValue extends Null {}
 
 /** @name IPNSIdentity */
-export interface IPNSIdentity extends Text {}
+export interface IPNSIdentity extends Null {}
 
 /** @name Lead */
 export interface Lead extends Null {}
@@ -1052,10 +1052,7 @@ export interface SeriesParameters extends Struct {
 }
 
 /** @name ServiceProviderRecord */
-export interface ServiceProviderRecord extends Struct {
-  readonly identity: IPNSIdentity;
-  readonly expires_at: u32;
-}
+export interface ServiceProviderRecord extends Null {}
 
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
