@@ -42,7 +42,7 @@ export async function content_CuratorGroupStatusSet(
 
   // ensure curator group exists
   if (!curatorGroup) {
-    return inconsistentState()
+    return inconsistentState('Non-existing curator group status set requested', curatorGroupId)
   }
 
   // update curator group
@@ -67,7 +67,7 @@ export async function content_CuratorAdded(
 
   // ensure curator group exists
   if (!curatorGroup) {
-    return inconsistentState()
+    return inconsistentState('Curator add to non-existing curator group requested', curatorGroupId)
   }
 
   // update curator group
@@ -92,14 +92,14 @@ export async function content_CuratorRemoved(
 
   // ensure curator group exists
   if (!curatorGroup) {
-    return inconsistentState()
+    return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
   const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId)
 
   // ensure curator group exists
   if (curatorIndex < 0) {
-    return inconsistentState()
+    return inconsistentState('Non-associated curator removal from curator group requested', curatorId)
   }
 
   // update curator group

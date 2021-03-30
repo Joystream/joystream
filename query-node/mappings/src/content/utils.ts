@@ -195,7 +195,7 @@ async function extractAsset(
   }
 
   if (assetIndex > assets.length) {
-    return inconsistentState()
+    return inconsistentState(`Non-existing asset extraction requested`, {assetsProvided: assets.length, assetIndex})
   }
 
   return convertAsset(assets[assetIndex], db, event)
@@ -207,7 +207,7 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   }
 
   if (assetIndex > assets.length) {
-    return inconsistentState()
+    return inconsistentState(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
   }
 
   const rawAsset = assets[assetIndex]
@@ -229,7 +229,7 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
   const isValidIso = ISO6391.validate(languageIso);
 
   if (!isValidIso) {
-    return inconsistentState()
+    return inconsistentState(`Invalid language ISO-639-1 provided`, languageIso)
   }
 
   const language = await db.get(Language, { where: { iso: languageIso }})
@@ -271,7 +271,7 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
   const category = await db.get(VideoCategory, { where: { id: categoryId }})
 
   if (!category) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video category association with video requested', categoryId)
   }
 
   return category

@@ -23,7 +23,7 @@ import {
 
 const currentNetwork = Network.BABYLON
 
-export function inconsistentState(extraInfo?: string, data?: unknown): never {
+export function inconsistentState(extraInfo: string, data?: unknown): never {
   const errorMessage = 'Inconsistent state: ' + extraInfo
 
   // log error
@@ -84,11 +84,11 @@ Logger will not be needed in the future when Hydra v3 will be released.
 
 class Logger {
 
-  info(message: string, data: unknown) {
+  info(message: string, data?: unknown) {
     console.log(message, data)
   }
 
-  error(message: string, data: unknown) {
+  error(message: string, data?: unknown) {
     console.error(message, data)
   }
 }

@@ -66,7 +66,7 @@ export async function content_VideoCategoryUpdated(
 
   // ensure video category exists
   if (!videoCategory) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video category update requested', videoCategoryId)
   }
 
   // read metadata
@@ -103,7 +103,7 @@ export async function content_VideoCategoryDeleted(
 
   // ensure video category exists
   if (!videoCategory) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video category deletion requested', videoCategoryId)
   }
 
   // remove video category
@@ -161,7 +161,7 @@ export async function content_VideoUpdated(
 
   // ensure video exists
   if (!video) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video update requested', videoId)
   }
 
   // prepare changed metadata
@@ -213,7 +213,7 @@ export async function content_VideoDeleted(
 
   // ensure video exists
   if (!video) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video deletion requested', videoId)
   }
 
   // remove video
@@ -236,7 +236,7 @@ export async function content_VideoCensored(
 
   // ensure video exists
   if (!video) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video censoring requested', videoId)
   }
 
   // update video
@@ -262,7 +262,7 @@ export async function content_VideoUncensored(
 
   // ensure video exists
   if (!video) {
-    return inconsistentState()
+    return inconsistentState('Non-existing video uncensoring requested', videoId)
   }
 
   // update video
@@ -310,6 +310,9 @@ export async function content_FeaturedVideosSet(
 
   // escape if no featured video needs to be added
   if (!toAdd) {
+    // emit log event
+    logger.info('Featured videos unchanged')
+
     return
   }
 
@@ -317,7 +320,7 @@ export async function content_FeaturedVideosSet(
   const videosToAdd = await db.getMany(Video, { where: { id: [toAdd] } })
 
   if (videosToAdd.length != toAdd.length) {
-    return inconsistentState()
+    return inconsistentState('At least one non-existing video featuring requested', toAdd)
   }
 
   // mark previously not-featured videos as featured

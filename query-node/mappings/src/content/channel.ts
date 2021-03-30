@@ -63,9 +63,8 @@ export async function content_ChannelUpdated(
 
   // ensure channel exists
   if (!channel) {
-    return inconsistentState()
+    return inconsistentState('Non-existing channel update requested', channelId)
   }
-
 
   // prepare changed metadata
   const newMetadata = channelUpdateParameters.new_meta.isSome && channelUpdateParameters.new_meta.unwrapOr(null)
@@ -131,7 +130,7 @@ export async function content_ChannelCensored(
 
   // ensure channel exists
   if (!channel) {
-    return inconsistentState()
+    return inconsistentState('Non-existing channel censoring requested', channelId)
   }
 
   // update channel
@@ -157,7 +156,7 @@ export async function content_ChannelUncensored(
 
   // ensure channel exists
   if (!channel) {
-    return inconsistentState()
+    return inconsistentState('Non-existing channel uncensoring requested', channelId)
   }
 
   // update channel
@@ -217,7 +216,7 @@ export async function content_ChannelCategoryUpdated(
 
   // ensure channel exists
   if (!channelCategory) {
-    return inconsistentState()
+    return inconsistentState('Non-existing channel category update requested', channelCategoryId)
   }
 
   // read metadata
@@ -254,7 +253,7 @@ export async function content_ChannelCategoryDeleted(
 
   // ensure channel category exists
   if (!channelCategory) {
-    return inconsistentState()
+    return inconsistentState('Non-existing channel category deletion requested', channelCategoryId)
   }
 
   // delete channel category
@@ -272,7 +271,7 @@ function handleChannelRewardAccountChange(
 ) {
   // new different reward account set?
   if (reward_account.isSome) {
-    channel.rewardAccount = reward_account.unwrap().toString()
+    channel.rewardAccount = reward_account.unwrap().toString() // TODO: get rid of unwrap
     return
   }
 

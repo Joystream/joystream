@@ -22,7 +22,7 @@ async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Members
 
   // ensure member exists
   if (!member) {
-    return inconsistentState(`Member(${id}) not found`)
+    return inconsistentState(`Operation on non-existing member requested`, id)
   }
   return member
 }

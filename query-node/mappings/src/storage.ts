@@ -61,7 +61,7 @@ export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent
 
   // ensure object exists
   if (!assetDataObject) {
-    return inconsistentState()
+    return inconsistentState('Non-existing content acceptation requested', contentId)
   }
 
   // update object
@@ -83,7 +83,7 @@ export async function ContentRejected(db: DatabaseManager, event: SubstrateEvent
 
   // ensure object exists
   if (!assetDataObject) {
-    return inconsistentState()
+    return inconsistentState('Non-existing content rejection requested', contentId)
   }
 
   // update object
