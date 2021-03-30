@@ -1,4 +1,4 @@
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -6,9 +6,6 @@ import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system
 import { TypeRegistry } from '@polkadot/types'
 import fs from 'fs'
 import { compactAddLength } from '@polkadot/util'
-
-// Patched WsProvider with larger fragment size for messages
-import WsProvider from './patched-ws-provider'
 
 function onApiDisconnected() {
   process.exit(2)
@@ -35,8 +32,8 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = await ApiPromise.create({ provider, types })
-      await api.isReady
+      api = new ApiPromise({ provider, types })
+      await api.isReadyOrError
       break
     } catch (err) {
       // failed to connect to node

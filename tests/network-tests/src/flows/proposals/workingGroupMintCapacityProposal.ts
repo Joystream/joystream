@@ -5,7 +5,7 @@ import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from 
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
@@ -19,7 +19,7 @@ export default {
 }
 
 async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
-  const debug = Debugger(`flow:workingGroupMintCapacityProposal:${group}`)
+  const debug = extendDebug(`flow:workingGroupMintCapacityProposal:${group}`)
   debug('Started')
   await lock(Resource.Proposals)
 
