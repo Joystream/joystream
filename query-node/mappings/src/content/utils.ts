@@ -57,6 +57,14 @@ import {
 
 type AssetStorageOrUrls = DataObject | string[]
 
+function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObject {
+  if (Array.isArray(dataObject)) {
+    return false
+  }
+
+  return true
+}
+
 export async function readProtobuf(
   type: Channel | ChannelCategory | Video | VideoCategory,
   metadata: Uint8Array,
@@ -203,18 +211,27 @@ function integrateAsset<T>(propertyName: string, result: T, asset?: AssetStorage
   const nameDataObject = propertyName + 'DataObject'
   const nameAvailability = propertyName + 'Availability'
 
-  const isUrls = Array.isArray(asset) // simple check if asset contains urls (thus it's not stored in storage)
-  if (isUrls) {
+  // is asset saved in storage?
+  if (!isAssetInStorage(asset)) {
+    // (un)set asset's properties
     result[nameUrl] = asset
-    result[nameAvailability] = AssetAvailability.ACCEPTED // TODO: solve availability
+    result[nameAvailability] = AssetAvailability.ACCEPTED
     delete result[nameDataObject]
 
     return result
   }
 
-  result[nameUrl] = asset
-  result[nameAvailability] = AssetAvailability.ACCEPTED // TODO: solve availability
-  delete result[nameDataObject]
+  // prepare conversion table between liaison judgment and asset availability
+  const conversionTable = {
+    [LiaisonJudgement.ACCEPTED]: AssetAvailability.ACCEPTED,
+    [LiaisonJudgement.PENDING]: AssetAvailability.PENDING,
+    [LiaisonJudgement.REJECTED]: AssetAvailability.INVALID,
+  }
+
+  // (un)set asset's properties
+  delete result[nameUrl]
+  result[nameAvailability] = conversionTable[asset.liaisonJudgement]
+  result[nameDataObject] = asset
 
   return result
 }

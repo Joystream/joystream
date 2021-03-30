@@ -28,7 +28,11 @@ async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Members
 /*
   Helper for converting Bytes type to string
 */
-function convertBytesToString(b: Bytes): string {
+function convertBytesToString(b: Bytes | null): string {
+  if (!b) {
+    return ''
+  }
+
   return Buffer.from(b.toU8a(true)).toString()
 }
 
@@ -43,9 +47,9 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     id: memberId.toString(),
     rootAccount: accountId.toString(),
     controllerAccount: accountId.toString(),
-    handle: convertBytesToString(handle.unwrap()), // TODO: get rid of unwraps
-    about: convertBytesToString(about.unwrap()),
-    avatarUri: convertBytesToString(avatarUri.unwrap()),
+    handle: convertBytesToString(handle.unwrapOr(null)),
+    about: convertBytesToString(about.unwrapOr(null)),
+    avatarUri: convertBytesToString(avatarUri.unwrapOr(null)),
     registeredAtBlock: event_.blockNumber,
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
     // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)

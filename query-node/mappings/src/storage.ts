@@ -28,7 +28,7 @@ export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): 
   await db.save<DataObject>(dataObject)
 
   // emit log event
-  logger.info("Storage content has beed added", {/*id: assetStorage.id, */channelId}) // TODO: update after Asset change merge
+  logger.info("Storage content has beed added", {id: dataObject.joystreamContentId, channelId})
 }
 
 export async function ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {

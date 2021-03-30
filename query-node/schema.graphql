@@ -65,7 +65,7 @@ enum AssetAvailability {
   "Asset is being uploaded to storage"
   PENDING,
 
-  "Anvalid storage (meta)data used"
+  "Invalid storage (meta)data used"
   INVALID,
 }
 
