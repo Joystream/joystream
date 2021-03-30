@@ -15,7 +15,7 @@ else
   # Fetch a cached joystream/node image if one is found matching code shasum instead of building
   CODE_HASH=`scripts/runtime-code-shasum.sh`
   IMAGE=joystream/node:${CODE_HASH}
-  echo "Trying to fetch cashed ${IMAGE} image"
+  echo "Trying to fetch cached ${IMAGE} image"
   docker pull ${IMAGE} || :
 
   if ! docker inspect ${IMAGE} > /dev/null;
