@@ -25,7 +25,7 @@ export class DownloadCommand extends BaseCommand {
     console.log(
       chalk.yellow(`
         Usage:   storage-cli download contentID filePath
-        Example: storage-cli download 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795 ./movie.mp4
+        Example: storage-cli download 5Ec3PL3wbutqvDykhNxXJFEWSdw9rS4LBsGUXH9gSusFzc5X ./movie.mp4
       `)
     )
   }
