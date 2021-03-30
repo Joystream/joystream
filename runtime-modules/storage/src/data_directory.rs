@@ -76,9 +76,6 @@ decl_error! {
         /// Content with this ID not found.
         CidNotFound,
 
-        /// Only the liaison for the content may modify its status.
-        LiaisonRequired,
-
         /// Cannot create content for inactive or missing data object type.
         DataObjectTypeMustBeActive,
 
@@ -117,7 +114,7 @@ decl_error! {
     }
 }
 
-/// The decision of the storage provider when it acts as liaison.
+/// The status of the content which can be updated by a storage provider.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
@@ -169,10 +166,10 @@ pub struct DataObjectInternal<
     /// Content size in bytes.
     pub size: u64,
 
-    /// Storage provider id of the liaison.
-    pub liaison: StorageProviderId,
+    /// Storage provider which first accepted the content.
+    pub liaison: Option<StorageProviderId>,
 
-    /// Storage provider as liaison judgment.
+    /// The liaison judgment.
     pub liaison_judgement: LiaisonJudgement,
 
     /// IPFS content id.
@@ -416,7 +413,7 @@ decl_module! {
         type Error = Error<T>;
 
         /// Adds the content to the system. The created DataObject
-        /// awaits liaison to accept or reject it.
+        /// awaits liaison to accept it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
@@ -641,7 +638,8 @@ decl_module! {
         }
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
-        /// The LiaisonJudgement can be updated, but only by the liaison.
+        /// The LiaisonJudgement can only be updated once from Pending to Accepted.
+        /// Subsequent calls are a no-op.
         #[weight = 10_000_000] // TODO: adjust weight
         pub(crate) fn accept_content(
             origin,
@@ -656,7 +654,7 @@ decl_module! {
 
             if data.liaison_judgement == LiaisonJudgement::Pending {
                 // Set the liaison which is updating the judgement
-                data.liaison = storage_provider_id;
+                data.liaison = Some(storage_provider_id);
 
                 // Set the judgement
                 data.liaison_judgement = LiaisonJudgement::Accepted;
@@ -798,8 +796,7 @@ impl<T: Trait> Module<T> {
                 size: content.size,
                 added_at: common::current_block_time::<T>(),
                 owner: owner.clone(),
-                // It is irrelevant what liaison is set when judgement is pending
-                liaison: StorageProviderId::<T>::default(),
+                liaison: None,
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id: content.ipfs_content_id,
             };

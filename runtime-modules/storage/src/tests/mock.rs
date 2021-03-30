@@ -111,7 +111,7 @@ impl ContentIdExists<Test> for MockContent {
                     time: 1024,
                 },
                 owner: StorageObjectOwner::Member(1),
-                liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+                liaison: Some(TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID),
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),

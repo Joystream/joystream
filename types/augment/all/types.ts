@@ -346,7 +346,7 @@ export interface DataObject extends Struct {
   readonly owner: StorageObjectOwner;
   readonly added_at: BlockAndTime;
   readonly type_id: DataObjectTypeId;
-  readonly liaison: StorageProviderId;
+  readonly liaison: Option<StorageProviderId>;
   readonly liaison_judgement: LiaisonJudgement;
   readonly ipfs_content_id: Text;
 }

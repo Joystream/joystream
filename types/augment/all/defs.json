@@ -493,7 +493,7 @@
         "added_at": "BlockAndTime",
         "type_id": "DataObjectTypeId",
         "size": "u64",
-        "liaison": "StorageProviderId",
+        "liaison": "Option<StorageProviderId>",
         "liaison_judgement": "LiaisonJudgement",
         "ipfs_content_id": "Text"
     },

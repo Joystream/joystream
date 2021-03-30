@@ -368,12 +368,13 @@ declare module '@polkadot/api/types/submittable' {
     dataDirectory: {
       /**
        * Storage provider accepts a content. Requires signed storage provider account and its id.
-       * The LiaisonJudgement can be updated, but only by the liaison.
+       * The LiaisonJudgement can only be updated once from Pending to Accepted.
+       * Subsequent calls are a no-op.
        **/
       acceptContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Adds the content to the system. The created DataObject
-       * awaits liaison to accept or reject it.
+       * awaits liaison to accept it.
        **/
       addContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**

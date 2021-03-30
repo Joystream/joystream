@@ -1,4 +1,4 @@
-import { BTreeMap, u64, bool, Text, Null, Bytes } from '@polkadot/types'
+import { BTreeMap, u64, bool, Text, Null, Bytes, Option } from '@polkadot/types'
 import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DAOId, WorkingGroup } from './common'
 import { MemberId } from './members'
 import { StorageProviderId } from './working-group' // this should be in discovery really
@@ -61,7 +61,7 @@ export class DataObject extends JoyStructDecorated({
   added_at: BlockAndTime,
   type_id: DataObjectTypeId,
   size: u64,
-  liaison: StorageProviderId,
+  liaison: Option.with(StorageProviderId),
   liaison_judgement: LiaisonJudgement,
   ipfs_content_id: Text,
 }) {
