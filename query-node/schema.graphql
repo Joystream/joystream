@@ -248,7 +248,7 @@ type CuratorGroup @entity {
   "Is group active or not"
   isActive: Boolean!
 
-  videos: [Video!] @derivedFrom(field: "ownerCuratorGroup")
+  channels: [Channel!] @derivedFrom(field: "ownerCuratorGroup")
 }
 
 type VideoCategory @entity {
