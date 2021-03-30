@@ -49,7 +49,7 @@ export async function content_VideoCategoryCreated(
   await db.save<VideoCategory>(videoCategory)
 
   // emit log event
-  logger.info('Video category has been created', {id: videoCategoryId.id})
+  logger.info('Video category has been created', {id: videoCategoryId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -86,7 +86,7 @@ export async function content_VideoCategoryUpdated(
   await db.save<VideoCategory>(videoCategory)
 
   // emit log event
-  logger.info('Video category has been updated', {id: videoCategoryId.id})
+  logger.info('Video category has been updated', {id: videoCategoryId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -109,7 +109,7 @@ export async function content_VideoCategoryDeleted(
   await db.remove<VideoCategory>(videoCategory)
 
   // emit log event
-  logger.info('Video category has been deleted', {id: videoCategoryId.id})
+  logger.info('Video category has been deleted', {id: videoCategoryId})
 }
 
 /////////////////// Video //////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ export async function content_VideoCreated(
   await db.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been created', {id: videoId.id})
+  logger.info('Video has been created', {id: videoId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -196,7 +196,7 @@ export async function content_VideoUpdated(
   await db.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been updated', {id: videoId.id})
+  logger.info('Video has been updated', {id: videoId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -219,7 +219,7 @@ export async function content_VideoDeleted(
   await db.remove<Video>(video)
 
   // emit log event
-  logger.info('Video has been deleted', {id: videoId.id})
+  logger.info('Video has been deleted', {id: videoId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -245,7 +245,7 @@ export async function content_VideoCensored(
   await db.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been censored', {id: videoId.id})
+  logger.info('Video has been censored', {id: videoId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -271,7 +271,7 @@ export async function content_VideoUncensored(
   await db.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been uncensored', {id: videoId.id})
+  logger.info('Video has been uncensored', {id: videoId})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

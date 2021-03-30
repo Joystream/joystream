@@ -1,4 +1,3 @@
-// TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
 // TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
 // TODO: can we rely on db having "foreign keys"? When item is deleted will automaticly be all relations to it unset?
 //       Similarly, will saving item also save all its related items no-yet-saved in db, or do they need to saved individually?

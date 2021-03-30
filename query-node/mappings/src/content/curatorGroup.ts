@@ -27,7 +27,7 @@ export async function content_CuratorGroupCreated(
   await db.save<CuratorGroup>(curatorGroup)
 
   // emit log event
-  logger.info('Curator group has been created', {id: curatorGroupId.id})
+  logger.info('Curator group has been created', {id: curatorGroupId})
 }
 
 export async function content_CuratorGroupStatusSet(
@@ -52,7 +52,7 @@ export async function content_CuratorGroupStatusSet(
   await db.save<CuratorGroup>(curatorGroup)
 
   // emit log event
-  logger.info('Curator group status has been set', {id: curatorGroupId.id, isActive})
+  logger.info('Curator group status has been set', {id: curatorGroupId, isActive})
 }
 
 export async function content_CuratorAdded(
@@ -77,7 +77,7 @@ export async function content_CuratorAdded(
   await db.save<CuratorGroup>(curatorGroup)
 
   // emit log event
-  logger.info('Curator has been added to curator group', {id: curatorGroupId.id, curatorId})
+  logger.info('Curator has been added to curator group', {id: curatorGroupId, curatorId})
 }
 
 export async function content_CuratorRemoved(
@@ -109,5 +109,5 @@ export async function content_CuratorRemoved(
   await db.save<CuratorGroup>(curatorGroup)
 
   // emit log event
-  logger.info('Curator has been removed from curator group', {id: curatorGroupId.id, curatorId})
+  logger.info('Curator has been removed from curator group', {id: curatorGroupId, curatorId})
 }
