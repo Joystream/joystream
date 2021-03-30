@@ -1,29 +1,29 @@
 syntax = "proto2";
 
 message OpeningMetadata {
-  required string short_description = 1;
-  required string description = 2;
-  required uint32 hiring_limit = 3;
-  required uint32 expected_duration = 4;
-  required string application_details = 5;
+  required string short_description = 1; // Short description of the opening
+  required string description = 2; // Full description of the opening
+  required uint32 hiring_limit = 3; // Expected number of hired applicants
+  required uint64 expected_ending_timestamp = 4; // Expected time when the opening will close (Unix timestamp)
+  required string application_details = 5; // Md-formatted text explaining the application process
   message ApplicationFormQuestion {
-    required string question = 1;
+    required string question = 1; // The question itself (ie. "What is your name?"")
     enum InputType {
       TEXT = 1;
       TEXTAREA = 2;
     }
-    required InputType type = 2;
+    required InputType type = 2; // Suggested type of the UI answer input
   }
-  repeated ApplicationFormQuestion application_form_questions = 6;
+  repeated ApplicationFormQuestion application_form_questions = 6; // List of questions that should be answered during application
 }
 
 message ApplicationMetadata {
-  repeated string answers = 1;
+  repeated string answers = 1; // List of answers to opening application form questions
 }
 
 message WorkingGroupStatusMetadata {
-  optional string description = 1;
-  optional string about = 2;
-  optional string status = 3; // Can also be an enum if we only want a limited set
-  optional string status_message = 4;
+  optional string description = 1; // Full status description (md-formatted)
+  optional string about = 2; // Status about text (md-formatted)
+  optional string status = 3; // The status itself (expected to be 1-3 words)
+  optional string status_message = 4; // Short status message
 }

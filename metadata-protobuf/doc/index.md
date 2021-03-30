@@ -36,10 +36,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| header | [string](#string) | optional |  |
-| bullet_points | [string](#string) | repeated |  |
-| cover_image | [string](#string) | optional |  |
-| description | [string](#string) | optional |  |
+| header | [string](#string) | optional | Candidacy header text |
+| bullet_points | [string](#string) | repeated | Candidate program in form of bullet points |
+| banner_image_uri | [string](#string) | optional | Image uri of candidate&#39;s banner |
+| description | [string](#string) | optional | Candidacy description (md-formatted) |
 
 
 
@@ -70,9 +70,9 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional |  |
-| avatar_uri | [string](#string) | optional |  |
-| about | [string](#string) | optional |  |
+| name | [string](#string) | optional | Member&#39;s real name |
+| avatar_uri | [string](#string) | optional | Member&#39;s avatar image uri |
+| about | [string](#string) | optional | Member&#39;s md-formatted about text |
 
 
 
@@ -103,7 +103,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| answers | [string](#string) | repeated |  |
+| answers | [string](#string) | repeated | List of answers to opening application form questions |
 
 
 
@@ -118,12 +118,12 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| short_description | [string](#string) | required |  |
-| description | [string](#string) | required |  |
-| hiring_limit | [uint32](#uint32) | required |  |
-| expected_duration | [uint32](#uint32) | required |  |
-| application_details | [string](#string) | required |  |
-| application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated |  |
+| short_description | [string](#string) | required | Short description of the opening |
+| description | [string](#string) | required | Full description of the opening |
+| hiring_limit | [uint32](#uint32) | required | Expected number of hired applicants |
+| expected_ending_timestamp | [uint64](#uint64) | required | Expected time when the opening will close (Unix timestamp) |
+| application_details | [string](#string) | required | Md-formatted text explaining the application process |
+| application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated | List of questions that should be answered during application |
 
 
 
@@ -138,8 +138,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| question | [string](#string) | required |  |
-| type | [OpeningMetadata.ApplicationFormQuestion.InputType](#OpeningMetadata.ApplicationFormQuestion.InputType) | required |  |
+| question | [string](#string) | required | The question itself (ie. &#34;What is your name?&#34;&#34;) |
+| type | [OpeningMetadata.ApplicationFormQuestion.InputType](#OpeningMetadata.ApplicationFormQuestion.InputType) | required | Suggested type of the UI answer input |
 
 
 
@@ -154,10 +154,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| description | [string](#string) | optional |  |
-| about | [string](#string) | optional |  |
-| status | [string](#string) | optional | Can also be an enum if we only want a limited set |
-| status_message | [string](#string) | optional |  |
+| description | [string](#string) | optional | Full status description (md-formatted) |
+| about | [string](#string) | optional | Status about text (md-formatted) |
+| status | [string](#string) | optional | The status itself (expected to be 1-3 words) |
+| status_message | [string](#string) | optional | Short status message |
 
 
 
