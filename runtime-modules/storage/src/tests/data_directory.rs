@@ -2,6 +2,7 @@
 
 use crate::data_directory::Error;
 use common::storage::StorageObjectOwner;
+use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
 use system::RawOrigin;
 
@@ -91,7 +92,7 @@ fn add_content_size_limit_reached() {
         let content_parameters = ContentParameters {
             content_id: 1,
             type_id: 1234,
-            size: DEFAULT_VOUCHER.size_limit + 1,
+            size: DEFAULT_VOUCHER.get_size_limit() + 1,
             ipfs_content_id: vec![1, 2, 3, 4],
         };
 
@@ -111,7 +112,7 @@ fn add_content_objects_limit_reached() {
 
         let mut content = vec![];
 
-        for i in 0..=DEFAULT_VOUCHER.objects_limit {
+        for i in 0..=DEFAULT_VOUCHER.get_objects_limit() {
             let content_parameters = ContentParameters {
                 content_id: i + 1,
                 type_id: 1234,
@@ -156,10 +157,7 @@ fn add_content_global_size_limit_reached() {
                 owner,
                 vec![content_parameters],
             );
-            assert_eq!(
-                res,
-                Err(Error::<Test>::GlobalVoucherSizeLimitExceeded.into())
-            );
+            assert_eq!(res, Err(Error::<Test>::VoucherSizeLimitExceeded.into()));
         });
 }
 
@@ -192,10 +190,7 @@ fn add_content_global_objects_limit_reached() {
                 owner,
                 vec![content_parameters],
             );
-            assert_eq!(
-                res,
-                Err(Error::<Test>::GlobalVoucherObjectsLimitExceeded.into())
-            );
+            assert_eq!(res, Err(Error::<Test>::VoucherObjectsLimitExceeded.into()));
         });
 }
 
@@ -320,7 +315,7 @@ fn update_storage_object_owner_voucher_objects_limit() {
         assert!(res.is_ok());
 
         assert_eq!(
-            TestDataDirectory::vouchers(owner).objects_limit,
+            TestDataDirectory::vouchers(owner).get_objects_limit(),
             new_objects_limit
         );
     });
@@ -367,7 +362,7 @@ fn update_storage_object_owner_voucher_size_limit() {
         assert!(res.is_ok());
 
         assert_eq!(
-            TestDataDirectory::vouchers(owner).size_limit,
+            TestDataDirectory::vouchers(owner).get_size_limit(),
             new_objects_total_size_limit
         );
     });
@@ -546,4 +541,154 @@ fn reject_content_as_liaison() {
         );
         assert_eq!(res, Ok(()));
     });
+}
+
+#[test]
+fn set_global_voucher_limits() {
+    with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let size_limit = TestDataDirectory::global_voucher().get_size_limit();
+        let increment_size_limit_by = 10;
+        let expected_new_size_limit = size_limit + increment_size_limit_by;
+
+        assert_ok!(TestDataDirectory::set_global_voucher_size_limit(
+            RawOrigin::Root.into(),
+            expected_new_size_limit
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(data_directory::RawEvent::GlobalVoucherSizeLimitUpdated(
+                expected_new_size_limit
+            ))
+        );
+
+        assert_eq!(
+            TestDataDirectory::global_voucher().get_size_limit(),
+            expected_new_size_limit
+        );
+
+        let objects_limit = TestDataDirectory::global_voucher().get_objects_limit();
+        let increment_objects_limit_by = 10;
+        let expected_new_objects_limit = objects_limit + increment_objects_limit_by;
+
+        assert_ok!(TestDataDirectory::set_global_voucher_objects_limit(
+            RawOrigin::Root.into(),
+            expected_new_objects_limit
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(data_directory::RawEvent::GlobalVoucherObjectsLimitUpdated(
+                expected_new_objects_limit
+            ))
+        );
+
+        assert_eq!(
+            TestDataDirectory::global_voucher().get_objects_limit(),
+            expected_new_objects_limit
+        );
+    })
+}
+
+#[test]
+fn set_limit_upper_bounds() {
+    with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let size_limit_upper_bound = TestDataDirectory::voucher_size_limit_upper_bound();
+        let increment_size_limit_upper_bound_by = 10;
+        let expected_new_size_limit_upper_bound =
+            size_limit_upper_bound + increment_size_limit_upper_bound_by;
+
+        assert_ok!(TestDataDirectory::set_voucher_size_limit_upper_bound(
+            RawOrigin::Root.into(),
+            expected_new_size_limit_upper_bound
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(data_directory::RawEvent::VoucherSizeLimitUpperBoundUpdated(
+                expected_new_size_limit_upper_bound
+            ))
+        );
+
+        assert_eq!(
+            TestDataDirectory::voucher_size_limit_upper_bound(),
+            expected_new_size_limit_upper_bound
+        );
+
+        let objects_limit_upper_bound = TestDataDirectory::voucher_objects_limit_upper_bound();
+        let increment_objects_limit_upper_bound_by = 10;
+        let expected_new_objects_limit_upper_bound =
+            objects_limit_upper_bound + increment_objects_limit_upper_bound_by;
+
+        assert_ok!(TestDataDirectory::set_voucher_objects_limit_upper_bound(
+            RawOrigin::Root.into(),
+            expected_new_objects_limit_upper_bound
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(
+                data_directory::RawEvent::VoucherObjectsLimitUpperBoundUpdated(
+                    expected_new_objects_limit_upper_bound
+                )
+            )
+        );
+
+        assert_eq!(
+            TestDataDirectory::voucher_objects_limit_upper_bound(),
+            expected_new_objects_limit_upper_bound
+        );
+    })
+}
+
+#[test]
+fn set_default_voucher() {
+    with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        SetLeadFixture::set_default_lead();
+
+        let default_voucher = TestDataDirectory::default_voucher();
+
+        let new_size_limit = default_voucher.get_size_limit() + 1;
+        let new_objects_limit = default_voucher.get_objects_limit() + 1;
+
+        assert_ok!(TestDataDirectory::set_default_voucher(
+            Origin::signed(DEFAULT_LEADER_ACCOUNT_ID),
+            new_size_limit,
+            new_objects_limit
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::data_directory(data_directory::RawEvent::DefaultVoucherUpdated(
+                new_size_limit,
+                new_objects_limit
+            ))
+        );
+
+        assert_eq!(
+            TestDataDirectory::default_voucher(),
+            Voucher::new(new_size_limit, new_objects_limit)
+        );
+    })
 }
