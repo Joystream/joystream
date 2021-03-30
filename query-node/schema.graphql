@@ -50,7 +50,7 @@ type Membership @entity {
   "The type of subscription the member has purchased if any."
   subscription: BigInt
 
-  channels: [Channel!] @derivedFrom(field: "ownerMember")
+  channels: [Channel!]! @derivedFrom(field: "ownerMember")
 }
 
 "Category of media channel"
@@ -60,7 +60,7 @@ type ChannelCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
 
-  channels: [Channel!] @derivedFrom(field: "category")
+  channels: [Channel!]! @derivedFrom(field: "category")
 
   happenedIn: Block!
 }
@@ -233,7 +233,7 @@ type Channel @entity {
   "The primary langauge of the channel's content"
   language: Language
 
-  videos: [Video!] @derivedFrom(field: "channel")
+  videos: [Video!]! @derivedFrom(field: "channel")
 
   happenedIn: Block!
 }
@@ -243,12 +243,12 @@ type CuratorGroup @entity {
   id: ID!
 
   "Curators belonging to this group"
-  curatorIds: [BigInt!]
+  curatorIds: [BigInt!]!
 
   "Is group active or not"
   isActive: Boolean!
 
-  channels: [Channel!] @derivedFrom(field: "ownerCuratorGroup")
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
 }
 
 type VideoCategory @entity {
@@ -258,7 +258,7 @@ type VideoCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
 
-  videos: [Video!] @derivedFrom(field: "category")
+  videos: [Video!]! @derivedFrom(field: "category")
 
   happenedIn: Block!
 }
