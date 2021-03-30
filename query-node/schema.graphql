@@ -41,6 +41,8 @@ type Membership @entity {
 
   "The type of subscription the member has purchased if any."
   subscription: BigInt
+
+  channels: [Channel!]! @derivedFrom(field: "ownerMember")
 }
 
 "Category of media channel"
@@ -50,7 +52,7 @@ type ChannelCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "channelCategoriesByName")
 
-  channels: [Channel!] @derivedFrom(field: "category")
+  channels: [Channel!]! @derivedFrom(field: "category")
 
   happenedIn: BigInt!
 }
@@ -165,9 +167,11 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  # "Owner of the channel" Commenting out this field: 'owner' can be curator_group, lead
-  # or a member. We are not handling events related to curator group so we will not set this field
-  # owner: Member!
+  "Member owning the channel (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the channel (if any)"
+  ownerCuratorGroup: CuratorGroup
 
   category: ChannelCategory
 
@@ -217,9 +221,22 @@ type Channel @entity {
   "The primary langauge of the channel's content"
   language: Language
 
-  videos: [Video!] @derivedFrom(field: "channel")
+  videos: [Video!]! @derivedFrom(field: "channel")
 
   happenedIn: BigInt!
+}
+
+type CuratorGroup @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  "Curators belonging to this group"
+  curatorIds: [BigInt!]!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
 }
 
 type VideoCategory @entity {
@@ -229,7 +246,7 @@ type VideoCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
 
-  videos: [Video!] @derivedFrom(field: "category")
+  videos: [Video!]! @derivedFrom(field: "category")
 
   happenedIn: BigInt!
 }
