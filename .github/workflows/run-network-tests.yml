@@ -97,7 +97,9 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -121,7 +123,9 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -145,7 +149,11 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/cd-schemas generate:all
+          yarn workspace @joystream/cd-schemas build
       - name: Ensure tests are runnable
         run: yarn workspace @joystream/cd-schemas checks --quiet
       - name: Start chain
@@ -171,9 +179,13 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
-      - name: Ensure query-node builds
-        run: yarn workspace query-node-root build
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/cd-schemas generate:all
+          yarn workspace @joystream/cd-schemas build
+          yarn workspace query-node-root build
+          yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       # Bring up hydra query-node development instance, then run content directory
@@ -199,7 +211,9 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
       - name: Build storage node
         run: yarn workspace storage-node build
       - name: Start Services

@@ -25,12 +25,11 @@ After cloning the repo run the following initialization scripts:
 # Install rust toolchain
 ./setup.sh
 
-# Install npm package dependencies
-# Also good habit to run this when switching between branches
-yarn install
+# Install npm package dependencies, build packages and docker images
+yarn build
 
-# run some tests
-yarn cargo-checks
+# start a local development network
+yarn start
 ```
 
 ## Software
@@ -75,6 +74,7 @@ The HEAD of the master branch should always be used for the correct version of t
 ```sh
 git checkout master
 yarn install
+yarn build:packages
 yarn workspace pioneer start
 ```
 
