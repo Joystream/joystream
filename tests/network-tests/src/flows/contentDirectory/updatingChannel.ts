@@ -5,7 +5,7 @@ import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntit
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export function createUpdateChannelHandleFixture(api: Api, handle: string, description: string): UpdateChannelFixture {
   // Create partial channel entity, only containing the fields we wish to update
@@ -19,7 +19,7 @@ export function createUpdateChannelHandleFixture(api: Api, handle: string, descr
 }
 
 export default async function updateChannel({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:updateChannel')
+  const debug = extendDebug('flow:updateChannel')
   debug('Started')
 
   const handle = 'New channel example'

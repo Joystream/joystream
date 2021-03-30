@@ -5,7 +5,7 @@ import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export function createSimpleChannelFixture(api: Api): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
@@ -31,7 +31,7 @@ function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEn
 }
 
 export default async function channelCreation({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creatingChannel')
+  const debug = extendDebug('flow:creatingChannel')
   debug('Started')
 
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)

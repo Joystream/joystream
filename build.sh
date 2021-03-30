@@ -14,42 +14,37 @@ yarn workspace storage-node build
 yarn workspace pioneer build
 
 if ! command -v docker-compose &> /dev/null
-then
-  echo "docker-compose not found, skipping docker build!"
-else
+  # Build or fetch cached joystream/node docker image
+  if [[ "$SKIP_JOYSTREAM_NODE" = 1 || "$SKIP_JOYSTREAM_NODE" = "true" ]]; then
+    echo "Skipping build of joystream/node docker image."
+  else
+    # Fetch a cached joystream/node image if one is found matching code shasum instead of building
+    CODE_HASH=`scripts/runtime-code-shasum.sh`
+    IMAGE=joystream/node:${CODE_HASH}
+    echo "Trying to fetch cashed ${IMAGE} image"
+    docker pull ${IMAGE} || :
+
+    if ! docker inspect ${IMAGE} > /dev/null;
+    then
+      echo "Fetch failed, building image locally"
+      docker-compose build joystream-node
+    else
+      echo "Tagging cached image as 'latest'"
+      docker image tag ${IMAGE} joystream/node:latest
+    fi
+  fi
+
   # Build joystream/apps docker image
-  docker-compose build pioneer
-
-  # Optionally build joystream/node docker image
-  # TODO: Try to fetch a cached joystream/node image
-  # if one is found matching code shasum instead of building
-  while true
-  do
-    read -p "Rebuild joystream/node docker image? (y/N): " answer2
-
-    case $answer2 in
-    [yY]* ) docker-compose build joystream-node
-            break;;
-
-    [nN]* ) break;;
-
-    * )     break;;
-    esac
-  done
+  echo "Building 'joystream/apps' docker image..."
+  docker-compose build colossus
+then
+  echo "docker-compose not found. Skipping docker image builds."
 fi
 
 # Build cargo crates: native binaries joystream/node, wasm runtime, and chainspec builder.
-while true
-do
-  read -p "Compile joystream node native binary? (y/N): " answer1
-
-  case $answer1 in
-   [yY]* ) yarn cargo-checks
-           yarn cargo-build
-           break;;
-
-   [nN]* ) break;;
-
-   * )     break;;
-  esac
-done
+if [[ "$SKIP_JOYSTREAM_NODE" = 1 || "$SKIP_JOYSTREAM_NODE" = "true" ]]; then
+  echo "Skipping cargo build"
+else
+  yarn cargo-checks
+  yarn cargo-build
+fi

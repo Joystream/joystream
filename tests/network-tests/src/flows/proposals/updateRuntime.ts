@@ -5,11 +5,11 @@ import { UpdateRuntimeFixture } from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource } from '../../Resources'
 
 export default async function updateRuntime({ api, env, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:updateRuntime')
+  const debug = extendDebug('flow:updateRuntime')
   debug('Started')
   await lock(Resource.Proposals)
 

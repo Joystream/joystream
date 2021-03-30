@@ -5,7 +5,7 @@ import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export function createVideoReferencingChannelFixture(api: Api, handle: string): CreateVideoFixture {
   const videoEntity: VideoEntity = {
@@ -56,7 +56,7 @@ function assertVideoMatchQueriedResult(queriedVideo: any, video: VideoEntity) {
 }
 
 export default async function createVideo({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creatingVideo')
+  const debug = extendDebug('flow:creatingVideo')
   debug('Started')
 
   const channelTitle = 'New channel example'
