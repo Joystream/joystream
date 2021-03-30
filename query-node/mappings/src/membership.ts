@@ -7,11 +7,9 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import {
   inconsistentState,
   logger,
-  prepareBlock,
 } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node/src/modules/membership/membership.model'
-import { Block } from 'query-node/src/modules/block/block.model'
 
 /*
   Retrive membership from the database
@@ -48,7 +46,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     handle: convertBytesToString(handle.unwrap()), // TODO: get rid of unwraps
     about: convertBytesToString(about.unwrap()),
     avatarUri: convertBytesToString(avatarUri.unwrap()),
-    registeredAtBlock: await prepareBlock(db, event_),
+    registeredAtBlock: event_.blockNumber,
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
     // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
     entry: MembershipEntryMethod.PAID,

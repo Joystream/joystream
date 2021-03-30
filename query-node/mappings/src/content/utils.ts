@@ -1,5 +1,7 @@
 // TODO: add logging of mapping events (entity found/not found, entity updated/deleted, etc.)
 // TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
+// TODO: can we rely on db having "foreign keys"? When item is deleted will automaticly be all relations to it unset?
+//       Similarly, will saving item also save all its related items no-yet-saved in db, or do they need to saved individually?
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
@@ -24,12 +26,11 @@ import {
 
 import {
   inconsistentState,
-  prepareBlock,
-  prepareAssetDataObject,
+  prepareDataObject,
 } from '../common'
 
+
 // primary entities
-import { Block } from 'query-node/src/modules/block/block.model'
 import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
 import { Channel } from 'query-node/src/modules/channel/channel.model'
 import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
@@ -43,24 +44,19 @@ import { VideoMediaEncoding } from 'query-node/src/modules/video-media-encoding/
 import { VideoMediaMetadata } from 'query-node/src/modules/video-media-metadata/video-media-metadata.model'
 
 // Asset
+import { AssetAvailability } from 'query-node/src/modules/enums/enums';
 import {
-  Asset,
-  AssetUrl,
-  AssetUploadStatus,
-  AssetStorage,
-  AssetOwner,
-  AssetOwnerMember,
-} from 'query-node/src/modules/variants/variants.model'
-import {
-  AssetDataObject,
+  DataObject,
   LiaisonJudgement
-} from 'query-node/src/modules/asset-data-object/asset-data-object.model'
+} from 'query-node/src/modules/data-object/data-object.model'
 
 // Joystream types
 import {
   ContentParameters,
   NewAsset,
 } from '@joystream/types/augment'
+
+type AssetStorageOrUrls = DataObject | string[]
 
 export async function readProtobuf(
   type: Channel | ChannelCategory | Video | VideoCategory,
@@ -77,12 +73,16 @@ export async function readProtobuf(
 
     // prepare cover photo asset if needed
     if (metaAsObject.coverPhoto !== undefined) {
-      result.coverPhoto = await extractAsset(metaAsObject.coverPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.coverPhoto, assets, db, event)
+      integrateAsset('coverPhoto', result, asset) // changes `result` inline!
+      delete metaAsObject.coverPhoto
     }
 
     // prepare avatar photo asset if needed
     if (metaAsObject.avatarPhoto !== undefined) {
-      result.avatarPhoto = await extractAsset(metaAsObject.avatarPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.avatarPhoto, assets, db, event)
+      integrateAsset('avatarPhoto', result, asset) // changes `result` inline!
+      delete metaAsObject.avatarPhoto
     }
 
     // prepare language if needed
@@ -125,12 +125,16 @@ export async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      result.thumbnailPhoto = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
+      integrateAsset('thumbnail', result, asset) // changes `result` inline!
+      delete metaAsObject.thumbnailPhoto
     }
 
     // prepare video asset if needed
     if (metaAsObject.video !== undefined) {
-      result.media = await extractAsset(metaAsObject.video, assets, db, event)
+      const asset = await extractAsset(metaAsObject.video, assets, db, event)
+      integrateAsset('media', result, asset) // changes `result` inline!
+      delete metaAsObject.video
     }
 
     // prepare language if needed
@@ -166,39 +170,54 @@ function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string
   delete video.publishedBeforeJoystream
 }
 
-async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<typeof Asset> {
+async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<AssetStorageOrUrls> {
   if (rawAsset.isUrls) {
-    const assetUrl = new AssetUrl()
-    assetUrl.urls = rawAsset.asUrls.toArray().map(item => item.toString())
+    const urls = rawAsset.asUrls.toArray().map(item => item.toString())
 
-    return assetUrl
+    return urls
   }
 
   // !rawAsset.isUrls && rawAsset.isUpload
 
   const contentParameters: ContentParameters = rawAsset.asUpload
+  const dataObject = await prepareDataObject(contentParameters, event.blockNumber)
 
-  const block = await prepareBlock(db, event)
-  const assetStorage = await prepareAssetDataObject(contentParameters, block)
-
-  return assetStorage
+  return dataObject
 }
 
 async function extractAsset(
-  assetIndex: number | undefined,
+  assetIndex: number,
   assets: NewAsset[],
   db: DatabaseManager,
   event: SubstrateEvent,
-): Promise<typeof Asset | undefined> {
-  if (assetIndex === undefined) {
-    return undefined
-  }
-
+): Promise<AssetStorageOrUrls> {
   if (assetIndex > assets.length) {
     return inconsistentState(`Non-existing asset extraction requested`, {assetsProvided: assets.length, assetIndex})
   }
 
   return convertAsset(assets[assetIndex], db, event)
+}
+
+// changes `result` inline!
+function integrateAsset<T>(propertyName: string, result: T, asset?: AssetStorageOrUrls): T {
+  const nameUrl = propertyName + 'Urls'
+  const nameDataObject = propertyName + 'DataObject'
+  const nameAvailability = propertyName + 'Availability'
+
+  const isUrls = Array.isArray(asset) // simple check if asset contains urls (thus it's not stored in storage)
+  if (isUrls) {
+    result[nameUrl] = asset
+    result[nameAvailability] = AssetAvailability.ACCEPTED // TODO: solve availability
+    delete result[nameDataObject]
+
+    return result
+  }
+
+  result[nameUrl] = asset
+  result[nameAvailability] = AssetAvailability.ACCEPTED // TODO: solve availability
+  delete result[nameDataObject]
+
+  return result
 }
 
 async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<BN | undefined> {

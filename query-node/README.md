@@ -71,46 +71,15 @@ sed -i 's/"query-node": "^0.0.0",//' query-node/mappings/package.json
 
 # install dependencies
 yarn
-
-# add dummy values to input schema variants that needs it
-sed -i 's/type AssetOwnerChannel @variant {/type AssetOwnerChannel @variant {\n  dummy: Int/' query-node/schema.graphql
-sed -i 's/type AssetNeverProvided @variant {/type AssetNeverProvided @variant {\n  dummy: Int/' query-node/schema.graphql
-sed -i 's/type AssetDeleted @variant {/type AssetDeleted @variant {\n  dummy: Int/' query-node/schema.graphql
-sed -i 's/type AssetUploadStatus @variant {/type AssetUploadStatus @variant {\n  dummy: Int/' query-node/schema.graphql
-
 yarn workspace @joystream/content-metadata-protobuf build
 yarn workspace @joystream/types build
 yarn workspace query-node-root build # this will fail during mappings compilation
-
-# setup TS declarations for query node compilation
-sed -i 's/"compilerOptions": {/"compilerOptions": {\n    "declaration": true,/' query-node/generated/graphql-server/tsconfig.json
 
 # add back dependency
 sed -i 's/"dependencies": {/"dependencies": {\n    "query-node": "^0.0.0",/' query-node/mappings/package.json
 
 # install query node dependency to mappings
 yarn
-
-# yarn workspace query-node compile # probably not needed
-sed -i 's/BN/number/' query-node/generated/graphql-server/src/modules/variants/variants.model.ts # replace BigNumber by number
-
-# remove extra variant imports
-TMP_VARIANT_IMPORT="import { Asset } from '../variants/variants.model'"
-sed -i "s#$TMP_VARIANT_IMPORT##;" query-node/generated/graphql-server/src/modules/channel/channel.model.ts query-node/generated/graphql-server/src/modules/video/video.model.ts
-echo $TMP_VARIANT_IMPORT >> query-node/generated/graphql-server/src/modules/channel/channel.model.ts
-echo $TMP_VARIANT_IMPORT >> query-node/generated/graphql-server/src/modules/video/video.model.ts
-
-# fix relations cardinality (why is this code generated like this? is input schema wrong or Hydra has a bug?)
-sed -i 's/return result.channels/return [result.channels]/' query-node/generated/graphql-server/src/modules/channel-category/channel-category.resolver.ts
-sed -i 's/return result.category/return result.category[0]/' query-node/generated/graphql-server/src/modules/channel/channel.resolver.ts
-sed -i 's/return result.videos/return [result.videos]/' query-node/generated/graphql-server/src/modules/video-category/video-category.resolver.ts
-sed -i 's/return result.category/return result.category[0]/' query-node/generated/graphql-server/src/modules/video/video.resolver.ts
-
-# fix two functions having the same name (why this has to be changed manually?)
-sed -i '0,/videoMediaMetadata/s/videoMediaMetadata/videoMediaMetadata2/' query-node/generated/graphql-server/src/modules/video-media-metadata/video-media-metadata.resolver.ts
-
-# add missing dependency
-sed -i 's/"dependencies": {/"dependencies": {\n    "pg-listen": "^1.7.0",/' query-node/generated/graphql-server/package.json
 
 # install new dependencies
 yarn

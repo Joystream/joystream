@@ -7,13 +7,12 @@ import { Option } from '@polkadot/types/codec';
 import { Content } from '../../../generated/types'
 import { readProtobuf } from './utils'
 
-
-// Asset
-import { AssetStorage } from 'query-node/src/modules/variants/variants.model'
+import {
+  DataObject,
+} from 'query-node/src/modules/data-object/data-object.model'
 import {
   inconsistentState,
   logger,
-  prepareBlock,
 } from '../common'
 
 // primary entities
@@ -39,7 +38,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     id: channelId,
     isCensored: false,
     videos: [],
-    happenedIn: await prepareBlock(db, event),
+    happenedIn: event.blockNumber,
     ...Object(protobufContent)
   })
 
@@ -88,7 +87,7 @@ export async function content_ChannelUpdated(
   // reward account change happened?
   if (channelUpdateParameters.reward_account.isSome) {
     // this will change the `channel`!
-    handleChannelRewardAccountChange(channel, channelUpdateParameters.reward_account.unwrap())
+    handleChannelRewardAccountChange(channel, channelUpdateParameters.reward_account.unwrap()) // TODO: get rid of unwrap
   }
 
   // save channel
@@ -106,11 +105,11 @@ export async function content_ChannelAssetsRemoved(
   const {contentId: contentIds} = new Content.ChannelAssetsRemovedEvent(event).data
 
   // load channel
-  const assets = await db.getMany(AssetStorage, { where: { id: contentIds } })
+  const assets = await db.getMany(DataObject, { where: { id: contentIds } })
 
   // delete assets
-  for (const asset in assets) {
-    await db.remove<AssetStorage>(asset)
+  for (const asset of assets) {
+    await db.remove<DataObject>(asset)
   }
 
   // emit log event
@@ -192,7 +191,7 @@ export async function content_ChannelCategoryCreated(
   const channelCategory = new ChannelCategory({
     id: event.params[0].value.toString(), // ChannelCategoryId
     channels: [],
-    happenedIn: await prepareBlock(db, event),
+    happenedIn: event.blockNumber,
     ...Object(protobufContent)
   })
 

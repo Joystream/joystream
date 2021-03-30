@@ -31,7 +31,7 @@ type Membership @entity {
   rootAccount: String!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: BigInt!
+  registeredAtBlock: Int!
 
   "Timestamp when member was registered"
   registeredAtTime: DateTime!
@@ -54,7 +54,7 @@ type ChannelCategory @entity {
 
   channels: [Channel!]! @derivedFrom(field: "category")
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 }
 
 "Asset availability representation"
@@ -87,7 +87,7 @@ type DataObject @entity {
   owner: DataObjectOwner!
 
   "Content added at"
-  addedAt: BigInt!
+  addedAt: Int!
 
   "Content type id"
   typeId: Int!
@@ -117,8 +117,11 @@ union DataObjectOwner = DataObjectOwnerMember
 
 "Asset owned by a member"
 type DataObjectOwnerMember @variant {
+  # use `BigInt` instead of `Membership` before variant relations are featured in Hydra
+  #"Member identifier"
+  #memberId: Membership!
   "Member identifier"
-  memberId: Membership!
+  memberId: BigInt!
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int!
@@ -160,7 +163,7 @@ type Language @entity {
   "Language identifier ISO 639-1"
   iso: String!
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 }
 
 type Channel @entity {
@@ -223,7 +226,7 @@ type Channel @entity {
 
   videos: [Video!]! @derivedFrom(field: "channel")
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 }
 
 type CuratorGroup @entity {
@@ -248,7 +251,7 @@ type VideoCategory @entity {
 
   videos: [Video!]! @derivedFrom(field: "category")
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 }
 
 type Video @entity {
@@ -324,7 +327,7 @@ type Video @entity {
   "Video file metadata"
   mediaMetadata: VideoMediaMetadata
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 
   "Is video featured or not"
   isFeatured: Boolean!
@@ -350,7 +353,7 @@ type VideoMediaMetadata @entity {
 
   video: Video @derivedFrom(field: "mediaMetadata")
 
-  happenedIn: BigInt!
+  happenedIn: Int!
 }
 
 type VideoMediaEncoding @entity {

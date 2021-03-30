@@ -8,7 +8,6 @@ import {
 import {
   inconsistentState,
   logger,
-  prepareBlock,
 } from '../common'
 
 import { readProtobuf } from './utils'
@@ -42,7 +41,7 @@ export async function content_VideoCategoryCreated(
     id: videoCategoryId.toString(), // ChannelId
     isCensored: false,
     videos: [],
-    happenedIn: await prepareBlock(db, event),
+    happenedIn: event.blockNumber,
     ...Object(protobufContent)
   })
 
@@ -137,7 +136,7 @@ export async function content_VideoCreated(
     id: videoId,
     isCensored: false,
     channel: channelId,
-    happenedIn: await prepareBlock(db, event),
+    happenedIn: event.blockNumber,
     ...Object(protobufContent)
   })
 

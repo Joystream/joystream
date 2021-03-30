@@ -6,8 +6,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import {
   inconsistentState,
   logger,
-  prepareAssetDataObject,
-  prepareBlock,
+  prepareDataObject,
 } from './common'
 
 import { Storage as StorageTypes } from '../../generated/types'
@@ -15,22 +14,18 @@ import {
   ContentId,
   ContentParameters,
 } from '@joystream/types/augment'
-import {
-  AssetStorage,
-} from 'query-node/src/modules/variants/variants.model'
 import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
 
-import { AssetDataObject } from 'query-node/src/modules/asset-data-object/asset-data-object.model'
+import { DataObject } from 'query-node/src/modules/data-object/data-object.model'
 
 export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {channelId, contentParameters} = new StorageTypes.ContentAddedEvent(event).data
   // TODO: resolve handling of Vec<ContentParameters> - currently only the first item is handleu
 
-  const block = await prepareBlock(db, event)
-  const assetStorage = await prepareAssetDataObject(contentParameters[0], block)
+  const dataObject = await prepareDataObject(contentParameters[0], event.blockNumber)
 
-  await db.save<AssetStorage>(assetStorage)
+  await db.save<DataObject>(dataObject)
 
   // emit log event
   logger.info("Storage content has beed added", {/*id: assetStorage.id, */channelId}) // TODO: update after Asset change merge
@@ -41,15 +36,15 @@ export async function ContentRemoved(db: DatabaseManager, event: SubstrateEvent)
   const {contentId: contentIds} = new StorageTypes.ContentRemovedEvent(event).data
 
   // load assets
-  const assetDataObjects = await db.getMany(AssetDataObject, { where: { joystreamContentId: contentIds }})
+  const dataObjects = await db.getMany(DataObject, { where: { joystreamContentId: contentIds }})
 
   // remove assets from database
-  for (let item of assetDataObjects) {
-      await db.remove<AssetDataObject>(item)
+  for (let item of dataObjects) {
+      await db.remove<DataObject>(item)
   }
 
   // emit log event
-  logger.info("Storage content have been removed", {id: contentIds, dataObjectIds: assetDataObjects.map(item => item.id)})
+  logger.info("Storage content have been removed", {id: contentIds, dataObjectIds: dataObjects.map(item => item.id)})
 }
 
 export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -57,18 +52,18 @@ export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent
   const {contentId} = new StorageTypes.ContentAcceptedEvent(event).data
 
   // load asset
-  const assetDataObject = await db.get(AssetDataObject, { where: { joystreamContentId: contentId }})
+  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
 
   // ensure object exists
-  if (!assetDataObject) {
+  if (!dataObject) {
     return inconsistentState('Non-existing content acceptation requested', contentId)
   }
 
   // update object
-  assetDataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
+  dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
   // save object
-  await db.save<AssetDataObject>(assetDataObject)
+  await db.save<DataObject>(dataObject)
 
   // emit log event
   logger.info("Storage content has been accepted", {id: contentId})
@@ -79,18 +74,18 @@ export async function ContentRejected(db: DatabaseManager, event: SubstrateEvent
   const {contentId} = new StorageTypes.ContentRejectedEvent(event).data
 
   // load asset
-  const assetDataObject = await db.get(AssetDataObject, { where: { joystreamContentId: contentId }})
+  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
 
   // ensure object exists
-  if (!assetDataObject) {
+  if (!dataObject) {
     return inconsistentState('Non-existing content rejection requested', contentId)
   }
 
   // update object
-  assetDataObject.liaisonJudgement = LiaisonJudgement.REJECTED
+  dataObject.liaisonJudgement = LiaisonJudgement.REJECTED
 
   // save object
-  await db.save<AssetDataObject>(assetDataObject)
+  await db.save<DataObject>(dataObject)
 
   // emit log event
   logger.info("Storage content has been rejected", {id: contentId})

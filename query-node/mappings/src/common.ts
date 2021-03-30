@@ -3,20 +3,21 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive';
 
-import { Block } from 'query-node/src/modules/block/block.model'
 import { Network } from 'query-node/src/modules/enums/enums'
 
 // Asset
 import {
-  Asset,
-  AssetUploadStatus,
-  AssetStorage,
-  AssetOwnerMember,
+  DataObjectOwner,
+  DataObjectOwnerMember,
+  DataObjectOwnerChannel,
+  DataObjectOwnerDao,
+  DataObjectOwnerCouncil,
+  DataObjectOwnerWorkingGroup,
 } from 'query-node/src/modules/variants/variants.model'
 import {
-  AssetDataObject,
+  DataObject,
   LiaisonJudgement,
-} from 'query-node/src/modules/asset-data-object/asset-data-object.model'
+} from 'query-node/src/modules/data-object/data-object.model'
 import {
   ContentParameters
 } from '@joystream/types/augment'
@@ -33,28 +34,13 @@ export function inconsistentState(extraInfo: string, data?: unknown): never {
   throw errorMessage
 }
 
-// prepare block record
-export async function prepareBlock(db: DatabaseManager, event: SubstrateEvent): Promise<Block> {
-  let block = await db.get(Block, { where: { block: event.blockNumber } })
+export async function prepareDataObject(contentParameters: ContentParameters, blockNumber: number): Promise<DataObject> {
+  const dataObjectOwner = new DataObjectOwnerMember() // TODO: proper owner
+  dataObjectOwner.memberId = new BN(0)
 
-  if (block) {
-      return block
-  }
-
-  return new Block({
-    block: event.blockNumber,
-    executedAt: new Date(event.blockTimestamp.toNumber()),
-    network: currentNetwork,
-  })
-}
-
-export async function prepareAssetDataObject(contentParameters: ContentParameters, block: Block): Promise<AssetStorage> {
-  const assetOwner = new AssetOwnerMember() // TODO: proper owner
-  assetOwner.memberId = new BN(0)
-
-  const assetDataObject = new AssetDataObject({
-    owner: assetOwner,
-    addedAt: block,
+  const dataObject = new DataObject({
+    owner: dataObjectOwner,
+    addedAt: blockNumber,
     typeId: contentParameters.type_id.toNumber(),
     // `size` is masked by `size` special name in struct so there needs to be `.get('size') as u64`
     size: (contentParameters.get('size') as unknown as u64).toBn(),
@@ -63,17 +49,8 @@ export async function prepareAssetDataObject(contentParameters: ContentParameter
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),
     joystreamContentId: contentParameters.content_id.toHex(),
   })
-  // TODO: handle `AssetNeverProvided` and `AssetDeleted` states
-  const uploadingStatus = new AssetUploadStatus()
-  /* TODO: set the values (`dataObject` and `oldDataObject` absent in AssetUploadStatus)
-  uploadingStatus.dataObject = new AssetDataObject
-  uploadingStatus.oldDataObject: undefined // TODO: handle oldDataObject
-  */
 
-  const assetStorage = new AssetStorage()
-  assetStorage.uploadStatus = uploadingStatus
-
-  return assetStorage
+  return dataObject
 }
 
 /////////////////// Logger /////////////////////////////////////////////////////
