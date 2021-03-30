@@ -20,7 +20,6 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/cd-schemas generate:all
         yarn workspace @joystream/cd-schemas build
-        yarn workspace @joystream/cli build
         yarn workspace network-tests checks --quiet
 
   network_build_osx:
@@ -41,5 +40,4 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/cd-schemas generate:all
         yarn workspace @joystream/cd-schemas build
-        yarn workspace @joystream/cli build
         yarn workspace network-tests checks --quiet

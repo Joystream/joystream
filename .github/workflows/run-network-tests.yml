@@ -185,7 +185,6 @@ jobs:
           yarn workspace @joystream/cd-schemas generate:all
           yarn workspace @joystream/cd-schemas build
           yarn workspace query-node-root build
-          yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       # Bring up hydra query-node development instance, then run content directory

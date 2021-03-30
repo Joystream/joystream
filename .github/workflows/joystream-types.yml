@@ -42,8 +42,6 @@ jobs:
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types build
-        yarn workspace @joystream/cd-schemas generate:all
-        yarn workspace @joystream/cd-schemas build
         yarn workspace @joystream/types checks --quiet
     - name: npm pack test
       run: |
