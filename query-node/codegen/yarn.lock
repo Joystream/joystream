@@ -76,10 +76,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@dzlzv/hydra-cli@2.0.1-beta.16":
-  version "2.0.1-beta.16"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.0.1-beta.16.tgz#b7f2247ef6c945e239b06930c46cba90bd31c8c9"
-  integrity sha512-FpZlXu6bNi3zZ4KLWW2PQDAlp55O8exDj4QcvbvFnwBbLPTgxsJrJ/VU6AfVdONs7OIShij2XhuT+IPJoGlY+g==
+"@dzlzv/hydra-cli@2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.0.1-beta.17.tgz#9e79fde559d7c90a429030fb906e2fbc352b2b2e"
+  integrity sha512-qRNr6R3i/ju4Uqk+gAXuJ0OWbDENkW1ghD84m3wRlFJ3DSDDPlXGmmc3+EfsgzAbSYHCOAnfsrWWsRdgrh8RtQ==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -109,10 +109,10 @@
     tslib "1.11.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
 
-"@dzlzv/hydra-typegen@2.0.1-beta.16":
-  version "2.0.1-beta.16"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.0.1-beta.16.tgz#2f82dba4587b0375a39983ad3eafe4d18e46becd"
-  integrity sha512-8N5cpnUtuKarFTLKUAtUfuL/PTvgGW1k2k07EwthHFdw/JCuCQAQyUWAcwJiOZbXauQnLpIvBJREH/b4hNArQQ==
+"@dzlzv/hydra-typegen@2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.0.1-beta.17.tgz#4fafa31254acb65a3e62ce1c114aae77d6e030cb"
+  integrity sha512-NJH8orCtOTvXf58AohyXwCbvhrkCqETAZbvRFqRmNslY3t5kRHfBfrhonN4NzbHURhufXX9z9j8+rt/9doxkPQ==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
