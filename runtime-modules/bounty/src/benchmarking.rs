@@ -206,6 +206,7 @@ benchmarks! {
 
     create_bounty_by_council {
         let i in 1 .. MAX_BYTES;
+        let j in 1 .. T::ClosedContractSizeLimit::get();
 
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
@@ -214,7 +215,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
-        let members = (1..T::ClosedContractSizeLimit::get())
+        let members = (1..=j)
             .map(|id| id.saturated_into())
             .collect::<BTreeSet<_>>();
 
@@ -239,6 +240,7 @@ benchmarks! {
 
     create_bounty_by_member {
         let i in 1 .. MAX_BYTES;
+        let j in 1 .. T::ClosedContractSizeLimit::get();
 
         let metadata = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100.into();
@@ -249,7 +251,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(cherry);
 
-        let members = (1..T::ClosedContractSizeLimit::get())
+        let members = (1..=j)
             .map(|id| id.saturated_into())
             .collect::<BTreeSet<_>>();
 

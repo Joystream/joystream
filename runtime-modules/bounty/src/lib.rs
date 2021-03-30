@@ -56,8 +56,8 @@ mod benchmarking;
 /// pallet_bounty WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn create_bounty_by_council(i: u32) -> Weight;
-    fn create_bounty_by_member(i: u32) -> Weight;
+    fn create_bounty_by_council(i: u32, j: u32) -> Weight;
+    fn create_bounty_by_member(i: u32, j: u32) -> Weight;
     fn cancel_bounty_by_member() -> Weight;
     fn cancel_bounty_by_council() -> Weight;
     fn veto_bounty() -> Weight;
@@ -709,11 +709,11 @@ decl_module! {
         /// ## Weight
         /// `O (W)` where:
         /// - `W` is the _metadata length.
+        /// - `M` is closed contract member list length.
         /// - DB:
-        ///    - O(1)
+        ///    - O(M) (O(1) on open contract)
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::create_bounty_by_member(metadata.len().saturated_into())
-              .max(WeightInfoBounty::<T>::create_bounty_by_council(metadata.len().saturated_into()))]
+        #[weight = Module::<T>::create_bounty_weight(&params, &metadata)]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, metadata: Vec<u8>) {
             let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
@@ -1712,5 +1712,20 @@ impl<T: Trait> Module<T> {
         ));
 
         Ok(())
+    }
+
+    // Calculates weight for create_bounty extrinsic.
+    fn create_bounty_weight(params: &BountyCreationParameters<T>, metadata: &[u8]) -> Weight {
+        let metadata_length = metadata.len().saturated_into();
+        let member_list_length =
+            if let AssuranceContractType::Closed(ref members) = params.contract_type {
+                members.len().saturated_into()
+            } else {
+                1 // consider open contract member list as one.
+            };
+
+        WeightInfoBounty::<T>::create_bounty_by_member(metadata_length, member_list_length).max(
+            WeightInfoBounty::<T>::create_bounty_by_council(metadata_length, member_list_length),
+        )
     }
 }
