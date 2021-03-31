@@ -206,7 +206,7 @@ async function extractAsset(
 }
 
 // changes `result` inline!
-function integrateAsset<T>(propertyName: string, result: T, asset?: AssetStorageOrUrls): T {
+function integrateAsset<T>(propertyName: string, result: T, asset: AssetStorageOrUrls): T {
   const nameUrl = propertyName + 'Urls'
   const nameDataObject = propertyName + 'DataObject'
   const nameAvailability = propertyName + 'Availability'
