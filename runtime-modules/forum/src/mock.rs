@@ -360,7 +360,7 @@ impl Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
+impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u128,

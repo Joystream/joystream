@@ -224,15 +224,22 @@ impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MinimumStakeForOpening: u32 = 50;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const CandidateStake: u64 = 130;
 }
 
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -256,7 +263,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -295,10 +302,14 @@ impl pallet_timestamp::Trait for Test {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = ();
-    type WeightInfo = Weights;
-    type DefaultInitialInvitationBalance = ();
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type WeightInfo = Weights;
+    type CandidateStake = CandidateStake;
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
