@@ -16,6 +16,7 @@ yarn codegen
 
 echo "Building mappings..."
 (cd mappings && yarn build)
+echo "Done."
 
 # Copy joy types
 cp ../types/augment/all/defs.json ./mappings/lib/mappings/generated/types/typedefs.json
