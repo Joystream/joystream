@@ -13,6 +13,7 @@ yarn clean
 
 # Build graphql-server customizing DB name
 yarn codegen
+yarn typegen
 
 echo "Building mappings..."
 (cd mappings && yarn build)

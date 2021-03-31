@@ -26,7 +26,7 @@
   "devDependencies": {
     "@dzlzv/hydra-cli": "0.1.8-1",
     "@dzlzv/hydra-processor": "2.1.0-beta.4",
-    "@dzlzv/hydra-typegen": "^2.0.1-beta.0"
+    "@dzlzv/hydra-typegen": "2.1.0-beta.4"
   },
   "dependencies": {
     "@dzlzv/hydra-db-utils": "^2.0.1-beta.0",

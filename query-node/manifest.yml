@@ -8,20 +8,20 @@ dataSource:
   chain: joystream
 entities:
   - mappings/lib/generated/**/*.model.js
-# typegen:
-metadata:
-  source: ws://localhost:9944
-events:
-  - contentDirectory.EntityCreated
-  - contentDirectory.EntityRemoved
-  - contentDirectory.EntitySchemaSupportAdded
-  - contentDirectory.EntityPropertyValuesUpdated
-  - contentDirectory.TransactionCompleted
-  - contentDirectory.TransactionFailed
-outDir: ./mappings/generated/types
-customTypes:
-  lib: '@joystream/types/augment/all/types'
-  typedefsLoc: '../types/augment/all/defs.json'
+typegen:
+  metadata:
+    source: ws://localhost:9944
+  events:
+    - contentDirectory.EntityCreated
+    - contentDirectory.EntityRemoved
+    - contentDirectory.EntitySchemaSupportAdded
+    - contentDirectory.EntityPropertyValuesUpdated
+    - contentDirectory.TransactionCompleted
+    - contentDirectory.TransactionFailed
+  outDir: ./mappings/generated/types
+  customTypes:
+    lib: '@joystream/types/augment/all/types'
+    typedefsLoc: '../types/augment/all/defs.json'
 mappings:
   hydraCommonVersion: '2.0.1-beta.0'
   # js module that exports the handler functions
