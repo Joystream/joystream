@@ -12,7 +12,7 @@ typegen:
   metadata:
     source: wss://sumer.joystream.app
   events:
-    # members
+    # membership
     - members.MemberRegistered
     - members.MemberUpdatedAboutText
     - members.MemberUpdatedAvatar
@@ -47,11 +47,11 @@ typegen:
     - content.FeaturedVideosSet
 
     # storage
-    #- storage.ContentAdded
-    #- storage.ContentRemoved
-    #- storage.ContentAccepted
-    #- storage.ContentRejected
-    #- storage.ContentUploadingStatusUpdated
+    - data_directory.ContentAdded
+    - data_directory.ContentRemoved
+    - data_directory.ContentAccepted
+    - data_directory.ContentRejected
+    - data_directory.ContentUploadingStatusUpdated
   calls:
     # members
     - members.buyMembership
@@ -93,11 +93,11 @@ typegen:
     - content.uncensor_video
 
     # storage
-    #- storage.add_content
-    #- storage.remove_content
-    #- storage.accept_content
-    #- storage.reject_content
-    #- storage.update_content_uploading_status
+    - data_directory.add_content
+    - data_directory.remove_content
+    - data_directory.accept_content
+    - data_directory.reject_content
+    - data_directory.update_content_uploading_status
 
   outDir: ./generated/types
   customTypes:
@@ -111,6 +111,7 @@ mappings:
   imports:
     - mappings/lib/generated/types
   eventHandlers:
+    # membership
     - event: members.MemberRegistered
       handler: members_MemberRegistered(DatabaseManager, SubstrateEvent)
     - event: members.MemberUpdatedAboutText
@@ -124,6 +125,7 @@ mappings:
     - event: members.MemberSetControllerAccount
       handler: members_MemberSetControllerAccount(DatabaseManager, SubstrateEvent)
 
+    # content directory
     - event: content.CuratorGroupCreated
       handler: content_CuratorGroupCreated(DatabaseManager, SubstrateEvent)
     - event: content.CuratorGroupStatusSet
@@ -172,6 +174,19 @@ mappings:
       handler: content_VideoUncensored(DatabaseManager, SubstrateEvent)
     - event: content.FeaturedVideosSet
       handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
+
+    # storage
+    - event: data_directory.ContentAdded
+      handler: data_directory_ContentAdded(DatabaseManager, SubstrateEvent)
+    - event: data_directory.ContentRemoved
+      handler: data_directory_ContentRemoved(DatabaseManager, SubstrateEvent)
+    - event: data_directory.ContentAccepted
+      handler: data_directory_ContentAccepted(DatabaseManager, SubstrateEvent)
+    - event: data_directory.ContentRejected
+      handler: data_directory_ContentRejected(DatabaseManager, SubstrateEvent)
+    - event: data_directory.ContentUploadingStatusUpdated
+      handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
+
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

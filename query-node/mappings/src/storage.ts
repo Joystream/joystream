@@ -9,7 +9,7 @@ import {
   prepareDataObject,
 } from './common'
 
-import { Storage as StorageTypes } from '../../generated/types'
+import { DataDirectory } from '../../generated/types'
 import {
   ContentId,
   ContentParameters,
@@ -18,9 +18,9 @@ import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
 
 import { DataObject } from 'query-node/src/modules/data-object/data-object.model'
 
-export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function data_directory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {channelId, contentParameters} = new StorageTypes.ContentAddedEvent(event).data
+  const {contentParameters} = new DataDirectory.ContentAddedEvent(event).data
   // TODO: resolve handling of Vec<ContentParameters> - currently only the first item is handleu
 
   const dataObject = await prepareDataObject(contentParameters[0], event.blockNumber)
@@ -28,12 +28,12 @@ export async function ContentAdded(db: DatabaseManager, event: SubstrateEvent): 
   await db.save<DataObject>(dataObject)
 
   // emit log event
-  logger.info("Storage content has beed added", {id: dataObject.joystreamContentId, channelId})
+  logger.info("Storage content has beed added", {id: dataObject.joystreamContentId})
 }
 
-export async function ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function data_directory_ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentId: contentIds} = new StorageTypes.ContentRemovedEvent(event).data
+  const {contentId: contentIds} = new DataDirectory.ContentRemovedEvent(event).data
 
   // load assets
   const dataObjects = await db.getMany(DataObject, { where: { joystreamContentId: contentIds }})
@@ -47,9 +47,9 @@ export async function ContentRemoved(db: DatabaseManager, event: SubstrateEvent)
   logger.info("Storage content have been removed", {id: contentIds, dataObjectIds: dataObjects.map(item => item.id)})
 }
 
-export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function data_directory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentId} = new StorageTypes.ContentAcceptedEvent(event).data
+  const {contentId} = new DataDirectory.ContentAcceptedEvent(event).data
 
   // load asset
   const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
@@ -69,9 +69,9 @@ export async function ContentAccepted(db: DatabaseManager, event: SubstrateEvent
   logger.info("Storage content has been accepted", {id: contentId})
 }
 
-export async function ContentRejected(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function data_directory_ContentRejected(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentId} = new StorageTypes.ContentRejectedEvent(event).data
+  const {contentId} = new DataDirectory.ContentRejectedEvent(event).data
 
   // load asset
   const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
