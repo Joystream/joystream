@@ -281,5 +281,5 @@ function handleChannelRewardAccountChange(
 
   // reward account removed
 
-  delete channel.rewardAccount
+  channel.rewardAccount = undefined // plan deletion (will have effect when saved to db)
 }

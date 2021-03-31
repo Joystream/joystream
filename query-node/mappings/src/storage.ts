@@ -1,5 +1,3 @@
-// TODO: validate storage types are generated as expected
-
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 

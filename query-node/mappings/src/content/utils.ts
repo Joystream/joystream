@@ -28,7 +28,6 @@ import {
   prepareDataObject,
 } from '../common'
 
-
 // primary entities
 import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
 import { Channel } from 'query-node/src/modules/channel/channel.model'
@@ -55,8 +54,14 @@ import {
   NewAsset,
 } from '@joystream/types/augment'
 
+/*
+  Asset either stored in storage or describing list of URLs.
+*/
 type AssetStorageOrUrls = DataObject | string[]
 
+/*
+  Type guard differentiating asset stored in storage from asset describing a list of URLs.
+*/
 function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObject {
   if (Array.isArray(dataObject)) {
     return false
@@ -65,10 +70,13 @@ function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObj
   return true
 }
 
+/*
+  Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
+*/
 export async function readProtobuf(
   type: Channel | ChannelCategory | Video | VideoCategory,
   metadata: Uint8Array,
-  assets: NewAsset[],
+  assets: NewAsset[], // assets provided in event
   db: DatabaseManager,
   event: SubstrateEvent,
 ): Promise<Partial<typeof type>> {
@@ -174,39 +182,55 @@ function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string
   }
 
   // unset publish info
-  delete video.publishedBeforeJoystream
+  video.publishedBeforeJoystream = undefined // plan deletion (will have effect when saved to db)
 }
 
+/*
+  Converts event asset into data object or list of URLs fit to be saved to db.
+*/
 async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<AssetStorageOrUrls> {
+  // is asset describing list of URLs?
   if (rawAsset.isUrls) {
     const urls = rawAsset.asUrls.toArray().map(item => item.toString())
 
     return urls
   }
 
-  // !rawAsset.isUrls && rawAsset.isUpload
+  // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
 
+  // prepare data object
   const contentParameters: ContentParameters = rawAsset.asUpload
   const dataObject = await prepareDataObject(contentParameters, event.blockNumber)
 
   return dataObject
 }
 
+/*
+  Selects asset from provided set of assets and prepares asset data fit to be saved to db.
+*/
 async function extractAsset(
   assetIndex: number,
   assets: NewAsset[],
   db: DatabaseManager,
   event: SubstrateEvent,
 ): Promise<AssetStorageOrUrls> {
+  // ensure asset index is valid
   if (assetIndex > assets.length) {
     return inconsistentState(`Non-existing asset extraction requested`, {assetsProvided: assets.length, assetIndex})
   }
 
+  // convert asset to data object record
   return convertAsset(assets[assetIndex], db, event)
 }
 
-// changes `result` inline!
-function integrateAsset<T>(propertyName: string, result: T, asset: AssetStorageOrUrls): T {
+/*
+  As a temporary messure to overcome yet-to-be-implemented features in Hydra, we are using redudant information
+  to describe asset state. This function introduces all redudant data needed to be saved to db.
+
+  Changes `result` argument!
+*/
+function integrateAsset<T>(propertyName: string, result: Object, asset: AssetStorageOrUrls) {
+  // helpers - property names
   const nameUrl = propertyName + 'Urls'
   const nameDataObject = propertyName + 'DataObject'
   const nameAvailability = propertyName + 'Availability'
@@ -216,7 +240,7 @@ function integrateAsset<T>(propertyName: string, result: T, asset: AssetStorageO
     // (un)set asset's properties
     result[nameUrl] = asset
     result[nameAvailability] = AssetAvailability.ACCEPTED
-    delete result[nameDataObject]
+    result[nameDataObject] = undefined // plan deletion (will have effect when saved to db)
 
     return result
   }
@@ -229,50 +253,57 @@ function integrateAsset<T>(propertyName: string, result: T, asset: AssetStorageO
   }
 
   // (un)set asset's properties
-  delete result[nameUrl]
+  result[nameUrl] = undefined // plan deletion (will have effect when saved to db)
   result[nameAvailability] = conversionTable[asset.liaisonJudgement]
   result[nameDataObject] = asset
-
-  return result
 }
 
 async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<BN | undefined> {
+  // escape if no asset is required
   if (assetIndex === undefined) {
     return undefined
   }
 
+  // ensure asset index is valid
   if (assetIndex > assets.length) {
     return inconsistentState(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
   }
 
   const rawAsset = assets[assetIndex]
 
+  // escape if asset is describing URLs (can't get size)
   if (rawAsset.isUrls) {
     return undefined
   }
 
-  // !rawAsset.isUrls && rawAsset.isUpload
+  // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
 
+  // extract video size
   const contentParameters: ContentParameters = rawAsset.asUpload
-  // `size` is masked by `size` special name in struct so there needs to be `.get('size') as u64`
+  // `size` is masked by `size` special name in struct that's why there needs to be `.get('size') as u64`
   const videoSize = (contentParameters.get('size') as unknown as u64).toBn()
 
   return videoSize
 }
 
 async function prepareLanguage(languageIso: string, db: DatabaseManager): Promise<Language> {
+  // validate language string
   const isValidIso = ISO6391.validate(languageIso);
 
+  // ensure language string is valid
   if (!isValidIso) {
     return inconsistentState(`Invalid language ISO-639-1 provided`, languageIso)
   }
 
+  // load language
   const language = await db.get(Language, { where: { iso: languageIso }})
 
+  // return existing language if any
   if (language) {
     return language;
   }
 
+  // create new language
   const newLanguage = new Language({
     iso: languageIso
   })
@@ -281,20 +312,27 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
 }
 
 async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promise<License> {
+  // NOTE: Deletion of any previous license should take place in appropriate even handling function
+  //       and not here even it might appear so.
+
+  // crete new license
   const license = new License(licenseProtobuf)
 
   return license
 }
 
 async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: BN | undefined): Promise<VideoMediaMetadata> {
+  // create new encoding info
   const encoding = new VideoMediaEncoding(videoProtobuf.mediaType)
 
+  // create new video metadata
   const videoMeta = new VideoMediaMetadata({
     encoding,
     pixelWidth: videoProtobuf.mediaPixelWidth,
     pixelHeight: videoProtobuf.mediaPixelHeight,
   })
 
+  // fill in video size if provided
   if (videoSize !== undefined) {
     videoMeta.size = videoSize
   }
@@ -303,8 +341,10 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
 }
 
 async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Promise<VideoCategory> {
+  // load video category
   const category = await db.get(VideoCategory, { where: { id: categoryId }})
 
+  // ensure video category exists
   if (!category) {
     return inconsistentState('Non-existing video category association with video requested', categoryId)
   }
