@@ -63,34 +63,16 @@ Follow the links for more information about the [indexer](https://github.com/Joy
 
 
 # Tmp command order
+TODO: remove after integration tests are finished and query node runs without any issues
 ```
-# run from the Joystream monorepo root
-
-# temporarily remove query node dependency from mappings package
-sed -i 's/"query-node": "^0.0.0",//' query-node/mappings/package.json
-
-# install dependencies
-yarn
-yarn workspace @joystream/content-metadata-protobuf build
-yarn workspace @joystream/types build
-yarn workspace query-node-root build # this will fail during mappings compilation
-
-# add back dependency
-sed -i 's/"dependencies": {/"dependencies": {\n    "query-node": "^0.0.0",/' query-node/mappings/package.json
-
-# install query node dependency to mappings
-yarn
-
-# install new dependencies
 yarn
 
 echo "set -a; . .env; set +a; yarn workspace query-node build:dev" > tmp.sh
 chmod +x tmp.sh
 ./tmp.sh
 
-# build mappings
-yarn workspace query-node-root typegen
-yarn workspace query-node-mappings build
+# build everything
+yarn build
 
 ```
 
