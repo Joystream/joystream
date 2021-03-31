@@ -66,7 +66,7 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }

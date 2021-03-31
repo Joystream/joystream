@@ -7,7 +7,7 @@ use crate::{Error, Event};
 pub use fixtures::*;
 pub use mock::*;
 
-use common::origin::MemberOriginValidator;
+use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
@@ -956,5 +956,31 @@ fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id(
         );
 
         assert_eq!(validation_result, Err(error.into()));
+    });
+}
+
+#[test]
+fn membership_info_provider_controller_account_id_fails_with_invalid_member_id() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let invalid_member_id = BOB_MEMBER_ID;
+        let validation_result = Membership::controller_account_id(invalid_member_id);
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Test>::MemberProfileNotFound.into())
+        );
+    });
+}
+
+#[test]
+fn membership_info_provider_controller_account_id_succeeds() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        let validation_result = Membership::controller_account_id(ALICE_MEMBER_ID);
+
+        assert_eq!(validation_result, Ok(ALICE_ACCOUNT_ID));
     });
 }

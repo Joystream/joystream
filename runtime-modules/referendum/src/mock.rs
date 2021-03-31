@@ -265,7 +265,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -274,7 +274,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
         unimplemented!()
     }
 
@@ -284,13 +284,13 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> bool {
         true
     }
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -494,7 +494,7 @@ where
 
     pub fn calculate_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::Trait>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
@@ -502,7 +502,7 @@ where
 
     pub fn calculate_commitment_custom_salt(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::Trait>::MemberId,
         custom_salt: &[u8],
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -523,7 +523,7 @@ where
     pub fn calculate_commitment_for_cycle(
         account_id: &<T as frame_system::Trait>::AccountId,
         cycle_id: &u64,
-        vote_option_index: &<T as common::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::Trait>::MemberId,
         custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
         let salt = match custom_salt {
@@ -535,7 +535,7 @@ where
             <Module<T, I> as ReferendumManager<
                 <T as frame_system::Trait>::Origin,
                 <T as frame_system::Trait>::AccountId,
-                <T as common::Trait>::MemberId,
+                <T as common::membership::Trait>::MemberId,
                 <T as frame_system::Trait>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
@@ -604,7 +604,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             <Module::<Runtime> as ReferendumManager<
                 <Runtime as frame_system::Trait>::Origin,
                 <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::Trait>::MemberId,
+                <Runtime as common::membership::Trait>::MemberId,
                 <Runtime as frame_system::Trait>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(OriginType::Root),
@@ -624,7 +624,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         <Module<Runtime> as ReferendumManager<
             <Runtime as frame_system::Trait>::Origin,
             <Runtime as frame_system::Trait>::AccountId,
-            <Runtime as common::Trait>::MemberId,
+            <Runtime as common::membership::Trait>::MemberId,
             <Runtime as frame_system::Trait>::Hash,
         >>::force_start(extra_winning_target_count, cycle_id);
     }
@@ -686,7 +686,10 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
     pub fn check_revealing_finished(
         expected_winners: Vec<
-            OptionResult<<Runtime as common::Trait>::MemberId, <Runtime as Trait>::VotePower>,
+            OptionResult<
+                <Runtime as common::membership::Trait>::MemberId,
+                <Runtime as Trait>::VotePower,
+            >,
         >,
         expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
     ) {

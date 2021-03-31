@@ -59,7 +59,7 @@ use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
-use common::origin::MemberOriginValidator;
+use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
 
@@ -95,7 +95,7 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::Trait
+    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::membership::Trait
 {
     /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -320,7 +320,7 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::Trait>::MemberId,
+      <T as common::membership::Trait>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
     {
@@ -1109,5 +1109,15 @@ impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for M
 
     fn is_member_controller_account(member_id: &T::MemberId, account_id: &T::AccountId) -> bool {
         Self::ensure_is_controller_account_for_member(member_id, account_id).is_ok()
+    }
+}
+
+impl<T: Trait> MembershipInfoProvider<T> for Module<T> {
+    fn controller_account_id(
+        member_id: common::MemberId<T>,
+    ) -> Result<T::AccountId, DispatchError> {
+        let membership = Self::ensure_membership(member_id)?;
+
+        Ok(membership.controller_account)
     }
 }

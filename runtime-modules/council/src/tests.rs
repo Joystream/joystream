@@ -6,7 +6,7 @@ use super::{
 };
 use crate::mock::*;
 use common::council::CouncilBudgetManager;
-use common::origin::CouncilOriginValidator;
+use common::council::CouncilOriginValidator;
 use frame_support::traits::Currency;
 use frame_support::StorageValue;
 use frame_system::RawOrigin;

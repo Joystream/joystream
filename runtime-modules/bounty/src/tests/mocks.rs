@@ -56,6 +56,11 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+    pub const BountyLockId: [u8; 8] = [12; 8];
+    pub const ClosedContractSizeLimit: u32 = 3;
+    pub const MinCherryLimit: u64 = 10;
+    pub const MinFundingLimit: u64 = 50;
+    pub const MinWorkEntrantStake: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -90,9 +95,32 @@ impl Trait for Test {
     type Event = TestEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
-    type MemberOriginValidator = ();
+    type Membership = ();
     type WeightInfo = ();
     type CouncilBudgetManager = CouncilBudgetManager;
+    type StakingHandler = StakingManager<Test, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u128) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
+}
+
+impl common::membership::MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
+        if member_id < 10 {
+            return Ok(member_id as u128); // similar account_id
+        }
+
+        Err(membership::Error::<Test>::MemberProfileNotFound.into())
+    }
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -120,10 +148,10 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
 }
 
 impl crate::WeightInfo for () {
-    fn create_bounty_by_member() -> u64 {
+    fn create_bounty_by_council(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn create_bounty_by_council() -> u64 {
+    fn create_bounty_by_member(_i: u32, _j: u32) -> u64 {
         0
     }
     fn cancel_bounty_by_member() -> u64 {
@@ -135,26 +163,50 @@ impl crate::WeightInfo for () {
     fn veto_bounty() -> u64 {
         0
     }
-    fn fund_bounty() -> u64 {
+    fn fund_bounty_by_member() -> u64 {
         0
     }
-    fn withdraw_member_funding() -> u64 {
+    fn fund_bounty_by_council() -> u64 {
         0
     }
-    fn withdraw_creator_funding_by_council() -> u64 {
+    fn withdraw_funding_by_member() -> u64 {
         0
     }
-    fn withdraw_creator_funding_by_member() -> u64 {
+    fn withdraw_funding_by_council() -> u64 {
+        0
+    }
+    fn announce_work_entry(_i: u32) -> u64 {
+        0
+    }
+    fn withdraw_work_entry() -> u64 {
+        0
+    }
+    fn submit_work(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_council_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_council_all_rejected(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_winners(_i: u32) -> u64 {
+        0
+    }
+    fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
+        0
+    }
+    fn withdraw_work_entrant_funds() -> u64 {
         0
     }
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u128> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         _member_id: u64,
@@ -250,11 +302,12 @@ impl membership::Trait for Test {
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock != BountyLockId::get() {
+            return false;
+        }
+
+        existing_locks.contains(new_lock)
     }
 }
 
@@ -271,7 +324,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -280,7 +333,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
         unimplemented!();
     }
 
@@ -290,7 +343,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -329,34 +382,21 @@ pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Trait for Test {
     type Event = TestEvent;
-
     type Referendum = referendum::Module<Test, ReferendumInstance>;
-
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
-
     type CandidacyLock = StakingManager<Self, CandidacyLockId>;
     type CouncilorLock = StakingManager<Self, CouncilorLockId>;
-
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
-
     type BudgetRefillPeriod = BudgetRefillPeriod;
-
     type StakingAccountValidator = ();
     type WeightInfo = CouncilWeightInfo;
+    type MemberOriginValidator = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
-
-    type MemberOriginValidator = ();
-}
-
-impl common::StakingAccountValidator<Test> for () {
-    fn is_member_staking_account(_: &u64, _: &u128) -> bool {
-        true
-    }
 }
 
 pub struct CouncilWeightInfo;
@@ -413,22 +453,15 @@ parameter_types! {
 
 impl referendum::Trait<ReferendumInstance> for Test {
     type Event = TestEvent;
-
     type MaxSaltLength = MaxSaltLength;
-
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
-
     type VotePower = u64;
-
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
-
     type MinimumStake = MinimumVotingStake;
-
     type WeightInfo = ReferendumWeightInfo;
-
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(

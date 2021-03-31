@@ -18,7 +18,7 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 
 mod mock;
@@ -63,7 +63,7 @@ pub trait WeightInfo {
     fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
 }
 
-pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type CategoryId: Parameter

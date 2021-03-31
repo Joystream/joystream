@@ -627,7 +627,7 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
 }
@@ -876,15 +876,25 @@ impl pallet_constitution::Trait for Runtime {
 
 parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+    pub const ClosedContractSizeLimit: u32 = 50;
+    pub const MinCherryLimit: Balance = 10;
+    pub const MinFundingLimit: Balance = 10;
+    pub const MinWorkEntrantStake: Balance = 100;
 }
 
 impl bounty::Trait for Runtime {
     type Event = Event;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
-    type MemberOriginValidator = Members;
+    type Membership = Members;
     type WeightInfo = weights::bounty::WeightInfo;
     type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
 }
 
 /// Forum identifier for category

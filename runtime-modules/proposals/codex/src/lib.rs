@@ -69,7 +69,7 @@ pub use crate::types::{
     BalanceKind, CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams,
     ProposalDetails, ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::MemberId;
 use council::Module as Council;
 use proposals_discussion::ThreadMode;
@@ -127,7 +127,7 @@ pub trait Trait:
     frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
-    + common::Trait
+    + common::membership::Trait
     + council::Trait
     + staking::Trait
 {
