@@ -17,6 +17,9 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/cd-schemas generate:all
+        yarn workspace @joystream/cd-schemas build
         yarn workspace @joystream/cli checks --quiet
     - name: yarn pack test
       run: |
@@ -39,6 +42,9 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/cd-schemas generate:all
+        yarn workspace @joystream/cd-schemas build        
         yarn workspace @joystream/cli checks --quiet
     - name: yarn pack test
       run: |

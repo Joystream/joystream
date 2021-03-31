@@ -38,7 +38,10 @@ yarn workspace query-node-root db:migrate
 docker-compose up -d graphql-server
 docker-compose up -d processor
 
-echo "press Ctrl+C to shutdown"
+docker-compose up -d pioneer
 
-# Start a dev instance of pioneer and wait for exit
-docker-compose up pioneer
+echo "use Ctrl+C to shutdown the development network."
+
+while true; do 
+  read
+done
