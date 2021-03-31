@@ -255,7 +255,7 @@ pub fn testnet_genesis(
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {
-            validator_count: 20,
+            validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
@@ -294,13 +294,13 @@ pub fn testnet_genesis(
         election: Some(CouncilElectionConfig {
             auto_start: true,
             election_parameters: ElectionParameters {
-                announcing_period: 2 * DAYS,
+                announcing_period: 4 * DAYS,
                 voting_period: 1 * DAYS,
                 revealing_period: 1 * DAYS,
-                council_size: 6,
-                candidacy_limit: 25,
+                council_size: 16,
+                candidacy_limit: 50,
                 min_council_stake: 1_000,
-                new_term_duration: 10 * DAYS,
+                new_term_duration: 1 * DAYS,
                 min_voting_stake: 100,
             },
         }),
