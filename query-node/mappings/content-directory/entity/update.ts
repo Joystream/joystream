@@ -1,4 +1,5 @@
-import { DB } from '../../../generated/indexer'
+import { DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
+
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
 import { KnownLicenseEntity } from '../../../generated/graphql-server/src/modules/known-license-entity/known-license-entity.model'
