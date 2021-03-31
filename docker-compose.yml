@@ -154,10 +154,9 @@ services:
       - "127.0.0.1:6379:6379"
 
   pioneer:
-    image: joystream/apps
+    image: joystream/pioneer
     build:
       context: .
-      dockerfile: apps.Dockerfile
+      dockerfile: pioneer.Dockerfile
     ports:
-      - "127.0.0.1:3000:3000"
-    command: workspace pioneer start
+      - "127.0.0.1:3000:80"
