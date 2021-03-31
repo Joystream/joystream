@@ -19,6 +19,9 @@ echo "Building mappings..."
 (cd mappings && yarn build)
 echo "Done."
 
+# Copy joy types
+cp ../types/augment/all/defs.json ./mappings/lib/mappings/generated-t/types/typedefs.json
+
 # We run yarn again to ensure processor and indexer dependencies are installed
 # and are inline with root workspace resolutions
 yarn
