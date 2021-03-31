@@ -221,10 +221,10 @@ jobs:
         run: |
           sleep 6
           export DEBUG=joystream:*
-          yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0
+          yarn storage-cli upload ./tests/network-tests/assets/joystream.MOV 1 0
           # Wait for storage-node to set status Accepted on uploaded content
           sleep 6
           cd utils/api-scripts/
           # Assume only one accepted data object was created
           CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
-          yarn storage-cli download http://localhost:3001 ${CONTENT_ID} ./download.png
+          yarn storage-cli download ${CONTENT_ID} ./joystream.mov

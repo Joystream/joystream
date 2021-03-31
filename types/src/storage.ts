@@ -1,4 +1,4 @@
-import { BTreeMap, u64, bool, Text, Null, Bytes } from '@polkadot/types'
+import { BTreeMap, u64, bool, Text, Null, Bytes, Option } from '@polkadot/types'
 import { BlockAndTime, JoyEnum, JoyStructDecorated, Hash, ChannelId, DAOId, WorkingGroup } from './common'
 import { MemberId } from './members'
 import { StorageProviderId } from './working-group' // this should be in discovery really
@@ -32,7 +32,6 @@ export class DataObjectStorageRelationshipId extends u64 {}
 export const LiaisonJudgementDef = {
   Pending: Null,
   Accepted: Null,
-  Rejected: Null,
 } as const
 export type LiaisonJudgementKey = keyof typeof LiaisonJudgementDef
 export class LiaisonJudgement extends JoyEnum(LiaisonJudgementDef) {}
@@ -62,7 +61,7 @@ export class DataObject extends JoyStructDecorated({
   added_at: BlockAndTime,
   type_id: DataObjectTypeId,
   size: u64,
-  liaison: StorageProviderId,
+  liaison: Option.with(StorageProviderId),
   liaison_judgement: LiaisonJudgement,
   ipfs_content_id: Text,
 }) {

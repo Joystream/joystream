@@ -21,7 +21,6 @@ interface AddContentParams {
 
 // Upload command class. Validates input parameters and uploads the asset to the storage node and runtime.
 export class UploadCommand extends BaseCommand {
-  private readonly api: any
   private readonly mediaSourceFilePath: string
   private readonly dataObjectTypeId: string
   private readonly keyFile: string
@@ -36,9 +35,8 @@ export class UploadCommand extends BaseCommand {
     keyFile: string,
     passPhrase: string
   ) {
-    super()
+    super(api)
 
-    this.api = api
     this.mediaSourceFilePath = mediaSourceFilePath
     this.dataObjectTypeId = dataObjectTypeId
     this.memberId = memberId
@@ -153,19 +151,6 @@ export class UploadCommand extends BaseCommand {
     }
   }
 
-  // Requests the runtime and obtains the storage node endpoint URL.
-  private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
-    try {
-      const endpoint = await this.api.workers.getWorkerStorageValue(storageProviderId)
-
-      debug(`Resolved endpoint: ${endpoint}`)
-
-      return endpoint
-    } catch (err) {
-      this.fail(`Could not get provider endpoint: ${err}`)
-    }
-  }
-
   // Loads and unlocks the runtime identity using the key file and pass phrase.
   private async loadIdentity(): Promise<any> {
     const noKeyFileProvided = !this.keyFile || this.keyFile === ''
@@ -208,7 +193,7 @@ export class UploadCommand extends BaseCommand {
     const dataObject = await this.createContent(addContentParams)
     debug(`Received data object: ${dataObject.toString()}`)
 
-    const colossusEndpoint = await this.discoverStorageProviderEndpoint(dataObject.liaison.toString())
+    const colossusEndpoint = await this.getAnyProviderEndpoint()
     debug(`Discovered storage node endpoint: ${colossusEndpoint}`)
 
     const assetUrl = this.createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId)

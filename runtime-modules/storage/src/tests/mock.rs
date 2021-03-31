@@ -111,7 +111,7 @@ impl ContentIdExists<Test> for MockContent {
                     time: 1024,
                 },
                 owner: StorageObjectOwner::Member(1),
-                liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+                liaison: Some(TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID),
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
@@ -208,15 +208,8 @@ impl data_object_type_registry::Trait for Test {
 
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
-    type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
-}
-
-impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, data_directory::Error<Test>> {
-        Ok(1)
-    }
 }
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {

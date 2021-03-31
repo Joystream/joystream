@@ -368,35 +368,55 @@ declare module '@polkadot/api/types/submittable' {
     dataDirectory: {
       /**
        * Storage provider accepts a content. Requires signed storage provider account and its id.
-       * The LiaisonJudgement can be updated, but only by the liaison.
+       * The LiaisonJudgement can only be updated once from Pending to Accepted.
+       * Subsequent calls are a no-op.
        **/
       acceptContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Adds the content to the system. The created DataObject
-       * awaits liaison to accept or reject it.
+       * awaits liaison to accept it.
        **/
       addContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Storage provider rejects a content. Requires signed storage provider account and its id.
-       * The LiaisonJudgement can be updated, but only by the liaison.
-       **/
-      rejectContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Remove the content from the system.
        **/
       removeContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, contentIds: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Set the default owner voucher
+       **/
+      setDefaultVoucher: AugmentedSubmittable<(sizeLimit: u64 | AnyNumber | Uint8Array, objectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets global voucher objects limit. Requires root privileges.
+       * New limit cannot be less that used value.
+       **/
+      setGlobalVoucherObjectsLimit: AugmentedSubmittable<(newObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets global voucher size limit. Requires root privileges.
+       * New limit cannot be less that used value.
+       **/
+      setGlobalVoucherSizeLimit: AugmentedSubmittable<(newSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets VoucherObjectsLimitUpperBound. Requires root privileges.
+       **/
+      setVoucherObjectsLimitUpperBound: AugmentedSubmittable<(newUpperBound: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Sets VoucherSizeLimitUpperBound. Requires root privileges.
+       **/
+      setVoucherSizeLimitUpperBound: AugmentedSubmittable<(newUpperBound: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Locks / unlocks content uploading
        **/
       updateContentUploadingStatus: AugmentedSubmittable<(isBlocked: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Updates storage object owner voucher objects limit. Requires leader privileges.
+       * New limit cannot be less that used value.
        **/
-      updateStorageObjectOwnerVoucherObjectsLimit: AugmentedSubmittable<(abstractOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerVoucherObjectsLimit: AugmentedSubmittable<(objectOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherObjectsLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Updates storage object owner voucher size limit. Requires leader privileges.
+       * New limit cannot be less that used value.
        **/
-      updateStorageObjectOwnerVoucherSizeLimit: AugmentedSubmittable<(abstractOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      updateStorageObjectOwnerVoucherSizeLimit: AugmentedSubmittable<(objectOwner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, newVoucherSizeLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     dataObjectStorageRegistry: {
       /**
