@@ -93,6 +93,8 @@ services:
     environment:
       - POLL_INTERVAL_MS=300
       - DEBUG=hydra-processor:*
+      - DB_HOST=db
+      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:4002/graphql
     depends_on:
       - indexer-api-gateway
     command: ["workspace", "query-node-root", "processor:start"]
