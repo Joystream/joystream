@@ -11,19 +11,17 @@ set +a
 
 yarn clean
 
-# We generate the code for each service separately to be able to specify
-# separate database names.
-
-# Build indexer customizing DB name
-DB_NAME=${INDEXER_DB_NAME} yarn codegen:indexer
-
 # Build graphql-server customizing DB name
-DB_NAME=${PROCESSOR_DB_NAME} yarn codegen:server
+yarn codegen
+
+echo "Building mappings..."
+(cd mappings && yarn build)
+
+# Copy joy types
+cp ../types/augment/all/defs.json ./mappings/lib/mappings/generated/types/typedefs.json
 
 # We run yarn again to ensure processor and indexer dependencies are installed
 # and are inline with root workspace resolutions
 yarn
 
 ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
-
-yarn tsc --build tsconfig.json
