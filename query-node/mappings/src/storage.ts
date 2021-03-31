@@ -7,26 +7,40 @@ import {
   prepareDataObject,
 } from './common'
 
-import { DataDirectory } from '../../generated/types'
+import {
+  DataDirectory,
+} from '../../generated/types'
 import {
   ContentId,
   ContentParameters,
+  StorageObjectOwner,
 } from '@joystream/types/augment'
 import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
 
+import {
+  DataObjectOwner,
+  DataObjectOwnerMember,
+  DataObjectOwnerChannel,
+  DataObjectOwnerDao,
+  DataObjectOwnerCouncil,
+  DataObjectOwnerWorkingGroup,
+} from 'query-node/src/modules/variants/variants.model'
 import { DataObject } from 'query-node/src/modules/data-object/data-object.model'
 
 export async function data_directory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentParameters} = new DataDirectory.ContentAddedEvent(event).data
-  // TODO: resolve handling of Vec<ContentParameters> - currently only the first item is handleu
+  const {contentParameters, storageObjectOwner} = new DataDirectory.ContentAddedEvent(event).data
 
-  const dataObject = await prepareDataObject(contentParameters[0], event.blockNumber)
+  // save all content objects
+  for (let parameters of contentParameters) {
+    const owner = convertStorageObjectOwner(storageObjectOwner)
+    const dataObject = await prepareDataObject(parameters, event.blockNumber, owner)
 
-  await db.save<DataObject>(dataObject)
+    await db.save<DataObject>(dataObject)
+  }
 
   // emit log event
-  logger.info("Storage content has beed added", {id: dataObject.joystreamContentId})
+  logger.info("Storage content has beed added", {ids: contentParameters.map(item => item.content_id.toString())})
 }
 
 export async function data_directory_ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -87,4 +101,41 @@ export async function data_directory_ContentRejected(db: DatabaseManager, event:
 
   // emit log event
   logger.info("Storage content has been rejected", {id: contentId})
+}
+
+/////////////////// Helpers ////////////////////////////////////////////////////
+
+function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof DataObjectOwner {
+  if (objectOwner.isMember) {
+    const owner = new DataObjectOwnerMember()
+    owner.member = objectOwner.asMember.toBn()
+
+    return owner
+  }
+
+  if (objectOwner.isChannel) {
+    const owner = new DataObjectOwnerChannel()
+    owner.channel = objectOwner.asChannel.toBn()
+
+    return owner
+  }
+
+  if (objectOwner.isDao) {
+    const owner = new DataObjectOwnerDao()
+    owner.dao = objectOwner.asDao.toBn()
+
+    return owner
+  }
+
+  if (objectOwner.isWorkingGroup) {
+    return new DataObjectOwnerCouncil()
+  }
+
+  if (objectOwner.isWorkingGroup) {
+    const owner = new DataObjectOwnerWorkingGroup()
+
+    return owner
+  }
+
+  throw 'Not-implemented StorageObjectOwner type used'
 }

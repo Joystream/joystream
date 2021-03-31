@@ -1,6 +1,7 @@
 // TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
 // TODO: can we rely on db having "foreign keys"? When item is deleted will automaticly be all relations to it unset?
 //       Similarly, will saving item also save all its related items no-yet-saved in db, or do they need to saved individually?
+//       Also, is the assumption that `db.save(MyType, {myProperty: undefined})` unsets value in db correct?
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
@@ -47,11 +48,16 @@ import {
   DataObject,
   LiaisonJudgement
 } from 'query-node/src/modules/data-object/data-object.model'
+import {
+  DataObjectOwner,
+  DataObjectOwnerMember,
+} from 'query-node/src/modules/variants/variants.model'
 
 // Joystream types
 import {
   ContentParameters,
   NewAsset,
+  ContentActor,
 } from '@joystream/types/augment'
 
 /*
@@ -78,7 +84,8 @@ export async function readProtobuf(
   metadata: Uint8Array,
   assets: NewAsset[], // assets provided in event
   db: DatabaseManager,
-  event: SubstrateEvent,
+  blockNumber: number,
+  actor: ContentActor,
 ): Promise<Partial<typeof type>> {
   // process channel
   if (type instanceof Channel) {
@@ -88,14 +95,14 @@ export async function readProtobuf(
 
     // prepare cover photo asset if needed
     if (metaAsObject.coverPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.coverPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.coverPhoto, assets, db, blockNumber, actor)
       integrateAsset('coverPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.coverPhoto
     }
 
     // prepare avatar photo asset if needed
     if (metaAsObject.avatarPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.avatarPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.avatarPhoto, assets, db, blockNumber, actor)
       integrateAsset('avatarPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.avatarPhoto
     }
@@ -140,14 +147,14 @@ export async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, event)
+      const asset = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, blockNumber, actor)
       integrateAsset('thumbnail', result, asset) // changes `result` inline!
       delete metaAsObject.thumbnailPhoto
     }
 
     // prepare video asset if needed
     if (metaAsObject.video !== undefined) {
-      const asset = await extractAsset(metaAsObject.video, assets, db, event)
+      const asset = await extractAsset(metaAsObject.video, assets, db, blockNumber, actor)
       integrateAsset('media', result, asset) // changes `result` inline!
       delete metaAsObject.video
     }
@@ -175,6 +182,25 @@ export async function readProtobuf(
   throw `Not implemented type: ${type}`
 }
 
+export function convertContentActorToOwner(actor: ContentActor): typeof DataObjectOwner {
+  if (actor.isMember) {
+    const owner = new DataObjectOwnerMember()
+    owner.member = actor.asMember.toBn()
+
+    return owner
+  }
+
+  if (actor.isLead) {
+    // TODO: who will be owner?
+  }
+
+  if (actor.isCurator) {
+    // TODO: who will be owner?
+  }
+
+  throw 'Not-implemented ContentActor type used'
+}
+
 function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string) {
   // published elsewhere before Joystream
   if (publishedAtString) {
@@ -188,7 +214,7 @@ function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string
 /*
   Converts event asset into data object or list of URLs fit to be saved to db.
 */
-async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: SubstrateEvent): Promise<AssetStorageOrUrls> {
+async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, blockNumber: number, actor: ContentActor): Promise<AssetStorageOrUrls> {
   // is asset describing list of URLs?
   if (rawAsset.isUrls) {
     const urls = rawAsset.asUrls.toArray().map(item => item.toString())
@@ -200,7 +226,9 @@ async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, event: Subs
 
   // prepare data object
   const contentParameters: ContentParameters = rawAsset.asUpload
-  const dataObject = await prepareDataObject(contentParameters, event.blockNumber)
+  const owner = convertContentActorToOwner(actor)
+  const dataObject = await prepareDataObject(contentParameters, blockNumber, owner)
+
 
   return dataObject
 }
@@ -212,7 +240,8 @@ async function extractAsset(
   assetIndex: number,
   assets: NewAsset[],
   db: DatabaseManager,
-  event: SubstrateEvent,
+  blockNumber: number,
+  actor: ContentActor,
 ): Promise<AssetStorageOrUrls> {
   // ensure asset index is valid
   if (assetIndex > assets.length) {
@@ -220,7 +249,7 @@ async function extractAsset(
   }
 
   // convert asset to data object record
-  return convertAsset(assets[assetIndex], db, event)
+  return convertAsset(assets[assetIndex], db, blockNumber, actor)
 }
 
 /*
@@ -312,7 +341,7 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
 }
 
 async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promise<License> {
-  // NOTE: Deletion of any previous license should take place in appropriate even handling function
+  // NOTE: Deletion of any previous license should take place in appropriate event handling function
   //       and not here even it might appear so.
 
   // crete new license

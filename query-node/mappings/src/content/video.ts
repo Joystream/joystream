@@ -25,7 +25,11 @@ export async function content_VideoCategoryCreated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {videoCategoryId, videoCategoryCreationParameters} = new Content.VideoCategoryCreatedEvent(event).data
+  const {
+    videoCategoryId,
+    videoCategoryCreationParameters,
+    contentActor,
+  } = new Content.VideoCategoryCreatedEvent(event).data
 
   // read metadata
   const protobufContent = readProtobuf(
@@ -33,7 +37,8 @@ export async function content_VideoCategoryCreated(
     videoCategoryCreationParameters.meta,
     [],
     db,
-    event
+    event.blockNumber,
+    contentActor,
   )
 
   // create new video category
@@ -58,7 +63,11 @@ export async function content_VideoCategoryUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {videoCategoryId, videoCategoryUpdateParameters} = new Content.VideoCategoryUpdatedEvent(event).data
+  const {
+    videoCategoryId,
+    videoCategoryUpdateParameters,
+    contentActor,
+  } = new Content.VideoCategoryUpdatedEvent(event).data
 
   // load video category
   const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
@@ -74,7 +83,8 @@ export async function content_VideoCategoryUpdated(
     videoCategoryUpdateParameters.new_meta,
     [],
     db,
-    event,
+    event.blockNumber,
+    contentActor,
   )
 
   // update all fields read from protobuf
@@ -120,7 +130,12 @@ export async function content_VideoCreated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelId, videoId, videoCreationParameters} = new Content.VideoCreatedEvent(event).data
+  const {
+    channelId,
+    videoId,
+    videoCreationParameters,
+    contentActor,
+  } = new Content.VideoCreatedEvent(event).data
 
   // read metadata
   const protobufContent = await readProtobuf(
@@ -128,7 +143,8 @@ export async function content_VideoCreated(
     videoCreationParameters.meta,
     videoCreationParameters.assets,
     db,
-    event,
+    event.blockNumber,
+    contentActor,
   )
 
   // create new video
@@ -153,7 +169,11 @@ export async function content_VideoUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {videoId, videoUpdateParameters} = new Content.VideoUpdatedEvent(event).data
+  const {
+    videoId,
+    videoUpdateParameters,
+    contentActor,
+  } = new Content.VideoUpdatedEvent(event).data
 
   // load video
   const video = await db.get(Video, { where: { id: videoId } })
@@ -173,7 +193,8 @@ export async function content_VideoUpdated(
       newMetadata,
       videoUpdateParameters.assets.unwrapOr([]),
       db,
-      event,
+      event.blockNumber,
+      contentActor,
     )
 
     // remember original license

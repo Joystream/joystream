@@ -121,37 +121,44 @@ type DataObjectOwnerMember @variant {
   #"Member identifier"
   #memberId: Membership!
   "Member identifier"
-  memberId: BigInt!
+  member: BigInt!
 
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a channel"
 type DataObjectOwnerChannel @variant {
+  # use `BigInt` instead of `Channel` before variant relations are featured in Hydra
+  #"Channel identifier"
+  #channel: Channel!
   "Channel identifier"
-  channel: Channel!
+  channel: BigInt!
 
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a DAO"
 type DataObjectOwnerDao @variant {
   "DAO identifier"
-  daoId: BigInt!
+  dao: BigInt!
 }
 
 "Asset owned by the Council"
 type DataObjectOwnerCouncil @variant {
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a WorkingGroup"
 type DataObjectOwnerWorkingGroup @variant {
-  "Working group identifier"
-  workingGroupId: BigInt!
+  # TODO: working group doesn't seem to have id but rather `isStorage`, `isContent`, ... shoudl we care about that?
+  #"Working group identifier"
+  #workingGroup: BigInt!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
 }
 
 #### High Level Derivative Entities ####

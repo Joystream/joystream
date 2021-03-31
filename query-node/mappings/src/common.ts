@@ -8,11 +8,6 @@ import { Network } from 'query-node/src/modules/enums/enums'
 // Asset
 import {
   DataObjectOwner,
-  DataObjectOwnerMember,
-  DataObjectOwnerChannel,
-  DataObjectOwnerDao,
-  DataObjectOwnerCouncil,
-  DataObjectOwnerWorkingGroup,
 } from 'query-node/src/modules/variants/variants.model'
 import {
   DataObject,
@@ -24,6 +19,9 @@ import {
 
 const currentNetwork = Network.BABYLON
 
+/*
+  Reports that insurmountable inconsistent state has been encountered and throws an exception.
+*/
 export function inconsistentState(extraInfo: string, data?: unknown): never {
   const errorMessage = 'Inconsistent state: ' + extraInfo
 
@@ -34,18 +32,25 @@ export function inconsistentState(extraInfo: string, data?: unknown): never {
   throw errorMessage
 }
 
-export async function prepareDataObject(contentParameters: ContentParameters, blockNumber: number): Promise<DataObject> {
-  const dataObjectOwner = new DataObjectOwnerMember() // TODO: proper owner
-  dataObjectOwner.memberId = new BN(0)
-
+/*
+  Prepares data object from content parameters.
+*/
+export async function prepareDataObject(
+  contentParameters: ContentParameters,
+  blockNumber: number,
+  owner: typeof DataObjectOwner,
+): Promise<DataObject> {
   const dataObject = new DataObject({
-    owner: dataObjectOwner,
+    owner,
     addedAt: blockNumber,
     typeId: contentParameters.type_id.toNumber(),
-    // `size` is masked by `size` special name in struct so there needs to be `.get('size') as u64`
+    // `size` is masked by `size` special name in `Struct` so there needs to be `.get('size') as unknown as u64` to retrieve proper value
     size: (contentParameters.get('size') as unknown as u64).toBn(),
-    liaisonId: new BN(0), // TODO: proper id
-    liaisonJudgement: LiaisonJudgement.PENDING, // TODO: proper judgement
+
+    // TODO: liason & judgement information can't be retrieved now - it's neither event parameter or extrinsic parameter
+    liaisonId: new BN(0),
+    liaisonJudgement: LiaisonJudgement.PENDING,
+
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),
     joystreamContentId: contentParameters.content_id.toHex(),
   })
@@ -56,15 +61,23 @@ export async function prepareDataObject(contentParameters: ContentParameters, bl
 /////////////////// Logger /////////////////////////////////////////////////////
 
 /*
-Logger will not be needed in the future when Hydra v3 will be released.
-*/
+  Simple logger enabling error and informational reporting.
 
+  `Logger` class will not be needed in the future when Hydra v3 will be released.
+  Hydra will provide logger instance and relevant code using `Logger` should be refactored.
+*/
 class Logger {
 
+  /*
+    Log significant event.
+  */
   info(message: string, data?: unknown) {
     console.log(message, data)
   }
 
+  /*
+    Log significant error.
+  */
   error(message: string, data?: unknown) {
     console.error(message, data)
   }

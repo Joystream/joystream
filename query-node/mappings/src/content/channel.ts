@@ -22,7 +22,7 @@ import { ChannelCategory } from 'query-node/src/modules/channel-category/channel
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {channelId, channelCreationParameters} = new Content.ChannelCreatedEvent(event).data
+  const {channelId, channelCreationParameters, contentActor} = new Content.ChannelCreatedEvent(event).data
 
   // read metadata
   const protobufContent = await readProtobuf(
@@ -30,7 +30,8 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     channelCreationParameters.meta,
     channelCreationParameters.assets,
     db,
-    event,
+    event.blockNumber,
+    contentActor,
   )
 
   // create entity
@@ -55,7 +56,11 @@ export async function content_ChannelUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelId , channelUpdateParameters} = new Content.ChannelUpdatedEvent(event).data
+  const {
+    channelId,
+    channelUpdateParameters,
+    contentActor,
+  } = new Content.ChannelUpdatedEvent(event).data
 
   // load channel
   const channel = await db.get(Channel, { where: { id: channelId } })
@@ -75,7 +80,8 @@ export async function content_ChannelUpdated(
       newMetadata,
       channelUpdateParameters.assets.unwrapOr([]),
       db,
-      event,
+      event.blockNumber,
+      contentActor,
     )
 
     // update all fields read from protobuf
@@ -180,6 +186,7 @@ export async function content_ChannelCategoryCreated(
 ) {
   // read event data
   const {channelCategoryCreationParameters} = new Content.ChannelCategoryCreatedEvent(event).data
+  const {actor: contentActor} = new Content.CreateChannelCategoryCall(event).args
 
   // read metadata
   const protobufContent = await readProtobuf(
@@ -187,7 +194,8 @@ export async function content_ChannelCategoryCreated(
     channelCategoryCreationParameters.meta,
     [],
     db,
-    event,
+    event.blockNumber,
+    contentActor,
   )
 
   // create new channel category
@@ -211,7 +219,11 @@ export async function content_ChannelCategoryUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelCategoryId, channelCategoryUpdateParameters} = new Content.ChannelCategoryUpdatedEvent(event).data
+  const {
+    channelCategoryId,
+    channelCategoryUpdateParameters,
+    contentActor,
+  } = new Content.ChannelCategoryUpdatedEvent(event).data
 
   // load channel category
   const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
@@ -227,7 +239,8 @@ export async function content_ChannelCategoryUpdated(
     channelCategoryUpdateParameters.new_meta,
     [],
     db,
-    event,
+    event.blockNumber,
+    contentActor,
   )
 
   // update all fields read from protobuf
