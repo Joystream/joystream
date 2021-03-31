@@ -18,7 +18,7 @@
     "codegen": "hydra-cli codegen",
     "codegen:noinstall": "hydra-cli codegen --no-install",
     "integration-tests": "./run-tests.sh",
-    "typegen": "rm -rf ./mappings/generated/ && hydra-typegen typegen manifest.yml --debug",
+    "typegen": "rm -rf ./mappings/generated-t/ && hydra-typegen typegen manifest.yml --debug",
     "db:init": "(cd ./generated/graphql-server && TYPEORM_LOGGING=true ts-node ../../scripts/initializeDefaultSchemas.ts)"
   },
   "author": "",
