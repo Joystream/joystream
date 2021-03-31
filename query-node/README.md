@@ -65,13 +65,8 @@ Follow the links for more information about the [indexer](https://github.com/Joy
 # Tmp command order
 TODO: remove after integration tests are finished and query node runs without any issues
 ```
-yarn
-
-echo "set -a; . .env; set +a; yarn workspace query-node build:dev" > tmp.sh
-chmod +x tmp.sh
-./tmp.sh
-
 # build everything
+yarn
 yarn build
 
 ```
