@@ -56,12 +56,11 @@ export class ApiFactory {
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
     let connectAttempts = 0
+    const api = new ApiPromise({ provider, types })
     while (true) {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = new ApiPromise({ provider, types })
-
         // Wait for api to be connected and ready
         await api.isReadyOrError
 

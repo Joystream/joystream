@@ -27,12 +27,11 @@ async function main() {
   console.log('WASM bytes:', wasm.byteLength)
 
   const provider = new WsProvider('ws://127.0.0.1:9944')
+  const api = new ApiPromise({ provider, types })
 
-  let api: ApiPromise
   let retry = 6
   while (true) {
     try {
-      api = new ApiPromise({ provider, types })
       await api.isReadyOrError
       break
     } catch (err) {

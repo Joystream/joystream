@@ -11,16 +11,14 @@ async function main() {
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
   // Create the API and wait until ready
-  let api: ApiPromise
+  const api = new ApiPromise({ provider, types })
   let retry = 6
   while (true) {
     try {
-      api = new ApiPromise({ provider, types })
       await api.isReadyOrError
       break
     } catch (err) {
       // failed to connect to node
-      console.error('Caught Error', err)
     }
 
     if (retry-- === 0) {
