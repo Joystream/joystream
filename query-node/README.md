@@ -78,18 +78,30 @@ yarn workspace query-node-root build # this will fail during mappings compilatio
 # add back dependency
 sed -i 's/"dependencies": {/"dependencies": {\n    "query-node": "^0.0.0",/' query-node/mappings/package.json
 
-# install query node dependency to mappings
-yarn
-
 # install new dependencies
 yarn
+
+# fix asset availability export
+sed -i "s#import { AssetAvailability } from '../enums/enums'#import { AssetAvailability } from '../enums/enums'\nexport { AssetAvailability } from '../enums/enums'#" query-node/generated/graphql-server/src/modules/video/video.model.ts
 
 echo "set -a; . .env; set +a; yarn workspace query-node build:dev" > tmp.sh
 chmod +x tmp.sh
 ./tmp.sh
 
+# temporarily "comment" monorepo workspaces
+sed -i 's/"workspaces": \[/"notWorkspaces": [/' package.json
+
+# use typegen
+cd query-node
+yarn
+yarn typegen
+rm node_modules yarn.lock -r # clean 
+cd ..
+
+# "uncomment" monorepo workspaces
+sed -i 's/"notWorkspaces": \[/"workspaces": [/' package.json
+
 # build mappings
-yarn workspace query-node-root typegen
 yarn workspace query-node-mappings build
 
 ```
