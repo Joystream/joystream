@@ -34,7 +34,8 @@
 //! - [update_accounts](./struct.Module.html#method.update_accounts) - updates member accounts.
 //! - [update_profile_verification](./struct.Module.html#method.update_profile_verification) -
 //! updates member profile verification status.
-//! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) - updates the referral cut.
+//! - [set_referral_cut](./struct.Module.html#method.set_referral_cut) -
+//! updates the referral cut percent value.
 //! - [transfer_invites](./struct.Module.html#method.transfer_invites) - transfers the invites
 //! from one member to another.
 //!
@@ -55,6 +56,7 @@ pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::Perbill;
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
@@ -74,8 +76,8 @@ type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn buy_membership_without_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
-    fn buy_membership_with_referrer(i: u32, j: u32, k: u32, z: u32) -> Weight;
+    fn buy_membership_without_referrer(i: u32, j: u32) -> Weight;
+    fn buy_membership_with_referrer(i: u32, j: u32) -> Weight;
     fn update_profile(i: u32) -> Weight;
     fn update_accounts_none() -> Weight;
     fn update_accounts_root() -> Weight;
@@ -83,7 +85,7 @@ pub trait WeightInfo {
     fn update_accounts_both() -> Weight;
     fn set_referral_cut() -> Weight;
     fn transfer_invites() -> Weight;
-    fn invite_member(i: u32, j: u32, k: u32, z: u32) -> Weight;
+    fn invite_member(i: u32, j: u32) -> Weight;
     fn set_membership_price() -> Weight;
     fn update_profile_verification() -> Weight;
     fn set_leader_invitation_quota() -> Weight;
@@ -103,6 +105,9 @@ pub trait Trait:
     /// Defines the default membership fee.
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
 
+    /// Defines the maximum percent value of the membership fee for the referral cut.
+    type ReferralCutMaximumPercent: Get<u8>;
+
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
         + common::working_group::WorkingGroupBudgetHandler<Self>;
@@ -117,8 +122,18 @@ pub trait Trait:
         Self::MemberId,
     >;
 
+    /// Staking handler used for staking candidate.
+    type StakingCandidateStakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        Self::MemberId,
+    >;
+
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Stake needed to candidate as staking account.
+    type CandidateStake: Get<BalanceOf<Self>>;
 }
 
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
@@ -162,7 +177,7 @@ pub struct StakingAccountMemberBinding<MemberId> {
 }
 
 /// Parameters for the buy_membership extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member root account.
     pub root_account: AccountId,
@@ -170,24 +185,18 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member controller account.
     pub controller_account: AccountId,
 
-    /// New member user name.
-    pub name: Option<Vec<u8>>,
-
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// New member avatar URI.
-    pub avatar_uri: Option<Vec<u8>>,
-
-    /// New member 'about' text.
-    pub about: Option<Vec<u8>>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 
     /// Referrer member id.
     pub referrer_id: Option<MemberId>,
 }
 
 /// Parameters for the invite_member extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// Inviting member id.
     pub inviting_member_id: MemberId,
@@ -198,17 +207,11 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// New member controller account.
     pub controller_account: AccountId,
 
-    /// New member user name.
-    pub name: Option<Vec<u8>>,
-
     /// New member handle.
     pub handle: Option<Vec<u8>>,
 
-    /// New member avatar URI.
-    pub avatar_uri: Option<Vec<u8>>,
-
-    /// New member 'about' text.
-    pub about: Option<Vec<u8>>,
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
 }
 
 decl_error! {
@@ -259,6 +262,18 @@ decl_error! {
         /// Cannot invite a member. Working group balance is not sufficient to set the default
         /// balance.
         WorkingGroupBudgetIsNotSufficientForInviting,
+
+        /// Cannot invite a member. The controller account has an existing conflicting lock.
+        ConflictingLock,
+
+        /// Cannot set a referral cut percent value. The limit was exceeded.
+        CannotExceedReferralCutPercentLimit,
+
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
     }
 }
 
@@ -276,8 +291,8 @@ decl_storage! {
         pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
             Vec<u8> => T::MemberId;
 
-        /// Referral cut to receive during on buying the membership.
-        pub ReferralCut get(fn referral_cut) : BalanceOf<T>;
+        /// Referral cut percent of the membership fee to receive on buying the membership.
+        pub ReferralCut get(fn referral_cut) : u8;
 
         /// Current membership price.
         pub MembershipPrice get(fn membership_price) : BalanceOf<T> =
@@ -301,7 +316,7 @@ decl_storage! {
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
                 let handle_hash = <Module<T>>::get_handle_hash(
-                    Some(member.handle.clone().into_bytes()),
+                    &Some(member.handle.clone().into_bytes()),
                 ).expect("Importing Member Failed");
 
                 let member_id = <Module<T>>::insert_member(
@@ -323,12 +338,26 @@ decl_event! {
       <T as common::membership::Trait>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Trait>::AccountId,
+      BuyMembershipParameters = BuyMembershipParameters<
+          <T as frame_system::Trait>::AccountId,
+          <T as common::membership::Trait>::MemberId,
+        >,
+      <T as common::membership::Trait>::ActorId,
+      InviteMembershipParameters = InviteMembershipParameters<
+          <T as frame_system::Trait>::AccountId,
+          <T as common::membership::Trait>::MemberId,
+        >,
     {
-        MemberRegistered(MemberId),
-        MemberProfileUpdated(MemberId),
-        MemberAccountsUpdated(MemberId),
-        MemberVerificationStatusUpdated(MemberId, bool),
-        ReferralCutUpdated(Balance),
+        MemberInvited(MemberId, InviteMembershipParameters),
+        MembershipBought(MemberId, BuyMembershipParameters),
+        MemberProfileUpdated(
+            MemberId,
+            Option<Vec<u8>>,
+            Option<Vec<u8>>,
+        ),
+        MemberAccountsUpdated(MemberId, Option<AccountId>, Option<AccountId>),
+        MemberVerificationStatusUpdated(MemberId, bool, ActorId),
+        ReferralCutUpdated(u8),
         InvitesTransferred(MemberId, MemberId, u32),
         MembershipPriceUpdated(Balance),
         InitialInvitationBalanceUpdated(Balance),
@@ -346,6 +375,16 @@ decl_module! {
         type Error = Error<T>;
 
         fn deposit_event() = default;
+
+        /// Exports const - default membership fee.
+        const DefaultMembershipPrice: BalanceOf<T> = T::DefaultMembershipPrice::get();
+
+        /// Exports const - maximum percent value of the membership fee for the referral cut.
+        const ReferralCutMaximumPercent: u8 = T::ReferralCutMaximumPercent::get();
+
+        /// Exports const - default balance for the invited member.
+        const DefaultInitialInvitationBalance: BalanceOf<T> =
+            T::DefaultInitialInvitationBalance::get();
 
         /// Non-members can buy membership.
         ///
@@ -376,7 +415,7 @@ decl_module! {
             );
 
             let handle_hash = Self::get_handle_hash(
-                params.handle,
+                &params.handle,
             )?;
 
             let referrer = params
@@ -401,7 +440,7 @@ decl_module! {
             let _ = balances::Module::<T>::slash(&who, fee);
 
             // Reward the referring member.
-            if let Some(referrer) = referrer{
+            if let Some(referrer) = referrer {
                 let referral_cut: BalanceOf<T> = Self::get_referral_bonus();
 
                 if referral_cut > Zero::zero() {
@@ -413,7 +452,7 @@ decl_module! {
             }
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+            Self::deposit_event(RawEvent::MembershipBought(member_id, params));
         }
 
         /// Update member's all or some of name, handle, avatar and about text.
@@ -435,13 +474,11 @@ decl_module! {
         pub fn update_profile(
             origin,
             member_id: T::MemberId,
-            name: Option<Vec<u8>>,
             handle: Option<Vec<u8>>,
-            avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
+            metadata: Option<Vec<u8>>,
         ) {
             // No effect if no changes.
-            if name.is_none() && handle.is_none() && avatar_uri.is_none() && about.is_none() {
+            if handle.is_none() && metadata.is_none() {
                 return Ok(())
             }
 
@@ -449,8 +486,8 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            let new_handle_hash = handle
-                .map(|handle| Self::get_handle_hash(Some(handle)))
+            let new_handle_hash = handle.clone()
+                .map(|handle| Self::get_handle_hash(&Some(handle)))
                 .transpose()?;
 
             //
@@ -467,7 +504,11 @@ decl_module! {
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
 
-                Self::deposit_event(RawEvent::MemberProfileUpdated(member_id));
+                Self::deposit_event(RawEvent::MemberProfileUpdated(
+                        member_id,
+                        handle,
+                        metadata,
+                    ));
             }
         }
 
@@ -503,16 +544,20 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(root_account) = new_root_account {
+            if let Some(root_account) = new_root_account.clone() {
                 membership.root_account = root_account;
             }
 
-            if let Some(controller_account) = new_controller_account {
+            if let Some(controller_account) = new_controller_account.clone() {
                 membership.controller_account = controller_account;
             }
 
             <MembershipById<T>>::insert(member_id, membership);
-            Self::deposit_event(RawEvent::MemberAccountsUpdated(member_id));
+            Self::deposit_event(RawEvent::MemberAccountsUpdated(
+                    member_id,
+                    new_root_account,
+                    new_controller_account
+                ));
         }
 
         /// Updates member profile verification status. Requires working group member origin.
@@ -544,11 +589,11 @@ decl_module! {
             });
 
             Self::deposit_event(
-                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified)
+                RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified, worker_id)
             );
         }
 
-        /// Updates membership referral cut. Requires root origin.
+        /// Updates membership referral cut percent value. Requires root origin.
         ///
         /// <weight>
         ///
@@ -558,16 +603,21 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::set_referral_cut()]
-        pub fn set_referral_cut(origin, value: BalanceOf<T>) {
+        pub fn set_referral_cut(origin, percent_value: u8) {
             ensure_root(origin)?;
+
+            ensure!(
+                percent_value <= T::ReferralCutMaximumPercent::get(),
+                Error::<T>::CannotExceedReferralCutPercentLimit
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            <ReferralCut<T>>::put(value);
+            ReferralCut::put(percent_value);
 
-            Self::deposit_event(RawEvent::ReferralCutUpdated(value));
+            Self::deposit_event(RawEvent::ReferralCutUpdated(percent_value));
         }
 
         /// Transfers invites from one member to another.
@@ -630,11 +680,10 @@ decl_module! {
         /// - DB:
         ///    - O(V)
         /// # </weight>
+        // TODO: adjust weight
         #[weight = WeightInfoMembership::<T>::invite_member(
-            Module::<T>::text_length_unwrap_or_default(&params.name),
             Module::<T>::text_length_unwrap_or_default(&params.handle),
-            Module::<T>::text_length_unwrap_or_default(&params.avatar_uri),
-            Module::<T>::text_length_unwrap_or_default(&params.about),
+            params.metadata.len().saturated_into(),
         )]
         pub fn invite_member(
             origin,
@@ -648,7 +697,7 @@ decl_module! {
             ensure!(membership.invites > Zero::zero(), Error::<T>::NotEnoughInvites);
 
             let handle_hash = Self::get_handle_hash(
-                params.handle,
+                &params.handle,
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
@@ -657,6 +706,14 @@ decl_module! {
             ensure!(
                 default_invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
+            );
+
+            // Check for existing invitation locks.
+            ensure!(
+                T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
+                    &params.controller_account
+                ),
+                Error::<T>::ConflictingLock,
             );
 
             //
@@ -693,7 +750,7 @@ decl_module! {
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberRegistered(member_id));
+            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
@@ -733,17 +790,13 @@ decl_module! {
 
             let leader_member_id = T::WorkingGroup::get_leader_member_id();
 
-            if let Some(member_id) = leader_member_id{
-                Self::ensure_membership(member_id)?;
-            }
-
             ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(member_id) = leader_member_id{
+            if let Some(member_id) = leader_member_id {
                 <MembershipById<T>>::mutate(&member_id, |membership| {
                         membership.invites = invitation_quota;
                 });
@@ -817,9 +870,29 @@ decl_module! {
 
             Self::ensure_membership(member_id)?;
 
+            ensure!(
+              T::StakingCandidateStakingHandler::is_account_free_of_conflicting_stakes(
+                  &staking_account_id
+              ),
+              Error::<T>::ConflictStakesOnAccount
+            );
+
+            ensure!(
+                T::StakingCandidateStakingHandler::is_enough_balance_for_stake(
+                    &staking_account_id,
+                    T::CandidateStake::get()
+                ),
+                Error::<T>::InsufficientBalanceToCoverStake
+            );
+
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::lock(
+                &staking_account_id,
+                T::CandidateStake::get(),
+            );
 
             <StakingAccountIdMemberStatus<T>>::insert(
                 staking_account_id.clone(),
@@ -855,6 +928,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            T::StakingCandidateStakingHandler::unlock(&staking_account_id);
 
             <StakingAccountIdMemberStatus<T>>::remove(staking_account_id.clone());
 
@@ -920,22 +995,19 @@ impl<T: Trait> Module<T> {
     }
 
     // Helper for buy_membership extrinsic weight calculation
+    // TODO: adjust weight
     fn calculate_weight_for_buy_membership(
         params: &BuyMembershipParameters<T::AccountId, T::MemberId>,
     ) -> Weight {
         if params.referrer_id.is_some() {
             WeightInfoMembership::<T>::buy_membership_with_referrer(
-                Self::text_length_unwrap_or_default(&params.name),
                 Self::text_length_unwrap_or_default(&params.handle),
-                Self::text_length_unwrap_or_default(&params.avatar_uri),
-                Self::text_length_unwrap_or_default(&params.about),
+                params.metadata.len().saturated_into(),
             )
         } else {
             WeightInfoMembership::<T>::buy_membership_without_referrer(
-                Self::text_length_unwrap_or_default(&params.name),
                 Self::text_length_unwrap_or_default(&params.handle),
-                Self::text_length_unwrap_or_default(&params.avatar_uri),
-                Self::text_length_unwrap_or_default(&params.about),
+                params.metadata.len().saturated_into(),
             )
         }
     }
@@ -973,9 +1045,11 @@ impl<T: Trait> Module<T> {
     }
 
     // Validate handle and return its hash.
-    fn get_handle_hash(handle: Option<Vec<u8>>) -> Result<Vec<u8>, Error<T>> {
+    fn get_handle_hash(handle: &Option<Vec<u8>>) -> Result<Vec<u8>, Error<T>> {
         // Handle is required during registration
-        let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
+        let handle = handle
+            .as_ref()
+            .ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
 
         if handle.is_empty() {
             return Err(Error::<T>::HandleMustBeProvidedDuringRegistration);
@@ -1044,12 +1118,15 @@ impl<T: Trait> Module<T> {
         Ok(membership)
     }
 
-    // Calculate current referral bonus. It minimum between membership fee and referral cut.
+    // Calculate current referral bonus as a percent of the membership fee.
     pub(crate) fn get_referral_bonus() -> BalanceOf<T> {
         let membership_fee = Self::membership_price();
         let referral_cut = Self::referral_cut();
 
-        membership_fee.min(referral_cut)
+        let referral_cut = Perbill::from_percent(referral_cut.into()) * membership_fee;
+
+        // Cannot be greater than 100%
+        referral_cut.min(membership_fee)
     }
 
     // Verifies registration of the staking account for ANY member.

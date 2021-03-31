@@ -33,7 +33,7 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::traits::{EnsureOrigin, Get, WithdrawReason};
+use frame_support::traits::{EnsureOrigin, Get};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
@@ -316,7 +316,7 @@ decl_event! {
         VoteCast(AccountId, Hash, Balance),
 
         /// User revealed his vote
-        VoteRevealed(AccountId, MemberId),
+        VoteRevealed(AccountId, MemberId, Vec<u8>),
 
         /// User released his stake
         StakeReleased(AccountId),
@@ -471,7 +471,7 @@ decl_module! {
             Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id, salt));
 
             Ok(())
         }
@@ -694,7 +694,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         current_cycle_id: &u64,
     ) -> Result<(), Error<T, I>> {
         // Should call after `can_vote`
-        T::StakingHandler::lock_with_reasons(account_id, *stake, WithdrawReason::Transfer.into());
+        T::StakingHandler::lock(account_id, *stake);
 
         // store vote
         Votes::<T, I>::insert(

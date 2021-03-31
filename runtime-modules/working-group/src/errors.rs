@@ -42,8 +42,8 @@ decl_error! {
         /// Signer is not worker role account.
         SignerIsNotWorkerRoleAccount,
 
-        /// Cannot stake zero.
-        CannotStakeZero,
+        /// Staking less than the lower bound.
+        BelowMinimumStakes,
 
         /// Insufficient balance to cover stake.
         InsufficientBalanceToCoverStake,
@@ -72,9 +72,6 @@ decl_error! {
         /// Specified unstaking period is less then minimum set for the group.
         UnstakingPeriodLessThanMinimum,
 
-        /// Requested operation with stake is impossible because of stake was not defined for the role.
-        CannotChangeStakeWithoutStakingAccount,
-
         /// Invalid spending amount.
         CannotSpendZero,
 
@@ -86,5 +83,8 @@ decl_error! {
 
         /// Cannot decrease stake - stake delta greater than initial stake.
         CannotDecreaseStakeDeltaGreaterThanStake,
+
+        /// Trying to fill opening with an application for other opening
+        ApplicationsNotForOpening,
     }
 }

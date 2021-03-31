@@ -1,5 +1,6 @@
 #![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::Currency;
 use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
@@ -10,13 +11,24 @@ use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Worker,
+    StakePolicy, Trait, Worker,
 };
 
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, u64, u64, u64, DefaultInstance>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
     ) {
         let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
 
@@ -35,12 +47,12 @@ impl EventFixture {
 }
 
 pub struct AddOpeningFixture {
-    origin: RawOrigin<u64>,
-    description: Vec<u8>,
-    opening_type: OpeningType,
-    starting_block: u64,
-    stake_policy: Option<StakePolicy<u64, u64>>,
-    reward_per_block: Option<u64>,
+    pub origin: RawOrigin<u64>,
+    pub description: Vec<u8>,
+    pub opening_type: OpeningType,
+    pub starting_block: u64,
+    pub stake_policy: StakePolicy<u64, u64>,
+    pub reward_per_block: Option<u64>,
 }
 
 impl Default for AddOpeningFixture {
@@ -50,7 +62,10 @@ impl Default for AddOpeningFixture {
             description: b"human_text".to_vec(),
             opening_type: OpeningType::Regular,
             starting_block: 0,
-            stake_policy: None,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
             reward_per_block: None,
         }
     }
@@ -79,6 +94,11 @@ impl AddOpeningFixture {
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
                 reward_per_block: self.reward_per_block.clone(),
+                creation_stake: if self.opening_type == OpeningType::Regular {
+                    <Test as Trait>::LeaderOpeningStake::get()
+                } else {
+                    0
+                },
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -118,7 +138,7 @@ impl AddOpeningFixture {
         }
     }
 
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
         Self {
             stake_policy,
             ..self
@@ -140,7 +160,8 @@ pub struct ApplyOnOpeningFixture {
     role_account_id: u64,
     reward_account_id: u64,
     description: Vec<u8>,
-    stake_parameters: Option<StakeParameters<u64, u64>>,
+    stake_parameters: StakeParameters<u64, u64>,
+    initial_balance: u64,
 }
 
 impl ApplyOnOpeningFixture {
@@ -151,52 +172,76 @@ impl ApplyOnOpeningFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>, member_id: u64) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u64>, id: u64) -> Self {
         Self {
             origin,
-            member_id,
+            stake_parameters: StakeParameters {
+                staking_account_id: id,
+                ..self.stake_parameters
+            },
+            member_id: id,
+            role_account_id: id,
+            reward_account_id: id,
             ..self
         }
     }
 
-    pub fn with_stake_parameters(
-        self,
-        stake_parameters: Option<StakeParameters<u64, u64>>,
-    ) -> Self {
+    pub fn with_stake_parameters(self, stake_parameters: StakeParameters<u64, u64>) -> Self {
         Self {
             stake_parameters,
             ..self
         }
     }
 
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
     pub fn default_for_opening_id(opening_id: u64) -> Self {
         Self {
-            origin: RawOrigin::Signed(1),
-            member_id: 1,
+            origin: RawOrigin::Signed(2),
+            member_id: 2,
             opening_id,
-            role_account_id: 1,
-            reward_account_id: 1,
+            role_account_id: 2,
+            reward_account_id: 2,
             description: b"human_text".to_vec(),
-            stake_parameters: None,
+            stake_parameters: StakeParameters {
+                stake: <Test as Trait>::MinimumApplicationStake::get(),
+                staking_account_id: 2,
+            },
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+        }
+    }
+
+    pub fn get_apply_on_opening_parameters(&self) -> ApplyOnOpeningParameters<Test> {
+        ApplyOnOpeningParameters::<Test> {
+            member_id: self.member_id,
+            opening_id: self.opening_id,
+            role_account_id: self.role_account_id,
+            reward_account_id: self.reward_account_id,
+            description: self.description.clone(),
+            stake_parameters: self.stake_parameters.clone(),
         }
     }
 
     pub fn call(&self) -> Result<u64, DispatchError> {
+        balances::Module::<Test>::make_free_balance_be(
+            &self.stake_parameters.staking_account_id,
+            self.initial_balance,
+        );
+
         let saved_application_next_id = TestWorkingGroup::next_application_id();
         TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
-            ApplyOnOpeningParameters::<Test> {
-                member_id: self.member_id,
-                opening_id: self.opening_id,
-                role_account_id: self.role_account_id,
-                reward_account_id: self.reward_account_id,
-                description: self.description.clone(),
-                stake_parameters: self.stake_parameters.clone(),
-            },
+            self.get_apply_on_opening_parameters(),
         )?;
 
         Ok(saved_application_next_id)
     }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
 
@@ -216,12 +261,10 @@ impl ApplyOnOpeningFixture {
             let expected_application = Application::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
-                staking_account_id: self
-                    .stake_parameters
-                    .clone()
-                    .map(|sp| sp.staking_account_id),
+                staking_account_id: self.stake_parameters.staking_account_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
+                opening_id: self.opening_id,
             };
 
             assert_eq!(actual_application, expected_application);
@@ -234,11 +277,11 @@ impl ApplyOnOpeningFixture {
 pub struct FillOpeningFixture {
     origin: RawOrigin<u64>,
     opening_id: u64,
-    successful_application_ids: BTreeSet<u64>,
+    pub successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
     reward_account_id: u64,
-    staking_account_id: Option<u64>,
-    stake_policy: Option<StakePolicy<u64, u64>>,
+    staking_account_id: u64,
+    stake_policy: StakePolicy<u64, u64>,
     reward_per_block: Option<u64>,
     created_at: u64,
 }
@@ -251,10 +294,13 @@ impl FillOpeningFixture {
             origin: RawOrigin::Signed(1),
             opening_id,
             successful_application_ids: application_ids,
-            role_account_id: 1,
-            reward_account_id: 1,
-            staking_account_id: None,
-            stake_policy: None,
+            role_account_id: 2,
+            reward_account_id: 2,
+            staking_account_id: 2,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
             reward_per_block: None,
             created_at: 0,
         }
@@ -268,14 +314,14 @@ impl FillOpeningFixture {
         Self { created_at, ..self }
     }
 
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
         Self {
             stake_policy,
             ..self
         }
     }
 
-    pub fn with_staking_account_id(self, staking_account_id: Option<u64>) -> Self {
+    pub fn with_staking_account_id(self, staking_account_id: u64) -> Self {
         Self {
             staking_account_id,
             ..self
@@ -321,15 +367,12 @@ impl FillOpeningFixture {
             }
 
             let expected_worker = Worker::<Test> {
-                member_id: 1,
+                member_id: 2,
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
                 staking_account_id: self.staking_account_id,
                 started_leaving_at: None,
-                job_unstaking_period: self
-                    .stake_policy
-                    .as_ref()
-                    .map_or(0, |sp| sp.leaving_unstaking_period),
+                job_unstaking_period: self.stake_policy.leaving_unstaking_period,
                 reward_per_block: self.reward_per_block,
                 missed_reward: None,
                 created_at: self.created_at,
@@ -354,20 +397,36 @@ impl FillOpeningFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
-    stake_policy: Option<StakePolicy<u64, u64>>,
+    stake_policy: StakePolicy<u64, u64>,
     reward_per_block: Option<u64>,
+    lead_id: u64,
+    initial_balance: u64,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
-            stake_policy: None,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
             reward_per_block: None,
+            lead_id: 1,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get()
+                + <Test as Trait>::LeaderOpeningStake::get()
+                + 1,
         }
     }
 }
 impl HireLeadFixture {
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
     pub fn with_setup_environment(self, setup_environment: bool) -> Self {
         Self {
             setup_environment,
@@ -375,7 +434,7 @@ impl HireLeadFixture {
         }
     }
 
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
         Self {
             stake_policy,
             ..self
@@ -389,46 +448,59 @@ impl HireLeadFixture {
         }
     }
 
-    pub fn hire_lead(self) -> u64 {
+    fn get_hiring_workflow(self) -> HiringWorkflow {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(OpeningType::Leader)
             .with_stake_policy(self.stake_policy)
             .with_reward_per_block(self.reward_per_block)
-            .add_application(b"leader".to_vec())
-            .execute()
-            .unwrap()
+            .with_initial_balance(self.initial_balance)
+            .add_application_full(
+                b"leader".to_vec(),
+                RawOrigin::Signed(self.lead_id),
+                self.lead_id,
+                self.lead_id,
+            )
+    }
+
+    pub fn hire_lead(self) -> u64 {
+        self.get_hiring_workflow().execute().unwrap()
     }
 
     pub fn expect(self, error: DispatchError) {
-        HiringWorkflow::default()
-            .with_setup_environment(self.setup_environment)
-            .with_opening_type(OpeningType::Leader)
-            .with_stake_policy(self.stake_policy)
-            .with_reward_per_block(self.reward_per_block)
-            .add_application(b"leader".to_vec())
-            .expect(Err(error))
-            .execute();
+        self.get_hiring_workflow().expect(Err(error)).execute();
     }
 }
 
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
-    stake_policy: Option<StakePolicy<u64, u64>>,
+    stake_policy: StakePolicy<u64, u64>,
     reward_per_block: Option<u64>,
+    initial_balance: u64,
 }
 
 impl Default for HireRegularWorkerFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
-            stake_policy: None,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
             reward_per_block: None,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
         }
     }
 }
 impl HireRegularWorkerFixture {
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
         Self {
             stake_policy,
             ..self
@@ -448,6 +520,7 @@ impl HireRegularWorkerFixture {
             .with_opening_type(OpeningType::Regular)
             .with_stake_policy(self.stake_policy)
             .with_reward_per_block(self.reward_per_block)
+            .with_initial_balance(self.initial_balance)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()
@@ -491,26 +564,17 @@ impl UpdateWorkerRoleAccountFixture {
 pub(crate) struct LeaveWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
-    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl LeaveWorkerRoleFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         Self {
             worker_id,
-            origin: RawOrigin::Signed(1),
-            stake_policy: None,
+            origin: RawOrigin::Signed(2),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
-        Self {
-            stake_policy,
-            ..self
-        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -519,16 +583,14 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            if self.stake_policy.is_some() {
-                let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
 
-                if worker.job_unstaking_period > 0 {
-                    assert_eq!(
-                        worker.started_leaving_at,
-                        Some(<frame_system::Module<Test>>::block_number())
-                    );
-                    return;
-                }
+            if worker.job_unstaking_period > 0 {
+                assert_eq!(
+                    worker.started_leaving_at,
+                    Some(<frame_system::Module<Test>>::block_number())
+                );
+                return;
             }
 
             assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
@@ -541,8 +603,8 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
-    penalty: Option<u64>,
-    rationale: Option<Vec<u8>>,
+    pub penalty: Option<u64>,
+    pub rationale: Option<Vec<u8>>,
 }
 
 impl TerminateWorkerRoleFixture {
@@ -596,7 +658,7 @@ pub struct SlashWorkerStakeFixture {
 
 impl SlashWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
+        let account_id = 2;
 
         let lead_account_id = get_current_lead_account_id();
 
@@ -614,6 +676,10 @@ impl SlashWorkerStakeFixture {
 
     pub fn with_penalty(self, penalty: u64) -> Self {
         Self { penalty, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -671,7 +737,7 @@ pub struct DecreaseWorkerStakeFixture {
 
 impl DecreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
+        let account_id = 2;
 
         let lead_account_id = get_current_lead_account_id();
 
@@ -682,6 +748,11 @@ impl DecreaseWorkerStakeFixture {
             account_id,
         }
     }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
@@ -703,7 +774,10 @@ impl DecreaseWorkerStakeFixture {
 
         if actual_result.is_ok() {
             // new stake was set
-            assert_eq!(self.balance, get_stake_balance(&self.account_id));
+            assert_eq!(
+                old_stake - self.balance,
+                get_stake_balance(&self.account_id)
+            );
 
             let new_balance = Balances::usable_balance(&self.account_id);
 
@@ -722,9 +796,9 @@ pub struct IncreaseWorkerStakeFixture {
 
 impl IncreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
+        let account_id = 2;
         Self {
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
             account_id,
@@ -732,6 +806,10 @@ impl IncreaseWorkerStakeFixture {
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
     }
 
     pub fn with_balance(self, balance: u64) -> Self {
@@ -794,10 +872,10 @@ impl WithdrawApplicationFixture {
 
     pub fn default_for_application_id(application_id: u64) -> Self {
         Self {
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(2),
             application_id,
             stake: false,
-            account_id: 1,
+            account_id: 2,
         }
     }
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -921,7 +999,7 @@ impl UpdateRewardAccountFixture {
         Self {
             worker_id,
             new_reward_account_id,
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(2),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {

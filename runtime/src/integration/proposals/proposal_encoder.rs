@@ -34,7 +34,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
     fn encode_proposal(proposal_details: ProposalDetailsOf<Runtime>) -> Vec<u8> {
         let call = match proposal_details {
             ProposalDetails::Signal(signal) => {
-                Call::ProposalsCodex(proposals_codex::Call::execute_signal_proposal(signal))
+                Call::JoystreamUtility(joystream_utility::Call::execute_signal_proposal(signal))
             }
             ProposalDetails::FundingRequest(params) => {
                 Call::Council(council::Call::funding_request(params))
@@ -42,8 +42,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetMaxValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),
             ),
-            ProposalDetails::RuntimeUpgrade(blob) => Call::ProposalsCodex(
-                proposals_codex::Call::execute_runtime_upgrade_proposal(blob),
+            ProposalDetails::RuntimeUpgrade(blob) => Call::JoystreamUtility(
+                joystream_utility::Call::execute_runtime_upgrade_proposal(blob),
             ),
             ProposalDetails::CreateWorkingGroupLeadOpening(create_opening_params) => {
                 wrap_working_group_call!(
@@ -58,7 +58,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::UpdateWorkingGroupBudget(amount, working_group, balance_kind) => {
-                Call::ProposalsCodex(proposals_codex::Call::update_working_group_budget(
+                Call::JoystreamUtility(joystream_utility::Call::update_working_group_budget(
                     working_group,
                     amount,
                     balance_kind,
@@ -124,6 +124,19 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ),
             ProposalDetails::SetReferralCut(new_referral_cut) => {
                 Call::Members(membership::Call::set_referral_cut(new_referral_cut))
+            }
+            ProposalDetails::CreateBlogPost(title, body) => {
+                Call::Blog(blog::Call::create_post(title, body))
+            }
+            ProposalDetails::EditBlogPost(post_id, title, body) => {
+                Call::Blog(blog::Call::edit_post(post_id, title, body))
+            }
+            ProposalDetails::LockBlogPost(post_id) => Call::Blog(blog::Call::lock_post(post_id)),
+            ProposalDetails::UnlockBlogPost(post_id) => {
+                Call::Blog(blog::Call::unlock_post(post_id))
+            }
+            ProposalDetails::VetoProposal(proposal_id) => {
+                Call::ProposalsEngine(proposals_engine::Call::veto_proposal(proposal_id))
             }
         };
 

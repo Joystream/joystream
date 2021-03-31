@@ -86,10 +86,8 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -141,7 +139,9 @@ fn create_proposal<T: Trait + membership::Trait>(
         approval_threshold_percentage: 1,
         slashing_quorum_percentage: 0,
         slashing_threshold_percentage: 1,
-        required_stake: Some(T::Balance::max_value()),
+        required_stake: Some(
+            T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
+        ),
         constitutionality,
     };
 
@@ -190,7 +190,7 @@ fn create_proposal<T: Trait + membership::Trait>(
 
     assert_eq!(
         <T as Trait>::StakingHandler::current_stake(&account_id),
-        T::Balance::max_value()
+        T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
     );
 
     (account_id, member_id, proposal_id)
@@ -364,12 +364,13 @@ benchmarks! {
         let (council, last_id) = elect_council::<T>(1);
         let (account_voter_id, member_voter_id) = council[0].clone();
         let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);
+        let rationale = vec![0u8; i.try_into().unwrap()];
     }: _ (
             RawOrigin::Signed(account_voter_id),
             member_voter_id,
             proposal_id,
             VoteKind::Approve,
-            vec![0u8; i.try_into().unwrap()]
+            rationale.clone()
         )
     verify {
         assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still exist");
@@ -394,7 +395,7 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into()
+            RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve, rationale).into()
         );
     }
 
@@ -421,12 +422,12 @@ benchmarks! {
 
         assert_eq!(
             Balances::<T>::usable_balance(account_id),
-            T::Balance::max_value() - T::CancellationFee::get(),
+            T::Balance::max_value() - T::CancellationFee::get() - T::CandidateStake::get(),
             "Balance not slashed"
         );
 
         assert_last_event::<T>(
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled).into()
+            RawEvent::ProposalCancelled(member_id, proposal_id).into()
         );
     }
 
@@ -445,7 +446,7 @@ benchmarks! {
 
         assert_eq!(
             Balances::<T>::usable_balance(account_id),
-            T::Balance::max_value(),
+            T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
             "Vetoed proposals shouldn't be slashed"
         );
 
@@ -676,7 +677,7 @@ benchmarks! {
             );
 
             assert_eq!(
-                Balances::<T>::free_balance(&proposer_account_id),
+                Balances::<T>::usable_balance(&proposer_account_id),
                 Zero::zero(),
                 "Should've all balance slashed"
             );

@@ -156,7 +156,7 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl balances::Trait for Test {
@@ -181,6 +181,9 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl common::membership::Trait for Test {
@@ -191,10 +194,10 @@ impl common::membership::Trait for Test {
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -218,7 +221,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -254,6 +257,10 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
@@ -309,6 +316,15 @@ impl crate::Trait for Test {
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
     type WeightInfo = ();
+    type StakingAccountValidator = ();
+}
+
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
+
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
 }
 
 impl crate::WeightInfo for () {

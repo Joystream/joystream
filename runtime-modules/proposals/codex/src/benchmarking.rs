@@ -2,7 +2,9 @@
 use super::*;
 use crate::Module as Codex;
 use balances::Module as Balances;
-use frame_benchmarking::{account, benchmarks};
+use common::working_group::WorkingGroup;
+use common::BalanceKind;
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -18,10 +20,7 @@ use sp_std::prelude::*;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-// Note: We use proposals_engine::Trait::Event here because crate::Trait
-// doesn't implement Event and we only use this function to assert events
-// from the proposals_engine pallet
-fn assert_last_event<T: Trait>(generic_event: <T as proposals_engine::Trait>::Event) {
+fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
     assert!(
@@ -61,16 +60,27 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+
+    let member_id = T::MemberId::from(id.try_into().unwrap());
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id.clone(),
+        account_id.clone(),
+    )
+    .unwrap();
 
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
@@ -95,6 +105,7 @@ fn create_proposal_parameters<T: Trait + membership::Trait>(
 fn create_proposal_verify<T: Trait>(
     account_id: T::AccountId,
     member_id: T::MemberId,
+    proposal_parameters: GeneralProposalParameters<T>,
     proposal_details: ProposalDetailsOf<T>,
 ) {
     assert_eq!(Discussion::<T>::thread_count(), 1, "No threads created");
@@ -141,14 +152,14 @@ fn create_proposal_verify<T: Trait>(
         1,
         "Proposal count not updated"
     );
+
     assert_eq!(
         Engine::<T>::active_proposal_count(),
         1,
         "Active proposal count not updated"
     );
-    assert_last_event::<T>(
-        proposals_engine::RawEvent::ProposalCreated(member_id, proposal_id).into(),
-    );
+
+    assert_last_event::<T>(RawEvent::ProposalCreated(proposal_parameters, proposal_details).into());
 
     assert!(
         ThreadIdByProposalId::<T>::contains_key(proposal_id),
@@ -159,78 +170,41 @@ fn create_proposal_verify<T: Trait>(
         thread_id,
         "Proposal and thread ID doesn't match"
     );
-
-    assert!(
-        ProposalDetailsByProposalId::<T>::contains_key(proposal_id),
-        "Proposal details not stored"
-    );
-
-    assert_eq!(
-        ProposalDetailsByProposalId::<T>::get(proposal_id),
-        proposal_details,
-        "Proposal details doesn't match"
-    );
-}
-
-fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
-    Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
-
-    T::set_working_group_budget(group, BalanceOf::<T>::from(budget));
-
-    assert_eq!(
-        Council::<T>::budget(),
-        BalanceOf::<T>::from(budget),
-        "Council budget not updated"
-    );
-
-    assert_eq!(
-        T::get_working_group_budget(group),
-        BalanceOf::<T>::from(budget),
-        "Working Group budget not updated"
-    );
-}
-
-fn assert_new_budgets<T: Trait>(
-    new_budget_council: u32,
-    new_budget_working_group: u32,
-    group: WorkingGroup,
-) {
-    assert_eq!(
-        Council::<T>::budget(),
-        BalanceOf::<T>::from(new_budget_council),
-        "Council budget not updated"
-    );
-
-    assert_eq!(
-        T::get_working_group_budget(group),
-        BalanceOf::<T>::from(new_budget_working_group),
-        "Working Group budget not updated"
-    );
 }
 
 benchmarks! {
-    where_clause { where T: membership::Trait }
+    where_clause {
+        where T: membership::Trait,
+        T: council::Trait,
+        T: working_group::Trait<working_group::Instance1>
+    }
+
     _ {
         let t in 1 .. T::TitleMaxLength::get() => ();
         let d in 1 .. T::DescriptionMaxLength::get() => ();
     }
-
-    // Note: No verify since there is no side effect to test
-    execute_signal_proposal {
-        let i in 1 .. MAX_BYTES;
-    }: _(RawOrigin::Root, vec![0u8; i.try_into().unwrap()])
 
     create_proposal_signal {
         let i in 1 .. MAX_BYTES;
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::Signal(vec![0u8; i.try_into().unwrap()]);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details,
+        );
     }
 
     create_proposal_runtime_upgrade {
@@ -238,12 +212,22 @@ benchmarks! {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::RuntimeUpgrade(vec![0u8; i.try_into().unwrap()]);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_funding_request {
@@ -251,9 +235,13 @@ benchmarks! {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
-        council::Module::<T>::set_budget(RawOrigin::Root.into(), council::Balance::<T>::max_value()).unwrap();
+        council::Module::<T>::set_budget(
+            RawOrigin::Root.into(),
+            council::Balance::<T>::max_value()
+        ).unwrap();
 
         let mut funding_requests =
             Vec::<common::FundingRequestParameters<council::Balance::<T>, T::AccountId>>::new();
@@ -266,21 +254,62 @@ benchmarks! {
         }
 
         let proposal_details = ProposalDetails::FundingRequest(funding_requests);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_max_validator_count {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_veto_proposal {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::VetoProposal(0.into());
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_create_working_group_lead_opening {
@@ -288,104 +317,171 @@ benchmarks! {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::CreateWorkingGroupLeadOpening(CreateOpeningParameters {
-            description: vec![0u8; i.try_into().unwrap()],
-            stake_policy: None,
-            reward_per_block: None,
-            group: WorkingGroup::Forum,
+        let proposal_details = ProposalDetails::CreateWorkingGroupLeadOpening(
+            CreateOpeningParameters {
+                description: vec![0u8; i.try_into().unwrap()],
+                stake_policy: working_group::StakePolicy {
+                    stake_amount:
+                        <T as working_group::Trait<working_group::Instance1>>
+                            ::MinimumApplicationStake::get(),
+                    leaving_unstaking_period: Zero::zero(),
+                },
+                reward_per_block: None,
+                group: WorkingGroup::Forum,
         });
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_fill_working_group_lead_opening {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::FillWorkingGroupLeadOpening(FillOpeningParameters {
             opening_id: working_group::OpeningId::zero(),
             application_id: working_group::ApplicationId::zero(),
             working_group: WorkingGroup::Forum,
         });
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters.clone(),
+            proposal_details
+        );
     }
 
     create_proposal_update_working_group_budget {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::UpdateWorkingGroupBudget(
             One::one(),
             WorkingGroup::Forum,
             BalanceKind::Positive
         );
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_decrease_working_group_lead_stake {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::DecreaseWorkingGroupLeadStake(
             working_group::WorkerId::<T>::zero(),
             BalanceOf::<T>::one(),
             WorkingGroup::Forum,
         );
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_slash_working_group_lead {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SlashWorkingGroupLead(
             working_group::WorkerId::<T>::zero(),
             BalanceOf::<T>::one(),
             WorkingGroup::Forum,
         );
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_working_group_lead_reward {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetWorkingGroupLeadReward(
             working_group::WorkerId::<T>::zero(),
             None,
             WorkingGroup::Forum,
         );
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_terminate_working_group_lead {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::TerminateWorkingGroupLead(
             TerminateRoleParameters {
@@ -394,9 +490,18 @@ benchmarks! {
                 group: WorkingGroup::Forum,
             }
         );
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_amend_constitution {
@@ -404,168 +509,302 @@ benchmarks! {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::AmendConstitution(vec![0u8; i.try_into().unwrap()]);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+        let proposal_details =
+            ProposalDetails::AmendConstitution(vec![0u8; i.try_into().unwrap()]);
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_cancel_working_group_lead_opening {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::CancelWorkingGroupLeadOpening(
             working_group::OpeningId::zero(),
             WorkingGroup::Forum);
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_membership_price {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_parameters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetMembershipPrice(BalanceOf::<T>::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_parameters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_parameters,
+            proposal_details
+        );
     }
 
     create_proposal_set_council_budget_increment {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetCouncilBudgetIncrement(BalanceOf::<T>::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_councilor_reward {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetCouncilorReward(BalanceOf::<T>::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_initial_invitation_balance {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetInitialInvitationBalance(BalanceOf::<T>::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_initial_invitation_count {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetInitialInvitationCount(One::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_membership_lead_invitation_quota {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetMembershipLeadInvitationQuota(One::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
     create_proposal_set_referral_cut {
         let t in ...;
         let d in ...;
 
-        let (account_id, member_id, general_proposal_paramters) = create_proposal_parameters::<T>(t, d);
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetReferralCut(One::one());
-    }: create_proposal(RawOrigin::Signed(account_id.clone()), general_proposal_paramters, proposal_details.clone())
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        create_proposal_verify::<T>(account_id, member_id, proposal_details);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
-    update_working_group_budget_positive_forum {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Forum, One::one(), BalanceKind::Positive)
+    create_proposal_create_blog_post {
+        let t in ...;
+        let d in ...;
+        let h in 1 .. MAX_BYTES;
+        let b in 1 .. MAX_BYTES;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::CreateBlogPost(
+                vec![0; h.try_into().unwrap()],
+                vec![0; b.try_into().unwrap()],
+            );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Forum);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
-    update_working_group_budget_negative_forum {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Forum);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Forum, One::one(), BalanceKind::Negative)
-    verify{
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Forum);
+    create_proposal_edit_blog_post {
+        let t in ...;
+        let d in ...;
+        let h in 1 .. MAX_BYTES;
+        let b in 1 .. MAX_BYTES;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::EditBlogPost(
+                0,
+                Some(vec![0; h.try_into().unwrap()]),
+                Some(vec![0; b.try_into().unwrap()]),
+            );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
-    update_working_group_budget_positive_storage {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Storage, One::one(), BalanceKind::Positive)
+    create_proposal_lock_blog_post {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::LockBlogPost(0);
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Storage);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
-    update_working_group_budget_negative_storage {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Storage);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Storage, One::one(), BalanceKind::Negative)
+    create_proposal_unlock_blog_post {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UnlockBlogPost(0);
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
     verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Storage);
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
     }
 
-    update_working_group_budget_positive_content {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Content, One::one(), BalanceKind::Positive)
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Content);
-    }
-
-    update_working_group_budget_negative_content {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Content);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Content, One::one(),
-    BalanceKind::Negative)
-    verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Content);
-    }
-
-    update_working_group_budget_positive_membership {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Membership, One::one(), BalanceKind::Positive)
-    verify {
-        assert_new_budgets::<T>(99, 101, WorkingGroup::Membership);
-    }
-
-    update_working_group_budget_negative_membership {
-        set_wg_and_council_budget::<T>(100, WorkingGroup::Membership);
-    }: update_working_group_budget(RawOrigin::Root, WorkingGroup::Membership, One::one(), BalanceKind::Negative)
-    verify {
-        assert_new_budgets::<T>(101, 99, WorkingGroup::Membership);
-    }
 }
 
 #[cfg(test)]
@@ -573,13 +812,6 @@ mod tests {
     use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
-
-    #[test]
-    fn test_execute_signal_proposal() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_execute_signal_proposal::<Test>());
-        });
-    }
 
     #[test]
     fn test_create_proposal_signal() {
@@ -719,62 +951,37 @@ mod tests {
     }
 
     #[test]
-    fn test_update_working_group_budget_positive_forum() {
+    fn test_create_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_forum::<
-                Test,
-            >());
+            assert_ok!(test_benchmark_create_proposal_create_blog_post::<Test>());
         });
     }
 
     #[test]
-    fn test_update_working_group_budget_negative_forum() {
+    fn test_edit_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_forum::<
-                Test,
-            >());
+            assert_ok!(test_benchmark_create_proposal_edit_blog_post::<Test>());
         });
     }
 
     #[test]
-    fn test_update_working_group_budget_positive_storage() {
+    fn test_lock_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_storage::<Test>());
+            assert_ok!(test_benchmark_create_proposal_lock_blog_post::<Test>());
         });
     }
 
     #[test]
-    fn test_update_working_group_budget_negative_storage() {
+    fn test_unlock_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_storage::<Test>());
+            assert_ok!(test_benchmark_create_proposal_unlock_blog_post::<Test>());
         });
     }
 
     #[test]
-    fn test_update_working_group_budget_positive_content() {
+    fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_content::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_content() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_content::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_positive_membership() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive_membership::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_update_working_group_budget_negative_membership() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative_membership::<Test>());
+            assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
         });
     }
 }

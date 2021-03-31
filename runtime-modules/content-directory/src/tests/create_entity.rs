@@ -67,8 +67,11 @@ fn create_entity_success() {
         // Ensure `NextEntityId` storage value updated
         assert_eq!(next_entity_id(), SECOND_ENTITY_ID);
 
-        let entity_created_event =
-            get_test_event(RawEvent::EntityCreated(actor, next_entity_id() - 1));
+        let entity_created_event = get_test_event(RawEvent::EntityCreated(
+            actor,
+            next_entity_id() - 1,
+            FIRST_CLASS_ID,
+        ));
 
         // Last event checked
         assert_event(entity_created_event, number_of_events_before_call + 1);

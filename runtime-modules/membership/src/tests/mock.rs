@@ -83,9 +83,11 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -107,6 +109,10 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MinimumStakeForOpening: u32 = 50;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -118,14 +124,17 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl LockComparator<u64> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock == InvitedMemberLockId::get() {
+            existing_locks.contains(new_lock)
+        } else {
+            false
+        }
     }
 }
 
@@ -216,20 +225,16 @@ impl working_group::WeightInfo for Weights {
         unimplemented!()
     }
 
-    fn leave_role_immediatly() -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role_later() -> u64 {
+    fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
 }
 
 impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         0
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         0
     }
     fn update_profile(_: u32) -> Weight {
@@ -253,7 +258,7 @@ impl WeightInfo for () {
     fn transfer_invites() -> Weight {
         0
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         0
     }
     fn set_membership_price() -> Weight {
@@ -300,9 +305,13 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
 impl Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
 
@@ -310,6 +319,7 @@ pub const WORKING_GROUP_BUDGET: u64 = 100;
 
 thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+    pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
@@ -348,7 +358,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
-        Some(ALICE_MEMBER_ID)
+        LEAD_SET.with(|lead_set| {
+            if *lead_set.borrow() {
+                Some(ALICE_MEMBER_ID)
+            } else {
+                None
+            }
+        })
     }
 
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
@@ -399,6 +415,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.membership_config = Some(membership_config);
         self
     }
+
     pub fn build(self) -> sp_io::TestExternalities {
         // Add system
         let mut t = self
@@ -415,6 +432,14 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
         t.into()
     }
+
+    pub fn with_lead(self) -> Self {
+        LEAD_SET.with(|lead_set| {
+            *lead_set.borrow_mut() = true;
+        });
+
+        self
+    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
@@ -430,6 +455,7 @@ pub fn build_test_externalities_with_initial_members(
                 .members(initial_members)
                 .build(),
         )
+        .with_lead()
         .build()
 }
 

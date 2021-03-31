@@ -304,7 +304,7 @@ decl_storage! {
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
-            T::MemberId => Candidate<T::AccountId, Balance::<T>, T::Hash, VotePowerOf::<T>>;
+            T::MemberId => Candidate<T::AccountId, Balance<T>, T::Hash, VotePowerOf::<T>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period
         /// starts.
@@ -320,17 +320,17 @@ decl_storage! {
         pub NextBudgetRefill get(fn next_budget_refill) config(): T::BlockNumber;
 
         /// Amount of balance to be refilled every budget period
-        pub BudgetIncrement get(fn budget_increment) config(): Balance::<T>;
+        pub BudgetIncrement get(fn budget_increment) config(): Balance<T>;
 
         /// Councilor reward per block
-        pub CouncilorReward get(fn councilor_reward) config(): Balance::<T>;
+        pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
     }
 }
 
 decl_event! {
     pub enum Event<T>
     where
-        Balance = Balance::<T>,
+        Balance = Balance<T>,
         <T as frame_system::Trait>::BlockNumber,
         <T as common::membership::Trait>::MemberId,
         <T as frame_system::Trait>::AccountId,
@@ -345,7 +345,7 @@ decl_event! {
         VotingPeriodStarted(u64),
 
         /// New candidate announced
-        NewCandidate(MemberId, Balance),
+        NewCandidate(MemberId, AccountId, AccountId, Balance),
 
         /// New council was elected and appointed
         NewCouncilElected(Vec<MemberId>),
@@ -534,7 +534,11 @@ decl_module! {
 
             // prepare candidate
             let candidate =
-                Self::prepare_new_candidate(staking_account_id, reward_account_id, stake);
+                Self::prepare_new_candidate(
+                    staking_account_id.clone(),
+                    reward_account_id.clone(),
+                    stake
+                );
 
             //
             // == MUTATION SAFE ==
@@ -547,7 +551,12 @@ decl_module! {
             Mutations::<T>::announce_candidacy(&stage_data, &membership_id, &candidate, &stake);
 
             // emit event
-            Self::deposit_event(RawEvent::NewCandidate(membership_id, stake));
+            Self::deposit_event(RawEvent::NewCandidate(
+                    membership_id,
+                    staking_account_id,
+                    reward_account_id,
+                    stake
+                ));
 
             Ok(())
         }
@@ -703,7 +712,7 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = CouncilWeightInfo::<T>::set_budget_increment()]
-        pub fn set_budget_increment(origin, budget_increment: Balance::<T>) -> Result<(), Error<T>> {
+        pub fn set_budget_increment(origin, budget_increment: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_budget_increment(origin)?;
 
@@ -732,7 +741,7 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = CouncilWeightInfo::<T>::set_councilor_reward()]
-        pub fn set_councilor_reward(origin, councilor_reward: Balance::<T>) -> Result<(), Error<T>> {
+        pub fn set_councilor_reward(origin, councilor_reward: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_councilor_reward(origin)?;
 

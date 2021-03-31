@@ -199,5 +199,55 @@
         "slashing_threshold_percentage": 6,
         "required_stake": 7,
         "constitutionality": 8
+    },
+    "create_blog_post_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    },
+    "edit_blog_post_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    },
+    "lock_blog_post_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    },
+    "unlock_blog_post_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
+    },
+    "veto_proposal_proposal": {
+        "voting_period": 1,
+        "grace_period": 2,
+        "approval_quorum_percentage": 3,
+        "approval_threshold_percentage": 4,
+        "slashing_quorum_percentage": 5,
+        "slashing_threshold_percentage": 6,
+        "required_stake": 7,
+        "constitutionality": 8
     }
 }

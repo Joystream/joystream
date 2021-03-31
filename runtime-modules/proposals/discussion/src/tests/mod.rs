@@ -247,8 +247,8 @@ fn update_post_call_succeeds() {
 
         EventFixture::assert_events(vec![
             RawEvent::ThreadCreated(1, 1),
-            RawEvent::PostCreated(1, 1),
-            RawEvent::PostUpdated(1, 1),
+            RawEvent::PostCreated(1, 1, post_fixture.thread_id, post_fixture.text.clone()),
+            RawEvent::PostUpdated(1, 1, post_fixture.thread_id, post_fixture.text.clone()),
         ]);
     });
 }
@@ -395,7 +395,7 @@ fn change_thread_mode_succeeds() {
 
         EventFixture::assert_events(vec![
             RawEvent::ThreadCreated(1, 1),
-            RawEvent::ThreadModeChanged(1, thread_mode),
+            RawEvent::ThreadModeChanged(1, thread_mode, change_thread_mode_fixture.member_id),
         ]);
     });
 }
