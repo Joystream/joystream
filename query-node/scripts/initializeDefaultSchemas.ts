@@ -6,7 +6,7 @@ loadConfig()
 
 import BN from 'bn.js'
 import { nanoid } from 'nanoid'
-import { SnakeNamingStrategy } from '@dzlzv/hydra-indexer-lib/lib'
+import { SnakeNamingStrategy } from '@dzlzv/hydra-db-utils'
 import { createConnection, ConnectionOptions, getConnection, EntityManager } from 'typeorm'
 
 import { Video } from '../generated/graphql-server/src/modules/video/video.model'
@@ -105,7 +105,7 @@ export async function main(): Promise<void> {
     // ///////// Channel /////////////////
 
     // ///////// Category /////////////////
-    const category = new Category({ ...commonProperties, name: `Category(0) ${nanoid()}` })
+    const category = new Category({ ...commonProperties, name: `Other` })
     await db.save<Category>(category)
     // ///////// Category /////////////////
 
