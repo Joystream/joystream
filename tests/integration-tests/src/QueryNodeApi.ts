@@ -15,7 +15,7 @@ export class QueryNodeApi {
   public tryQueryWithTimeout<QueryResultT extends ApolloQueryResult<unknown>>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    timeoutMs = 120000,
+    timeoutMs = 210000,
     retryTimeMs = 30000
   ): Promise<QueryResultT> {
     const retryDebug = Debugger('query-node-api:retry')
