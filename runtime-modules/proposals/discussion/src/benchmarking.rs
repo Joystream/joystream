@@ -251,7 +251,8 @@ benchmarks! {
 
         let text = vec![0u8; j.try_into().unwrap()];
 
-    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone())
+        assert!(Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get());
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone(), true)
     verify {
         let post_id = T::PostId::from(1);
 
@@ -293,7 +294,8 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             caller_member_id,
             thread_id,
-            vec![0u8]
+            vec![0u8],
+            true
         ).unwrap();
 
         let post_id = T::PostId::from(1);

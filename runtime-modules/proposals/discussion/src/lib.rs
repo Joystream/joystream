@@ -54,11 +54,14 @@ mod tests;
 mod types;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::sp_runtime::ModuleId;
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
+use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, Parameter,
 };
+use sp_runtime::traits::{AccountIdConversion, Saturating};
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
@@ -68,6 +71,11 @@ use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
 pub use types::ThreadMode;
+
+/// Balance alias for `balances` module.
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+type Balances<T> = balances::Module<T>;
 
 /// Proposals discussion WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -98,6 +106,9 @@ decl_event!(
 
         /// Emits on thread mode change.
         ThreadModeChanged(ThreadId, ThreadMode<MemberId>, MemberId),
+
+        /// Emits on post deleted
+        PostDeleted(MemberId, ThreadId, PostId),
     }
 );
 
@@ -108,7 +119,7 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + common::membership::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -133,6 +144,15 @@ pub trait Trait: frame_system::Trait + common::membership::Trait {
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Fee for creating a post
+    type PostDeposit: Get<Self::Balance>;
+
+    /// The proposal_discussion module Id, used to derive the account Id to hold the thread bounty
+    type ModuleId: Get<ModuleId>;
+
+    /// Maximum number of blocks before a post can be erased by anyone
+    type PostLifeTime: Get<Self::BlockNumber>;
 }
 
 decl_error! {
@@ -155,6 +175,12 @@ decl_error! {
 
         /// Max allowed authors list limit exceeded.
         MaxWhiteListSizeExceeded,
+
+        /// Account has insufficient balance to create a post
+        InsufficientBalanceForPost,
+
+        /// Account can't delete post at the moment
+        CannotDeletePost,
     }
 }
 
@@ -171,7 +197,7 @@ decl_storage! {
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId:
             double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
-                DiscussionPost<MemberId<T>>;
+                DiscussionPost<MemberId<T>, BalanceOf<T>, T::BlockNumber>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
@@ -203,10 +229,11 @@ decl_module! {
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
-            thread_id : T::ThreadId,
-            text : Vec<u8>
+            thread_id: T::ThreadId,
+            text: Vec<u8>,
+            editable: bool
         ) {
-            T::AuthorOriginValidator::ensure_member_controller_account_origin(
+            let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
                 post_author_id,
             )?;
@@ -215,20 +242,83 @@ decl_module! {
 
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
+            // Ensure account has enough funds
+            if editable {
+                ensure!(
+                    Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get(),
+                    Error::<T>::InsufficientBalanceForPost,
+                );
+            }
+
             // mutation
+
+            if editable {
+                Self::transfer_to_state_cleanup_treasury_account(
+                    T::PostDeposit::get(),
+                    thread_id,
+                    &account_id,
+                )?;
+            }
 
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
-
-            let new_post = DiscussionPost {
-                author_id: post_author_id,
-            };
-
             let post_id = T::PostId::from(new_post_id);
-            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+
+            if editable {
+                let new_post = DiscussionPost {
+                    author_id: post_author_id,
+                    cleanup_pay_off: T::PostDeposit::get(),
+                    last_edited: frame_system::Module::<T>::block_number(),
+                };
+
+                <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+            }
+
             PostCount::put(next_post_count_value);
             Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
        }
+
+        #[weight = 1_000_000] // TODO: Adjust weight
+        pub fn delete_post(
+            origin,
+            deleter_id: MemberId<T>,
+            post_id : T::PostId,
+            thread_id: T::ThreadId,
+        ) {
+            let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
+                origin.clone(),
+                deleter_id,
+            )?;
+
+            ensure!(
+                <PostThreadIdByPostId<T>>::contains_key(thread_id, post_id),
+                Error::<T>::PostDoesntExist
+            );
+
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                deleter_id,
+            )?;
+
+            let post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
+            if !Self::anyone_can_delete_post(thread_id, post_id) {
+                ensure!(
+                    post.author_id == deleter_id,
+                    Error::<T>::CannotDeletePost
+                );
+            }
+
+            // mutation
+
+            Self::pay_off(
+                thread_id,
+                T::PostDeposit::get(),
+                &account_id,
+            )?;
+
+            <PostThreadIdByPostId<T>>::remove(thread_id, post_id);
+            Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id));
+        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
         ///
@@ -261,6 +351,9 @@ decl_module! {
 
             // mutation
 
+            let mut new_post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
+            new_post.last_edited = frame_system::Module::<T>::block_number();
+            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id, thread_id, text));
        }
 
@@ -365,6 +458,42 @@ impl<T: Trait> Module<T> {
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
+    }
+
+    fn anyone_can_delete_post(thread_id: T::ThreadId, post_id: T::PostId) -> bool {
+        let thread_exists = <ThreadById<T>>::contains_key(thread_id);
+        let post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
+        !thread_exists
+            && frame_system::Module::<T>::block_number().saturating_sub(post.last_edited)
+                >= T::PostLifeTime::get()
+    }
+
+    fn pay_off(
+        thread_id: T::ThreadId,
+        amount: BalanceOf<T>,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &state_cleanup_treasury_account,
+            account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    fn transfer_to_state_cleanup_treasury_account(
+        amount: BalanceOf<T>,
+        thread_id: T::ThreadId,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
     }
 
     fn ensure_thread_mode(

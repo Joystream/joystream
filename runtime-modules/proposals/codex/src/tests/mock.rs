@@ -11,7 +11,7 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult, ModuleId, Perbill,
 };
 use sp_staking::SessionIndex;
 use staking_handler::{LockComparator, StakingManager};
@@ -311,6 +311,9 @@ parameter_types! {
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
     pub const MaxWhiteListSize: u32 = 20;
+    pub const PostLifeTime: u64 = 10;
+    pub const PostDeposit: u64 = 100;
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
 }
 
 pub struct MockProposalsDiscussionWeight;
@@ -323,6 +326,9 @@ impl proposals_discussion::Trait for Test {
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = MockProposalsDiscussionWeight;
+    type PostLifeTime = PostLifeTime;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
 }
 
 impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {

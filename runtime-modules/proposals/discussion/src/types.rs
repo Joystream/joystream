@@ -22,9 +22,15 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 /// Post for the discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct DiscussionPost<PostAuthorId> {
+pub struct DiscussionPost<PostAuthorId, Balance, BlockNumber> {
     /// Author of the post.
     pub author_id: PostAuthorId,
+
+    /// Cleanup pay off
+    pub cleanup_pay_off: Balance,
+
+    /// Last time post was created/edited
+    pub last_edited: BlockNumber,
 }
 
 /// Discussion thread permission modes.

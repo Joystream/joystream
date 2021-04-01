@@ -9,7 +9,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult, ModuleId, Perbill,
 };
 
 use crate::CouncilOriginValidator;
@@ -78,6 +78,9 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
+    pub const PostLifeTime: u64 = 10;
+    pub const PostDeposit: u64 = 100;
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
 }
 
 // Weights info stub
@@ -222,6 +225,9 @@ impl crate::Trait for Test {
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = ();
+    type PostLifeTime = PostLifeTime;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
 }
 
 impl WeightInfo for () {
@@ -248,7 +254,11 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
         }
 
         if actor_id < 12 {
-            return Ok(actor_id);
+            if let Ok(account_id) = frame_system::ensure_signed(origin) {
+                return Ok(account_id);
+            } else {
+                return Ok(actor_id);
+            }
         }
 
         if actor_id == 12 && frame_system::ensure_signed(origin).unwrap_or_default() == 12 {
