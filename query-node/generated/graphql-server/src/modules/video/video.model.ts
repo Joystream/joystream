@@ -21,6 +21,7 @@ import { VideoMediaMetadata } from '../video-media-metadata/video-media-metadata
 import { FeaturedVideo } from '../featured-video/featured-video.model';
 
 import { AssetAvailability } from '../enums/enums';
+export { AssetAvailability };
 
 @Model({ api: {} })
 export class Video extends BaseModel {
