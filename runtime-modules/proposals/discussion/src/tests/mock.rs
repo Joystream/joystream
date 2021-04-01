@@ -235,7 +235,11 @@ impl WeightInfo for () {
         0
     }
 
-    fn update_post() -> Weight {
+    fn update_post(_: u32) -> Weight {
+        0
+    }
+
+    fn delete_post() -> Weight {
         0
     }
 

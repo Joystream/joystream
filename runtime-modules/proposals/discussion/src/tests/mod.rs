@@ -201,6 +201,7 @@ impl PostFixture {
             self.author_id,
             self.post_id.unwrap(),
             self.thread_id,
+            true,
         );
 
         assert_eq!(add_post_result, result);

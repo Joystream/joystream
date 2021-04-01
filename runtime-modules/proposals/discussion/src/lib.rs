@@ -80,8 +80,9 @@ type Balances<T> = balances::Module<T>;
 /// Proposals discussion WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
-    fn add_post(i: u32) -> Weight; // Note: since parameter doesn't affect weight it's discarded
-    fn update_post() -> Weight; // Note: since parameter doesn't affect weight it's discarded
+    fn add_post(j: u32) -> Weight;
+    fn update_post(j: u32) -> Weight;
+    fn delete_post() -> Weight;
     fn change_thread_mode(i: u32) -> Weight;
 }
 
@@ -108,7 +109,7 @@ decl_event!(
         ThreadModeChanged(ThreadId, ThreadMode<MemberId>, MemberId),
 
         /// Emits on post deleted
-        PostDeleted(MemberId, ThreadId, PostId),
+        PostDeleted(MemberId, ThreadId, PostId, bool),
     }
 );
 
@@ -223,9 +224,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::add_post(
-            T::MaxWhiteListSize::get(),
-        )]
+        #[weight = WeightInfoDiscussion::<T>::add_post(text.len().saturated_into())]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
@@ -278,12 +277,13 @@ decl_module! {
             Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
        }
 
-        #[weight = 1_000_000] // TODO: Adjust weight
+        #[weight = WeightInfoDiscussion::<T>::delete_post()]
         pub fn delete_post(
             origin,
             deleter_id: MemberId<T>,
             post_id : T::PostId,
             thread_id: T::ThreadId,
+            hide: bool,
         ) {
             let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
@@ -317,7 +317,7 @@ decl_module! {
             )?;
 
             <PostThreadIdByPostId<T>>::remove(thread_id, post_id);
-            Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id));
+            Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id, hide));
         }
 
         /// Updates a post with author origin check. Update attempts number is limited.
@@ -329,7 +329,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::update_post()]
+        #[weight = WeightInfoDiscussion::<T>::update_post(text.len().saturated_into())]
         pub fn update_post(
             origin,
             thread_id: T::ThreadId,
