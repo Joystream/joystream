@@ -3,18 +3,34 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { Membership, MembershipEntryMethod } from 'query-node/dist/src/modules/membership/membership.model'
+import { Membership } from 'query-node/dist/src/modules/membership/membership.model'
 import { Members } from './generated/types'
-import { prepareBlock } from './common'
 import BN from 'bn.js'
-import { Block } from 'query-node/dist/src/modules/block/block.model'
 import { Bytes } from '@polkadot/types'
+import { EventType, MembershipEntryMethod } from 'query-node/dist/src/modules/enums/enums'
 import { MembershipSystem } from 'query-node/dist/src/modules/membership-system/membership-system.model'
+import { MemberMetadata } from 'query-node/dist/src/modules/member-metadata/member-metadata.model'
+import { MembershipBoughtEvent } from 'query-node/dist/src/modules/membership-bought-event/membership-bought-event.model'
+import { MemberProfileUpdatedEvent } from 'query-node/dist/src/modules/member-profile-updated-event/member-profile-updated-event.model'
+import { MemberAccountsUpdatedEvent } from 'query-node/dist/src/modules/member-accounts-updated-event/member-accounts-updated-event.model'
+import { MemberInvitedEvent } from 'query-node/dist/src/modules/member-invited-event/member-invited-event.model'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
+import { Event } from 'query-node/dist/src/modules/event/event.model'
+import { MemberVerificationStatusUpdatedEvent } from 'query-node/dist/src/modules/member-verification-status-updated-event/member-verification-status-updated-event.model'
+import { createEvent } from './common'
+import { InvitesTransferredEvent } from 'query-node/dist/src/modules/invites-transferred-event/invites-transferred-event.model'
+import { StakingAccountConfirmedEvent } from 'query-node/dist/src/modules/staking-account-confirmed-event/staking-account-confirmed-event.model'
+import { StakingAccountRemovedEvent } from 'query-node/dist/src/modules/staking-account-removed-event/staking-account-removed-event.model'
+import { InitialInvitationCountUpdatedEvent } from 'query-node/dist/src/modules/initial-invitation-count-updated-event/initial-invitation-count-updated-event.model'
+import { MembershipPriceUpdatedEvent } from 'query-node/dist/src/modules/membership-price-updated-event/membership-price-updated-event.model'
+import { ReferralCutUpdatedEvent } from 'query-node/dist/src/modules/referral-cut-updated-event/referral-cut-updated-event.model'
+import { InitialInvitationBalanceUpdatedEvent } from 'query-node/dist/src/modules/initial-invitation-balance-updated-event/initial-invitation-balance-updated-event.model'
+import { StakingAccountAddedEvent } from 'query-node/dist/src/modules/staking-account-added-event/staking-account-added-event.model'
+import { LeaderInvitationQuotaUpdatedEvent } from 'query-node/dist/src/modules/leader-invitation-quota-updated-event/leader-invitation-quota-updated-event.model'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
-  const member = await db.get(Membership, { where: { id: id.toString() } })
+  const member = await db.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
   if (!member) {
     throw new Error(`Member(${id}) not found`)
   }
@@ -48,20 +64,25 @@ async function newMembershipFromParams(
   memberId: MemberId,
   entryMethod: MembershipEntryMethod,
   params: BuyMembershipParameters | InviteMembershipParameters
-): Promise<void> {
+): Promise<Membership> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const membershipSystem = await getMembershipSystem(db)
   const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
   const metadata = deserializeMemberMeta(metatadaBytes)
+
+  const metadataEntity = new MemberMetadata({
+    name: metadata?.getName(),
+    about: metadata?.getAbout(),
+    avatarUri: metadata?.getAvatarUri(),
+  })
+
   const member = new Membership({
     id: memberId.toString(),
-    name: metadata?.getName(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: handle.unwrap().toString(),
-    about: metadata?.getAbout(),
-    avatarUri: metadata?.getAvatarUri(),
-    registeredAtBlock: await prepareBlock(db, event_),
+    metadata: metadataEntity,
+    registeredAtBlock: event_.blockNumber,
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
     entry: entryMethod,
     referredBy:
@@ -79,13 +100,37 @@ async function newMembershipFromParams(
         : undefined,
   })
 
-  await db.save<Block>(member.registeredAtBlock)
+  await db.save<MemberMetadata>(member.metadata)
   await db.save<Membership>(member)
+
+  return member
 }
 
 export async function members_MembershipBought(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const { memberId, buyMembershipParameters } = new Members.MembershipBoughtEvent(event_).data
-  await newMembershipFromParams(db, event_, memberId, MembershipEntryMethod.PAID, buyMembershipParameters)
+  const member = await newMembershipFromParams(
+    db,
+    event_,
+    memberId,
+    MembershipEntryMethod.PAID,
+    buyMembershipParameters
+  )
+  const membershipBoughtEvent = new MembershipBoughtEvent({
+    event: createEvent(event_, EventType.MembershipBought),
+    newMember: member,
+    controllerAccount: member.controllerAccount,
+    rootAccount: member.rootAccount,
+    handle: member.handle,
+    metadata: new MemberMetadata({
+      ...member.metadata,
+      id: undefined,
+    }),
+    referrer: member.referredBy,
+  })
+
+  await db.save<Event>(membershipBoughtEvent.event)
+  await db.save<MemberMetadata>(membershipBoughtEvent.metadata)
+  await db.save<MembershipBoughtEvent>(membershipBoughtEvent)
 }
 
 export async function members_MemberProfileUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -94,19 +139,34 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   const metadata = metadataBytesOpt.isSome ? deserializeMemberMeta(metadataBytesOpt.unwrap()) : undefined
   const member = await getMemberById(db, memberId)
   if (metadata?.hasName()) {
-    member.name = metadata.getName()
+    member.metadata.name = metadata.getName()
   }
   if (metadata?.hasAbout()) {
-    member.about = metadata.getAbout()
+    member.metadata.about = metadata.getAbout()
   }
   if (metadata?.hasAvatarUri()) {
-    member.avatarUri = metadata.getAvatarUri()
+    member.metadata.avatarUri = metadata.getAvatarUri()
   }
   if (handle.isSome) {
     member.handle = bytesToString(handle.unwrap())
   }
 
+  await db.save<MemberMetadata>(member.metadata)
   await db.save<Membership>(member)
+
+  const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
+    event: createEvent(event_, EventType.MemberProfileUpdated),
+    member: member,
+    newHandle: member.handle,
+    newMetadata: new MemberMetadata({
+      ...member.metadata,
+      id: undefined,
+    }),
+  })
+
+  await db.save<Event>(memberProfileUpdatedEvent.event)
+  await db.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
+  await db.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
 }
 
 export async function members_MemberAccountsUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -121,6 +181,16 @@ export async function members_MemberAccountsUpdated(db: DatabaseManager, event_:
   }
 
   await db.save<Membership>(member)
+
+  const memberAccountsUpdatedEvent = new MemberAccountsUpdatedEvent({
+    event: createEvent(event_, EventType.MemberAccountsUpdated),
+    member: member,
+    newRootAccount: member.rootAccount,
+    newControllerAccount: member.controllerAccount,
+  })
+
+  await db.save<Event>(memberAccountsUpdatedEvent.event)
+  await db.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
 }
 
 export async function members_MemberVerificationStatusUpdated(
@@ -132,6 +202,15 @@ export async function members_MemberVerificationStatusUpdated(
   member.isVerified = verificationStatus.valueOf()
 
   await db.save<Membership>(member)
+
+  const memberVerificationStatusUpdatedEvent = new MemberVerificationStatusUpdatedEvent({
+    event: createEvent(event_, EventType.MemberVerificationStatusUpdated),
+    member: member,
+    isVerified: member.isVerified,
+  })
+
+  await db.save<Event>(memberVerificationStatusUpdatedEvent.event)
+  await db.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
 }
 
 export async function members_InvitesTransferred(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -146,16 +225,62 @@ export async function members_InvitesTransferred(db: DatabaseManager, event_: Su
 
   await db.save<Membership>(sourceMember)
   await db.save<Membership>(targetMember)
+
+  const invitesTransferredEvent = new InvitesTransferredEvent({
+    event: createEvent(event_, EventType.InvitesTransferred),
+    sourceMember,
+    targetMember,
+    numberOfInvites: numberOfInvites.toNumber(),
+  })
+
+  await db.save<Event>(invitesTransferredEvent.event)
+  await db.save<InvitesTransferredEvent>(invitesTransferredEvent)
 }
 
 export async function members_MemberInvited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const { memberId, inviteMembershipParameters } = new Members.MemberInvitedEvent(event_).data
-  await newMembershipFromParams(db, event_, memberId, MembershipEntryMethod.INVITED, inviteMembershipParameters)
+  const invitedMember = await newMembershipFromParams(
+    db,
+    event_,
+    memberId,
+    MembershipEntryMethod.INVITED,
+    inviteMembershipParameters
+  )
 
   // Decrease invite count of inviting member
   const invitingMember = await getMemberById(db, inviteMembershipParameters.inviting_member_id)
   invitingMember.inviteCount -= 1
   await db.save<Membership>(invitingMember)
+
+  const memberInvitedEvent = new MemberInvitedEvent({
+    event: createEvent(event_, EventType.MemberInvited),
+    invitingMember,
+    newMember: invitedMember,
+    handle: invitedMember.handle,
+    rootAccount: invitedMember.rootAccount,
+    controllerAccount: invitedMember.controllerAccount,
+    metadata: new MemberMetadata({
+      ...invitedMember.metadata,
+      id: undefined,
+    }),
+  })
+
+  await db.save<Event>(memberInvitedEvent.event)
+  await db.save<MemberMetadata>(memberInvitedEvent.metadata)
+  await db.save<MemberInvitedEvent>(memberInvitedEvent)
+}
+
+export async function members_StakingAccountAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  const { memberId, accountId } = new Members.StakingAccountAddedEvent(event_).data
+
+  const stakingAccountAddedEvent = new StakingAccountAddedEvent({
+    event: createEvent(event_, EventType.StakingAccountAddedEvent),
+    member: new Membership({ id: memberId.toString() }),
+    account: accountId.toString(),
+  })
+
+  await db.save<Event>(stakingAccountAddedEvent.event)
+  await db.save<StakingAccountAddedEvent>(stakingAccountAddedEvent)
 }
 
 export async function members_StakingAccountConfirmed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -164,6 +289,15 @@ export async function members_StakingAccountConfirmed(db: DatabaseManager, event
   member.boundAccounts.push(accountId.toString())
 
   await db.save<Membership>(member)
+
+  const stakingAccountConfirmedEvent = new StakingAccountConfirmedEvent({
+    event: createEvent(event_, EventType.StakingAccountConfirmed),
+    member,
+    account: accountId.toString(),
+  })
+
+  await db.save<Event>(stakingAccountConfirmedEvent.event)
+  await db.save<StakingAccountConfirmedEvent>(stakingAccountConfirmedEvent)
 }
 
 export async function members_StakingAccountRemoved(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -175,6 +309,15 @@ export async function members_StakingAccountRemoved(db: DatabaseManager, event_:
   )
 
   await db.save<Membership>(member)
+
+  const stakingAccountRemovedEvent = new StakingAccountRemovedEvent({
+    event: createEvent(event_, EventType.StakingAccountRemoved),
+    member,
+    account: accountId.toString(),
+  })
+
+  await db.save<Event>(stakingAccountRemovedEvent.event)
+  await db.save<StakingAccountRemovedEvent>(stakingAccountRemovedEvent)
 }
 
 export async function members_InitialInvitationCountUpdated(
@@ -186,6 +329,14 @@ export async function members_InitialInvitationCountUpdated(
   membershipSystem.defaultInviteCount = newDefaultInviteCount.toNumber()
 
   await db.save<MembershipSystem>(membershipSystem)
+
+  const initialInvitationCountUpdatedEvent = new InitialInvitationCountUpdatedEvent({
+    event: createEvent(event_, EventType.InitialInvitationCountUpdated),
+    newInitialInvitationCount: newDefaultInviteCount.toNumber(),
+  })
+
+  await db.save<Event>(initialInvitationCountUpdatedEvent.event)
+  await db.save<InitialInvitationCountUpdatedEvent>(initialInvitationCountUpdatedEvent)
 }
 
 export async function members_MembershipPriceUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -194,6 +345,14 @@ export async function members_MembershipPriceUpdated(db: DatabaseManager, event_
   membershipSystem.membershipPrice = newMembershipPrice
 
   await db.save<MembershipSystem>(membershipSystem)
+
+  const membershipPriceUpdatedEvent = new MembershipPriceUpdatedEvent({
+    event: createEvent(event_, EventType.MembershipPriceUpdated),
+    newPrice: newMembershipPrice,
+  })
+
+  await db.save<Event>(membershipPriceUpdatedEvent.event)
+  await db.save<MembershipPriceUpdatedEvent>(membershipPriceUpdatedEvent)
 }
 
 export async function members_ReferralCutUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -202,6 +361,14 @@ export async function members_ReferralCutUpdated(db: DatabaseManager, event_: Su
   membershipSystem.referralCut = newReferralCut
 
   await db.save<MembershipSystem>(membershipSystem)
+
+  const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
+    event: createEvent(event_, EventType.ReferralCutUpdated),
+    newValue: newReferralCut,
+  })
+
+  await db.save<Event>(referralCutUpdatedEvent.event)
+  await db.save<ReferralCutUpdatedEvent>(referralCutUpdatedEvent)
 }
 
 export async function members_InitialInvitationBalanceUpdated(
@@ -213,4 +380,26 @@ export async function members_InitialInvitationBalanceUpdated(
   membershipSystem.invitedInitialBalance = newInvitedInitialBalance
 
   await db.save<MembershipSystem>(membershipSystem)
+
+  const initialInvitationBalanceUpdatedEvent = new InitialInvitationBalanceUpdatedEvent({
+    event: createEvent(event_, EventType.InitialInvitationBalanceUpdated),
+    newInitialBalance: newInvitedInitialBalance,
+  })
+
+  await db.save<Event>(initialInvitationBalanceUpdatedEvent.event)
+  await db.save<InitialInvitationBalanceUpdatedEvent>(initialInvitationBalanceUpdatedEvent)
+}
+
+export async function members_LeaderInvitationQuotaUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  const { u32: newQuota } = new Members.LeaderInvitationQuotaUpdatedEvent(event_).data
+
+  const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
+    event: createEvent(event_, EventType.LeaderInvitationQuotaUpdated),
+    newInvitationQuota: newQuota.toNumber(),
+  })
+
+  // TODO: Update MembershipSystem?
+
+  await db.save<Event>(leaderInvitationQuotaUpdatedEvent.event)
+  await db.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
 }

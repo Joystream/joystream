@@ -18,12 +18,14 @@ typegen:
     - members.MemberVerificationStatusUpdated
     - members.InvitesTransferred
     - members.MemberInvited
+    - members.StakingAccountAdded
     - members.StakingAccountConfirmed
     - members.StakingAccountRemoved
     - members.InitialInvitationCountUpdated
     - members.MembershipPriceUpdated
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
+    - members.LeaderInvitationQuotaUpdated
   calls:
     - members.updateProfile
     - members.updateAccounts
@@ -54,6 +56,8 @@ mappings:
       handler: members_InvitesTransferred(DatabaseManager, SubstrateEvent)
     - event: members.MemberInvited
       handler: members_MemberInvited(DatabaseManager, SubstrateEvent)
+    - event: members.StakingAccountAdded
+      handler: members_StakingAccountAdded(DatabaseManager, SubstrateEvent)
     - event: members.StakingAccountConfirmed
       handler: members_StakingAccountConfirmed(DatabaseManager, SubstrateEvent)
     - event: members.StakingAccountRemoved
@@ -66,6 +70,8 @@ mappings:
       handler: members_ReferralCutUpdated(DatabaseManager, SubstrateEvent)
     - event: members.InitialInvitationBalanceUpdated
       handler: members_InitialInvitationBalanceUpdated(DatabaseManager, SubstrateEvent)
+    - event: members.LeaderInvitationQuotaUpdated
+      handler: members_LeaderInvitationQuotaUpdated(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

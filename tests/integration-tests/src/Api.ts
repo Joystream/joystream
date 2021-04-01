@@ -14,6 +14,7 @@ import { types } from '@joystream/types'
 import { v4 as uuid } from 'uuid'
 import Debugger from 'debug'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails, MembershipEventName } from './types'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -208,21 +209,59 @@ export class Api {
     return paymentInfo.partialFee
   }
 
+  // TODO: Augmentations comming with new @polkadot/typegen!
+
   public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
     return events.find((record) => record.event.section === section && record.event.method === method)
   }
 
-  public findMemberBoughtEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MembershipBought')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public async retrieveEventDetails(
+    result: ISubmittableResult,
+    section: string,
+    method: string
+  ): Promise<EventDetails | undefined> {
+    const { status, events } = result
+    const record = this.findEventRecord(events, section, method)
+    if (!record) {
+      return
+    }
+
+    const blockHash = status.asInBlock
+    const { number: blockNumber } = await this.api.rpc.chain.getHeader(blockHash)
+    const blockEvents = await this.api.query.system.events.at(blockHash)
+    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) => blockEvent.hash.eq(record.event.hash))
+
+    return {
+      event: record.event,
+      blockNumber: blockNumber.toNumber(),
+      indexInBlock,
     }
   }
 
-  public findMemberInvitedEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MemberInvited')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public async retrieveMembershipEventDetails(
+    result: ISubmittableResult,
+    eventName: MembershipEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'members', eventName)
+    if (!details) {
+      throw new Error(`${eventName} details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveMembershipBoughtEventDetails(result: ISubmittableResult): Promise<MembershipBoughtEventDetails> {
+    const details = await this.retrieveMembershipEventDetails(result, 'MembershipBought')
+    return {
+      ...details,
+      memberId: details.event.data[0] as MemberId,
+    }
+  }
+
+  public async retrieveMemberInvitedEventDetails(result: ISubmittableResult): Promise<MemberInvitedEventDetails> {
+    const details = await this.retrieveMembershipEventDetails(result, 'MemberInvited')
+    return {
+      ...details,
+      newMemberId: details.event.data[0] as MemberId,
     }
   }
 

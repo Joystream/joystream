@@ -4,14 +4,27 @@ import { assert } from 'chai'
 import { BaseFixture } from '../Fixture'
 import { MemberId } from '@joystream/types/common'
 import Debugger from 'debug'
-import { ISubmittableResult } from '@polkadot/types/types'
 import { QueryNodeApi } from '../QueryNodeApi'
 import { BuyMembershipParameters, Membership } from '@joystream/types/members'
-import { Membership as QueryNodeMembership, MembershipEntryMethod } from '../QueryNodeApiSchema.generated'
+import {
+  Membership as QueryNodeMembership,
+  MembershipEntryMethod,
+  MembershipBoughtEvent,
+  EventType,
+  MemberProfileUpdatedEvent,
+  MemberAccountsUpdatedEvent,
+  MemberInvitedEvent,
+  InvitesTransferredEvent,
+  StakingAccountAddedEvent,
+  StakingAccountConfirmedEvent,
+  StakingAccountRemovedEvent,
+  Event,
+} from '../QueryNodeApiSchema.generated'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { CreateInterface, createType } from '@joystream/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
+import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails } from '../types'
 
 // FIXME: Retrieve from runtime when possible!
 const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
@@ -20,6 +33,9 @@ type MemberContext = {
   account: string
   memberId: MemberId
 }
+
+type AnyQueryNodeEvent = { event: Event }
+
 // common code for fixtures
 abstract class MembershipFixture extends BaseFixture {
   generateParamsFromAccountId(accountId: string): CreateInterface<BuyMembershipParameters> {
@@ -39,10 +55,6 @@ abstract class MembershipFixture extends BaseFixture {
     return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
   }
 
-  sendBuyMembershipTx(accountId: string): Promise<ISubmittableResult> {
-    return this.api.signAndSend(this.generateBuyMembershipTx(accountId), accountId)
-  }
-
   generateInviteMemberTx(memberId: MemberId, inviteeAccountId: string): SubmittableExtrinsic<'promise'> {
     return this.api.tx.members.inviteMember({
       ...this.generateParamsFromAccountId(inviteeAccountId),
@@ -50,8 +62,13 @@ abstract class MembershipFixture extends BaseFixture {
     })
   }
 
-  sendInviteMemberTx(memberId: MemberId, inviterAccount: string, inviteeAccount: string): Promise<ISubmittableResult> {
-    return this.api.signAndSend(this.generateInviteMemberTx(memberId, inviteeAccount), inviterAccount)
+  findMatchingQueryNodeEvent<T extends AnyQueryNodeEvent>(eventToFind: EventDetails, queryNodeEvents: T[]) {
+    const { blockNumber, indexInBlock } = eventToFind
+    const qEvent = queryNodeEvents.find((e) => e.event.inBlock === blockNumber && e.event.indexInBlock === indexInBlock)
+    if (!qEvent) {
+      throw new Error(`Could not find matching query-node event (expected ${blockNumber}:${indexInBlock})!`)
+    }
+    return qEvent
   }
 }
 
@@ -78,9 +95,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
       handle,
       rootAccount,
       controllerAccount,
-      name,
-      about,
-      avatarUri,
+      metadata: { name, about, avatarUri },
       isVerified,
       entry,
     } = qMember as QueryNodeMembership
@@ -97,6 +112,29 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     assert.equal(entry, MembershipEntryMethod.Paid)
   }
 
+  private assertEventMatchQueriedResult(
+    eventDetails: MembershipBoughtEventDetails,
+    account: string,
+    txHash: string,
+    qEvents: MembershipBoughtEvent[]
+  ) {
+    assert.equal(qEvents.length, 1, `Invalid number of MembershipBoughtEvents recieved`)
+    const [qEvent] = qEvents
+    const txParams = this.generateParamsFromAccountId(account)
+    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    assert.equal(qEvent.event.inBlock, eventDetails.blockNumber)
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
+    assert.equal(qEvent.event.type, EventType.MembershipBought)
+    assert.equal(qEvent.newMember.id, eventDetails.memberId.toString())
+    assert.equal(qEvent.handle, txParams.handle)
+    assert.equal(qEvent.rootAccount, txParams.root_account.toString())
+    assert.equal(qEvent.controllerAccount, txParams.controller_account.toString())
+    assert.equal(qEvent.metadata.name, metadata.getName())
+    assert.equal(qEvent.metadata.about, metadata.getAbout())
+    assert.equal(qEvent.metadata.avatarUri, metadata.getAvatarUri())
+  }
+
   async execute(): Promise<void> {
     // Fee estimation and transfer
     const membershipFee: BN = await this.api.getMembershipFee()
@@ -108,9 +146,10 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
 
     await this.api.treasuryTransferBalanceToAccounts(this.accounts, estimatedFee)
 
-    this.memberIds = (await Promise.all(this.accounts.map((account) => this.sendBuyMembershipTx(account))))
-      .map(({ events }) => this.api.findMemberBoughtEvent(events))
-      .filter((id) => id !== undefined) as MemberId[]
+    const extrinsics = this.accounts.map((a) => this.generateBuyMembershipTx(a))
+    const results = await Promise.all(this.accounts.map((a, i) => this.api.signAndSend(extrinsics[i], a)))
+    const events = await Promise.all(results.map((r) => this.api.retrieveMembershipBoughtEventDetails(r)))
+    this.memberIds = events.map((e) => e.memberId)
 
     this.debug(`Registered ${this.memberIds.length} new members`)
 
@@ -127,14 +166,23 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     // Query-node part:
 
     // Ensure newly created members were parsed by query node
-    for (const i in members) {
-      const memberId = this.memberIds[i]
-      const member = members[i]
-      await this.query.tryQueryWithTimeout(
-        () => this.query.getMemberById(memberId),
-        (r) => this.assertMemberMatchQueriedResult(member, r.data.membership)
-      )
-    }
+    await Promise.all(
+      members.map(async (member, i) => {
+        const memberId = this.memberIds[i]
+        await this.query.tryQueryWithTimeout(
+          () => this.query.getMemberById(memberId),
+          (r) => this.assertMemberMatchQueriedResult(member, r.data.membershipByUniqueInput)
+        )
+        // Ensure the query node event is valid
+        const res = await this.query.getMembershipBoughtEvents(memberId)
+        this.assertEventMatchQueriedResult(
+          events[i],
+          this.accounts[i],
+          extrinsics[i].hash.toString(),
+          res.data.membershipBoughtEvents
+        )
+      })
+    )
   }
 }
 
@@ -169,7 +217,7 @@ export class BuyMembershipWithInsufficienFundsFixture extends MembershipFixture 
       'Account already has sufficient balance to purchase membership'
     )
 
-    const result = await this.sendBuyMembershipTx(this.account)
+    const result = await this.api.signAndSend(this.generateBuyMembershipTx(this.account), this.account)
 
     this.expectDispatchError(result, 'Buying membership with insufficient funds should fail.')
 
@@ -178,7 +226,8 @@ export class BuyMembershipWithInsufficienFundsFixture extends MembershipFixture 
   }
 }
 
-export class UpdateProfileHappyCaseFixture extends BaseFixture {
+// TODO: Add partial update to make sure it works too
+export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   private query: QueryNodeApi
   private memberContext: MemberContext
   // Update data
@@ -195,11 +244,35 @@ export class UpdateProfileHappyCaseFixture extends BaseFixture {
 
   private assertProfileUpdateSuccesful(qMember?: QueryNodeMembership | null) {
     assert.isOk(qMember, 'Membership query result is empty')
-    const { name, handle, avatarUri, about } = qMember as QueryNodeMembership
+    const {
+      handle,
+      metadata: { name, avatarUri, about },
+    } = qMember as QueryNodeMembership
     assert.equal(name, this.newName)
     assert.equal(handle, this.newHandle)
     assert.equal(avatarUri, this.newAvatarUri)
     assert.equal(about, this.newAbout)
+  }
+
+  private assertQueryNodeEventIsValid(
+    eventDetails: EventDetails,
+    txHash: string,
+    qEvents: MemberProfileUpdatedEvent[]
+  ) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    const {
+      event: { inExtrinsic, type },
+      member: { id: memberId },
+      newHandle,
+      newMetadata,
+    } = qEvent
+    assert.equal(inExtrinsic, txHash)
+    assert.equal(type, EventType.MemberProfileUpdated)
+    assert.equal(memberId, this.memberContext.memberId.toString())
+    assert.equal(newHandle, this.newHandle)
+    assert.equal(newMetadata.name, this.newName)
+    assert.equal(newMetadata.about, this.newAbout)
+    assert.equal(newMetadata.avatarUri, this.newAvatarUri)
   }
 
   async execute(): Promise<void> {
@@ -214,15 +287,19 @@ export class UpdateProfileHappyCaseFixture extends BaseFixture {
     )
     const txFee = await this.api.estimateTxFee(tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
-    await this.api.signAndSend(tx, this.memberContext.account)
+    const txRes = await this.api.signAndSend(tx, this.memberContext.account)
+    const txHash = tx.hash.toString()
+    const updateEvent = await this.api.retrieveMembershipEventDetails(txRes, 'MemberProfileUpdated')
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
-      (res) => this.assertProfileUpdateSuccesful(res.data.membership)
+      (res) => this.assertProfileUpdateSuccesful(res.data.membershipByUniqueInput)
     )
+    const res = await this.query.getMemberProfileUpdatedEvents(this.memberContext.memberId)
+    this.assertQueryNodeEventIsValid(updateEvent, txHash, res.data.memberProfileUpdatedEvents)
   }
 }
 
-export class UpdateAccountsHappyCaseFixture extends BaseFixture {
+export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   private query: QueryNodeApi
   private memberContext: MemberContext
   // Update data
@@ -245,6 +322,25 @@ export class UpdateAccountsHappyCaseFixture extends BaseFixture {
     assert.equal(controllerAccount, this.newControllerAccount)
   }
 
+  private assertQueryNodeEventIsValid(
+    eventDetails: EventDetails,
+    txHash: string,
+    qEvents: MemberAccountsUpdatedEvent[]
+  ) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    const {
+      event: { inExtrinsic, type },
+      member: { id: memberId },
+      newControllerAccount,
+      newRootAccount,
+    } = qEvent
+    assert.equal(inExtrinsic, txHash)
+    assert.equal(type, EventType.MemberAccountsUpdated)
+    assert.equal(memberId, this.memberContext.memberId.toString())
+    assert.equal(newControllerAccount, this.newControllerAccount)
+    assert.equal(newRootAccount, this.newRootAccount)
+  }
+
   async execute(): Promise<void> {
     const tx = this.api.tx.members.updateAccounts(
       this.memberContext.memberId,
@@ -253,11 +349,15 @@ export class UpdateAccountsHappyCaseFixture extends BaseFixture {
     )
     const txFee = await this.api.estimateTxFee(tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
-    await this.api.signAndSend(tx, this.memberContext.account)
+    const txRes = await this.api.signAndSend(tx, this.memberContext.account)
+    const txHash = tx.hash.toString()
+    const updateEvent = await this.api.retrieveMembershipEventDetails(txRes, 'MemberAccountsUpdated')
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
-      (res) => this.assertAccountsUpdateSuccesful(res.data.membership)
+      (res) => this.assertAccountsUpdateSuccesful(res.data.membershipByUniqueInput)
     )
+    const res = await this.query.getMemberAccountsUpdatedEvents(this.memberContext.memberId)
+    this.assertQueryNodeEventIsValid(updateEvent, txHash, res.data.memberAccountsUpdatedEvents)
   }
 }
 
@@ -279,9 +379,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
       handle,
       rootAccount,
       controllerAccount,
-      name,
-      about,
-      avatarUri,
+      metadata: { name, about, avatarUri },
       isVerified,
       entry,
       invitedBy,
@@ -300,9 +398,33 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     assert.equal(invitedBy!.id, this.inviterContext.memberId.toString())
   }
 
+  private aseertQueryNodeEventIsValid(
+    eventDetails: MemberInvitedEventDetails,
+    account: string,
+    txHash: string,
+    qEvents: MemberInvitedEvent[]
+  ) {
+    assert.isNotEmpty(qEvents)
+    assert.equal(qEvents.length, 1, 'Unexpected number of MemberInvited events returned by query node')
+    const [qEvent] = qEvents
+    const txParams = this.generateParamsFromAccountId(account)
+    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    assert.equal(qEvent.event.inBlock, eventDetails.blockNumber)
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
+    assert.equal(qEvent.event.type, EventType.MemberInvited)
+    assert.equal(qEvent.newMember.id, eventDetails.newMemberId.toString())
+    assert.equal(qEvent.handle, txParams.handle)
+    assert.equal(qEvent.rootAccount, txParams.root_account)
+    assert.equal(qEvent.controllerAccount, txParams.controller_account)
+    assert.equal(qEvent.metadata.name, metadata.getName())
+    assert.equal(qEvent.metadata.about, metadata.getAbout())
+    assert.equal(qEvent.metadata.avatarUri, metadata.getAvatarUri())
+  }
+
   async execute(): Promise<void> {
-    const exampleTx = this.generateInviteMemberTx(this.inviterContext.memberId, this.accounts[0])
-    const feePerTx = await this.api.estimateTxFee(exampleTx, this.inviterContext.account)
+    const extrinsics = this.accounts.map((a) => this.generateInviteMemberTx(this.inviterContext.memberId, a))
+    const feePerTx = await this.api.estimateTxFee(extrinsics[0], this.inviterContext.account)
     await this.api.treasuryTransferBalance(this.inviterContext.account, feePerTx.muln(this.accounts.length))
 
     const initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
@@ -313,28 +435,29 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
 
     const { invites: initialInvitesCount } = await this.api.query.members.membershipById(this.inviterContext.memberId)
 
-    const invitedMembersIds = (
-      await Promise.all(
-        this.accounts.map((account) =>
-          this.sendInviteMemberTx(this.inviterContext.memberId, this.inviterContext.account, account)
-        )
-      )
-    )
-      .map(({ events }) => this.api.findMemberInvitedEvent(events))
-      .filter((id) => id !== undefined) as MemberId[]
+    const txResults = await Promise.all(extrinsics.map((tx) => this.api.signAndSend(tx, this.inviterContext.account)))
+    const events = await Promise.all(txResults.map((res) => this.api.retrieveMemberInvitedEventDetails(res)))
+    const invitedMembersIds = events.map((e) => e.newMemberId)
 
     await Promise.all(
-      this.accounts.map((account, i) => {
+      this.accounts.map(async (account, i) => {
         const memberId = invitedMembersIds[i]
-        return this.query.tryQueryWithTimeout(
+        await this.query.tryQueryWithTimeout(
           () => this.query.getMemberById(memberId),
-          (res) => this.assertMemberCorrectlyInvited(account, res.data.membership)
+          (res) => this.assertMemberCorrectlyInvited(account, res.data.membershipByUniqueInput)
+        )
+        const res = await this.query.getMemberInvitedEvents(memberId)
+        this.aseertQueryNodeEventIsValid(
+          events[i],
+          account,
+          extrinsics[i].hash.toString(),
+          res.data.memberInvitedEvents
         )
       })
     )
 
     const {
-      data: { membership: inviter },
+      data: { membershipByUniqueInput: inviter },
     } = await this.query.getMemberById(this.inviterContext.memberId)
     assert.isOk(inviter)
     const { inviteCount, invitees } = inviter as QueryNodeMembership
@@ -369,6 +492,21 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     this.invitesToTransfer = invitesToTransfer
   }
 
+  private assertQueryNodeEventIsValid(eventDetails: EventDetails, txHash: string, qEvents: InvitesTransferredEvent[]) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    const {
+      event: { inExtrinsic, type },
+      sourceMember,
+      targetMember,
+      numberOfInvites,
+    } = qEvent
+    assert.equal(inExtrinsic, txHash)
+    assert.equal(type, EventType.InvitesTransferred)
+    assert.equal(sourceMember.id, this.fromContext.memberId.toString())
+    assert.equal(targetMember.id, this.toContext.memberId.toString())
+    assert.equal(numberOfInvites, this.invitesToTransfer)
+  }
+
   async execute(): Promise<void> {
     const { fromContext, toContext, invitesToTransfer } = this
     const tx = this.api.tx.members.transferInvites(fromContext.memberId, toContext.memberId, invitesToTransfer)
@@ -381,19 +519,36 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     ])
 
     // Send transfer invites extrinsic
-    await this.api.signAndSend(tx, fromContext.account)
+    const txRes = await this.api.signAndSend(tx, fromContext.account)
+    const event = await this.api.retrieveMembershipEventDetails(txRes, 'InvitesTransferred')
+    const txHash = tx.hash.toString()
+
+    // Check "from" member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(fromContext.memberId),
-      ({ data: { membership: queriedFromMember } }) => {
-        assert.isOk(queriedFromMember)
-        assert.equal(queriedFromMember!.inviteCount, fromMember.invites.toNumber() - invitesToTransfer)
+      ({ data: { membershipByUniqueInput: queriedFromMember } }) => {
+        if (!queriedFromMember) {
+          throw new Error('Source member not found')
+        }
+        assert.equal(queriedFromMember.inviteCount, fromMember.invites.toNumber() - invitesToTransfer)
       }
     )
+
+    // Check "to" member
     const {
-      data: { membership: queriedToMember },
+      data: { membershipByUniqueInput: queriedToMember },
     } = await this.query.getMemberById(toContext.memberId)
-    assert.isOk(queriedToMember)
-    assert.equal(queriedToMember!.inviteCount, toMember.invites.toNumber() + invitesToTransfer)
+    if (!queriedToMember) {
+      throw new Error('Target member not found')
+    }
+    assert.equal(queriedToMember.inviteCount, toMember.invites.toNumber() + invitesToTransfer)
+
+    // Check event
+    const {
+      data: { invitesTransferredEvents },
+    } = await this.query.getInvitesTransferredEvents(fromContext.memberId)
+
+    this.assertQueryNodeEventIsValid(event, txHash, invitesTransferredEvents)
   }
 }
 
@@ -409,31 +564,91 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
     this.accounts = accounts
   }
 
+  private assertQueryNodeAddAccountEventIsValid(
+    eventDetails: EventDetails,
+    account: string,
+    txHash: string,
+    qEvents: StakingAccountAddedEvent[]
+  ) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StakingAccountAddedEvent)
+    assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
+    assert.equal(qEvent.account, account)
+  }
+
+  private assertQueryNodeConfirmAccountEventIsValid(
+    eventDetails: EventDetails,
+    account: string,
+    txHash: string,
+    qEvents: StakingAccountConfirmedEvent[]
+  ) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StakingAccountConfirmed)
+    assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
+    assert.equal(qEvent.account, account)
+  }
+
   async execute(): Promise<void> {
     const { memberContext, accounts } = this
-    const addStakingCandidateTx = this.api.tx.members.addStakingAccountCandidate(memberContext.memberId)
+    const addStakingCandidateTxs = accounts.map(() =>
+      this.api.tx.members.addStakingAccountCandidate(memberContext.memberId)
+    )
     const confirmStakingAccountTxs = accounts.map((a) =>
       this.api.tx.members.confirmStakingAccount(memberContext.memberId, a)
     )
-    const addStakingCandidateFee = await this.api.estimateTxFee(addStakingCandidateTx, accounts[0])
+    const addStakingCandidateFee = await this.api.estimateTxFee(addStakingCandidateTxs[0], accounts[0])
     const confirmStakingAccountFee = await this.api.estimateTxFee(confirmStakingAccountTxs[0], memberContext.account)
 
     await this.api.treasuryTransferBalance(memberContext.account, confirmStakingAccountFee.muln(accounts.length))
     const stakingAccountRequiredBalance = addStakingCandidateFee.addn(MINIMUM_STAKING_ACCOUNT_BALANCE)
     await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, stakingAccountRequiredBalance)))
     // Add staking account candidates
-    await Promise.all(accounts.map((a) => this.api.signAndSend(addStakingCandidateTx, a)))
+    const addResults = await Promise.all(accounts.map((a, i) => this.api.signAndSend(addStakingCandidateTxs[i], a)))
+    const addEvents = await Promise.all(
+      addResults.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountAdded'))
+    )
     // Confirm staking accounts
-    await Promise.all(confirmStakingAccountTxs.map((tx) => this.api.signAndSend(tx, memberContext.account)))
+    const confirmResults = await Promise.all(
+      confirmStakingAccountTxs.map((tx) => this.api.signAndSend(tx, memberContext.account))
+    )
+    const confirmEvents = await Promise.all(
+      confirmResults.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountConfirmed'))
+    )
 
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
-      ({ data: { membership } }) => {
-        assert.isOk(membership)
-        assert.isNotEmpty(membership!.boundAccounts)
-        assert.includeMembers(membership!.boundAccounts, accounts)
+      ({ data: { membershipByUniqueInput: membership } }) => {
+        if (!membership) {
+          throw new Error('Member not found')
+        }
+        assert.isNotEmpty(membership.boundAccounts)
+        assert.includeMembers(membership.boundAccounts, accounts)
       }
     )
+
+    // Check events
+    const {
+      data: { stakingAccountAddedEvents },
+    } = await this.query.getStakingAccountAddedEvents(memberContext.memberId)
+    const {
+      data: { stakingAccountConfirmedEvents },
+    } = await this.query.getStakingAccountConfirmedEvents(memberContext.memberId)
+    accounts.forEach(async (account, i) => {
+      this.assertQueryNodeAddAccountEventIsValid(
+        addEvents[i],
+        account,
+        addStakingCandidateTxs[i].hash.toString(),
+        stakingAccountAddedEvents
+      )
+      this.assertQueryNodeConfirmAccountEventIsValid(
+        confirmEvents[i],
+        account,
+        confirmStakingAccountTxs[i].hash.toString(),
+        stakingAccountConfirmedEvents
+      )
+    })
   }
 }
 
@@ -449,22 +664,56 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
     this.accounts = accounts
   }
 
+  private assertQueryNodeRemoveAccountEventIsValid(
+    eventDetails: EventDetails,
+    account: string,
+    txHash: string,
+    qEvents: StakingAccountRemovedEvent[]
+  ) {
+    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StakingAccountRemoved)
+    assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
+    assert.equal(qEvent.account, account)
+  }
+
   async execute(): Promise<void> {
     const { memberContext, accounts } = this
-    const removeStakingAccountTx = this.api.tx.members.removeStakingAccount(memberContext.memberId)
+    const removeStakingAccountTxs = accounts.map(() => this.api.tx.members.removeStakingAccount(memberContext.memberId))
 
-    const removeStakingAccountFee = await this.api.estimateTxFee(removeStakingAccountTx, accounts[0])
+    const removeStakingAccountFee = await this.api.estimateTxFee(removeStakingAccountTxs[0], accounts[0])
 
     await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, removeStakingAccountFee)))
     // Remove staking accounts
-    await Promise.all(accounts.map((a) => this.api.signAndSend(removeStakingAccountTx, a)))
+    const results = await Promise.all(accounts.map((a, i) => this.api.signAndSend(removeStakingAccountTxs[i], a)))
+    const events = await Promise.all(
+      results.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountRemoved'))
+    )
 
+    // Check member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
-      ({ data: { membership } }) => {
-        assert.isOk(membership)
-        assert.notInclude(membership!.boundAccounts, accounts)
+      ({ data: { membershipByUniqueInput: membership } }) => {
+        if (!membership) {
+          throw new Error('Membership not found!')
+        }
+        accounts.forEach((a) => assert.notInclude(membership.boundAccounts, a))
       }
+    )
+
+    // Check events
+    const {
+      data: { stakingAccountRemovedEvents },
+    } = await this.query.getStakingAccountRemovedEvents(memberContext.memberId)
+    await Promise.all(
+      accounts.map(async (account, i) => {
+        this.assertQueryNodeRemoveAccountEventIsValid(
+          events[i],
+          account,
+          removeStakingAccountTxs[i].hash.toString(),
+          stakingAccountRemovedEvents
+        )
+      })
     )
   }
 }

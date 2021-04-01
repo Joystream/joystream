@@ -1,20 +1,15 @@
+/*
+eslint-disable @typescript-eslint/naming-convention
+*/
 import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { Block } from 'query-node/dist/src/modules/block/block.model'
-import { Network } from 'query-node/dist/src/modules/enums/enums'
+import { EventType } from 'query-node/dist/src/modules/enums/enums'
+import { Event } from 'query-node/dist/src/modules/event/event.model'
 
-const currentNetwork = Network.OLYMPIA
-
-export async function prepareBlock(db: DatabaseManager, event: SubstrateEvent): Promise<Block> {
-  const block = await db.get(Block, { where: { block: event.blockNumber } })
-
-  if (block) {
-    return block
-  }
-
-  return new Block({
-    block: event.blockNumber,
-    executedAt: new Date(event.blockTimestamp.toNumber()),
-    network: currentNetwork,
+export function createEvent(event_: SubstrateEvent, type: EventType): Event {
+  return new Event({
+    inBlock: event_.blockNumber,
+    inExtrinsic: event_.extrinsic?.hash,
+    indexInBlock: event_.index,
+    type,
   })
 }
