@@ -9,7 +9,7 @@ export default async function profileUpdate({ api, query }: FlowProps): Promise<
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [account] = api.createKeyPairs(1).map((key) => key.address)
+  const [account] = (await api.createKeyPairs(1)).map((key) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()

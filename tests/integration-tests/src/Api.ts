@@ -126,12 +126,17 @@ export class Api {
   }
 
   // Create new keys and store them in the shared keyring
-  public createKeyPairs(n: number): KeyringPair[] {
+  public async createKeyPairs(n: number, withExistentialDeposit = true): Promise<KeyringPair[]> {
     const nKeyPairs: KeyringPair[] = []
     for (let i = 0; i < n; i++) {
       // What are risks of generating duplicate keys this way?
       // Why not use a deterministic /TestKeys/N and increment N
       nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
+    }
+    if (withExistentialDeposit) {
+      await Promise.all(
+        nKeyPairs.map(({ address }) => this.treasuryTransferBalance(address, this.existentialDeposit()))
+      )
     }
     return nKeyPairs
   }
@@ -204,9 +209,13 @@ export class Api {
   }
 
   // This method does not take into account weights and the runtime weight to fees computation!
-  public async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<BN> {
+  public async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<Balance> {
     const paymentInfo = await tx.paymentInfo(account)
     return paymentInfo.partialFee
+  }
+
+  public existentialDeposit(): Balance {
+    return this.api.consts.balances.existentialDeposit
   }
 
   // TODO: Augmentations comming with new @polkadot/typegen!

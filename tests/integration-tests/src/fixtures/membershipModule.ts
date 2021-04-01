@@ -137,8 +137,8 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
 
   async execute(): Promise<void> {
     // Fee estimation and transfer
-    const membershipFee: BN = await this.api.getMembershipFee()
-    const membershipTransactionFee: BN = await this.api.estimateTxFee(
+    const membershipFee = await this.api.getMembershipFee()
+    const membershipTransactionFee = await this.api.estimateTxFee(
       this.generateBuyMembershipTx(this.accounts[0]),
       this.accounts[0]
     )
@@ -306,13 +306,18 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   private newRootAccount: string
   private newControllerAccount: string
 
-  public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext) {
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    memberContext: MemberContext,
+    newRootAccount: string,
+    newControllerAccount: string
+  ) {
     super(api)
     this.query = query
     this.memberContext = memberContext
-    const [newRootAccount, newControllerAccount] = this.api.createKeyPairs(2)
-    this.newRootAccount = newRootAccount.address
-    this.newControllerAccount = newControllerAccount.address
+    this.newRootAccount = newRootAccount
+    this.newControllerAccount = newControllerAccount
   }
 
   private assertAccountsUpdateSuccesful(qMember?: QueryNodeMembership | null) {

@@ -19,7 +19,7 @@ async function init() {
   const membershipSystem = new MembershipSystem({
     defaultInviteCount: initialInvitationCount.toNumber(),
     membershipPrice,
-    referralCut,
+    referralCut: referralCut.toNumber(),
     invitedInitialBalance: initialInvitationBalance,
   })
   await db.save<MembershipSystem>(membershipSystem)

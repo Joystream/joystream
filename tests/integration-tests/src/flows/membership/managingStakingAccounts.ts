@@ -14,7 +14,7 @@ export default async function membershipCreation({ api, query, env }: FlowProps)
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [account] = api.createKeyPairs(1).map((key) => key.address)
+  const [account] = (await api.createKeyPairs(1)).map((key) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
@@ -22,7 +22,7 @@ export default async function membershipCreation({ api, query, env }: FlowProps)
   const N: number = +env.STAKING_ACCOUNTS_ADD_N!
   assert(N > 0)
 
-  const stakingAccounts = api.createKeyPairs(N).map((k) => k.address)
+  const stakingAccounts = (await api.createKeyPairs(N)).map((k) => k.address)
   const addStakingAccountsHappyCaseFixture = new AddStakingAccountsHappyCaseFixture(
     api,
     query,

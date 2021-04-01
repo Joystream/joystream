@@ -9,7 +9,7 @@ export default async function membershipCreation({ api, query, env }: FlowProps)
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [fromAcc, toAcc] = api.createKeyPairs(2).map((key) => key.address)
+  const [fromAcc, toAcc] = (await api.createKeyPairs(2)).map((key) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [fromAcc, toAcc])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [fromMemberId, toMemberId] = buyMembershipHappyCaseFixture.getCreatedMembers()

@@ -356,15 +356,15 @@ export async function members_MembershipPriceUpdated(db: DatabaseManager, event_
 }
 
 export async function members_ReferralCutUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const { balance: newReferralCut } = new Members.ReferralCutUpdatedEvent(event_).data
+  const { u8: newReferralCut } = new Members.ReferralCutUpdatedEvent(event_).data
   const membershipSystem = await getMembershipSystem(db)
-  membershipSystem.referralCut = newReferralCut
+  membershipSystem.referralCut = newReferralCut.toNumber()
 
   await db.save<MembershipSystem>(membershipSystem)
 
   const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
     event: createEvent(event_, EventType.ReferralCutUpdated),
-    newValue: newReferralCut,
+    newValue: newReferralCut.toNumber(),
   })
 
   await db.save<Event>(referralCutUpdatedEvent.event)

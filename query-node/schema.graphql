@@ -85,8 +85,8 @@ type MembershipSystem @entity {
   "Current price to buy a membership."
   membershipPrice: BigInt!
 
-  "Amount of tokens diverted to invitor."
-  referralCut: BigInt!
+  "Percentage of tokens diverted to invitor."
+  referralCut: Int!
 
   "The initial, locked, balance credited to controller account of invitee."
   invitedInitialBalance: BigInt!
@@ -222,7 +222,7 @@ type ReferralCutUpdatedEvent @entity {
   member: Membership!
 
   "New cut value."
-  newValue: BigInt!
+  newValue: Int!
 }
 
 type InvitesTransferredEvent @entity {
