@@ -20,10 +20,12 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   async getExistingChannelHandles(): Promise<string[]> {
     cli.action.start('Fetching chain data...')
     const result = await Promise.all(
-      (await this.entitiesByClassAndOwner('Channel')).map(async ([, channel]) => {
-        const { handle } = await this.parseToEntityJson<ChannelEntity>(channel)
-        return handle
-      })
+      (await this.entitiesByClassAndOwner('Channel'))
+        .filter(([, c]) => c.supported_schemas.toArray().length)
+        .map(async ([, channel]) => {
+          const { handle } = await this.parseToEntityJson<ChannelEntity>(channel)
+          return handle
+        })
     )
     cli.action.stop()
 
