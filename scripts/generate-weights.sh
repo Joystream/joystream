@@ -4,6 +4,9 @@
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
+STEPS=${1:-50}
+REPEAT=${2:-20}
+
 benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
@@ -11,8 +14,8 @@ benchmark() {
       --pallet=$1 \
       --extrinsic=* \
       --chain=dev \
-      --steps=50 \
-      --repeat=20 \
+      --steps=$STEPS \
+      --repeat=$REPEAT \
       --execution=wasm \
       --output=. 2>&1 > /dev/null)
 
