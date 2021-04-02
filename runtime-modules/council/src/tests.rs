@@ -1718,7 +1718,7 @@ fn test_funding_request_succeeds() {
             origin,
             vec![
                 common::FundingRequestParameters {
-                    amount: 5,
+                    amount: 15,
                     account: 0,
                 },
                 common::FundingRequestParameters {

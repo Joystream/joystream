@@ -68,10 +68,13 @@ pub struct Opening<BlockNumber: Ord, Balance> {
     pub description_hash: Vec<u8>,
 
     /// Stake policy for the job opening.
-    pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
+    pub stake_policy: StakePolicy<BlockNumber, Balance>,
 
     /// Reward per block for the job opening.
     pub reward_per_block: Option<Balance>,
+
+    /// Stake used to create the opening.
+    pub creation_stake: Balance,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -104,13 +107,16 @@ pub struct JobApplication<AccountId, MemberId> {
     pub reward_account_id: AccountId,
 
     /// Account used to stake in this role.
-    pub staking_account_id: Option<AccountId>,
+    pub staking_account_id: AccountId,
 
     /// Member applying.
     pub member_id: MemberId,
 
     /// Hash of the application description.
     pub description_hash: Vec<u8>,
+
+    /// Opening ID for the application
+    pub opening_id: OpeningId,
 }
 
 impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
@@ -118,8 +124,9 @@ impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
     pub fn new(
         role_account_id: &AccountId,
         reward_account_id: &AccountId,
-        staking_account_id: &Option<AccountId>,
+        staking_account_id: &AccountId,
         member_id: &MemberId,
+        opening_id: OpeningId,
         description_hash: Vec<u8>,
     ) -> Self {
         JobApplication {
@@ -127,6 +134,7 @@ impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
             reward_account_id: reward_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
             member_id: member_id.clone(),
+            opening_id,
             description_hash,
         }
     }
@@ -143,7 +151,7 @@ pub struct GroupWorker<AccountId, MemberId, BlockNumber, Balance> {
     pub role_account_id: AccountId,
 
     /// Account used to stake in this role.
-    pub staking_account_id: Option<AccountId>,
+    pub staking_account_id: AccountId,
 
     /// Reward account id.
     pub reward_account_id: AccountId,
@@ -152,6 +160,7 @@ pub struct GroupWorker<AccountId, MemberId, BlockNumber, Balance> {
     pub started_leaving_at: Option<BlockNumber>,
 
     /// Unstaking period when the worker chooses to leave the role.
+    ///
     /// It is defined by the job opening.
     pub job_unstaking_period: BlockNumber,
 
@@ -173,7 +182,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
         member_id: &MemberId,
         role_account_id: &AccountId,
         reward_account_id: &AccountId,
-        staking_account_id: &Option<AccountId>,
+        staking_account_id: &AccountId,
         job_unstaking_period: BlockNumber,
         reward_per_block: Option<Balance>,
         created_at: BlockNumber,
@@ -228,7 +237,7 @@ pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
     pub description: Vec<u8>,
 
     /// Stake information for the application.
-    pub stake_parameters: Option<StakeParameters<AccountId, Balance>>,
+    pub stake_parameters: StakeParameters<AccountId, Balance>,
 }
 
 /// Contains information for the stakes when applying for opening.

@@ -20,7 +20,15 @@ fn create_class_success() {
         let default_class = create_class_with_default_permissions();
         assert_eq!(class_by_id(FIRST_CLASS_ID), default_class);
 
-        let class_created_event = get_test_event(RawEvent::ClassCreated(FIRST_CLASS_ID));
+        let class = get_class_for(ClassType::Valid);
+        let class_created_event = get_test_event(RawEvent::ClassCreated(
+            FIRST_CLASS_ID,
+            class.get_name().to_owned(),
+            class.get_description().to_owned(),
+            class.get_permissions_ref().to_owned(),
+            class.get_maximum_entities_count(),
+            class.get_default_entity_creation_voucher_upper_bound(),
+        ));
 
         // Event checked
         assert_event(class_created_event, number_of_events_before_call + 1);

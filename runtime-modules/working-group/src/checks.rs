@@ -12,6 +12,7 @@ use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
+use staking_handler::StakingHandler;
 
 use crate::types::{ApplicationInfo, StakeParameters};
 
@@ -32,9 +33,33 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
     }
 }
 
+pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    opening_type: OpeningType,
+) -> DispatchResult {
+    // Lead needs stake to generate opening
+    if opening_type == OpeningType::Regular {
+        // We check here that the origin is active leader
+        // just to make this future proof for any change in
+        // `ensure_origin_for_opening_type`
+        ensure_origin_is_active_leader::<T, I>(origin)?;
+        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?);
+
+        ensure!(
+            T::StakingHandler::is_enough_balance_for_stake(
+                &lead.staking_account_id,
+                T::LeaderOpeningStake::get()
+            ),
+            Error::<T, I>::InsufficientBalanceToCoverStake
+        );
+    }
+
+    Ok(())
+}
+
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
-    opening_id: &OpeningId,
+    opening_id: OpeningId,
 ) -> Result<Opening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
@@ -188,19 +213,17 @@ pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
 
 // Check opening: verifies stake policy for the opening.
 pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
-    stake_policy: &Option<StakePolicy<T::BlockNumber, BalanceOf<T>>>,
+    stake_policy: &StakePolicy<T::BlockNumber, BalanceOf<T>>,
 ) -> Result<(), DispatchError> {
-    if let Some(stake_policy) = stake_policy {
-        ensure!(
-            stake_policy.stake_amount != Zero::zero(),
-            Error::<T, I>::CannotStakeZero
-        );
+    ensure!(
+        stake_policy.stake_amount >= T::MinimumApplicationStake::get(),
+        Error::<T, I>::BelowMinimumStakes
+    );
 
-        ensure!(
-            stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
-            Error::<T, I>::UnstakingPeriodLessThanMinimum
-        );
-    }
+    ensure!(
+        stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
+        Error::<T, I>::UnstakingPeriodLessThanMinimum
+    );
 
     Ok(())
 }
@@ -222,19 +245,12 @@ pub(crate) fn ensure_valid_reward_per_block<T: Trait<I>, I: Instance>(
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
     opening: &Opening<T::BlockNumber, BalanceOf<T>>,
-    stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOf<T>>>,
+    stake_parameters: &StakeParameters<T::AccountId, BalanceOf<T>>,
 ) -> DispatchResult {
-    let opening_stake_balance = opening
-        .stake_policy
-        .clone()
-        .unwrap_or_default()
-        .stake_amount;
-
-    let application_stake_balance = stake_parameters.clone().unwrap_or_default().stake;
-
-    if application_stake_balance < opening_stake_balance {
-        return Err(Error::<T, I>::ApplicationStakeDoesntMatchOpening.into());
-    }
+    ensure!(
+        opening.stake_policy.stake_amount <= stake_parameters.stake,
+        Error::<T, I>::ApplicationStakeDoesntMatchOpening
+    );
 
     Ok(())
 }

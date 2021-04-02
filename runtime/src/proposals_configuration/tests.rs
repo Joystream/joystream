@@ -192,3 +192,48 @@ fn proposal_parameters_are_initialized_set_invitation_count() {
 
     assert_eq!(default_proposal_parameters(), actual_params);
 }
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_create_blog_post_proposal() {
+    let actual_params = super::CreateBlogPostProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_edit_blog_post_proposal() {
+    let actual_params = super::EditBlogPostProoposalParamters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_lock_blog_post_proposal() {
+    let actual_params = super::LockBlogPostProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_unlock_blog_post_proposal() {
+    let actual_params = super::UnlockBlogPostProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}
+
+// Enable during the conditional compilation tests.
+#[test]
+#[ignore]
+fn proposal_parameters_are_initialized_veto_proposal_proposal() {
+    let actual_params = super::VetoProposalProposalParameters::get();
+
+    assert_eq!(default_proposal_parameters(), actual_params);
+}

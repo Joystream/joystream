@@ -9,133 +9,129 @@ pub struct WeightInfo;
 impl working_group::WeightInfo for WeightInfo {
     fn on_initialize_leaving(i: u32) -> Weight {
         (0 as Weight)
-            .saturating_add((744_041_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((496_301_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
             .saturating_add(DbWeight::get().writes((3 as Weight).saturating_mul(i as Weight)))
     }
     fn on_initialize_rewarding_with_missing_reward(i: u32) -> Weight {
-        (2_692_227_000 as Weight)
-            .saturating_add((490_219_000 as Weight).saturating_mul(i as Weight))
+        (32_208_000 as Weight)
+            .saturating_add((361_542_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
             .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
     }
     fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32) -> Weight {
-        (106_702_000 as Weight)
-            .saturating_add((382_691_000 as Weight).saturating_mul(i as Weight))
+        (129_133_000 as Weight)
+            .saturating_add((233_951_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
     }
     fn on_initialize_rewarding_without_missing_reward(i: u32) -> Weight {
-        (946_654_000 as Weight)
-            .saturating_add((326_825_000 as Weight).saturating_mul(i as Weight))
+        (82_724_000 as Weight)
+            .saturating_add((222_551_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn apply_on_opening(i: u32) -> Weight {
-        (583_905_000 as Weight)
-            .saturating_add((2_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add(DbWeight::get().reads(5 as Weight))
+        (532_302_000 as Weight)
+            .saturating_add((144_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(4 as Weight))
     }
     fn fill_opening_lead() -> Weight {
-        (517_943_000 as Weight)
+        (441_600_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(6 as Weight))
     }
     fn fill_opening_worker(i: u32) -> Weight {
-        (0 as Weight)
-            .saturating_add((337_560_000 as Weight).saturating_mul(i as Weight))
+        (145_112_000 as Weight)
+            .saturating_add((257_669_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(3 as Weight))
             .saturating_add(DbWeight::get().writes((2 as Weight).saturating_mul(i as Weight)))
     }
     fn update_role_account() -> Weight {
-        (405_699_000 as Weight)
+        (278_339_000 as Weight)
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn cancel_opening() -> Weight {
-        (284_090_000 as Weight)
+        (201_764_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn withdraw_application() -> Weight {
-        (412_772_000 as Weight)
+        (291_554_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(3 as Weight))
     }
     fn slash_stake(i: u32) -> Weight {
-        (827_597_000 as Weight)
-            .saturating_add((4_000 as Weight).saturating_mul(i as Weight))
+        (605_562_000 as Weight)
+            .saturating_add((122_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn terminate_role_worker(i: u32) -> Weight {
-        (1_268_966_000 as Weight)
-            .saturating_add((14_000 as Weight).saturating_mul(i as Weight))
+        (961_187_000 as Weight)
+            .saturating_add((249_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(5 as Weight))
     }
     fn terminate_role_lead(i: u32) -> Weight {
-        (1_266_771_000 as Weight)
-            .saturating_add((5_000 as Weight).saturating_mul(i as Weight))
+        (986_954_000 as Weight)
+            .saturating_add((255_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(6 as Weight))
     }
     fn increase_stake() -> Weight {
-        (783_675_000 as Weight)
+        (393_177_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn decrease_stake() -> Weight {
-        (895_623_000 as Weight)
+        (456_618_000 as Weight)
             .saturating_add(DbWeight::get().reads(5 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
     fn spend_from_budget() -> Weight {
-        (307_455_000 as Weight)
+        (227_722_000 as Weight)
             .saturating_add(DbWeight::get().reads(4 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn update_reward_amount() -> Weight {
-        (420_916_000 as Weight)
+        (309_008_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn set_status_text(i: u32) -> Weight {
-        (238_830_000 as Weight)
-            .saturating_add((68_000 as Weight).saturating_mul(i as Weight))
+        (182_500_000 as Weight)
+            .saturating_add((127_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn update_reward_account() -> Weight {
-        (313_123_000 as Weight)
+        (240_377_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn set_budget() -> Weight {
-        (81_417_000 as Weight).saturating_add(DbWeight::get().writes(1 as Weight))
+        (66_927_000 as Weight).saturating_add(DbWeight::get().writes(1 as Weight))
     }
     fn add_opening(i: u32) -> Weight {
-        (290_743_000 as Weight)
-            .saturating_add((2_000 as Weight).saturating_mul(i as Weight))
+        (233_945_000 as Weight)
+            .saturating_add((127_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(3 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
-    fn leave_role_immediatly() -> Weight {
-        (544_861_000 as Weight)
-            .saturating_add(DbWeight::get().reads(5 as Weight))
-            .saturating_add(DbWeight::get().writes(4 as Weight))
-    }
-    fn leave_role_later() -> Weight {
-        (341_012_000 as Weight)
+    fn leave_role(i: u32) -> Weight {
+        (221_051_000 as Weight)
+            .saturating_add((28_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }

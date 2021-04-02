@@ -88,10 +88,8 @@ fn member_account<T: common::membership::Trait + balances::Trait + membership::T
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -253,7 +251,7 @@ benchmarks! {
 
         let text = vec![0u8; j.try_into().unwrap()];
 
-    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text)
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone())
     verify {
         let post_id = T::PostId::from(1);
 
@@ -264,7 +262,13 @@ benchmarks! {
             "Post author isn't correct"
         );
 
-        assert_last_event::<T>(RawEvent::PostCreated(post_id, caller_member_id).into());
+        assert_last_event::<T>(RawEvent::PostCreated(
+                post_id,
+                caller_member_id,
+                thread_id,
+                text
+            ).into()
+        );
     }
 
     update_post {
@@ -297,9 +301,9 @@ benchmarks! {
         assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
 
         let new_text = vec![0u8; j.try_into().unwrap()];
-    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text)
+    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text.clone())
     verify {
-        assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
+        assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id, thread_id, new_text).into());
     }
 
     change_thread_mode {
@@ -338,7 +342,12 @@ benchmarks! {
             "Thread not correctly updated"
         );
 
-        assert_last_event::<T>(RawEvent::ThreadModeChanged(thread_id, mode).into());
+        assert_last_event::<T>(RawEvent::ThreadModeChanged(
+                thread_id,
+                mode,
+                caller_member_id
+            ).into()
+        );
     }
 }
 

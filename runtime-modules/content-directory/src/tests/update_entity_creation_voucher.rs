@@ -35,9 +35,12 @@ fn create_entity_creation_voucher_success() {
             entity_voucher,
         );
 
-        let entity_creation_voucher_created_event = get_test_event(
-            RawEvent::EntityCreationVoucherCreated(entity_controller, entity_voucher),
-        );
+        let entity_creation_voucher_created_event =
+            get_test_event(RawEvent::EntityCreationVoucherCreated(
+                entity_controller,
+                entity_voucher,
+                FIRST_CLASS_ID,
+            ));
 
         // Last event checked
         assert_event(
@@ -96,9 +99,12 @@ fn update_entity_creation_voucher_success() {
             entity_creation_voucher
         );
 
-        let entity_creation_voucher_created_event = get_test_event(
-            RawEvent::EntityCreationVoucherUpdated(entity_controller, entity_creation_voucher),
-        );
+        let entity_creation_voucher_created_event =
+            get_test_event(RawEvent::EntityCreationVoucherUpdated(
+                entity_controller,
+                entity_creation_voucher,
+                FIRST_CLASS_ID,
+            ));
 
         // Last event checked
         assert_event(

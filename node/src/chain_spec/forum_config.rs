@@ -2,7 +2,7 @@ use codec::Decode;
 use node_runtime::{
     forum,
     forum::{Category, Post, Thread},
-    AccountId, ForumConfig, Moment, PostId, Runtime, ThreadId,
+    AccountId, Balance, BlockNumber, ForumConfig, Moment, PostId, Runtime, ThreadId,
 };
 use serde::Deserialize;
 use sp_core::H256;
@@ -11,16 +11,19 @@ use std::{fs, path::Path};
 type CategoryId = <Runtime as forum::Trait>::CategoryId;
 type ForumUserId = forum::ForumUserId<Runtime>;
 type ModeratorId = forum::ModeratorId<Runtime>;
+type Hash = H256;
+type PostOf = Post<ForumUserId, ThreadId, H256, Balance, BlockNumber>;
+
 type ThreadOf = (
     CategoryId,
     ThreadId,
-    Thread<ForumUserId, CategoryId, Moment, H256>,
+    Thread<ForumUserId, CategoryId, Moment, Hash, Balance>,
 );
 
 #[derive(Decode)]
 struct ForumData {
-    categories: Vec<(CategoryId, Category<CategoryId, ThreadId, H256>)>,
-    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, H256>)>,
+    categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
+    posts: Vec<(ThreadId, PostId, PostOf)>,
     threads: Vec<ThreadOf>,
     category_by_moderator: Vec<(CategoryId, ModeratorId, ())>,
     data_migration_done: bool,

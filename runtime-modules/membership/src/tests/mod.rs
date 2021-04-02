@@ -13,6 +13,7 @@ use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
+use sp_arithmetic::Perbill;
 use sp_runtime::DispatchError;
 
 #[test]
@@ -39,7 +40,10 @@ fn buy_membership_succeeds() {
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(next_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(
+            next_member_id,
+            get_alice_membership_parameters(),
+        ));
     });
 }
 
@@ -61,8 +65,8 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
     build_test_externalities().execute_with(|| {
         let initial_balance = DefaultMembershipPrice::get();
         let lock_id = LockIdentifier::default();
-        Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
         set_alice_free_balance(initial_balance);
+        Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
 
         assert_dispatch_error_message(
             buy_default_membership_as_alice(),
@@ -104,10 +108,8 @@ fn update_profile_succeeds() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            info.name,
-            info.handle,
-            info.avatar_uri,
-            info.about,
+            info.handle.clone(),
+            Some(info.metadata.clone()),
         ));
 
         let profile = get_membership_by_id(next_member_id);
@@ -118,7 +120,11 @@ fn update_profile_succeeds() {
             get_bob_info().handle_hash.unwrap()
         ));
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(next_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberProfileUpdated(
+            next_member_id,
+            info.handle,
+            Some(info.metadata),
+        ));
     });
 }
 
@@ -134,8 +140,6 @@ fn update_profile_has_no_effect_on_empty_parameters() {
         assert_ok!(Membership::update_profile(
             Origin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
-            None,
-            None,
             None,
             None,
         ));
@@ -174,6 +178,8 @@ fn update_profile_accounts_succeeds() {
 
         EventFixture::assert_last_crate_event(Event::<Test>::MemberAccountsUpdated(
             ALICE_MEMBER_ID,
+            Some(ALICE_NEW_ACCOUNT_ID),
+            Some(ALICE_NEW_ACCOUNT_ID),
         ));
     });
 }
@@ -216,6 +222,7 @@ fn update_verification_status_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberVerificationStatusUpdated(
             next_member_id,
             true,
+            UpdateMembershipVerificationFixture::default().worker_id,
         ));
     });
 }
@@ -311,14 +318,17 @@ fn referral_bonus_calculated_successfully() {
     build_test_externalities().execute_with(|| {
         // it should take minimum of the referral cut and membership fee
         let membership_fee = DefaultMembershipPrice::get();
-        let diff = 10;
+        let diff = 10u8;
 
-        let referral_cut = membership_fee.saturating_sub(diff);
-        <crate::ReferralCut<Test>>::put(referral_cut);
-        assert_eq!(Membership::get_referral_bonus(), referral_cut);
+        let referral_cut = 100 - diff;
+        <crate::ReferralCut>::put(referral_cut);
+        assert_eq!(
+            Membership::get_referral_bonus(),
+            Perbill::from_percent(referral_cut.into()) * membership_fee
+        );
 
-        let referral_cut = membership_fee.saturating_add(diff);
-        <crate::ReferralCut<Test>>::put(referral_cut);
+        let referral_cut = 100 + diff; // Incorrect value
+        <crate::ReferralCut>::put(referral_cut);
         assert_eq!(Membership::get_referral_bonus(), membership_fee);
     });
 }
@@ -334,6 +344,19 @@ fn set_referral_cut_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::ReferralCutUpdated(
             DEFAULT_REFERRAL_CUT_VALUE,
         ));
+    });
+}
+
+#[test]
+fn set_referral_fails_exceeding_the_limit() {
+    build_test_externalities().execute_with(|| {
+        let invalid_referral_cut_value = ReferralCutMaximumPercent::get() + 1;
+
+        SetReferralCutFixture::default()
+            .with_referral_cut(invalid_referral_cut_value)
+            .call_and_assert(Err(
+                Error::<Test>::CannotExceedReferralCutPercentLimit.into()
+            ));
     });
 }
 
@@ -485,7 +508,28 @@ fn invite_member_succeeds() {
         // Invited member balance locked.
         assert_eq!(0, Balances::usable_balance(&profile.controller_account));
 
-        EventFixture::assert_last_crate_event(Event::<Test>::MemberRegistered(bob_member_id));
+        EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
+            bob_member_id,
+            InviteMembershipFixture::default().get_invite_membership_parameters(),
+        ));
+    });
+}
+
+#[test]
+fn invite_member_fails_with_existing_invitation_lock() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = DefaultMembershipPrice::get();
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        InviteMembershipFixture::default().call_and_assert(Ok(()));
+
+        <Test as Trait>::WorkingGroup::set_budget(initial_balance);
+
+        InviteMembershipFixture::default()
+            .with_handle(b"bob2".to_vec())
+            .call_and_assert(Err(Error::<Test>::ConflictingLock.into()));
     });
 }
 
@@ -658,7 +702,7 @@ fn set_leader_invitation_quota_with_invalid_origin() {
 fn set_leader_invitation_quota_fails_with_not_found_leader_membership() {
     build_test_externalities().execute_with(|| {
         SetLeaderInvitationQuotaFixture::default()
-            .call_and_assert(Err(Error::<Test>::MemberProfileNotFound.into()));
+            .call_and_assert(Err(Error::<Test>::WorkingGroupLeaderNotSet.into()));
     });
 }
 
@@ -758,6 +802,17 @@ fn add_staking_account_candidate_fails_with_duplicated_staking_account_id() {
 
         AddStakingAccountFixture::default()
             .call_and_assert(Err(Error::<Test>::StakingAccountIsAlreadyRegistered.into()));
+    });
+}
+
+#[test]
+fn add_staking_account_candidate_fails_with_insufficient_balance() {
+    let initial_members = [(ALICE_MEMBER_ID, ALICE_ACCOUNT_ID)];
+
+    build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
+        AddStakingAccountFixture::default()
+            .with_initial_balance(<Test as Trait>::CandidateStake::get() - 1)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceToCoverStake.into()));
     });
 }
 

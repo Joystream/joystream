@@ -25,7 +25,7 @@ fn update_entity_property_values_success() {
             LEAD_ORIGIN,
             actor.clone(),
             FIRST_ENTITY_ID,
-            second_schema_new_property_values
+            second_schema_new_property_values.clone()
         ));
 
         // Runtime tested state after call
@@ -50,9 +50,13 @@ fn update_entity_property_values_success() {
         let mut side_effects = ReferenceCounterSideEffects::default();
         side_effects.insert(SECOND_ENTITY_ID, side_effect);
 
-        let entity_property_values_updated_event = get_test_event(
-            RawEvent::EntityPropertyValuesUpdated(actor, FIRST_ENTITY_ID, Some(side_effects)),
-        );
+        let entity_property_values_updated_event =
+            get_test_event(RawEvent::EntityPropertyValuesUpdated(
+                actor,
+                FIRST_ENTITY_ID,
+                Some(side_effects),
+                second_schema_new_property_values,
+            ));
 
         // Last event checked
         assert_event(

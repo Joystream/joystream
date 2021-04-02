@@ -261,7 +261,10 @@ parameter_types! {
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
     pub const MaxWinnerTargetCount: u64 = 10;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 mod balances_mod {
@@ -370,10 +373,10 @@ impl referendum::WeightInfo for Weights {
 }
 
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -397,7 +400,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -443,6 +446,10 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
@@ -499,7 +506,7 @@ impl Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -989,8 +996,8 @@ where
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
-                staking_account_id,
-                reward_account_id,
+                staking_account_id.clone(),
+                reward_account_id.clone(),
                 stake
             ),
             expected_result,
@@ -1005,7 +1012,12 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::NewCandidate(member_id.into(), stake.into())),
+            TestEvent::event_mod(RawEvent::NewCandidate(
+                member_id.into(),
+                staking_account_id.into(),
+                reward_account_id.into(),
+                stake.into()
+            )),
         );
     }
 

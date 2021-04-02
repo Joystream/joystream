@@ -91,13 +91,13 @@ decl_event!(
         ThreadCreated(ThreadId, MemberId),
 
         /// Emits on post creation.
-        PostCreated(PostId, MemberId),
+        PostCreated(PostId, MemberId, ThreadId, Vec<u8>),
 
         /// Emits on post update.
-        PostUpdated(PostId, MemberId),
+        PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
 
         /// Emits on thread mode change.
-        ThreadModeChanged(ThreadId, ThreadMode<MemberId>),
+        ThreadModeChanged(ThreadId, ThreadMode<MemberId>, MemberId),
     }
 );
 
@@ -204,7 +204,7 @@ decl_module! {
             origin,
             post_author_id: MemberId<T>,
             thread_id : T::ThreadId,
-            _text : Vec<u8>
+            text : Vec<u8>
         ) {
             T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
@@ -227,7 +227,7 @@ decl_module! {
             let post_id = T::PostId::from(new_post_id);
             <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             PostCount::put(next_post_count_value);
-            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id));
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
@@ -244,7 +244,7 @@ decl_module! {
             origin,
             thread_id: T::ThreadId,
             post_id : T::PostId,
-            _text : Vec<u8>
+            text : Vec<u8>
         ){
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
             ensure!(
@@ -261,7 +261,7 @@ decl_module! {
 
             // mutation
 
-            Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id));
+            Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id, thread_id, text));
        }
 
         /// Changes thread permission mode.
@@ -313,7 +313,7 @@ decl_module! {
                 thread.mode = mode.clone();
             });
 
-            Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode));
+            Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode, member_id));
        }
     }
 }

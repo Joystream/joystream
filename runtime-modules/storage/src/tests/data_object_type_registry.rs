@@ -15,7 +15,7 @@ impl SetLeadFixture {
         let worker = working_group::Worker::<Test> {
             member_id: DEFAULT_LEADER_MEMBER_ID,
             role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
-            staking_account_id: None,
+            staking_account_id: DEFAULT_LEADER_ACCOUNT_ID,
             reward_account_id: DEFAULT_LEADER_ACCOUNT_ID,
             started_leaving_at: None,
             job_unstaking_period: 0,
@@ -40,7 +40,7 @@ impl SetLeadFixture {
 fn get_last_data_object_type_id() -> u64 {
     let dot_id = match System::events().last().unwrap().event {
         MetaEvent::data_object_type_registry(
-            data_object_type_registry::RawEvent::DataObjectTypeRegistered(dot_id),
+            data_object_type_registry::RawEvent::DataObjectTypeRegistered(dot_id, _),
         ) => dot_id,
         _ => 0xdeadbeefu64, // unlikely value
     };
@@ -238,7 +238,7 @@ fn update_existing() {
         let res = TestDataObjectTypeRegistry::update_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
             dot_id,
-            updated3,
+            updated3.clone(),
         );
         assert!(res.is_ok());
         assert_eq!(
@@ -246,7 +246,7 @@ fn update_existing() {
             EventRecord {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
-                    data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id)
+                    data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id, updated3)
                 ),
                 topics: vec![],
             }
@@ -291,7 +291,7 @@ fn activate_existing() {
         };
         let id_res = TestDataObjectTypeRegistry::register_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
-            data,
+            data.clone(),
         );
         assert!(id_res.is_ok());
         assert_eq!(
@@ -300,7 +300,8 @@ fn activate_existing() {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeRegistered(
-                        expected_data_object_type_id
+                        expected_data_object_type_id,
+                        data
                     )
                 ),
                 topics: vec![],
@@ -323,7 +324,7 @@ fn activate_existing() {
             EventRecord {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
-                    data_object_type_registry::RawEvent::DataObjectTypeUpdated(
+                    data_object_type_registry::RawEvent::DataObjectTypeActivationChanged(
                         expected_data_object_type_id
                     )
                 ),

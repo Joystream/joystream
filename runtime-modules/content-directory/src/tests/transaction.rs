@@ -58,11 +58,12 @@ fn transaction_success() {
         let operations_count = operations.len();
 
         // Complete transaction
-        assert_ok!(transaction(LEAD_ORIGIN, actor.clone(), operations));
+        assert_ok!(transaction(LEAD_ORIGIN, actor.clone(), operations.clone()));
 
         // Runtime tested state after call
 
-        let transaction_completed_event = get_test_event(RawEvent::TransactionCompleted(actor));
+        let transaction_completed_event =
+            get_test_event(RawEvent::TransactionCompleted(actor, operations));
 
         // Last event checked
         assert_event(

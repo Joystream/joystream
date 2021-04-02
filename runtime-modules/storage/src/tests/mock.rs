@@ -100,6 +100,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -138,7 +139,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl balances::Trait for Test {
@@ -157,6 +158,10 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -169,6 +174,8 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {
@@ -235,10 +242,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn add_opening(_: u32) -> Weight {
         0
     }
-    fn leave_role_immediatly() -> Weight {
-        0
-    }
-    fn leave_role_later() -> Weight {
+    fn leave_role(_: u32) -> Weight {
         0
     }
 }
@@ -246,10 +250,10 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -273,7 +277,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -356,6 +360,10 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
@@ -500,7 +508,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
     let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        staking_account_id: None,
+        staking_account_id: 1,
         reward_account_id: role_account_id,
         started_leaving_at: None,
         job_unstaking_period: 0,

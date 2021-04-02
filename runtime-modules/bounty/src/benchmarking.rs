@@ -86,10 +86,8 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -396,7 +394,11 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: fund_bounty (RawOrigin::Signed(account_id.clone()), BountyActor::Member(member_id), bounty_id, amount)
     verify {
-        assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() - amount);
+        assert_eq!(
+            Balances::<T>::usable_balance(&account_id),
+            // included staking account deposit
+            initial_balance::<T>() - amount - T::CandidateStake::get()
+        );
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
 
@@ -473,7 +475,12 @@ benchmarks! {
 
     }: withdraw_funding (RawOrigin::Signed(account_id.clone()), funder, bounty_id)
     verify {
-        assert_eq!(Balances::<T>::usable_balance(&account_id), initial_balance::<T>() + cherry);
+        assert_eq!(
+            Balances::<T>::usable_balance(&account_id),
+            // included staking account deposit
+            initial_balance::<T>() - T::CandidateStake::get() + cherry
+        );
+
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
