@@ -19,10 +19,10 @@ export class OpeningMetadata extends jspb.Message {
   getHiringLimit(): number | undefined;
   setHiringLimit(value: number): void;
 
-  hasExpectedDuration(): boolean;
-  clearExpectedDuration(): void;
-  getExpectedDuration(): number | undefined;
-  setExpectedDuration(value: number): void;
+  hasExpectedEndingTimestamp(): boolean;
+  clearExpectedEndingTimestamp(): void;
+  getExpectedEndingTimestamp(): number | undefined;
+  setExpectedEndingTimestamp(value: number): void;
 
   hasApplicationDetails(): boolean;
   clearApplicationDetails(): void;
@@ -49,7 +49,7 @@ export namespace OpeningMetadata {
     shortDescription?: string,
     description?: string,
     hiringLimit?: number,
-    expectedDuration?: number,
+    expectedEndingTimestamp?: number,
     applicationDetails?: string,
     applicationFormQuestionsList: Array<OpeningMetadata.ApplicationFormQuestion.AsObject>,
   }

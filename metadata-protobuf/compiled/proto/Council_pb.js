@@ -78,7 +78,7 @@ proto.CouncilCandidacyNoteMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     header: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     bulletPointsList: (f = jspb.Message.getRepeatedField(msg, 2)) == null ? undefined : f,
-    coverImage: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
+    bannerImageUri: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
     description: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f
   };
 
@@ -126,7 +126,7 @@ proto.CouncilCandidacyNoteMetadata.deserializeBinaryFromReader = function(msg, r
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
-      msg.setCoverImage(value);
+      msg.setBannerImageUri(value);
       break;
     case 4:
       var value = /** @type {string} */ (reader.readString());
@@ -266,10 +266,10 @@ proto.CouncilCandidacyNoteMetadata.prototype.clearBulletPointsList = function() 
 
 
 /**
- * optional string cover_image = 3;
+ * optional string banner_image_uri = 3;
  * @return {string}
  */
-proto.CouncilCandidacyNoteMetadata.prototype.getCoverImage = function() {
+proto.CouncilCandidacyNoteMetadata.prototype.getBannerImageUri = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
@@ -278,7 +278,7 @@ proto.CouncilCandidacyNoteMetadata.prototype.getCoverImage = function() {
  * @param {string} value
  * @return {!proto.CouncilCandidacyNoteMetadata} returns this
  */
-proto.CouncilCandidacyNoteMetadata.prototype.setCoverImage = function(value) {
+proto.CouncilCandidacyNoteMetadata.prototype.setBannerImageUri = function(value) {
   return jspb.Message.setField(this, 3, value);
 };
 
@@ -287,7 +287,7 @@ proto.CouncilCandidacyNoteMetadata.prototype.setCoverImage = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.CouncilCandidacyNoteMetadata} returns this
  */
-proto.CouncilCandidacyNoteMetadata.prototype.clearCoverImage = function() {
+proto.CouncilCandidacyNoteMetadata.prototype.clearBannerImageUri = function() {
   return jspb.Message.setField(this, 3, undefined);
 };
 
@@ -296,7 +296,7 @@ proto.CouncilCandidacyNoteMetadata.prototype.clearCoverImage = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.CouncilCandidacyNoteMetadata.prototype.hasCoverImage = function() {
+proto.CouncilCandidacyNoteMetadata.prototype.hasBannerImageUri = function() {
   return jspb.Message.getField(this, 3) != null;
 };
 

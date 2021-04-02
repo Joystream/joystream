@@ -74,7 +74,6 @@ export class QueryNodeApi {
           handle
           metadata {
             name
-            avatarUri
             about
           }
           controllerAccount
@@ -120,7 +119,6 @@ export class QueryNodeApi {
           handle
           metadata {
             name
-            avatarUri
             about
           }
           referrer {
@@ -156,7 +154,6 @@ export class QueryNodeApi {
           newHandle
           newMetadata {
             name
-            avatarUri
             about
           }
         }
@@ -224,7 +221,6 @@ export class QueryNodeApi {
           metadata {
             name
             about
-            avatarUri
           }
         }
       }

@@ -146,7 +146,7 @@ proto.OpeningMetadata.toObject = function(includeInstance, msg) {
     shortDescription: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
     description: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
     hiringLimit: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
-    expectedDuration: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
+    expectedEndingTimestamp: (f = jspb.Message.getField(msg, 4)) == null ? undefined : f,
     applicationDetails: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
     applicationFormQuestionsList: jspb.Message.toObjectList(msg.getApplicationFormQuestionsList(),
     proto.OpeningMetadata.ApplicationFormQuestion.toObject, includeInstance)
@@ -199,8 +199,8 @@ proto.OpeningMetadata.deserializeBinaryFromReader = function(msg, reader) {
       msg.setHiringLimit(value);
       break;
     case 4:
-      var value = /** @type {number} */ (reader.readUint32());
-      msg.setExpectedDuration(value);
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setExpectedEndingTimestamp(value);
       break;
     case 5:
       var value = /** @type {string} */ (reader.readString());
@@ -263,7 +263,7 @@ proto.OpeningMetadata.serializeBinaryToWriter = function(message, writer) {
   }
   f = /** @type {number} */ (jspb.Message.getField(message, 4));
   if (f != null) {
-    writer.writeUint32(
+    writer.writeUint64(
       4,
       f
     );
@@ -599,10 +599,10 @@ proto.OpeningMetadata.prototype.hasHiringLimit = function() {
 
 
 /**
- * required uint32 expected_duration = 4;
+ * required uint64 expected_ending_timestamp = 4;
  * @return {number}
  */
-proto.OpeningMetadata.prototype.getExpectedDuration = function() {
+proto.OpeningMetadata.prototype.getExpectedEndingTimestamp = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
 };
 
@@ -611,7 +611,7 @@ proto.OpeningMetadata.prototype.getExpectedDuration = function() {
  * @param {number} value
  * @return {!proto.OpeningMetadata} returns this
  */
-proto.OpeningMetadata.prototype.setExpectedDuration = function(value) {
+proto.OpeningMetadata.prototype.setExpectedEndingTimestamp = function(value) {
   return jspb.Message.setField(this, 4, value);
 };
 
@@ -620,7 +620,7 @@ proto.OpeningMetadata.prototype.setExpectedDuration = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.OpeningMetadata} returns this
  */
-proto.OpeningMetadata.prototype.clearExpectedDuration = function() {
+proto.OpeningMetadata.prototype.clearExpectedEndingTimestamp = function() {
   return jspb.Message.setField(this, 4, undefined);
 };
 
@@ -629,7 +629,7 @@ proto.OpeningMetadata.prototype.clearExpectedDuration = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.OpeningMetadata.prototype.hasExpectedDuration = function() {
+proto.OpeningMetadata.prototype.hasExpectedEndingTimestamp = function() {
   return jspb.Message.getField(this, 4) != null;
 };
 

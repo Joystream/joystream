@@ -9,10 +9,10 @@ export class MembershipMetadata extends jspb.Message {
   getName(): string | undefined;
   setName(value: string): void;
 
-  hasAvatarUri(): boolean;
-  clearAvatarUri(): void;
-  getAvatarUri(): string | undefined;
-  setAvatarUri(value: string): void;
+  hasAvatar(): boolean;
+  clearAvatar(): void;
+  getAvatar(): number | undefined;
+  setAvatar(value: number): void;
 
   hasAbout(): boolean;
   clearAbout(): void;
@@ -32,7 +32,7 @@ export class MembershipMetadata extends jspb.Message {
 export namespace MembershipMetadata {
   export type AsObject = {
     name?: string,
-    avatarUri?: string,
+    avatar?: number,
     about?: string,
   }
 }

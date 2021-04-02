@@ -14,10 +14,10 @@ export class CouncilCandidacyNoteMetadata extends jspb.Message {
   setBulletPointsList(value: Array<string>): void;
   addBulletPoints(value: string, index?: number): string;
 
-  hasCoverImage(): boolean;
-  clearCoverImage(): void;
-  getCoverImage(): string | undefined;
-  setCoverImage(value: string): void;
+  hasBannerImageUri(): boolean;
+  clearBannerImageUri(): void;
+  getBannerImageUri(): string | undefined;
+  setBannerImageUri(value: string): void;
 
   hasDescription(): boolean;
   clearDescription(): void;
@@ -38,7 +38,7 @@ export namespace CouncilCandidacyNoteMetadata {
   export type AsObject = {
     header?: string,
     bulletPointsList: Array<string>,
-    coverImage?: string,
+    bannerImageUri?: string,
     description?: string,
   }
 }

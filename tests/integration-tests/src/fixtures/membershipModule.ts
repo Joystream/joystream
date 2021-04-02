@@ -43,7 +43,7 @@ abstract class MembershipFixture extends BaseFixture {
     const metadata = new MembershipMetadata()
     metadata.setName(`name${accountId.substring(0, 14)}`)
     metadata.setAbout(`about${accountId.substring(0, 14)}`)
-    metadata.setAvatarUri(`avatarUri${accountId.substring(0, 14)}`)
+    // TODO: avatar
     return {
       root_account: accountId,
       controller_account: accountId,
@@ -96,7 +96,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
       handle,
       rootAccount,
       controllerAccount,
-      metadata: { name, about, avatarUri },
+      metadata: { name, about },
       isVerified,
       entry,
     } = qMember as QueryNodeMembership
@@ -108,7 +108,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     assert.equal(controllerAccount, member.controller_account.toString())
     assert.equal(name, metadata.getName())
     assert.equal(about, metadata.getAbout())
-    assert.equal(avatarUri, metadata.getAvatarUri())
+    // TODO: avatar
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Paid)
   }
@@ -133,7 +133,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     assert.equal(qEvent.controllerAccount, txParams.controller_account.toString())
     assert.equal(qEvent.metadata.name, metadata.getName())
     assert.equal(qEvent.metadata.about, metadata.getAbout())
-    assert.equal(qEvent.metadata.avatarUri, metadata.getAvatarUri())
+    // TODO: avatar
   }
 
   async execute(): Promise<void> {
@@ -235,7 +235,6 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   // Update data
   private newName = 'New name'
   private newHandle = 'New handle'
-  private newAvatarUri = 'New avatar uri'
   private newAbout = 'New about'
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext) {
@@ -248,11 +247,11 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
     assert.isOk(qMember, 'Membership query result is empty')
     const {
       handle,
-      metadata: { name, avatarUri, about },
+      metadata: { name, about },
     } = qMember as QueryNodeMembership
     assert.equal(name, this.newName)
     assert.equal(handle, this.newHandle)
-    assert.equal(avatarUri, this.newAvatarUri)
+    // TODO: avatar
     assert.equal(about, this.newAbout)
   }
 
@@ -274,14 +273,14 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
     assert.equal(newHandle, this.newHandle)
     assert.equal(newMetadata.name, this.newName)
     assert.equal(newMetadata.about, this.newAbout)
-    assert.equal(newMetadata.avatarUri, this.newAvatarUri)
+    // TODO: avatar
   }
 
   async execute(): Promise<void> {
     const metadata = new MembershipMetadata()
     metadata.setName(this.newName)
     metadata.setAbout(this.newAbout)
-    metadata.setAvatarUri(this.newAvatarUri)
+    // TODO: avatar
     const tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
       this.newHandle,
@@ -386,7 +385,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
       handle,
       rootAccount,
       controllerAccount,
-      metadata: { name, about, avatarUri },
+      metadata: { name, about },
       isVerified,
       entry,
       invitedBy,
@@ -398,7 +397,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     assert.equal(controllerAccount, txParams.controller_account)
     assert.equal(name, metadata.getName())
     assert.equal(about, metadata.getAbout())
-    assert.equal(avatarUri, metadata.getAvatarUri())
+    // TODO: avatar
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Invited)
     assert.isOk(invitedBy)
@@ -426,7 +425,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
     assert.equal(qEvent.metadata.name, metadata.getName())
     assert.equal(qEvent.metadata.about, metadata.getAbout())
-    assert.equal(qEvent.metadata.avatarUri, metadata.getAvatarUri())
+    // TODO: avatar
   }
 
   async execute(): Promise<void> {

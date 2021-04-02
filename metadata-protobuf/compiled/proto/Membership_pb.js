@@ -70,7 +70,7 @@ proto.MembershipMetadata.prototype.toObject = function(opt_includeInstance) {
 proto.MembershipMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
     name: (f = jspb.Message.getField(msg, 1)) == null ? undefined : f,
-    avatarUri: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
+    avatar: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f,
     about: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f
   };
 
@@ -113,8 +113,8 @@ proto.MembershipMetadata.deserializeBinaryFromReader = function(msg, reader) {
       msg.setName(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
-      msg.setAvatarUri(value);
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setAvatar(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
@@ -156,9 +156,9 @@ proto.MembershipMetadata.serializeBinaryToWriter = function(message, writer) {
       f
     );
   }
-  f = /** @type {string} */ (jspb.Message.getField(message, 2));
+  f = /** @type {number} */ (jspb.Message.getField(message, 2));
   if (f != null) {
-    writer.writeString(
+    writer.writeUint32(
       2,
       f
     );
@@ -210,19 +210,19 @@ proto.MembershipMetadata.prototype.hasName = function() {
 
 
 /**
- * optional string avatar_uri = 2;
- * @return {string}
+ * optional uint32 avatar = 2;
+ * @return {number}
  */
-proto.MembershipMetadata.prototype.getAvatarUri = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+proto.MembershipMetadata.prototype.getAvatar = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
 };
 
 
 /**
- * @param {string} value
+ * @param {number} value
  * @return {!proto.MembershipMetadata} returns this
  */
-proto.MembershipMetadata.prototype.setAvatarUri = function(value) {
+proto.MembershipMetadata.prototype.setAvatar = function(value) {
   return jspb.Message.setField(this, 2, value);
 };
 
@@ -231,7 +231,7 @@ proto.MembershipMetadata.prototype.setAvatarUri = function(value) {
  * Clears the field making it undefined.
  * @return {!proto.MembershipMetadata} returns this
  */
-proto.MembershipMetadata.prototype.clearAvatarUri = function() {
+proto.MembershipMetadata.prototype.clearAvatar = function() {
   return jspb.Message.setField(this, 2, undefined);
 };
 
@@ -240,7 +240,7 @@ proto.MembershipMetadata.prototype.clearAvatarUri = function() {
  * Returns whether this field is set.
  * @return {boolean}
  */
-proto.MembershipMetadata.prototype.hasAvatarUri = function() {
+proto.MembershipMetadata.prototype.hasAvatar = function() {
   return jspb.Message.getField(this, 2) != null;
 };
 

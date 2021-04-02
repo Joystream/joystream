@@ -5,12 +5,95 @@ enum Network {
   OLYMPIA
 }
 
-type Block @entity {
-  "Block number as a string"
-  id: ID!
-  block: Int!
-  executedAt: DateTime!
-  network: Network!
+"The decision of the storage provider when it acts as liaison"
+enum LiaisonJudgement {
+  "Content awaits for a judgment"
+  PENDING,
+
+  "Content accepted"
+  ACCEPTED,
+
+  "Content rejected"
+  REJECTED,
+}
+
+"Manages content ids, type and storage provider decision about it"
+type DataObject @entity {
+  "Content owner"
+  owner: DataObjectOwner!
+
+  "Content added at"
+  addedAt: Int!
+
+  "Content type id"
+  typeId: Int!
+
+  "Content size in bytes"
+  size: BigInt!
+
+  "Storage provider id of the liaison"
+  liaisonId: BigInt!
+
+  "Storage provider as liaison judgment"
+  liaisonJudgement: LiaisonJudgement!
+
+  "IPFS content id"
+  ipfsContentId: String!
+
+  "Joystream runtime content"
+  joystreamContentId: String!
+}
+
+"Owner type for storage object"
+union DataObjectOwner = DataObjectOwnerMember
+  | DataObjectOwnerChannel
+  | DataObjectOwnerDao
+  | DataObjectOwnerCouncil
+  | DataObjectOwnerWorkingGroup
+
+"Asset owned by a member"
+type DataObjectOwnerMember @variant {
+  # use `BigInt` instead of `Membership` before variant relations are featured in Hydra
+  #"Member identifier"
+  #memberId: Membership!
+  "Member identifier"
+  member: BigInt!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a channel"
+type DataObjectOwnerChannel @variant {
+  # use `BigInt` instead of `Channel` before variant relations are featured in Hydra
+  #"Channel identifier"
+  #channel: Channel!
+  "Channel identifier"
+  channel: BigInt!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a DAO"
+type DataObjectOwnerDao @variant {
+  "DAO identifier"
+  dao: BigInt!
+}
+
+"Asset owned by the Council"
+type DataObjectOwnerCouncil @variant {
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a WorkingGroup"
+type DataObjectOwnerWorkingGroup @variant {
+  #"Working group identifier"
+  #workingGroup: BigInt!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
 }
 
 enum MembershipEntryMethod {
@@ -23,8 +106,8 @@ type MemberMetadata @entity {
   "Member's name"
   name: String
 
-  "A Url to member's Avatar image TODO: Storage asset"
-  avatarUri: String
+  "Avatar data object"
+  avatar: DataObject
 
   "Short text chosen by member to share information about themselves"
   about: String

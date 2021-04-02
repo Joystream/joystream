@@ -85,7 +85,7 @@ async function newMembershipFromParams(
   const metadataEntity = new MemberMetadata({
     name: metadata?.getName(),
     about: metadata?.getAbout(),
-    avatarUri: metadata?.getAvatarUri(),
+    // TODO: avatar
   })
 
   const member = new Membership({
@@ -156,9 +156,7 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   if (metadata?.hasAbout()) {
     member.metadata.about = metadata.getAbout()
   }
-  if (metadata?.hasAvatarUri()) {
-    member.metadata.avatarUri = metadata.getAvatarUri()
-  }
+  // TODO: avatar
   if (handle.isSome) {
     member.handle = bytesToString(handle.unwrap())
   }
