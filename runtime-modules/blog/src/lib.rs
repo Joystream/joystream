@@ -35,7 +35,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use errors::Error;
 pub use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::weights::Weight;
@@ -74,7 +74,9 @@ pub trait WeightInfo {
 }
 
 // The pallet's configuration trait.
-pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Trait {
+pub trait Trait<I: Instance = DefaultInstance>:
+    frame_system::Trait + common::membership::Trait
+{
     /// Origin from which participant must come.
     type ParticipantEnsureOrigin: MemberOriginValidator<
         Self::Origin,

@@ -55,7 +55,8 @@ use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
-use common::origin::{CouncilOriginValidator, MemberOriginValidator};
+use common::council::CouncilOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::{FundingRequestParameters, StakingAccountValidator};
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -175,15 +176,18 @@ pub type Balance<T> = <T as balances::Trait>::Balance;
 pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as frame_system::Trait>::Origin,
     <T as frame_system::Trait>::AccountId,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
     <T as frame_system::Trait>::Hash,
 >>::VotePower;
-pub type CastVoteOf<T> =
-    CastVote<<T as frame_system::Trait>::Hash, Balance<T>, <T as common::Trait>::MemberId>;
+pub type CastVoteOf<T> = CastVote<
+    <T as frame_system::Trait>::Hash,
+    Balance<T>,
+    <T as common::membership::Trait>::MemberId,
+>;
 
 pub type CouncilMemberOf<T> = CouncilMember<
     <T as frame_system::Trait>::AccountId,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
     Balance<T>,
     <T as frame_system::Trait>::BlockNumber,
 >;
@@ -218,7 +222,7 @@ pub trait WeightInfo {
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
 
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::Trait + balances::Trait {
+pub trait Trait: frame_system::Trait + common::membership::Trait + balances::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -272,7 +276,7 @@ pub trait ReferendumConnection<T: Trait> {
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `process_results()`.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
     );
 
     /// Process referendum results. This function MUST be called in runtime's implementation of
@@ -328,7 +332,7 @@ decl_event! {
     where
         Balance = Balance<T>,
         <T as frame_system::Trait>::BlockNumber,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
         <T as frame_system::Trait>::AccountId,
     {
         /// New council was elected
@@ -888,7 +892,7 @@ impl<T: Trait> Module<T> {
 
     // Conclude election period and elect new council if possible.
     fn end_election_period(
-        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -1066,7 +1070,7 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
     // Process candidates' results recieved from the referendum.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
     ) {
         //
         // == MUTATION SAFE ==
@@ -1566,8 +1570,8 @@ impl<T: Trait> EnsureChecks<T> {
     }
 }
 
-impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId>
-    for Module<T>
+impl<T: Trait + common::membership::Trait>
+    CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T>
 {
     fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
         EnsureChecks::<T>::ensure_user_membership(origin, &member_id)?;
@@ -1579,5 +1583,15 @@ impl<T: Trait + common::Trait> CouncilOriginValidator<T::Origin, T::MemberId, T:
         ensure!(is_councilor, Error::<T>::NotCouncilor);
 
         Ok(())
+    }
+}
+
+impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
+    fn get_budget() -> Balance<T> {
+        Self::budget()
+    }
+
+    fn set_budget(budget: Balance<T>) {
+        Mutations::<T>::set_budget(budget);
     }
 }

@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '8.0.1'
+version = '8.1.0'
 
 [dependencies]
 # Third-party dependencies
@@ -76,8 +76,9 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
-pallet_constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
+pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
+bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
 blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 
@@ -151,8 +152,9 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
     'content-directory/std',
-    'pallet_constitution/std',
+    'pallet-constitution/std',
     'staking-handler/std',
+    'bounty/std',
     'blog/std',
     'joystream-utility/std'
 ]
@@ -172,12 +174,13 @@ runtime-benchmarks = [
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",
     "joystream-utility/runtime-benchmarks",
-    "pallet_constitution/runtime-benchmarks",
+    "pallet-constitution/runtime-benchmarks",
     "working-group/runtime-benchmarks",
     "forum/runtime-benchmarks",
     "membership/runtime-benchmarks",
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
+    "bounty/runtime-benchmarks",
     "blog/runtime-benchmarks",
     "hex-literal",
 ]

@@ -21,7 +21,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 
 mod mock;
@@ -84,7 +84,7 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait + balances::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

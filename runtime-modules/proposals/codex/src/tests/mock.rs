@@ -72,7 +72,7 @@ impl_outer_dispatch! {
     }
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -162,7 +162,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -171,7 +171,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
         unimplemented!();
     }
 
@@ -181,7 +181,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -284,7 +284,7 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         _: u64,
@@ -299,7 +299,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 

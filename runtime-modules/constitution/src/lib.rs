@@ -72,7 +72,7 @@ decl_module! {
         /// - Db writes: 1 (constant value)
         /// # </weight>
         #[weight = WeightInfoConstitution::<T>::amend_constitution(constitution_text.len().saturated_into())]
-        fn amend_constitution(origin, constitution_text: Vec<u8>) {
+        pub fn amend_constitution(origin, constitution_text: Vec<u8>) {
             ensure_root(origin)?;
 
             //

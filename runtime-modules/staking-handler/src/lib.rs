@@ -62,7 +62,7 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
 pub struct StakingManager<
     T: frame_system::Trait
         + pallet_balances::Trait
-        + common::Trait
+        + common::membership::Trait
         + LockComparator<<T as pallet_balances::Trait>::Balance>,
     LockId: Get<LockIdentifier>,
 > {
@@ -73,14 +73,14 @@ pub struct StakingManager<
 impl<
         T: frame_system::Trait
             + pallet_balances::Trait
-            + common::Trait
+            + common::membership::Trait
             + LockComparator<<T as pallet_balances::Trait>::Balance>,
         LockId: Get<LockIdentifier>,
     >
     StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
     > for StakingManager<T, LockId>
 {
     fn lock(

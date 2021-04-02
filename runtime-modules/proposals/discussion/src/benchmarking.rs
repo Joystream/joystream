@@ -70,7 +70,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
+fn member_account<T: common::membership::Trait + balances::Trait + membership::Trait>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {

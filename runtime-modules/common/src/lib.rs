@@ -2,52 +2,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod constraints;
-pub mod origin;
+pub mod council;
+pub mod membership;
 pub mod working_group;
 
-use codec::{Codec, Decode, Encode};
-use frame_support::Parameter;
+use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
 
-/// Member id type alias
-pub type MemberId<T> = <T as Trait>::MemberId;
-
-/// Actor id type alias
-pub type ActorId<T> = <T as Trait>::ActorId;
-
-/// Generic trait for membership dependent pallets.
-pub trait Trait: frame_system::Trait {
-    /// Describes the common type for the members.
-    type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + Eq;
-
-    /// Describes the common type for the working group members (workers).
-    type ActorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
-}
-
-/// Validates staking account ownership for a member.
-pub trait StakingAccountValidator<T: Trait> {
-    /// Verifies that staking account bound to the member.
-    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
-}
+pub use membership::{ActorId, MemberId, StakingAccountValidator};
 
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

@@ -95,7 +95,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -280,7 +280,7 @@ impl crate::WeightInfo for () {
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,

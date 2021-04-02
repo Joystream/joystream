@@ -94,7 +94,7 @@ impl balances::Trait for Runtime {
     type MaxLocks = ();
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = u128;
     type ActorId = u128;
 }
@@ -360,7 +360,7 @@ impl Trait for Runtime {
     type WeightInfo = ();
 }
 
-impl common::origin::MemberOriginValidator<Origin, u128, u128> for () {
+impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u128,
@@ -394,7 +394,7 @@ impl common::origin::MemberOriginValidator<Origin, u128, u128> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -403,7 +403,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
         unimplemented!()
     }
 
@@ -413,7 +413,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> bool {
         *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
     }
