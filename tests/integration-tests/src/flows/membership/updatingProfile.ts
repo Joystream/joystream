@@ -4,7 +4,7 @@ import { BuyMembershipHappyCaseFixture, UpdateProfileHappyCaseFixture } from '..
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-export default async function profileUpdate({ api, query }: FlowProps): Promise<void> {
+export default async function updatingProfile({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger('flow:member-profile-update')
   debug('Started')
   api.enableDebugTxLogs()

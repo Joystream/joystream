@@ -8,7 +8,7 @@ import { Members } from './generated/types'
 import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { EventType, MembershipEntryMethod } from 'query-node/dist/src/modules/enums/enums'
-import { MembershipSystem } from 'query-node/dist/src/modules/membership-system/membership-system.model'
+import { MembershipSystemSnapshot } from 'query-node/dist/src/modules/membership-system-snapshot/membership-system-snapshot.model'
 import { MemberMetadata } from 'query-node/dist/src/modules/member-metadata/member-metadata.model'
 import { MembershipBoughtEvent } from 'query-node/dist/src/modules/membership-bought-event/membership-bought-event.model'
 import { MemberProfileUpdatedEvent } from 'query-node/dist/src/modules/member-profile-updated-event/member-profile-updated-event.model'
@@ -37,12 +37,24 @@ async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Members
   return member
 }
 
-async function getMembershipSystem(db: DatabaseManager) {
-  const membershipSystem = await db.get(MembershipSystem, {})
+async function getLatestMembershipSystemSnapshot(db: DatabaseManager): Promise<MembershipSystemSnapshot> {
+  const membershipSystem = await db.get(MembershipSystemSnapshot, { order: { snapshotBlock: 'DESC' } })
   if (!membershipSystem) {
-    throw new Error(`Membership system entity not found! Forgot to run "yarn workspace query-node-root db:init"?`)
+    throw new Error(`Membership system snapshot not found! Forgot to run "yarn workspace query-node-root db:init"?`)
   }
   return membershipSystem
+}
+
+async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: SubstrateEvent) {
+  const latestSnapshot = await getLatestMembershipSystemSnapshot(db)
+  return latestSnapshot.snapshotBlock === event_.blockNumber
+    ? latestSnapshot
+    : new MembershipSystemSnapshot({
+        ...latestSnapshot,
+        id: undefined,
+        snapshotBlock: event_.blockNumber,
+        snapshotTime: new Date(new BN(event_.blockTimestamp).toNumber()),
+      })
 }
 
 function bytesToString(b: Bytes): string {
@@ -66,7 +78,7 @@ async function newMembershipFromParams(
   params: BuyMembershipParameters | InviteMembershipParameters
 ): Promise<Membership> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const membershipSystem = await getMembershipSystem(db)
+  const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(db)
   const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
   const metadata = deserializeMemberMeta(metatadaBytes)
 
@@ -90,7 +102,7 @@ async function newMembershipFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: membershipSystem.defaultInviteCount,
+    inviteCount: defaultInviteCount,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
@@ -325,10 +337,10 @@ export async function members_InitialInvitationCountUpdated(
   event_: SubstrateEvent
 ): Promise<void> {
   const { u32: newDefaultInviteCount } = new Members.InitialInvitationCountUpdatedEvent(event_).data
-  const membershipSystem = await getMembershipSystem(db)
-  membershipSystem.defaultInviteCount = newDefaultInviteCount.toNumber()
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  membershipSystemSnapshot.defaultInviteCount = newDefaultInviteCount.toNumber()
 
-  await db.save<MembershipSystem>(membershipSystem)
+  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationCountUpdatedEvent = new InitialInvitationCountUpdatedEvent({
     event: createEvent(event_, EventType.InitialInvitationCountUpdated),
@@ -341,10 +353,10 @@ export async function members_InitialInvitationCountUpdated(
 
 export async function members_MembershipPriceUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const { balance: newMembershipPrice } = new Members.MembershipPriceUpdatedEvent(event_).data
-  const membershipSystem = await getMembershipSystem(db)
-  membershipSystem.membershipPrice = newMembershipPrice
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  membershipSystemSnapshot.membershipPrice = newMembershipPrice
 
-  await db.save<MembershipSystem>(membershipSystem)
+  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const membershipPriceUpdatedEvent = new MembershipPriceUpdatedEvent({
     event: createEvent(event_, EventType.MembershipPriceUpdated),
@@ -357,10 +369,10 @@ export async function members_MembershipPriceUpdated(db: DatabaseManager, event_
 
 export async function members_ReferralCutUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const { u8: newReferralCut } = new Members.ReferralCutUpdatedEvent(event_).data
-  const membershipSystem = await getMembershipSystem(db)
-  membershipSystem.referralCut = newReferralCut.toNumber()
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  membershipSystemSnapshot.referralCut = newReferralCut.toNumber()
 
-  await db.save<MembershipSystem>(membershipSystem)
+  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
     event: createEvent(event_, EventType.ReferralCutUpdated),
@@ -376,10 +388,10 @@ export async function members_InitialInvitationBalanceUpdated(
   event_: SubstrateEvent
 ): Promise<void> {
   const { balance: newInvitedInitialBalance } = new Members.InitialInvitationBalanceUpdatedEvent(event_).data
-  const membershipSystem = await getMembershipSystem(db)
-  membershipSystem.invitedInitialBalance = newInvitedInitialBalance
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  membershipSystemSnapshot.invitedInitialBalance = newInvitedInitialBalance
 
-  await db.save<MembershipSystem>(membershipSystem)
+  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationBalanceUpdatedEvent = new InitialInvitationBalanceUpdatedEvent({
     event: createEvent(event_, EventType.InitialInvitationBalanceUpdated),
@@ -397,8 +409,6 @@ export async function members_LeaderInvitationQuotaUpdated(db: DatabaseManager, 
     event: createEvent(event_, EventType.LeaderInvitationQuotaUpdated),
     newInvitationQuota: newQuota.toNumber(),
   })
-
-  // TODO: Update MembershipSystem?
 
   await db.save<Event>(leaderInvitationQuotaUpdatedEvent.event)
   await db.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)

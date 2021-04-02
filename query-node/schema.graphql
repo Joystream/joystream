@@ -78,7 +78,13 @@ type Membership @entity {
   referredBy: Membership
 }
 
-type MembershipSystem @entity {
+type MembershipSystemSnapshot @entity {
+  "Block number of the snapshot block"
+  snapshotBlock: Int!
+
+  "Time of the snapshot (based on block timestamp)"
+  snapshotTime: DateTime!
+
   "Initial invitation count of a new member."
   defaultInviteCount: Int!
 
@@ -112,6 +118,9 @@ enum EventType {
 }
 
 type Event @entity {
+  "{blockNumber}-{indexInBlock}"
+  id: ID!
+
   "Hash of the extrinsic which caused the event to be emitted"
   inExtrinsic: String
 
@@ -217,9 +226,6 @@ type MemberVerificationStatusUpdatedEvent @entity {
 type ReferralCutUpdatedEvent @entity {
   "Generic event data"
   event: Event!
-
-  "Membership in question."
-  member: Membership!
 
   "New cut value."
   newValue: Int!

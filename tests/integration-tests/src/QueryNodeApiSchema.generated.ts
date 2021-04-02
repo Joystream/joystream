@@ -957,8 +957,6 @@ export type MemberMetadata = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
-  member: Membership
-  memberId: Scalars['String']
   /** Member's name */
   name?: Maybe<Scalars['String']>
   /** A Url to member's Avatar image TODO: Storage asset */
@@ -979,7 +977,6 @@ export type MemberMetadataConnection = {
 }
 
 export type MemberMetadataCreateInput = {
-  memberId: Scalars['ID']
   name?: Maybe<Scalars['String']>
   avatarUri?: Maybe<Scalars['String']>
   about?: Maybe<Scalars['String']>
@@ -998,8 +995,6 @@ export enum MemberMetadataOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
-  MemberIdAsc = 'memberId_ASC',
-  MemberIdDesc = 'memberId_DESC',
   NameAsc = 'name_ASC',
   NameDesc = 'name_DESC',
   AvatarUriAsc = 'avatarUri_ASC',
@@ -1009,7 +1004,6 @@ export enum MemberMetadataOrderByInput {
 }
 
 export type MemberMetadataUpdateInput = {
-  memberId?: Maybe<Scalars['ID']>
   name?: Maybe<Scalars['String']>
   avatarUri?: Maybe<Scalars['String']>
   about?: Maybe<Scalars['String']>
@@ -1040,8 +1034,6 @@ export type MemberMetadataWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  memberId_eq?: Maybe<Scalars['ID']>
-  memberId_in?: Maybe<Array<Scalars['ID']>>
   name_eq?: Maybe<Scalars['String']>
   name_contains?: Maybe<Scalars['String']>
   name_startsWith?: Maybe<Scalars['String']>
@@ -1221,7 +1213,6 @@ export type Membership = BaseGraphQlObject & {
   memberaccountsupdatedeventmember?: Maybe<Array<MemberAccountsUpdatedEvent>>
   memberinvitedeventinvitingMember?: Maybe<Array<MemberInvitedEvent>>
   memberinvitedeventnewMember?: Maybe<Array<MemberInvitedEvent>>
-  membermetadatamember?: Maybe<Array<MemberMetadata>>
   memberprofileupdatedeventmember?: Maybe<Array<MemberProfileUpdatedEvent>>
   memberverificationstatusupdatedeventmember?: Maybe<Array<MemberVerificationStatusUpdatedEvent>>
   membershipboughteventnewMember?: Maybe<Array<MembershipBoughtEvent>>
@@ -1524,8 +1515,8 @@ export type MembershipPriceUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type MembershipSystem = BaseGraphQlObject & {
-  __typename?: 'MembershipSystem'
+export type MembershipSystemSnapshot = BaseGraphQlObject & {
+  __typename?: 'MembershipSystemSnapshot'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1534,43 +1525,53 @@ export type MembershipSystem = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
+  /** Block number of the snapshot block */
+  snapshotBlock: Scalars['Int']
+  /** Time of the snapshot (based on block timestamp) */
+  snapshotTime: Scalars['DateTime']
   /** Initial invitation count of a new member. */
   defaultInviteCount: Scalars['Int']
   /** Current price to buy a membership. */
   membershipPrice: Scalars['BigInt']
-  /** Amount of tokens diverted to invitor. */
-  referralCut: Scalars['BigInt']
+  /** Percentage of tokens diverted to invitor. */
+  referralCut: Scalars['Int']
   /** The initial, locked, balance credited to controller account of invitee. */
   invitedInitialBalance: Scalars['BigInt']
 }
 
-export type MembershipSystemConnection = {
-  __typename?: 'MembershipSystemConnection'
+export type MembershipSystemSnapshotConnection = {
+  __typename?: 'MembershipSystemSnapshotConnection'
   totalCount: Scalars['Int']
-  edges: Array<MembershipSystemEdge>
+  edges: Array<MembershipSystemSnapshotEdge>
   pageInfo: PageInfo
 }
 
-export type MembershipSystemCreateInput = {
+export type MembershipSystemSnapshotCreateInput = {
+  snapshotBlock: Scalars['Float']
+  snapshotTime: Scalars['DateTime']
   defaultInviteCount: Scalars['Float']
   membershipPrice: Scalars['BigInt']
-  referralCut: Scalars['BigInt']
+  referralCut: Scalars['Float']
   invitedInitialBalance: Scalars['BigInt']
 }
 
-export type MembershipSystemEdge = {
-  __typename?: 'MembershipSystemEdge'
-  node: MembershipSystem
+export type MembershipSystemSnapshotEdge = {
+  __typename?: 'MembershipSystemSnapshotEdge'
+  node: MembershipSystemSnapshot
   cursor: Scalars['String']
 }
 
-export enum MembershipSystemOrderByInput {
+export enum MembershipSystemSnapshotOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
   UpdatedAtAsc = 'updatedAt_ASC',
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  SnapshotBlockAsc = 'snapshotBlock_ASC',
+  SnapshotBlockDesc = 'snapshotBlock_DESC',
+  SnapshotTimeAsc = 'snapshotTime_ASC',
+  SnapshotTimeDesc = 'snapshotTime_DESC',
   DefaultInviteCountAsc = 'defaultInviteCount_ASC',
   DefaultInviteCountDesc = 'defaultInviteCount_DESC',
   MembershipPriceAsc = 'membershipPrice_ASC',
@@ -1581,14 +1582,16 @@ export enum MembershipSystemOrderByInput {
   InvitedInitialBalanceDesc = 'invitedInitialBalance_DESC',
 }
 
-export type MembershipSystemUpdateInput = {
+export type MembershipSystemSnapshotUpdateInput = {
+  snapshotBlock?: Maybe<Scalars['Float']>
+  snapshotTime?: Maybe<Scalars['DateTime']>
   defaultInviteCount?: Maybe<Scalars['Float']>
   membershipPrice?: Maybe<Scalars['BigInt']>
-  referralCut?: Maybe<Scalars['BigInt']>
+  referralCut?: Maybe<Scalars['Float']>
   invitedInitialBalance?: Maybe<Scalars['BigInt']>
 }
 
-export type MembershipSystemWhereInput = {
+export type MembershipSystemSnapshotWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
   createdAt_eq?: Maybe<Scalars['DateTime']>
@@ -1613,6 +1616,17 @@ export type MembershipSystemWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  snapshotBlock_eq?: Maybe<Scalars['Int']>
+  snapshotBlock_gt?: Maybe<Scalars['Int']>
+  snapshotBlock_gte?: Maybe<Scalars['Int']>
+  snapshotBlock_lt?: Maybe<Scalars['Int']>
+  snapshotBlock_lte?: Maybe<Scalars['Int']>
+  snapshotBlock_in?: Maybe<Array<Scalars['Int']>>
+  snapshotTime_eq?: Maybe<Scalars['DateTime']>
+  snapshotTime_lt?: Maybe<Scalars['DateTime']>
+  snapshotTime_lte?: Maybe<Scalars['DateTime']>
+  snapshotTime_gt?: Maybe<Scalars['DateTime']>
+  snapshotTime_gte?: Maybe<Scalars['DateTime']>
   defaultInviteCount_eq?: Maybe<Scalars['Int']>
   defaultInviteCount_gt?: Maybe<Scalars['Int']>
   defaultInviteCount_gte?: Maybe<Scalars['Int']>
@@ -1625,12 +1639,12 @@ export type MembershipSystemWhereInput = {
   membershipPrice_lt?: Maybe<Scalars['BigInt']>
   membershipPrice_lte?: Maybe<Scalars['BigInt']>
   membershipPrice_in?: Maybe<Array<Scalars['BigInt']>>
-  referralCut_eq?: Maybe<Scalars['BigInt']>
-  referralCut_gt?: Maybe<Scalars['BigInt']>
-  referralCut_gte?: Maybe<Scalars['BigInt']>
-  referralCut_lt?: Maybe<Scalars['BigInt']>
-  referralCut_lte?: Maybe<Scalars['BigInt']>
-  referralCut_in?: Maybe<Array<Scalars['BigInt']>>
+  referralCut_eq?: Maybe<Scalars['Int']>
+  referralCut_gt?: Maybe<Scalars['Int']>
+  referralCut_gte?: Maybe<Scalars['Int']>
+  referralCut_lt?: Maybe<Scalars['Int']>
+  referralCut_lte?: Maybe<Scalars['Int']>
+  referralCut_in?: Maybe<Array<Scalars['Int']>>
   invitedInitialBalance_eq?: Maybe<Scalars['BigInt']>
   invitedInitialBalance_gt?: Maybe<Scalars['BigInt']>
   invitedInitialBalance_gte?: Maybe<Scalars['BigInt']>
@@ -1639,7 +1653,7 @@ export type MembershipSystemWhereInput = {
   invitedInitialBalance_in?: Maybe<Array<Scalars['BigInt']>>
 }
 
-export type MembershipSystemWhereUniqueInput = {
+export type MembershipSystemSnapshotWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -1891,9 +1905,9 @@ export type Query = {
   membershipPriceUpdatedEvents: Array<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventByUniqueInput?: Maybe<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventsConnection: MembershipPriceUpdatedEventConnection
-  membershipSystems: Array<MembershipSystem>
-  membershipSystemByUniqueInput?: Maybe<MembershipSystem>
-  membershipSystemsConnection: MembershipSystemConnection
+  membershipSystemSnapshots: Array<MembershipSystemSnapshot>
+  membershipSystemSnapshotByUniqueInput?: Maybe<MembershipSystemSnapshot>
+  membershipSystemSnapshotsConnection: MembershipSystemSnapshotConnection
   memberships: Array<Membership>
   membershipByUniqueInput?: Maybe<Membership>
   membershipsConnection: MembershipConnection
@@ -2172,24 +2186,24 @@ export type QueryMembershipPriceUpdatedEventsConnectionArgs = {
   orderBy?: Maybe<MembershipPriceUpdatedEventOrderByInput>
 }
 
-export type QueryMembershipSystemsArgs = {
+export type QueryMembershipSystemSnapshotsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
-  where?: Maybe<MembershipSystemWhereInput>
-  orderBy?: Maybe<MembershipSystemOrderByInput>
+  where?: Maybe<MembershipSystemSnapshotWhereInput>
+  orderBy?: Maybe<MembershipSystemSnapshotOrderByInput>
 }
 
-export type QueryMembershipSystemByUniqueInputArgs = {
-  where: MembershipSystemWhereUniqueInput
+export type QueryMembershipSystemSnapshotByUniqueInputArgs = {
+  where: MembershipSystemSnapshotWhereUniqueInput
 }
 
-export type QueryMembershipSystemsConnectionArgs = {
+export type QueryMembershipSystemSnapshotsConnectionArgs = {
   first?: Maybe<Scalars['Int']>
   after?: Maybe<Scalars['String']>
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
-  where?: Maybe<MembershipSystemWhereInput>
-  orderBy?: Maybe<MembershipSystemOrderByInput>
+  where?: Maybe<MembershipSystemSnapshotWhereInput>
+  orderBy?: Maybe<MembershipSystemSnapshotOrderByInput>
 }
 
 export type QueryMembershipsArgs = {
@@ -2314,7 +2328,7 @@ export type ReferralCutUpdatedEvent = BaseGraphQlObject & {
   member: Membership
   memberId: Scalars['String']
   /** New cut value. */
-  newValue: Scalars['BigInt']
+  newValue: Scalars['Int']
 }
 
 export type ReferralCutUpdatedEventConnection = {
@@ -2327,7 +2341,7 @@ export type ReferralCutUpdatedEventConnection = {
 export type ReferralCutUpdatedEventCreateInput = {
   eventId: Scalars['ID']
   memberId: Scalars['ID']
-  newValue: Scalars['BigInt']
+  newValue: Scalars['Float']
 }
 
 export type ReferralCutUpdatedEventEdge = {
@@ -2354,7 +2368,7 @@ export enum ReferralCutUpdatedEventOrderByInput {
 export type ReferralCutUpdatedEventUpdateInput = {
   eventId?: Maybe<Scalars['ID']>
   memberId?: Maybe<Scalars['ID']>
-  newValue?: Maybe<Scalars['BigInt']>
+  newValue?: Maybe<Scalars['Float']>
 }
 
 export type ReferralCutUpdatedEventWhereInput = {
@@ -2386,12 +2400,12 @@ export type ReferralCutUpdatedEventWhereInput = {
   eventId_in?: Maybe<Array<Scalars['ID']>>
   memberId_eq?: Maybe<Scalars['ID']>
   memberId_in?: Maybe<Array<Scalars['ID']>>
-  newValue_eq?: Maybe<Scalars['BigInt']>
-  newValue_gt?: Maybe<Scalars['BigInt']>
-  newValue_gte?: Maybe<Scalars['BigInt']>
-  newValue_lt?: Maybe<Scalars['BigInt']>
-  newValue_lte?: Maybe<Scalars['BigInt']>
-  newValue_in?: Maybe<Array<Scalars['BigInt']>>
+  newValue_eq?: Maybe<Scalars['Int']>
+  newValue_gt?: Maybe<Scalars['Int']>
+  newValue_gte?: Maybe<Scalars['Int']>
+  newValue_lt?: Maybe<Scalars['Int']>
+  newValue_lte?: Maybe<Scalars['Int']>
+  newValue_in?: Maybe<Array<Scalars['Int']>>
 }
 
 export type ReferralCutUpdatedEventWhereUniqueInput = {

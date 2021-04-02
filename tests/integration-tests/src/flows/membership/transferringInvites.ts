@@ -4,7 +4,7 @@ import { BuyMembershipHappyCaseFixture, TransferInvitesHappyCaseFixture } from '
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-export default async function membershipCreation({ api, query, env }: FlowProps): Promise<void> {
+export default async function transferringInvites({ api, query, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:transferring-invites')
   debug('Started')
   api.enableDebugTxLogs()

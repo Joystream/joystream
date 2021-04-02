@@ -4,7 +4,7 @@ import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { AccountId, MemberId } from '@joystream/types/common'
 
-import { AccountInfo, Balance, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
@@ -171,6 +171,10 @@ export class Api {
 
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber()
+  }
+
+  public async getBlockHash(blockNumber: number | BlockNumber): Promise<BlockHash> {
+    return this.api.rpc.chain.getBlockHash(blockNumber)
   }
 
   public async getControllerAccountOfMember(id: MemberId): Promise<string> {

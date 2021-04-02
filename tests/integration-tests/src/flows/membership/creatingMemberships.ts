@@ -8,7 +8,7 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
-export default async function membershipCreation({ api, query, env }: FlowProps): Promise<void> {
+export default async function creatingMemberships({ api, query, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:creating-members')
   debug('Started')
   api.enableDebugTxLogs()

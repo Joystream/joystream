@@ -19,12 +19,13 @@ import {
   StakingAccountConfirmedEvent,
   StakingAccountRemovedEvent,
   Event,
+  MembershipSystemSnapshot,
 } from '../QueryNodeApiSchema.generated'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { CreateInterface, createType } from '@joystream/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails } from '../types'
+import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails, MembershipEventName } from '../types'
 
 // FIXME: Retrieve from runtime when possible!
 const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
@@ -212,8 +213,9 @@ export class BuyMembershipWithInsufficienFundsFixture extends MembershipFixture 
 
     const balance = await this.api.getBalance(this.account)
 
-    assert(
-      balance.toBn() < membershipFee.add(membershipTransactionFee),
+    assert.isBelow(
+      balance.toNumber(),
+      membershipFee.add(membershipTransactionFee).toNumber(),
       'Account already has sufficient balance to purchase membership'
     )
 
@@ -718,6 +720,159 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
           removeStakingAccountTxs[i].hash.toString(),
           stakingAccountRemovedEvents
         )
+      })
+    )
+  }
+}
+
+type MembershipSystemValues = {
+  referralCut: number
+  defaultInviteCount: number
+  membershipPrice: BN
+  invitedInitialBalance: BN
+}
+
+export class SudoUpdateMembershipSystem extends MembershipFixture {
+  private query: QueryNodeApi
+  private newValues: Partial<MembershipSystemValues>
+
+  public constructor(api: Api, query: QueryNodeApi, newValues: Partial<MembershipSystemValues>) {
+    super(api)
+    this.query = query
+    this.newValues = newValues
+  }
+
+  private async getMembershipSystemValuesAt(blockNumber: number): Promise<MembershipSystemValues> {
+    const blockHash = await this.api.getBlockHash(blockNumber)
+    return {
+      referralCut: (await this.api.query.members.referralCut.at(blockHash)).toNumber(),
+      defaultInviteCount: (await this.api.query.members.initialInvitationCount.at(blockHash)).toNumber(),
+      invitedInitialBalance: await this.api.query.members.initialInvitationBalance.at(blockHash),
+      membershipPrice: await this.api.query.members.membershipPrice.at(blockHash),
+    }
+  }
+
+  private async assertBeforeSnapshotIsValid(beforeSnapshot: MembershipSystemSnapshot) {
+    assert.isNumber(beforeSnapshot.snapshotBlock)
+    const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock)
+    assert.equal(beforeSnapshot.referralCut, chainValues.referralCut)
+    assert.equal(beforeSnapshot.invitedInitialBalance, chainValues.invitedInitialBalance.toString())
+    assert.equal(beforeSnapshot.membershipPrice, chainValues.membershipPrice.toString())
+    assert.equal(beforeSnapshot.defaultInviteCount, chainValues.defaultInviteCount)
+  }
+
+  private assertAfterSnapshotIsValid(
+    beforeSnapshot: MembershipSystemSnapshot,
+    afterSnapshot: MembershipSystemSnapshot
+  ) {
+    const { newValues } = this
+    const expectedValue = (field: keyof MembershipSystemValues) => {
+      const newValue = newValues[field]
+      return newValue === undefined ? beforeSnapshot[field] : newValue instanceof BN ? newValue.toString() : newValue
+    }
+    assert.equal(afterSnapshot.referralCut, expectedValue('referralCut'))
+    assert.equal(afterSnapshot.invitedInitialBalance, expectedValue('invitedInitialBalance'))
+    assert.equal(afterSnapshot.membershipPrice, expectedValue('membershipPrice'))
+    assert.equal(afterSnapshot.defaultInviteCount, expectedValue('defaultInviteCount'))
+  }
+
+  private checkEvent<T extends AnyQueryNodeEvent>(qEvent: T | undefined, txHash: string): T {
+    if (!qEvent) {
+      throw new Error('Missing query-node event')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    return qEvent
+  }
+
+  async execute(): Promise<void> {
+    const extrinsics: { tx: SubmittableExtrinsic<'promise'>; eventName: MembershipEventName }[] = []
+    if (this.newValues.referralCut !== undefined) {
+      extrinsics.push({
+        tx: this.api.tx.sudo.sudo(this.api.tx.members.setReferralCut(this.newValues.referralCut)),
+        eventName: 'ReferralCutUpdated',
+      })
+    }
+    if (this.newValues.defaultInviteCount !== undefined) {
+      extrinsics.push({
+        tx: this.api.tx.sudo.sudo(this.api.tx.members.setInitialInvitationCount(this.newValues.defaultInviteCount)),
+        eventName: 'InitialInvitationCountUpdated',
+      })
+    }
+    if (this.newValues.membershipPrice !== undefined) {
+      extrinsics.push({
+        tx: this.api.tx.sudo.sudo(this.api.tx.members.setMembershipPrice(this.newValues.membershipPrice)),
+        eventName: 'MembershipPriceUpdated',
+      })
+    }
+    if (this.newValues.invitedInitialBalance !== undefined) {
+      extrinsics.push({
+        tx: this.api.tx.sudo.sudo(
+          this.api.tx.members.setInitialInvitationBalance(this.newValues.invitedInitialBalance)
+        ),
+        eventName: 'InitialInvitationBalanceUpdated',
+      })
+    }
+
+    // We don't use api.makeSudoCall, since we cannot(?) then access tx hashes
+    const sudo = await this.api.query.sudo.key()
+    const results = await Promise.all(extrinsics.map(({ tx }) => this.api.signAndSend(tx, sudo)))
+    const events = await Promise.all(
+      results.map((r, i) => this.api.retrieveMembershipEventDetails(r, extrinsics[i].eventName))
+    )
+
+    const beforeSnapshotMaxBlockNumber = Math.min(...events.map((e) => e.blockNumber)) - 1
+    const afterSnapshotBlockNumber = Math.max(...events.map((e) => e.blockNumber))
+
+    // Fetch "afterSnapshot" first to make sure query node has progressed enough
+    const afterSnapshot = (await this.query.tryQueryWithTimeout(
+      () => this.query.getMembershipSystemSnapshot(afterSnapshotBlockNumber),
+      (snapshot) => assert.isOk(snapshot)
+    )) as MembershipSystemSnapshot
+
+    const beforeSnapshot = await this.query.getMembershipSystemSnapshot(beforeSnapshotMaxBlockNumber, 'lte')
+
+    if (!beforeSnapshot) {
+      throw new Error(`MembershipSystemSnapshot before block ${beforeSnapshotMaxBlockNumber} not found!`)
+    }
+
+    // Validate snapshots
+    await this.assertBeforeSnapshotIsValid(beforeSnapshot)
+    this.assertAfterSnapshotIsValid(beforeSnapshot, afterSnapshot)
+
+    // Check events
+    await Promise.all(
+      events.map(async (event, i) => {
+        const { eventName, tx } = extrinsics[i]
+        const txHash = tx.hash.toString()
+        const { blockNumber, indexInBlock } = event
+        if (eventName === 'ReferralCutUpdated') {
+          const { newValue } = this.checkEvent(
+            await this.query.getReferralCutUpdatedEvent(blockNumber, indexInBlock),
+            txHash
+          )
+          assert.equal(newValue, this.newValues.referralCut)
+        }
+        if (eventName === 'MembershipPriceUpdated') {
+          const { newPrice } = this.checkEvent(
+            await this.query.getMembershipPriceUpdatedEvent(blockNumber, indexInBlock),
+            txHash
+          )
+          assert.equal(newPrice, this.newValues.membershipPrice!.toString())
+        }
+        if (eventName === 'InitialInvitationBalanceUpdated') {
+          const { newInitialBalance } = this.checkEvent(
+            await this.query.getInitialInvitationBalanceUpdatedEvent(blockNumber, indexInBlock),
+            txHash
+          )
+          assert.equal(newInitialBalance, this.newValues.invitedInitialBalance!.toString())
+        }
+        if (eventName === 'InitialInvitationCountUpdated') {
+          const { newInitialInvitationCount } = this.checkEvent(
+            await this.query.getInitialInvitationCountUpdatedEvent(blockNumber, indexInBlock),
+            txHash
+          )
+          assert.equal(newInitialInvitationCount, this.newValues.defaultInviteCount)
+        }
       })
     )
   }

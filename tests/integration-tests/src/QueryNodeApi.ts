@@ -1,31 +1,43 @@
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { MemberId } from '@joystream/types/common'
-import { Query } from './QueryNodeApiSchema.generated'
+import {
+  InitialInvitationBalanceUpdatedEvent,
+  InitialInvitationCountUpdatedEvent,
+  MembershipPriceUpdatedEvent,
+  MembershipSystemSnapshot,
+  Query,
+  ReferralCutUpdatedEvent,
+} from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
 
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
+  private readonly debug: Debugger.Debugger
   private readonly queryDebug: Debugger.Debugger
+  private readonly tryDebug: Debugger.Debugger
 
   constructor(queryNodeProvider: ApolloClient<NormalizedCacheObject>) {
     this.queryNodeProvider = queryNodeProvider
-    this.queryDebug = Debugger('query-node-api:query')
+    this.debug = Debugger('query-node-api')
+    this.queryDebug = this.debug.extend('query')
+    this.tryDebug = this.debug.extend('try')
   }
 
-  public tryQueryWithTimeout<QueryResultT extends ApolloQueryResult<unknown>>(
+  public tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
     timeoutMs = 210000,
     retryTimeMs = 30000
   ): Promise<QueryResultT> {
-    const retryDebug = Debugger('query-node-api:retry')
+    const label = query.toString().replace(/^.*\./g, '')
+    const retryDebug = this.tryDebug.extend(label).extend('retry')
+    const failDebug = this.tryDebug.extend(label).extend('failed')
     return new Promise((resolve, reject) => {
       let lastError: any
       const timeout = setTimeout(() => {
-        console.error(`Query node query is still failing after timeout was reached (${timeoutMs}ms)!`)
+        failDebug(`Query node query is still failing after timeout was reached (${timeoutMs}ms)!`)
         reject(lastError)
       }, timeoutMs)
-
       const tryQuery = () => {
         query()
           .then((result) => {
@@ -339,5 +351,148 @@ export class QueryNodeApi {
       query: STAKING_ACCOUNT_REMOVED_BY_MEMBER_ID,
       variables: { memberId: memberId.toNumber() },
     })
+  }
+
+  public async getMembershipSystemSnapshot(
+    blockNumber: number,
+    matchType: 'eq' | 'lt' | 'lte' | 'gt' | 'gte' = 'eq'
+  ): Promise<MembershipSystemSnapshot | undefined> {
+    const MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY = gql`
+      query($blockNumber: Int!) {
+        membershipSystemSnapshots(where: { snapshotBlock_${matchType}: $blockNumber }, orderBy: snapshotBlock_DESC, limit: 1) {
+          snapshotBlock,
+          snapshotTime,
+          referralCut,
+          invitedInitialBalance,
+          defaultInviteCount,
+          membershipPrice
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getMembershipSystemSnapshot(${matchType} ${blockNumber})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'membershipSystemSnapshots'>>({
+        query: MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY,
+        variables: { blockNumber },
+      })
+    ).data.membershipSystemSnapshots[0]
+  }
+
+  public async getReferralCutUpdatedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<ReferralCutUpdatedEvent | undefined> {
+    const REFERRAL_CUT_UPDATED_BY_ID = gql`
+      query($eventId: ID!) {
+        referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          newValue
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getReferralCutUpdatedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'referralCutUpdatedEvents'>>({
+        query: REFERRAL_CUT_UPDATED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.referralCutUpdatedEvents[0]
+  }
+
+  public async getMembershipPriceUpdatedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<MembershipPriceUpdatedEvent | undefined> {
+    const MEMBERSHIP_PRICE_UPDATED_BY_ID = gql`
+      query($eventId: ID!) {
+        membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          newPrice
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getMembershipPriceUpdatedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'membershipPriceUpdatedEvents'>>({
+        query: MEMBERSHIP_PRICE_UPDATED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.membershipPriceUpdatedEvents[0]
+  }
+
+  public async getInitialInvitationBalanceUpdatedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<InitialInvitationBalanceUpdatedEvent | undefined> {
+    const INITIAL_INVITATION_BALANCE_UPDATED_BY_ID = gql`
+      query($eventId: ID!) {
+        initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          newInitialBalance
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getInitialInvitationBalanceUpdatedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'initialInvitationBalanceUpdatedEvents'>>({
+        query: INITIAL_INVITATION_BALANCE_UPDATED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.initialInvitationBalanceUpdatedEvents[0]
+  }
+
+  public async getInitialInvitationCountUpdatedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<InitialInvitationCountUpdatedEvent | undefined> {
+    const INITIAL_INVITATION_COUNT_UPDATED_BY_ID = gql`
+      query($eventId: ID!) {
+        initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          newInitialInvitationCount
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getInitialInvitationCountUpdatedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'initialInvitationCountUpdatedEvents'>>({
+        query: INITIAL_INVITATION_COUNT_UPDATED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.initialInvitationCountUpdatedEvents[0]
   }
 }
