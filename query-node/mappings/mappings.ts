@@ -110,6 +110,7 @@ async function newMembershipFromParams(
       entryMethod === MembershipEntryMethod.INVITED
         ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
         : undefined,
+    isFoundingMember: false,
   })
 
   await db.save<MemberMetadata>(member.metadata)

@@ -159,6 +159,9 @@ type Membership @entity {
 
   "A member that referred this member (if any)"
   referredBy: Membership
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
 }
 
 type MembershipSystemSnapshot @entity {
