@@ -25,11 +25,10 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
-rustup install nightly-2021-02-20
-rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+rustup install nightly-2021-03-24
+rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 
-rustup install 1.51.0
-rustup default 1.51.0
+rustup default nightly-2021-03-24
 
 rustup component add rustfmt clippy
 
