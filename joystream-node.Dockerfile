@@ -1,5 +1,4 @@
 FROM liuchong/rustup:nightly AS rustup
-RUN rustup component add rustfmt clippy
 RUN rustup install nightly-2021-03-24
 RUN rustup default nightly-2021-03-24
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
