@@ -64,7 +64,7 @@ import {
   createVideo,
 } from './entity/create'
 
-import { DB } from '../../generated/indexer'
+import { DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
 
 // Keep track of the next entity id
 async function nextEntityId(db: DB): Promise<NextEntityId> {
