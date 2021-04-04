@@ -1,7 +1,7 @@
-FROM liuchong/rustup:1.51.0 AS rustup
-RUN rustup component add rustfmt clippy
-RUN rustup install nightly-2021-02-20 --force
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+FROM liuchong/rustup:nightly AS rustup
+RUN rustup install nightly-2021-03-24
+RUN rustup default nightly-2021-03-24
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev
 
@@ -12,7 +12,7 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ENV WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
+ENV WASM_BUILD_TOOLCHAIN=nightly-2021-03-24
 RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --release
