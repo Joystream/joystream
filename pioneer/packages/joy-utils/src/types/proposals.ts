@@ -141,7 +141,7 @@ export type HistoricalProposalData = {
     createdAt: string,
     status: unknown, // JSON of ProposalStatus
     votingResults: unknown, // JSON of VotingResults
-    details: unknown[], // JSON of ParsedProposalDetails
+    details: Record<string, unknown> | unknown[], // JSON of ParsedProposalDetails
     type: string,
     proposer: ParsedMember,
     createdAtBlock: number,
@@ -150,7 +150,7 @@ export type HistoricalProposalData = {
   votes: {
     councilMembersLength: number,
     votes: {
-      vote: number;
+      vote: string;
       member: ParsedMember & { memberId: number },
     }[]
   },
