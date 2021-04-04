@@ -44,7 +44,6 @@ use frame_system::EnsureRoot;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
@@ -311,7 +310,6 @@ impl_opaque_keys! {
         pub grandpa: Grandpa,
         pub babe: Babe,
         pub im_online: ImOnline,
-        pub authority_discovery: AuthorityDiscovery,
     }
 }
 // NOTE: `SessionHandler` and `SessionKeys` are co-dependent: One key will be used for each handler.
@@ -416,8 +414,6 @@ impl pallet_offences::Trait for Runtime {
     type OnOffenceHandler = Staking;
     type WeightSoftLimit = OffencesWeightSoftLimit;
 }
-
-impl pallet_authority_discovery::Trait for Runtime {}
 
 parameter_types! {
     pub const WindowSize: BlockNumber = 101;
@@ -709,7 +705,6 @@ construct_runtime!(
         FinalityTracker: pallet_finality_tracker::{Module, Call, Inherent},
         Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
         ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-        AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
         Offences: pallet_offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},

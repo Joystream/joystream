@@ -23,7 +23,6 @@
 
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -31,9 +30,9 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    membership, wasm_binary_unwrap, BabeConfig, Balance, BalancesConfig, ContentDirectoryConfig,
+    ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig, CouncilConfig,
+    CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
     StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
@@ -85,35 +84,21 @@ where
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
     seed: &str,
-) -> (
-    AccountId,
-    AccountId,
-    GrandpaId,
-    BabeId,
-    ImOnlineId,
-    AuthorityDiscoveryId,
-) {
+) -> (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId) {
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
         get_from_seed::<GrandpaId>(seed),
         get_from_seed::<BabeId>(seed),
         get_from_seed::<ImOnlineId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
     )
 }
 
-fn session_keys(
-    grandpa: GrandpaId,
-    babe: BabeId,
-    im_online: ImOnlineId,
-    authority_discovery: AuthorityDiscoveryId,
-) -> SessionKeys {
+fn session_keys(grandpa: GrandpaId, babe: BabeId, im_online: ImOnlineId) -> SessionKeys {
     SessionKeys {
         grandpa,
         babe,
         im_online,
-        authority_discovery,
     }
 }
 
@@ -212,14 +197,7 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
 // as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
-    initial_authorities: Vec<(
-        AccountId,
-        AccountId,
-        GrandpaId,
-        BabeId,
-        ImOnlineId,
-        AuthorityDiscoveryId,
-    )>,
+    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: node_runtime::ProposalsConfigParameters,
@@ -271,7 +249,6 @@ pub fn testnet_genesis(
             authorities: vec![],
         }),
         pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
-        pallet_authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
         pallet_grandpa: Some(GrandpaConfig {
             authorities: vec![],
         }),
@@ -282,7 +259,7 @@ pub fn testnet_genesis(
                     (
                         x.0.clone(),
                         x.0.clone(),
-                        session_keys(x.2.clone(), x.3.clone(), x.4.clone(), x.5.clone()),
+                        session_keys(x.2.clone(), x.3.clone(), x.4.clone()),
                     )
                 })
                 .collect::<Vec<_>>(),

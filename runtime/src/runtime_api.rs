@@ -12,12 +12,12 @@ use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    AccountId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList, GrandpaId, Hash, Index,
+    RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
-    RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    AllModules, Babe, Call, Grandpa, Historical, InherentDataExt, RandomnessCollectiveFlip,
+    Runtime, SessionKeys, System, TransactionPayment,
 };
 use frame_support::weights::Weight;
 
@@ -210,12 +210,6 @@ impl_runtime_apis! {
 
         fn current_epoch_start() -> sp_consensus_babe::SlotNumber {
             Babe::current_epoch_start()
-        }
-    }
-
-    impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
-        fn authorities() -> Vec<AuthorityDiscoveryId> {
-            AuthorityDiscovery::authorities()
         }
     }
 
