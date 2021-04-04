@@ -70,7 +70,17 @@ pub enum OperationType<T: Trait> {
 
 impl<T: Trait> core::fmt::Debug for OperationType<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "OperationType {:?}", self)
+        match self {
+            OperationType::CreateEntity(_) => {
+                write!(formatter, "OperationType::CreateEntity")
+            }
+            OperationType::AddSchemaSupportToEntity(_) => {
+                write!(formatter, "OperationType::AddSchemaSupportToEntity")
+            }
+            OperationType::UpdatePropertyValues(_) => {
+                write!(formatter, "OperationType::UpdatePropertyValues")
+            }
+        }
     }
 }
 

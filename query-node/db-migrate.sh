@@ -8,6 +8,8 @@ set -a
 . ../.env
 set +a
 
-yarn workspace query-node-root db:indexer:migrate
 yarn workspace query-node-root db:schema:migrate
-TYPEORM_DATABASE=${PROCESSOR_DB_NAME} yarn workspace query-node-root db:indexer:migrate
+
+yarn hydra-processor migrate --env=../.env
+
+yarn workspace query-node-root db:init

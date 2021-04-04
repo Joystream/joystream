@@ -10,7 +10,7 @@ pub enum InputPropertyValue<T: Trait> {
 
 impl<T: Trait> core::fmt::Debug for InputPropertyValue<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "InputPropertyValue {:?}", self)
+        write!(formatter, "InputPropertyValue")
     }
 }
 
@@ -42,13 +42,9 @@ impl<T: Trait> InputPropertyValue<T> {
     /// Retrieve all involved `entity_id`'s, if current `InputPropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
-            InputPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_involved_entity() {
-                    Some(vec![entity_id])
-                } else {
-                    None
-                }
-            }
+            InputPropertyValue::Single(single_property_value) => single_property_value
+                .get_involved_entity()
+                .map(|entity_id| vec![entity_id]),
             InputPropertyValue::Vector(vector_property_value) => {
                 vector_property_value.get_involved_entities()
             }
@@ -81,7 +77,7 @@ pub enum InputValue<T: Trait> {
 
 impl<T: Trait> core::fmt::Debug for InputValue<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-        write!(formatter, "InputValue {:?}", self)
+        write!(formatter, "InputValue")
     }
 }
 

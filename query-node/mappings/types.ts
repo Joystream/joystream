@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { EntityId, SchemaId, ParametrizedClassPropertyValue, ClassId } from '@joystream/types/content-directory'
-import { DB } from '../generated/indexer'
+import { DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
 
 export interface BaseJoystreamMember {
   memberId: BN

@@ -3,19 +3,19 @@
     "declaration": true,
     "importHelpers": true,
     "module": "commonjs",
+    "outDir": "lib",
+    "rootDirs": ["./"],
     "strict": true,
     "target": "es2017",
+    "noImplicitAny": false,
+    "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "sourceMap": true,
-    "inlineSources": false,
-    "strictPropertyInitialization": false,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["../../../types/augment-codec/augment-types.ts"]
-    },
-    "esModuleInterop": true
+      "@polkadot/types/augment": ["../../types/augment-codec/augment-types.ts"]
+    }
   },
-  "exclude": ["node_modules"]
+  "include": ["./**/*"]
 }

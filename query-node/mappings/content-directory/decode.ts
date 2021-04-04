@@ -1,4 +1,4 @@
-import { SubstrateEvent } from '../../generated/indexer'
+import { SubstrateEvent } from '@dzlzv/hydra-common'
 import {
   IClassEntity,
   IProperty,

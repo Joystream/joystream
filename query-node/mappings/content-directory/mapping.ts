@@ -1,3 +1,6 @@
+import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { SubstrateEvent } from '@dzlzv/hydra-common'
+
 export {
   contentDirectory_EntitySchemaSupportAdded,
   contentDirectory_EntityRemoved,
@@ -8,3 +11,8 @@ export { contentDirectory_TransactionCompleted, contentDirectory_TransactionFail
 
 // Only one time to seed the database
 // export { system_ExtrinsicSuccess } from './initializeDefaultSchemas'
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export function system_ExtrinsicSuccess(db: DatabaseManager, event: SubstrateEvent): void {
+  return
+}

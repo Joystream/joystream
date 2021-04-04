@@ -1,5 +1,6 @@
 import Debug from 'debug'
-import { DB, SubstrateEvent } from '../../../generated/indexer'
+import { SubstrateEvent } from '@dzlzv/hydra-common'
+import { DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
 import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
 import { decode } from '../decode'
