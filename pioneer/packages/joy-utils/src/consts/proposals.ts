@@ -33,7 +33,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   SetValidatorCount: {
     description: 'Set Max Validator Count Proposal',
     category: 'Validators',
-    stake: 100000,
+    stake: 500000,
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
@@ -71,7 +71,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   SetElectionParameters: {
     description: 'Set Election Parameters Proposal',
     category: 'Council',
-    stake: 200000,
+    stake: 1000000,
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
@@ -80,7 +80,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   RuntimeUpgrade: {
     description: 'Runtime Upgrade Proposal',
     category: 'Other',
-    stake: 1000000,
+    stake: 5000000,
     approvalQuorum: 80,
     approvalThreshold: 100,
     slashingQuorum: 60,
