@@ -30,6 +30,9 @@ docker-compose up -d colossus
 # Create a new content directory lead
 yarn workspace api-scripts initialize-content-lead
 
+# Set sudo as the membership screening authority
+yarn workspace api-scripts set-sudo-as-screening-auth
+
 ## Query Node Infrastructure
 # Initialize a new database for the query node infrastructure
 docker-compose up -d db

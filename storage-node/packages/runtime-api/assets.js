@@ -103,15 +103,6 @@ class AssetsApi {
   }
 
   /*
-   * Sets the data object liaison judgement to Rejected
-   */
-  async rejectContent(providerAccountId, storageProviderId, contentId) {
-    contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.rejectContent(storageProviderId, contentId)
-    return this.base.signAndSend(providerAccountId, tx)
-  }
-
-  /*
    * Gets storage relationship for contentId for the given provider
    */
   async getStorageRelationshipAndId(storageProviderId, contentId) {
