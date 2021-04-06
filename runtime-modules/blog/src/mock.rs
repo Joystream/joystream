@@ -222,17 +222,20 @@ impl membership::WeightInfo for Weights {
 parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
+    pub const ReplyDeposit: u64 = 500;
+    pub const BlogModuleId: ModuleId = ModuleId(*b"m00:blog"); // module : blog
 }
 
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type PostsMaxNumber = PostsMaxNumber;
-    type RepliesMaxNumber = RepliesMaxNumber;
     type ParticipantEnsureOrigin = MockEnsureParticipant;
     type WeightInfo = ();
 
     type ReplyId = u64;
+    type ReplyDeposit = ReplyDeposit;
+    type ModuleId = BlogModuleId;
 }
 
 impl WeightInfo for () {
@@ -402,7 +405,12 @@ pub fn get_reply(
     parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
-    Reply::new(reply_text, owner, parent_id)
+    Reply::new(
+        reply_text,
+        owner,
+        parent_id,
+        <Runtime as Trait>::ReplyDeposit::get(),
+    )
 }
 
 pub fn create_reply(
@@ -418,6 +426,7 @@ pub fn create_reply(
         post_id,
         reply_id,
         reply,
+        true,
     )
 }
 

@@ -410,6 +410,11 @@ fn reply_creation_success() {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
 
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         // Events number before tested call
@@ -443,8 +448,9 @@ fn reply_creation_success() {
             FIRST_ID,
             FIRST_ID,
             get_reply_text(),
+            true,
         ));
-        assert_event_success(reply_created_event, number_of_events_before_call + 1)
+        assert_event_success(reply_created_event, number_of_events_before_call + 4)
     })
 }
 
@@ -453,6 +459,17 @@ fn direct_reply_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
         let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         assert_ok!(create_reply(
@@ -490,8 +507,10 @@ fn direct_reply_creation_success() {
             FIRST_ID,
             SECOND_ID,
             get_reply_text(),
+            true,
         ));
-        assert_event_success(reply_created_event, number_of_events_before_call + 1)
+
+        assert_event_success(reply_created_event, number_of_events_before_call + 2)
     })
 }
 
@@ -551,41 +570,15 @@ fn reply_creation_post_not_found() {
 }
 
 #[test]
-fn reply_creation_limit_reached() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Create post for future replies
-        create_post(Origin::root()).unwrap();
-        loop {
-            // Events number before tested call
-            let number_of_events_before_call = System::events().len();
-            if let Err(create_reply_err) = create_reply(
-                FIRST_OWNER_ORIGIN,
-                FIRST_OWNER_PARTICIPANT_ID,
-                FIRST_ID,
-                None,
-            ) {
-                let post = post_by_id(FIRST_ID).unwrap();
-
-                // Root post replies counter & reply root max number contraint equality checked
-                assert_eq!(post.replies_count(), RepliesMaxNumber::get());
-
-                // Last reply creation, before limit reached, failure checked
-                assert_failure(
-                    Err(create_reply_err),
-                    Error::RepliesLimitReached,
-                    number_of_events_before_call,
-                );
-                break;
-            }
-        }
-    })
-}
-
-#[test]
 fn direct_reply_creation_reply_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -617,6 +610,11 @@ fn reply_editing_success() {
         create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
 
         create_reply(
             SECOND_OWNER_ORIGIN,
@@ -660,6 +658,11 @@ fn reply_editing_post_locked_error() {
         create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
 
         create_reply(
             SECOND_OWNER_ORIGIN,
@@ -728,6 +731,11 @@ fn reply_editing_ownership_error() {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
 
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         create_reply(
@@ -789,6 +797,11 @@ fn reply_editing_participant_error() {
         create_post(Origin::root()).unwrap();
 
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
 
         create_reply(
             SECOND_OWNER_ORIGIN,

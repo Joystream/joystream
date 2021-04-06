@@ -113,12 +113,18 @@ fn generate_reply<T: Trait<I>, I: Instance>(
         post_id,
         None,
         vec![0u8],
+        true,
     )
     .unwrap();
 
     assert_eq!(
         Blog::<T, I>::reply_by_id(post_id, T::ReplyId::zero()),
-        Reply::<T, I>::new(vec![0u8], participant_id, ParentId::Post(post_id))
+        Reply::<T, I>::new(
+            vec![0u8],
+            participant_id,
+            ParentId::Post(post_id),
+            T::ReplyDeposit::get()
+        )
     );
 
     T::ReplyId::zero()
@@ -194,7 +200,7 @@ benchmarks_instance! {
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let origin = RawOrigin::Signed(account_id);
         let text = vec![0u8; t.try_into().unwrap()];
-    }: create_reply(origin.clone(), participant_id, post_id, None, text.clone())
+    }: create_reply(origin.clone(), participant_id, post_id, None, text.clone(), true)
     verify {
         let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
         expected_post.increment_replies_counter();
@@ -204,7 +210,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 text.clone(),
                 participant_id,
-                ParentId::Post(post_id)
+                ParentId::Post(post_id),
+                T::ReplyDeposit::get(),
             )
         );
 
@@ -213,7 +220,8 @@ benchmarks_instance! {
                 participant_id,
                 post_id,
                 Zero::zero(),
-                text
+                text,
+                true
             ).into()
         );
     }
@@ -229,7 +237,7 @@ benchmarks_instance! {
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         let text = vec![0u8; t.try_into().unwrap()];
-    }: create_reply(origin.clone(), participant_id, post_id, Some(reply_id), text.clone())
+    }: create_reply(origin.clone(), participant_id, post_id, Some(reply_id), text.clone(), true)
     verify {
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
@@ -238,7 +246,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 text.clone(),
                 participant_id,
-                ParentId::Reply(reply_id)
+                ParentId::Reply(reply_id),
+                T::ReplyDeposit::get(),
             )
         );
 
@@ -248,7 +257,8 @@ benchmarks_instance! {
                 post_id,
                 reply_id,
                 One::one(),
-                text
+                text,
+                true,
             ).into()
         );
     }
@@ -272,7 +282,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 updated_text.clone(),
                 participant_id,
-                ParentId::Post(post_id)
+                ParentId::Post(post_id),
+                T::ReplyDeposit::get(),
             )
         );
 
