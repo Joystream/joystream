@@ -280,9 +280,6 @@ benchmarks! {
         let (_, _) = member_account::<T>("caller_member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
-        // Worst case scenario there is a council
-        elect_council::<T>(2);
-
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
             ThreadMode::Open
