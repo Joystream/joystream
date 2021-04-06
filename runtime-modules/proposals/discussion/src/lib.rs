@@ -12,6 +12,7 @@
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
 //! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread
+//! - [delete_post](./struct.Module.html#method.delete_post) - Removes thread from storage
 //! permission mode
 //!
 //! ## Public API methods
@@ -277,7 +278,8 @@ decl_module! {
             Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
        }
 
-        /// Adds a post with author origin check.
+        /// Remove post from storage, with the last parameter indicating whether to also hide it
+        /// in the UI.
         ///
         /// <weight>
         ///
