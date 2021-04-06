@@ -219,8 +219,8 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the number of whitelisted members for `thread_id`
+        /// `O (L)` where:
+        /// - `L` is the length of `text`
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -277,6 +277,15 @@ decl_module! {
             Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
        }
 
+        /// Adds a post with author origin check.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::delete_post()]
         pub fn delete_post(
             origin,
@@ -325,7 +334,8 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)` doesn't depend on the state or parameters
+        /// `O (L)` where:
+        /// - `L` is the length of `text`
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -351,9 +361,11 @@ decl_module! {
 
             // mutation
 
-            let mut new_post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
-            new_post.last_edited = frame_system::Module::<T>::block_number();
-            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+            <PostThreadIdByPostId<T>>::mutate(
+                thread_id,
+                post_id,
+                |new_post| new_post.last_edited = frame_system::Module::<T>::block_number()
+            );
             Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id, thread_id, text));
        }
 

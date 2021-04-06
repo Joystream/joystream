@@ -44,4 +44,5 @@ std = [
 	'frame-support/std',
 	'frame-system/std',
     'common/std',
+    'balances/std',
 ]

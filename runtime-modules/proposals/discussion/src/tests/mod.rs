@@ -101,12 +101,12 @@ impl DiscussionFixture {
 
 struct PostFixture {
     pub text: Vec<u8>,
-    pub origin: RawOrigin<u64>,
+    pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub post_id: Option<u64>,
     pub author_id: u64,
     pub initial_balance: u64,
-    pub account_id: u64,
+    pub account_id: u128,
     pub editable: bool,
 }
 
@@ -124,11 +124,11 @@ impl PostFixture {
         }
     }
 
-    fn with_account_id(self, account_id: u64) -> Self {
+    fn with_account_id(self, account_id: u128) -> Self {
         PostFixture { account_id, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         PostFixture { origin, ..self }
     }
 
@@ -404,7 +404,7 @@ fn create_post_call_succeeds_non_editable() {
 }
 
 struct ChangeThreadModeFixture {
-    pub origin: RawOrigin<u64>,
+    pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub member_id: u64,
     pub mode: ThreadMode<u64>,
@@ -428,7 +428,7 @@ impl ChangeThreadModeFixture {
         Self { member_id, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 

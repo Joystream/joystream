@@ -248,20 +248,20 @@ impl WeightInfo for () {
     }
 }
 
-impl MemberOriginValidator<Origin, u64, u64> for () {
+impl MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         actor_id: u64,
-    ) -> Result<u64, DispatchError> {
+    ) -> Result<u128, DispatchError> {
         if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
 
         if actor_id < 12 {
             if let Ok(account_id) = frame_system::ensure_signed(origin) {
-                return Ok(account_id);
+                return Ok(account_id.into());
             } else {
-                return Ok(actor_id);
+                return Ok(actor_id.into());
             }
         }
 
@@ -272,7 +272,7 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
         Err(DispatchError::Other("Invalid author"))
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
         unimplemented!()
     }
 }
@@ -363,7 +363,7 @@ impl council::WeightInfo for CouncilWeightInfo {
 }
 
 pub struct CouncilMock;
-impl CouncilOriginValidator<Origin, u64, u64> for CouncilMock {
+impl CouncilOriginValidator<Origin, u64, u128> for CouncilMock {
     fn ensure_member_consulate(origin: Origin, actor_id: u64) -> DispatchResult {
         if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
             return Ok(());
@@ -381,7 +381,7 @@ impl frame_system::Trait for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;

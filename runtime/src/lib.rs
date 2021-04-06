@@ -838,7 +838,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
     pub const ProposalsPostDeposit: Balance = 2000;
     // module : proposals_discussion
-    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:prdis");
     pub const ForumPostLifeTime: BlockNumber = 3600;
 }
 
