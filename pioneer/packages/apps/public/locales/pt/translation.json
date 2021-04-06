@@ -436,7 +436,7 @@
   "The RPC node can be selected from the pre-defined list or manually entered, depending on the chain you wish to connect to.": "O nó RPC pode ser selecionado da lista predefinida ou inserido manualmente, dependendo da cadeia à qual você deseja se conectar.",
   "The Threshold must be a positive number": "O mínimo deve ser um número positivo",
   "The Threshold must lower than 11": "O mínimo deve ser menor que 11",
-  "The UI puts a limit of 40 payouts at a time, where each payout is a single validator for a single era.": "A interface do usuário coloca um limite de 40 pagamentos por vez, em que cada pagamento é um validador único para uma única era.",
+  "The UI puts a limit of 30 payouts at a time, where each payout is a single validator for a single era.": "A interface do usuário coloca um limite de 30 pagamentos por vez, em que cada pagamento é um validador único para uma única era.",
   "The account password as specified when creating the account. This is used to encrypt the backup file and subsequently decrypt it when restoring the account.": "A senha da conta, conforme especificado ao criar a conta. Isso é usado para criptografar o arquivo de backup e, posteriormente, descriptografá-lo ao restaurar a conta.",
   "The account that signed the input": "A conta que assinou a entrada",
   "The account to which the proposed balance will be transferred if approved": "A conta para a qual o saldo proposto será transferido se aprovado",
