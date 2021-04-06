@@ -96,7 +96,7 @@ type DataObject @entity {
   size: BigInt!
 
   "Storage provider id of the liaison"
-  liaisonId: BigInt!
+  liaisonId: BigInt # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -118,6 +118,7 @@ union DataObjectOwner = DataObjectOwnerMember
 "Asset owned by a member"
 type DataObjectOwnerMember @variant {
   # use `BigInt` instead of `Membership` before variant relations are featured in Hydra
+  # TODO: setup proper relations
   #"Member identifier"
   #memberId: Membership!
   "Member identifier"
@@ -153,12 +154,8 @@ type DataObjectOwnerCouncil @variant {
 
 "Asset owned by a WorkingGroup"
 type DataObjectOwnerWorkingGroup @variant {
-  # TODO: working group doesn't seem to have id but rather `isStorage`, `isContent`, ... shoudl we care about that?
-  #"Working group identifier"
-  #workingGroup: BigInt!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
+  "Working group identifier"
+  workingGroup: Int!
 }
 
 #### High Level Derivative Entities ####

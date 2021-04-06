@@ -46,11 +46,7 @@ export async function prepareDataObject(
     typeId: contentParameters.type_id.toNumber(),
     // `size` is masked by `size` special name in `Struct` so there needs to be `.get('size') as unknown as u64` to retrieve proper value
     size: (contentParameters.get('size') as unknown as u64).toBn(),
-
-    // TODO: liason & judgement information can't be retrieved now - it's neither event parameter or extrinsic parameter
-    liaisonId: new BN(0),
-    liaisonJudgement: LiaisonJudgement.PENDING,
-
+    liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),
     joystreamContentId: contentParameters.content_id.toHex(),
   })

@@ -51,10 +51,12 @@ import {
 import {
   DataObjectOwner,
   DataObjectOwnerMember,
+  DataObjectOwnerChannel,
 } from 'query-node/src/modules/variants/variants.model'
 
 // Joystream types
 import {
+  ChannelId,
   ContentParameters,
   NewAsset,
   ContentActor,
@@ -76,65 +78,101 @@ function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObj
   return true
 }
 
+export interface IReadProtobufArguments{
+  metadata: Uint8Array
+  db: DatabaseManager
+  blockNumber: number
+}
+
+export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments {
+  assets: NewAsset[] // assets provided in event
+  contentOwner: typeof DataObjectOwner
+}
+
 /*
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
 */
 export async function readProtobuf(
-  type: Channel | ChannelCategory | Video | VideoCategory,
-  metadata: Uint8Array,
-  assets: NewAsset[], // assets provided in event
-  db: DatabaseManager,
-  blockNumber: number,
-  actor: ContentActor,
+  type: ChannelCategory | VideoCategory,
+  parameters: IReadProtobufArguments,
+): Promise<Partial<typeof type>> {
+  // process channel category
+  if (type instanceof ChannelCategory) {
+    return ChannelCategoryMetadata.deserializeBinary(parameters.metadata).toObject()
+  }
+
+  // process video category
+  if (type instanceof VideoCategory) {
+    return VideoCategoryMetadata.deserializeBinary(parameters.metadata).toObject()
+  }
+
+  // this should never happen
+  throw `Not implemented type: ${type}`
+}
+
+/*
+  Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
+  In addition it handles any assets associated with the metadata.
+*/
+export async function readProtobufWithAssets(
+  type: Channel | Video,
+  parameters: IReadProtobufArgumentsWithAssets,
 ): Promise<Partial<typeof type>> {
   // process channel
   if (type instanceof Channel) {
-    const meta = ChannelMetadata.deserializeBinary(metadata)
+    const meta = ChannelMetadata.deserializeBinary(parameters.metadata)
     const metaAsObject = meta.toObject()
     const result = metaAsObject as any as Channel
 
     // prepare cover photo asset if needed
     if (metaAsObject.coverPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.coverPhoto, assets, db, blockNumber, actor)
+      const asset = await extractAsset({
+        assetIndex: metaAsObject.coverPhoto,
+        assets: parameters.assets,
+        db: parameters.db,
+        blockNumber: parameters.blockNumber,
+        contentOwner: parameters.contentOwner,
+      })
       integrateAsset('coverPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.coverPhoto
     }
 
     // prepare avatar photo asset if needed
     if (metaAsObject.avatarPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.avatarPhoto, assets, db, blockNumber, actor)
+      const asset = await extractAsset({
+        assetIndex: metaAsObject.avatarPhoto,
+        assets: parameters.assets,
+        db: parameters.db,
+        blockNumber: parameters.blockNumber,
+        contentOwner: parameters.contentOwner,
+      })
       integrateAsset('avatarPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.avatarPhoto
     }
 
     // prepare language if needed
     if (metaAsObject.language) {
-      result.language = await prepareLanguage(metaAsObject.language, db)
+      result.language = await prepareLanguage(metaAsObject.language, parameters.db)
     }
 
     return result
   }
 
-  // process channel category
-  if (type instanceof ChannelCategory) {
-    return ChannelCategoryMetadata.deserializeBinary(metadata).toObject()
-  }
-
   // process video
   if (type instanceof Video) {
-    const meta = VideoMetadata.deserializeBinary(metadata)
+    const meta = VideoMetadata.deserializeBinary(parameters.metadata)
     const metaAsObject = meta.toObject()
     const result = metaAsObject as any as Video
 
     // prepare video category if needed
     if (metaAsObject.category !== undefined) {
-      result.category = await prepareVideoCategory(metaAsObject.category, db)
+      result.category = await prepareVideoCategory(metaAsObject.category, parameters.db)
     }
 
     // prepare media meta information if needed
     if (metaAsObject.mediaType) {
       // prepare video file size if poosible
-      const videoSize = await extractVideoSize(assets, metaAsObject.video)
+      const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
 
       result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize)
       delete metaAsObject.mediaType
@@ -147,21 +185,35 @@ export async function readProtobuf(
 
     // prepare thumbnail photo asset if needed
     if (metaAsObject.thumbnailPhoto !== undefined) {
-      const asset = await extractAsset(metaAsObject.thumbnailPhoto, assets, db, blockNumber, actor)
+      const asset = await extractAsset({
+        assetIndex: metaAsObject.thumbnailPhoto,
+        assets: parameters.assets,
+        db: parameters.db,
+        blockNumber: parameters.blockNumber,
+        //actor: actor,
+        contentOwner: parameters.contentOwner,
+      })
       integrateAsset('thumbnail', result, asset) // changes `result` inline!
       delete metaAsObject.thumbnailPhoto
     }
 
     // prepare video asset if needed
     if (metaAsObject.video !== undefined) {
-      const asset = await extractAsset(metaAsObject.video, assets, db, blockNumber, actor)
+      const asset = await extractAsset({
+        assetIndex: metaAsObject.video,
+        assets: parameters.assets,
+        db: parameters.db,
+        blockNumber: parameters.blockNumber,
+        //actor: actor,
+        contentOwner: parameters.contentOwner,
+      })
       integrateAsset('media', result, asset) // changes `result` inline!
       delete metaAsObject.video
     }
 
     // prepare language if needed
     if (metaAsObject.language) {
-      result.language = await prepareLanguage(metaAsObject.language, db)
+      result.language = await prepareLanguage(metaAsObject.language, parameters.db)
     }
 
     // prepare information about media published somewhere else before Joystream if needed.
@@ -173,29 +225,23 @@ export async function readProtobuf(
     return result
   }
 
-  // process video category
-  if (type instanceof VideoCategory) {
-    return VideoCategoryMetadata.deserializeBinary(metadata).toObject()
-  }
-
   // this should never happen
   throw `Not implemented type: ${type}`
 }
 
-export function convertContentActorToOwner(actor: ContentActor): typeof DataObjectOwner {
-  if (actor.isMember) {
+export function convertContentActorToOwner(contentActor: ContentActor, channelId: BN): typeof DataObjectOwner {
+  if (contentActor.isMember) {
     const owner = new DataObjectOwnerMember()
-    owner.member = actor.asMember.toBn()
+    owner.member = contentActor.asMember.toBn()
 
     return owner
   }
 
-  if (actor.isLead) {
-    // TODO: who will be owner?
-  }
+  if (contentActor.isLead || contentActor.isCurator) {
+    const owner = new DataObjectOwnerChannel()
+    owner.channel = channelId
 
-  if (actor.isCurator) {
-    // TODO: who will be owner?
+    return owner
   }
 
   throw 'Not-implemented ContentActor type used'
@@ -211,45 +257,60 @@ function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string
   video.publishedBeforeJoystream = undefined // plan deletion (will have effect when saved to db)
 }
 
+interface IConvertAssetParameters {
+  rawAsset: NewAsset
+  db: DatabaseManager
+  blockNumber: number
+  contentOwner: typeof DataObjectOwner
+}
+
 /*
   Converts event asset into data object or list of URLs fit to be saved to db.
 */
-async function convertAsset(rawAsset: NewAsset, db: DatabaseManager, blockNumber: number, actor: ContentActor): Promise<AssetStorageOrUrls> {
+async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetStorageOrUrls> {
   // is asset describing list of URLs?
-  if (rawAsset.isUrls) {
-    const urls = rawAsset.asUrls.toArray().map(item => item.toString())
+  if (parameters.rawAsset.isUrls) {
+    const urls = parameters.rawAsset.asUrls.toArray().map(item => item.toString())
 
     return urls
   }
 
-  // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
+  // !parameters.rawAsset.isUrls && parameters.rawAsset.isUpload // asset is in storage
 
   // prepare data object
-  const contentParameters: ContentParameters = rawAsset.asUpload
-  const owner = convertContentActorToOwner(actor)
-  const dataObject = await prepareDataObject(contentParameters, blockNumber, owner)
-
+  const contentParameters: ContentParameters = parameters.rawAsset.asUpload
+  const dataObject = await prepareDataObject(contentParameters, parameters.blockNumber, parameters.contentOwner)
 
   return dataObject
+}
+
+interface IExtractAssetParameters {
+  assetIndex: number
+  assets: NewAsset[]
+  db: DatabaseManager
+  blockNumber: number
+  contentOwner: typeof DataObjectOwner
 }
 
 /*
   Selects asset from provided set of assets and prepares asset data fit to be saved to db.
 */
-async function extractAsset(
-  assetIndex: number,
-  assets: NewAsset[],
-  db: DatabaseManager,
-  blockNumber: number,
-  actor: ContentActor,
-): Promise<AssetStorageOrUrls> {
+async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls> {
   // ensure asset index is valid
-  if (assetIndex > assets.length) {
-    return inconsistentState(`Non-existing asset extraction requested`, {assetsProvided: assets.length, assetIndex})
+  if (parameters.assetIndex > parameters.assets.length) {
+    return inconsistentState(`Non-existing asset extraction requested`, {
+      assetsProvided: parameters.assets.length,
+      assetIndex: parameters.assetIndex,
+    })
   }
 
   // convert asset to data object record
-  return convertAsset(assets[assetIndex], db, blockNumber, actor)
+  return convertAsset({
+    rawAsset: parameters.assets[parameters.assetIndex],
+    db: parameters.db,
+    blockNumber: parameters.blockNumber,
+    contentOwner: parameters.contentOwner,
+  })
 }
 
 /*

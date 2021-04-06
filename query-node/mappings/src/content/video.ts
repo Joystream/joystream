@@ -1,5 +1,6 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import BN from 'bn.js'
 
 import {
   Content,
@@ -10,7 +11,11 @@ import {
   logger,
 } from '../common'
 
-import { readProtobuf } from './utils'
+import {
+  convertContentActorToOwner,
+  readProtobuf,
+  readProtobufWithAssets
+} from './utils'
 
 // primary entities
 import { Video } from 'query-node/src/modules/video/video.model'
@@ -18,6 +23,11 @@ import { VideoCategory } from 'query-node/src/modules/video-category/video-categ
 
 // secondary entities
 import { License } from 'query-node/src/modules/license/license.model'
+
+// Joystream types
+import {
+  ChannelId,
+} from '@joystream/types/augment'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_VideoCategoryCreated(
@@ -34,11 +44,11 @@ export async function content_VideoCategoryCreated(
   // read metadata
   const protobufContent = readProtobuf(
     new VideoCategory(),
-    videoCategoryCreationParameters.meta,
-    [],
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: videoCategoryCreationParameters.meta,
+      db,
+      blockNumber: event.blockNumber,
+    }
   )
 
   // create new video category
@@ -80,11 +90,11 @@ export async function content_VideoCategoryUpdated(
   // read metadata
   const protobufContent = await readProtobuf(
     new VideoCategory(),
-    videoCategoryUpdateParameters.new_meta,
-    [],
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: videoCategoryUpdateParameters.new_meta,
+      db,
+      blockNumber: event.blockNumber,
+    }
   )
 
   // update all fields read from protobuf
@@ -138,13 +148,15 @@ export async function content_VideoCreated(
   } = new Content.VideoCreatedEvent(event).data
 
   // read metadata
-  const protobufContent = await readProtobuf(
+  const protobufContent = await readProtobufWithAssets(
     new Video(),
-    videoCreationParameters.meta,
-    videoCreationParameters.assets,
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: videoCreationParameters.meta,
+      db,
+      blockNumber: event.blockNumber,
+      assets: videoCreationParameters.assets,
+      contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
+    }
   )
 
   // create new video
@@ -188,13 +200,15 @@ export async function content_VideoUpdated(
 
   // update metadata if it was changed
   if (newMetadata) {
-    const protobufContent = await readProtobuf(
+    const protobufContent = await readProtobufWithAssets(
       new Video(),
-      newMetadata,
-      videoUpdateParameters.assets.unwrapOr([]),
-      db,
-      event.blockNumber,
-      contentActor,
+      {
+        metadata: newMetadata,
+        db,
+        blockNumber: event.blockNumber,
+        assets: videoUpdateParameters.assets.unwrapOr([]),
+        contentOwner: convertContentActorToOwner(contentActor, new BN(video.channel.id)),
+      }
     )
 
     // remember original license

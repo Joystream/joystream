@@ -5,7 +5,11 @@ import ISO6391 from 'iso-639-1';
 import { AccountId } from "@polkadot/types/interfaces";
 import { Option } from '@polkadot/types/codec';
 import { Content } from '../../../generated/types'
-import { readProtobuf } from './utils'
+import {
+  readProtobuf,
+  readProtobufWithAssets,
+  convertContentActorToOwner,
+} from './utils'
 
 import {
   DataObject,
@@ -25,13 +29,15 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
   const {channelId, channelCreationParameters, contentActor} = new Content.ChannelCreatedEvent(event).data
 
   // read metadata
-  const protobufContent = await readProtobuf(
+  const protobufContent = await readProtobufWithAssets(
     new Channel(),
-    channelCreationParameters.meta,
-    channelCreationParameters.assets,
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: channelCreationParameters.meta,
+      db,
+      blockNumber: event.blockNumber,
+      assets: channelCreationParameters.assets,
+      contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
+    }
   )
 
   // create entity
@@ -75,13 +81,15 @@ export async function content_ChannelUpdated(
 
   //  update metadata if it was changed
   if (newMetadata) {
-    const protobufContent = await readProtobuf(
+    const protobufContent = await readProtobufWithAssets(
       new Channel(),
-      newMetadata,
-      channelUpdateParameters.assets.unwrapOr([]),
-      db,
-      event.blockNumber,
-      contentActor,
+      {
+        metadata: newMetadata,
+        db,
+        blockNumber: event.blockNumber,
+        assets: channelUpdateParameters.assets.unwrapOr([]),
+        contentOwner: convertContentActorToOwner(contentActor, channelId),
+      }
     )
 
     // update all fields read from protobuf
@@ -191,11 +199,11 @@ export async function content_ChannelCategoryCreated(
   // read metadata
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
-    channelCategoryCreationParameters.meta,
-    [],
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: channelCategoryCreationParameters.meta,
+      db,
+      blockNumber: event.blockNumber,
+    }
   )
 
   // create new channel category
@@ -236,11 +244,11 @@ export async function content_ChannelCategoryUpdated(
   // read metadata
   const protobufContent = await readProtobuf(
     new ChannelCategory(),
-    channelCategoryUpdateParameters.new_meta,
-    [],
-    db,
-    event.blockNumber,
-    contentActor,
+    {
+      metadata: channelCategoryUpdateParameters.new_meta,
+      db,
+      blockNumber: event.blockNumber,
+    }
   )
 
   // update all fields read from protobuf

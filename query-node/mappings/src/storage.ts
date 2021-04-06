@@ -61,7 +61,7 @@ export async function data_directory_ContentRemoved(db: DatabaseManager, event: 
 
 export async function data_directory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentId} = new DataDirectory.ContentAcceptedEvent(event).data
+  const {contentId, storageProviderId} = new DataDirectory.ContentAcceptedEvent(event).data
 
   // load asset
   const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
@@ -72,6 +72,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   }
 
   // update object
+  dataObject.liaisonId = storageProviderId
   dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
   // save object
@@ -83,7 +84,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
 
 export async function data_directory_ContentRejected(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const {contentId} = new DataDirectory.ContentRejectedEvent(event).data
+  const {contentId, storageProviderId} = new DataDirectory.ContentRejectedEvent(event).data
 
   // load asset
   const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
@@ -94,6 +95,7 @@ export async function data_directory_ContentRejected(db: DatabaseManager, event:
   }
 
   // update object
+  dataObject.liaisonId = storageProviderId
   dataObject.liaisonJudgement = LiaisonJudgement.REJECTED
 
   // save object
@@ -127,12 +129,13 @@ function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof Data
     return owner
   }
 
-  if (objectOwner.isWorkingGroup) {
+  if (objectOwner.isCouncil) {
     return new DataObjectOwnerCouncil()
   }
 
   if (objectOwner.isWorkingGroup) {
     const owner = new DataObjectOwnerWorkingGroup()
+    owner.workingGroup = objectOwner.asWorkingGroup.toNumber()
 
     return owner
   }
