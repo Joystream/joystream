@@ -5,6 +5,7 @@ import { InputParser } from '@joystream/cd-schemas'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
+import { cli } from 'cli-ux'
 
 import { flags } from '@oclif/command'
 import _ from 'lodash'
@@ -14,6 +15,21 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static flags = {
     ...IOFlags,
     confirm: flags.boolean({ char: 'y', name: 'confirm', required: false, description: 'Confirm the provided input' }),
+  }
+
+  async getExistingChannelHandles(): Promise<string[]> {
+    cli.action.start('Fetching chain data...')
+    const result = await Promise.all(
+      (await this.entitiesByClassAndOwner('Channel'))
+        .filter(([, c]) => c.supported_schemas.toArray().length)
+        .map(async ([, channel]) => {
+          const { handle } = await this.parseToEntityJson<ChannelEntity>(channel)
+          return handle
+        })
+    )
+    cli.action.stop()
+
+    return result
   }
 
   async run() {
@@ -27,9 +43,16 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
 
     const { input, output, confirm } = this.parse(CreateChannelCommand).flags
 
+    // Can potentially slow things down quite a bit
+    const existingHandles = await this.getExistingChannelHandles()
+
     let inputJson = await getInputJson<ChannelEntity>(input, channelJsonSchema)
     if (!inputJson) {
       const customPrompts: JsonSchemaCustomPrompts = [
+        [
+          'handle',
+          { validate: (h) => (existingHandles.includes(h) ? 'Channel with such handle already exists' : true) },
+        ],
         ['language', () => this.promptForEntityId('Choose channel language', 'Language', 'name')],
         ['isCensored', 'skip'],
       ]
