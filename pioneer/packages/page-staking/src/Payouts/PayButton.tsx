@@ -14,7 +14,7 @@ import { useApi, useToggle } from '@polkadot/react-hooks';
 
 import { useTranslation } from '../translate';
 
-const MAX_BATCH_SIZE = 40;
+const MAX_BATCH_SIZE = 30;
 
 interface Props {
   className?: string;
