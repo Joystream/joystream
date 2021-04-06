@@ -20,8 +20,10 @@ members = [
     "runtime-modules/blog",
     "runtime-modules/utility",
 	"node",
-	"utils/chain-spec-builder/"
-#    "analyses/bench" # doesn't work with the "all features" release build
+	"utils/chain-spec-builder/",
+]
+exclude = [
+    "analyses/bench"
 ]
 
 [profile.release]
