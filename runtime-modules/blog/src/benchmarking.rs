@@ -300,7 +300,7 @@ benchmarks_instance! {
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
-    }: _(origin.clone(), participant_id, post_id, reply_id)
+    }: _(origin.clone(), participant_id, post_id, reply_id, true)
     verify {
         assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
 
@@ -308,6 +308,7 @@ benchmarks_instance! {
                 participant_id,
                 post_id,
                 reply_id,
+                true,
             ).into());
     }
 }

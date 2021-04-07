@@ -442,7 +442,13 @@ pub fn delete_reply(
     post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> DispatchResult {
-    TestBlogModule::delete_reply(Origin::signed(origin_id), participant_id, post_id, reply_id)
+    TestBlogModule::delete_reply(
+        Origin::signed(origin_id),
+        participant_id,
+        post_id,
+        reply_id,
+        true,
+    )
 }
 
 pub fn edit_reply(

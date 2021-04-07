@@ -652,6 +652,7 @@ decl_module! {
             participant_id: ParticipantId<T>,
             post_id: PostId,
             reply_id: T::ReplyId,
+            hide: bool,
         ) -> DispatchResult {
             let account_id = Self::ensure_valid_participant(origin, participant_id)?;
             // Ensure post with given id exists
@@ -680,7 +681,7 @@ decl_module! {
             <ReplyById<T, I>>::remove(post_id, reply_id);
 
             // Trigger event
-            Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id));
+            Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id, hide));
             Ok(())
         }
 
@@ -826,7 +827,7 @@ decl_event!(
         DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId, Text, bool),
 
         /// A reply was deleted from storage
-        ReplyDeleted(ParticipantId, PostId, ReplyId),
+        ReplyDeleted(ParticipantId, PostId, ReplyId, bool),
 
         /// A reply was edited
         ReplyEdited(ParticipantId, PostId, ReplyId, Text),
