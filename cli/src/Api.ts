@@ -48,7 +48,15 @@ import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recur
 import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint, ChannelId, Url } from '@joystream/types/common'
-import { CuratorGroup, CuratorGroupId, Channel, Video, VideoId } from '@joystream/types/content'
+import {
+  CuratorGroup,
+  CuratorGroupId,
+  Channel,
+  Video,
+  VideoId,
+  ChannelCategory,
+  VideoCategory,
+} from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
 import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
@@ -536,6 +544,16 @@ export default class Api {
   async videoById(videoId: number): Promise<Video | null> {
     const exists = !!(await this._api.query.content.videoById.size(videoId)).toNumber()
     return exists ? await this._api.query.content.videoById<Video>(videoId) : null
+  }
+
+  async channelCategoryById(channelCategoryId: number): Promise<ChannelCategory | null> {
+    const exists = !!(await this._api.query.content.channelCategoryById.size(channelCategoryId)).toNumber()
+    return exists ? await this._api.query.content.channelCategoryById<ChannelCategory>(channelCategoryId) : null
+  }
+
+  async videoCategoryById(videoCategoryId: number): Promise<VideoCategory | null> {
+    const exists = !!(await this._api.query.content.videoCategoryById.size(videoCategoryId)).toNumber()
+    return exists ? await this._api.query.content.videoCategoryById<VideoCategory>(videoCategoryId) : null
   }
 
   async dataByContentId(contentId: ContentId): Promise<DataObject | null> {
