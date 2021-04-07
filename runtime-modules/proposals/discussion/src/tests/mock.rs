@@ -9,7 +9,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult, ModuleId, Perbill,
 };
 
 use crate::CouncilOriginValidator;
@@ -78,6 +78,9 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
+    pub const PostLifeTime: u64 = 10;
+    pub const PostDeposit: u64 = 100;
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
 }
 
 // Weights info stub
@@ -222,6 +225,9 @@ impl crate::Trait for Test {
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = ();
+    type PostLifeTime = PostLifeTime;
+    type PostDeposit = PostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
 }
 
 impl WeightInfo for () {
@@ -229,7 +235,11 @@ impl WeightInfo for () {
         0
     }
 
-    fn update_post() -> Weight {
+    fn update_post(_: u32) -> Weight {
+        0
+    }
+
+    fn delete_post() -> Weight {
         0
     }
 
@@ -238,17 +248,21 @@ impl WeightInfo for () {
     }
 }
 
-impl MemberOriginValidator<Origin, u64, u64> for () {
+impl MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         actor_id: u64,
-    ) -> Result<u64, DispatchError> {
+    ) -> Result<u128, DispatchError> {
         if frame_system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
 
         if actor_id < 12 {
-            return Ok(actor_id);
+            if let Ok(account_id) = frame_system::ensure_signed(origin) {
+                return Ok(account_id.into());
+            } else {
+                return Ok(actor_id.into());
+            }
         }
 
         if actor_id == 12 && frame_system::ensure_signed(origin).unwrap_or_default() == 12 {
@@ -258,7 +272,7 @@ impl MemberOriginValidator<Origin, u64, u64> for () {
         Err(DispatchError::Other("Invalid author"))
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
         unimplemented!()
     }
 }
@@ -349,7 +363,7 @@ impl council::WeightInfo for CouncilWeightInfo {
 }
 
 pub struct CouncilMock;
-impl CouncilOriginValidator<Origin, u64, u64> for CouncilMock {
+impl CouncilOriginValidator<Origin, u64, u128> for CouncilMock {
     fn ensure_member_consulate(origin: Origin, actor_id: u64) -> DispatchResult {
         if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
             return Ok(());
@@ -367,7 +381,7 @@ impl frame_system::Trait for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;

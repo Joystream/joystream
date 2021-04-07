@@ -836,6 +836,10 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
+    pub const ProposalsPostDeposit: Balance = 2000;
+    // module : proposals_discussion
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:prdis");
+    pub const ForumPostLifeTime: BlockNumber = 3600;
 }
 
 macro_rules! call_wg {
@@ -857,6 +861,9 @@ impl proposals_discussion::Trait for Runtime {
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = weights::proposals_discussion::WeightInfo;
+    type PostDeposit = ProposalsPostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
+    type PostLifeTime = ForumPostLifeTime;
 }
 
 impl joystream_utility::Trait for Runtime {

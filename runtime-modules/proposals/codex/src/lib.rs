@@ -887,6 +887,5 @@ impl<T: Trait> ProposalObserver<T> for Module<T> {
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 
         proposals_discussion::ThreadById::<T>::remove(thread_id);
-        proposals_discussion::PostThreadIdByPostId::<T>::remove_prefix(thread_id);
     }
 }
