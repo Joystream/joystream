@@ -1,11 +1,16 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
+import { flags } from '@oclif/command'
 
 export default class UpdateVideoCensorshipStatusCommand extends ContentDirectoryCommandBase {
   static description = 'Update Video censorship status (Censored / Not censored).'
   static flags = {
-    context: ContentDirectoryCommandBase.ownerContextFlag,
+    rationale: flags.string({
+      name: 'rationale',
+      required: false,
+      description: 'rationale',
+    }),
   }
 
   static args = [
@@ -19,26 +24,21 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
       required: false,
       description: 'New video censorship status (1 - censored, 0 - not censored)',
     },
-    {
-      name: 'rationale',
-      required: true,
-      description: 'rationale',
-    },
   ]
 
   async run() {
-    let { context } = this.parse(UpdateVideoCensorshipStatusCommand).flags
-
-    let { id, status, rationale } = this.parse(UpdateVideoCensorshipStatusCommand).args
-
-    if (!context) {
-      context = await this.promptForOwnerContext()
-    }
+    let {
+      args: { id, status },
+      flags: { rationale },
+    } = this.parse(UpdateVideoCensorshipStatusCommand)
 
     const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const video = await this.getApi().videoById(id)
+    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const actor = await this.getCurationActorByChannel(channel)
+
+    await this.requestAccountDecoding(currentAccount)
 
     if (status === undefined) {
       status = await this.simplePrompt({
@@ -56,6 +56,10 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
         })
       }
       status = !!parseInt(status)
+    }
+
+    if (rationale === undefined) {
+      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
     }
 
     await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCensorshipStatus', [

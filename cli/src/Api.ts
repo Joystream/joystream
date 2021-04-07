@@ -523,9 +523,13 @@ export default class Api {
     return (await this._api.query.content.nextCuratorGroupId<CuratorGroupId>()).toNumber()
   }
 
-  async channelById(channelId: number): Promise<Channel | null> {
-    const c = await this._api.query.content.channelById<Channel>(channelId)
-    return c.isEmpty ? null : c
+  async channelById(channelId: number): Promise<Channel> {
+    const channel = await this._api.query.content.channelById<Channel>(channelId)
+    if (channel.isEmpty) {
+      throw new CLIError(`Channel by id ${channelId} not found!`)
+    }
+
+    return channel
   }
 
   async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
@@ -541,9 +545,13 @@ export default class Api {
     }
   }
 
-  async videoById(videoId: number): Promise<Video | null> {
-    const exists = !!(await this._api.query.content.videoById.size(videoId)).toNumber()
-    return exists ? await this._api.query.content.videoById<Video>(videoId) : null
+  async videoById(videoId: number): Promise<Video> {
+    const video = await this._api.query.content.videoById<Video>(videoId)
+    if (video.isEmpty) {
+      throw new CLIError(`Video by id ${videoId} not found!`)
+    }
+
+    return video
   }
 
   async channelCategoryById(channelCategoryId: number): Promise<ChannelCategory | null> {

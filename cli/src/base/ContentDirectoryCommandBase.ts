@@ -1,11 +1,13 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { CuratorGroup, CuratorGroupId, ContentActor } from '@joystream/types/content'
+import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
+
+// TODO: Rework the contexts
 
 const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
 const OWNER_CONTEXTS = ['Member', 'Curator'] as const
@@ -75,6 +77,10 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     await this.getRequiredLead()
   }
 
+  async getCurationActorByChannel(channel: Channel): Promise<ContentActor> {
+    return channel.owner.isOfType('Curators') ? await this.getActor('Lead') : await this.getActor('Curator')
+  }
+
   async getCuratorContext(): Promise<ContentActor> {
     const curator = await this.getRequiredWorker()
 
@@ -88,7 +94,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
     let groupId: number
     if (!availableGroupIds.length) {
-      this.error('You do not have the curator access!', { exit: ExitCodes.AccessDenied })
+      this.error("You don't belong to any active curator group!", { exit: ExitCodes.AccessDenied })
     } else if (availableGroupIds.length === 1) {
       groupId = availableGroupIds[0].toNumber()
     } else {
@@ -106,7 +112,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         name:
           `Group ${id.toString()} (` +
           `${group.active.valueOf() ? 'Active' : 'Inactive'}, ` +
-          `${group.curators.toArray().length} member(s), `,
+          `${group.curators.toArray().length} member(s)), `,
         value: id.toNumber(),
       }))
   }

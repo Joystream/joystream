@@ -1,11 +1,16 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
+import { flags } from '@oclif/command'
 
 export default class UpdateChannelCensorshipStatusCommand extends ContentDirectoryCommandBase {
   static description = 'Update Channel censorship status (Censored / Not censored).'
   static flags = {
-    context: ContentDirectoryCommandBase.ownerContextFlag,
+    rationale: flags.string({
+      name: 'rationale',
+      required: false,
+      description: 'rationale',
+    }),
   }
 
   static args = [
@@ -17,28 +22,22 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
     {
       name: 'status',
       required: false,
-      description: 'New status of the channel (1 - censored, 0 - not censored)',
-    },
-    {
-      name: 'rationale',
-      required: true,
-      description: 'rationale',
+      description: 'New censorship status of the channel (1 - censored, 0 - not censored)',
     },
   ]
 
   async run() {
-    let { context } = this.parse(UpdateChannelCensorshipStatusCommand).flags
-
-    let { id, status, rationale } = this.parse(UpdateChannelCensorshipStatusCommand).args
-
-    if (!context) {
-      context = await this.promptForOwnerContext()
-    }
+    let {
+      args: { id, status },
+      flags: { rationale },
+    } = this.parse(UpdateChannelCensorshipStatusCommand)
 
     const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const channel = await this.getApi().channelById(id)
+    const actor = await this.getCurationActorByChannel(channel)
+
+    await this.requestAccountDecoding(currentAccount)
 
     if (status === undefined) {
       status = await this.simplePrompt({
@@ -56,6 +55,10 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
         })
       }
       status = !!parseInt(status)
+    }
+
+    if (rationale === undefined) {
+      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
     }
 
     await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannelCensorshipStatus', [
