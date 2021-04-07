@@ -190,7 +190,6 @@ export async function readProtobufWithAssets(
         assets: parameters.assets,
         db: parameters.db,
         blockNumber: parameters.blockNumber,
-        //actor: actor,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('thumbnail', result, asset) // changes `result` inline!
@@ -204,7 +203,6 @@ export async function readProtobufWithAssets(
         assets: parameters.assets,
         db: parameters.db,
         blockNumber: parameters.blockNumber,
-        //actor: actor,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('media', result, asset) // changes `result` inline!
@@ -230,6 +228,12 @@ export async function readProtobufWithAssets(
 }
 
 export function convertContentActorToOwner(contentActor: ContentActor, channelId: BN): typeof DataObjectOwner {
+  const owner = new DataObjectOwnerChannel()
+  owner.channel = channelId
+
+  return owner
+
+  /* contentActor is irrelevant now -> all video/channel content belongs to the channel
   if (contentActor.isMember) {
     const owner = new DataObjectOwnerMember()
     owner.member = contentActor.asMember.toBn()
@@ -245,6 +249,7 @@ export function convertContentActorToOwner(contentActor: ContentActor, channelId
   }
 
   throw 'Not-implemented ContentActor type used'
+  */
 }
 
 function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string) {
