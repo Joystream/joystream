@@ -83,7 +83,11 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async getChannelOwnerActor(channel: Channel): Promise<ContentActor> {
     if (channel.owner.isOfType('Curators')) {
-      return await this.getCuratorContext(channel.owner.asType('Curators'))
+      try {
+        return await this.getActor('Lead')
+      } catch (e) {
+        return await this.getCuratorContext(channel.owner.asType('Curators'))
+      }
     } else {
       return await this.getActor('Member')
     }
@@ -91,7 +95,6 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async getCategoryManagementActor(): Promise<ContentActor> {
     try {
-      await this.getRequiredLead()
       return await this.getActor('Lead')
     } catch (e) {
       return await this.getActor('Curator')
