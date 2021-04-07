@@ -1,0 +1,16 @@
+{
+  "assets": [
+    {
+      "Urls": ["https://joystream.org/WorkingGroupOpening.schema.json"]
+    }
+  ],
+  "new_meta": {
+    "title": "Channel Title",
+    "description": "Cool Description",
+    "isPublic": true,
+    "language": "eng",
+    "coverPhoto": 1,
+    "avatarPhoto": 1,
+    "category": 1
+  }
+}
