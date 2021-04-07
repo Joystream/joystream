@@ -46,8 +46,8 @@
   },
   "dependencies": {
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.14.0",
-    "@polkadot/api": "^1.26.1",
+    "@joystream/types": "^0.15.0",
+    "@polkadot/api": "4.2.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"

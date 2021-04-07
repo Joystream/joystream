@@ -417,14 +417,14 @@ export class ElectionParametersProposalFixture extends BaseFixture {
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing Election Parameters proposal ' + uuid().substring(0, 8)
 
-    const announcingPeriod: BN = new BN(28800)
-    const votingPeriod: BN = new BN(14400)
-    const revealingPeriod: BN = new BN(14400)
-    const councilSize: BN = await this.api.getCouncilSize()
-    const candidacyLimit: BN = await this.api.getCandidacyLimit()
-    const newTermDuration: BN = new BN(144000)
-    const minCouncilStake: BN = await this.api.getMinCouncilStake()
-    const minVotingStake: BN = await this.api.getMinVotingStake()
+    const announcingPeriod: BN = new BN(1)
+    const votingPeriod: BN = new BN(1)
+    const revealingPeriod: BN = new BN(1)
+    const councilSize: BN = new BN(1)
+    const candidacyLimit: BN = new BN(1)
+    const newTermDuration: BN = new BN(1)
+    const minCouncilStake: BN = new BN(1)
+    const minVotingStake: BN = new BN(1)
 
     // Proposal stake calculation
     // Required stake is hardcoded in runtime-module (but not available as const)
@@ -446,16 +446,14 @@ export class ElectionParametersProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalance(this.proposerAccount, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposedAnnouncingPeriod: BN = announcingPeriod.subn(1)
-    const proposedVotingPeriod: BN = votingPeriod.addn(1)
-    const proposedRevealingPeriod: BN = revealingPeriod.addn(1)
-    const proposedCouncilSize: BN = councilSize.addn(1)
-    const proposedCandidacyLimit: BN = new BN(51) // candidacyLimit.addn(1)
-    // assert they are different
-    assert(!candidacyLimit.eq(proposedCandidacyLimit))
-    const proposedNewTermDuration: BN = newTermDuration.addn(1)
-    const proposedMinCouncilStake: BN = minCouncilStake.addn(1)
-    const proposedMinVotingStake: BN = minVotingStake.addn(1)
+    const proposedAnnouncingPeriod: BN = new BN(43199)
+    const proposedVotingPeriod: BN = new BN(28799)
+    const proposedRevealingPeriod: BN = new BN(28799)
+    const proposedCouncilSize: BN = new BN(39)
+    const proposedCandidacyLimit: BN = new BN(199)
+    const proposedNewTermDuration: BN = new BN(143999)
+    const proposedMinCouncilStake: BN = new BN(99999)
+    const proposedMinVotingStake: BN = new BN(99999)
 
     const proposalCreationResult = await this.api.proposeElectionParameters(
       this.proposerAccount,
@@ -471,11 +469,13 @@ export class ElectionParametersProposalFixture extends BaseFixture {
       proposedMinCouncilStake,
       proposedMinVotingStake
     )
+
     const proposalNumber = this.api.findProposalCreatedEvent(proposalCreationResult.events) as ProposalId
     assert.notEqual(proposalNumber, undefined)
 
     const approveProposalFixture = new VoteForProposalFixture(this.api, proposalNumber)
     await approveProposalFixture.execute()
+
     assert(approveProposalFixture.proposalExecuted)
 
     // Assertions
@@ -733,10 +733,10 @@ export class VoteForProposalFixture extends BaseFixture {
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
 
     // Approving the proposal
-    const onProposalFinalized = this.api.waitForProposalToFinalize(this.proposalNumber)
+    const proposalExecutionResult = await this.api.subscribeToProposalExecutionResult(this.proposalNumber)
     const approvals = await this.api.batchApproveProposal(this.proposalNumber)
     approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
-    const proposalOutcome = await onProposalFinalized
+    const proposalOutcome = await proposalExecutionResult.promise
     this._proposalExecuted = proposalOutcome[0]
     this._events = proposalOutcome[1]
   }

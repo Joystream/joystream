@@ -1,5 +1,5 @@
 import { Codec } from '@polkadot/types/types';
-import ApiPromise from '@polkadot/api/promise';
+import { ApiPromise } from '@polkadot/api/promise';
 
 type cacheQueryStorage = {
   (...args: any): Promise<Codec>;

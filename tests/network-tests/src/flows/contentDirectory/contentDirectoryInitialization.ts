@@ -1,6 +1,6 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
-const debug = Debugger('initializeContentDirectory')
+import { extendDebug } from '../../Debugger'
+const debug = extendDebug('initializeContentDirectory')
 
 export default async function initializeContentDirectory({ api }: FlowProps): Promise<void> {
   debug('Started')

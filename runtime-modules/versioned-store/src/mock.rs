@@ -26,7 +26,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -47,16 +47,18 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl Trait for Runtime {
@@ -242,7 +244,7 @@ pub fn default_genesis_config() -> GenesisConfig {
 }
 
 fn build_test_externalities(config: GenesisConfig) -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 

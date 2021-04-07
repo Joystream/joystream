@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use frame_support::dispatch::DispatchError;
+use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
-use system::RawOrigin;
 
 use super::mock::*;
 
@@ -197,7 +197,10 @@ fn reject_content_as_liaison() {
 fn data_object_injection_works() {
     with_default_mock_builder(|| {
         // No objects in directory before injection
-        assert_eq!(TestDataDirectory::known_content_ids(), vec![]);
+        assert_eq!(
+            TestDataDirectory::known_content_ids(),
+            Vec::<<Test as data_directory::Trait>::ContentId>::new()
+        );
 
         // new objects to inject into the directory
         let mut objects = BTreeMap::new();

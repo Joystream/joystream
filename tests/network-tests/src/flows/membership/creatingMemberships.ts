@@ -5,12 +5,12 @@ import {
 } from '../../fixtures/membershipModule'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
 export default async function membershipCreation({ api, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:memberships')
+  const debug = extendDebug('flow:memberships')
   debug('Started')
   api.enableDebugTxLogs()
 

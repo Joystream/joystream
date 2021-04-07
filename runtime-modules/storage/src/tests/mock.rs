@@ -38,7 +38,7 @@ impl_outer_event! {
         balances<T>,
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -96,7 +96,7 @@ parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -117,16 +117,18 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -140,6 +142,8 @@ impl balances::Trait for Test {
     type Event = MetaEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -177,7 +181,7 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
+        let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
     }
@@ -223,6 +227,7 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+#[allow(dead_code)]
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
     first_content_id: u64,
@@ -259,7 +264,7 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
@@ -297,7 +302,7 @@ impl ExtBuilder {
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;

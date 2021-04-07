@@ -64,13 +64,9 @@ impl<
     /// Retrieve all involved `entity_id`'s, if current `StoredPropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<EntityId>> {
         match self {
-            StoredPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_involved_entity() {
-                    Some(vec![entity_id])
-                } else {
-                    None
-                }
-            }
+            StoredPropertyValue::Single(single_property_value) => single_property_value
+                .get_involved_entity()
+                .map(|entity_id| vec![entity_id]),
             StoredPropertyValue::Vector(vector_property_value) => vector_property_value
                 .get_vec_value_ref()
                 .get_involved_entities(),
@@ -81,7 +77,7 @@ impl<
     pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         match self {
             StoredPropertyValue::Single(output_value) => {
-                (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+                (property_id, output_value).using_encoded(<T as frame_system::Trait>::Hashing::hash)
             }
             StoredPropertyValue::Vector(vector_output_value) => {
                 vector_output_value.compute_unique_hash::<T>(property_id)
@@ -159,7 +155,7 @@ impl<
     /// Compute hash from unique vec property value and its respective property_id
     pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         // Do not hash nonce
-        (property_id, &self.vec_value).using_encoded(<T as system::Trait>::Hashing::hash)
+        (property_id, &self.vec_value).using_encoded(<T as frame_system::Trait>::Hashing::hash)
     }
 
     /// Increase nonce by 1

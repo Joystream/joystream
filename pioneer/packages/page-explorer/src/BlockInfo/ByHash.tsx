@@ -7,7 +7,7 @@ import { KeyedEvent } from '@polkadot/react-query/types';
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HeaderExtended } from '@polkadot/api-derive';
+import { HeaderExtended } from '@polkadot/api-derive/types';
 import { AddressSmall, Columar, Column, LinkExternal, Table } from '@polkadot/react-components';
 import { useApi, useCall } from '@polkadot/react-hooks';
 import { formatNumber } from '@polkadot/util';

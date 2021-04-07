@@ -1,6 +1,7 @@
 import Debug from 'debug'
 
-import { DB, SubstrateEvent } from '../../generated/indexer'
+import { SubstrateEvent } from '@dzlzv/hydra-common'
+import { DatabaseManager, DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
 import { NextEntityId } from '../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
 import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
@@ -73,7 +74,7 @@ async function getNextEntityId(db: DB): Promise<number> {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function contentDirectory_TransactionFailed(db: DB, event: SubstrateEvent): Promise<void> {
+export async function contentDirectory_TransactionFailed(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   debug(`TransactionFailed event: ${JSON.stringify(event)}`)
 
   const failedOperationIndex = event.params[1].value as number

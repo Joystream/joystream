@@ -40,18 +40,18 @@ const REVEALING_PERIOD_MIN = 14400;
 const REVEALING_PERIOD_MAX = 28800;
 const MIN_COUNCIL_STAKE_MIN = 1;
 const MIN_COUNCIL_STAKE_MAX = 100000;
-const NEW_TERM_DURATION_MIN = 14400;
-const NEW_TERM_DURATION_MAX = 432000;
+const NEW_TERM_DURATION_MIN = 1;
+const NEW_TERM_DURATION_MAX = 144000;
 const CANDIDACY_LIMIT_MIN = 50;
-const CANDIDACY_LIMIT_MAX = 100;
-const COUNCIL_SIZE_MIN = 4;
-const COUNCIL_SIZE_MAX = 20;
+const CANDIDACY_LIMIT_MAX = 200;
+const COUNCIL_SIZE_MIN = 6;
+const COUNCIL_SIZE_MAX = 40;
 const MIN_VOTING_STAKE_MIN = 1;
 const MIN_VOTING_STAKE_MAX = 100000;
 
 // Spending
 const TOKENS_MIN = 0;
-const TOKENS_MAX = 5000000;
+const TOKENS_MAX = 50000000;
 
 // Set Validator Count
 const MAX_VALIDATOR_COUNT_MIN = 4;
@@ -83,7 +83,7 @@ const WG_MINT_CAP_MAX = 5000000;
 // TODO: Discuss the actual values
 const MIN_REWARD_AMOUNT = 1;
 const MAX_REWARD_AMOUNT = 100000;
-const MIN_REWARD_INTERVAL = 1;
+const MIN_REWARD_INTERVAL = 600; // 1 h
 const MAX_REWARD_INTERVAL = 30 * 14400; // 30 days
 // 3 days margin (voting_period) to prevent FillOpeningInvalidNextPaymentBlock
 // Should we worry that much about it though?

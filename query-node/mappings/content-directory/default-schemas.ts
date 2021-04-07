@@ -1,7 +1,7 @@
 import Debug from 'debug'
 import { nanoid } from 'nanoid'
 
-import { DB } from '../../generated/indexer'
+import { DatabaseManager as DB } from '@dzlzv/hydra-db-utils'
 import { Channel } from '../../generated/graphql-server/src/modules/channel/channel.model'
 import { Language } from '../../generated/graphql-server/src/modules/language/language.model'
 import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'

@@ -15,21 +15,22 @@
     "db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
     "db:migrate": "./db-migrate.sh",
     "db:schema:migrate": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
-    "db:indexer:migrate": "(cd ./generated/indexer && yarn db:migrate)",
-    "codegen:indexer": "yarn hydra-cli codegen --no-install --no-graphql && cp indexer-tsconfig.json generated/indexer/tsconfig.json",
-    "codegen:server": "yarn hydra-cli codegen --no-install --no-indexer",
-    "cd-classes": "ts-node scripts/get-class-id-and-name.ts",
+    "codegen": "hydra-cli codegen",
+    "codegen:noinstall": "hydra-cli codegen --no-install",
     "integration-tests": "./run-tests.sh",
+    "typegen": "rm -rf ./mappings/generated/ && hydra-typegen typegen manifest.yml --debug",
     "db:init": "(cd ./generated/graphql-server && TYPEORM_LOGGING=true ts-node ../../scripts/initializeDefaultSchemas.ts)"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@dzlzv/hydra-cli": "^0.0.24"
+    "@dzlzv/hydra-cli": "0.1.8-1",
+    "@dzlzv/hydra-processor": "2.1.0-beta.4",
+    "@dzlzv/hydra-typegen": "2.1.0-beta.4"
   },
   "dependencies": {
-    "@dzlzv/hydra-indexer-lib": "^0.0.22-legacy.1.26.1",
-    "@joystream/types": "^0.14.0",
+    "@dzlzv/hydra-db-utils": "^2.0.1-beta.0",
+    "@joystream/types": "^0.15.0",
     "@types/bn.js": "^4.11.6",
     "@types/debug": "^4.1.5",
     "bn.js": "^5.1.2",

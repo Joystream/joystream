@@ -13,6 +13,7 @@
 //!
 //! Dependency: Joystream stake module
 
+#![allow(clippy::collapsible_match)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
@@ -48,7 +49,7 @@ mod test;
 pub use hiring::*;
 
 /// Main trait of hiring substrate module
-pub trait Trait: system::Trait + stake::Trait + Sized {
+pub trait Trait: frame_system::Trait + stake::Trait + Sized {
     /// OpeningId type
     type OpeningId: Parameter
         + Member
@@ -179,7 +180,7 @@ impl<T: Trait> Module<T> {
         role_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
         human_readable_text: Vec<u8>,
     ) -> Result<T::OpeningId, AddOpeningError> {
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
 
         Self::ensure_can_add_opening(
             current_block_height,
@@ -240,7 +241,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         //
-        let current_block_height = <system::Module<T>>::block_number(); // move later!
+        let current_block_height = <frame_system::Module<T>>::block_number(); // move later!
         let new_active_stage = active_stage.new_stage_on_cancelling(current_block_height)?;
 
         // Ensure unstaking periods are OK.
@@ -316,7 +317,7 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
 
         // Update state of opening
         let new_opening = opening.clone_with_new_active_opening_stage(
@@ -354,7 +355,7 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
 
         let new_opening =
             opening.clone_with_new_active_opening_stage(hiring::ActiveOpeningStage::ReviewPeriod {
@@ -494,7 +495,7 @@ impl<T: Trait> Module<T> {
         );
 
         // Grab current block height
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
         // Get opening with updated counters
         let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
 
@@ -650,7 +651,7 @@ impl<T: Trait> Module<T> {
         );
 
         // Grab current block height
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
 
         // Compute index for this new application
         let application_index_in_opening =
@@ -794,7 +795,7 @@ impl<T: Trait> Module<T> {
 
         // Drop stake from stake to application map
         <ApplicationIdByStakingId<T>>::remove(stake_id);
-        let current_block_height = <system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Module<T>>::block_number();
 
         // New application computed
         let mut new_application = application.clone();
@@ -944,11 +945,12 @@ pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
 
 /// Balance alias
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /*
  *  ======== ======== ======== ======== =======
@@ -966,7 +968,7 @@ type ApplicationBTreeMap<T> = BTreeMap<
     <T as Trait>::ApplicationId,
     hiring::Application<
         <T as Trait>::OpeningId,
-        <T as system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::BlockNumber,
         <T as stake::Trait>::StakeId,
     >,
 >;
@@ -1144,7 +1146,7 @@ impl<T: Trait> Module<T> {
                 let was_unstaked = application_was_unstaked || role_was_unstaked;
 
                 // Grab current block height
-                let current_block_height = <system::Module<T>>::block_number();
+                let current_block_height = <frame_system::Module<T>>::block_number();
 
                 /*
                  * TODO:
@@ -1255,14 +1257,9 @@ impl<T: Trait> Module<T> {
         opt_imbalance: Option<NegativeImbalance<T>>,
         application_id: &T::ApplicationId,
     ) -> Option<T::StakeId> {
-        if let Some(imbalance) = opt_imbalance {
-            Some(Self::infallible_stake_initiation_on_application(
-                imbalance,
-                application_id,
-            ))
-        } else {
-            None
-        }
+        opt_imbalance.map(|imbalance| {
+            Self::infallible_stake_initiation_on_application(imbalance, application_id)
+        })
     }
 
     fn infallible_stake_initiation_on_application(
@@ -1397,11 +1394,9 @@ impl<T: Trait> Module<T> {
     pub(crate) fn create_stake_balance(
         opt_stake_imbalance: &Option<NegativeImbalance<T>>,
     ) -> Option<BalanceOf<T>> {
-        if let Some(ref imbalance) = opt_stake_imbalance {
-            Some(imbalance.peek())
-        } else {
-            None
-        }
+        opt_stake_imbalance
+            .as_ref()
+            .map(|imbalance| imbalance.peek())
     }
 
     /// Performs all necessary check before adding an opening

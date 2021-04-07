@@ -2,13 +2,14 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import type BN from 'bn.js';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
 import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { ApiProps, ApiState } from './types';
 
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import store from 'store';
-import ApiPromise from '@polkadot/api/promise';
+import { ApiPromise } from '@polkadot/api/promise';
 import { setDeriveCache, deriveMapCache } from '@polkadot/api-derive/util';
 import { typesChain, typesSpec } from '@polkadot/apps-config/api';
 import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
@@ -22,7 +23,7 @@ import uiSettings from '@polkadot/ui-settings';
 import ApiSigner from '@polkadot/react-signer/signers/ApiSigner';
 import { formatBalance, isTestChain } from '@polkadot/util';
 import { setSS58Format } from '@polkadot/util-crypto';
-import addressDefaults from '@polkadot/util-crypto/address/defaults';
+import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 
 import ApiContext from './ApiContext';
 import registry from './typeRegistry';
@@ -51,7 +52,6 @@ interface ChainData {
   systemVersion: string;
 }
 
-const DEFAULT_DECIMALS = registry.createType('u32', 15);
 const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
 const injectedPromise = web3Enable('pioneer');
 let api: ApiPromise;
@@ -105,29 +105,28 @@ async function retrieve (api: ApiPromise): Promise<ChainData> {
 
 async function loadOnReady (api: ApiPromise, store: KeyringStore | undefined, types: Record<string, Record<string, string>>): Promise<ApiState> {
   registry.register(types);
-
   const { injectedAccounts, properties, systemChain, systemChainType, systemName, systemVersion } = await retrieve(api);
   const ss58Format = uiSettings.prefix === -1
     ? properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber()
     : uiSettings.prefix;
-  const tokenSymbol = properties.tokenSymbol.unwrapOr(undefined)?.toString();
-  const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber();
-  const isDevelopment = systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain);
+  const tokenSymbol = properties.tokenSymbol.unwrap();
+  const tokenDecimals = properties.tokenDecimals.unwrap();
+  const isDevelopment = (systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain));
 
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
 
   // explicitly override the ss58Format as specified
-  registry.setChainProperties(registry.createType('ChainProperties', { ...properties, ss58Format }));
+  registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
 
   // FIXME This should be removed (however we have some hanging bits, e.g. vanity)
   setSS58Format(ss58Format);
 
   // first setup the UI helpers
   formatBalance.setDefaults({
-    decimals: tokenDecimals,
-    unit: tokenSymbol
+    decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),
+    unit: tokenSymbol[0].toString()
   });
-  TokenUnit.setAbbr(tokenSymbol);
+  TokenUnit.setAbbr(tokenSymbol[0].toString());
 
   // finally load the keyring
   keyring.loadAll({

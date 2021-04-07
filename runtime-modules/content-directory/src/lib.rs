@@ -95,7 +95,7 @@
 //!
 //! ```
 //! use frame_support::{decl_module, assert_ok};
-//! use system::{self as system, ensure_signed};
+//! use frame_system::{self as frame_system, ensure_signed};
 //!
 //! pub trait Trait: pallet_content_directory::Trait {}
 //!
@@ -148,6 +148,7 @@ use frame_support::{
     traits::Get,
     Parameter,
 };
+use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -156,7 +157,6 @@ use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::ensure_signed;
 
 pub use errors::Error;
 
@@ -169,7 +169,7 @@ pub type MaxNumber = u32;
 pub type EntityOf<T> = Entity<
     <T as Trait>::ClassId,
     <T as ActorAuthenticator>::MemberId,
-    <T as system::Trait>::Hash,
+    <T as frame_system::Trait>::Hash,
     <T as Trait>::EntityId,
     <T as Trait>::Nonce,
 >;
@@ -179,13 +179,16 @@ pub type ClassOf<T> =
     Class<<T as Trait>::EntityId, <T as Trait>::ClassId, <T as ActorAuthenticator>::CuratorGroupId>;
 
 /// Type simplification
-pub type StoredPropertyValueOf<T> =
-    StoredPropertyValue<<T as system::Trait>::Hash, <T as Trait>::EntityId, <T as Trait>::Nonce>;
+pub type StoredPropertyValueOf<T> = StoredPropertyValue<
+    <T as frame_system::Trait>::Hash,
+    <T as Trait>::EntityId,
+    <T as Trait>::Nonce,
+>;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + ActorAuthenticator + Clone {
+pub trait Trait: frame_system::Trait + ActorAuthenticator + Clone {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Nonce type is used to avoid data race update conditions, when performing property value vector operations
     type Nonce: Parameter

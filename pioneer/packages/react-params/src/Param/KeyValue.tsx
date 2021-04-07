@@ -5,9 +5,8 @@
 import { Props } from '../types';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Compact } from '@polkadot/types';
 import { Input } from '@polkadot/react-components';
-import { hexToU8a, u8aConcat } from '@polkadot/util';
+import { hexToU8a, u8aConcat, compactAddLength } from '@polkadot/util';
 
 import Bare from './Bare';
 
@@ -32,7 +31,7 @@ export function createParam (hex: string | String, length = -1): StateParam {
 
   return {
     isValid,
-    u8a: Compact.addLengthPrefix(u8a)
+    u8a: compactAddLength(u8a)
   };
 }
 

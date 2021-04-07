@@ -3,7 +3,7 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { useEffect, useState } from 'react';
-import contractObservable from '@polkadot/ui-keyring/observable/contracts';
+import { keyring } from '@polkadot/ui-keyring';
 
 import useIsMountedRef from './useIsMountedRef';
 
@@ -18,7 +18,7 @@ export default function useContracts (): UseContracts {
   const [state, setState] = useState<UseContracts>({ allContracts: [], hasContracts: false, isContract: () => false });
 
   useEffect((): () => void => {
-    const subscription = contractObservable.subject.subscribe((contracts): void => {
+    const subscription = keyring.contracts.subject.subscribe((contracts): void => {
       if (mountedRef.current) {
         const allContracts = contracts ? Object.keys(contracts) : [];
         const hasContracts = allContracts.length !== 0;
