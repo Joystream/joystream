@@ -224,6 +224,7 @@ parameter_types! {
     pub const RepliesMaxNumber: u64 = 100;
     pub const ReplyDeposit: u64 = 500;
     pub const BlogModuleId: ModuleId = ModuleId(*b"m00:blog"); // module : blog
+    pub const ReplyLifetime: <Runtime as frame_system::Trait>::BlockNumber = 10;
 }
 
 impl Trait for Runtime {
@@ -236,6 +237,7 @@ impl Trait for Runtime {
     type ReplyId = u64;
     type ReplyDeposit = ReplyDeposit;
     type ModuleId = BlogModuleId;
+    type ReplyLifetime = ReplyLifetime;
 }
 
 impl WeightInfo for () {
@@ -258,6 +260,9 @@ impl WeightInfo for () {
         unimplemented!()
     }
     fn edit_reply(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn delete_reply() -> Weight {
         unimplemented!()
     }
 }
@@ -293,17 +298,17 @@ impl common::membership::Trait for Runtime {
 #[derive(Default)]
 pub struct ExtBuilder;
 
-impl ExtBuilder {
-    fn run_to_block(n: u64) {
-        while System::block_number() < n {
-            <System as OnFinalize<u64>>::on_finalize(System::block_number());
-            <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
-            System::set_block_number(System::block_number() + 1);
-            <System as OnInitialize<u64>>::on_initialize(System::block_number());
-            <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
-        }
+pub(crate) fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
 
+impl ExtBuilder {
     pub fn build(self) -> TestExternalities {
         let t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -312,7 +317,7 @@ impl ExtBuilder {
         let mut result: TestExternalities = t.into();
 
         // Make sure we are not in block 0 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
-        result.execute_with(|| Self::run_to_block(1));
+        result.execute_with(|| run_to_block(1));
 
         result
     }
@@ -418,6 +423,7 @@ pub fn create_reply(
     participant_id: u64,
     post_id: PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
+    editable: bool,
 ) -> DispatchResult {
     let reply = get_reply_text();
     TestBlogModule::create_reply(
@@ -426,8 +432,17 @@ pub fn create_reply(
         post_id,
         reply_id,
         reply,
-        true,
+        editable,
     )
+}
+
+pub fn delete_reply(
+    origin_id: u64,
+    participant_id: u64,
+    post_id: PostId,
+    reply_id: <Runtime as Trait>::ReplyId,
+) -> DispatchResult {
+    TestBlogModule::delete_reply(Origin::signed(origin_id), participant_id, post_id, reply_id)
 }
 
 pub fn edit_reply(

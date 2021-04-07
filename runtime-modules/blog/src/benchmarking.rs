@@ -294,6 +294,22 @@ benchmarks_instance! {
                 updated_text
             ).into());
     }
+
+    delete_reply {
+        let post_id = generate_post::<T, I>();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let origin = RawOrigin::Signed(account_id);
+    }: _(origin.clone(), participant_id, post_id, reply_id)
+    verify {
+        assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
+
+        assert_last_event::<T, I>(RawEvent::ReplyDeleted(
+                participant_id,
+                post_id,
+                reply_id,
+            ).into());
+    }
 }
 
 #[cfg(test)]
@@ -348,6 +364,13 @@ mod tests {
     fn test_edit_reply() {
         ExtBuilder::default().build().execute_with(|| {
             assert_ok!(test_benchmark_edit_reply::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_delete_reply() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_ok!(test_benchmark_delete_reply::<Runtime>());
         })
     }
 }

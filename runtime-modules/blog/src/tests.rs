@@ -405,7 +405,7 @@ fn post_editing_post_locked_error() {
 
 // Replies
 #[test]
-fn reply_creation_success() {
+fn editable_reply_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
@@ -424,7 +424,8 @@ fn reply_creation_success() {
             SECOND_OWNER_ORIGIN,
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
-            None
+            None,
+            true
         ));
 
         // Check reply related state after extrinsic performed
@@ -435,9 +436,6 @@ fn reply_creation_success() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
         ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
-
-        // Overall post replies count
-        assert_eq!(post.replies_count(), 1);
 
         // Root replies counter updated
         assert_eq!(post.replies_count(), 1);
@@ -455,7 +453,71 @@ fn reply_creation_success() {
 }
 
 #[test]
-fn direct_reply_creation_success() {
+fn editable_reply_creation_fails_without_enough_funds() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get() - 1,
+        );
+
+        assert_eq!(
+            create_reply(
+                SECOND_OWNER_ORIGIN,
+                SECOND_OWNER_PARTICIPANT_ID,
+                FIRST_ID,
+                None,
+                true
+            ),
+            Err(Error::<Runtime, DefaultInstance>::InsufficientBalanceForReply.into())
+        );
+    })
+}
+
+#[test]
+fn non_editable_reply_creation_success() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        assert_ok!(create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            false,
+        ));
+
+        // Check reply related state after extrinsic performed
+
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        assert!(!<ReplyById<Runtime>>::contains_key(FIRST_ID, FIRST_ID));
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        // Event checked
+        let reply_created_event = get_test_event(RawEvent::ReplyCreated(
+            reply_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            get_reply_text(),
+            false,
+        ));
+        assert_event_success(reply_created_event, number_of_events_before_call + 1)
+    })
+}
+
+#[test]
+fn editable_direct_reply_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
@@ -476,7 +538,8 @@ fn direct_reply_creation_success() {
             FIRST_OWNER_ORIGIN,
             FIRST_OWNER_PARTICIPANT_ID,
             FIRST_ID,
-            None
+            None,
+            true,
         ));
 
         // Events number before tested call
@@ -487,7 +550,8 @@ fn direct_reply_creation_success() {
             SECOND_OWNER_ORIGIN,
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
-            Some(FIRST_ID)
+            Some(FIRST_ID),
+            true
         ));
 
         // Check reply related state after extrinsic performed
@@ -515,6 +579,119 @@ fn direct_reply_creation_success() {
 }
 
 #[test]
+fn non_editable_direct_reply_creation_success() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            true,
+        ));
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Create reply for direct replying
+        assert_ok!(create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            Some(FIRST_ID),
+            false
+        ));
+
+        // Check reply related state after extrinsic performed
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        // Replies related storage updated succesfully
+        reply_by_id(FIRST_ID, FIRST_ID).expect("Reply not found");
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 2);
+
+        // Event checked
+        let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
+            direct_reply_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            SECOND_ID,
+            get_reply_text(),
+            false,
+        ));
+
+        assert_event_success(reply_created_event, number_of_events_before_call + 1)
+    })
+}
+
+#[test]
+fn editable_direct_reply_to_non_editable_reply_creation_success() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &SECOND_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            false,
+        ));
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Create reply for direct replying
+        assert_ok!(create_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            Some(FIRST_ID),
+            true
+        ));
+
+        // Check reply related state after extrinsic performed
+
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        // Replies related storage updated succesfully
+        reply_by_id(FIRST_ID, SECOND_ID).expect("Reply not found");
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 2);
+
+        // Event checked
+        let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
+            direct_reply_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            SECOND_ID,
+            get_reply_text(),
+            true,
+        ));
+
+        assert_event_success(reply_created_event, number_of_events_before_call + 4)
+    })
+}
+
+#[test]
 fn reply_creation_post_locked_error() {
     ExtBuilder::default().build().execute_with(|| {
         create_post(Origin::root()).unwrap();
@@ -530,6 +707,7 @@ fn reply_creation_post_locked_error() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         );
 
         // Check if related replies storage left unchanged
@@ -555,6 +733,7 @@ fn reply_creation_post_not_found() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         );
 
         // Check if related replies storage left unchanged
@@ -589,6 +768,7 @@ fn direct_reply_creation_reply_not_found() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             Some(FIRST_ID),
+            true,
         );
 
         // Check if related runtime storage left unchanged
@@ -621,6 +801,7 @@ fn reply_editing_success() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         )
         .unwrap();
 
@@ -669,6 +850,7 @@ fn reply_editing_post_locked_error() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         )
         .unwrap();
 
@@ -743,6 +925,7 @@ fn reply_editing_ownership_error() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         )
         .unwrap();
 
@@ -779,7 +962,7 @@ fn reply_participant_error() {
 
         let number_of_events_before_call = System::events().len();
 
-        let reply_result = create_reply(SECOND_OWNER_ORIGIN, BAD_MEMBER_ID, FIRST_ID, None);
+        let reply_result = create_reply(SECOND_OWNER_ORIGIN, BAD_MEMBER_ID, FIRST_ID, None, true);
 
         // Failure checked
         assert_failure(
@@ -808,6 +991,7 @@ fn reply_editing_participant_error() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             None,
+            true,
         )
         .unwrap();
 
@@ -829,6 +1013,200 @@ fn reply_editing_participant_error() {
             Error::MembershipError,
             number_of_events_before_call,
         );
+    })
+}
+
+#[test]
+fn reply_delete_success() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            true,
+        ));
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Check reply related state after extrinsic performed
+
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        // Replies related storage updated succesfully
+        reply_by_id(FIRST_ID, FIRST_ID).expect("Reply not found");
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        assert!(<ReplyById<Runtime, DefaultInstance>>::contains_key(
+            FIRST_ID, FIRST_ID
+        ));
+
+        assert_ok!(delete_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        ));
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        assert!(!<ReplyById<Runtime, DefaultInstance>>::contains_key(
+            FIRST_ID, FIRST_ID
+        ));
+
+        // Event checked
+        let reply_created_event = get_test_event(RawEvent::ReplyDeleted(
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        ));
+
+        assert_event_success(reply_created_event, number_of_events_before_call + 2)
+    })
+}
+
+#[test]
+fn reply_delete_fails_with_non_existant_post() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        assert_eq!(
+            delete_reply(
+                FIRST_OWNER_ORIGIN,
+                FIRST_OWNER_PARTICIPANT_ID,
+                FIRST_ID,
+                FIRST_ID,
+            ),
+            Err(Error::<Runtime, DefaultInstance>::ReplyNotFound.into())
+        );
+    })
+}
+
+#[test]
+fn reply_delete_fails_invalid_participant() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            true,
+        ));
+
+        // Check reply related state after extrinsic performed
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        // Replies related storage updated succesfully
+        reply_by_id(FIRST_ID, FIRST_ID).expect("Reply not found");
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        assert!(<ReplyById<Runtime, DefaultInstance>>::contains_key(
+            FIRST_ID, FIRST_ID
+        ));
+
+        assert_eq!(
+            delete_reply(
+                SECOND_OWNER_ORIGIN,
+                SECOND_OWNER_PARTICIPANT_ID,
+                FIRST_ID,
+                FIRST_ID,
+            ),
+            Err(Error::<Runtime, DefaultInstance>::ReplyOwnershipError.into())
+        );
+    })
+}
+
+#[test]
+fn reply_delete_success_with_other_participant() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create post for future replies
+        create_post(Origin::root()).unwrap();
+
+        Balances::<Runtime>::make_free_balance_be(
+            &FIRST_OWNER_ORIGIN,
+            <Runtime as Trait>::ReplyDeposit::get(),
+        );
+
+        assert_ok!(create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            None,
+            true,
+        ));
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Check reply related state after extrinsic performed
+
+        let post = post_by_id(FIRST_ID).unwrap();
+
+        // Replies related storage updated succesfully
+        reply_by_id(FIRST_ID, FIRST_ID).expect("Reply not found");
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        assert!(<ReplyById<Runtime, DefaultInstance>>::contains_key(
+            FIRST_ID, FIRST_ID
+        ));
+
+        run_to_block(
+            frame_system::Module::<Runtime>::block_number()
+                + <Runtime as Trait>::ReplyLifetime::get(),
+        );
+
+        assert_ok!(delete_reply(
+            SECOND_OWNER_ORIGIN,
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        ));
+
+        // Overall post replies count
+        assert_eq!(post.replies_count(), 1);
+
+        assert!(!<ReplyById<Runtime, DefaultInstance>>::contains_key(
+            FIRST_ID, FIRST_ID
+        ));
+
+        // Event checked
+        let reply_created_event = get_test_event(RawEvent::ReplyDeleted(
+            SECOND_OWNER_PARTICIPANT_ID,
+            FIRST_ID,
+            FIRST_ID,
+        ));
+
+        assert_event_success(reply_created_event, number_of_events_before_call + 4)
     })
 }
 

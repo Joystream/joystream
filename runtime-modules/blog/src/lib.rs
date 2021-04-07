@@ -30,7 +30,8 @@
 //! - [unlock_post](./struct.Module.html#method.unlock_post)
 //! - [edit_post](./struct.Module.html#method.edit_post)
 //! - [create_reply](./struct.Module.html#method.create_reply)
-//! - [edit_reply](./struct.Module.html#method.create_reply)
+//! - [edit_reply](./struct.Module.html#method.edit_reply)
+//! - [delete_reply](./struct.Module.html#method.delete_reply)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -80,6 +81,7 @@ pub trait WeightInfo {
     fn create_reply_to_post(t: u32) -> Weight;
     fn create_reply_to_reply(t: u32) -> Weight;
     fn edit_reply(t: u32) -> Weight;
+    fn delete_reply() -> Weight;
 }
 
 type BlogWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
@@ -121,6 +123,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// The forum module Id, used to derive the account Id to hold the thread bounty
     type ModuleId: Get<ModuleId>;
+
+    /// Time a reply can live until it can be deleted by anyone
+    type ReplyLifetime: Get<Self::BlockNumber>;
 }
 
 /// Type, representing blog related post structure
@@ -249,6 +254,8 @@ pub struct Reply<T: Trait<I>, I: Instance> {
     parent_id: ParentId<T::ReplyId, PostId>,
     /// Pay off by deleting post
     cleanup_pay_off: T::Balance,
+    /// Last time reply was edited
+    last_edited: T::BlockNumber,
 }
 
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
@@ -260,6 +267,8 @@ impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
             .field("text_hash", &self.text_hash)
             .field("owner", &self.owner)
             .field("parent_id", &self.parent_id)
+            .field("cleanup_pay_off", &self.cleanup_pay_off)
+            .field("last_edited", &self.last_edited)
             .finish()
     }
 }
@@ -273,6 +282,8 @@ impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
         self.text_hash == other.text_hash
             && self.owner == other.owner
             && self.parent_id == other.parent_id
+            && self.cleanup_pay_off == other.cleanup_pay_off
+            && self.last_edited == other.last_edited
     }
 }
 
@@ -287,6 +298,7 @@ impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
             owner: Default::default(),
             parent_id: Default::default(),
             cleanup_pay_off: Default::default(),
+            last_edited: Default::default(),
         }
     }
 }
@@ -304,6 +316,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
             owner,
             parent_id,
             cleanup_pay_off,
+            last_edited: frame_system::Module::<T>::block_number(),
         }
     }
 
@@ -314,7 +327,8 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
 
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
-        self.text_hash = T::Hashing::hash(&new_text)
+        self.text_hash = T::Hashing::hash(&new_text);
+        self.last_edited = frame_system::Module::<T>::block_number()
     }
 }
 
@@ -360,7 +374,7 @@ decl_module! {
         #[weight = BlogWeightInfo::<T, I>::create_post(
                 title.len().saturated_into(),
                 body.len().saturated_into()
-            )]
+        )]
         pub fn create_post(origin, title: Vec<u8>, body: Vec<u8>) -> DispatchResult  {
 
             // Ensure blog -> owner relation exists
@@ -517,12 +531,11 @@ decl_module! {
             Self::ensure_post_unlocked(&post)?;
 
             if let Some(reply_id) = reply_id {
-                // Check parent reply existance in case of direct reply
-                Self::ensure_reply_exists(post_id, reply_id)?;
+                // Check parent existed at some point in time(whether it is in storage or not)
+                ensure!(reply_id < post.replies_count(), Error::<T, I>::ReplyNotFound);
             }
 
             if editable {
-
                 ensure!(
                     Balances::<T>::usable_balance(&account_id) >= T::ReplyDeposit::get(),
                     Error::<T, I>::InsufficientBalanceForReply
@@ -549,7 +562,6 @@ decl_module! {
 
             if editable {
                 let parent_id = if let Some(reply_id) = reply_id {
-                    Self::ensure_reply_exists(post_id, reply_id)?;
                     ParentId::Reply(reply_id)
                 } else {
                     ParentId::Post(post_id)
@@ -625,7 +637,16 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 1_000_000] // TODO: Adjust weight
+        /// Remove reply from storage
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depends on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = BlogWeightInfo::<T, I>::delete_reply()]
         pub fn delete_reply(
             origin,
             participant_id: ParticipantId<T>,
@@ -633,17 +654,21 @@ decl_module! {
             reply_id: T::ReplyId,
         ) -> DispatchResult {
             let account_id = Self::ensure_valid_participant(origin, participant_id)?;
+            // Ensure post with given id exists
+            let post = Self::ensure_post_exists(post_id)?;
 
-            if let Ok(post) = Self::ensure_post_exists(post_id) {
-                // Ensure post unlocked, so mutations can be performed
-                Self::ensure_post_unlocked(&post)?;
-            }
+            // Ensure post unlocked, so mutations can be performed
+            Self::ensure_post_unlocked(&post)?;
 
             // Ensure reply with given id exists
             let reply = Self::ensure_reply_exists(post_id, reply_id)?;
 
-            // Ensure reply -> owner relation exists
-            Self::ensure_reply_ownership(&reply, &participant_id)?;
+            // Ensure reply -> owner relation exists if post lifetime hasn't ran out
+            if (frame_system::Module::<T>::block_number() - reply.last_edited) <
+                T::ReplyLifetime::get()
+            {
+                Self::ensure_reply_ownership(&reply, &participant_id)?;
+            }
 
             //
             // == MUTATION SAFE ==

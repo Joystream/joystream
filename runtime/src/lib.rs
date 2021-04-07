@@ -945,6 +945,9 @@ impl bounty::Trait for Runtime {
 parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
+    pub const ReplyDeposit: Balance = 2000;
+    pub const BlogModuleId: ModuleId = ModuleId(*b"mod:blog"); // module : forum
+    pub const ReplyLifetime: BlockNumber = 43_200;
 }
 
 pub type BlogInstance = blog::Instance1;
@@ -952,11 +955,13 @@ impl blog::Trait<BlogInstance> for Runtime {
     type Event = Event;
 
     type PostsMaxNumber = PostsMaxNumber;
-    type RepliesMaxNumber = RepliesMaxNumber;
     type ParticipantEnsureOrigin = Members;
     type WeightInfo = weights::blog::WeightInfo;
 
     type ReplyId = u64;
+    type ReplyDeposit = ReplyDeposit;
+    type ModuleId = BlogModuleId;
+    type ReplyLifetime = ReplyLifetime;
 }
 
 /// Forum identifier for category
