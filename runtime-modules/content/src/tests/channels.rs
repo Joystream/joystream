@@ -292,18 +292,21 @@ fn channel_censoring() {
         let group_id = curators::add_curator_to_new_group(FIRST_CURATOR_ID);
 
         // Curator can censor channels
-        assert_ok!(Content::censor_channel(
+        let is_censored = true;
+        assert_ok!(Content::update_channel_censorship_status(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             channel_id,
+            is_censored,
             vec![]
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelCensored(
+            MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
                 ContentActor::Curator(group_id, FIRST_CURATOR_ID),
                 channel_id,
+                is_censored,
                 vec![]
             ))
         );
@@ -313,18 +316,21 @@ fn channel_censoring() {
         assert!(channel.is_censored);
 
         // Curator can un-censor channels
-        assert_ok!(Content::uncensor_channel(
+        let is_censored = false;
+        assert_ok!(Content::update_channel_censorship_status(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
             channel_id,
+            is_censored,
             vec![]
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelUncensored(
+            MetaEvent::content(RawEvent::ChannelCensorshipStatusUpdated(
                 ContentActor::Curator(group_id, FIRST_CURATOR_ID),
                 channel_id,
+                is_censored,
                 vec![]
             ))
         );
@@ -334,11 +340,13 @@ fn channel_censoring() {
         assert!(!channel.is_censored);
 
         // Member cannot censor channels
+        let is_censored = true;
         assert_err!(
-            Content::censor_channel(
+            Content::update_channel_censorship_status(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id,
+                is_censored,
                 vec![]
             ),
             Error::<Test>::ActorNotAuthorized
@@ -359,20 +367,22 @@ fn channel_censoring() {
 
         // Curator cannot censor curator group channels
         assert_err!(
-            Content::censor_channel(
+            Content::update_channel_censorship_status(
                 Origin::signed(FIRST_CURATOR_ORIGIN),
                 ContentActor::Curator(group_id, FIRST_CURATOR_ID),
                 curator_channel_id,
+                is_censored,
                 vec![]
             ),
             Error::<Test>::CannotCensoreCuratorGroupOwnedChannels
         );
 
         // Lead can still censor curator group channels
-        assert_ok!(Content::censor_channel(
+        assert_ok!(Content::update_channel_censorship_status(
             Origin::signed(LEAD_ORIGIN),
             ContentActor::Lead,
             curator_channel_id,
+            is_censored,
             vec![]
         ));
     })

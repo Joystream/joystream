@@ -498,6 +498,10 @@ export default class Api {
     return await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById)
   }
 
+  async availableVideos(): Promise<[VideoId, Video][]> {
+    return await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
+  }
+
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
     return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.content.curatorGroupById)
   }
@@ -517,12 +521,20 @@ export default class Api {
   }
 
   async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
-    const videoEntries = await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
-    return videoEntries.filter(([, video]) => video.in_channel.toNumber() === channelId)
+    const channel = await this.channelById(channelId)
+    if (channel) {
+      return Promise.all(
+        channel.videos.map(
+          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
+        )
+      )
+    } else {
+      return []
+    }
   }
 
   async videoById(videoId: number): Promise<Video | null> {
-    const exists = !!(await this._api.query.content.entityById.size(videoId)).toNumber()
+    const exists = !!(await this._api.query.content.videoById.size(videoId)).toNumber()
     return exists ? await this._api.query.content.videoById<Video>(videoId) : null
   }
 

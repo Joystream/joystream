@@ -1,22 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { NewAsset } from '@joystream/types/content'
-import { ChannelMetadata } from '@joystream/content-metadata-protobuf'
-import { Vec, Option } from '@polkadot/types'
-import AccountId from '@polkadot/types/generic/AccountId'
-import { Bytes } from '@polkadot/types/primitive'
-
-type ChannelUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>
-  new_meta: ChannelMetadata.AsObject
-  reward_account: Option<AccountId>
-}
-
-type ChannelUpdateParameters = {
-  assets: Option<Vec<NewAsset>>
-  new_meta: Bytes
-  reward_account: Option<AccountId>
-}
+import { channelMetadataFromInput } from '../../helpers/serialization'
+import { ChannelUpdateParameters, ChannelUpdateParametersInput } from '../../Types'
 
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing content directory channel.'
@@ -50,18 +35,9 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
     if (input) {
       const channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)
 
-      const channelMetadata = new ChannelMetadata()
-      channelMetadata.setTitle(channelUpdateParametersInput.new_meta.title!)
-      channelMetadata.setDescription(channelUpdateParametersInput.new_meta.description!)
-      channelMetadata.setIsPublic(channelUpdateParametersInput.new_meta.isPublic!)
-      channelMetadata.setLanguage(channelUpdateParametersInput.new_meta.language!)
-      channelMetadata.setCoverPhoto(channelUpdateParametersInput.new_meta.coverPhoto!)
-      channelMetadata.setAvatarPhoto(channelUpdateParametersInput.new_meta.avatarPhoto!)
-      channelMetadata.setCategory(channelUpdateParametersInput.new_meta.category!)
+      const api = await this.getOriginalApi()
 
-      const serialized = channelMetadata.serializeBinary()
-
-      const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
+      const meta = channelMetadataFromInput(api, channelUpdateParametersInput)
 
       const channelUpdateParameters: ChannelUpdateParameters = {
         assets: channelUpdateParametersInput.assets,
@@ -73,7 +49,6 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
       this.log('Meta: ' + meta)
 
-      this.jsonPrettyPrint(JSON.stringify(channelUpdateParameters))
       const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
       if (confirmed) {

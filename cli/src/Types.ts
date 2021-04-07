@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { ElectionStage, Seat } from '@joystream/types/council'
-import { Option } from '@polkadot/types'
+import { Vec, Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
@@ -9,6 +9,9 @@ import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
 import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
+import { NewAsset } from '@joystream/types/content'
+import { Bytes } from '@polkadot/types/primitive'
+import { VideoMetadata, ChannelMetadata } from '@joystream/content-metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -197,3 +200,47 @@ export type ApiMethodNamedArg = {
   value: ApiMethodArg
 }
 export type ApiMethodNamedArgs = ApiMethodNamedArg[]
+
+export type VideoUpdateParametersInput = {
+  assets: Option<Vec<NewAsset>>
+  meta: VideoMetadata.AsObject
+}
+
+export type VideoUpdateParameters = {
+  assets: Option<Vec<NewAsset>>
+  meta: Bytes
+}
+
+export type VideoCreationParametersInput = {
+  assets: Vec<NewAsset>
+  meta: VideoMetadata.AsObject
+}
+
+export type VideoCreationParameters = {
+  assets: Vec<NewAsset>
+  meta: Bytes
+}
+
+export type ChannelCreationParametersInput = {
+  assets: Vec<NewAsset>
+  meta: ChannelMetadata.AsObject
+  reward_account: Option<AccountId>
+}
+
+export type ChannelCreationParameters = {
+  assets: Vec<NewAsset>
+  meta: Bytes
+  reward_account: Option<AccountId>
+}
+
+export type ChannelUpdateParametersInput = {
+  assets: Option<Vec<NewAsset>>
+  meta: ChannelMetadata.AsObject
+  reward_account: Option<AccountId>
+}
+
+export type ChannelUpdateParameters = {
+  assets: Option<Vec<NewAsset>>
+  new_meta: Bytes
+  reward_account: Option<AccountId>
+}

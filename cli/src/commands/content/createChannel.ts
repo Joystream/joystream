@@ -1,22 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { NewAsset } from '@joystream/types/content'
-import { ChannelMetadata } from '@joystream/content-metadata-protobuf'
-import { Vec, Option } from '@polkadot/types'
-import AccountId from '@polkadot/types/generic/AccountId'
-import { Bytes } from '@polkadot/types/primitive'
-
-type ChannelCreationParametersInput = {
-  assets: Vec<NewAsset>
-  meta: ChannelMetadata.AsObject
-  reward_account: Option<AccountId>
-}
-
-type ChannelCreationParameters = {
-  assets: Vec<NewAsset>
-  meta: Bytes
-  reward_account: Option<AccountId>
-}
+import { ChannelCreationParameters, ChannelCreationParametersInput } from '../../Types'
+import { channelMetadataFromInput } from '../../helpers/serialization'
 
 export default class CreateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel inside content directory.'
@@ -40,18 +25,9 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     if (input) {
       const channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
 
-      const channelMetadata = new ChannelMetadata()
-      channelMetadata.setTitle(channelCreationParametersInput.meta.title!)
-      channelMetadata.setDescription(channelCreationParametersInput.meta.description!)
-      channelMetadata.setIsPublic(channelCreationParametersInput.meta.isPublic!)
-      channelMetadata.setLanguage(channelCreationParametersInput.meta.language!)
-      channelMetadata.setCoverPhoto(channelCreationParametersInput.meta.coverPhoto!)
-      channelMetadata.setAvatarPhoto(channelCreationParametersInput.meta.avatarPhoto!)
-      channelMetadata.setCategory(channelCreationParametersInput.meta.category!)
+      const api = await this.getOriginalApi()
 
-      const serialized = channelMetadata.serializeBinary()
-
-      const meta = this.createType('Bytes', '0x' + Buffer.from(serialized).toString('hex'))
+      const meta = channelMetadataFromInput(api, channelCreationParametersInput)
 
       const channelCreationParameters: ChannelCreationParameters = {
         assets: channelCreationParametersInput.assets,
