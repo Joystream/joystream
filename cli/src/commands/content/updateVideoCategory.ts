@@ -19,18 +19,14 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
   ]
 
   async run() {
-    let { context, input } = this.parse(UpdateVideoCategoryCommand).flags
+    const { context, input } = this.parse(UpdateVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(UpdateVideoCategoryCommand).args
-
-    if (!context) {
-      context = await this.promptForCategoriesContext()
-    }
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
     if (input) {
       const videoCategoryUpdateParametersInput = await getInputJson<VideoCategoryUpdateParametersInput>(input)

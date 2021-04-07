@@ -15,21 +15,17 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
   ]
 
   async run() {
-    let { context } = this.parse(DeleteVideoCategoryCommand).flags
+    const { context } = this.parse(DeleteVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args
 
-    const videoCategory = await this.getApi().videoCategoryById(videoCategoryId)
+    const videoCategoryIds = await this.getApi().videoCategoryIds()
 
-    if (videoCategory) {
-      if (!context) {
-        context = await this.promptForCategoriesContext()
-      }
-
+    if (videoCategoryIds.some((id) => id.toString() === videoCategoryId)) {
       const currentAccount = await this.getRequiredSelectedAccount()
       await this.requestAccountDecoding(currentAccount)
 
-      const actor = await this.getActor(context)
+      const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
       await this.sendAndFollowNamedTx(currentAccount, 'content', 'deleteVideoCategory', [actor, videoCategoryId])
     } else {

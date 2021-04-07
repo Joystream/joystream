@@ -6,7 +6,6 @@ import { videoMetadataFromInput } from '../../helpers/serialization'
 export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Update video under specific id.'
   static flags = {
-    context: ContentDirectoryCommandBase.ownerContextFlag,
     input: IOFlags.input,
   }
 
@@ -19,18 +18,17 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-    let { context, input } = this.parse(UpdateVideoCommand).flags
+    const { input } = this.parse(UpdateVideoCommand).flags
 
     const { videoId } = this.parse(UpdateVideoCommand).args
 
-    if (!context) {
-      context = await this.promptForOwnerContext()
-    }
-
     const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const video = await this.getApi().videoById(videoId)
+    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const actor = await this.getChannelOwnerActor(channel)
+
+    await this.requestAccountDecoding(currentAccount)
 
     if (input) {
       const videoUpdateParametersInput = await getInputJson<VideoUpdateParametersInput>(input)

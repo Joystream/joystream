@@ -6,7 +6,6 @@ import { ChannelUpdateParameters, ChannelUpdateParametersInput } from '../../Typ
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing content directory channel.'
   static flags = {
-    context: ContentDirectoryCommandBase.contextFlag,
     input: IOFlags.input,
   }
 
@@ -19,18 +18,16 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-    let { context, input } = this.parse(UpdateChannelCommand).flags
+    const { input } = this.parse(UpdateChannelCommand).flags
 
     const { channelId } = this.parse(UpdateChannelCommand).args
 
-    if (!context) {
-      context = await this.promptForContext()
-    }
-
     const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const channel = await this.getApi().channelById(channelId)
+    const actor = await this.getChannelOwnerActor(channel)
+
+    await this.requestAccountDecoding(currentAccount)
 
     if (input) {
       const channelUpdateParametersInput = await getInputJson<ChannelUpdateParametersInput>(input)

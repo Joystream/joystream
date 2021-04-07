@@ -6,7 +6,6 @@ import { VideoCreationParameters, VideoCreationParametersInput } from '../../Typ
 export default class CreateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Create video under specific channel inside content directory.'
   static flags = {
-    context: ContentDirectoryCommandBase.ownerContextFlag,
     input: IOFlags.input,
   }
 
@@ -19,18 +18,16 @@ export default class CreateVideoCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
-    let { context, input } = this.parse(CreateVideoCommand).flags
+    const { input } = this.parse(CreateVideoCommand).flags
 
     const { channelId } = this.parse(CreateVideoCommand).args
 
-    if (!context) {
-      context = await this.promptForOwnerContext()
-    }
-
     const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const channel = await this.getApi().channelById(channelId)
+    const actor = await this.getChannelOwnerActor(channel)
+
+    await this.requestAccountDecoding(currentAccount)
 
     if (input) {
       const videoCreationParametersInput = await getInputJson<VideoCreationParametersInput>(input)

@@ -19,18 +19,14 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
   ]
 
   async run() {
-    let { context, input } = this.parse(UpdateChannelCategoryCommand).flags
+    const { context, input } = this.parse(UpdateChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(UpdateChannelCategoryCommand).args
-
-    if (!context) {
-      context = await this.promptForCategoriesContext()
-    }
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
     if (input) {
       const channelCategoryUpdateParametersInput = await getInputJson<ChannelCategoryUpdateParametersInput>(input)

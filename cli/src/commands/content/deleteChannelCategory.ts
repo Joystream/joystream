@@ -15,21 +15,17 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
   ]
 
   async run() {
-    let { context } = this.parse(DeleteChannelCategoryCommand).flags
+    const { context } = this.parse(DeleteChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(DeleteChannelCategoryCommand).args
 
-    const channelCategory = await this.getApi().channelCategoryById(channelCategoryId)
+    const channelCategoryIds = await this.getApi().channelCategoryIds()
 
-    if (channelCategory) {
-      if (!context) {
-        context = await this.promptForCategoriesContext()
-      }
-
+    if (channelCategoryIds.some((id) => id.toString() === channelCategoryId)) {
       const currentAccount = await this.getRequiredSelectedAccount()
       await this.requestAccountDecoding(currentAccount)
 
-      const actor = await this.getActor(context)
+      const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
       await this.sendAndFollowNamedTx(currentAccount, 'content', 'deleteChannelCategory', [actor, channelCategoryId])
     } else {

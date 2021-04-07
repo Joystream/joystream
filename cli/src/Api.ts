@@ -56,6 +56,8 @@ import {
   VideoId,
   ChannelCategory,
   VideoCategory,
+  ChannelCategoryId,
+  VideoCategoryId,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
 import { ServiceProviderRecord } from '@joystream/types/discovery'
@@ -523,16 +525,16 @@ export default class Api {
     return (await this._api.query.content.nextCuratorGroupId<CuratorGroupId>()).toNumber()
   }
 
-  async channelById(channelId: number): Promise<Channel> {
+  async channelById(channelId: ChannelId | number | string): Promise<Channel> {
     const channel = await this._api.query.content.channelById<Channel>(channelId)
     if (channel.isEmpty) {
-      throw new CLIError(`Channel by id ${channelId} not found!`)
+      throw new CLIError(`Channel by id ${channelId.toString()} not found!`)
     }
 
     return channel
   }
 
-  async videosByChannelId(channelId: number): Promise<[VideoId, Video][]> {
+  async videosByChannelId(channelId: ChannelId | number | string): Promise<[VideoId, Video][]> {
     const channel = await this.channelById(channelId)
     if (channel) {
       return Promise.all(
@@ -545,23 +547,29 @@ export default class Api {
     }
   }
 
-  async videoById(videoId: number): Promise<Video> {
+  async videoById(videoId: VideoId | number | string): Promise<Video> {
     const video = await this._api.query.content.videoById<Video>(videoId)
     if (video.isEmpty) {
-      throw new CLIError(`Video by id ${videoId} not found!`)
+      throw new CLIError(`Video by id ${videoId.toString()} not found!`)
     }
 
     return video
   }
 
-  async channelCategoryById(channelCategoryId: number): Promise<ChannelCategory | null> {
-    const exists = !!(await this._api.query.content.channelCategoryById.size(channelCategoryId)).toNumber()
-    return exists ? await this._api.query.content.channelCategoryById<ChannelCategory>(channelCategoryId) : null
+  async channelCategoryIds(): Promise<ChannelCategoryId[]> {
+    // There is currently no way to differentiate between unexisting and existing category
+    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
+    return (
+      await this.entriesByIds<ChannelCategoryId, ChannelCategory>(this._api.query.content.channelCategoryById)
+    ).map(([id]) => id)
   }
 
-  async videoCategoryById(videoCategoryId: number): Promise<VideoCategory | null> {
-    const exists = !!(await this._api.query.content.videoCategoryById.size(videoCategoryId)).toNumber()
-    return exists ? await this._api.query.content.videoCategoryById<VideoCategory>(videoCategoryId) : null
+  async videoCategoryIds(): Promise<VideoCategoryId[]> {
+    // There is currently no way to differentiate between unexisting and existing category
+    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
+    return (await this.entriesByIds<VideoCategoryId, VideoCategory>(this._api.query.content.videoCategoryById)).map(
+      ([id]) => id
+    )
   }
 
   async dataByContentId(contentId: ContentId): Promise<DataObject | null> {

@@ -81,24 +81,54 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return channel.owner.isOfType('Curators') ? await this.getActor('Lead') : await this.getActor('Curator')
   }
 
-  async getCuratorContext(): Promise<ContentActor> {
+  async getChannelOwnerActor(channel: Channel): Promise<ContentActor> {
+    if (channel.owner.isOfType('Curators')) {
+      return await this.getCuratorContext(channel.owner.asType('Curators'))
+    } else {
+      return await this.getActor('Member')
+    }
+  }
+
+  async getCategoryManagementActor(): Promise<ContentActor> {
+    try {
+      await this.getRequiredLead()
+      return await this.getActor('Lead')
+    } catch (e) {
+      return await this.getActor('Curator')
+    }
+  }
+
+  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<ContentActor> {
     const curator = await this.getRequiredWorker()
 
-    const groups = await this.getApi().availableCuratorGroups()
-    const availableGroupIds = groups
-      .filter(
-        ([, group]) =>
-          group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
-      )
-      .map(([id]) => id)
-
     let groupId: number
-    if (!availableGroupIds.length) {
-      this.error("You don't belong to any active curator group!", { exit: ExitCodes.AccessDenied })
-    } else if (availableGroupIds.length === 1) {
-      groupId = availableGroupIds[0].toNumber()
+    if (requiredGroupId) {
+      const group = await this.getCuratorGroup(requiredGroupId.toNumber())
+      if (!group.active.valueOf()) {
+        this.error(`Curator group ${requiredGroupId.toString()} is no longer active`, { exit: ExitCodes.AccessDenied })
+      }
+      if (!group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))) {
+        this.error(`You don't belong to required curator group (ID: ${requiredGroupId.toString()})`, {
+          exit: ExitCodes.AccessDenied,
+        })
+      }
+      groupId = requiredGroupId.toNumber()
     } else {
-      groupId = await this.promptForCuratorGroup('Select Curator Group context', availableGroupIds)
+      const groups = await this.getApi().availableCuratorGroups()
+      const availableGroupIds = groups
+        .filter(
+          ([, group]) =>
+            group.active.valueOf() && group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
+        )
+        .map(([id]) => id)
+
+      if (!availableGroupIds.length) {
+        this.error("You don't belong to any active curator group!", { exit: ExitCodes.AccessDenied })
+      } else if (availableGroupIds.length === 1) {
+        groupId = availableGroupIds[0].toNumber()
+      } else {
+        groupId = await this.promptForCuratorGroup('Select Curator Group context', availableGroupIds)
+      }
     }
 
     return createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] })

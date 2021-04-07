@@ -11,16 +11,12 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
   }
 
   async run() {
-    let { context, input } = this.parse(CreateChannelCategoryCommand).flags
-
-    if (!context) {
-      context = await this.promptForCategoriesContext()
-    }
+    const { context, input } = this.parse(CreateChannelCategoryCommand).flags
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
     if (input) {
       const channelCategoryCreationParametersInput = await getInputJson<ChannelCategoryCreationParametersInput>(input)

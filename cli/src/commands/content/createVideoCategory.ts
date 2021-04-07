@@ -7,20 +7,16 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
   static description = 'Create video category inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
-    input: IOFlags.input,
+    input: IOFlags.input, // TODO: Fix that
   }
 
   async run() {
-    let { context, input } = this.parse(CreateVideoCategoryCommand).flags
-
-    if (!context) {
-      context = await this.promptForCategoriesContext()
-    }
+    const { context, input } = this.parse(CreateVideoCategoryCommand).flags
 
     const currentAccount = await this.getRequiredSelectedAccount()
     await this.requestAccountDecoding(currentAccount)
 
-    const actor = await this.getActor(context)
+    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
     if (input) {
       const videoCategoryCreationParametersInput = await getInputJson<VideoCategoryCreationParametersInput>(input)
