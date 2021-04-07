@@ -20,7 +20,7 @@ import hiring from '../hiring'
 import workingGroup from '../working-group'
 import storage from '../storage'
 import proposals from '../proposals'
-import contentDirectory from '../content'
+import content from '../content'
 import legacy from '../legacy'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
@@ -42,7 +42,7 @@ const typesByModule = {
   'working-group': workingGroup,
   'storage': storage,
   'proposals': proposals,
-  'content': contentDirectory,
+  'content': content,
 }
 
 type Imports = { [moduleName: string]: string[] }

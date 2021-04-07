@@ -48,7 +48,7 @@ export default class SetCuratorGroupStatusCommand extends ContentDirectoryComman
     }
 
     await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'setCuratorGroupStatus', [id, status])
+    await this.sendAndFollowNamedTx(account, 'content', 'setCuratorGroupStatus', [id, status])
 
     console.log(
       chalk.green(

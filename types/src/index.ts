@@ -11,7 +11,7 @@ import hiring from './hiring'
 import workingGroup from './working-group'
 import storage from './storage'
 import proposals from './proposals'
-import contentDirectory from './content'
+import content from './content'
 import legacy from './legacy'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
@@ -32,7 +32,7 @@ export {
   workingGroup,
   storage,
   proposals,
-  contentDirectory,
+  content,
 }
 
 export const types: RegistryTypes = {
@@ -50,7 +50,7 @@ export const types: RegistryTypes = {
   ...workingGroup,
   ...storage,
   ...proposals,
-  ...contentDirectory,
+  ...content,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)

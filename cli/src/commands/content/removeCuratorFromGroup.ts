@@ -39,7 +39,7 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     }
 
     await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'removeCuratorFromGroup', [groupId, curatorId])
+    await this.sendAndFollowNamedTx(account, 'content', 'removeCuratorFromGroup', [groupId, curatorId])
 
     this.log(chalk.green(`Curator ${chalk.white(curatorId)} successfully removed from group ${chalk.white(groupId)}!`))
   }
