@@ -60,7 +60,6 @@ import {
   VideoCategoryId,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -577,28 +576,10 @@ export default class Api {
     return dataObject.isEmpty ? null : dataObject
   }
 
-  async ipnsIdentity(storageProviderId: number): Promise<string | null> {
-    const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId<ServiceProviderRecord>(
-      storageProviderId
-    )
-    return accountInfo.isEmpty || accountInfo.expires_at.toNumber() <= (await this.bestNumber())
-      ? null
-      : accountInfo.identity.toString()
-  }
-
   async getRandomBootstrapEndpoint(): Promise<string | null> {
     const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
     const randomEndpoint = _.sample(endpoints.toArray())
     return randomEndpoint ? randomEndpoint.toString() : null
-  }
-
-  async isAnyProviderAvailable(): Promise<boolean> {
-    const accounInfoEntries = await this.entriesByIds<StorageProviderId, ServiceProviderRecord>(
-      this._api.query.discovery.accountInfoByStorageProviderId
-    )
-
-    const bestNumber = await this.bestNumber()
-    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
   }
 
   async storageProviderEndpoint(storageProviderId: number): Promise<string> {
