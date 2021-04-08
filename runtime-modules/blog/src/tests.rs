@@ -415,6 +415,11 @@ fn editable_reply_creation_success() {
             <Runtime as Trait>::ReplyDeposit::get(),
         );
 
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN),
+            <Runtime as Trait>::ReplyDeposit::get()
+        );
+
         let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         // Events number before tested call
@@ -427,6 +432,8 @@ fn editable_reply_creation_success() {
             None,
             true
         ));
+
+        assert_eq!(Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN), 0);
 
         // Check reply related state after extrinsic performed
 
@@ -1027,6 +1034,11 @@ fn reply_delete_success() {
             <Runtime as Trait>::ReplyDeposit::get(),
         );
 
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
+            <Runtime as Trait>::ReplyDeposit::get()
+        );
+
         assert_ok!(create_reply(
             FIRST_OWNER_ORIGIN,
             FIRST_OWNER_PARTICIPANT_ID,
@@ -1034,6 +1046,8 @@ fn reply_delete_success() {
             None,
             true,
         ));
+
+        assert_eq!(Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN), 0);
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -1058,6 +1072,11 @@ fn reply_delete_success() {
             FIRST_ID,
             FIRST_ID,
         ));
+
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
+            <Runtime as Trait>::ReplyDeposit::get()
+        );
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 1);
@@ -1156,6 +1175,11 @@ fn reply_delete_success_with_other_participant() {
             <Runtime as Trait>::ReplyDeposit::get(),
         );
 
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
+            <Runtime as Trait>::ReplyDeposit::get()
+        );
+
         assert_ok!(create_reply(
             FIRST_OWNER_ORIGIN,
             FIRST_OWNER_PARTICIPANT_ID,
@@ -1163,6 +1187,8 @@ fn reply_delete_success_with_other_participant() {
             None,
             true,
         ));
+
+        assert_eq!(Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN), 0);
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -1186,12 +1212,19 @@ fn reply_delete_success_with_other_participant() {
                 + <Runtime as Trait>::ReplyLifetime::get(),
         );
 
+        assert_eq!(Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN), 0);
+
         assert_ok!(delete_reply(
             SECOND_OWNER_ORIGIN,
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
         ));
+
+        assert_eq!(
+            Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN),
+            <Runtime as Trait>::ReplyDeposit::get()
+        );
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 1);
