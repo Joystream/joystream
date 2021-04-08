@@ -1242,6 +1242,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.13.10", "@babel/runtime@^7.13.9":
+  version "7.13.10"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.13.10.tgz#47d42a57b6095f4468da440388fdbad8bebf0d7d"
+  integrity sha512-4QPkjJq6Ns3V/RgpEahRk+AGfL0eO6RHHtTWoNNr5mO49G6B5+X6d6THgWEAvTrznU5xYpbAlVKRYcsCgh/Akw==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/runtime@^7.6.3":
   version "7.7.4"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.7.4.tgz#b23a856751e4bf099262f867767889c0e3fe175b"
@@ -1360,10 +1367,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@2.0.0-beta":
-  version "2.0.0-beta"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.0.0-beta.tgz#241a4fbaef5fb90661d994bfb06f9466fd569565"
-  integrity sha512-F06H+lj02Z5iQg+MvVx9VRjXN70Agx+7a78SiQ5zjAKHQsunwWnOTVNCcGI/tU3qDW+fh6fh1eCTcNJHtVW8TA==
+"@dzlzv/hydra-cli@2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.0.1-beta.17.tgz#9e79fde559d7c90a429030fb906e2fbc352b2b2e"
+  integrity sha512-qRNr6R3i/ju4Uqk+gAXuJ0OWbDENkW1ghD84m3wRlFJ3DSDDPlXGmmc3+EfsgzAbSYHCOAnfsrWWsRdgrh8RtQ==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -1393,44 +1400,36 @@
     tslib "1.11.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
 
-"@dzlzv/hydra-common@0.0.3", "@dzlzv/hydra-common@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-0.0.3.tgz#87f729959644c39f9e2dd01d1a0c64075ee43d65"
-  integrity sha512-M/q+oe4E4ov+zRZZl5BkoxsnUKsREw0wc+7f6tGjL6ZKIkfEPv6EhhBF1w2m/aM+ysLXYhq9poOFwHyR5SvDlg==
+"@dzlzv/hydra-common@2.0.1-beta.17", "@dzlzv/hydra-common@^2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.0.1-beta.17.tgz#2c99c88ff877add3d3f9ad9a94f5788d755c4c42"
+  integrity sha512-fOxzei0mCRD7KL3MSY5saoJFknnoVysy9qHpfk6yNkyFsykHmekv1mqgicNwuC5HLq/ChxKoQHPeuVV3oltG/w==
   dependencies:
     bn.js "^5.1.3"
 
-"@dzlzv/hydra-common@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-0.0.1.tgz#e6dbffad93745627bce11eb6bd7ee8f407ab9cfd"
-  integrity sha512-wTFvBSb4Rq0YqSFE2gTLsJAPt2Iw0wUPQbVmXUXSUwJ/pCzihqLdgf0RlWjzTZXIctuHWHzcYbrseoGhiy4gpQ==
+"@dzlzv/hydra-db-utils@2.0.1-beta.17", "@dzlzv/hydra-db-utils@^2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.0.1-beta.17.tgz#92ddc4c26ef22e1d247ace2f83e5b93d727f09f9"
+  integrity sha512-DPPCD5NfKICorkHsam55VMPsEXQCtuGVe6LasjEWdseDN2d9Px8t8o2+up51nOy8Gqc1dm0xCk+qSTe7GRD8ow==
   dependencies:
-    bn.js "^5.1.3"
-
-"@dzlzv/hydra-db-utils@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-0.0.2.tgz#7d0b23ead97a5d084e72d2ecfb6dbcb126557a19"
-  integrity sha512-dPrUqhtkq8HvT2jnTuSDPLQdEjaaTX+fRbfrz9wbJVUAYCW50nHtn2qZ1DEp23hiE0EkUkm+JLYONWDpJVNQ7w==
-  dependencies:
-    "@dzlzv/hydra-common" "^0.0.1"
+    "@dzlzv/hydra-common" "^2.0.1-beta.17"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.1.3"
     ioredis "^4.17.3"
     lodash "^4.17.20"
+    shortid "^2.2.16"
     typeorm "^0.2.25"
 
-"@dzlzv/hydra-processor@0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-0.1.1.tgz#b227c10c625ea164fc60a86751f6951107572afd"
-  integrity sha512-r48VwjqL/w+UIuYEelnO7y6OVDek5lzwCywgXJuLlRUk/5Jhz8BBiC8GMFAfoc5sXStTC7uY8NNgtaJrGj3cEQ==
+"@dzlzv/hydra-processor@2.0.1-beta.17":
+  version "2.0.1-beta.17"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.0.1-beta.17.tgz#eefe5f54157722b162ffcff629eadbf16c82e1f1"
+  integrity sha512-fKLNt9+Z2py+R91CxPbPJi7kdNCZadnerBCxf4UUCrCr2PIpqDRF/0KsKxEHnW1xGpgTe0LhbA7d4vMbsV0X/w==
   dependencies:
-    "@dzlzv/hydra-common" "^0.0.3"
-    "@dzlzv/hydra-db-utils" "^0.0.2"
+    "@dzlzv/hydra-common" "^2.0.1-beta.17"
+    "@dzlzv/hydra-db-utils" "^2.0.1-beta.17"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
-    "@oclif/plugin-help" "^2"
-    "@oclif/plugin-plugins" "^1.9.4"
     bn.js "^5.1.3"
     chalk "^4.1.0"
     delay "^5.0.0"
@@ -1446,16 +1445,14 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@dzlzv/hydra-typegen@0.0.3-1":
-  version "0.0.3-1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-0.0.3-1.tgz#e1fe3b22c77eb46b7be313e87248282906daf6e9"
-  integrity sha512-h5ppekE8IMFuhyhFmcgb84VGAGEJYCOsqHDVL27TL9umx8KWVPLeYmgd6bA43zsXKsU+ws1pT4ncCDz70t56tw==
+"@dzlzv/hydra-typegen@2.0.1-beta.16":
+  version "2.0.1-beta.16"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.0.1-beta.16.tgz#2f82dba4587b0375a39983ad3eafe4d18e46becd"
+  integrity sha512-8N5cpnUtuKarFTLKUAtUfuL/PTvgGW1k2k07EwthHFdw/JCuCQAQyUWAcwJiOZbXauQnLpIvBJREH/b4hNArQQ==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
-    "@oclif/plugin-help" "^2"
-    "@oclif/plugin-plugins" "^1.9.4"
     "@polkadot/api" "^2.10.1"
     debug "^4.3.1"
     handlebars "^4.7.6"
@@ -3639,6 +3636,25 @@
     "@polkadot/util-crypto" "^3.0.1"
     bn.js "^5.1.2"
 
+"@polkadot/metadata@^4.1.1":
+  version "4.3.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/metadata/-/metadata-4.3.1.tgz#a50cb33760dfa904bc39be584b9477a0b9e13dde"
+  integrity sha512-vYH1lhqH2Y3xUPWqGleGR0tJgMzPFYiAeim0lrjvbxtoaUJESAdG0hKy7J4pQuod8FvJvhxnl+0NXAw0pCnWcQ==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+    "@polkadot/types" "4.3.1"
+    "@polkadot/types-known" "4.3.1"
+    "@polkadot/util" "^6.0.5"
+    "@polkadot/util-crypto" "^6.0.5"
+    bn.js "^4.11.9"
+
+"@polkadot/networks@^6.0.5":
+  version "6.0.5"
+  resolved "https://registry.yarnpkg.com/@polkadot/networks/-/networks-6.0.5.tgz#36271138eb2b1b7d79462fa89544d1b90fa77010"
+  integrity sha512-QSa5RdK43yD4kLsZ6tXIB652bZircaVPOpsZ5JFzxCM4gdxHCSCUeXNVBeh3uqeB3FOZZYzSYeoZHLaXuT3yJw==
+  dependencies:
+    "@babel/runtime" "^7.13.9"
+
 "@polkadot/react-identicon@^0.57.3":
   version "0.57.3"
   resolved "https://registry.yarnpkg.com/@polkadot/react-identicon/-/react-identicon-0.57.3.tgz#f2f1a9b57faa66e1df47a0238daa9607f76d946c"
@@ -3736,7 +3752,18 @@
     "@polkadot/util" "^3.0.1"
     bn.js "^5.1.2"
 
-"@polkadot/types@1.26.1", "@polkadot/types@^1.26.1", "@polkadot/types@~2.10.2-7":
+"@polkadot/types-known@4.3.1":
+  version "4.3.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/types-known/-/types-known-4.3.1.tgz#0b2c51ee5522277ea91fed353cf5cae47a647a20"
+  integrity sha512-Fcx6bvp6r8v/11upAgat3yAClRwtmci0LVdlsQhbGHv4jBW/LFqKxX9vcfwpA28D22U3ZGxHnduaiH6Gjyw+FA==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+    "@polkadot/networks" "^6.0.5"
+    "@polkadot/types" "4.3.1"
+    "@polkadot/util" "^6.0.5"
+    bn.js "^4.11.9"
+
+"@polkadot/types@1.26.1", "@polkadot/types@4.3.1", "@polkadot/types@^1.26.1":
   version "1.26.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-1.26.1.tgz#e58a823da22bd526b298f7d42384bf59b8994fad"
   integrity sha512-mrA3+qYyDvfOIOMkY8lg2ziCYpwOl3N1LUxKdiyBDtKM7Dl8ZWQ0nLUCDW5MhbzDlThmYjE4feBRA+2eBShfyA==
@@ -3781,7 +3808,7 @@
     "@babel/runtime" "^7.10.5"
     color "^3.1.2"
 
-"@polkadot/util-crypto@3.0.1", "@polkadot/util-crypto@^3.0.1":
+"@polkadot/util-crypto@3.0.1", "@polkadot/util-crypto@^3.0.1", "@polkadot/util-crypto@^6.0.5":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util-crypto/-/util-crypto-3.0.1.tgz#800746a39a00e5aa7dc7b901bbde0f5e3e0be60b"
   integrity sha512-4G5kzNfqa/nQGuTtoFsy3DESApc8BTgTHbAvLwSkxzM3j8YsvC5ayJ3AFYvM2UT2PDwXmrFx4cwRnYsYZvhC9A==
@@ -3800,7 +3827,7 @@
     tweetnacl "^1.0.3"
     xxhashjs "^0.2.2"
 
-"@polkadot/util@3.0.1", "@polkadot/util@^3.0.1":
+"@polkadot/util@3.0.1", "@polkadot/util@^3.0.1", "@polkadot/util@^6.0.5":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util/-/util-3.0.1.tgz#f7ed9d81d745136aa6d6ad57277ee05c88f32784"
   integrity sha512-WvH+seT03YQ+6dWJqo285uYHsDvMEGzgYQILEclzQo8xExeCYLIX6GptpW0vGycVxdZmmCdDmUFbcQSRsFawYA==
@@ -7949,7 +7976,7 @@ bluebird@^3.1.1, bluebird@^3.3.5, bluebird@^3.5.1, bluebird@^3.5.3, bluebird@^3.
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.7.2.tgz#9f229c15be272454ffa973ace0dbee79a1b0c36f"
   integrity sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
 
-bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.1.1, bn.js@^4.11.8, bn.js@^4.4.0, bn.js@^5.1.2, bn.js@^5.1.3:
+bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.1.1, bn.js@^4.11.8, bn.js@^4.11.9, bn.js@^4.4.0, bn.js@^5.1.2, bn.js@^5.1.3:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-5.1.2.tgz#c9686902d3c9a27729f43ab10f9d79c2004da7b0"
   integrity sha512-40rZaf3bUNKTVYu9sIeeEGOg7g14Yvnj9kH7b50EiwX0Q7A6umbvfI5tvHaOERH0XigqKkfLkFQxzb4e6CIXnA==
@@ -16830,6 +16857,11 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=
 
+iso-639-1@^2.1.8:
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/iso-639-1/-/iso-639-1-2.1.9.tgz#e41b11d4f1808e5316d0252c3fa16eeb9b37bb58"
+  integrity sha512-owRu9up+Cpx/hwSzm83j6G8PtC7U99UCtPVItsafefNfEgMl+pi8KBwhXwJkJfp6IouyYWFxj8n24SvCWpKZEQ==
+
 iso-constants@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/iso-constants/-/iso-constants-0.1.2.tgz#3d2456ed5aeaa55d18564f285ba02a47a0d885b4"
@@ -22430,10 +22462,24 @@ pg-connection-string@0.1.3, pg-connection-string@^0.1.3:
   resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-0.1.3.tgz#da1847b20940e42ee1492beaf65d49d91b245df7"
   integrity sha1-2hhHsglA5C7hSSvq9l1J2RskXfc=
 
+pg-format@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/pg-format/-/pg-format-1.0.4.tgz#27734236c2ad3f4e5064915a59334e20040a828e"
+  integrity sha1-J3NCNsKtP05QZJFaWTNOIAQKgo4=
+
 pg-int8@1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/pg-int8/-/pg-int8-1.0.1.tgz#943bd463bf5b71b4170115f80f8efc9a0c0eb78c"
   integrity sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==
+
+pg-listen@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/pg-listen/-/pg-listen-1.7.0.tgz#5a5c68a1cabf88d2b78ed9cf133667f597d3b860"
+  integrity sha512-MKDwKLm4ryhy7iq1yw1K1MvUzBdTkaT16HZToddX9QaT8XSdt3Kins5mYH6DLECGFzFWG09VdXvWOIYogjXrsg==
+  dependencies:
+    debug "^4.1.1"
+    pg-format "^1.0.4"
+    typed-emitter "^0.1.0"
 
 pg-packet-stream@^1.1.0:
   version "1.1.0"
@@ -25830,7 +25876,7 @@ shellwords@^0.1.1:
   resolved "https://registry.yarnpkg.com/shellwords/-/shellwords-0.1.1.tgz#d6b9181c1a48d397324c84871efbcfc73fc0654b"
   integrity sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==
 
-shortid@^2.2.15:
+shortid@^2.2.15, shortid@^2.2.16:
   version "2.2.16"
   resolved "https://registry.yarnpkg.com/shortid/-/shortid-2.2.16.tgz#b742b8f0cb96406fd391c76bfc18a67a57fe5608"
   integrity sha512-Ugt+GIZqvGXCIItnsL+lvFJOiN7RYqlGy7QE41O3YC1xbNSeDGIRO7xg2JJXIAj1cAGnOeC1r7/T9pgrtQbv4g==
@@ -28046,6 +28092,11 @@ type@^2.0.0:
   resolved "https://registry.yarnpkg.com/type/-/type-2.0.0.tgz#5f16ff6ef2eb44f260494dae271033b29c09a9c3"
   integrity sha512-KBt58xCHry4Cejnc2ISQAF7QY+ORngsWfxezO68+12hKV6lQY8P/psIkcbjeHWn7MqcgciWJyCCevFMJdIXpow==
 
+typed-emitter@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/typed-emitter/-/typed-emitter-0.1.0.tgz#ca532f100ccbf850e3a73b8ebf43d43e4f1f3849"
+  integrity sha512-Tfay0l6gJMP5rkil8CzGbLthukn+9BN/VXWcABVFPjOoelJ+koW8BuPZYk+h/L+lEeIp1fSzVRiWRPIjKVjPdg==
+
 typed-styles@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/typed-styles/-/typed-styles-0.0.7.tgz#93392a008794c4595119ff62dde6809dbc40a3d9"
@@ -29106,7 +29157,6 @@ warning@^4.0.2, warning@^4.0.3:
 
 "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
   version "2.23.0"
-  uid "4582fc35554580e0af0f43a9b3725aad2eb808c6"
   resolved "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz#4582fc35554580e0af0f43a9b3725aad2eb808c6"
   dependencies:
     "@types/app-root-path" "^1.2.4"

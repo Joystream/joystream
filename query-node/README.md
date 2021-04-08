@@ -63,46 +63,11 @@ Follow the links for more information about the [indexer](https://github.com/Joy
 
 
 # Tmp command order
+TODO: remove after integration tests are finished and query node runs without any issues
 ```
-# run from the Joystream monorepo root
-
-# temporarily remove query node dependency from mappings package
-sed -i 's/"query-node": "^0.0.0",//' query-node/mappings/package.json
-
-# install dependencies
+# build everything
 yarn
-yarn workspace @joystream/content-metadata-protobuf build
-yarn workspace @joystream/types build
-yarn workspace query-node-root build # this will fail during mappings compilation
-
-# add back dependency
-sed -i 's/"dependencies": {/"dependencies": {\n    "query-node": "^0.0.0",/' query-node/mappings/package.json
-
-# install new dependencies
-yarn
-
-# fix asset availability export
-sed -i "s#import { AssetAvailability } from '../enums/enums'#import { AssetAvailability } from '../enums/enums'\nexport { AssetAvailability } from '../enums/enums'#" query-node/generated/graphql-server/src/modules/video/video.model.ts
-
-echo "set -a; . .env; set +a; yarn workspace query-node build:dev" > tmp.sh
-chmod +x tmp.sh
-./tmp.sh
-
-# temporarily "comment" monorepo workspaces
-sed -i 's/"workspaces": \[/"notWorkspaces": [/' package.json
-
-# use typegen
-cd query-node
-yarn
-yarn typegen
-rm node_modules yarn.lock -r # clean 
-cd ..
-
-# "uncomment" monorepo workspaces
-sed -i 's/"notWorkspaces": \[/"workspaces": [/' package.json
-
-# build mappings
-yarn workspace query-node-mappings build
+yarn build
 
 ```
 
