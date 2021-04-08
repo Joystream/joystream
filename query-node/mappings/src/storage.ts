@@ -36,6 +36,10 @@ export async function data_directory_ContentAdded(db: DatabaseManager, event: Su
     const owner = convertStorageObjectOwner(storageObjectOwner)
     const dataObject = await prepareDataObject(parameters, event.blockNumber, owner)
 
+    // fill in auto-generated fields
+    dataObject.createdAt = new Date(event.blockTimestamp.toNumber())
+    dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
+
     await db.save<DataObject>(dataObject)
   }
 
@@ -75,6 +79,9 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   dataObject.liaisonId = storageProviderId
   dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
+  // set last update time
+  dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save object
   await db.save<DataObject>(dataObject)
 
@@ -97,6 +104,9 @@ export async function data_directory_ContentRejected(db: DatabaseManager, event:
   // update object
   dataObject.liaisonId = storageProviderId
   dataObject.liaisonJudgement = LiaisonJudgement.REJECTED
+
+  // set last update time
+  dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save object
   await db.save<DataObject>(dataObject)

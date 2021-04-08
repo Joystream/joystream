@@ -42,10 +42,17 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
 
   // create entity
   const channel = new Channel({
+    // main data
     id: channelId.toString(),
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
+
+    // fill in auto-generated fields
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
+
+    // integrate metadata
     ...protobufContent
   })
 
@@ -107,6 +114,9 @@ export async function content_ChannelUpdated(
     handleChannelRewardAccountChange(channel, newRewardAccount)
   }
 
+  // set last update time
+  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save channel
   await db.save<Channel>(channel)
 
@@ -152,6 +162,9 @@ export async function content_ChannelCensored(
   // update channel
   channel.isCensored = true;
 
+  // set last update time
+  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save channel
   await db.save<Channel>(channel)
 
@@ -177,6 +190,9 @@ export async function content_ChannelUncensored(
 
   // update channel
   channel.isCensored = false;
+
+  // set last update time
+  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save channel
   await db.save<Channel>(channel)
@@ -208,9 +224,16 @@ export async function content_ChannelCategoryCreated(
 
   // create new channel category
   const channelCategory = new ChannelCategory({
+    // main data
     id: channelCategoryId.toString(),
     channels: [],
     createdInBlock: event.blockNumber,
+
+    // fill in auto-generated fields
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
+
+    // integrate metadata
     ...protobufContent
   })
 
@@ -255,6 +278,9 @@ export async function content_ChannelCategoryUpdated(
   for (let [key, value] of Object(protobufContent).entries()) {
     channelCategory[key] = value
   }
+
+  // set last update time
+  channelCategory.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save channel category
   await db.save<ChannelCategory>(channelCategory)

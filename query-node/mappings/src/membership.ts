@@ -44,6 +44,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
 
   // create new membership
   const member = new Membership({
+    // main data
     id: memberId.toString(),
     rootAccount: accountId.toString(),
     controllerAccount: accountId.toString(),
@@ -53,6 +54,10 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     createdInBlock: event_.blockNumber,
     // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
     entry: MembershipEntryMethod.PAID,
+
+    // fill in auto-generated fields
+    createdAt: new Date(event_.blockTimestamp.toNumber()),
+    updatedAt: new Date(event_.blockTimestamp.toNumber()),
   })
 
   // save membership
@@ -73,6 +78,9 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_
   // update member
   member.about = convertBytesToString(text)
 
+  // set last update time
+  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+
   // save member
   await db.save<Membership>(member)
 
@@ -90,6 +98,9 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: S
 
   // update member
   member.avatarUri = convertBytesToString(uri)
+
+  // set last update time
+  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -109,6 +120,9 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: S
   // update member
   member.handle = convertBytesToString(handle)
 
+  // set last update time
+  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+
   // save member
   await db.save<Membership>(member)
 
@@ -125,6 +139,9 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event_: 
 
   // update member
   member.rootAccount = newRootAccount.toString()
+
+  // set last update time
+  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -143,6 +160,9 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 
   // update member
   member.controllerAccount = newControllerAccount.toString()
+
+  // set last update time
+  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)

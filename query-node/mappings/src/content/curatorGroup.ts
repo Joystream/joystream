@@ -18,9 +18,14 @@ export async function content_CuratorGroupCreated(
 
   // create new curator group
   const curatorGroup = new CuratorGroup({
+    // main data
     id: curatorGroupId.toString(),
     curatorIds: [],
     isActive: false, // runtime creates inactive curator groups by default
+
+    // fill in auto-generated fields
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
   })
 
   // save curator group
@@ -48,6 +53,9 @@ export async function content_CuratorGroupStatusSet(
   // update curator group
   curatorGroup.isActive = isActive.isTrue
 
+  // set last update time
+  curatorGroup.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
 
@@ -72,6 +80,9 @@ export async function content_CuratorAdded(
 
   // update curator group
   curatorGroup.curatorIds.push(curatorId)
+
+  // set last update time
+  curatorGroup.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)

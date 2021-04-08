@@ -54,9 +54,16 @@ export async function content_VideoCategoryCreated(
 
   // create new video category
   const videoCategory = new VideoCategory({
-    id: videoCategoryId.toString(), // ChannelId
+    // main data
+    id: videoCategoryId.toString(),
     videos: [],
     createdInBlock: event.blockNumber,
+
+    // fill in auto-generated fields
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
+
+    // integrate metadata
     ...protobufContent
   })
 
@@ -101,6 +108,9 @@ export async function content_VideoCategoryUpdated(
   for (let [key, value] of Object(protobufContent).entries()) {
     videoCategory[key] = value
   }
+
+  // set last update time
+  videoCategory.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save video category
   await db.save<VideoCategory>(videoCategory)
@@ -169,10 +179,17 @@ export async function content_VideoCreated(
 
   // create new video
   const video = new Video({
+    // main data
     id: videoId.toString(),
     isCensored: false,
     channel,
     createdInBlock: event.blockNumber,
+
+    // fill in auto-generated fields
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
+
+    // integrate metadata
     ...protobufContent
   })
 
@@ -235,6 +252,9 @@ export async function content_VideoUpdated(
 
   // TODO: handle situation when only assets changed
 
+  // set last update time
+  video.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save video
   await db.save<Video>(video)
 
@@ -284,6 +304,9 @@ export async function content_VideoCensored(
   // update video
   video.isCensored = true;
 
+  // set last update time
+  video.updatedAt = new Date(event.blockTimestamp.toNumber())
+
   // save video
   await db.save<Video>(video)
 
@@ -309,6 +332,9 @@ export async function content_VideoUncensored(
 
   // update video
   video.isCensored = false;
+
+  // set last update time
+  video.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save video
   await db.save<Video>(video)
@@ -347,6 +373,9 @@ export async function content_FeaturedVideosSet(
   for (let video of toRemove) {
     video.isFeatured = false;
 
+    // set last update time
+    video.updatedAt = new Date(event.blockTimestamp.toNumber())
+
     await db.save<Video>(video)
   }
 
@@ -368,6 +397,9 @@ export async function content_FeaturedVideosSet(
   // mark previously not-featured videos as featured
   for (let video of videosToAdd) {
     video.isFeatured = true;
+
+    // set last update time
+    video.updatedAt = new Date(event.blockTimestamp.toNumber())
 
     await db.save<Video>(video)
   }
