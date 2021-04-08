@@ -32,7 +32,6 @@ import {
   RoleStakeProfile,
   Opening as WGOpening,
   Application as WGApplication,
-  StorageProviderId,
 } from '@joystream/types/working-group'
 import {
   Opening,
