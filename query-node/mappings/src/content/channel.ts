@@ -42,11 +42,11 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
 
   // create entity
   const channel = new Channel({
-    id: channelId,
+    id: channelId.toString(),
     isCensored: false,
     videos: [],
-    happenedIn: event.blockNumber,
-    ...Object(protobufContent)
+    createdInBlock: event.blockNumber,
+    ...protobufContent
   })
 
   // save entity
@@ -193,7 +193,7 @@ export async function content_ChannelCategoryCreated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelCategoryCreationParameters} = new Content.ChannelCategoryCreatedEvent(event).data
+  const {channelCategoryCreationParameters, channelCategoryId} = new Content.ChannelCategoryCreatedEvent(event).data
   const {actor: contentActor} = new Content.CreateChannelCategoryCall(event).args
 
   // read metadata
@@ -208,10 +208,10 @@ export async function content_ChannelCategoryCreated(
 
   // create new channel category
   const channelCategory = new ChannelCategory({
-    id: event.params[0].value.toString(), // ChannelCategoryId
+    id: channelCategoryId.toString(),
     channels: [],
-    happenedIn: event.blockNumber,
-    ...Object(protobufContent)
+    createdInBlock: event.blockNumber,
+    ...protobufContent
   })
 
   // save channel

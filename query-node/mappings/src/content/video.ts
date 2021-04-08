@@ -18,6 +18,7 @@ import {
 } from './utils'
 
 // primary entities
+import { Channel } from 'query-node/src/modules/channel/channel.model'
 import { Video } from 'query-node/src/modules/video/video.model'
 import { VideoCategory } from 'query-node/src/modules/video-category/video-category.model'
 
@@ -42,7 +43,7 @@ export async function content_VideoCategoryCreated(
   } = new Content.VideoCategoryCreatedEvent(event).data
 
   // read metadata
-  const protobufContent = readProtobuf(
+  const protobufContent = await readProtobuf(
     new VideoCategory(),
     {
       metadata: videoCategoryCreationParameters.meta,
@@ -54,10 +55,9 @@ export async function content_VideoCategoryCreated(
   // create new video category
   const videoCategory = new VideoCategory({
     id: videoCategoryId.toString(), // ChannelId
-    isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
-    ...Object(protobufContent)
+    ...protobufContent
   })
 
   // save video category
@@ -159,13 +159,21 @@ export async function content_VideoCreated(
     }
   )
 
+  // load channel
+  const channel = await db.get(Channel, { where: { id: channelId } })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Trying to add video to non-existing channel', channelId)
+  }
+
   // create new video
   const video = new Video({
-    id: videoId,
+    id: videoId.toString(),
     isCensored: false,
-    channel: channelId,
+    channel,
     createdInBlock: event.blockNumber,
-    ...Object(protobufContent)
+    ...protobufContent
   })
 
   // save video

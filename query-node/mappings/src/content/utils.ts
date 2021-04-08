@@ -92,18 +92,18 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
 /*
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
 */
-export async function readProtobuf(
-  type: ChannelCategory | VideoCategory,
+export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
+  type: T,
   parameters: IReadProtobufArguments,
-): Promise<Partial<typeof type>> {
+): Promise<Partial<T>> {
   // process channel category
   if (type instanceof ChannelCategory) {
-    return ChannelCategoryMetadata.deserializeBinary(parameters.metadata).toObject()
+    return ChannelCategoryMetadata.deserializeBinary(parameters.metadata).toObject() as Partial<T>
   }
 
   // process video category
   if (type instanceof VideoCategory) {
-    return VideoCategoryMetadata.deserializeBinary(parameters.metadata).toObject()
+    return VideoCategoryMetadata.deserializeBinary(parameters.metadata).toObject() as Partial<T>
   }
 
   // this should never happen
@@ -114,15 +114,23 @@ export async function readProtobuf(
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
   In addition it handles any assets associated with the metadata.
 */
+
+/*
 export async function readProtobufWithAssets(
   type: Channel | Video,
   parameters: IReadProtobufArgumentsWithAssets,
 ): Promise<Partial<typeof type>> {
+*/
+export async function readProtobufWithAssets<T extends Channel | Video>(
+  type: T,
+  parameters: IReadProtobufArgumentsWithAssets,
+): Promise<Partial<T>> {
+
   // process channel
   if (type instanceof Channel) {
     const meta = ChannelMetadata.deserializeBinary(parameters.metadata)
     const metaAsObject = meta.toObject()
-    const result = metaAsObject as any as Channel
+    const result = metaAsObject as any as Partial<Channel>
 
     // prepare cover photo asset if needed
     if (metaAsObject.coverPhoto !== undefined) {
@@ -155,14 +163,14 @@ export async function readProtobufWithAssets(
       result.language = await prepareLanguage(metaAsObject.language, parameters.db)
     }
 
-    return result
+    return result as Partial<T>
   }
 
   // process video
   if (type instanceof Video) {
     const meta = VideoMetadata.deserializeBinary(parameters.metadata)
     const metaAsObject = meta.toObject()
-    const result = metaAsObject as any as Video
+    const result = metaAsObject as any as Partial<Video>
 
     // prepare video category if needed
     if (metaAsObject.category !== undefined) {
@@ -220,7 +228,7 @@ export async function readProtobufWithAssets(
       handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream.date)
     }
 
-    return result
+    return result as Partial<T>
   }
 
   // this should never happen
@@ -252,7 +260,7 @@ export function convertContentActorToOwner(contentActor: ContentActor, channelId
   */
 }
 
-function handlePublishedBeforeJoystream(video: Video, publishedAtString?: string) {
+function handlePublishedBeforeJoystream(video: Partial<Video>, publishedAtString?: string) {
   // published elsewhere before Joystream
   if (publishedAtString) {
     video.publishedBeforeJoystream = new Date(publishedAtString)
