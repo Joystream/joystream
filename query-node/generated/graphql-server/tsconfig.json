@@ -21,6 +21,6 @@
     "esModuleInterop": true,
     "declaration": true
   },
-  "include": ["src/**/*", "db/**/*"],
+  "include": ["src/**/*", "db/**/*", "model/**/*"],
   "exclude": ["node_modules/**/*", "generated/**/*", "tools/**/*"]
 }

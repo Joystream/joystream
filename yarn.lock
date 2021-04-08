@@ -1367,10 +1367,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.0.1-beta.17.tgz#9e79fde559d7c90a429030fb906e2fbc352b2b2e"
-  integrity sha512-qRNr6R3i/ju4Uqk+gAXuJ0OWbDENkW1ghD84m3wRlFJ3DSDDPlXGmmc3+EfsgzAbSYHCOAnfsrWWsRdgrh8RtQ==
+"@dzlzv/hydra-cli@2.1.0-beta.6":
+  version "2.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.1.0-beta.6.tgz#7692a8921c2288cb92cdc239348edfe320e1fd5a"
+  integrity sha512-rE6bqv19B/+UpA+yUtNxweWbgHHkMpBZC8PQnf1kGlYPAgLOrBdlUq+qMjqYJV504p+to6RZbBwr74PscHcmCw==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -1381,6 +1381,7 @@
     "@oclif/plugin-help" "^2"
     "@oclif/plugin-plugins" "^1.9.4"
     "@types/chalk" "^2.2.0"
+    "@types/copyfiles" "^2.4.0"
     "@types/fs-extra" "^8.1.0"
     "@types/graphql" "^14.5.0"
     "@types/listr" "^0.14.2"
@@ -1388,6 +1389,7 @@
     "@types/node" "^12.12.30"
     chalk "^4.1.0"
     cli-ux "^5.4.9"
+    copyfiles "^2.4.1"
     execa "^4.0.3"
     fs-extra "^9.0.0"
     glob "^7.1.6"
@@ -1400,19 +1402,19 @@
     tslib "1.11.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
 
-"@dzlzv/hydra-common@2.0.1-beta.17", "@dzlzv/hydra-common@^2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.0.1-beta.17.tgz#2c99c88ff877add3d3f9ad9a94f5788d755c4c42"
-  integrity sha512-fOxzei0mCRD7KL3MSY5saoJFknnoVysy9qHpfk6yNkyFsykHmekv1mqgicNwuC5HLq/ChxKoQHPeuVV3oltG/w==
+"@dzlzv/hydra-common@2.1.0-beta.6", "@dzlzv/hydra-common@^2.1.0-beta.6":
+  version "2.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.1.0-beta.6.tgz#37fe3f5a499d2422018e7acaf3a056d7f6285799"
+  integrity sha512-7xe6yW7an1fi+PX6RpqVli8duB9Zs/jDJbJwum5E7zEGlk0D4ZzSTxPqOjPr9GYhrZaa1SJsDOZCazZmcGMxWA==
   dependencies:
     bn.js "^5.1.3"
 
-"@dzlzv/hydra-db-utils@2.0.1-beta.17", "@dzlzv/hydra-db-utils@^2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.0.1-beta.17.tgz#92ddc4c26ef22e1d247ace2f83e5b93d727f09f9"
-  integrity sha512-DPPCD5NfKICorkHsam55VMPsEXQCtuGVe6LasjEWdseDN2d9Px8t8o2+up51nOy8Gqc1dm0xCk+qSTe7GRD8ow==
+"@dzlzv/hydra-db-utils@2.1.0-beta.6", "@dzlzv/hydra-db-utils@^2.1.0-beta.6":
+  version "2.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.1.0-beta.6.tgz#192957fa7ac461add0c8613456d61352480a1915"
+  integrity sha512-XxBpQdR6OnFAGe95DNKplj/ceCpzFqmBjtbxUmx/z728ToLpncJagjtO3hJRg4AtPOZJP30hel/eNLooghciDQ==
   dependencies:
-    "@dzlzv/hydra-common" "^2.0.1-beta.17"
+    "@dzlzv/hydra-common" "^2.1.0-beta.6"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.1.3"
     ioredis "^4.17.3"
@@ -1420,13 +1422,13 @@
     shortid "^2.2.16"
     typeorm "^0.2.25"
 
-"@dzlzv/hydra-processor@2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.0.1-beta.17.tgz#eefe5f54157722b162ffcff629eadbf16c82e1f1"
-  integrity sha512-fKLNt9+Z2py+R91CxPbPJi7kdNCZadnerBCxf4UUCrCr2PIpqDRF/0KsKxEHnW1xGpgTe0LhbA7d4vMbsV0X/w==
+"@dzlzv/hydra-processor@2.1.0-beta.6":
+  version "2.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.1.0-beta.6.tgz#77e1fa28e5e3db2ff6ff045672e9d21a0d843e38"
+  integrity sha512-kF+FY1ufW2hzlJ69w3FjTd+mKGLUK/siHQgd7Xmif09HkbbR1aPhWFlV9Nz3bA7y7YbWspjvnR+LfQAfUFfi5w==
   dependencies:
-    "@dzlzv/hydra-common" "^2.0.1-beta.17"
-    "@dzlzv/hydra-db-utils" "^2.0.1-beta.17"
+    "@dzlzv/hydra-common" "^2.1.0-beta.6"
+    "@dzlzv/hydra-db-utils" "^2.1.0-beta.6"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -4705,6 +4707,11 @@
     "@types/express" "*"
     "@types/keygrip" "*"
     "@types/node" "*"
+
+"@types/copyfiles@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@types/copyfiles/-/copyfiles-2.4.0.tgz#877ef9aa9def7df889fb1ca900206c79a873d113"
+  integrity sha512-ujm66wtJzW0ok5bIfwSZdvI4C4E6rbAvG58zow71wLjPPj65rIMu4Uy5LOx5H4eRvaagGUrrKTxqfLiDSsHEGQ==
 
 "@types/cors@2.8.8":
   version "2.8.8"
@@ -9931,6 +9938,19 @@ copy-webpack-plugin@^6.0.3:
     schema-utils "^2.7.0"
     serialize-javascript "^4.0.0"
     webpack-sources "^1.4.3"
+
+copyfiles@^2.4.1:
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/copyfiles/-/copyfiles-2.4.1.tgz#d2dcff60aaad1015f09d0b66e7f0f1c5cd3c5da5"
+  integrity sha512-fereAvAvxDrQDOXybk3Qu3dPbOoKoysFMWtkY3mv5BsL8//OSZVL5DCLYqgRfY5cWirgRzlC+WSrxp6Bo3eNZg==
+  dependencies:
+    glob "^7.0.5"
+    minimatch "^3.0.3"
+    mkdirp "^1.0.4"
+    noms "0.0.0"
+    through2 "^2.0.1"
+    untildify "^4.0.0"
+    yargs "^16.1.0"
 
 core-js-compat@^3.6.2, core-js-compat@^3.6.5:
   version "3.6.5"
@@ -20194,7 +20214,7 @@ minimalistic-crypto-utils@^1.0.0, minimalistic-crypto-utils@^1.0.1:
   resolved "https://registry.yarnpkg.com/minimalistic-crypto-utils/-/minimalistic-crypto-utils-1.0.1.tgz#f6c00c1c0b082246e5c4d99dfb8c7c083b2b582a"
   integrity sha1-9sAMHAsIIkblxNmd+4x8CDsrWCo=
 
-minimatch@*, "minimatch@2 || 3", minimatch@3.0.4, minimatch@^3.0.0, minimatch@^3.0.2, minimatch@^3.0.4, minimatch@~3.0.2:
+minimatch@*, "minimatch@2 || 3", minimatch@3.0.4, minimatch@^3.0.0, minimatch@^3.0.2, minimatch@^3.0.3, minimatch@^3.0.4, minimatch@~3.0.2:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.0.4.tgz#5166e286457f03306064be5497e8dbb0c3d32083"
   integrity sha512-yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==
@@ -21143,6 +21163,14 @@ nodemon@^1.18.10:
     touch "^3.1.0"
     undefsafe "^2.0.2"
     update-notifier "^2.5.0"
+
+noms@0.0.0:
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/noms/-/noms-0.0.0.tgz#da8ebd9f3af9d6760919b27d9cdc8092a7332859"
+  integrity sha1-2o69nzr51nYJGbJ9nNyAkqczKFk=
+  dependencies:
+    inherits "^2.0.1"
+    readable-stream "~1.0.31"
 
 noop-logger@^0.1.1:
   version "0.1.1"
@@ -24462,7 +24490,7 @@ readable-stream@1.1.x, readable-stream@~1.1.9:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
-"readable-stream@>=1.0.33-1 <1.1.0-0":
+"readable-stream@>=1.0.33-1 <1.1.0-0", readable-stream@~1.0.31:
   version "1.0.34"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-1.0.34.tgz#125820e34bc842d2f2aaafafe4c2916ee32c157c"
   integrity sha1-Elgg40vIQtLyqq+v5MKRbuMsFXw=
@@ -28528,6 +28556,11 @@ unset-value@^1.0.0:
     has-value "^0.3.1"
     isobject "^3.0.0"
 
+untildify@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/untildify/-/untildify-4.0.0.tgz#2bc947b953652487e4600949fb091e3ae8cd919b"
+  integrity sha512-KK8xQ1mkzZeg9inewmFVDNkg3l5LUhoq9kN6iWYB/CC9YMG8HA+c1Q8HwDe6dEX7kErrEVNVBO3fWsVq5iDgtw==
+
 unzip-response@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/unzip-response/-/unzip-response-2.0.1.tgz#d2f0f737d16b0615e72a6935ed04214572d56f97"
@@ -30155,7 +30188,7 @@ yargs@^15.0.1, yargs@^15.3.1, yargs@^15.4.1:
     y18n "^4.0.0"
     yargs-parser "^18.1.2"
 
-yargs@^16.0.0:
+yargs@^16.0.0, yargs@^16.1.0:
   version "16.2.0"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-16.2.0.tgz#1c82bf0f6b6a66eafce7ef30e376f49a12477f66"
   integrity sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==
