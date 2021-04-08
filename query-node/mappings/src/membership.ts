@@ -37,10 +37,10 @@ function convertBytesToString(b: Bytes | null): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberRegistered(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { accountId, memberId } = new Members.MemberRegisteredEvent(event_).data
-  const { avatarUri, about, handle } = new Members.BuyMembershipCall(event_).args
+  const { accountId, memberId } = new Members.MemberRegisteredEvent(event).data
+  const { avatarUri, about, handle } = new Members.BuyMembershipCall(event).args
 
   // create new membership
   const member = new Membership({
@@ -51,13 +51,13 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     handle: convertBytesToString(handle.unwrapOr(null)),
     about: convertBytesToString(about.unwrapOr(null)),
     avatarUri: convertBytesToString(avatarUri.unwrapOr(null)),
-    createdInBlock: event_.blockNumber,
+    createdInBlock: event.blockNumber,
     // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
     entry: MembershipEntryMethod.PAID,
 
     // fill in auto-generated fields
-    createdAt: new Date(event_.blockTimestamp.toNumber()),
-    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    createdAt: new Date(event.blockTimestamp.toNumber()),
+    updatedAt: new Date(event.blockTimestamp.toNumber()),
   })
 
   // save membership
@@ -68,9 +68,9 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedAboutText(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { text, memberId } = new Members.ChangeMemberAboutTextCall(event_).args
+  const { text, memberId } = new Members.ChangeMemberAboutTextCall(event).args
 
   // load member
   const member = await getMemberById(db, memberId)
@@ -79,7 +79,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_
   member.about = convertBytesToString(text)
 
   // set last update time
-  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+  member.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -89,9 +89,9 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event_
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { uri, memberId } = new Members.ChangeMemberAvatarCall(event_).args
+  const { uri, memberId } = new Members.ChangeMemberAvatarCall(event).args
 
   // load member
   const member = await getMemberById(db, memberId)
@@ -100,7 +100,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: S
   member.avatarUri = convertBytesToString(uri)
 
   // set last update time
-  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+  member.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -110,9 +110,9 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event_: S
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedHandle(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { handle, memberId } = new Members.ChangeMemberHandleCall(event_).args
+  const { handle, memberId } = new Members.ChangeMemberHandleCall(event).args
 
   // load member
   const member = await getMemberById(db, memberId)
@@ -121,7 +121,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: S
   member.handle = convertBytesToString(handle)
 
   // set last update time
-  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+  member.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -131,9 +131,9 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event_: S
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberSetRootAccount(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberSetRootAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newRootAccount, memberId } = new Members.SetRootAccountCall(event_).args
+  const { newRootAccount, memberId } = new Members.SetRootAccountCall(event).args
 
   const member = await getMemberById(db, memberId)
 
@@ -141,7 +141,7 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event_: 
   member.rootAccount = newRootAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+  member.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -151,9 +151,9 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event_: 
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberSetControllerAccount(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function members_MemberSetControllerAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newControllerAccount, memberId } = new Members.SetControllerAccountCall(event_).args
+  const { newControllerAccount, memberId } = new Members.SetControllerAccountCall(event).args
 
   // load member
   const member = await getMemberById(db, memberId)
@@ -162,7 +162,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   member.controllerAccount = newControllerAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(event_.blockTimestamp.toNumber())
+  member.updatedAt = new Date(event.blockTimestamp.toNumber())
 
   // save member
   await db.save<Membership>(member)
