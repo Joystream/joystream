@@ -42,7 +42,7 @@ export async function prepareDataObject(
 ): Promise<DataObject> {
   const dataObject = new DataObject({
     owner,
-    addedAt: blockNumber,
+    createdInBlock: blockNumber,
     typeId: contentParameters.type_id.toNumber(),
     // `size` is masked by `size` special name in `Struct` so there needs to be `.get('size') as unknown as u64` to retrieve proper value
     size: (contentParameters.get('size') as unknown as u64).toBn(),

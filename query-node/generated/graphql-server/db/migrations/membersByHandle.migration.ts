@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class MembersByHandleMigration1617193983916 implements MigrationInterface {
-    name = 'membersByHandleMigration1617193983916'
+export class MembersByHandleMigration1617875747204 implements MigrationInterface {
+    name = 'membersByHandleMigration1617875747204'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // TODO: escape 

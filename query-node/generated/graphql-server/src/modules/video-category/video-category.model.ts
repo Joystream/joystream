@@ -6,18 +6,15 @@ import { Video } from '../video/video.model';
 export class VideoCategory extends BaseModel {
   @StringField({
     nullable: true,
-    description: `The name of the category`
+    description: `The name of the category`,
   })
   name?: string;
 
-  @OneToMany(
-    () => Video,
-    (param: Video) => param.category
-  )
+  @OneToMany(() => Video, (param: Video) => param.category)
   videos?: Video[];
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
   constructor(init?: Partial<VideoCategory>) {
     super();

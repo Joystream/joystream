@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class VideoCategoriesByNameMigration1617193983916 implements MigrationInterface {
-    name = 'videoCategoriesByNameMigration1617193983916'
+export class VideoCategoriesByNameMigration1617875747204 implements MigrationInterface {
+    name = 'videoCategoriesByNameMigration1617875747204'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // TODO: escape 

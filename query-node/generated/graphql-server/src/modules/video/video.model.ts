@@ -9,7 +9,7 @@ import {
   OneToOneJoin,
   CustomField,
   EnumField,
-  StringField
+  StringField,
 } from 'warthog';
 
 import { Channel } from '../channel/channel.model';
@@ -21,141 +21,114 @@ import { VideoMediaMetadata } from '../video-media-metadata/video-media-metadata
 import { FeaturedVideo } from '../featured-video/featured-video.model';
 
 import { AssetAvailability } from '../enums/enums';
-export { AssetAvailability };
 
 @Model({ api: {} })
 export class Video extends BaseModel {
-  @ManyToOne(
-    () => Channel,
-    (param: Channel) => param.videos,
-    { skipGraphQLField: true }
-  )
+  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true })
   channel!: Channel;
 
-  @ManyToOne(
-    () => VideoCategory,
-    (param: VideoCategory) => param.videos,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, { skipGraphQLField: true, nullable: true })
   category?: VideoCategory;
 
   @StringField({
     nullable: true,
-    description: `The title of the video`
+    description: `The title of the video`,
   })
   title?: string;
 
   @StringField({
     nullable: true,
-    description: `The description of the Video`
+    description: `The description of the Video`,
   })
   description?: string;
 
   @IntField({
     nullable: true,
-    description: `Video duration in seconds`
+    description: `Video duration in seconds`,
   })
   duration?: number;
 
-  @ManyToOne(
-    () => DataObject,
-    (param: DataObject) => param.videothumbnailDataObject,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => DataObject, (param: DataObject) => param.videothumbnailDataObject, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   thumbnailDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
-    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` }
+    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
   thumbnailUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
-    description: `Availability meta information`
+    description: `Availability meta information`,
   })
   thumbnailAvailability!: AssetAvailability;
 
-  @ManyToOne(
-    () => Language,
-    (param: Language) => param.videolanguage,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => Language, (param: Language) => param.videolanguage, { skipGraphQLField: true, nullable: true })
   language?: Language;
 
   @BooleanField({
     nullable: true,
-    description: `Whether or not Video contains marketing`
+    description: `Whether or not Video contains marketing`,
   })
   hasMarketing?: boolean;
 
   @DateTimeField({
     nullable: true,
-    description: `If the Video was published on other platform before beeing published on Joystream - the original publication date`
+    description: `If the Video was published on other platform before beeing published on Joystream - the original publication date`,
   })
   publishedBeforeJoystream?: Date;
 
   @BooleanField({
     nullable: true,
-    description: `Whether the Video is supposed to be publically displayed`
+    description: `Whether the Video is supposed to be publically displayed`,
   })
   isPublic?: boolean;
 
   @BooleanField({
-    description: `Flag signaling whether a video is censored.`
+    description: `Flag signaling whether a video is censored.`,
   })
   isCensored!: boolean;
 
   @BooleanField({
     nullable: true,
-    description: `Whether the Video contains explicit material.`
+    description: `Whether the Video contains explicit material.`,
   })
   isExplicit?: boolean;
 
-  @ManyToOne(
-    () => License,
-    (param: License) => param.videolicense,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => License, (param: License) => param.videolicense, { skipGraphQLField: true, nullable: true })
   license?: License;
 
-  @ManyToOne(
-    () => DataObject,
-    (param: DataObject) => param.videomediaDataObject,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => DataObject, (param: DataObject) => param.videomediaDataObject, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   mediaDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
-    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` }
+    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
   mediaUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
-    description: `Availability meta information`
+    description: `Availability meta information`,
   })
   mediaAvailability!: AssetAvailability;
 
-  @OneToOneJoin(
-    () => VideoMediaMetadata,
-    (param: VideoMediaMetadata) => param.video,
-    { nullable: true }
-  )
+  @OneToOneJoin(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.video, { nullable: true })
   mediaMetadata?: VideoMediaMetadata;
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
   @BooleanField({
-    description: `Is video featured or not`
+    description: `Is video featured or not`,
   })
   isFeatured!: boolean;
 
-  @OneToOne(
-    () => FeaturedVideo,
-    (param: FeaturedVideo) => param.video,
-    { nullable: true }
-  )
+  @OneToOne(() => FeaturedVideo, (param: FeaturedVideo) => param.video, { nullable: true })
   featured?: FeaturedVideo;
 
   constructor(init?: Partial<Video>) {

@@ -6,25 +6,17 @@ import { Video } from '../video/video.model';
 @Model({ api: {} })
 export class Language extends BaseModel {
   @StringField({
-    description: `Language identifier ISO 639-1`
+    description: `Language identifier ISO 639-1`,
   })
   iso!: string;
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
-  @OneToMany(
-    () => Channel,
-    (param: Channel) => param.language,
-    { nullable: true }
-  )
+  @OneToMany(() => Channel, (param: Channel) => param.language, { nullable: true })
   channellanguage?: Channel[];
 
-  @OneToMany(
-    () => Video,
-    (param: Video) => param.language,
-    { nullable: true }
-  )
+  @OneToMany(() => Video, (param: Video) => param.language, { nullable: true })
   videolanguage?: Video[];
 
   constructor(init?: Partial<Language>) {

@@ -18,18 +18,18 @@ export { LiaisonJudgement };
 export class DataObject extends BaseModel {
   @Column('jsonb')
   @WarthogField('json')
-  @Field(type => DataObjectOwner, {
-    description: `Content owner`
+  @Field((type) => DataObjectOwner, {
+    description: `Content owner`,
   })
   owner!: typeof DataObjectOwner;
 
   @IntField({
-    description: `Content added at`
+    description: `Content added at`,
   })
-  addedAt!: number;
+  createdInBlock!: number;
 
   @IntField({
-    description: `Content type id`
+    description: `Content type id`,
   })
   typeId!: number;
 
@@ -39,63 +39,48 @@ export class DataObject extends BaseModel {
     transformer: {
       to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
       from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined
-    }
+        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
+    },
   })
   size!: BN;
 
   @NumericField({
+    nullable: true,
     description: `Storage provider id of the liaison`,
 
     transformer: {
       to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
       from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined
-    }
+        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
+    },
   })
-  liaisonId!: BN;
+  liaisonId?: BN;
 
   @EnumField('LiaisonJudgement', LiaisonJudgement, {
-    description: `Storage provider as liaison judgment`
+    description: `Storage provider as liaison judgment`,
   })
   liaisonJudgement!: LiaisonJudgement;
 
   @StringField({
-    description: `IPFS content id`
+    description: `IPFS content id`,
   })
   ipfsContentId!: string;
 
   @StringField({
-    description: `Joystream runtime content`
+    description: `Joystream runtime content`,
   })
   joystreamContentId!: string;
 
-  @OneToMany(
-    () => Channel,
-    (param: Channel) => param.coverPhotoDataObject,
-    { nullable: true }
-  )
+  @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, { nullable: true })
   channelcoverPhotoDataObject?: Channel[];
 
-  @OneToMany(
-    () => Channel,
-    (param: Channel) => param.avatarDataObject,
-    { nullable: true }
-  )
+  @OneToMany(() => Channel, (param: Channel) => param.avatarDataObject, { nullable: true })
   channelavatarDataObject?: Channel[];
 
-  @OneToMany(
-    () => Video,
-    (param: Video) => param.thumbnailDataObject,
-    { nullable: true }
-  )
+  @OneToMany(() => Video, (param: Video) => param.thumbnailDataObject, { nullable: true })
   videothumbnailDataObject?: Video[];
 
-  @OneToMany(
-    () => Video,
-    (param: Video) => param.mediaDataObject,
-    { nullable: true }
-  )
+  @OneToMany(() => Video, (param: Video) => param.mediaDataObject, { nullable: true })
   videomediaDataObject?: Video[];
 
   constructor(init?: Partial<DataObject>) {

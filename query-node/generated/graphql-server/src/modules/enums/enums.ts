@@ -1,20 +1,20 @@
 export enum Network {
   BABYLON = 'BABYLON',
   ALEXANDRIA = 'ALEXANDRIA',
-  ROME = 'ROME'
+  ROME = 'ROME',
 }
 export enum MembershipEntryMethod {
   PAID = 'PAID',
   SCREENING = 'SCREENING',
-  GENESIS = 'GENESIS'
+  GENESIS = 'GENESIS',
 }
 export enum AssetAvailability {
   ACCEPTED = 'ACCEPTED',
   PENDING = 'PENDING',
-  INVALID = 'INVALID'
+  INVALID = 'INVALID',
 }
 export enum LiaisonJudgement {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
 }

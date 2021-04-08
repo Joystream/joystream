@@ -7,7 +7,7 @@ import {
   OneToMany,
   CustomField,
   EnumField,
-  StringField
+  StringField,
 } from 'warthog';
 
 import { Membership } from '../membership/membership.model';
@@ -22,107 +22,89 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Channel extends BaseModel {
-  @ManyToOne(
-    () => Membership,
-    (param: Membership) => param.channels,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => Membership, (param: Membership) => param.channels, { skipGraphQLField: true, nullable: true })
   ownerMember?: Membership;
 
-  @ManyToOne(
-    () => CuratorGroup,
-    (param: CuratorGroup) => param.channels,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => CuratorGroup, (param: CuratorGroup) => param.channels, { skipGraphQLField: true, nullable: true })
   ownerCuratorGroup?: CuratorGroup;
 
-  @ManyToOne(
-    () => ChannelCategory,
-    (param: ChannelCategory) => param.channels,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => ChannelCategory, (param: ChannelCategory) => param.channels, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   category?: ChannelCategory;
 
   @StringField({
     nullable: true,
-    description: `Reward account where revenue is sent if set.`
+    description: `Reward account where revenue is sent if set.`,
   })
   rewardAccount?: string;
 
   @StringField({
     nullable: true,
-    description: `The title of the Channel`
+    description: `The title of the Channel`,
   })
   title?: string;
 
   @StringField({
     nullable: true,
-    description: `The description of a Channel`
+    description: `The description of a Channel`,
   })
   description?: string;
 
-  @ManyToOne(
-    () => DataObject,
-    (param: DataObject) => param.channelcoverPhotoDataObject,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => DataObject, (param: DataObject) => param.channelcoverPhotoDataObject, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   coverPhotoDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
-    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` }
+    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
   coverPhotoUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
-    description: `Availability meta information`
+    description: `Availability meta information`,
   })
   coverPhotoAvailability!: AssetAvailability;
 
-  @ManyToOne(
-    () => DataObject,
-    (param: DataObject) => param.channelavatarDataObject,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => DataObject, (param: DataObject) => param.channelavatarDataObject, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   avatarDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
-    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` }
+    api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
   avatarUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
-    description: `Availability meta information`
+    description: `Availability meta information`,
   })
   avatarAvailability!: AssetAvailability;
 
   @BooleanField({
     nullable: true,
-    description: `Flag signaling whether a channel is public.`
+    description: `Flag signaling whether a channel is public.`,
   })
   isPublic?: boolean;
 
   @BooleanField({
-    description: `Flag signaling whether a channel is censored.`
+    description: `Flag signaling whether a channel is censored.`,
   })
   isCensored!: boolean;
 
-  @ManyToOne(
-    () => Language,
-    (param: Language) => param.channellanguage,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => Language, (param: Language) => param.channellanguage, { skipGraphQLField: true, nullable: true })
   language?: Language;
 
-  @OneToMany(
-    () => Video,
-    (param: Video) => param.channel
-  )
+  @OneToMany(() => Video, (param: Video) => param.channel)
   videos?: Video[];
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
   constructor(init?: Partial<Channel>) {
     super();

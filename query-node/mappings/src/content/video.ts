@@ -56,7 +56,7 @@ export async function content_VideoCategoryCreated(
     id: videoCategoryId.toString(), // ChannelId
     isCensored: false,
     videos: [],
-    happenedIn: event.blockNumber,
+    createdInBlock: event.blockNumber,
     ...Object(protobufContent)
   })
 
@@ -164,7 +164,7 @@ export async function content_VideoCreated(
     id: videoId,
     isCensored: false,
     channel: channelId,
-    happenedIn: event.blockNumber,
+    createdInBlock: event.blockNumber,
     ...Object(protobufContent)
   })
 

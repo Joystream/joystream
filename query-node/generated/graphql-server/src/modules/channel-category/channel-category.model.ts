@@ -6,18 +6,15 @@ import { Channel } from '../channel/channel.model';
 export class ChannelCategory extends BaseModel {
   @StringField({
     nullable: true,
-    description: `The name of the category`
+    description: `The name of the category`,
   })
   name?: string;
 
-  @OneToMany(
-    () => Channel,
-    (param: Channel) => param.category
-  )
+  @OneToMany(() => Channel, (param: Channel) => param.category)
   channels?: Channel[];
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
   constructor(init?: Partial<ChannelCategory>) {
     super();

@@ -8,7 +8,7 @@ import {
   JSONField,
   BytesField,
   EnumField,
-  StringField
+  StringField,
 } from 'warthog';
 
 import BN from 'bn.js';
@@ -20,13 +20,13 @@ export class DataObjectOwnerChannel {
   public isTypeOf: string = 'DataObjectOwnerChannel';
 
   @NumericField({
-    description: `Channel identifier`
+    description: `Channel identifier`,
   })
   channel!: BN;
 
   @IntField({
     nullable: true,
-    description: `Variant needs to have at least one property. This value is not used.`
+    description: `Variant needs to have at least one property. This value is not used.`,
   })
   dummy?: number;
 }
@@ -36,7 +36,7 @@ export class DataObjectOwnerCouncil {
 
   @IntField({
     nullable: true,
-    description: `Variant needs to have at least one property. This value is not used.`
+    description: `Variant needs to have at least one property. This value is not used.`,
   })
   dummy?: number;
 }
@@ -45,7 +45,7 @@ export class DataObjectOwnerDao {
   public isTypeOf: string = 'DataObjectOwnerDao';
 
   @NumericField({
-    description: `DAO identifier`
+    description: `DAO identifier`,
   })
   dao!: BN;
 }
@@ -54,13 +54,13 @@ export class DataObjectOwnerMember {
   public isTypeOf: string = 'DataObjectOwnerMember';
 
   @NumericField({
-    description: `Member identifier`
+    description: `Member identifier`,
   })
   member!: BN;
 
   @IntField({
     nullable: true,
-    description: `Variant needs to have at least one property. This value is not used.`
+    description: `Variant needs to have at least one property. This value is not used.`,
   })
   dummy?: number;
 }
@@ -69,10 +69,9 @@ export class DataObjectOwnerWorkingGroup {
   public isTypeOf: string = 'DataObjectOwnerWorkingGroup';
 
   @IntField({
-    nullable: true,
-    description: `Variant needs to have at least one property. This value is not used.`
+    description: `Working group identifier`,
   })
-  dummy?: number;
+  workingGroup!: number;
 }
 
 export const DataObjectOwner = createUnionType({
@@ -82,7 +81,7 @@ export const DataObjectOwner = createUnionType({
     DataObjectOwnerChannel,
     DataObjectOwnerDao,
     DataObjectOwnerCouncil,
-    DataObjectOwnerWorkingGroup
+    DataObjectOwnerWorkingGroup,
   ],
-  resolveType: value => (value.isTypeOf ? value.isTypeOf : undefined)
+  resolveType: (value) => (value.isTypeOf ? value.isTypeOf : undefined),
 });

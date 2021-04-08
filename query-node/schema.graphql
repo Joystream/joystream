@@ -31,10 +31,7 @@ type Membership @entity {
   rootAccount: String!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: Int!
-
-  "Timestamp when member was registered"
-  registeredAtTime: DateTime!
+  createdInBlock: Int!
 
   "How the member was registered"
   entry: MembershipEntryMethod!
@@ -54,7 +51,7 @@ type ChannelCategory @entity {
 
   channels: [Channel!]! @derivedFrom(field: "category")
 
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 "Asset availability representation"
@@ -87,7 +84,7 @@ type DataObject @entity {
   owner: DataObjectOwner!
 
   "Content added at"
-  addedAt: Int!
+  createdInBlock: Int!
 
   "Content type id"
   typeId: Int!
@@ -167,7 +164,7 @@ type Language @entity {
   "Language identifier ISO 639-1"
   iso: String!
 
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type Channel @entity {
@@ -230,7 +227,7 @@ type Channel @entity {
 
   videos: [Video!]! @derivedFrom(field: "channel")
 
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type CuratorGroup @entity {
@@ -255,7 +252,7 @@ type VideoCategory @entity {
 
   videos: [Video!]! @derivedFrom(field: "category")
 
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type Video @entity {
@@ -331,7 +328,7 @@ type Video @entity {
   "Video file metadata"
   mediaMetadata: VideoMediaMetadata
 
-  happenedIn: Int!
+  createdInBlock: Int!
 
   "Is video featured or not"
   isFeatured: Boolean!
@@ -357,7 +354,7 @@ type VideoMediaMetadata @entity {
 
   video: Video @derivedFrom(field: "mediaMetadata")
 
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type VideoMediaEncoding @entity {

@@ -4,10 +4,7 @@ import { Video } from '../video/video.model';
 
 @Model({ api: {} })
 export class FeaturedVideo extends BaseModel {
-  @OneToOneJoin(
-    () => Video,
-    (param: Video) => param.featured
-  )
+  @OneToOneJoin(() => Video, (param: Video) => param.featured)
   video!: Video;
 
   constructor(init?: Partial<FeaturedVideo>) {

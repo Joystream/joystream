@@ -7,22 +7,21 @@ import { Video } from '../video/video.model';
 
 @Model({ api: {} })
 export class VideoMediaMetadata extends BaseModel {
-  @ManyToOne(
-    () => VideoMediaEncoding,
-    (param: VideoMediaEncoding) => param.videomediametadataencoding,
-    { skipGraphQLField: true, nullable: true }
-  )
+  @ManyToOne(() => VideoMediaEncoding, (param: VideoMediaEncoding) => param.videomediametadataencoding, {
+    skipGraphQLField: true,
+    nullable: true,
+  })
   encoding?: VideoMediaEncoding;
 
   @IntField({
     nullable: true,
-    description: `Video media width in pixels`
+    description: `Video media width in pixels`,
   })
   pixelWidth?: number;
 
   @IntField({
     nullable: true,
-    description: `Video media height in pixels`
+    description: `Video media height in pixels`,
   })
   pixelHeight?: number;
 
@@ -33,20 +32,16 @@ export class VideoMediaMetadata extends BaseModel {
     transformer: {
       to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
       from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined
-    }
+        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
+    },
   })
   size?: BN;
 
-  @OneToOne(
-    () => Video,
-    (param: Video) => param.mediaMetadata,
-    { nullable: true }
-  )
+  @OneToOne(() => Video, (param: Video) => param.mediaMetadata, { nullable: true })
   video?: Video;
 
   @IntField({})
-  happenedIn!: number;
+  createdInBlock!: number;
 
   constructor(init?: Partial<VideoMediaMetadata>) {
     super();

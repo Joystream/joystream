@@ -8,19 +8,16 @@ import { Channel } from '../channel/channel.model';
 export class CuratorGroup extends BaseModel {
   @CustomField({
     db: { type: 'numeric', array: true },
-    api: { type: 'numeric', description: `Curators belonging to this group` }
+    api: { type: 'numeric', description: `Curators belonging to this group` },
   })
   curatorIds!: BN[];
 
   @BooleanField({
-    description: `Is group active or not`
+    description: `Is group active or not`,
   })
   isActive!: boolean;
 
-  @OneToMany(
-    () => Channel,
-    (param: Channel) => param.ownerCuratorGroup
-  )
+  @OneToMany(() => Channel, (param: Channel) => param.ownerCuratorGroup)
   channels?: Channel[];
 
   constructor(init?: Partial<CuratorGroup>) {

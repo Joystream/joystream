@@ -50,8 +50,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event_: Subs
     handle: convertBytesToString(handle.unwrapOr(null)),
     about: convertBytesToString(about.unwrapOr(null)),
     avatarUri: convertBytesToString(avatarUri.unwrapOr(null)),
-    registeredAtBlock: event_.blockNumber,
-    registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
+    createdInBlock: event_.blockNumber,
     // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
     entry: MembershipEntryMethod.PAID,
   })

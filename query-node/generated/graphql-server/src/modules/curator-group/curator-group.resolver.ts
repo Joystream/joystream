@@ -10,7 +10,7 @@ import {
   Field,
   Int,
   ArgsType,
-  Info
+  Info,
 } from 'type-graphql';
 import graphqlFields from 'graphql-fields';
 import { Inject } from 'typedi';
@@ -24,7 +24,7 @@ import {
   CuratorGroupWhereArgs,
   CuratorGroupWhereInput,
   CuratorGroupWhereUniqueInput,
-  CuratorGroupOrderByEnum
+  CuratorGroupOrderByEnum,
 } from '../../../generated';
 
 import { CuratorGroup } from './curator-group.model';
@@ -113,8 +113,8 @@ export class CuratorGroupResolver {
       edges: [],
       pageInfo: {
         hasNextPage: false,
-        hasPreviousPage: false
-      }
+        hasPreviousPage: false,
+      },
     };
     // If the related database table does not have any records then an error is thrown to the client
     // by warthog

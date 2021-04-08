@@ -10,7 +10,7 @@ import {
   Field,
   Int,
   ArgsType,
-  Info
+  Info,
 } from 'type-graphql';
 import graphqlFields from 'graphql-fields';
 import { Inject } from 'typedi';
@@ -24,7 +24,7 @@ import {
   VideoCategoryWhereArgs,
   VideoCategoryWhereInput,
   VideoCategoryWhereUniqueInput,
-  VideoCategoryOrderByEnum
+  VideoCategoryOrderByEnum,
 } from '../../../generated';
 
 import { VideoCategory } from './video-category.model';
@@ -113,8 +113,8 @@ export class VideoCategoryResolver {
       edges: [],
       pageInfo: {
         hasNextPage: false,
-        hasPreviousPage: false
-      }
+        hasPreviousPage: false,
+      },
     };
     // If the related database table does not have any records then an error is thrown to the client
     // by warthog
