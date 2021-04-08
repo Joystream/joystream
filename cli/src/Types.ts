@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { ElectionStage, Seat } from '@joystream/types/council'
-import { Vec, Option } from '@polkadot/types'
+import { Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
@@ -9,14 +9,13 @@ import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
 import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
-import { NewAsset } from '@joystream/types/content'
-import { Bytes } from '@polkadot/types/primitive'
 import {
   VideoMetadata,
   ChannelMetadata,
   ChannelCategoryMetadata,
   VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
+import { ContentParameters } from '@joystream/types/storage'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -206,78 +205,41 @@ export type ApiMethodNamedArg = {
 }
 export type ApiMethodNamedArgs = ApiMethodNamedArg[]
 
-export type VideoUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>
-  meta: VideoMetadata.AsObject
+// Content-related
+export enum AssetType {
+  AnyAsset = 1,
 }
 
-export type VideoUpdateParameters = {
-  assets: Option<Vec<NewAsset>>
-  meta: Bytes
+export type InputAssetDetails = {
+  parameters: ContentParameters
+  path: string
 }
 
-export type VideoCreationParametersInput = {
-  assets: Vec<NewAsset>
-  meta: VideoMetadata.AsObject
+export type VideoFFProbeMetadata = {
+  width?: number
+  height?: number
+  codecName?: string
+  codecFullName?: string
+  duration?: number
 }
 
-export type VideoCreationParameters = {
-  assets: Vec<NewAsset>
-  meta: Bytes
+export type VideoFileMetadata = VideoFFProbeMetadata & {
+  size: number
+  container: string
+  mimeType: string
 }
 
-export type ChannelCreationParametersInput = {
-  assets: Vec<NewAsset>
-  meta: ChannelMetadata.AsObject
-  reward_account: Option<AccountId>
+export type VideoInputParameters = Omit<VideoMetadata.AsObject, 'video' | 'thumbnailPhoto'> & {
+  videoPath?: string
+  thumbnailPhotoPath?: string
 }
 
-export type ChannelCreationParameters = {
-  assets: Vec<NewAsset>
-  meta: Bytes
-  reward_account: Option<AccountId>
+export type ChannelInputParameters = Omit<ChannelMetadata.AsObject, 'coverPhoto' | 'avatarPhoto'> & {
+  coverPhotoPath?: string
+  avatarPhotoPath?: string
+  rewardAccount?: string
 }
 
-export type ChannelUpdateParametersInput = {
-  assets: Option<Vec<NewAsset>>
-  meta: ChannelMetadata.AsObject
-  reward_account: Option<AccountId>
-}
+export type ChannelCategoryInputParameters = ChannelCategoryMetadata.AsObject
 
-export type ChannelUpdateParameters = {
-  assets: Option<Vec<NewAsset>>
-  new_meta: Bytes
-  reward_account: Option<AccountId>
-}
-
-export type ChannelCategoryCreationParametersInput = {
-  meta: ChannelCategoryMetadata.AsObject
-}
-
-export type ChannelCategoryCreationParameters = {
-  meta: Bytes
-}
-
-export type ChannelCategoryUpdateParametersInput = {
-  meta: ChannelCategoryMetadata.AsObject
-}
-
-export type ChannelCategoryUpdateParameters = {
-  new_meta: Bytes
-}
-
-export type VideoCategoryCreationParametersInput = {
-  meta: VideoCategoryMetadata.AsObject
-}
-
-export type VideoCategoryCreationParameters = {
-  meta: Bytes
-}
-
-export type VideoCategoryUpdateParametersInput = {
-  meta: VideoCategoryMetadata.AsObject
-}
-
-export type VideoCategoryUpdateParameters = {
-  new_meta: Bytes
-}
+export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject

@@ -18,11 +18,14 @@
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
     "@polkadot/api": "1.26.1",
+    "cli-progress": "^3.9.0",
+    "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
     "@types/proper-lockfile": "^4.1.1",
     "@types/slug": "^0.9.1",
     "ajv": "^6.11.0",
+    "axios": "^0.21.1",
     "cli-ux": "^5.4.5",
     "fluent-ffmpeg": "^2.1.2",
     "inquirer": "^7.1.0",
@@ -37,8 +40,7 @@
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1",
-    "axios": "^0.21.1"
+    "tslib": "^1.11.1"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
@@ -52,11 +54,11 @@
     "eslint-config-oclif": "^3.1.0",
     "eslint-config-oclif-typescript": "^0.1.0",
     "globby": "^10.0.2",
+    "json-schema-to-typescript": "^9.1.1",
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^8.8.2",
-    "typescript": "^3.8.3",
-    "json-schema-to-typescript": "^9.1.1"
+    "typescript": "^3.8.3"
   },
   "engines": {
     "node": ">=12.18.0",

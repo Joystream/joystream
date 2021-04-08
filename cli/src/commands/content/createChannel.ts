@@ -1,53 +1,61 @@
+import { getInputJson } from '../../helpers/InputOutput'
+import { ChannelInputParameters } from '../../Types'
+import { metadataToBytes, channelMetadataFromInput } from '../../helpers/serialization'
+import { flags } from '@oclif/command'
+import { CreateInterface } from '@joystream/types'
+import { ChannelCreationParameters } from '@joystream/types/content'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { ChannelCreationParameters, ChannelCreationParametersInput } from '../../Types'
-import { channelMetadataFromInput } from '../../helpers/serialization'
+import UploadCommandBase from '../../base/UploadCommandBase'
+import ExitCodes from '../../ExitCodes'
 
-export default class CreateChannelCommand extends ContentDirectoryCommandBase {
+export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.ownerContextFlag,
-    input: IOFlags.input,
+    input: flags.string({
+      char: 'i',
+      required: true,
+      description: `Path to JSON file to use as input`,
+    }),
   }
 
   async run() {
     let { context, input } = this.parse(CreateChannelCommand).flags
 
+    // Context
     if (!context) {
       context = await this.promptForOwnerContext()
     }
-
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
+    const account = await this.getRequiredSelectedAccount()
     const actor = await this.getActor(context)
+    await this.requestAccountDecoding(account)
 
-    if (input) {
-      const channelCreationParametersInput = await getInputJson<ChannelCreationParametersInput>(input)
+    const channelInput = await getInputJson<ChannelInputParameters>(input)
 
-      const api = await this.getOriginalApi()
-
-      const meta = channelMetadataFromInput(api, channelCreationParametersInput)
-
-      const channelCreationParameters: ChannelCreationParameters = {
-        assets: channelCreationParametersInput.assets,
-        meta,
-        reward_account: channelCreationParametersInput.reward_account,
-      }
-
-      this.jsonPrettyPrint(JSON.stringify(channelCreationParametersInput))
-
-      this.log('Meta: ' + meta)
-
-      const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
-
-      if (confirmed) {
-        this.log('Sending the extrinsic...')
-
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannel', [actor, channelCreationParameters])
-      }
-    } else {
-      this.error('Input invalid or was not provided...')
+    const meta = channelMetadataFromInput(channelInput)
+    const { coverPhotoPath, avatarPhotoPath } = channelInput
+    if (!coverPhotoPath || !avatarPhotoPath) {
+      // TODO: Handle with json schema validation?
+      this.error('Invalid input! coverPhotoPath and avatarPhotoPath are required!', { exit: ExitCodes.InvalidInput })
     }
+    const inputAssets = await this.prepareInputAssets([coverPhotoPath, avatarPhotoPath], input)
+    const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
+    // Set assets indexes in the metadata
+    meta.setCoverPhoto(0)
+    meta.setAvatarPhoto(1)
+
+    const channelCreationParameters: CreateInterface<ChannelCreationParameters> = {
+      assets,
+      meta: metadataToBytes(meta),
+      reward_account: channelInput.rewardAccount,
+    }
+
+    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta.toObject() }))
+
+    await this.requireConfirmation('Do you confirm the provided input?', true)
+
+    await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [actor, channelCreationParameters])
+
+    await this.uploadAssets(inputAssets)
   }
 }

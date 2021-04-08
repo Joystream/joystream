@@ -1,13 +1,20 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { ChannelCategoryCreationParameters, ChannelCategoryCreationParametersInput } from '../../Types'
-import { channelCategoryMetadataFromInput } from '../../helpers/serialization'
+import { getInputJson } from '../../helpers/InputOutput'
+import { ChannelCategoryInputParameters } from '../../Types'
+import { channelCategoryMetadataFromInput, metadataToBytes } from '../../helpers/serialization'
+import { flags } from '@oclif/command'
+import { CreateInterface } from '@joystream/types'
+import { ChannelCategoryCreationParameters } from '@joystream/types/content'
 
 export default class CreateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel category inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
-    input: IOFlags.input,
+    input: flags.string({
+      char: 'i',
+      required: true,
+      description: `Path to JSON file to use as input`,
+    }),
   }
 
   async run() {
@@ -18,33 +25,21 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
 
     const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
-    if (input) {
-      const channelCategoryCreationParametersInput = await getInputJson<ChannelCategoryCreationParametersInput>(input)
+    const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input)
 
-      const api = await this.getOriginalApi()
+    const meta = channelCategoryMetadataFromInput(channelCategoryInput)
 
-      const meta = channelCategoryMetadataFromInput(api, channelCategoryCreationParametersInput)
-
-      const channelCategoryCreationParameters: ChannelCategoryCreationParameters = {
-        meta,
-      }
-
-      this.jsonPrettyPrint(JSON.stringify(channelCategoryCreationParametersInput))
-
-      this.log('Meta: ' + meta)
-
-      const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
-
-      if (confirmed) {
-        this.log('Sending the extrinsic...')
-
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannelCategory', [
-          actor,
-          channelCategoryCreationParameters,
-        ])
-      }
-    } else {
-      this.error('Input invalid or was not provided...')
+    const channelCategoryCreationParameters: CreateInterface<ChannelCategoryCreationParameters> = {
+      meta: metadataToBytes(meta),
     }
+
+    this.jsonPrettyPrint(JSON.stringify(channelCategoryInput))
+
+    await this.requireConfirmation('Do you confirm the provided input?', true)
+
+    await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannelCategory', [
+      actor,
+      channelCategoryCreationParameters,
+    ])
   }
 }

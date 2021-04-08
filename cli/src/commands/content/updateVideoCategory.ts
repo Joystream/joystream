@@ -1,13 +1,20 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import { VideoCategoryUpdateParameters, VideoCategoryUpdateParametersInput } from '../../Types'
-import { videoCategoryMetadataFromInput } from '../../helpers/serialization'
+import { getInputJson } from '../../helpers/InputOutput'
+import { VideoCategoryInputParameters } from '../../Types'
+import { metadataToBytes, videoCategoryMetadataFromInput } from '../../helpers/serialization'
+import { flags } from '@oclif/command'
+import { CreateInterface } from '@joystream/types'
+import { VideoCategoryUpdateParameters } from '@joystream/types/content'
 
 export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Update video category inside content directory.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
-    input: IOFlags.input,
+    input: flags.string({
+      char: 'i',
+      required: true,
+      description: `Path to JSON file to use as input`,
+    }),
   }
 
   static args = [
@@ -28,34 +35,22 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
 
     const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
-    if (input) {
-      const videoCategoryUpdateParametersInput = await getInputJson<VideoCategoryUpdateParametersInput>(input)
+    const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input)
 
-      const api = await this.getOriginalApi()
+    const meta = videoCategoryMetadataFromInput(videoCategoryInput)
 
-      const meta = videoCategoryMetadataFromInput(api, videoCategoryUpdateParametersInput)
-
-      const videoCategoryUpdateParameters: VideoCategoryUpdateParameters = {
-        new_meta: meta,
-      }
-
-      this.jsonPrettyPrint(JSON.stringify(videoCategoryUpdateParameters))
-
-      this.log('Meta: ' + meta)
-
-      const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
-
-      if (confirmed) {
-        this.log('Sending the extrinsic...')
-
-        await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCategory', [
-          actor,
-          videoCategoryId,
-          videoCategoryUpdateParameters,
-        ])
-      }
-    } else {
-      this.error('Input invalid or was not provided...')
+    const videoCategoryUpdateParameters: CreateInterface<VideoCategoryUpdateParameters> = {
+      new_meta: metadataToBytes(meta),
     }
+
+    this.jsonPrettyPrint(JSON.stringify(videoCategoryInput))
+
+    await this.requireConfirmation('Do you confirm the provided input?', true)
+
+    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCategory', [
+      actor,
+      videoCategoryId,
+      videoCategoryUpdateParameters,
+    ])
   }
 }

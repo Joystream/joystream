@@ -6,7 +6,7 @@ import { formatBalance } from '@polkadot/util'
 import { Balance, Moment, BlockNumber } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, CodecArg } from '@polkadot/types/types'
-import { Option, Vec, UInt } from '@polkadot/types'
+import { Option, Vec, UInt, Bytes } from '@polkadot/types'
 import {
   AccountSummary,
   CouncilInfoObj,
@@ -32,6 +32,7 @@ import {
   RoleStakeProfile,
   Opening as WGOpening,
   Application as WGApplication,
+  StorageProviderId,
 } from '@joystream/types/working-group'
 import {
   Opening,
@@ -524,10 +525,12 @@ export default class Api {
   }
 
   async channelById(channelId: ChannelId | number | string): Promise<Channel> {
-    const channel = await this._api.query.content.channelById<Channel>(channelId)
-    if (channel.isEmpty) {
+    // isEmpty will not work for { MemmberId: 0 } ownership
+    const exists = !!(await this._api.query.content.channelById.size(channelId)).toNumber()
+    if (!exists) {
       throw new CLIError(`Channel by id ${channelId.toString()} not found!`)
     }
+    const channel = await this._api.query.content.channelById<Channel>(channelId)
 
     return channel
   }
@@ -570,9 +573,13 @@ export default class Api {
     )
   }
 
-  async dataByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this._api.query.dataDirectory.dataByContentId<DataObject>(contentId)
-    return dataObject.isEmpty ? null : dataObject
+  async dataObjectsByContentIds(contentIds: ContentId[]): Promise<DataObject[]> {
+    const dataObjects = await this._api.query.dataDirectory.dataByContentId.multi<DataObject>(contentIds)
+    const notFoundIndex = dataObjects.findIndex((o) => o.isEmpty)
+    if (notFoundIndex !== -1) {
+      throw new CLIError(`DataObject not found by id ${contentIds[notFoundIndex].toString()}`)
+    }
+    return dataObjects
   }
 
   async getRandomBootstrapEndpoint(): Promise<string | null> {
@@ -581,8 +588,14 @@ export default class Api {
     return randomEndpoint ? randomEndpoint.toString() : null
   }
 
-  async storageProviderEndpoint(storageProviderId: number): Promise<string> {
-    const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
+  async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {
+    const value = await this._api.query.storageWorkingGroup.workerStorage<Bytes>(storageProviderId)
     return this._api.createType('Text', value).toString()
+  }
+
+  async allStorageProviderEndpoints(): Promise<string[]> {
+    const workerIds = (await this.groupWorkers(WorkingGroups.StorageProviders)).map(([id]) => id)
+    const workerStorages = await this._api.query.storageWorkingGroup.workerStorage.multi<Bytes>(workerIds)
+    return workerStorages.map((storage) => this._api.createType('Text', storage).toString())
   }
 }

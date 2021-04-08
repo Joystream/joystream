@@ -90,7 +90,7 @@ type CreateInterface_NoOption<T extends Codec> =
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
 // (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
-type CreateInterface<T extends Codec> =
+export type CreateInterface<T extends Codec> =
   | T
   | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
 

@@ -1,16 +1,10 @@
 {
-  "assets": [
-    {
-      "Urls": ["https://joystream.org/WorkingGroupOpening.schema.json"]
-    }
-  ],
-  "meta": {
-    "title": "Title",
-    "description": "Description",
-    "isPublic": true,
-    "language": "eng",
-    "coverPhoto": 1,
-    "avatarPhoto": 1,
-    "category": 1
-  }
+  "title": "Example Joystream Channel",
+  "description": "This is an awesome example channel!",
+  "isPublic": true,
+  "language": "en",
+  "category": 1,
+  "avatarPhotoPath": "./avatar-photo-1.png",
+  "coverPhotoPath": "./cover-photo-1.png",
+  "rewardAccount": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 }
