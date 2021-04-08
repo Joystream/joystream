@@ -35,5 +35,6 @@ std = [
 	'sp-runtime/std',
 	'frame-system/std',
     'common/std',
-    'sp-arithmetic/std'
+    'sp-arithmetic/std',
+    'balances/std'
 ]
