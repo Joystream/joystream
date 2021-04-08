@@ -20,8 +20,9 @@ members = [
 	"runtime-modules/versioned-store-permissions",
 	"runtime-modules/working-group",
 	"runtime-modules/content-directory",
+	"runtime-modules/storage-v2",
 	"node",
-	"utils/chain-spec-builder/"
+	"utils/chain-spec-builder/",
 ]
 
 [profile.release]
