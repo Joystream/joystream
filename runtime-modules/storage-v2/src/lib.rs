@@ -8,6 +8,9 @@
 // TODO: add types comments
 // TODO: add benchmarks
 
+#[cfg(test)]
+mod tests;
+
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage};
@@ -143,7 +146,7 @@ pub struct Voucher {
 pub enum StorageBucketOperatorStatus {
     Missing,
     InvitedStorageWorker(WorkerId),
-    StorageWorker(WorkerId)
+    StorageWorker(WorkerId),
 }
 
 impl Default for StorageBucketOperatorStatus {
@@ -158,7 +161,7 @@ pub struct StorageBucket {
     pub operator_status: StorageBucketOperatorStatus,
     pub accepting_new_bags: bool,
     pub number_of_pending_data_objects: u32,
-    pub voucher: Voucher
+    pub voucher: Voucher,
 }
 
 decl_storage! {

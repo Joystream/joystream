@@ -1,0 +1,96 @@
+#![cfg(test)]
+
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+pub use frame_system;
+use sp_core::H256;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
+};
+
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Test;
+
+impl_outer_origin! {
+    pub enum Origin for Test {}
+}
+
+mod storage {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        balances<T>,
+        storage<T>,
+        frame_system<T>,
+    }
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+}
+
+impl balances::Trait for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
+
+impl crate::Trait for Test {
+    type Event = TestEvent;
+}
+
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
+
+impl frame_system::Trait for Test {
+    type BaseCallFilter = ();
+    type Origin = Origin;
+    type Call = ();
+    type Index = u64;
+    type BlockNumber = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = TestEvent;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
+}
+
+pub fn initial_test_ext() -> sp_io::TestExternalities {
+    let t = frame_system::GenesisConfig::default()
+        .build_storage::<Test>()
+        .unwrap();
+
+    t.into()
+}
+
+pub type Storage = crate::Module<Test>;
+pub type System = frame_system::Module<Test>;
+pub type Balances = balances::Module<Test>;
