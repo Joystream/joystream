@@ -4,6 +4,7 @@ import { metadataToBytes, channelMetadataFromInput } from '../../helpers/seriali
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
+import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 
@@ -29,7 +30,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const actor = await this.getActor(context)
     await this.requestAccountDecoding(account)
 
-    const channelInput = await getInputJson<ChannelInputParameters>(input)
+    const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
 
     const meta = channelMetadataFromInput(channelInput)
     const { coverPhotoPath, avatarPhotoPath } = channelInput

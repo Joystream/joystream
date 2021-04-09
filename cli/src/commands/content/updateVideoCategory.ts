@@ -5,6 +5,7 @@ import { metadataToBytes, videoCategoryMetadataFromInput } from '../../helpers/s
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryUpdateParameters } from '@joystream/types/content'
+import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
 
 export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Update video category inside content directory.'
@@ -35,7 +36,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
 
     const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
-    const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input)
+    const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input, VideoCategoryInputSchema)
 
     const meta = videoCategoryMetadataFromInput(videoCategoryInput)
 

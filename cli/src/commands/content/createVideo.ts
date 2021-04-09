@@ -6,6 +6,7 @@ import { CreateInterface } from '@joystream/types'
 import { flags } from '@oclif/command'
 import { VideoCreationParameters } from '@joystream/types/content'
 import { MediaType, VideoMetadata } from '@joystream/content-metadata-protobuf'
+import { VideoInputSchema } from '../../json-schemas/ContentDirectory'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video under specific channel inside content directory.'
@@ -45,7 +46,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
     await this.requestAccountDecoding(account)
 
     // Get input from file
-    const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input)
+    const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
 
     const meta = videoMetadataFromInput(videoCreationParametersInput)
 

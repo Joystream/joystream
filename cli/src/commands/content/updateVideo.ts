@@ -5,6 +5,7 @@ import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoUpdateParameters } from '@joystream/types/content'
+import { VideoInputSchema } from '../../json-schemas/ContentDirectory'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
   static description = 'Update video under specific id.'
@@ -37,7 +38,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const actor = await this.getChannelOwnerActor(channel)
     await this.requestAccountDecoding(currentAccount)
 
-    const videoInput = await getInputJson<VideoInputParameters>(input)
+    const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
 
     const meta = videoMetadataFromInput(videoInput)
     const { videoPath, thumbnailPhotoPath } = videoInput

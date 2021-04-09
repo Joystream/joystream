@@ -5,6 +5,7 @@ import { channelCategoryMetadataFromInput, metadataToBytes } from '../../helpers
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryCreationParameters } from '@joystream/types/content'
+import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
 
 export default class CreateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel category inside content directory.'
@@ -25,7 +26,7 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
 
     const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
-    const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input)
+    const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input, ChannelCategoryInputSchema)
 
     const meta = channelCategoryMetadataFromInput(channelCategoryInput)
 

@@ -5,6 +5,7 @@ import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { CreateInterface } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
+import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
@@ -36,7 +37,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     const actor = await this.getChannelOwnerActor(channel)
     await this.requestAccountDecoding(currentAccount)
 
-    const channelInput = await getInputJson<ChannelInputParameters>(input)
+    const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
 
     const meta = channelMetadataFromInput(channelInput)
 

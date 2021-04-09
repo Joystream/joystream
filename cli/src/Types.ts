@@ -17,6 +17,8 @@ import {
 } from '@joystream/content-metadata-protobuf'
 import { ContentId, ContentParameters } from '@joystream/types/storage'
 
+import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
+
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
 // If not provided in the account json file, the meta.name value is set to "Unnamed Account"
@@ -246,3 +248,33 @@ export type ChannelInputParameters = Omit<ChannelMetadata.AsObject, 'coverPhoto'
 export type ChannelCategoryInputParameters = ChannelCategoryMetadata.AsObject
 
 export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject
+
+// JSONSchema utility types
+export type JSONTypeName<T> = T extends string
+  ? 'string'
+  : T extends number
+  ? 'number'
+  : T extends any[]
+  ? 'array'
+  : T extends Record<string, unknown>
+  ? 'object'
+  : T extends boolean
+  ? 'boolean'
+  : never
+
+export type PropertySchema<P> = Omit<
+  JSONSchema7Definition & {
+    type: JSONTypeName<P>
+    properties: P extends Record<string, unknown> ? JsonSchemaProperties<P> : never
+  },
+  P extends Record<string, unknown> ? '' : 'properties'
+>
+
+export type JsonSchemaProperties<T extends Record<string, unknown>> = {
+  [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
+}
+
+export type JsonSchema<T extends Record<string, unknown>> = JSONSchema7 & {
+  type: 'object'
+  properties: JsonSchemaProperties<T>
+}

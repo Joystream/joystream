@@ -20,7 +20,7 @@ export const IOFlags = {
   }),
 }
 
-export async function getInputJson<T>(inputPath: string, schema?: Record<string, unknown>): Promise<T> {
+export async function getInputJson<T>(inputPath: string, schema?: unknown): Promise<T> {
   let content, jsonObj
   try {
     content = fs.readFileSync(inputPath).toString()
@@ -39,11 +39,14 @@ export async function getInputJson<T>(inputPath: string, schema?: Record<string,
   return jsonObj as T
 }
 
-export async function validateInput(input: unknown, schema: Record<string, unknown>): Promise<void> {
+export async function validateInput(input: unknown, schema: unknown): Promise<void> {
   const ajv = new Ajv({ allErrors: true })
-  const valid = ajv.validate(schema, input) as boolean
+  const valid = ajv.validate(schema as any, input) as boolean
   if (!valid) {
-    throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
+    throw new CLIError(
+      `Input JSON file is not valid:\n` +
+        ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`).join('\n')
+    )
   }
 }
 
