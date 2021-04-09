@@ -770,14 +770,19 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn censor_channel(
+        pub fn update_channel_censorship_status(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            is_censored: bool,
             rationale: Vec<u8>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            if channel.is_censored == is_censored {
+                return Ok(())
+            }
 
             ensure_actor_authorized_to_censor::<T>(
                 origin,
@@ -791,44 +796,14 @@ decl_module! {
 
             let mut channel = channel;
 
-            channel.is_censored = true;
+            channel.is_censored = is_censored;
 
             // TODO: unset the reward account ? so no revenue can be earned for censored channels?
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel);
 
-            Self::deposit_event(RawEvent::ChannelCensored(actor, channel_id, rationale));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncensor_channel(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            rationale: Vec<u8>,
-        ) {
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                &channel.owner,
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let mut channel = channel;
-
-            channel.is_censored = false;
-
-            // Update the channel
-            ChannelById::<T>::insert(channel_id, channel);
-
-            Self::deposit_event(RawEvent::ChannelUncensored(actor, channel_id, rationale));
+            Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1221,45 +1196,19 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn censor_video(
+        pub fn update_video_censorship_status(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            is_censored: bool,
             rationale: Vec<u8>,
         ) {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            ensure_actor_authorized_to_censor::<T>(
-                origin,
-                &actor,
-                // The channel owner will be..
-                &Self::channel_by_id(video.in_channel).owner,
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let mut video = video;
-
-            video.is_censored = true;
-
-            // Update the video
-            VideoById::<T>::insert(video_id, video);
-
-            Self::deposit_event(RawEvent::VideoCensored(actor, video_id, rationale));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn uncensor_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            rationale: Vec<u8>
-        ) {
-            // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
+            if video.is_censored == is_censored {
+                return Ok(())
+            }
 
             ensure_actor_authorized_to_censor::<T>(
                 origin,
@@ -1274,12 +1223,12 @@ decl_module! {
 
             let mut video = video;
 
-            video.is_censored = false;
+            video.is_censored = is_censored;
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
 
-            Self::deposit_event(RawEvent::VideoUncensored(actor, video_id, rationale));
+            Self::deposit_event(RawEvent::VideoCensorshipStatusUpdated(actor, video_id, is_censored, rationale));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1453,6 +1402,7 @@ decl_event!(
         ContentParameters = ContentParameters<T>,
         AccountId = <T as system::Trait>::AccountId,
         ContentId = ContentId<T>,
+        IsCensored = bool,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1475,8 +1425,12 @@ decl_event!(
         ),
         ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
-        ChannelCensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
-        ChannelUncensored(ContentActor, ChannelId, Vec<u8> /* rationale */),
+        ChannelCensorshipStatusUpdated(
+            ContentActor,
+            ChannelId,
+            IsCensored,
+            Vec<u8>, /* rationale */
+        ),
 
         // Channel Ownership Transfers
         ChannelOwnershipTransferRequested(
@@ -1522,8 +1476,12 @@ decl_event!(
         ),
         VideoDeleted(ContentActor, VideoId),
 
-        VideoCensored(ContentActor, VideoId, Vec<u8> /* rationale */),
-        VideoUncensored(ContentActor, VideoId, Vec<u8> /* rationale */),
+        VideoCensorshipStatusUpdated(
+            ContentActor,
+            VideoId,
+            IsCensored,
+            Vec<u8>, /* rationale */
+        ),
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),

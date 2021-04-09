@@ -133,7 +133,7 @@ struct ValidatedUserInfo {
     about: Vec<u8>,
 }
 
-#[derive(Encode, Decode, Debug, PartialEq)]
+#[derive(Encode, Decode, Debug, PartialEq, Eq, Clone)]
 pub enum EntryMethod<PaidTermId, AccountId> {
     Paid(PaidTermId),
     Screening(AccountId),
@@ -245,8 +245,9 @@ decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
       <T as Trait>::MemberId,
+      <T as Trait>::PaidTermId,
     {
-        MemberRegistered(MemberId, AccountId),
+        MemberRegistered(MemberId, AccountId, EntryMethod<PaidTermId, AccountId>),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
@@ -297,7 +298,7 @@ decl_module! {
 
             let _ = T::Currency::slash(&who, terms.fee);
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, who, EntryMethod::Paid(paid_terms_id)));
         }
 
         /// Change member's about text
@@ -470,17 +471,19 @@ decl_module! {
                 T::Currency::deposit_creating(&new_member_account, initial_balance);
             };
 
+            let entry_method = EntryMethod::Screening(sender);
+
             // cannot fail because of prior check_user_registration_info
             let member_id = Self::insert_member(
                 &new_member_account,
                 &new_member_account,
                 &user_info,
-                EntryMethod::Screening(sender),
+                entry_method.clone(),
                 <system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account, entry_method));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
