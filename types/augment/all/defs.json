@@ -827,5 +827,6 @@
             "ExistingVideo": "VideoId"
         }
     },
-    "MaxNumber": "u32"
+    "MaxNumber": "u32",
+    "IsCensored": "bool"
 }
